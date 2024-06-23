@@ -36,7 +36,7 @@ namespace silkworm::rpc::ethdb::bitmap {
 Task<roaring::Roaring> get(
     db::kv::api::Transaction& tx,
     const std::string& table,
-    silkworm::Bytes& key,
+    Bytes& key,
     uint32_t from_block,
     uint32_t to_block);
 

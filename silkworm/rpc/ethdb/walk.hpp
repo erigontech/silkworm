@@ -25,7 +25,7 @@
 
 namespace silkworm::rpc::ethdb {
 
-using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
+using Walker = std::function<bool(Bytes&, Bytes&)>;
 
 Task<void> walk(db::kv::api::Transaction& tx, const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w);
 

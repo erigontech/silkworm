@@ -37,7 +37,7 @@ class LocalCursor : public CursorDupSort {
   public:
     explicit LocalCursor(mdbx::txn& txn, uint32_t cursor_id, const std::string& table_name)
         : cursor_id_{cursor_id},
-          db_cursor_{txn, silkworm::db::MapConfig{table_name.c_str()}},
+          db_cursor_{txn, MapConfig{table_name.c_str()}},
           txn_{txn} {}
 
     [[nodiscard]] uint32_t cursor_id() const override { return cursor_id_; };

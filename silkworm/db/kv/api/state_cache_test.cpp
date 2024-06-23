@@ -21,8 +21,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/use_future.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
@@ -36,8 +34,6 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
-
-#include "util.hpp"
 
 namespace silkworm::db::kv::api {
 
@@ -61,22 +57,22 @@ static constexpr auto kTestAddress4{0x2d3be3b6021606e1af02fccbc6ea5b192e6d412d_a
 static const std::vector<evmc::address> kTestAddresses{kTestAddress1, kTestAddress2, kTestAddress3, kTestAddress4};
 static constexpr uint64_t kTestIncarnation{3};
 
-static const silkworm::Bytes kTestAccountData{*silkworm::from_hex("600035600055")};
+static const Bytes kTestAccountData{*from_hex("600035600055")};
 
-static const silkworm::Bytes kTestStorageData1{*silkworm::from_hex("600035600055")};
-static const silkworm::Bytes kTestStorageData2{*silkworm::from_hex("6000356000550055")};
-static const std::vector<silkworm::Bytes> kTestStorageData{kTestStorageData1, kTestStorageData2};
+static const Bytes kTestStorageData1{*from_hex("600035600055")};
+static const Bytes kTestStorageData2{*from_hex("6000356000550055")};
+static const std::vector<Bytes> kTestStorageData{kTestStorageData1, kTestStorageData2};
 
-static const silkworm::Bytes kTestCode1{*silkworm::from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
-static const silkworm::Bytes kTestCode2{*silkworm::from_hex("600160010160005500")};
-static const silkworm::Bytes kTestCode3{*silkworm::from_hex("600260020160005500")};
-static const silkworm::Bytes kTestCode4{*silkworm::from_hex("60606040526008565b00")};
-static const std::vector<silkworm::Bytes> kTestCodes{kTestCode1, kTestCode2, kTestCode3, kTestCode4};
+static const Bytes kTestCode1{*from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
+static const Bytes kTestCode2{*from_hex("600160010160005500")};
+static const Bytes kTestCode3{*from_hex("600260020160005500")};
+static const Bytes kTestCode4{*from_hex("60606040526008565b00")};
+static const std::vector<Bytes> kTestCodes{kTestCode1, kTestCode2, kTestCode3, kTestCode4};
 
 static const auto kTestHashedLocation1{0x6677907ab33937e392b9be983b30818f29d594039c9e1e7490bf7b3698888fb1_bytes32};
 static const auto kTestHashedLocation2{0xe046602dcccb1a2f1d176718c8e709a42bba57af2da2379ba7130e2f916c95cd_bytes32};
 static const std::vector<evmc::bytes32> kTestHashedLocations{kTestHashedLocation1, kTestHashedLocation2};
-static const std::vector<silkworm::Bytes> kTestZeroTxs{};
+static const std::vector<Bytes> kTestZeroTxs{};
 
 TEST_CASE("CoherentStateRoot", "[rpc][ethdb][kv][state_cache]") {
     SECTION("CoherentStateRoot::CoherentStateRoot") {
@@ -98,29 +94,29 @@ TEST_CASE("CoherentCacheConfig", "[rpc][ethdb][kv][state_cache]") {
     }
 }
 
-remote::StateChangeBatch new_batch(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
-                                   const std::vector<silkworm::Bytes>& tx_rlps, bool unwind) {
+remote::StateChangeBatch new_batch(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
+                                   const std::vector<Bytes>& tx_rlps, bool unwind) {
     remote::StateChangeBatch state_changes;
     state_changes.set_state_version_id(view_id);
 
     remote::StateChange* latest_change = state_changes.add_change_batch();
     latest_change->set_block_height(block_height);
-    latest_change->set_allocated_block_hash(silkworm::rpc::H256_from_bytes32(block_hash).release());
+    latest_change->set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
     latest_change->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
     for (auto& tx_rlp : tx_rlps) {
-        latest_change->add_txs(silkworm::to_hex(tx_rlp));
+        latest_change->add_txs(to_hex(tx_rlp));
     }
 
     return state_changes;
 }
 
-remote::StateChangeBatch new_batch_with_upsert(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
-                                               const std::vector<silkworm::Bytes>& tx_rlps, bool unwind) {
+remote::StateChangeBatch new_batch_with_upsert(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
+                                               const std::vector<Bytes>& tx_rlps, bool unwind) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     remote::AccountChange* account_change = latest_change->add_changes();
-    account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
+    account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
     account_change->set_action(remote::Action::UPSERT);
     account_change->set_incarnation(kTestIncarnation);
     account_change->set_data(kTestAccountData.data(), kTestAccountData.size());
@@ -128,8 +124,8 @@ remote::StateChangeBatch new_batch_with_upsert(uint64_t view_id, silkworm::Block
     return state_changes;
 }
 
-remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, silkworm::BlockNum block_height,
-                                                    const evmc::bytes32& block_hash, const std::vector<silkworm::Bytes>& tx_rlps,
+remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, BlockNum block_height,
+                                                    const evmc::bytes32& block_hash, const std::vector<Bytes>& tx_rlps,
                                                     bool unwind, uint64_t num_changes, uint64_t offset = 0) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
@@ -138,7 +134,7 @@ remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, silkworm::
     SILKWORM_ASSERT(num_changes <= kTestCodes.size());
     for (auto i{offset}; i < num_changes; ++i) {
         remote::AccountChange* account_change = latest_change->add_changes();
-        account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddresses[i]).release());
+        account_change->set_allocated_address(rpc::H160_from_address(kTestAddresses[i]).release());
         account_change->set_action(remote::Action::UPSERT_CODE);
         account_change->set_incarnation(kTestIncarnation);
         account_change->set_data(kTestAccountData.data(), kTestAccountData.size());
@@ -148,48 +144,48 @@ remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, silkworm::
     return state_changes;
 }
 
-remote::StateChangeBatch new_batch_with_delete(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
-                                               const std::vector<silkworm::Bytes>& tx_rlps, bool unwind) {
+remote::StateChangeBatch new_batch_with_delete(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
+                                               const std::vector<Bytes>& tx_rlps, bool unwind) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     remote::AccountChange* account_change = latest_change->add_changes();
-    account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
+    account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
     account_change->set_action(remote::Action::REMOVE);
 
     return state_changes;
 }
 
-remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, silkworm::BlockNum block_height,
-                                                const evmc::bytes32& block_hash, const std::vector<silkworm::Bytes>& tx_rlps,
+remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, BlockNum block_height,
+                                                const evmc::bytes32& block_hash, const std::vector<Bytes>& tx_rlps,
                                                 bool unwind, uint64_t num_storage_changes) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     remote::AccountChange* account_change = latest_change->add_changes();
-    account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
+    account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
     account_change->set_action(remote::Action::STORAGE);
     account_change->set_incarnation(kTestIncarnation);
     SILKWORM_ASSERT(num_storage_changes <= kTestHashedLocations.size());
     SILKWORM_ASSERT(num_storage_changes <= kTestStorageData.size());
     for (auto i{0u}; i < num_storage_changes; ++i) {
         remote::StorageChange* storage_change = account_change->add_storage_changes();
-        storage_change->set_allocated_location(silkworm::rpc::H256_from_bytes32(kTestHashedLocations[i]).release());
+        storage_change->set_allocated_location(rpc::H256_from_bytes32(kTestHashedLocations[i]).release());
         storage_change->set_data(kTestStorageData[i].data(), kTestStorageData[i].size());
     }
 
     return state_changes;
 }
 
-remote::StateChangeBatch new_batch_with_code(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
-                                             const std::vector<silkworm::Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
+remote::StateChangeBatch new_batch_with_code(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
+                                             const std::vector<Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     SILKWORM_ASSERT(num_code_changes <= kTestCodes.size());
     for (auto i{0u}; i < num_code_changes; ++i) {
         remote::AccountChange* account_change = latest_change->add_changes();
-        account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
+        account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
         account_change->set_action(remote::Action::CODE);
         account_change->set_code(kTestCodes[i].data(), kTestCodes[i].size());
     }
@@ -199,11 +195,11 @@ remote::StateChangeBatch new_batch_with_code(uint64_t view_id, silkworm::BlockNu
 
 struct StateCacheTest : public silkworm::test_util::ContextTestBase {
     void get_and_check_upsert(CoherentStateCache& cache, Transaction& txn, const evmc::address& address,
-                              const silkworm::Bytes& data) {
+                              const Bytes& data) {
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
         if (view) {
-            const silkworm::Bytes address_key{address.bytes, silkworm::kAddressLength};
+            const Bytes address_key{address.bytes, kAddressLength};
             const auto value = spawn_and_wait(view->get(address_key));
             CHECK(value.has_value());
             if (value) {
@@ -212,12 +208,12 @@ struct StateCacheTest : public silkworm::test_util::ContextTestBase {
         }
     }
 
-    void get_and_check_code(CoherentStateCache& cache, Transaction& txn, silkworm::ByteView code) {
+    void get_and_check_code(CoherentStateCache& cache, Transaction& txn, ByteView code) {
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
         if (view) {
-            const ethash::hash256 code_hash{silkworm::keccak256(code)};
-            const silkworm::Bytes code_hash_key{code_hash.bytes, silkworm::kHashLength};
+            const ethash::hash256 code_hash{keccak256(code)};
+            const Bytes code_hash_key{code_hash.bytes, kHashLength};
             const auto value = spawn_and_wait(view->get_code(code_hash_key));
             CHECK(value.has_value());
             if (value) {
@@ -330,7 +326,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
         if (view) {
-            const silkworm::Bytes address_key{kTestAddress1.bytes, silkworm::kAddressLength};
+            const Bytes address_key{kTestAddress1.bytes, kAddressLength};
             const auto value1 = spawn_and_wait(view->get(address_key));
             CHECK(value1.has_value());
             if (value1) {
@@ -441,8 +437,8 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
         if (view) {
-            const ethash::hash256 code_hash{silkworm::keccak256(kTestCode1)};
-            const silkworm::Bytes code_hash_key{code_hash.bytes, silkworm::kHashLength};
+            const ethash::hash256 code_hash{keccak256(kTestCode1)};
+            const Bytes code_hash_key{code_hash.bytes, kHashLength};
             const auto value = spawn_and_wait(view->get_code(code_hash_key));
             CHECK(value.has_value());
             if (value) {

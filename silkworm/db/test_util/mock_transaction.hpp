@@ -38,7 +38,7 @@ class MockTransaction : public kv::api::Transaction {
     MOCK_METHOD((Task<void>), open, (), (override));
     MOCK_METHOD((Task<std::shared_ptr<kv::api::Cursor>>), cursor, (const std::string&), (override));
     MOCK_METHOD((Task<std::shared_ptr<kv::api::CursorDupSort>>), cursor_dup_sort, (const std::string&), (override));
-    MOCK_METHOD((std::shared_ptr<silkworm::State>), create_state,
+    MOCK_METHOD((std::shared_ptr<State>), create_state,
                 (boost::asio::any_io_executor&, const chain::ChainStorage&, BlockNum), (override));
     MOCK_METHOD((std::shared_ptr<chain::ChainStorage>), create_storage, (), (override));
     MOCK_METHOD((Task<void>), close, (), (override));

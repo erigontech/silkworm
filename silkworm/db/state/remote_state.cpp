@@ -31,19 +31,19 @@
 
 namespace silkworm::db::state {
 
-std::unordered_map<evmc::bytes32, silkworm::Bytes> AsyncRemoteState::code_;
+std::unordered_map<evmc::bytes32, Bytes> AsyncRemoteState::code_;
 
-Task<std::optional<silkworm::Account>> AsyncRemoteState::read_account(const evmc::address& address) const noexcept {
+Task<std::optional<Account>> AsyncRemoteState::read_account(const evmc::address& address) const noexcept {
     co_return co_await state_reader_.read_account(address, block_number_ + 1);
 }
 
-Task<silkworm::ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
+Task<ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
     const auto optional_code{co_await state_reader_.read_code(code_hash)};
     if (optional_code) {
         code_[code_hash] = *optional_code;
         co_return code_[code_hash];  // NOLINT(runtime/arrays)
     }
-    co_return silkworm::ByteView{};
+    co_return ByteView{};
 }
 
 Task<evmc::bytes32> AsyncRemoteState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
@@ -54,11 +54,11 @@ Task<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& /*add
     co_return 0;
 }
 
-Task<std::optional<silkworm::BlockHeader>> AsyncRemoteState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
+Task<std::optional<BlockHeader>> AsyncRemoteState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     co_return co_await storage_.read_header(block_number, block_hash);
 }
 
-Task<bool> AsyncRemoteState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
+Task<bool> AsyncRemoteState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& filled_body) const noexcept {
     co_return co_await storage_.read_body(block_hash, block_number, filled_body);
 }
 
@@ -80,10 +80,10 @@ Task<std::optional<evmc::bytes32>> AsyncRemoteState::canonical_hash(BlockNum blo
     co_return co_await storage_.read_canonical_hash(block_number);
 }
 
-std::optional<silkworm::Account> RemoteState::read_account(const evmc::address& address) const noexcept {
+std::optional<Account> RemoteState::read_account(const evmc::address& address) const noexcept {
     SILK_DEBUG << "RemoteState::read_account address=" << address << " start";
     try {
-        std::future<std::optional<silkworm::Account>> result{boost::asio::co_spawn(executor_, async_state_.read_account(address), boost::asio::use_future)};
+        std::future<std::optional<Account>> result{boost::asio::co_spawn(executor_, async_state_.read_account(address), boost::asio::use_future)};
         const auto optional_account{result.get()};
         SILK_DEBUG << "RemoteState::read_account account.nonce=" << (optional_account ? optional_account->nonce : 0) << " end";
         return optional_account;
@@ -93,15 +93,15 @@ std::optional<silkworm::Account> RemoteState::read_account(const evmc::address& 
     }
 }
 
-silkworm::ByteView RemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView RemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
     SILK_DEBUG << "RemoteState::read_code code_hash=" << to_hex(code_hash) << " start";
     try {
-        std::future<silkworm::ByteView> result{boost::asio::co_spawn(executor_, async_state_.read_code(code_hash), boost::asio::use_future)};
+        std::future<ByteView> result{boost::asio::co_spawn(executor_, async_state_.read_code(code_hash), boost::asio::use_future)};
         const auto code{result.get()};
         return code;
     } catch (const std::exception& e) {
         SILK_ERROR << "RemoteState::read_code exception: " << e.what();
-        return silkworm::ByteView{};
+        return ByteView{};
     }
 }
 
@@ -123,10 +123,10 @@ uint64_t RemoteState::previous_incarnation(const evmc::address& address) const n
     return 0;
 }
 
-std::optional<silkworm::BlockHeader> RemoteState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
+std::optional<BlockHeader> RemoteState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
     SILK_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << to_hex(block_hash);
     try {
-        std::future<std::optional<silkworm::BlockHeader>> result{boost::asio::co_spawn(executor_, async_state_.read_header(block_number, block_hash), boost::asio::use_future)};
+        std::future<std::optional<BlockHeader>> result{boost::asio::co_spawn(executor_, async_state_.read_header(block_number, block_hash), boost::asio::use_future)};
         auto optional_header{result.get()};
         SILK_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << to_hex(block_hash);
         return optional_header;
@@ -136,7 +136,7 @@ std::optional<silkworm::BlockHeader> RemoteState::read_header(BlockNum block_num
     }
 }
 
-bool RemoteState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& out) const noexcept {
+bool RemoteState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
     SILK_DEBUG << "RemoteState::read_body block_number=" << block_number << " block_hash=" << to_hex(block_hash);
     try {
         auto result{boost::asio::co_spawn(executor_, async_state_.read_body(block_number, block_hash, out), boost::asio::use_future)};

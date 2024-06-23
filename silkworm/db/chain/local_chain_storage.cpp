@@ -23,7 +23,7 @@
 
 namespace silkworm::db::chain {
 
-LocalChainStorage::LocalChainStorage(db::ROTxn& txn) : data_model_{txn} {}
+LocalChainStorage::LocalChainStorage(ROTxn& txn) : data_model_{txn} {}
 
 Task<ChainConfig> LocalChainStorage::read_chain_config() const {
     const auto chain_config{data_model_.read_chain_config()};

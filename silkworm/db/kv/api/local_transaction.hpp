@@ -49,7 +49,7 @@ class LocalTransaction : public BaseTransaction {
 
     Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) override;
+    std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) override;
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 
@@ -65,7 +65,7 @@ class LocalTransaction : public BaseTransaction {
 
     mdbx::env chaindata_env_;
     uint32_t last_cursor_id_{0};
-    db::ROTxnManaged txn_;
+    ROTxnManaged txn_;
     uint64_t tx_id_{++next_tx_id_};
 };
 

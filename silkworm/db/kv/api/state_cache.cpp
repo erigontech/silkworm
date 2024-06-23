@@ -28,17 +28,15 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 
-#include "util.hpp"
-
 namespace silkworm::db::kv::api {
 
 CoherentStateView::CoherentStateView(Transaction& txn, CoherentStateCache* cache) : txn_(txn), cache_(cache) {}
 
-Task<std::optional<silkworm::Bytes>> CoherentStateView::get(const silkworm::Bytes& key) {
+Task<std::optional<Bytes>> CoherentStateView::get(const Bytes& key) {
     co_return co_await cache_->get(key, txn_);
 }
 
-Task<std::optional<silkworm::Bytes>> CoherentStateView::get_code(const silkworm::Bytes& key) {
+Task<std::optional<Bytes>> CoherentStateView::get_code(const Bytes& key) {
     co_return co_await cache_->get_code(key, txn_);
 }
 
@@ -122,37 +120,37 @@ void CoherentStateCache::on_new_block(const ::remote::StateChangeBatch& state_ch
 
 void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateViewId view_id,
                                                const remote::AccountChange& change) {
-    const auto address = silkworm::rpc::address_from_H160(change.address());
-    const auto data_bytes = silkworm::bytes_of_string(change.data());
+    const auto address = rpc::address_from_H160(change.address());
+    const auto data_bytes = bytes_of_string(change.data());
     SILK_DEBUG << "CoherentStateCache::process_upsert_change address: " << address << " data: " << data_bytes;
-    const silkworm::Bytes address_key{address.bytes, silkworm::kAddressLength};
+    const Bytes address_key{address.bytes, kAddressLength};
     add({address_key, data_bytes}, root, view_id);
 }
 
 void CoherentStateCache::process_code_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change) {
-    const auto code_bytes = silkworm::bytes_of_string(change.code());
-    const ethash::hash256 code_hash{silkworm::keccak256(code_bytes)};
-    const silkworm::Bytes code_hash_key{code_hash.bytes, silkworm::kHashLength};
+    const auto code_bytes = bytes_of_string(change.code());
+    const ethash::hash256 code_hash{keccak256(code_bytes)};
+    const Bytes code_hash_key{code_hash.bytes, kHashLength};
     SILK_DEBUG << "CoherentStateCache::process_code_change code_hash_key: " << code_hash_key;
     add_code({code_hash_key, code_bytes}, root, view_id);
 }
 
 void CoherentStateCache::process_delete_change(CoherentStateRoot* root, StateViewId view_id,
                                                const remote::AccountChange& change) {
-    const auto address = silkworm::rpc::address_from_H160(change.address());
+    const auto address = rpc::address_from_H160(change.address());
     SILK_DEBUG << "CoherentStateCache::process_delete_change address: " << address;
-    const silkworm::Bytes address_key{address.bytes, silkworm::kAddressLength};
+    const Bytes address_key{address.bytes, kAddressLength};
     add({address_key, {}}, root, view_id);
 }
 
 void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateViewId view_id,
                                                 const remote::AccountChange& change) {
-    const auto address = silkworm::rpc::address_from_H160(change.address());
+    const auto address = rpc::address_from_H160(change.address());
     SILK_DEBUG << "CoherentStateCache::process_storage_change address=" << address;
     for (const auto& storage_change : change.storage_changes()) {
-        const auto location_hash = silkworm::rpc::bytes32_from_H256(storage_change.location());
+        const auto location_hash = rpc::bytes32_from_H256(storage_change.location());
         const auto storage_key = composite_storage_key(address, change.incarnation(), location_hash.bytes);
-        const auto value = silkworm::bytes_of_string(storage_change.data());
+        const auto value = bytes_of_string(storage_change.data());
         SILK_DEBUG << "CoherentStateCache::process_storage_change key=" << storage_key << " value=" << value;
         add({storage_key, value}, root, view_id);
     }
@@ -160,7 +158,7 @@ void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVi
 
 bool CoherentStateCache::add(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->cache.insert(kv);
-    SILK_DEBUG << "Data cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
+    SILK_DEBUG << "Data cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;
     if (!inserted) {
         replaced = *it;
@@ -173,14 +171,14 @@ bool CoherentStateCache::add(const KeyValue& kv, CoherentStateRoot* root, StateV
     }
     if (replaced) {
         state_evictions_.remove(*replaced);
-        SILK_DEBUG << "Data evictions removed replaced.key=" << silkworm::to_hex(replaced->key);
+        SILK_DEBUG << "Data evictions removed replaced.key=" << to_hex(replaced->key);
     }
     state_evictions_.push_front(kv);
 
     // Remove the longest unused key-value pair when size exceeded
     if (state_evictions_.size() > config_.max_state_keys) {
         const auto oldest = state_evictions_.back();
-        SILK_DEBUG << "Data cache resize oldest.key=" << silkworm::to_hex(oldest.key);
+        SILK_DEBUG << "Data cache resize oldest.key=" << to_hex(oldest.key);
         state_evictions_.pop_back();
         const auto num_erased = root->cache.erase(oldest);
         SILKWORM_ASSERT(num_erased == 1);
@@ -190,7 +188,7 @@ bool CoherentStateCache::add(const KeyValue& kv, CoherentStateRoot* root, StateV
 
 bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->code_cache.insert(kv);
-    SILK_DEBUG << "Code cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
+    SILK_DEBUG << "Code cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;
     if (!inserted) {
         replaced = *it;
@@ -203,14 +201,14 @@ bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, S
     }
     if (replaced) {
         code_evictions_.remove(*replaced);
-        SILK_DEBUG << "Code evictions removed replaced.key=" << silkworm::to_hex(replaced->key);
+        SILK_DEBUG << "Code evictions removed replaced.key=" << to_hex(replaced->key);
     }
     code_evictions_.push_front(kv);
 
     // Remove the longest unused key-value pair when size exceeded
     if (code_evictions_.size() > config_.max_code_keys) {
         const auto oldest = code_evictions_.back();
-        SILK_DEBUG << "Code cache resize oldest.key=" << silkworm::to_hex(oldest.key);
+        SILK_DEBUG << "Code cache resize oldest.key=" << to_hex(oldest.key);
         code_evictions_.pop_back();
         const auto num_erased = root->code_cache.erase(oldest);
         SILKWORM_ASSERT(num_erased == 1);
@@ -218,7 +216,7 @@ bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, S
     return inserted;
 }
 
-Task<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Bytes& key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get(const Bytes& key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto view_id = tx.view_id();
@@ -259,7 +257,7 @@ Task<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Byt
     co_return value;
 }
 
-Task<std::optional<silkworm::Bytes>> CoherentStateCache::get_code(const silkworm::Bytes& key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get_code(const Bytes& key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto view_id = tx.view_id();

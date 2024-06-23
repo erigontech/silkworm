@@ -23,22 +23,22 @@
 namespace silkworm::db::kv::api {
 
 TEST_CASE("print Bytes", "[rpc][common][util]") {
-    silkworm::Bytes b{};
+    Bytes b{};
     CHECK_NOTHROW(test_util::null_stream() << b);
 }
 
 TEST_CASE("byte view from string", "[rpc][common][util]") {
-    CHECK(silkworm::byte_view_of_string("").empty());
+    CHECK(byte_view_of_string("").empty());
 }
 
 TEST_CASE("bytes from string", "[rpc][common][util]") {
-    CHECK(silkworm::bytes_of_string("").empty());
+    CHECK(bytes_of_string("").empty());
 }
 
 TEST_CASE("print ByteView", "[rpc][common][util]") {
-    silkworm::Bytes b1;
+    Bytes b1;
     CHECK_NOTHROW(test_util::null_stream() << b1);
-    silkworm::Bytes b2{*silkworm::from_hex("0x0608")};
+    Bytes b2{*from_hex("0x0608")};
     CHECK_NOTHROW(test_util::null_stream() << b2);
 }
 

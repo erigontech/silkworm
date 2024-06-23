@@ -35,7 +35,7 @@ class StateReader {
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
 
-    [[nodiscard]] Task<std::optional<silkworm::Account>> read_account(const evmc::address& address, BlockNum block_number) const;
+    [[nodiscard]] Task<std::optional<Account>> read_account(const evmc::address& address, BlockNum block_number) const;
 
     [[nodiscard]] Task<evmc::bytes32> read_storage(
         const evmc::address& address,
@@ -43,12 +43,15 @@ class StateReader {
         const evmc::bytes32& location_hash,
         BlockNum block_number) const;
 
-    [[nodiscard]] Task<std::optional<silkworm::Bytes>> read_code(const evmc::bytes32& code_hash) const;
+    [[nodiscard]] Task<std::optional<Bytes>> read_code(const evmc::bytes32& code_hash) const;
 
-    [[nodiscard]] Task<std::optional<silkworm::Bytes>> read_historical_account(const evmc::address& address, BlockNum block_number) const;
+    [[nodiscard]] Task<std::optional<Bytes>> read_historical_account(const evmc::address& address,
+                                                                     BlockNum block_number) const;
 
-    [[nodiscard]] Task<std::optional<silkworm::Bytes>> read_historical_storage(const evmc::address& address, uint64_t incarnation,
-                                                                               const evmc::bytes32& location_hash, BlockNum block_number) const;
+    [[nodiscard]] Task<std::optional<Bytes>> read_historical_storage(const evmc::address& address,
+                                                                     uint64_t incarnation,
+                                                                     const evmc::bytes32& location_hash,
+                                                                     BlockNum block_number) const;
 
   private:
     kv::api::Transaction& tx_;

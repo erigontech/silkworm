@@ -19,15 +19,13 @@
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-#include "../api/util.hpp"
-
 namespace silkworm::db::kv::api {
 
 Task<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "LocalCursor::open_cursor opening new cursor for table: " << table_name;
     // table_name name must be a valid MDBX map name
-    if (!silkworm::db::has_map(txn_, table_name.c_str())) {
+    if (!has_map(txn_, table_name.c_str())) {
         const auto error_message = "unknown table: " + table_name;
         SILK_ERROR << "open_cursor !has_map: " << table_name << " " << is_dup_sorted << error_message;
         throw std::runtime_error(error_message);
@@ -41,7 +39,7 @@ Task<KeyValue> LocalCursor::seek(ByteView key) {
     mdbx::slice mdbx_key{key};
 
     const auto result = (key.empty()) ? db_cursor_.to_first(/*throw_notfound=*/false) : db_cursor_.lower_bound(mdbx_key, /*throw_notfound=*/false);
-    SILK_DEBUG << "LocalCursor::seek result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "LocalCursor::seek result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         SILK_DEBUG << "LocalCursor::seek found: key: " << key << " value: " << byte_view_of_string(result.value.as_string());
@@ -58,7 +56,7 @@ Task<KeyValue> LocalCursor::seek_exact(ByteView key) {
     const bool found = db_cursor_.seek(key);
     if (found) {
         const auto result = db_cursor_.current(/*throw_notfound=*/false);
-        SILK_DEBUG << "LocalCursor::seek_exact result: " << db::detail::dump_mdbx_result(result);
+        SILK_DEBUG << "LocalCursor::seek_exact result: " << detail::dump_mdbx_result(result);
         if (result) {
             SILK_DEBUG << "LocalCursor::seek_exact found: "
                        << " key: " << key << " value: " << byte_view_of_string(result.value.as_string());
@@ -73,7 +71,7 @@ Task<KeyValue> LocalCursor::next() {
     SILK_DEBUG << "LocalCursor::next: " << cursor_id_;
 
     const auto result = db_cursor_.to_next(/*throw_notfound=*/false);
-    SILK_DEBUG << "LocalCursor::next result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "LocalCursor::next result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         SILK_DEBUG << "LocalCursor::next: "
@@ -89,7 +87,7 @@ Task<KeyValue> LocalCursor::previous() {
     SILK_DEBUG << "LocalCursor::previous: " << cursor_id_;
 
     const auto result = db_cursor_.to_previous(/*throw_notfound=*/false);
-    SILK_DEBUG << "LocalCursor::previous result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "LocalCursor::previous result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         SILK_DEBUG << "LocalCursor::previous: "
@@ -105,7 +103,7 @@ Task<KeyValue> LocalCursor::next_dup() {
     SILK_DEBUG << "LocalCursor::next_dup: " << cursor_id_;
 
     const auto result = db_cursor_.to_current_next_multi(/*throw_notfound=*/false);
-    SILK_DEBUG << "LocalCursor::next_dup result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "LocalCursor::next_dup result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         SILK_DEBUG << "LocalCursor::next_dup: "
@@ -117,11 +115,11 @@ Task<KeyValue> LocalCursor::next_dup() {
     co_return KeyValue{};
 }
 
-Task<Bytes> LocalCursor::seek_both(silkworm::ByteView key, silkworm::ByteView value) {
+Task<Bytes> LocalCursor::seek_both(ByteView key, ByteView value) {
     SILK_DEBUG << "LocalCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
 
     const auto result = db_cursor_.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
-    SILK_DEBUG << "LocalCursor::seek_both result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "LocalCursor::seek_both result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         SILK_DEBUG << "LocalCursor::seek_both key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string());
@@ -130,11 +128,11 @@ Task<Bytes> LocalCursor::seek_both(silkworm::ByteView key, silkworm::ByteView va
     co_return bytes_of_string("");
 }
 
-Task<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) {
+Task<KeyValue> LocalCursor::seek_both_exact(ByteView key, ByteView value) {
     SILK_DEBUG << "LocalCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
 
     const auto result = db_cursor_.find_multivalue(key, value, /*throw_notfound=*/false);
-    SILK_DEBUG << "LocalCursor::seek_both_exact result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "LocalCursor::seek_both_exact result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         SILK_DEBUG << "LocalCursor::seek_both_exact: "

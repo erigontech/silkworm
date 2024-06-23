@@ -25,36 +25,36 @@
 
 namespace silkworm::db::state {
 
-std::optional<silkworm::Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    return silkworm::db::read_account(txn_, address, block_number_ + 1);
+std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
+    return db::read_account(txn_, address, block_number_ + 1);
 }
 
-silkworm::ByteView LocalState::read_code(const evmc::bytes32& code_hash) const noexcept {
-    auto code_optional = silkworm::db::read_code(txn_, code_hash);
+ByteView LocalState::read_code(const evmc::bytes32& code_hash) const noexcept {
+    auto code_optional = db::read_code(txn_, code_hash);
     if (!code_optional) {
-        return silkworm::ByteView{};
+        return ByteView{};
     }
     return *code_optional;
 }
 
 evmc::bytes32 LocalState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
-    return silkworm::db::read_storage(txn_, address, incarnation, location, block_number_ + 1);
+    return db::read_storage(txn_, address, incarnation, location, block_number_ + 1);
 }
 
 uint64_t LocalState::previous_incarnation(const evmc::address& /*address*/) const noexcept {
     return 0;
 }
 
-std::optional<silkworm::BlockHeader> LocalState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
-    return silkworm::db::read_header(txn_, block_number, block_hash);
+std::optional<BlockHeader> LocalState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
+    return db::read_header(txn_, block_number, block_hash);
 }
 
-bool LocalState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& out) const noexcept {
-    return silkworm::db::read_body(txn_, block_hash, block_number, out);
+bool LocalState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
+    return db::read_body(txn_, block_hash, block_number, out);
 }
 
 std::optional<intx::uint256> LocalState::total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
-    return silkworm::db::read_total_difficulty(txn_, block_number, block_hash);
+    return db::read_total_difficulty(txn_, block_number, block_hash);
 }
 
 evmc::bytes32 LocalState::state_root_hash() const {
@@ -68,7 +68,7 @@ BlockNum LocalState::current_canonical_block() const {
 
 std::optional<evmc::bytes32> LocalState::canonical_hash(BlockNum block_number) const {
     // This method should not be called by EVM::execute
-    return silkworm::db::read_canonical_hash(txn_, block_number);
+    return db::read_canonical_hash(txn_, block_number);
 }
 
 }  // namespace silkworm::db::state

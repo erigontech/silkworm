@@ -32,7 +32,7 @@ namespace silkworm::db::kv::api {
 
 class Transaction {
   public:
-    using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
+    using Walker = std::function<bool(Bytes&, Bytes&)>;
 
     Transaction() = default;
 
@@ -52,7 +52,7 @@ class Transaction {
 
     virtual Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) = 0;
 
-    virtual std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) = 0;
+    virtual std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) = 0;
 
     virtual std::shared_ptr<chain::ChainStorage> create_storage() = 0;
 
@@ -60,7 +60,7 @@ class Transaction {
 
     virtual Task<kv::api::KeyValue> get(const std::string& table, ByteView key) = 0;
 
-    virtual Task<silkworm::Bytes> get_one(const std::string& table, ByteView key) = 0;
+    virtual Task<Bytes> get_one(const std::string& table, ByteView key) = 0;
 
     virtual Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) = 0;
 };

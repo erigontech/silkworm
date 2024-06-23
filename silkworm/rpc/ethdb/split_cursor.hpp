@@ -74,16 +74,16 @@ class SplitCursorDupSort {
 
   private:
     CursorDupSort& inner_cursor_;
-    silkworm::Bytes key_;
-    silkworm::Bytes subkey_;
-    silkworm::Bytes first_bytes_;
+    Bytes key_;
+    Bytes subkey_;
+    Bytes first_bytes_;
     uint8_t last_bits_;
     uint64_t part1_end_;
     uint64_t match_bytes_;
     uint8_t mask_;
     uint64_t value_offset_;
 
-    bool match_key(const silkworm::ByteView& key);
+    bool match_key(const ByteView& key);
     SplittedKeyValue split_key_value(const KeyValue& kv);
 };
 

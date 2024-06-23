@@ -62,26 +62,26 @@ Task<std::optional<BlockNum>> RemoteChainStorage::read_block_number(const Hash& 
     co_return co_await read_header_number(tx_, hash);
 }
 
-Task<bool> RemoteChainStorage::read_block(HashAsSpan hash, BlockNum number, bool read_senders, silkworm::Block& block) const {
+Task<bool> RemoteChainStorage::read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const {
     co_return co_await block_provider_(number, hash, read_senders, block);
 }
 
-Task<bool> RemoteChainStorage::read_block(const Hash& hash, BlockNum number, silkworm::Block& block) const {
+Task<bool> RemoteChainStorage::read_block(const Hash& hash, BlockNum number, Block& block) const {
     co_return co_await block_provider_(number, hash.bytes, /*.read_senders=*/false, block);
 }
 
-Task<bool> RemoteChainStorage::read_block(const Hash& hash, silkworm::Block& block) const {
+Task<bool> RemoteChainStorage::read_block(const Hash& hash, Block& block) const {
     const BlockNum block_number = co_await read_header_number(tx_, hash);
     co_return co_await block_provider_(block_number, hash.bytes, /*.read_senders=*/false, block);
 }
 
-Task<bool> RemoteChainStorage::read_block(BlockNum number, bool read_senders, silkworm::Block& block) const {
+Task<bool> RemoteChainStorage::read_block(BlockNum number, bool read_senders, Block& block) const {
     const auto hash = co_await read_canonical_block_hash(tx_, number);
     co_return co_await block_provider_(number, hash.bytes, read_senders, block);
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum number, HashAsArray hash) const {
-    silkworm::Block block;
+    Block block;
     const bool success = co_await block_provider_(number, hash, /*.read_senders=*/false, block);
     std::optional<BlockHeader> header;
     if (success) {
@@ -104,7 +104,7 @@ Task<std::vector<BlockHeader>> RemoteChainStorage::read_sibling_headers(BlockNum
 }
 
 Task<bool> RemoteChainStorage::read_body(BlockNum number, HashAsArray hash, bool read_senders, BlockBody& body) const {
-    silkworm::Block block;
+    Block block;
     const bool success = co_await block_provider_(number, hash, read_senders, block);
     if (!success) {
         co_return false;
@@ -134,7 +134,7 @@ Task<std::optional<BlockHeader>> RemoteChainStorage::read_canonical_header(Block
 }
 
 Task<bool> RemoteChainStorage::read_canonical_body(BlockNum number, BlockBody& body) const {
-    silkworm::Block block;
+    Block block;
     const auto hash = co_await read_canonical_block_hash(tx_, number);
     const bool success = co_await block_provider_(number, hash.bytes, /*.read_senders=*/false, block);
     if (!success) {
@@ -146,7 +146,7 @@ Task<bool> RemoteChainStorage::read_canonical_body(BlockNum number, BlockBody& b
     co_return true;
 }
 
-Task<bool> RemoteChainStorage::read_canonical_block(BlockNum number, silkworm::Block& block) const {
+Task<bool> RemoteChainStorage::read_canonical_block(BlockNum number, Block& block) const {
     const auto hash = co_await read_canonical_block_hash(tx_, number);
     const bool success = co_await block_provider_(number, hash.bytes, /*.read_senders=*/false, block);
     if (!success) {
@@ -166,7 +166,7 @@ Task<bool> RemoteChainStorage::has_body(BlockNum number, const Hash& hash) const
 }
 
 Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const {
-    silkworm::Block block;
+    Block block;
     const bool success = co_await block_provider_(number, hash.bytes, /*.read_senders=*/false, block);
     if (!success) {
         co_return false;

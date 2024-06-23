@@ -53,12 +53,12 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             }));
         const BlockNum block_number = 1'000'000;
         AsyncRemoteState state{transaction, chain_storage, block_number};
-        const auto code_read{spawn_and_wait(state.read_code(silkworm::kEmptyHash))};
+        const auto code_read{spawn_and_wait(state.read_code(kEmptyHash))};
         CHECK(code_read.empty());
     }
 
     SECTION("read_code for non-empty hash") {
-        static const silkworm::Bytes code{*silkworm::from_hex("0x0608")};
+        static const Bytes code{*from_hex("0x0608")};
         EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return code;
@@ -67,7 +67,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         const auto code_read{spawn_and_wait(state.read_code(code_hash))};
-        CHECK(code_read == silkworm::ByteView{code});
+        CHECK(code_read == ByteView{code});
     }
 
     SECTION("read_code with empty response from db") {
@@ -141,13 +141,13 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        silkworm::BlockBody body;
+        BlockBody body;
         EXPECT_CALL(chain_storage, read_body(block_hash, block_number, body))
             .WillOnce(Invoke([](Unused, Unused, Unused) -> Task<bool> { co_return true; }));
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto success = remote_state.read_body(block_number, block_hash, body);
         CHECK(success);
-        CHECK(body == silkworm::BlockBody{});
+        CHECK(body == BlockBody{});
         io_context_.stop();
         io_context_thread.join();
     }
@@ -209,14 +209,14 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
             std::thread io_context_thread{[&io_context]() { io_context.run(); }};
 
-            silkworm::Bytes code{*silkworm::from_hex("0x0608")};
+            Bytes code{*from_hex("0x0608")};
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
             const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
             RemoteState remote_state(io_context, transaction, storage, block_number);
             auto ret_code = remote_state.read_code(code_hash);
-            CHECK(ret_code == silkworm::ByteView{});
+            CHECK(ret_code == ByteView{});
             io_context.stop();
             io_context_thread.join();
         }
@@ -226,7 +226,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
             std::thread io_context_thread{[&io_context]() { io_context.run(); }};
 
-            silkworm::Bytes storage{*silkworm::from_hex("0x0608")};
+            Bytes storage{*from_hex("0x0608")};
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
             evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
@@ -347,12 +347,12 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         AsyncRemoteState state{transaction, chain_storage, block_number};
-        silkworm::BlockBody body;
+        BlockBody body;
         EXPECT_CALL(chain_storage, read_body(block_hash, block_number, body))
             .WillOnce(Invoke([](Unused, Unused, Unused) -> Task<bool> { co_return true; }));
         const auto success{spawn_and_wait(state.read_body(block_number, block_hash, body))};
         CHECK(success);
-        CHECK(body == silkworm::BlockBody{});
+        CHECK(body == BlockBody{});
     }
 
     SECTION("AsyncRemoteState::canonical_hash for empty response from chain storage") {
@@ -375,13 +375,13 @@ TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
     RemoteState remote_state(current_executor, transaction, chain_storage, 0);
 
     SECTION("overridden write methods do nothing") {
-        CHECK_NOTHROW(remote_state.insert_block(silkworm::Block{}, evmc::bytes32{}));
+        CHECK_NOTHROW(remote_state.insert_block(Block{}, evmc::bytes32{}));
         CHECK_NOTHROW(remote_state.canonize_block(0, evmc::bytes32{}));
         CHECK_NOTHROW(remote_state.decanonize_block(0));
-        CHECK_NOTHROW(remote_state.insert_receipts(0, std::vector<silkworm::Receipt>{}));
+        CHECK_NOTHROW(remote_state.insert_receipts(0, std::vector<Receipt>{}));
         CHECK_NOTHROW(remote_state.begin_block(0, 0));
         CHECK_NOTHROW(remote_state.update_account(evmc::address{}, std::nullopt, std::nullopt));
-        CHECK_NOTHROW(remote_state.update_account_code(evmc::address{}, 0, evmc::bytes32{}, silkworm::ByteView{}));
+        CHECK_NOTHROW(remote_state.update_account_code(evmc::address{}, 0, evmc::bytes32{}, ByteView{}));
         CHECK_NOTHROW(remote_state.update_storage(evmc::address{}, 0, evmc::bytes32{}, evmc::bytes32{}, evmc::bytes32{}));
         CHECK_NOTHROW(remote_state.unwind_state_changes(0));
     }

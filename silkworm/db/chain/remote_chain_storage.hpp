@@ -26,7 +26,7 @@
 
 namespace silkworm::db::chain {
 
-using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, silkworm::Block&)>;
+using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, Block&)>;
 using BlockNumberFromTxnHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
 
 //! RemoteChainStorage must be used when blockchain data is remote with respect to the running component, i.e. it is
@@ -38,16 +38,16 @@ class RemoteChainStorage : public ChainStorage {
                        BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider);
     ~RemoteChainStorage() override = default;
 
-    [[nodiscard]] Task<silkworm::ChainConfig> read_chain_config() const override;
+    [[nodiscard]] Task<ChainConfig> read_chain_config() const override;
 
     [[nodiscard]] Task<BlockNum> highest_block_number() const override;
 
     [[nodiscard]] Task<std::optional<BlockNum>> read_block_number(const Hash& hash) const override;
 
-    Task<bool> read_block(HashAsSpan hash, BlockNum number, bool read_senders, silkworm::Block& block) const override;
-    Task<bool> read_block(const Hash& hash, BlockNum number, silkworm::Block& block) const override;
-    Task<bool> read_block(const Hash& hash, silkworm::Block& block) const override;
-    Task<bool> read_block(BlockNum number, bool read_senders, silkworm::Block& block) const override;
+    Task<bool> read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const override;
+    Task<bool> read_block(const Hash& hash, BlockNum number, Block& block) const override;
+    Task<bool> read_block(const Hash& hash, Block& block) const override;
+    Task<bool> read_block(BlockNum number, bool read_senders, Block& block) const override;
 
     [[nodiscard]] Task<std::optional<BlockHeader>> read_header(BlockNum number, HashAsArray hash) const override;
     [[nodiscard]] Task<std::optional<BlockHeader>> read_header(BlockNum number, const Hash& hash) const override;
@@ -64,7 +64,7 @@ class RemoteChainStorage : public ChainStorage {
 
     Task<bool> read_canonical_body(BlockNum number, BlockBody& body) const override;
 
-    Task<bool> read_canonical_block(BlockNum number, silkworm::Block& block) const override;
+    Task<bool> read_canonical_block(BlockNum number, Block& block) const override;
 
     [[nodiscard]] Task<bool> has_body(BlockNum number, HashAsArray hash) const override;
     [[nodiscard]] Task<bool> has_body(BlockNum number, const Hash& hash) const override;

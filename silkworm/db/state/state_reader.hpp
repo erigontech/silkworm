@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 
 namespace silkworm::db::state {
 

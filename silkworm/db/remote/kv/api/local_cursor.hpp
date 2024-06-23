@@ -28,7 +28,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 
-#include "endpoint/cursor.hpp"
+#include "cursor.hpp"
 #include "util.hpp"
 
 namespace silkworm::db::kv::api {

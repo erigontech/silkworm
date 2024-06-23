@@ -18,8 +18,8 @@
 
 #include <functional>
 
-#include "endpoint/transaction.hpp"
 #include "state_cache.hpp"
+#include "transaction.hpp"
 
 namespace silkworm::db::kv::api {
 

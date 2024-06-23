@@ -21,8 +21,8 @@
 #include <utility>
 
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 #include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 
 namespace silkworm::rpc::ethdb::file {

@@ -29,7 +29,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 
 namespace silkworm::db::state {

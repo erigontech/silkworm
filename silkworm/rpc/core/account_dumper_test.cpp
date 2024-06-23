@@ -27,7 +27,7 @@
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/remote/kv/api/base_transaction.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
+#include <silkworm/db/remote/kv/api/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 
 namespace silkworm::rpc {

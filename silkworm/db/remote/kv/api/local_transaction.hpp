@@ -27,7 +27,7 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 
 #include "base_transaction.hpp"
-#include "endpoint/cursor.hpp"
+#include "cursor.hpp"
 #include "local_cursor.hpp"
 #include "state_cache.hpp"
 

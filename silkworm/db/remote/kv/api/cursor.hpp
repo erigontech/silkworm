@@ -23,7 +23,7 @@
 
 #include <silkworm/core/common/util.hpp>
 
-#include "key_value.hpp"
+#include "endpoint/key_value.hpp"
 
 namespace silkworm::db::kv::api {
 

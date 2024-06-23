@@ -28,8 +28,8 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/db/chain/remote_chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 #include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 #include <silkworm/db/remote/kv/grpc/client/remote_transaction.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/infra/test_util/log.hpp>

@@ -21,7 +21,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 
 namespace silkworm::rpc::ethdb {
 

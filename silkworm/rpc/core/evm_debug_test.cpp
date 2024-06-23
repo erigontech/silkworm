@@ -25,7 +25,7 @@
 
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>

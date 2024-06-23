@@ -32,7 +32,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/types/block.hpp>

@@ -28,7 +28,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/remote/kv/api/util.hpp>
 
-#include "../../api/endpoint/cursor.hpp"
+#include "../../api/cursor.hpp"
 #include "rpc.hpp"
 
 namespace silkworm::db::kv::grpc::client {

@@ -24,7 +24,9 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
+
+#include "cursor.hpp"
+#include "endpoint/key_value.hpp"
 
 namespace silkworm::db::kv::api {
 

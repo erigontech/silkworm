@@ -29,8 +29,8 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 #include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/remote/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/types/block.hpp>

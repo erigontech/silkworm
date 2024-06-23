@@ -21,6 +21,7 @@
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 #include "endpoint/version.hpp"
+#include "transaction.hpp"
 
 namespace silkworm::kv::api {
 

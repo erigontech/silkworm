@@ -22,7 +22,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
+#include <silkworm/db/remote/kv/api/cursor.hpp>
 #include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
 #include <silkworm/rpc/common/util.hpp>
 

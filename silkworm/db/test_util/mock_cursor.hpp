@@ -18,7 +18,7 @@
 
 #include <gmock/gmock.h>
 
-#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
+#include <silkworm/db/remote/kv/api/cursor.hpp>
 
 namespace silkworm::db::test_util {
 

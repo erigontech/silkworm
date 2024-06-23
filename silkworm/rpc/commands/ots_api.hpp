@@ -24,7 +24,7 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
+#include <silkworm/db/remote/kv/api/cursor.hpp>
 #include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/remote/kv/api/state_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>

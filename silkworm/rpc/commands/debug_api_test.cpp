@@ -26,23 +26,30 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/db/chain/chain_storage.hpp>
+#include <silkworm/db/remote/kv/api/base_transaction.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
+#include <silkworm/db/remote/kv/api/state_cache.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/filter_storage.hpp>
-#include <silkworm/rpc/ethdb/base_transaction.hpp>
-#include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #if !defined(__clang__)
 #include <silkworm/rpc/stagedsync/stages.hpp>
 #endif  // !defined(__clang__)
 
 namespace silkworm::rpc::commands {
 
+using db::chain::ChainStorage;
+using db::kv::api::Cursor;
+using db::kv::api::CursorDupSort;
+using db::kv::api::KeyValue;
+
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT
 
-class DummyCursor : public ethdb::CursorDupSort {
+class DummyCursor : public CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {};
 
@@ -160,7 +167,7 @@ class DummyCursor : public ethdb::CursorDupSort {
     nlohmann::json::iterator itr_;
 };
 
-class DummyTransaction : public ethdb::BaseTransaction {
+class DummyTransaction : public db::kv::api::BaseTransaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json)
         : BaseTransaction(nullptr), json_{json}, tx_id_{next_tx_id++}, view_id_{next_view_id++} {};
@@ -177,14 +184,14 @@ class DummyTransaction : public ethdb::BaseTransaction {
         co_return;
     }
 
-    Task<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& table) override {
+    Task<std::shared_ptr<Cursor>> cursor(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, false);
 
         co_return cursor;
     }
 
-    Task<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
+    Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, true);
 
@@ -216,7 +223,7 @@ class DummyDatabase : public ethdb::Database {
   public:
     explicit DummyDatabase(const nlohmann::json& json) : json_{json} {}
 
-    Task<std::unique_ptr<ethdb::Transaction>> begin() override {
+    Task<std::unique_ptr<db::kv::api::Transaction>> begin() override {
         auto txn = std::make_unique<DummyTransaction>(json_);
         co_return txn;
     }
@@ -231,7 +238,7 @@ TEST_CASE("DebugRpcApi") {
 
     boost::asio::io_context ioc;
     add_shared_service(ioc, std::make_shared<BlockCache>());
-    add_shared_service<ethdb::kv::StateCache>(ioc, std::make_shared<ethdb::kv::CoherentStateCache>());
+    add_shared_service<db::kv::api::StateCache>(ioc, std::make_shared<db::kv::api::CoherentStateCache>());
     WorkerPool workers{1};
 
     SECTION("CTOR") {

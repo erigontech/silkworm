@@ -22,14 +22,15 @@
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
+#include <silkworm/db/remote/kv/api/state_cache.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
-
-#include "state_cache.hpp"
 
 namespace silkworm::rpc::ethdb::kv {
+
+using db::kv::api::StateCache;
 
 class RemoteDatabase : public Database {
   public:
@@ -46,13 +47,13 @@ class RemoteDatabase : public Database {
     RemoteDatabase(const RemoteDatabase&) = delete;
     RemoteDatabase& operator=(const RemoteDatabase&) = delete;
 
-    Task<std::unique_ptr<Transaction>> begin() override;
+    Task<std::unique_ptr<db::kv::api::Transaction>> begin() override;
 
   private:
     ethbackend::BackEnd* backend_;
     StateCache* state_cache_;
     agrpc::GrpcContext& grpc_context_;
-    std::unique_ptr<remote::KV::StubInterface> stub_;
+    std::unique_ptr<::remote::KV::StubInterface> stub_;
 };
 
 }  // namespace silkworm::rpc::ethdb::kv

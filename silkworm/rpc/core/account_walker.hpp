@@ -26,6 +26,8 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/split_cursor.hpp>
@@ -33,11 +35,13 @@
 
 namespace silkworm::rpc {
 
+using db::kv::api::KeyValue;
+
 class AccountWalker {
   public:
     using Collector = std::function<bool(ByteView, ByteView)>;
 
-    explicit AccountWalker(ethdb::Transaction& transaction) : transaction_(transaction) {}
+    explicit AccountWalker(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
 
     AccountWalker(const AccountWalker&) = delete;
     AccountWalker& operator=(const AccountWalker&) = delete;
@@ -45,12 +49,12 @@ class AccountWalker {
     Task<void> walk_of_accounts(BlockNum block_number, const evmc::address& start_address, Collector& collector);
 
   private:
-    Task<KeyValue> next(ethdb::Cursor& cursor, uint64_t len);
-    Task<KeyValue> seek(ethdb::Cursor& cursor, ByteView key, uint64_t len);
+    Task<KeyValue> next(db::kv::api::Cursor& cursor, uint64_t len);
+    Task<KeyValue> seek(db::kv::api::Cursor& cursor, ByteView key, uint64_t len);
     Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number, BlockNum block, Bytes addr);
     Task<ethdb::SplittedKeyValue> seek(ethdb::SplitCursor& cursor, BlockNum number);
 
-    ethdb::Transaction& transaction_;
+    db::kv::api::Transaction& transaction_;
 };
 
 }  // namespace silkworm::rpc

@@ -21,14 +21,14 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 
 namespace silkworm::rpc::ethdb {
 
 using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
 
-Task<void> walk(Transaction& tx, const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w);
+Task<void> walk(db::kv::api::Transaction& tx, const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w);
 
-Task<void> for_prefix(Transaction& tx, const std::string& table, ByteView prefix, Walker w);
+Task<void> for_prefix(db::kv::api::Transaction& tx, const std::string& table, ByteView prefix, Walker w);
 
 }  // namespace silkworm::rpc::ethdb

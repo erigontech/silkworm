@@ -17,6 +17,8 @@
 #include "receipts.hpp"
 
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/remote/kv/api/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -25,7 +27,9 @@
 
 namespace silkworm::rpc::core {
 
-Task<Receipts> get_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash) {
+using ethdb::walk;
+
+Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash) {
     const auto cached_receipts = co_await read_receipts(tx, block_with_hash);
     if (cached_receipts) {
         co_return *cached_receipts;
@@ -38,7 +42,7 @@ Task<Receipts> get_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHas
     co_return Receipts{};
 }
 
-Task<std::optional<Receipts>> read_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash) {
+Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash) {
     const evmc::bytes32 block_hash = block_with_hash.hash;
     uint64_t block_number = block_with_hash.block.header.number;
     const auto raw_receipts = co_await read_raw_receipts(tx, block_number);
@@ -93,7 +97,7 @@ Task<std::optional<Receipts>> read_receipts(ethdb::Transaction& tx, const silkwo
     co_return receipts;
 }
 
-Task<std::optional<Receipts>> read_raw_receipts(ethdb::Transaction& tx, BlockNum block_number) {
+Task<std::optional<Receipts>> read_raw_receipts(db::kv::api::Transaction& tx, BlockNum block_number) {
     const auto block_key = db::block_key(block_number);
     const auto data = co_await tx.get_one(db::table::kBlockReceiptsName, block_key);
     SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);

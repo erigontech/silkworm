@@ -16,13 +16,15 @@
 
 #include "remote_database.hpp"
 
+#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/remote/kv/grpc/client/remote_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/ethdb/kv/remote_transaction.hpp>
-#include <silkworm/rpc/storage/remote_chain_storage.hpp>
 
 #include "backend_providers.hpp"
 
 namespace silkworm::rpc::ethdb::kv {
+
+using db::kv::grpc::client::RemoteTransaction;
 
 RemoteDatabase::RemoteDatabase(ethbackend::BackEnd* backend,
                                StateCache* state_cache,
@@ -44,7 +46,7 @@ RemoteDatabase::~RemoteDatabase() {
     SILK_TRACE << "RemoteDatabase::dtor " << this;
 }
 
-Task<std::unique_ptr<Transaction>> RemoteDatabase::begin() {
+Task<std::unique_ptr<db::kv::api::Transaction>> RemoteDatabase::begin() {
     SILK_TRACE << "RemoteDatabase::begin " << this << " start";
     auto txn = std::make_unique<RemoteTransaction>(*stub_,
                                                    grpc_context_,

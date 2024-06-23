@@ -23,15 +23,16 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/infra/common/ensure.hpp>
+#include <silkworm/db/common/clock_time.hpp>
+#include <silkworm/db/remote/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/grpc/client/unary_rpc.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-#include <silkworm/rpc/common/clock_time.hpp>
-#include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/grpc/unary_rpc.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::ethbackend {
+
+namespace clock_time = db::clock_time;
 
 RemoteBackEnd::RemoteBackEnd(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel,
                              agrpc::GrpcContext& grpc_context)

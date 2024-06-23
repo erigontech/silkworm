@@ -16,11 +16,12 @@
 
 #include "walk.hpp"
 
+#include <silkworm/db/remote/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc::ethdb {
 
-Task<void> walk(Transaction& tx, const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w) {
+Task<void> walk(db::kv::api::Transaction& tx, const std::string& table, ByteView start_key, uint32_t fixed_bits, Walker w) {
     const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
     SILK_TRACE << "rpc::ethdb::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes;
     const auto shift_bits = fixed_bits & 7;
@@ -50,7 +51,7 @@ Task<void> walk(Transaction& tx, const std::string& table, ByteView start_key, u
     }
 }
 
-Task<void> for_prefix(Transaction& tx, const std::string& table, ByteView prefix, Walker w) {
+Task<void> for_prefix(db::kv::api::Transaction& tx, const std::string& table, ByteView prefix, Walker w) {
     const auto new_cursor = co_await tx.cursor(table);
     SILK_TRACE << "rpc::ethdb::for_prefix cursor_id: " << new_cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix);
     auto kv_pair = co_await new_cursor->seek(prefix);

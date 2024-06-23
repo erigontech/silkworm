@@ -36,6 +36,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/remote/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -79,7 +80,7 @@ class RequestHandler_ForTest : public json_rpc::RequestHandler {
 
 class LocalContextTestBase : public ServiceContextTestBase {
   public:
-    explicit LocalContextTestBase(ethdb::kv::StateCache* state_cache, mdbx::env& chaindata_env) : ServiceContextTestBase() {
+    explicit LocalContextTestBase(db::kv::api::StateCache* state_cache, mdbx::env& chaindata_env) : ServiceContextTestBase() {
         add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::file::LocalDatabase>(state_cache, chaindata_env));
     }
 };
@@ -106,7 +107,7 @@ class RpcApiTestBase : public LocalContextTestBase {
     boost::asio::ip::tcp::socket socket_;
     commands::RpcApi rpc_api_;
     commands::RpcApiTable rpc_api_table_;
-    ethdb::kv::CoherentStateCache state_cache_;
+    db::kv::api::CoherentStateCache state_cache_;
 };
 
 class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {

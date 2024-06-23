@@ -26,8 +26,8 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/types/block.hpp>
 
@@ -40,7 +40,7 @@ class StorageWalker {
     using AccountCollector = std::function<bool(const evmc::address&, silkworm::ByteView, silkworm::ByteView)>;
     using StorageCollector = std::function<bool(const silkworm::ByteView, silkworm::ByteView, silkworm::ByteView)>;
 
-    explicit StorageWalker(ethdb::Transaction& transaction) : transaction_(transaction) {}
+    explicit StorageWalker(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
 
     StorageWalker(const StorageWalker&) = delete;
     StorageWalker& operator=(const StorageWalker&) = delete;
@@ -60,7 +60,7 @@ class StorageWalker {
         StorageCollector& collector);
 
   private:
-    ethdb::Transaction& transaction_;
+    db::kv::api::Transaction& transaction_;
 };
 
 }  // namespace silkworm::rpc

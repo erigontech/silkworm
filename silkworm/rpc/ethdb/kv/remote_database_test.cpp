@@ -21,18 +21,19 @@
 #include <boost/system/system_error.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_matcher.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>
-#include <silkworm/rpc/test_util/kv_test_base.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
-struct RemoteDatabaseTest : test_util::KVTestBase {
+struct RemoteDatabaseTest : db::test_util::KVTestBase {
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
-    CoherentStateCache state_cache_;
+    db::kv::api::CoherentStateCache state_cache_;
     test::BackEndMock backend;
     RemoteDatabase remote_db_{&backend, &state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };

@@ -21,13 +21,15 @@
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/db/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/commands/eth_api.hpp>
-#include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 
 namespace silkworm::rpc::json_rpc {
+
+namespace clock_time = db::clock_time;
 
 RequestHandler::RequestHandler(StreamWriter* stream_writer,
                                commands::RpcApi& rpc_api,

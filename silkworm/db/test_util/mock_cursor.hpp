@@ -18,38 +18,33 @@
 
 #include <gmock/gmock.h>
 
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
 
 namespace silkworm::db::test_util {
 
-class MockROCursor : public ROCursor {
+class MockCursor : public kv::api::Cursor {
   public:
-    MOCK_METHOD((void), bind, (ROTxn&, const MapConfig&), (override));
-    MOCK_METHOD((size_t), size, (), (const, override));
-    MOCK_METHOD((bool), empty, (), (const));
-    MOCK_METHOD((bool), is_multi_value, (), (const, override));
-    MOCK_METHOD((bool), is_dangling, (), (const, override));
-    MOCK_METHOD((::mdbx::map_handle), map, (), (const, override));
-    MOCK_METHOD((CursorResult), to_first, (), (override));
-    MOCK_METHOD((CursorResult), to_first, (bool), (override));
-    MOCK_METHOD((CursorResult), to_previous, (), (override));
-    MOCK_METHOD((CursorResult), to_previous, (bool), (override));
-    MOCK_METHOD((CursorResult), current, (), (const, override));
-    MOCK_METHOD((CursorResult), current, (bool), (const, override));
-    MOCK_METHOD((CursorResult), to_next, (), (override));
-    MOCK_METHOD((CursorResult), to_next, (bool), (override));
-    MOCK_METHOD((CursorResult), to_last, (), (override));
-    MOCK_METHOD((CursorResult), to_last, (bool), (override));
-    MOCK_METHOD((CursorResult), find, (const Slice&), (override));
-    MOCK_METHOD((CursorResult), find, (const Slice&, bool), (override));
-    MOCK_METHOD((CursorResult), lower_bound, (const Slice&), (override));
-    MOCK_METHOD((CursorResult), lower_bound, (const Slice&, bool), (override));
-    MOCK_METHOD((MoveResult), move, (MoveOperation, bool), (override));
-    MOCK_METHOD((MoveResult), move, (MoveOperation, const Slice&, bool), (override));
-    MOCK_METHOD((bool), seek, (const Slice&), (override));
-    MOCK_METHOD((bool), eof, (), (const, override));
-    MOCK_METHOD((bool), on_first, (), (const, override));
-    MOCK_METHOD((bool), on_last, (), (const, override));
+    MOCK_METHOD((uint32_t), cursor_id, (), (const));
+    MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
+    MOCK_METHOD((Task<kv::api::KeyValue>), seek, (silkworm::ByteView key));
+    MOCK_METHOD((Task<kv::api::KeyValue>), seek_exact, (silkworm::ByteView key));
+    MOCK_METHOD((Task<kv::api::KeyValue>), next, ());
+    MOCK_METHOD((Task<kv::api::KeyValue>), previous, ());
+    MOCK_METHOD((Task<void>), close_cursor, ());
+};
+
+class MockCursorDupSort : public kv::api::CursorDupSort {
+  public:
+    MOCK_METHOD((uint32_t), cursor_id, (), (const));
+    MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
+    MOCK_METHOD((Task<kv::api::KeyValue>), seek, (silkworm::ByteView key));
+    MOCK_METHOD((Task<kv::api::KeyValue>), seek_exact, (silkworm::ByteView key));
+    MOCK_METHOD((Task<kv::api::KeyValue>), next, ());
+    MOCK_METHOD((Task<kv::api::KeyValue>), previous, ());
+    MOCK_METHOD((Task<kv::api::KeyValue>), next_dup, ());
+    MOCK_METHOD((Task<void>), close_cursor, ());
+    MOCK_METHOD((Task<silkworm::Bytes>), seek_both, (silkworm::ByteView, silkworm::ByteView));
+    MOCK_METHOD((Task<kv::api::KeyValue>), seek_both_exact, (silkworm::ByteView, silkworm::ByteView));
 };
 
 }  // namespace silkworm::db::test_util

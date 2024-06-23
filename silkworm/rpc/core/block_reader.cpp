@@ -20,16 +20,18 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
+#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/json/types.hpp>
-#include <silkworm/rpc/state/state_reader.hpp>
 
 namespace silkworm::rpc {
+
+using db::state::StateReader;
 
 void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
     for (const auto& entry : balance_changes) {

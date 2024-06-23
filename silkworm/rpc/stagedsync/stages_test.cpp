@@ -23,18 +23,20 @@
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc::stages {
 
+using db::kv::api::KeyValue;
 using testing::_;
 using testing::InvokeWithoutArgs;
 
 TEST_CASE("get_sync_stage_progress", "[rpc][stagedsync]") {
     WorkerPool pool{1};
-    test::MockTransaction transaction;
+    db::test_util::MockTransaction transaction;
 
     SECTION("empty stage key") {
         EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {

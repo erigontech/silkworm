@@ -25,11 +25,18 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
-#include <silkworm/rpc/ethdb/base_transaction.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
+#include <silkworm/db/chain/chain_storage.hpp>
+#include <silkworm/db/remote/kv/api/base_transaction.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 
 namespace silkworm::rpc {
+
+using db::chain::ChainStorage;
+using db::kv::api::BaseTransaction;
+using db::kv::api::Cursor;
+using db::kv::api::CursorDupSort;
+using db::kv::api::KeyValue;
 
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT
@@ -37,7 +44,7 @@ static const std::string zeros = "0000000000000000000000000000000000000000000000
 static const evmc::bytes32 zero_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 #endif
 
-class DummyCursor : public ethdb::CursorDupSort {
+class DummyCursor : public CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
 
@@ -155,9 +162,9 @@ class DummyCursor : public ethdb::CursorDupSort {
     nlohmann::json::iterator itr_;
 };
 
-class DummyTransaction : public ethdb::BaseTransaction {
+class DummyTransaction : public BaseTransaction {
   public:
-    explicit DummyTransaction(const nlohmann::json& json) : ethdb::BaseTransaction(nullptr), json_{json} {}
+    explicit DummyTransaction(const nlohmann::json& json) : BaseTransaction(nullptr), json_{json} {}
 
     [[nodiscard]] uint64_t tx_id() const override { return 0; }
     [[nodiscard]] uint64_t view_id() const override { return 0; }
@@ -166,14 +173,14 @@ class DummyTransaction : public ethdb::BaseTransaction {
         co_return;
     }
 
-    Task<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& table) override {
+    Task<std::shared_ptr<Cursor>> cursor(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, false);
 
         co_return cursor;
     }
 
-    Task<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
+    Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, true);
 
@@ -200,7 +207,7 @@ class DummyDatabase : public ethdb::Database {
   public:
     explicit DummyDatabase(const nlohmann::json& json) : json_{json} {}
 
-    Task<std::unique_ptr<ethdb::Transaction>> begin() override {
+    Task<std::unique_ptr<db::kv::api::Transaction>> begin() override {
         auto txn = std::make_unique<DummyTransaction>(json_);
         co_return txn;
     }

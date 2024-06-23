@@ -25,21 +25,23 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
-#include <silkworm/rpc/state/remote_state.hpp>
-#include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_block_cache.hpp>
-#include <silkworm/rpc/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc::trace {
 
+using db::chain::RemoteChainStorage;
+using db::kv::api::KeyValue;
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -59,7 +61,7 @@ static Bytes kConfigValue{*silkworm::from_hex(
     "426c6f636b223a353036323630352c22636c69717565223a7b22706572696f64223a31352c2265706f6368223a33303030307d7d")};
 
 struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
-    test::MockTransaction transaction;
+    db::test_util::MockTransaction transaction;
     WorkerPool workers{1};
     test::MockBlockCache block_cache;
     StringWriter writer{4096};
@@ -80,7 +82,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("precompiled contract failure") {
@@ -264,7 +266,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("Call: failed with intrinsic gas too low") {
@@ -1061,7 +1063,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("Call: TO present") {
@@ -1291,7 +1293,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -1574,7 +1576,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("callMany: failed with intrinsic gas too low") {
@@ -1877,7 +1879,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -2419,7 +2421,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -2618,7 +2620,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -3564,7 +3566,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
@@ -3702,7 +3704,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
     }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))

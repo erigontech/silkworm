@@ -22,13 +22,13 @@
 #include <vector>
 
 #include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/remote/kv/grpc/client/state_changes_stream.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/common/version.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/ethdb/kv/state_changes_stream.hpp>
 #include <silkworm/rpc/http/server.hpp>
 
 #include "settings.hpp"
@@ -90,7 +90,7 @@ class Daemon {
     std::unique_ptr<::remote::KV::StubInterface> kv_stub_;
 
     //! The stream handling StateChanges server-streaming RPC.
-    std::unique_ptr<ethdb::kv::StateChangesStream> state_changes_stream_;
+    std::unique_ptr<db::kv::grpc::client::StateChangesStream> state_changes_stream_;
 
     //! The secret key for communication from CL & EL
     std::optional<std::string> jwt_secret_;

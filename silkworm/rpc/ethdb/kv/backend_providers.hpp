@@ -16,18 +16,18 @@
 
 #pragma once
 
+#include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
-#include <silkworm/rpc/storage/remote_chain_storage.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
-inline BlockProvider block_provider(ethbackend::BackEnd* backend) {
+inline db::chain::BlockProvider block_provider(ethbackend::BackEnd* backend) {
     return [backend](auto block_num, HashAsSpan hash, bool read_senders, auto& block) -> Task<bool> {
         return backend->get_block(block_num, hash, read_senders, block);
     };
 }
 
-inline BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider(ethbackend::BackEnd* backend) {
+inline db::chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider(ethbackend::BackEnd* backend) {
     return [backend](HashAsSpan hash) -> Task<BlockNum> {
         return backend->get_block_number_from_txn_hash(hash);
     };

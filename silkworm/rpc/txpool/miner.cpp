@@ -17,11 +17,14 @@
 #include "miner.hpp"
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/common/clock_time.hpp>
+#include <silkworm/db/remote/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/common/clock_time.hpp>
-#include <silkworm/rpc/grpc/unary_rpc.hpp>
+#include <silkworm/infra/grpc/client/unary_rpc.hpp>
 
 namespace silkworm::rpc::txpool {
+
+namespace clock_time = db::clock_time;
 
 Miner::Miner(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
     : Miner(context.get_executor(), ::txpool::Mining::NewStub(channel), grpc_context) {}

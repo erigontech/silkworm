@@ -28,7 +28,7 @@ namespace silkworm::rpc::test {
 
 class MockDatabase : public ethdb::Database {
   public:
-    MOCK_METHOD((Task<std::unique_ptr<ethdb::Transaction>>), begin, ());
+    MOCK_METHOD((Task<std::unique_ptr<db::kv::api::Transaction>>), begin, ());
 };
 
 }  // namespace silkworm::rpc::test

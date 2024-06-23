@@ -36,19 +36,6 @@
 
 namespace silkworm {
 
-struct KeyValue {
-    Bytes key;
-    Bytes value;
-};
-
-inline bool operator<(const KeyValue& lhs, const KeyValue& rhs) {
-    return lhs.key < rhs.key;
-}
-
-inline bool operator==(const KeyValue& lhs, const KeyValue& rhs) {
-    return lhs.key == rhs.key;
-}
-
 std::string base64_encode(ByteView bytes_to_encode, bool url);
 
 bool check_tx_fee_less_cap(float cap, const intx::uint256& max_fee_per_gas, uint64_t gas_limit);
@@ -57,45 +44,13 @@ bool is_replay_protected(const Transaction& txn);
 
 std::string decoding_result_to_string(DecodingError decode_result);
 
-template <unsigned N>
-ByteView full_view(const uint8_t (&bytes)[N]) {
-    return {bytes, N};
-}
-
-inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
-
-inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
-
 inline ByteView full_view(const Bloom& bloom) { return {bloom.data(), kBloomByteLength}; }
 
-inline ByteView full_view(const ethash::hash256& hash) { return {hash.bytes, kHashLength}; }
-
 const ChainConfig* lookup_chain_config(uint64_t chain_id);
-
-inline std::ostream& operator<<(std::ostream& out, ByteView bytes) {
-    for (const auto& b : bytes) {
-        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
-    }
-    out << std::dec;
-    return out;
-}
-
-inline ByteView byte_view_of_string(const std::string& s) {
-    return {reinterpret_cast<const uint8_t*>(s.data()), s.length()};
-}
-
-inline Bytes bytes_of_string(const std::string& s) {
-    return {s.begin(), s.end()};
-}
 
 inline evmc::bytes32 bytes32_from_hex(const std::string& s) {
     const auto b32_bytes = from_hex(s);
     return to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));
-}
-
-inline std::ostream& operator<<(std::ostream& out, const Bytes& bytes) {
-    out << to_hex(bytes);
-    return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const Account& account);
@@ -113,14 +68,6 @@ inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     silkworm::rlp::encode(txn_rlp, txn, /*wrap_eip2718_into_string=*/false);
     return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
 }
-
-namespace intx {
-template <unsigned N>
-inline std::ostream& operator<<(std::ostream& out, const uint<N>& value) {
-    out << "0x" << intx::hex(value);
-    return out;
-}
-}  // namespace intx
 
 namespace boost::asio {
 inline std::ostream& operator<<(std::ostream& out, const const_buffer& buffer) {

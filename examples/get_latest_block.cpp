@@ -28,6 +28,7 @@
 #include <boost/asio/use_future.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/db/remote/kv/api/state_cache.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -36,6 +37,7 @@
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 
 using namespace silkworm;
+using namespace silkworm::db;
 using namespace silkworm::rpc;
 
 ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "server location as string <address>:<port>");
@@ -93,7 +95,7 @@ int main(int argc, char* argv[]) {
         auto* io_context = context.io_context();
         auto* grpc_context = context.grpc_context();
 
-        ethdb::kv::CoherentStateCache state_cache;
+        kv::api::CoherentStateCache state_cache;
         auto channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
         auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(*io_context, channel, *grpc_context)};
         auto database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), &state_cache, *grpc_context, channel);

@@ -22,7 +22,7 @@
 
 #include <boost/asio/io_context.hpp>
 
-#include <silkworm/rpc/ethdb/transaction.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 
 namespace silkworm::rpc::ethdb {
 
@@ -34,7 +34,7 @@ class Database {
     Database(const Database&) = delete;
     Database& operator=(const Database&) = delete;
 
-    virtual Task<std::unique_ptr<Transaction>> begin() = 0;
+    virtual Task<std::unique_ptr<db::kv::api::Transaction>> begin() = 0;
 };
 
 }  // namespace silkworm::rpc::ethdb

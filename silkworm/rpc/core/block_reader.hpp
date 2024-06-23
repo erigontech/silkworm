@@ -28,9 +28,9 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/chain/chain_storage.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/transaction.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
-#include <silkworm/rpc/storage/chain_storage.hpp>
 #include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc {
@@ -41,7 +41,7 @@ void to_json(nlohmann::json& json, const BalanceChanges& balance_changes);
 
 class BlockReader {
   public:
-    explicit BlockReader(const ChainStorage& chain_storage, ethdb::Transaction& transaction)
+    explicit BlockReader(const db::chain::ChainStorage& chain_storage, db::kv::api::Transaction& transaction)
         : chain_storage_(chain_storage), transaction_(transaction) {}
 
     BlockReader(const BlockReader&) = delete;
@@ -52,8 +52,8 @@ class BlockReader {
   private:
     [[nodiscard]] Task<void> load_addresses(BlockNum block_number, BalanceChanges& balance_changes) const;
 
-    const ChainStorage& chain_storage_;
-    ethdb::Transaction& transaction_;
+    const db::chain::ChainStorage& chain_storage_;
+    db::kv::api::Transaction& transaction_;
 };
 
 }  // namespace silkworm::rpc

@@ -26,14 +26,16 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/test_util/mock_cursor.hpp>
+#include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/test_util/mock_cursor.hpp>
-#include <silkworm/rpc/test_util/mock_transaction.hpp>
 
 namespace silkworm::rpc::core {
 
+using db::kv::api::KeyValue;
 using testing::_;
 using testing::InSequence;
 using testing::Invoke;
@@ -59,7 +61,7 @@ static silkworm::Bytes kBody{*silkworm::from_hex("c68369e45a03c0")};
 TEST_CASE("read_raw_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
-    test::MockTransaction transaction;
+    db::test_util::MockTransaction transaction;
 
     SECTION("null receipts") {
         const uint64_t block_number{0};
@@ -84,8 +86,8 @@ TEST_CASE("read_raw_receipts") {
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("818400f6011a0004a0c8");
         }));
-        auto cursor{std::make_shared<test::MockCursor>()};
-        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
+        auto cursor{std::make_shared<db::test_util::MockCursor>()};
+        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<db::kv::api::Cursor>> { co_return cursor; }));
         EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key{*silkworm::from_hex("000000000035db8000000000")};
             silkworm::Bytes value{*silkworm::from_hex(
@@ -124,8 +126,8 @@ TEST_CASE("read_raw_receipts") {
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a");
         }));
-        auto cursor{std::make_shared<test::MockCursor>()};
-        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
+        auto cursor{std::make_shared<db::test_util::MockCursor>()};
+        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<db::kv::api::Cursor>> { co_return cursor; }));
         EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key1{*silkworm::from_hex("000000000035db8400000000")};
             silkworm::Bytes value1{*silkworm::from_hex(
@@ -181,8 +183,8 @@ TEST_CASE("read_raw_receipts") {
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("818400f6011a0004a0c8");
         }));
-        auto cursor{std::make_shared<test::MockCursor>()};
-        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<ethdb::Cursor>> { co_return cursor; }));
+        auto cursor{std::make_shared<db::test_util::MockCursor>()};
+        EXPECT_CALL(transaction, cursor(db::table::kLogsName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<db::kv::api::Cursor>> { co_return cursor; }));
         EXPECT_CALL(*cursor, seek(_)).WillOnce(Invoke([](Unused) -> Task<KeyValue> {
             silkworm::Bytes key{};
             silkworm::Bytes value{*silkworm::from_hex(
@@ -221,7 +223,7 @@ TEST_CASE("read_raw_receipts") {
 TEST_CASE("read_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
-    test::MockTransaction transaction;
+    db::test_util::MockTransaction transaction;
 
     SECTION("null receipts without data") {
         const silkworm::BlockWithHash block_with_hash{};

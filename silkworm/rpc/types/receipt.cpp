@@ -21,6 +21,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/remote/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 

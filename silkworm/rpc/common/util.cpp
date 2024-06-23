@@ -17,6 +17,7 @@
 #include "util.hpp"
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/remote/kv/api/util.hpp>
 
 namespace silkworm {
 

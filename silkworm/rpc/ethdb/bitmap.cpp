@@ -24,6 +24,7 @@
 #include <gsl/narrow>
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/remote/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/ethdb/walk.hpp>
 
@@ -31,6 +32,7 @@ namespace silkworm::rpc::ethdb::bitmap {
 
 using roaring_bitmap_t = roaring::api::roaring_bitmap_t;
 using Roaring = roaring::Roaring;
+using rpc::ethdb::walk;
 
 static Roaring fast_or(size_t n, const std::vector<std::unique_ptr<Roaring>>& inputs) {
     std::vector<const roaring_bitmap_t*> x(n);
@@ -47,7 +49,7 @@ static Roaring fast_or(size_t n, const std::vector<std::unique_ptr<Roaring>>& in
 }
 
 Task<Roaring> get(
-    Transaction& tx,
+    db::kv::api::Transaction& tx,
     const std::string& table,
     silkworm::Bytes& key,
     uint32_t from_block,
@@ -75,7 +77,7 @@ Task<Roaring> get(
 }
 
 Task<Roaring> from_topics(
-    Transaction& tx,
+    db::kv::api::Transaction& tx,
     const std::string& table,
     const FilterTopics& topics,
     uint64_t start,
@@ -106,7 +108,7 @@ Task<Roaring> from_topics(
 }
 
 Task<Roaring> from_addresses(
-    Transaction& tx,
+    db::kv::api::Transaction& tx,
     const std::string& table,
     const FilterAddresses& addresses,
     uint64_t start,

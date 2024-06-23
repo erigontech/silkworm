@@ -79,6 +79,8 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation);
 
 Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
 
+Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, HashAsArray hash);
+
 // Erigon EncodeBlockNumber
 Bytes block_key(BlockNum block_number);
 

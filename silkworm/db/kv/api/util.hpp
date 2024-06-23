@@ -68,9 +68,3 @@ inline std::ostream& operator<<(std::ostream& out, const Bytes& bytes) {
 }
 
 }  // namespace silkworm
-
-namespace silkworm::db::kv::api {
-
-Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, HashAsArray hash);
-
-}  // namespace silkworm::db::kv::api

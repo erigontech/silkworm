@@ -39,6 +39,14 @@ Bytes storage_prefix(const evmc::address& address, uint64_t incarnation) {
     return storage_prefix(address.bytes, incarnation);
 }
 
+Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, HashAsArray hash) {
+    Bytes res(kAddressLength + kIncarnationLength + kHashLength, '\0');
+    std::memcpy(&res[0], address.bytes, kAddressLength);
+    endian::store_big_u64(&res[kAddressLength], incarnation);
+    std::memcpy(&res[kAddressLength + db::kIncarnationLength], hash, kHashLength);
+    return res;
+}
+
 Bytes block_key(BlockNum block_number) {
     Bytes key(sizeof(BlockNum), '\0');
     endian::store_big_u64(&key[0], block_number);

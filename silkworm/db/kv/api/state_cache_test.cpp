@@ -33,6 +33,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 

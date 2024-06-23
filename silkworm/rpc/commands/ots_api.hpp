@@ -23,10 +23,10 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
-#include <silkworm/db/remote/kv/api/cursor.hpp>
-#include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
-#include <silkworm/db/remote/kv/api/state_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>

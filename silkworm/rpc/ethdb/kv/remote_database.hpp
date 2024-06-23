@@ -22,8 +22,8 @@
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/db/remote/kv/api/state_cache.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>

@@ -36,7 +36,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>

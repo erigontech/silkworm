@@ -22,8 +22,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/db/remote/kv/api/base_transaction.hpp>
-#include <silkworm/db/remote/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/base_transaction.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/rpc/common/util.hpp>
 

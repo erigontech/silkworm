@@ -24,7 +24,7 @@
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 
 namespace silkworm::db::chain {
 

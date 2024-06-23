@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,27 +14,16 @@
    limitations under the License.
 */
 
-#pragma once
+#include "iterator.hpp"
 
-#include <memory>
+namespace silkworm::remote::kv::api {
 
-#include <silkworm/infra/concurrency/task.hpp>
+Uint64Iter& Uint64Iter::operator++() {
+    return *this;
+}
 
-#include <boost/asio/io_context.hpp>
+bool operator==(const Uint64Iter& lhs, const Uint64Iter& rhs) {
+    return lhs.entry_.value == rhs.entry_.value;
+}
 
-#include <silkworm/db/kv/api/transaction.hpp>
-
-namespace silkworm::rpc::ethdb {
-
-class Database {
-  public:
-    Database() = default;
-    virtual ~Database() = default;
-
-    Database(const Database&) = delete;
-    Database& operator=(const Database&) = delete;
-
-    virtual Task<std::unique_ptr<db::kv::api::Transaction>> begin() = 0;
-};
-
-}  // namespace silkworm::rpc::ethdb
+}  // namespace silkworm::remote::kv::api

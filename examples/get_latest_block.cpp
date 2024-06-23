@@ -28,7 +28,7 @@
 #include <boost/asio/use_future.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/common/constants.hpp>

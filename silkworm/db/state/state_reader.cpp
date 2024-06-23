@@ -19,8 +19,8 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
-#include <silkworm/db/remote/kv/api/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

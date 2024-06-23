@@ -16,7 +16,7 @@
 
 #include "backend_kv_server.hpp"
 
-#include <silkworm/db/remote/kv/grpc/server/kv_calls.hpp>
+#include <silkworm/db/kv/grpc/server/kv_calls.hpp>
 #include <silkworm/node/remote/ethbackend/grpc/server/backend_calls.hpp>
 
 namespace silkworm::node {

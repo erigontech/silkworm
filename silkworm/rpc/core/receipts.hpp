@@ -21,7 +21,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core {

@@ -18,7 +18,7 @@
 
 #include <utility>
 
-#include <silkworm/db/remote/kv/api/local_transaction.hpp>
+#include <silkworm/db/kv/api/local_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc::ethdb::file {

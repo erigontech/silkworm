@@ -22,7 +22,7 @@
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 

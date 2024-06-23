@@ -25,7 +25,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc::test {

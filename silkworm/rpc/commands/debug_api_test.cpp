@@ -27,9 +27,9 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/base_transaction.hpp>
-#include <silkworm/db/remote/kv/api/cursor.hpp>
-#include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/base_transaction.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/infra/test_util/log.hpp>

@@ -23,7 +23,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/db/remote/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>

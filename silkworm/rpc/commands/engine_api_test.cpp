@@ -28,7 +28,7 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/base_transaction.hpp>
+#include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>

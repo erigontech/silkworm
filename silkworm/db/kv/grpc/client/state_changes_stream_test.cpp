@@ -22,7 +22,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/remote/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>

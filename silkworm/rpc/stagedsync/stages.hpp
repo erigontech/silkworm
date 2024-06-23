@@ -20,8 +20,8 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
-#include <silkworm/db/remote/kv/api/util.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/stages.hpp>
 
 namespace silkworm::rpc::stages {

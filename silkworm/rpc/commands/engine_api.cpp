@@ -22,7 +22,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/remote/kv/api/util.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/json/client_version.hpp>

@@ -23,7 +23,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/remote/kv/api/util.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>

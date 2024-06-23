@@ -16,7 +16,7 @@
 
 #include "walk.hpp"
 
-#include <silkworm/db/remote/kv/api/util.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc::ethdb {

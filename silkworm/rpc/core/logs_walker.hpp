@@ -21,7 +21,7 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/types/filter.hpp>
 #include <silkworm/rpc/types/log.hpp>

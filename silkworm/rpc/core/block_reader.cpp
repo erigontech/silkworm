@@ -20,7 +20,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/remote/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>

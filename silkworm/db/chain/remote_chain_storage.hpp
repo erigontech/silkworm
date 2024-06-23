@@ -20,7 +20,7 @@
 
 #include <agrpc/grpc_context.hpp>
 
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 
 #include "chain_storage.hpp"
 

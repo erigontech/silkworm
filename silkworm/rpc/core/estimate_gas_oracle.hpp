@@ -27,7 +27,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>

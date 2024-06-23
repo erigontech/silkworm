@@ -27,8 +27,8 @@
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/base_transaction.hpp>
-#include <silkworm/db/remote/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/base_transaction.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 

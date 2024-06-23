@@ -26,7 +26,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/types/block.hpp>

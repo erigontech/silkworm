@@ -25,8 +25,8 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/remote/kv/api/cursor.hpp>
-#include <silkworm/db/remote/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 
 namespace silkworm::db::test_util {
 

@@ -31,7 +31,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/remote/kv/api/util.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/client/util.hpp>

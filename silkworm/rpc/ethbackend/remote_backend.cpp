@@ -23,7 +23,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/remote/kv/api/util.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/unary_rpc.hpp>

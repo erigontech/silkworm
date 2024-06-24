@@ -1752,10 +1752,9 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
         reply = make_json_error(request, -32602, error_msg);
         co_return;
     }
-
     silkworm::ByteView encoded_tx_view{*encoded_tx_bytes};
     Transaction txn;
-    const auto decoding_result{silkworm::rlp::decode(encoded_tx_view, txn)};
+    const auto decoding_result{silkworm::rlp::decode_transaction(encoded_tx_view, txn, silkworm::rlp::Eip2718Wrapping::kBoth)};
     if (!decoding_result) {
         const auto error_msg = decoding_result_to_string(decoding_result.error());
         SILK_ERROR << error_msg;

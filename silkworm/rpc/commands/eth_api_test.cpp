@@ -62,19 +62,35 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails r
     })"_json);
 }
 
-TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails wrong number digit", "[rpc][api]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails length", "[rpc][api]") {
     const auto request = R"({
         "jsonrpc": "2.0",
         "id": 1,
         "method": "eth_sendRawTransaction",
-        "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445"]
+        "params": ["0x01f87482053980843b9aca008509502f9000830493e080809a608060405260098060116000396000f3fe6080604052600080fdc001a02f770992b74b52f9e2beef5b33376590e6dc7669ee7ab648e1e31ad3a377f627a07c3030ba71736bb982ccbb1e36b073489abe0c18ffc14be5206c29f1c026c99a"]
     })"_json;
     std::string reply;
     run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "error":{"code":-32000,"message":"rlp: unexpected EIP-2178 serialization"}
+        "error":{"code":-32000,"message":"rlp: unexpected Length"}
+    })"_json);
+}
+
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails to send", "[rpc][api]") {
+    const auto request = R"({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_sendRawTransaction",
+        "params": ["0x02f87482053980843b9aca008509502f9000830493e080809a608060405260098060116000396000f3fe6080604052600080fdc001a02f770992b74b52f9e2beef5b33376590e6dc7669ee7ab648e1e31ad3a377f627a07c3030ba71736bb982ccbb1e36b073489abe0c18ffc14be5206c29f1c026c99a"]
+    })"_json;
+    std::string reply;
+    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    CHECK(nlohmann::json::parse(reply) == R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "error":{"code":100,"message":"failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:12345: Failed to connect to remote host: Connection refused [std:grpc:14]"}
     })"_json);
 }
 

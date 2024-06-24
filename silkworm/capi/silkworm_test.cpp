@@ -813,10 +813,10 @@ static SilkwormRpcSettings make_rpc_settings_for_test(uint16_t api_listening_por
     (void)std::snprintf(settings.eth_api_host, SILKWORM_RPC_SETTINGS_HOST_SIZE, "localhost");
     (void)std::snprintf(settings.eth_api_spec, SILKWORM_RPC_SETTINGS_API_NAMESPACE_SPEC_SIZE, "eth,ots");
     for (auto& domain : settings.cors_domains) {
-        domain[0] = 0;
+        domain[0] = '\0';
     }
     (void)std::snprintf(settings.cors_domains[0], SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "*");
-    (void)std::snprintf(settings.jwt_file_path, SILKWORM_PATH_SIZE, "jwt.hex");
+    settings.jwt_file_path[0] = '\0';
     return settings;
 }
 

@@ -37,8 +37,8 @@ class Directory {
     //! \brief Returns whether this Directory exists on filesystem
     [[nodiscard]] bool exists() const;
 
-    //! \brief Returns whether this Directory is uncontaminated (i.e. brand new with no contents)
-    [[nodiscard]] bool is_pristine() const;
+    //! \brief Returns whether this Directory is empty
+    [[nodiscard]] bool is_empty() const;
 
     //! \brief Returns the cumulative size of all contained files and subdirectories
     [[nodiscard]] size_t size() const;

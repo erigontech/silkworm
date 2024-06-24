@@ -57,11 +57,8 @@ Directory::Directory(const std::filesystem::path& directory_path, bool must_crea
     }
 }
 
-bool Directory::is_pristine() const {
-    if (!exists()) {
-        return false;
-    }
-    return std::filesystem::is_empty(path_);
+bool Directory::is_empty() const {
+    return exists() && std::filesystem::is_empty(path_);
 }
 
 const std::filesystem::path& Directory::path() const { return path_; }

@@ -138,7 +138,6 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
             EXPECT_CALL(*execution_service, insert_blocks(_))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> { co_return execution::api::InsertionResult{}; }));
             EXPECT_CALL(*execution_service, get_header_hash_number(Hash{payload.block_hash}))
-                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
                 .WillOnce(InvokeWithoutArgs([=]() -> Task<std::optional<BlockNum>> { co_return payload.number; }));
             EXPECT_CALL(*execution_service, validate_chain(block_number_or_hash))
                 .WillOnce(InvokeWithoutArgs([&]() -> Task<execution::api::ValidationResult> {

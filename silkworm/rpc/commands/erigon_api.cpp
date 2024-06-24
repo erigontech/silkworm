@@ -145,7 +145,6 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
             block_number = kEarliestBlockNumber;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
-            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {
                 const auto header = co_await chain_storage->read_canonical_header(bn);
                 co_return header && header->timestamp >= timestamp;

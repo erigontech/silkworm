@@ -18,7 +18,6 @@
 
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -61,7 +60,7 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const 
     for (size_t i{0}; i < receipts.size(); i++) {
         // The tx hash can be calculated by the tx content itself
         auto tx_hash{transactions[i].hash()};
-        receipts[i].tx_hash = silkworm::to_bytes32(full_view(tx_hash.bytes));
+        receipts[i].tx_hash = to_bytes32(tx_hash.bytes);
         receipts[i].tx_index = uint32_t(i);
 
         receipts[i].block_hash = block_hash;

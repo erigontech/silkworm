@@ -59,13 +59,13 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     std::vector<KeyValue> collected_data;
 
-    AccountWalker::Collector collector = [&](silkworm::ByteView k, silkworm::ByteView v) {
+    AccountWalker::Collector collector = [&](ByteView k, ByteView v) {
         if (max_result > 0 && collected_data.size() >= static_cast<std::size_t>(max_result)) {
             dump_accounts.next = bytes_to_address(k);
             return false;
         }
 
-        if (k.size() > silkworm::kAddressLength) {
+        if (k.size() > kAddressLength) {
             return true;
         }
 
@@ -92,8 +92,8 @@ Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_d
     for (const auto& kv : collected_data) {
         const auto address = bytes_to_address(kv.key);
 
-        auto account{silkworm::Account::from_encoded_storage(kv.value)};
-        silkworm::success_or_throw(account);
+        auto account{Account::from_encoded_storage(kv.value)};
+        success_or_throw(account);
 
         DumpAccount dump_account;
         dump_account.balance = account->balance;
@@ -101,11 +101,11 @@ Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_d
         dump_account.code_hash = account->code_hash;
         dump_account.incarnation = account->incarnation;
 
-        if (account->incarnation > 0 && account->code_hash == silkworm::kEmptyHash) {
-            const auto storage_key{db::storage_prefix(full_view(address), account->incarnation)};
+        if (account->incarnation > 0 && account->code_hash == kEmptyHash) {
+            const auto storage_key{db::storage_prefix(address.bytes, account->incarnation)};
             auto code_hash{co_await transaction_.get_one(db::table::kPlainCodeHashName, storage_key)};
-            if (code_hash.length() == silkworm::kHashLength) {
-                std::memcpy(dump_account.code_hash.bytes, code_hash.data(), silkworm::kHashLength);
+            if (code_hash.length() == kHashLength) {
+                std::memcpy(dump_account.code_hash.bytes, code_hash.data(), kHashLength);
             }
         }
         if (!exclude_code) {
@@ -126,27 +126,26 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
         auto& address = it.first;
         auto& account = it.second;
 
-        std::map<silkworm::Bytes, silkworm::Bytes> collected_entries;
-        StorageWalker::AccountCollector collector = [&](const evmc::address& /*address*/, silkworm::ByteView loc, silkworm::ByteView data) {
+        std::map<Bytes, Bytes> collected_entries;
+        StorageWalker::AccountCollector collector = [&](const evmc::address& /*address*/, ByteView loc, ByteView data) {
             if (!account.storage.has_value()) {
                 account.storage = Storage{};
             }
             auto& storage = *account.storage;
-            storage[silkworm::to_bytes32(loc)] = data;
-            auto hash = hash_of(loc);
-            auto key = full_view(hash);
-            collected_entries[silkworm::Bytes{key}] = data;
+            storage[to_bytes32(loc)] = data;
+            const auto hash = hash_of(loc);
+            collected_entries[Bytes{hash.bytes}] = data;
 
             return true;
         };
 
         co_await storage_walker.walk_of_storages(block_number, address, start_location, account.incarnation, collector);
 
-        silkworm::trie::HashBuilder hb;
+        trie::HashBuilder hb;
         for (const auto& [key, value] : collected_entries) {
-            silkworm::Bytes encoded{};
-            silkworm::rlp::encode(encoded, value);
-            silkworm::Bytes unpacked = silkworm::trie::unpack_nibbles(key);
+            Bytes encoded{};
+            rlp::encode(encoded, value);
+            Bytes unpacked = trie::unpack_nibbles(key);
 
             hb.add_leaf(unpacked, encoded);
         }

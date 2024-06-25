@@ -33,7 +33,7 @@ constexpr const char* kSafeBlockHash = "safeBlockHash";
 using namespace db::chain;
 
 static Task<BlockNum> get_forkchoice_block_number(db::kv::api::Transaction& tx, const char* block_hash_tag) {
-    const auto kv_pair = co_await tx.get(db::table::kLastForkchoiceName, bytes_of_string(block_hash_tag));
+    const auto kv_pair = co_await tx.get(db::table::kLastForkchoiceName, string_to_bytes(block_hash_tag));
     const auto block_hash_data = kv_pair.value;
     if (block_hash_data.empty()) {
         co_return 0;
@@ -128,7 +128,7 @@ Task<BlockNum> get_latest_executed_block_number(db::kv::api::Transaction& tx) {
 }
 
 Task<BlockNum> get_latest_block_number(db::kv::api::Transaction& tx) {
-    const auto kv_pair = co_await tx.get(db::table::kLastForkchoiceName, bytes_of_string(kHeadBlockHash));
+    const auto kv_pair = co_await tx.get(db::table::kLastForkchoiceName, string_to_bytes(kHeadBlockHash));
     const auto head_block_hash_data = kv_pair.value;
     if (!head_block_hash_data.empty()) {
         const auto head_block_hash = to_bytes32(head_block_hash_data);

@@ -19,7 +19,6 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -31,7 +30,7 @@ namespace silkworm::db::state {
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address, BlockNum block_number) const {
     std::optional<Bytes> encoded{co_await read_historical_account(address, block_number)};
     if (!encoded) {
-        encoded = co_await tx_.get_one(table::kPlainStateName, full_view(address));
+        encoded = co_await tx_.get_one(table::kPlainStateName, address.bytes);
     }
     SILK_DEBUG << "StateReader::read_account encoded: " << (encoded ? *encoded : Bytes{});
     if (!encoded || encoded->empty()) {
@@ -43,7 +42,7 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
 
     if (account->incarnation > 0 && account->code_hash == kEmptyHash) {
         // Restore code hash
-        const auto storage_key{storage_prefix(full_view(address), account->incarnation)};
+        const auto storage_key{storage_prefix(address.bytes, account->incarnation)};
         auto code_hash{co_await tx_.get_one(table::kPlainCodeHashName, storage_key)};
         if (code_hash.length() == kHashLength) {
             std::memcpy(account->code_hash.bytes, code_hash.data(), kHashLength);
@@ -78,7 +77,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::bytes32& code_hash
     if (code_hash == kEmptyHash) {
         co_return std::nullopt;
     }
-    co_return co_await tx_.get_one(table::kCodeName, full_view(code_hash));
+    co_return co_await tx_.get_one(table::kCodeName, code_hash.bytes);
 }
 
 Task<std::optional<Bytes>> StateReader::read_historical_account(const evmc::address& address, BlockNum block_number) const {
@@ -87,7 +86,7 @@ Task<std::optional<Bytes>> StateReader::read_historical_account(const evmc::addr
     const auto kv_pair{co_await tx_.get(table::kAccountHistoryName, account_history_key)};
 
     SILK_DEBUG << "StateReader::read_historical_account kv_pair.key: " << to_hex(kv_pair.key);
-    const auto address_view{full_view(address)};
+    const ByteView address_view{address.bytes};
     if (kv_pair.key.substr(0, kAddressLength) != address_view) {
         co_return std::nullopt;
     }
@@ -120,8 +119,9 @@ Task<std::optional<Bytes>> StateReader::read_historical_storage(const evmc::addr
     SILK_DEBUG << "StateReader::read_historical_storage storage_history_key: " << storage_history_key;
     const auto kv_pair{co_await tx_.get(table::kStorageHistoryName, storage_history_key)};
 
-    const auto location_hash_view{full_view(location_hash)};
-    if (kv_pair.key.substr(0, kAddressLength) != full_view(address) ||
+    const ByteView address_view{address.bytes};
+    const ByteView location_hash_view{location_hash.bytes};
+    if (kv_pair.key.substr(0, kAddressLength) != address_view ||
         kv_pair.key.substr(kAddressLength, kHashLength) != location_hash_view) {
         co_return std::nullopt;
     }

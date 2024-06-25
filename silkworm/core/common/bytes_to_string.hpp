@@ -31,6 +31,7 @@ inline const char* byte_ptr_cast(const uint8_t* ptr) { return reinterpret_cast<c
 inline uint8_t* byte_ptr_cast(char* ptr) { return reinterpret_cast<uint8_t*>(ptr); }
 inline const uint8_t* byte_ptr_cast(const char* ptr) { return reinterpret_cast<const uint8_t*>(ptr); }
 
+inline Bytes string_to_bytes(const std::string& s) { return {s.begin(), s.end()}; }
 inline ByteView string_view_to_byte_view(std::string_view v) { return {byte_ptr_cast(v.data()), v.length()}; }
 
 template <std::size_t Size>

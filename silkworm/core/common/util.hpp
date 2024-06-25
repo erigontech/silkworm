@@ -18,6 +18,8 @@
 
 #include <cmath>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
 #include <optional>
 #include <regex>
 #include <string_view>
@@ -28,6 +30,17 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+
+// intx does not include operator<< overloading for uint<N>
+namespace intx {
+
+template <unsigned N>
+inline std::ostream& operator<<(std::ostream& out, const uint<N>& value) {
+    out << "0x" << intx::hex(value);
+    return out;
+}
+
+}  // namespace intx
 
 namespace silkworm {
 
@@ -63,7 +76,8 @@ inline bool is_valid_address(std::string_view s) {
 std::string to_hex(ByteView bytes, bool with_prefix = false);
 
 //! \brief Returns a string representing the hex form of provided integral
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>>>
+template <typename T>
+    requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
 std::string to_hex(T value, bool with_prefix = false) {
     uint8_t bytes[sizeof(T)];
     intx::be::store(bytes, value);
@@ -98,7 +112,7 @@ inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.
 
 //! \brief Create an intx::uint256 from a string supporting both fixed decimal and scientific notation
 template <UnsignedIntegral Int>
-inline constexpr Int from_string_sci(const char* str) {
+constexpr Int from_string_sci(const char* str) {
     auto s = str;
     auto m = Int{};
 
@@ -152,6 +166,19 @@ inline constexpr Int from_string_sci(const char* str) {
         --exp;
     }
     return x;
+}
+
+inline std::ostream& operator<<(std::ostream& out, ByteView bytes) {
+    for (const auto& b : bytes) {
+        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
+    }
+    out << std::dec;
+    return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Bytes& bytes) {
+    out << to_hex(bytes);
+    return out;
 }
 
 float to_float(const intx::uint256&) noexcept;

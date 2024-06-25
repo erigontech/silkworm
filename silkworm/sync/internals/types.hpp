@@ -36,12 +36,6 @@ using duration_t = std::chrono::system_clock::duration;
 using seconds_t = std::chrono::seconds;
 using milliseconds_t = std::chrono::milliseconds;
 
-// stream operator <<
-inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
-    out << silkworm::to_hex(bytes);
-    return out;
-}
-
 // Peers
 using PeerId = Bytes;
 

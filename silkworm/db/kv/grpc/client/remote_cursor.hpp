@@ -26,7 +26,6 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 
 #include "../../api/cursor.hpp"
 #include "rpc.hpp"

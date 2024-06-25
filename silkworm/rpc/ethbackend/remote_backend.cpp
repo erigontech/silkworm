@@ -22,8 +22,8 @@
 #include <boost/endian/conversion.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/unary_rpc.hpp>
@@ -148,12 +148,12 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_number, const HashAsSpan& has
     request.set_block_height(block_number);
     request.set_allocated_block_hash(H256_from_bytes(hash).release());
     const auto reply = co_await get_block_rpc.finish_on(executor_, request);
-    ByteView block_rlp{byte_view_of_string(reply.block_rlp())};
+    ByteView block_rlp{string_view_to_byte_view(reply.block_rlp())};
     if (const auto decode_result{rlp::decode(block_rlp, block)}; !decode_result) {
         co_return false;
     }
     if (read_senders) {
-        ByteView senders{byte_view_of_string(reply.senders())};
+        ByteView senders{string_view_to_byte_view(reply.senders())};
         if (senders.size() % kAddressLength == 0 && senders.size() / kAddressLength == block.transactions.size()) {
             std::vector<evmc::address> sender_addresses;
             sender_addresses.reserve(block.transactions.size());
@@ -183,7 +183,7 @@ std::vector<Bytes> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrFi
     std::vector<Bytes> encoded_transactions;
     encoded_transactions.reserve(static_cast<std::size_t>(grpc_txs.size()));
     for (const auto& grpc_tx_string : grpc_txs) {
-        encoded_transactions.push_back(bytes_of_string(grpc_tx_string));
+        encoded_transactions.push_back(string_to_bytes(grpc_tx_string));
     }
     return encoded_transactions;
 }

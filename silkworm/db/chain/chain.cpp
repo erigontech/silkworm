@@ -19,12 +19,12 @@
 #include <string>
 #include <utility>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -70,7 +70,7 @@ Task<intx::uint256> read_total_difficulty(kv::api::Transaction& tx, const evmc::
 }
 
 Task<evmc::bytes32> read_head_header_hash(kv::api::Transaction& tx) {
-    const Bytes kHeadHeaderKey = bytes_of_string(table::kHeadHeaderName);
+    const Bytes kHeadHeaderKey = string_to_bytes(table::kHeadHeaderName);
     const auto value = co_await tx.get_one(table::kHeadHeaderName, kHeadHeaderKey);
     if (value.empty()) {
         throw std::runtime_error{"empty head header hash value in read_head_header_hash"};

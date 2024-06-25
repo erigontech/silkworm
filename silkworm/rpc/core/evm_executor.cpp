@@ -23,11 +23,11 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -46,7 +46,7 @@ std::string ExecutionResult::error_message(bool full_error) const {
 }
 
 static Bytes build_abi_selector(const std::string& signature) {
-    const auto signature_hash = hash_of(byte_view_of_string(signature));
+    const auto signature_hash = hash_of(string_view_to_byte_view(signature));
     return {std::begin(signature_hash.bytes), std::begin(signature_hash.bytes) + 4};
 }
 

@@ -21,9 +21,9 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
@@ -121,14 +121,14 @@ void CoherentStateCache::on_new_block(const ::remote::StateChangeBatch& state_ch
 void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateViewId view_id,
                                                const remote::AccountChange& change) {
     const auto address = rpc::address_from_H160(change.address());
-    const auto data_bytes = bytes_of_string(change.data());
+    const auto data_bytes = string_to_bytes(change.data());
     SILK_DEBUG << "CoherentStateCache::process_upsert_change address: " << address << " data: " << data_bytes;
     const Bytes address_key{address.bytes, kAddressLength};
     add({address_key, data_bytes}, root, view_id);
 }
 
 void CoherentStateCache::process_code_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change) {
-    const auto code_bytes = bytes_of_string(change.code());
+    const auto code_bytes = string_to_bytes(change.code());
     const ethash::hash256 code_hash{keccak256(code_bytes)};
     const Bytes code_hash_key{code_hash.bytes, kHashLength};
     SILK_DEBUG << "CoherentStateCache::process_code_change code_hash_key: " << code_hash_key;
@@ -150,7 +150,7 @@ void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVi
     for (const auto& storage_change : change.storage_changes()) {
         const auto location_hash = rpc::bytes32_from_H256(storage_change.location());
         const auto storage_key = composite_storage_key(address, change.incarnation(), location_hash.bytes);
-        const auto value = bytes_of_string(storage_change.data());
+        const auto value = string_to_bytes(storage_change.data());
         SILK_DEBUG << "CoherentStateCache::process_storage_change key=" << storage_key << " value=" << value;
         add({storage_key, value}, root, view_id);
     }

@@ -286,8 +286,8 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
     try {
         auto account_history_cursor = co_await tx->cursor(db::table::kAccountHistoryName);
         auto account_change_set_cursor = co_await tx->cursor_dup_sort(db::table::kAccountChangeSetName);
-        auto sender_byte_view = full_view(sender);
-        auto key_value = co_await account_history_cursor->seek(sender_byte_view);
+        const ByteView sender_byte_view{sender.bytes};
+        auto key_value = co_await account_history_cursor->seek(sender.bytes);
 
         std::vector<BlockNum> account_block_numbers;
 
@@ -395,7 +395,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        auto contract_address_byte_view = full_view(contract_address);
+        const ByteView contract_address_byte_view{contract_address.bytes};
         auto plain_state_cursor = co_await tx->cursor(db::table::kPlainStateName);
         auto account_payload = co_await plain_state_cursor->seek(contract_address_byte_view);
         auto plain_state_account = Account::from_encoded_storage(account_payload.value);

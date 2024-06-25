@@ -32,7 +32,6 @@
 #include <silkworm/interfaces/remote/kv.pb.h>  // weird but currently needed
 
 #include "transaction.hpp"
-#include "util.hpp"
 
 namespace silkworm::db::kv::api {
 

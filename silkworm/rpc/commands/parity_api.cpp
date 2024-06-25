@@ -22,7 +22,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -116,7 +115,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         std::optional<Account> account = co_await state_reader.read_account(address, block_number);
         if (!account) throw std::domain_error{"account not found"};
 
-        Bytes seek_bytes = db::storage_prefix(full_view(address), account->incarnation);
+        Bytes seek_bytes = db::storage_prefix(address.bytes, account->incarnation);
         const auto cursor = co_await tx->cursor_dup_sort(db::table::kPlainStateName);
         SILK_TRACE << "ParityRpcApi::handle_parity_list_storage_keys cursor id: " << cursor->cursor_id();
         Bytes seek_val = offset ? offset.value() : Bytes{};

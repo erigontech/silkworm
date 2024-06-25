@@ -21,7 +21,6 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
@@ -58,13 +57,13 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r) {
     return out;
 }
 
-silkworm::Bloom bloom_from_logs(const Logs& logs) {
+Bloom bloom_from_logs(const Logs& logs) {
     SILK_TRACE << "bloom_from_logs #logs: " << logs.size();
-    silkworm::Bloom bloom{};
+    Bloom bloom{};
     for (auto const& log : logs) {
-        silkworm::m3_2048(bloom, full_view(log.address));
+        m3_2048(bloom, log.address.bytes);
         for (const auto& topic : log.topics) {
-            silkworm::m3_2048(bloom, full_view(topic));
+            m3_2048(bloom, topic.bytes);
         }
     }
     SILK_TRACE << "bloom_from_logs bloom: " << silkworm::to_hex(full_view(bloom));

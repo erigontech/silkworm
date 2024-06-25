@@ -20,15 +20,16 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 
 namespace silkworm::rpc::stages {
 
-const silkworm::Bytes kHeaders = silkworm::bytes_of_string(silkworm::db::stages::kHeadersKey);
-const silkworm::Bytes kExecution = silkworm::bytes_of_string(silkworm::db::stages::kExecutionKey);
-const silkworm::Bytes kFinish = silkworm::bytes_of_string(silkworm::db::stages::kFinishKey);
+const Bytes kHeaders = silkworm::bytes_of_string(db::stages::kHeadersKey);
+const Bytes kExecution = silkworm::bytes_of_string(db::stages::kExecutionKey);
+const Bytes kFinish = silkworm::bytes_of_string(db::stages::kFinishKey);
 
-Task<BlockNum> get_sync_stage_progress(ethdb::Transaction& tx, const silkworm::Bytes& stage_key);
+Task<BlockNum> get_sync_stage_progress(db::kv::api::Transaction& tx, const Bytes& stage_key);
 
 }  // namespace silkworm::rpc::stages

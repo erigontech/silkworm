@@ -31,7 +31,9 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -46,9 +48,10 @@
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
-#include <silkworm/rpc/state/state_reader.hpp>
 
 namespace silkworm::rpc::commands {
+
+using db::state::StateReader;
 
 // https://eth.wiki/json-rpc/API#eth_blocknumber
 Task<void> EthereumRpcApi::handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {

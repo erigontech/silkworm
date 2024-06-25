@@ -28,19 +28,6 @@
 
 namespace silkworm {
 
-TEST_CASE("print Bytes", "[rpc][common][util]") {
-    silkworm::Bytes b{};
-    CHECK_NOTHROW(test_util::null_stream() << b);
-}
-
-TEST_CASE("byte view from string", "[rpc][common][util]") {
-    CHECK(silkworm::byte_view_of_string("").empty());
-}
-
-TEST_CASE("bytes from string", "[rpc][common][util]") {
-    CHECK(silkworm::bytes_of_string("").empty());
-}
-
 TEST_CASE("calculate hash of byte array", "[rpc][common][util]") {
     const auto eth_hash{hash_of(silkworm::ByteView{})};
     CHECK(silkworm::to_bytes32(silkworm::ByteView{eth_hash.bytes, silkworm::kHashLength}) == silkworm::kEmptyHash);
@@ -49,13 +36,6 @@ TEST_CASE("calculate hash of byte array", "[rpc][common][util]") {
 TEST_CASE("calculate hash of transaction", "[rpc][common][util]") {
     const auto eth_hash{hash_of_transaction(silkworm::Transaction{})};
     CHECK(silkworm::to_bytes32(silkworm::ByteView{eth_hash.bytes, silkworm::kHashLength}) == 0x3763e4f6e4198413383534c763f3f5dac5c5e939f0a81724e3beb96d6e2ad0d5_bytes32);
-}
-
-TEST_CASE("print ByteView", "[rpc][common][util]") {
-    silkworm::Bytes b1;
-    CHECK_NOTHROW(test_util::null_stream() << b1);
-    silkworm::Bytes b2{*silkworm::from_hex("0x0608")};
-    CHECK_NOTHROW(test_util::null_stream() << b2);
 }
 
 TEST_CASE("print empty address", "[rpc][common][util]") {

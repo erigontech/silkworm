@@ -18,12 +18,12 @@
 
 #include <utility>
 
+#include <silkworm/db/kv/api/local_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/ethdb/file/local_transaction.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 
-LocalDatabase::LocalDatabase(kv::StateCache* state_cache, mdbx::env chaindata_env)
+LocalDatabase::LocalDatabase(StateCache* state_cache, mdbx::env chaindata_env)
     : state_cache_{state_cache}, chaindata_env_{std::move(chaindata_env)} {
     SILK_TRACE << "LocalDatabase::ctor " << this;
 }
@@ -32,9 +32,9 @@ LocalDatabase::~LocalDatabase() {
     SILK_TRACE << "LocalDatabase::dtor " << this;
 }
 
-Task<std::unique_ptr<Transaction>> LocalDatabase::begin() {
+Task<std::unique_ptr<db::kv::api::Transaction>> LocalDatabase::begin() {
     SILK_TRACE << "LocalDatabase::begin " << this << " start";
-    auto txn = std::make_unique<LocalTransaction>(chaindata_env_, state_cache_);
+    auto txn = std::make_unique<db::kv::api::LocalTransaction>(chaindata_env_, state_cache_);
     co_await txn->open();
     SILK_TRACE << "LocalDatabase::begin " << this << " txn: " << txn.get() << " end";
     co_return txn;

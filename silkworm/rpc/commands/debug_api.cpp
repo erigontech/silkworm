@@ -29,6 +29,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/chain/chain.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -40,7 +41,6 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_debug.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
 #include <silkworm/rpc/ethdb/walk.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -49,6 +49,8 @@
 #include <silkworm/rpc/types/dump_account.hpp>
 
 namespace silkworm::rpc::commands {
+
+using rpc::ethdb::walk;
 
 static constexpr int16_t kAccountRangeMaxResults{256};
 
@@ -153,7 +155,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
         co_return;
     }
 
-    auto start_hash = params[0].get<evmc::bytes32>();
+    const auto start_hash = params[0].get<evmc::bytes32>();
     auto end_hash = start_hash;
     if (params.size() == 2) {
         end_hash = params[1].get<evmc::bytes32>();
@@ -163,9 +165,18 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
     auto tx = co_await database_->begin();
 
     try {
-        const auto start_block_number = co_await core::rawdb::read_header_number(*tx, start_hash);
-        const auto end_block_number = co_await core::rawdb::read_header_number(*tx, end_hash);
-        auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number);
+        const auto chain_storage = tx->create_storage();
+
+        const auto start_block_number = co_await chain_storage->read_block_number(start_hash);
+        if (!start_block_number) {
+            throw std::invalid_argument("start block " + silkworm::to_hex(start_hash) + " not found");
+        }
+        const auto end_block_number = co_await chain_storage->read_block_number(end_hash);
+        if (!end_block_number) {
+            throw std::invalid_argument("end block " + silkworm::to_hex(end_hash) + " not found");
+        }
+        const auto addresses = co_await get_modified_accounts(*tx, *start_block_number, *end_block_number);
+
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -621,7 +632,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     co_return;
 }
 
-Task<std::set<evmc::address>> get_modified_accounts(ethdb::Transaction& tx, BlockNum start_block_number, BlockNum end_block_number) {
+Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_number, BlockNum end_block_number) {
     const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx);
 
     SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;

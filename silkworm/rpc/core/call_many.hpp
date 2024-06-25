@@ -29,10 +29,10 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/ethdb/kv/state_cache.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
@@ -47,7 +47,7 @@ struct CallManyResult {
 class CallExecutor {
   public:
     explicit CallExecutor(
-        ethdb::Transaction& transaction,
+        db::kv::api::Transaction& transaction,
         BlockCache& block_cache,
         WorkerPool& workers)
         : transaction_(transaction), block_cache_(block_cache), workers_{workers} {}
@@ -72,7 +72,7 @@ class CallExecutor {
                                         boost::asio::any_io_executor& executor);
 
   private:
-    ethdb::Transaction& transaction_;
+    db::kv::api::Transaction& transaction_;
     BlockCache& block_cache_;
     WorkerPool& workers_;
 };

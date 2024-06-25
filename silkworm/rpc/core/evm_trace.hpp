@@ -35,9 +35,9 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
@@ -468,7 +468,7 @@ class TraceCallExecutor {
     explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
                                const ChainStorage& chain_storage,
                                WorkerPool& workers,
-                               ethdb::Transaction& tx)
+                               db::kv::api::Transaction& tx)
         : block_cache_(block_cache), chain_storage_{chain_storage}, workers_{workers}, tx_{tx} {}
     virtual ~TraceCallExecutor() = default;
 
@@ -503,7 +503,7 @@ class TraceCallExecutor {
     silkworm::BlockCache& block_cache_;
     const ChainStorage& chain_storage_;
     WorkerPool& workers_;
-    ethdb::Transaction& tx_;
+    db::kv::api::Transaction& tx_;
 };
 
 }  // namespace silkworm::rpc::trace

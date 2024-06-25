@@ -17,11 +17,10 @@
 #include "account_walker.hpp"
 
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
 
 namespace silkworm::rpc {
 
@@ -79,7 +78,7 @@ Task<void> AccountWalker::walk_of_accounts(BlockNum block_number, const evmc::ad
     }
 }
 
-Task<KeyValue> AccountWalker::next(ethdb::Cursor& cursor, uint64_t len) {
+Task<KeyValue> AccountWalker::next(db::kv::api::Cursor& cursor, uint64_t len) {
     auto kv = co_await cursor.next();
     while (!kv.key.empty() && kv.key.size() > len) {
         kv = co_await cursor.next();
@@ -87,7 +86,7 @@ Task<KeyValue> AccountWalker::next(ethdb::Cursor& cursor, uint64_t len) {
     co_return kv;
 }
 
-Task<KeyValue> AccountWalker::seek(ethdb::Cursor& cursor, silkworm::ByteView key, uint64_t len) {
+Task<KeyValue> AccountWalker::seek(db::kv::api::Cursor& cursor, silkworm::ByteView key, uint64_t len) {
     auto kv = co_await cursor.seek(key);
     if (kv.key.size() > len) {
         co_return co_await next(cursor, len);

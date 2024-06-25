@@ -18,9 +18,10 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/chain/chain.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
 
 namespace silkworm::rpc::core {
@@ -29,22 +30,24 @@ constexpr const char* kHeadBlockHash = "headBlockHash";
 constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
 constexpr const char* kSafeBlockHash = "safeBlockHash";
 
-static Task<BlockNum> get_forkchoice_block_number(ethdb::Transaction& tx, const char* block_hash_tag) {
+using namespace db::chain;
+
+static Task<BlockNum> get_forkchoice_block_number(db::kv::api::Transaction& tx, const char* block_hash_tag) {
     const auto kv_pair = co_await tx.get(db::table::kLastForkchoiceName, bytes_of_string(block_hash_tag));
     const auto block_hash_data = kv_pair.value;
     if (block_hash_data.empty()) {
         co_return 0;
     }
     const auto block_hash = to_bytes32(block_hash_data);
-    co_return co_await rawdb::read_header_number(tx, block_hash);
+    co_return co_await read_header_number(tx, block_hash);
 }
 
-Task<bool> is_latest_block_number(BlockNum block_number, ethdb::Transaction& tx) {
+Task<bool> is_latest_block_number(BlockNum block_number, db::kv::api::Transaction& tx) {
     const auto last_executed_block_number = co_await get_latest_executed_block_number(tx);
     co_return last_executed_block_number == block_number;
 }
 
-Task<BlockNum> get_block_number_by_tag(const std::string& block_id, ethdb::Transaction& tx) {
+Task<BlockNum> get_block_number_by_tag(const std::string& block_id, db::kv::api::Transaction& tx) {
     BlockNum block_number{0};
     if (block_id == kEarliestBlockId) {
         block_number = kEarliestBlockNumber;
@@ -61,7 +64,7 @@ Task<BlockNum> get_block_number_by_tag(const std::string& block_id, ethdb::Trans
     co_return block_number;
 }
 
-Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, ethdb::Transaction& tx, bool latest_required) {
+Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, db::kv::api::Transaction& tx, bool latest_required) {
     BlockNum block_number{0};
     bool is_latest_block = false;
     bool check_if_latest = false;
@@ -93,18 +96,18 @@ Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, et
     co_return std::make_pair(block_number, is_latest_block);
 }
 
-Task<BlockNum> get_block_number(const std::string& block_id, ethdb::Transaction& tx) {
+Task<BlockNum> get_block_number(const std::string& block_id, db::kv::api::Transaction& tx) {
     const auto [block_number, _] = co_await get_block_number(block_id, tx, /*latest_required=*/false);
     co_return block_number;
 }
 
-Task<std::pair<BlockNum, bool>> get_block_number(const BlockNumberOrHash& bnoh, ethdb::Transaction& tx) {
+Task<std::pair<BlockNum, bool>> get_block_number(const BlockNumberOrHash& bnoh, db::kv::api::Transaction& tx) {
     if (bnoh.is_tag()) {
         co_return co_await get_block_number(bnoh.tag(), tx, true);
     } else if (bnoh.is_number()) {
         co_return co_await get_block_number(to_hex(bnoh.number(), true), tx, true);
     } else if (bnoh.is_hash()) {
-        const auto block_number = co_await rawdb::read_header_number(tx, bnoh.hash());
+        const auto block_number = co_await read_header_number(tx, bnoh.hash());
         const auto latest_block_number = co_await get_latest_block_number(tx);
         co_return std::make_pair(block_number, block_number == latest_block_number);
     } else {
@@ -112,37 +115,37 @@ Task<std::pair<BlockNum, bool>> get_block_number(const BlockNumberOrHash& bnoh, 
     }
 }
 
-Task<BlockNum> get_current_block_number(ethdb::Transaction& tx) {
+Task<BlockNum> get_current_block_number(db::kv::api::Transaction& tx) {
     co_return co_await stages::get_sync_stage_progress(tx, stages::kFinish);
 }
 
-Task<BlockNum> get_highest_block_number(ethdb::Transaction& tx) {
+Task<BlockNum> get_highest_block_number(db::kv::api::Transaction& tx) {
     co_return co_await stages::get_sync_stage_progress(tx, stages::kHeaders);
 }
 
-Task<BlockNum> get_latest_executed_block_number(ethdb::Transaction& tx) {
+Task<BlockNum> get_latest_executed_block_number(db::kv::api::Transaction& tx) {
     co_return co_await stages::get_sync_stage_progress(tx, stages::kExecution);
 }
 
-Task<BlockNum> get_latest_block_number(ethdb::Transaction& tx) {
+Task<BlockNum> get_latest_block_number(db::kv::api::Transaction& tx) {
     const auto kv_pair = co_await tx.get(db::table::kLastForkchoiceName, bytes_of_string(kHeadBlockHash));
     const auto head_block_hash_data = kv_pair.value;
     if (!head_block_hash_data.empty()) {
         const auto head_block_hash = to_bytes32(head_block_hash_data);
-        co_return co_await rawdb::read_header_number(tx, head_block_hash);
+        co_return co_await read_header_number(tx, head_block_hash);
     }
     co_return co_await get_latest_executed_block_number(tx);
 }
 
-Task<BlockNum> get_forkchoice_finalized_block_number(ethdb::Transaction& tx) {
+Task<BlockNum> get_forkchoice_finalized_block_number(db::kv::api::Transaction& tx) {
     co_return co_await get_forkchoice_block_number(tx, kFinalizedBlockHash);
 }
 
-Task<BlockNum> get_forkchoice_safe_block_number(ethdb::Transaction& tx) {
+Task<BlockNum> get_forkchoice_safe_block_number(db::kv::api::Transaction& tx) {
     co_return co_await get_forkchoice_block_number(tx, kSafeBlockHash);
 }
 
-Task<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, ethdb::Transaction& tx) {
+Task<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, db::kv::api::Transaction& tx) {
     if (bnoh.is_tag()) {
         co_return bnoh.tag() == core::kLatestBlockId || bnoh.tag() == core::kPendingBlockId;
     } else {
@@ -151,7 +154,7 @@ Task<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, ethdb::Transact
             co_return bnoh.number() == latest_block_number;
         } else {
             SILKWORM_ASSERT(bnoh.is_hash());
-            const auto block_number = co_await rawdb::read_header_number(tx, bnoh.hash());
+            const auto block_number = co_await read_header_number(tx, bnoh.hash());
             co_return block_number == latest_block_number;
         }
     }

@@ -25,20 +25,24 @@
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/db/state/remote_state.hpp>
+#include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
-#include <silkworm/rpc/storage/remote_chain_storage.hpp>
-#include <silkworm/rpc/test_util/dummy_transaction.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
-#include <silkworm/rpc/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
 
+using db::chain::RemoteChainStorage;
+using db::kv::api::KeyValue;
 using testing::_;
 using testing::InvokeWithoutArgs;
 
@@ -47,7 +51,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
         pool.start();
     }
 
-    test::MockTransaction transaction;
+    db::test_util::MockTransaction transaction;
     WorkerPool workers{1};
     ClientContextPool pool{1};
     boost::asio::any_io_executor io_executor{pool.next_io_context().get_executor()};
@@ -58,7 +62,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     const uint64_t chain_id{5};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};
-    std::shared_ptr<State> state{std::make_shared<rpc::state::RemoteState>(io_executor, transaction, storage, block_number)};
+    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number)};
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 };
 

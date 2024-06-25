@@ -20,12 +20,9 @@
 #include <string>
 #include <vector>
 
-#include <intx/intx.hpp>
-
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/chain/chain.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/binary_search.hpp>
@@ -34,7 +31,6 @@
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -130,7 +126,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         // Lookup the first and last block headers
         const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNumber);
         ensure(first_header.has_value(), "cannot find earliest header");
-        const auto head_header_hash = co_await core::rawdb::read_head_header_hash(*tx);
+        const auto head_header_hash = co_await db::chain::read_head_header_hash(*tx);
         const auto head_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
         ensure(head_header_block_number.has_value(), "cannot find head header hash");
         const auto current_header = co_await chain_storage->read_header(*head_header_block_number, head_header_hash);

@@ -23,13 +23,15 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/log.hpp>
 
@@ -45,12 +47,15 @@ struct ChunkProviderResponse {
     bool error;
 };
 
+using db::kv::api::KeyValue;
+using db::kv::api::StateCache;
+
 class ChunkProvider {
   private:
-    ethdb::Cursor* cursor_ = nullptr;
+    db::kv::api::Cursor* cursor_ = nullptr;
     evmc::address address_;
     bool navigate_forward_ = false;
-    silkworm::KeyValue first_seek_key_value_;
+    KeyValue first_seek_key_value_;
 
     bool first_ = true;
     bool eof_ = false;
@@ -58,7 +63,7 @@ class ChunkProvider {
 
   public:
     ChunkProvider() = default;
-    ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, bool navigate_forward, silkworm::KeyValue first_seek_key_value);
+    ChunkProvider(db::kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward, KeyValue first_seek_key_value);
 
     Task<ChunkProviderResponse> get();
 };
@@ -71,12 +76,12 @@ struct ChunkLocatorResponse {
 
 class ChunkLocator {
   private:
-    silkworm::rpc::ethdb::Cursor* cursor_;
+    db::kv::api::Cursor* cursor_;
     evmc::address address_;
     bool navigate_forward_;
 
   public:
-    ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, bool navigate_forward);
+    ChunkLocator(db::kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward);
 
     Task<ChunkLocatorResponse> get(BlockNum min_block);
 };
@@ -95,7 +100,7 @@ class BlockProvider {
 
 class ForwardBlockProvider : public BlockProvider {
   private:
-    silkworm::rpc::ethdb::Cursor* cursor_;
+    db::kv::api::Cursor* cursor_;
     evmc::address address_;
     BlockNum min_block_;
     ChunkLocator chunk_locator_;
@@ -117,7 +122,7 @@ class ForwardBlockProvider : public BlockProvider {
     void advance_if_needed(BlockNum min_block);
 
   public:
-    ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, BlockNum min_block) : chunk_locator_(cursor, address, true), chunk_provider_() {
+    ForwardBlockProvider(db::kv::api::Cursor* cursor, const evmc::address& address, BlockNum min_block) : chunk_locator_(cursor, address, true), chunk_provider_() {
         cursor_ = cursor;
         address_ = address;
         min_block_ = min_block;
@@ -128,7 +133,7 @@ class ForwardBlockProvider : public BlockProvider {
 
 class BackwardBlockProvider : public BlockProvider {
   private:
-    silkworm::rpc::ethdb::Cursor* cursor_;
+    db::kv::api::Cursor* cursor_;
     evmc::address address_;
     BlockNum max_block_;
     ChunkLocator chunk_locator_;
@@ -148,7 +153,7 @@ class BackwardBlockProvider : public BlockProvider {
     void reverse_iterator(roaring::Roaring64Map& bitmap);
 
   public:
-    BackwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, const evmc::address& address, BlockNum max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
+    BackwardBlockProvider(db::kv::api::Cursor* cursor, const evmc::address& address, BlockNum max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
         cursor_ = cursor;
         address_ = address;
         max_block_ = max_block;
@@ -187,7 +192,7 @@ class OtsRpcApi {
         : io_context_(io_context),
           workers_{workers},
           database_(must_use_private_service<ethdb::Database>(io_context_)),
-          state_cache_(must_use_shared_service<ethdb::kv::StateCache>(io_context_)),
+          state_cache_(must_use_shared_service<StateCache>(io_context_)),
           block_cache_(must_use_shared_service<BlockCache>(io_context_)),
           backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
 
@@ -214,7 +219,7 @@ class OtsRpcApi {
     boost::asio::io_context& io_context_;
     WorkerPool& workers_;
     ethdb::Database* database_;
-    ethdb::kv::StateCache* state_cache_;
+    StateCache* state_cache_;
     BlockCache* block_cache_;
     ethbackend::BackEnd* backend_;
 
@@ -223,13 +228,13 @@ class OtsRpcApi {
   private:
     Task<bool> trace_blocks(
         FromToBlockProvider& from_to_provider,
-        ethdb::Transaction& tx,
+        db::kv::api::Transaction& tx,
         const evmc::address& address,
         uint64_t page_size,
         uint64_t result_count,
         std::vector<TransactionsWithReceipts>& results);
 
-    Task<void> trace_block(ethdb::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results);
+    Task<void> trace_block(db::kv::api::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results);
     static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
     static intx::uint256 get_block_fees(const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts);
 };

@@ -30,7 +30,7 @@
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-#include "test_util/mock_cursor.hpp"
+#include "test_util/mock_ro_cursor.hpp"
 #include "test_util/mock_txn.hpp"
 
 namespace silkworm {

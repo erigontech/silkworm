@@ -23,19 +23,21 @@
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/rpc/common/util.hpp>
+#include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
-#include <silkworm/rpc/state/remote_state.hpp>
-#include <silkworm/rpc/storage/remote_chain_storage.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_block_cache.hpp>
-#include <silkworm/rpc/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc::debug {
 
+using db::kv::api::KeyValue;
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -56,7 +58,7 @@ static Bytes kConfigValue{*silkworm::from_hex(
 
 struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     test::MockBlockCache cache;
-    test::MockTransaction transaction;
+    db::test_util::MockTransaction transaction;
     WorkerPool workers{1};
     StringWriter writer{4096};
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
@@ -70,7 +72,7 @@ class TestDebugExecutor : DebugExecutor {
     explicit TestDebugExecutor(
         BlockCache& block_cache,
         WorkerPool& workers,
-        ethdb::Transaction& tx,
+        db::kv::api::Transaction& tx,
         DebugConfig config = {})
         : DebugExecutor(block_cache, workers, tx, config) {}
     ~TestDebugExecutor() override = default;
@@ -99,7 +101,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
         }));
 
     SECTION("precompiled contract failure") {
@@ -259,7 +261,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
         }));
 
     SECTION("Call: failed with intrinsic gas too low") {
@@ -1001,7 +1003,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
         }));
 
     SECTION("Call: TO present") {
@@ -1146,7 +1148,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<rpc::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
         }));
 
     EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))

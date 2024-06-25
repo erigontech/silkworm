@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/remote/kv/grpc/server/kv_server.hpp>
+#include <silkworm/db/kv/grpc/server/kv_server.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/remote/ethbackend/grpc/server/backend_server.hpp>
 

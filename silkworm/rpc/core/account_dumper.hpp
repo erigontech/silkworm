@@ -27,18 +27,21 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/dump_account.hpp>
 
 namespace silkworm::rpc::core {
 
+using db::kv::api::KeyValue;
+
 class AccountDumper {
   public:
-    explicit AccountDumper(ethdb::Transaction& transaction) : transaction_(transaction) {}
+    explicit AccountDumper(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
 
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
@@ -52,10 +55,10 @@ class AccountDumper {
         bool exclude_storage);
 
   private:
-    Task<void> load_accounts(const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
+    Task<void> load_accounts(const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
     Task<void> load_storage(BlockNum block_number, DumpAccounts& dump_accounts);
 
-    ethdb::Transaction& transaction_;
+    db::kv::api::Transaction& transaction_;
 };
 
 }  // namespace silkworm::rpc::core

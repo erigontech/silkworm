@@ -22,10 +22,10 @@
 
 #include <evmc/instructions.h>
 
+#include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
-#include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>

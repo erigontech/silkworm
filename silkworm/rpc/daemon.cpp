@@ -241,7 +241,7 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
-    state_changes_stream_ = std::make_unique<ethdb::kv::StateChangesStream>(context, kv_stub_.get());
+    state_changes_stream_ = std::make_unique<db::kv::grpc::client::StateChangesStream>(context, kv_stub_.get());
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
@@ -259,7 +259,7 @@ void Daemon::add_private_services() {
         auto& io_context{*context.io_context()};
         auto& grpc_context{*context.grpc_context()};
 
-        auto* state_cache{must_use_shared_service<ethdb::kv::StateCache>(io_context)};
+        auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
 
         auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
         auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
@@ -282,7 +282,7 @@ void Daemon::add_shared_services() {
     // Create the unique block cache to be shared among the execution contexts
     auto block_cache = std::make_shared<BlockCache>();
     // Create the unique state cache to be shared among the execution contexts
-    auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
+    auto state_cache = std::make_shared<db::kv::api::CoherentStateCache>();
     // Create the unique filter storage to be shared among the execution contexts
     auto filter_storage = std::make_shared<FilterStorage>(context_pool_.num_contexts() * kDefaultFilterStorageSize);
     // Create the unique Execution remote client to be shared among the execution contexts
@@ -293,7 +293,7 @@ void Daemon::add_shared_services() {
         auto& io_context = context_pool_.next_io_context();
 
         add_shared_service(io_context, block_cache);
-        add_shared_service<ethdb::kv::StateCache>(io_context, std::move(state_cache));
+        add_shared_service<db::kv::api::StateCache>(io_context, std::move(state_cache));
         add_shared_service(io_context, filter_storage);
         add_shared_service<engine::ExecutionEngine>(io_context, remote_execution_engine);
     }

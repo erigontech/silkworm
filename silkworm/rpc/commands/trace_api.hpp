@@ -22,11 +22,12 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
+#include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -41,7 +42,7 @@ class TraceRpcApi {
     TraceRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
         : io_context_(io_context),
           block_cache_{must_use_shared_service<BlockCache>(io_context_)},
-          state_cache_{must_use_shared_service<ethdb::kv::StateCache>(io_context_)},
+          state_cache_{must_use_shared_service<db::kv::api::StateCache>(io_context_)},
           database_{must_use_private_service<ethdb::Database>(io_context_)},
           workers_{workers},
           backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
@@ -67,7 +68,7 @@ class TraceRpcApi {
   private:
     boost::asio::io_context& io_context_;
     BlockCache* block_cache_;
-    ethdb::kv::StateCache* state_cache_;
+    db::kv::api::StateCache* state_cache_;
     ethdb::Database* database_;
     WorkerPool& workers_;
     ethbackend::BackEnd* backend_;

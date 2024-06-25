@@ -18,6 +18,7 @@
 
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc {

@@ -34,9 +34,9 @@
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/db/chain/chain_storage.hpp>
+#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/state/state_reader.hpp>
-#include <silkworm/rpc/storage/chain_storage.hpp>
 
 namespace silkworm::rpc {
 
@@ -83,6 +83,7 @@ class AnalysisCacheService : public ServiceBase<AnalysisCacheService> {
     AnalysisCache analysis_cache_{kCacheSize, true};
 };
 
+using db::chain::ChainStorage;
 using Tracers = std::vector<std::shared_ptr<EvmTracer>>;
 
 class EVMExecutor {

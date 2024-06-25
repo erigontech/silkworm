@@ -22,11 +22,15 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
-#include "cursor.hpp"
-
 namespace silkworm::rpc::ethdb {
+
+using db::kv::api::Cursor;
+using db::kv::api::CursorDupSort;
+using db::kv::api::KeyValue;
 
 struct SplittedKeyValue {
     Bytes key1;
@@ -70,16 +74,16 @@ class SplitCursorDupSort {
 
   private:
     CursorDupSort& inner_cursor_;
-    silkworm::Bytes key_;
-    silkworm::Bytes subkey_;
-    silkworm::Bytes first_bytes_;
+    Bytes key_;
+    Bytes subkey_;
+    Bytes first_bytes_;
     uint8_t last_bits_;
     uint64_t part1_end_;
     uint64_t match_bytes_;
     uint8_t mask_;
     uint64_t value_offset_;
 
-    bool match_key(const silkworm::ByteView& key);
+    bool match_key(const ByteView& key);
     SplittedKeyValue split_key_value(const KeyValue& kv);
 };
 

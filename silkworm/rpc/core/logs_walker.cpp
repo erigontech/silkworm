@@ -22,16 +22,18 @@
 
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/chain/chain.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
 #include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 #include <silkworm/rpc/ethdb/walk.hpp>
 
 namespace silkworm::rpc {
+
+using namespace db::chain;
 
 Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_numbers(const Filter& filter) {
     uint64_t start{}, end{};
@@ -41,7 +43,7 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_numbers(const Filter& 
             start = end = std::numeric_limits<uint64_t>::max();
         } else {
             auto block_hash = silkworm::to_bytes32(block_hash_bytes.value());
-            auto block_number = co_await core::rawdb::read_header_number(tx_, block_hash);
+            auto block_number = co_await read_header_number(tx_, block_hash);
             start = end = block_number;
         }
     } else {
@@ -122,7 +124,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
         filtered_block_logs.clear();
         const auto block_key = silkworm::db::block_key(block_to_match);
         SILK_DEBUG << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
-        co_await for_prefix(tx_, db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+        co_await ethdb::for_prefix(tx_, db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
             chunk_logs.clear();
             const bool decoding_ok{cbor_decode(v, chunk_logs)};
             if (!decoding_ok) {

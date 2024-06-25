@@ -21,15 +21,15 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core {
 
-Task<Receipts> get_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
+Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
 
-Task<std::optional<Receipts>> read_receipts(ethdb::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
+Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
 
-Task<std::optional<Receipts>> read_raw_receipts(ethdb::Transaction& tx, BlockNum block_number);
+Task<std::optional<Receipts>> read_raw_receipts(db::kv::api::Transaction& tx, BlockNum block_number);
 
 }  // namespace silkworm::rpc::core

@@ -27,10 +27,10 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
@@ -80,7 +80,7 @@ class EstimateGasOracle {
                                const AccountReader& account_reader,
                                const silkworm::ChainConfig& config,
                                WorkerPool& workers,
-                               ethdb::Transaction& tx,
+                               db::kv::api::Transaction& tx,
                                const ChainStorage& chain_storage)
         : block_header_provider_(block_header_provider),
           account_reader_{account_reader},
@@ -105,7 +105,7 @@ class EstimateGasOracle {
     const AccountReader& account_reader_;
     const silkworm::ChainConfig& config_;
     WorkerPool& workers_;
-    ethdb::Transaction& transaction_;
+    db::kv::api::Transaction& transaction_;
     const ChainStorage& storage_;
 };
 

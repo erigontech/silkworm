@@ -22,9 +22,13 @@ add_subdirectory(snapshots)
 add_subdirectory(test_util)
 
 find_package(absl REQUIRED)
+find_package(asio-grpc REQUIRED)
+find_package(Boost REQUIRED headers)
+find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(Protobuf REQUIRED)
 
 set(LIBS_PUBLIC
     absl::btree
@@ -41,6 +45,10 @@ set(LIBS_PRIVATE
     magic_enum::magic_enum
     Microsoft.GSL::GSL
     nlohmann_json::nlohmann_json
+    asio-grpc::asio-grpc
+    Boost::headers
+    gRPC::grpc++
+    protobuf::libprotobuf
     silkworm_db_etl
     silkworm_infra
     silkworm_snapshots
@@ -53,4 +61,4 @@ silkworm_library(
   PRIVATE ${LIBS_PRIVATE}
 )
 
-target_link_libraries(silkworm_db_test PRIVATE silkworm_db_test_util)
+target_link_libraries(silkworm_db_test PRIVATE silkworm_db_test_util silkworm_infra_test_util)

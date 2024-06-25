@@ -23,6 +23,8 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -31,11 +33,11 @@
 #include <silkworm/rpc/core/account_walker.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/json/types.hpp>
-#include <silkworm/rpc/state/state_reader.hpp>
 
 namespace silkworm::rpc::core {
+
+using db::state::StateReader;
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
@@ -55,7 +57,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     dump_accounts.root = block_with_hash->block.header.state_root;
 
-    std::vector<silkworm::KeyValue> collected_data;
+    std::vector<KeyValue> collected_data;
 
     AccountWalker::Collector collector = [&](silkworm::ByteView k, silkworm::ByteView v) {
         if (max_result > 0 && collected_data.size() >= static_cast<std::size_t>(max_result)) {
@@ -67,7 +69,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
             return true;
         }
 
-        silkworm::KeyValue kv;
+        KeyValue kv;
         kv.key = k;
         kv.value = v;
         collected_data.push_back(kv);
@@ -85,7 +87,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     co_return dump_accounts;
 }
 
-Task<void> AccountDumper::load_accounts(const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
+Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
     StateReader state_reader{transaction_};
     for (const auto& kv : collected_data) {
         const auto address = bytes_to_address(kv.key);

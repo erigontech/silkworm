@@ -18,10 +18,10 @@
 
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/grpc/client/unary_rpc.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-#include <silkworm/rpc/common/clock_time.hpp>
-#include <silkworm/rpc/grpc/unary_rpc.hpp>
 
 namespace silkworm::rpc::txpool {
 

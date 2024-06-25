@@ -31,15 +31,16 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/infra/grpc/client/util.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
-#include <silkworm/rpc/grpc/util.hpp>
 
 using namespace silkworm;
 using namespace silkworm::rpc;

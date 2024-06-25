@@ -24,6 +24,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/estimate_gas_oracle.hpp>
 
@@ -32,7 +33,7 @@ namespace silkworm::rpc {
 class MockEstimateGasOracle : public EstimateGasOracle {
   public:
     explicit MockEstimateGasOracle(const BlockHeaderProvider& block_header_provider, const AccountReader& account_reader,
-                                   const silkworm::ChainConfig& config, WorkerPool& workers, ethdb::Transaction& tx, const ChainStorage& storage)
+                                   const silkworm::ChainConfig& config, WorkerPool& workers, db::kv::api::Transaction& tx, const ChainStorage& storage)
         : EstimateGasOracle(block_header_provider, account_reader, config, workers, tx, storage) {}
 
     MOCK_METHOD((ExecutionResult), try_execution, (EVMExecutor&, const silkworm::Block&, const silkworm::Transaction&), (override));

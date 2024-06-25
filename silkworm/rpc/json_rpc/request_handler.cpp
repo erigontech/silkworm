@@ -21,9 +21,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/commands/eth_api.hpp>
-#include <silkworm/rpc/common/clock_time.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 

@@ -21,8 +21,8 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/types/filter.hpp>
 #include <silkworm/rpc/types/log.hpp>
 
@@ -32,7 +32,7 @@ using boost::asio::awaitable;
 
 class LogsWalker {
   public:
-    explicit LogsWalker(BlockCache& block_cache, ethdb::Transaction& tx)
+    explicit LogsWalker(BlockCache& block_cache, db::kv::api::Transaction& tx)
         : block_cache_(block_cache), tx_(tx) {}
 
     LogsWalker(const LogsWalker&) = delete;
@@ -53,7 +53,7 @@ class LogsWalker {
     void filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs, size_t max_logs);
 
     BlockCache& block_cache_;
-    ethdb::Transaction& tx_;
+    db::kv::api::Transaction& tx_;
 };
 
 }  // namespace silkworm::rpc

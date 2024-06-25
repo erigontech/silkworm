@@ -21,8 +21,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/ethdb/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/transaction.hpp>
 #include <silkworm/rpc/test/dummy_transaction.hpp>

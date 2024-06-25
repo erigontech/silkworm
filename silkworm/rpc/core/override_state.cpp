@@ -17,19 +17,16 @@
 #include "override_state.hpp"
 
 #include <bit>
-#include <future>
 #include <unordered_map>
-#include <utility>
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/use_future.hpp>
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/rawdb/chain.hpp>
+#include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc::state {
 

@@ -24,8 +24,8 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/test_util/mock_cursor.hpp>
 
 namespace silkworm::rpc::ethdb {
 
@@ -45,7 +45,7 @@ static const silkworm::Bytes location{(0x000000000000000000000000000000000000000
 
 TEST_CASE("split cursor dup sort") {
     WorkerPool pool{1};
-    test::MockCursorDupSort csdp;
+    db::test_util::MockCursorDupSort csdp;
 
     SECTION("0 maching bits: seek_both, key not exists") {
         SplitCursorDupSort sc(csdp, key, location, 0, silkworm::kAddressLength, 0);
@@ -185,7 +185,7 @@ TEST_CASE("split cursor dup sort") {
 
 TEST_CASE("split cursor") {
     WorkerPool pool{1};
-    test::MockCursor csdp;
+    db::test_util::MockCursor csdp;
 
     SECTION("0 maching bits: seek, key not exists") {
         SplitCursor sc(csdp, key, 0, silkworm::kAddressLength, 0, silkworm::kAddressLength);

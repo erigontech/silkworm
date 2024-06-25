@@ -24,13 +24,14 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/empty_hashes.hpp>
-#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
+#include <silkworm/rpc/engine/conversion.hpp>
+#include <silkworm/rpc/engine/validation.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::chainsync {
@@ -115,60 +116,6 @@ Task<void> PoSSync::download_blocks() {
     }
 }
 
-// Convert an ExecutionPayload to a Block as per Engine API spec
-std::shared_ptr<Block> PoSSync::make_execution_block(const rpc::ExecutionPayload& payload) {
-    std::shared_ptr<Block> block = std::make_shared<Block>();
-    BlockHeader& header = block->header;
-
-    header.number = payload.number;
-    header.timestamp = payload.timestamp;
-    header.parent_hash = payload.parent_hash;
-    header.state_root = payload.state_root;
-    header.receipts_root = payload.receipts_root;
-    header.logs_bloom = payload.logs_bloom;
-    header.gas_used = payload.gas_used;
-    header.gas_limit = payload.gas_limit;
-    header.timestamp = payload.timestamp;
-    header.extra_data = payload.extra_data;
-    header.base_fee_per_gas = payload.base_fee;
-    header.beneficiary = payload.suggested_fee_recipient;
-
-    for (const auto& rlp_encoded_tx : payload.transactions) {
-        ByteView rlp_encoded_tx_view{rlp_encoded_tx};
-        Transaction tx;
-        auto decoding_result = rlp::decode_transaction(rlp_encoded_tx_view, tx, rlp::Eip2718Wrapping::kBoth);
-        if (!decoding_result) {
-            std::string reason{magic_enum::enum_name<DecodingError>(decoding_result.error())};
-            throw PayloadValidationError("tx rlp decoding error: " + reason);
-        }
-        block->transactions.push_back(tx);
-    }
-    header.transactions_root = protocol::compute_transaction_root(*block);
-
-    // as per EIP-4895
-    if (payload.withdrawals) {
-        block->withdrawals = std::vector<Withdrawal>{};
-        block->withdrawals->reserve(payload.withdrawals->size());
-        std::copy(payload.withdrawals->begin(), payload.withdrawals->end(), std::back_inserter(*block->withdrawals));
-        header.withdrawals_root = protocol::compute_withdrawals_root(*block);
-    }
-
-    // as per EIP-3675
-    header.ommers_hash = kEmptyListHash;  // = Keccak256(RLP([]))
-    header.difficulty = 0;
-    header.nonce = {0, 0, 0, 0, 0, 0, 0, 0};
-    block->ommers = {};  // RLP([]) = 0xc0
-
-    // as per EIP-4399
-    header.prev_randao = payload.prev_randao;
-
-    // as per EIP-4844
-    header.blob_gas_used = payload.blob_gas_used;
-    header.excess_blob_gas = payload.excess_blob_gas;
-
-    return block;
-}
-
 void PoSSync::do_sanity_checks(const BlockHeader&, /*const BlockHeader& parent,*/ TotalDifficulty parent_td) {
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
 
@@ -197,7 +144,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
     const auto& payload{request.execution_payload};
     try {
         // Make the execution full block from the block payload
-        auto block = make_execution_block(payload);  // as per the EngineAPI spec
+        auto block = rpc::engine::block_from_execution_payload(payload);  // as per the EngineAPI spec
 
         // Handle version-specific fields
         if (request.parent_beacon_block_root) {
@@ -205,7 +152,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         }
 
         // Validations
-        if (const auto res{validate_blob_hashes(*block, request.expected_blob_versioned_hashes)}; !res) {
+        if (const auto res{rpc::engine::validate_blob_hashes(*block, request.expected_blob_versioned_hashes)}; !res) {
             co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, res.error()};
         }
 
@@ -484,24 +431,6 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum 
         }
     }
     co_return payload_bodies;
-}
-
-tl::expected<void, std::string> PoSSync::validate_blob_hashes(const Block& block,
-                                                              const std::optional<std::vector<Hash>>& expected_blob_versioned_hashes) {
-    std::vector<Hash> blob_versioned_hashes;
-    for (const auto& tx : block.transactions) {
-        if (tx.type == TransactionType::kBlob) {
-            blob_versioned_hashes.insert(blob_versioned_hashes.end(),
-                                         tx.blob_versioned_hashes.cbegin(), tx.blob_versioned_hashes.cend());
-        }
-    }
-    if (expected_blob_versioned_hashes && blob_versioned_hashes != *expected_blob_versioned_hashes) {
-        return tl::make_unexpected("computed blob versioned hashes list does not match expected one");
-    }
-    if (!expected_blob_versioned_hashes && !blob_versioned_hashes.empty()) {
-        return tl::make_unexpected("computed blob versioned hashes list is not empty");
-    }
-    return {};
 }
 
 }  // namespace silkworm::chainsync

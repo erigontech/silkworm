@@ -32,11 +32,11 @@ namespace silkworm::db::kv::api {
 
 CoherentStateView::CoherentStateView(Transaction& txn, CoherentStateCache* cache) : txn_(txn), cache_(cache) {}
 
-Task<std::optional<Bytes>> CoherentStateView::get(const Bytes& key) {
+Task<std::optional<Bytes>> CoherentStateView::get(ByteView key) {
     co_return co_await cache_->get(key, txn_);
 }
 
-Task<std::optional<Bytes>> CoherentStateView::get_code(const Bytes& key) {
+Task<std::optional<Bytes>> CoherentStateView::get_code(ByteView key) {
     co_return co_await cache_->get_code(key, txn_);
 }
 
@@ -156,7 +156,7 @@ void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVi
     }
 }
 
-bool CoherentStateCache::add(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id) {
+bool CoherentStateCache::add(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->cache.insert(kv);
     SILK_DEBUG << "Data cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;
@@ -173,7 +173,7 @@ bool CoherentStateCache::add(const KeyValue& kv, CoherentStateRoot* root, StateV
         state_evictions_.remove(*replaced);
         SILK_DEBUG << "Data evictions removed replaced.key=" << to_hex(replaced->key);
     }
-    state_evictions_.push_front(kv);
+    state_evictions_.push_front(std::move(kv));
 
     // Remove the longest unused key-value pair when size exceeded
     if (state_evictions_.size() > config_.max_state_keys) {
@@ -186,7 +186,7 @@ bool CoherentStateCache::add(const KeyValue& kv, CoherentStateRoot* root, StateV
     return inserted;
 }
 
-bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, StateViewId view_id) {
+bool CoherentStateCache::add_code(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->code_cache.insert(kv);
     SILK_DEBUG << "Code cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;
@@ -203,7 +203,7 @@ bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, S
         code_evictions_.remove(*replaced);
         SILK_DEBUG << "Code evictions removed replaced.key=" << to_hex(replaced->key);
     }
-    code_evictions_.push_front(kv);
+    code_evictions_.push_front(std::move(kv));
 
     // Remove the longest unused key-value pair when size exceeded
     if (code_evictions_.size() > config_.max_code_keys) {
@@ -216,7 +216,7 @@ bool CoherentStateCache::add_code(const KeyValue& kv, CoherentStateRoot* root, S
     return inserted;
 }
 
-Task<std::optional<Bytes>> CoherentStateCache::get(const Bytes& key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get(ByteView key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto view_id = tx.view_id();
@@ -225,7 +225,7 @@ Task<std::optional<Bytes>> CoherentStateCache::get(const Bytes& key, Transaction
         co_return std::nullopt;
     }
 
-    KeyValue kv{key};
+    KeyValue kv{Bytes{key}};
     auto& cache = root_it->second->cache;
     const auto kv_it = cache.find(kv);
     if (kv_it != cache.end()) {
@@ -252,12 +252,13 @@ Task<std::optional<Bytes>> CoherentStateCache::get(const Bytes& key, Transaction
     read_lock.unlock();
     std::unique_lock write_lock{rw_mutex_};
 
-    add({key, value}, root_it->second.get(), view_id);
+    kv.value = value;
+    add(std::move(kv), root_it->second.get(), view_id);
 
     co_return value;
 }
 
-Task<std::optional<Bytes>> CoherentStateCache::get_code(const Bytes& key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get_code(ByteView key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto view_id = tx.view_id();
@@ -266,7 +267,7 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(const Bytes& key, Transa
         co_return std::nullopt;
     }
 
-    KeyValue kv{key};
+    KeyValue kv{Bytes{key}};
     auto& code_cache = root_it->second->code_cache;
     const auto kv_it = code_cache.find(kv);
     if (kv_it != code_cache.end()) {
@@ -293,7 +294,8 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(const Bytes& key, Transa
     read_lock.unlock();
     std::unique_lock write_lock{rw_mutex_};
 
-    add_code({key, value}, root_it->second.get(), view_id);
+    kv.value = value;
+    add_code(std::move(kv), root_it->second.get(), view_id);
 
     co_return value;
 }

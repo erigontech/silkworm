@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <iterator>
 #include <memory>
 
 #include <silkworm/core/common/bytes.hpp>
@@ -37,6 +38,13 @@ class Compressor {
 
     void add_word(ByteView word, bool is_compressed = true);
     static void compress(Compressor compressor);
+
+    using value_type = ByteView;
+    using Iterator = std::back_insert_iterator<Compressor>;
+    void push_back(ByteView word) { add_word(word); }
+    Iterator add_word_iterator() {
+        return std::back_inserter(*this);
+    }
 
   private:
     std::unique_ptr<CompressorImpl> p_impl_;

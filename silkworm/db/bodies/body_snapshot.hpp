@@ -21,10 +21,27 @@
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/snapshot_word_serializer.hpp>
+#include <silkworm/db/snapshots/snapshot_writer.hpp>
 
 namespace silkworm::snapshots {
 
+void encode_word_from_body(Bytes& word, const BlockBodyForStorage& body);
 void decode_word_into_body(ByteView word, BlockBodyForStorage& body);
+
+struct BodySnapshotWordSerializer : public SnapshotWordSerializer {
+    BlockBodyForStorage value;
+    Bytes word;
+
+    ~BodySnapshotWordSerializer() override = default;
+
+    ByteView encode_word() override {
+        word.clear();
+        encode_word_from_body(word, value);
+        return word;
+    }
+};
+
+static_assert(SnapshotWordSerializerConcept<BodySnapshotWordSerializer>);
 
 struct BodySnapshotWordDeserializer : public SnapshotWordDeserializer {
     BlockBodyForStorage value;
@@ -39,5 +56,6 @@ struct BodySnapshotWordDeserializer : public SnapshotWordDeserializer {
 static_assert(SnapshotWordDeserializerConcept<BodySnapshotWordDeserializer>);
 
 using BodySnapshotReader = SnapshotReader<BodySnapshotWordDeserializer>;
+using BodySnapshotWriter = SnapshotWriter<BodySnapshotWordSerializer>;
 
 }  // namespace silkworm::snapshots

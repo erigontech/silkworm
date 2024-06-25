@@ -38,8 +38,26 @@ ByteView slice_tx_payload(ByteView tx_rlp);
 
 Hash tx_buffer_hash(ByteView tx_buffer, uint64_t tx_id);
 
+//! Encode transaction as a snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
+void encode_word_from_tx(Bytes& word, const Transaction& tx);
+
 //! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
 void decode_word_into_tx(ByteView word, Transaction& tx);
+
+struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
+    Transaction value;
+    Bytes word;
+
+    ~TransactionSnapshotWordSerializer() override = default;
+
+    ByteView encode_word() override {
+        word.clear();
+        encode_word_from_tx(word, value);
+        return word;
+    }
+};
+
+static_assert(SnapshotWordSerializerConcept<TransactionSnapshotWordSerializer>);
 
 struct TransactionSnapshotWordDeserializer : public SnapshotWordDeserializer {
     Transaction value;

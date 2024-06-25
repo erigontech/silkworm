@@ -27,6 +27,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -125,7 +126,7 @@ Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlo
             for (std::size_t i{0}; i < sizeof(silkworm::db::stages::kAllStages) / sizeof(char*) - 1; i++) {  // no unWind
                 StageData current_stage;
                 current_stage.stage_name = silkworm::db::stages::kAllStages[i];
-                current_stage.block_number = to_quantity(co_await stages::get_sync_stage_progress(*tx, silkworm::bytes_of_string(current_stage.stage_name)));
+                current_stage.block_number = to_quantity(co_await stages::get_sync_stage_progress(*tx, string_to_bytes(current_stage.stage_name)));
                 syncing_data.stages.push_back(current_stage);
             }
             reply = make_json_content(request, syncing_data);

@@ -29,9 +29,9 @@
 #include <boost/asio/signal_set.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/client/util.hpp>
@@ -39,7 +39,6 @@
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/rpc/common/constants.hpp>
-#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 
 using namespace silkworm;
@@ -325,8 +324,8 @@ int kv_seek(const std::string& target, const std::string& table_name, silkworm::
         std::cout << "KV Tx STATUS: " << reader_writer->Finish() << "\n";
         return -1;
     }
-    const auto& rsp_key = silkworm::byte_view_of_string(seek_pair.k());
-    const auto& rsp_value = silkworm::byte_view_of_string(seek_pair.v());
+    const auto& rsp_key = silkworm::string_view_to_byte_view(seek_pair.k());
+    const auto& rsp_value = silkworm::string_view_to_byte_view(seek_pair.v());
     std::cout << "KV Tx SEEK <- key: " << rsp_key << " value: " << rsp_value << std::endl;
 
     // Close cursor
@@ -435,8 +434,8 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     if (!has_event || got_tag != SEEK_TAG) {
         return -1;
     }
-    const auto& key_bytes = silkworm::byte_view_of_string(seek_pair.k());
-    const auto& value_bytes = silkworm::byte_view_of_string(seek_pair.v());
+    const auto& key_bytes = silkworm::string_view_to_byte_view(seek_pair.k());
+    const auto& value_bytes = silkworm::string_view_to_byte_view(seek_pair.v());
     std::cout << "KV Tx SEEK <- key: " << key_bytes << " value: " << value_bytes << std::endl;
 
     // 4) Close cursor
@@ -560,8 +559,8 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                             std::cout << "error reading SEEK gRPC" << std::flush;
                             return;
                         }
-                        const auto& key_bytes = silkworm::byte_view_of_string(seek_pair.k());
-                        const auto& value_bytes = silkworm::byte_view_of_string(seek_pair.v());
+                        const auto& key_bytes = silkworm::string_view_to_byte_view(seek_pair.k());
+                        const auto& value_bytes = silkworm::string_view_to_byte_view(seek_pair.v());
                         std::cout << "KV Tx SEEK <- key: " << key_bytes << " value: " << value_bytes << std::endl;
                         auto close_message = remote::Cursor{};
                         close_message.set_op(remote::Op::CLOSE);
@@ -653,8 +652,8 @@ int kv_seek_both(const std::string& target, const std::string& table_name, silkw
         std::cout << "KV Tx STATUS: " << reader_writer->Finish() << "\n";
         return -1;
     }
-    const auto& rsp_key = silkworm::byte_view_of_string(seek_both_pair.k());
-    const auto& rsp_value = silkworm::byte_view_of_string(seek_both_pair.v());
+    const auto& rsp_key = silkworm::string_view_to_byte_view(seek_both_pair.k());
+    const auto& rsp_value = silkworm::string_view_to_byte_view(seek_both_pair.v());
     std::cout << "KV Tx SEEK_BOTH <- key: " << rsp_key << " value: " << rsp_value << std::endl;
 
     // Close cursor

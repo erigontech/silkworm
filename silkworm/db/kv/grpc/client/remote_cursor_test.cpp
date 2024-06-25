@@ -23,6 +23,7 @@
 #include <catch2/matchers/catch_matchers_predicate.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_matcher.hpp>
@@ -39,16 +40,16 @@ namespace test = rpc::test;
 static const char* kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
 static const char* kPlainStateValue{""};
 
-static const silkworm::Bytes kPlainStateKeyBytes{silkworm::bytes_of_string(kPlainStateKey)};
-static const silkworm::Bytes kPlainStateValueBytes{silkworm::bytes_of_string(kPlainStateValue)};
+static const silkworm::Bytes kPlainStateKeyBytes{string_to_bytes(kPlainStateKey)};
+static const silkworm::Bytes kPlainStateValueBytes{string_to_bytes(kPlainStateValue)};
 
 static const char* kAccountChangeSetKey{"0000000000532b9f"};
 static const char* kAccountChangeSetSubkey{"0000000000000000000000000000000000000000"};
 static const char* kAccountChangeSetValue{"020944ed67f28fd50bb8e9"};
 
-static const silkworm::Bytes kAccountChangeSetKeyBytes{silkworm::bytes_of_string(kAccountChangeSetKey)};
-static const silkworm::Bytes kAccountChangeSetSubkeyBytes{silkworm::bytes_of_string(kAccountChangeSetSubkey)};
-static const silkworm::Bytes kAccountChangeSetValueBytes{silkworm::bytes_of_string(kAccountChangeSetValue)};
+static const silkworm::Bytes kAccountChangeSetKeyBytes{string_to_bytes(kAccountChangeSetKey)};
+static const silkworm::Bytes kAccountChangeSetSubkeyBytes{string_to_bytes(kAccountChangeSetSubkey)};
+static const silkworm::Bytes kAccountChangeSetValueBytes{string_to_bytes(kAccountChangeSetValue)};
 
 struct RemoteCursorTest : test_util::KVTestBase {
     RemoteCursorTest() {

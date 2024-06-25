@@ -17,7 +17,6 @@
 #include "miner.hpp"
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/unary_rpc.hpp>

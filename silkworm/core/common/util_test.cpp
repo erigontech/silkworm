@@ -18,6 +18,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/test_util/null_stream.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
@@ -225,6 +226,24 @@ TEST_CASE("intx::uint256 to_float") {
     CHECK(to_float(1) == 1.f);
     CHECK(to_float(24) == 24.f);
     CHECK(to_float(intx::from_string<intx::uint256>("1000000000000000000000000")) == 1e24f);
+}
+
+TEST_CASE("print intx::uint256") {
+    const auto i{intx::from_string<intx::uint256>("1000000000000000000000000")};
+    CHECK(test_util::null_stream() << i);
+}
+
+TEST_CASE("print Bytes") {
+    Bytes b{};
+    CHECK(test_util::null_stream() << b);
+}
+
+TEST_CASE("print ByteView") {
+    ByteView bv1;
+    CHECK(test_util::null_stream() << bv1);
+    Bytes b{*from_hex("0x0608")};
+    ByteView bv2{b};
+    CHECK(test_util::null_stream() << bv2);
 }
 
 }  // namespace silkworm

@@ -16,6 +16,7 @@
 
 #include "remote_cursor.hpp"
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
@@ -48,8 +49,8 @@ Task<api::KeyValue> RemoteCursor::seek(ByteView key) {
     seek_message.set_cursor(cursor_id_);
     seek_message.set_k(key.data(), key.length());
     auto seek_pair = co_await tx_rpc_.write_and_read(seek_message);
-    const auto k = silkworm::bytes_of_string(seek_pair.k());
-    const auto v = silkworm::bytes_of_string(seek_pair.v());
+    const auto k = string_to_bytes(seek_pair.k());
+    const auto v = string_to_bytes(seek_pair.v());
     SILK_DEBUG << "RemoteCursor::seek k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return api::KeyValue{k, v};
 }
@@ -62,8 +63,8 @@ Task<api::KeyValue> RemoteCursor::seek_exact(ByteView key) {
     seek_message.set_cursor(cursor_id_);
     seek_message.set_k(key.data(), key.length());
     auto seek_pair = co_await tx_rpc_.write_and_read(seek_message);
-    const auto k = silkworm::bytes_of_string(seek_pair.k());
-    const auto v = silkworm::bytes_of_string(seek_pair.v());
+    const auto k = string_to_bytes(seek_pair.k());
+    const auto v = string_to_bytes(seek_pair.v());
     SILK_DEBUG << "RemoteCursor::seek_exact k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return api::KeyValue{k, v};
 }
@@ -74,8 +75,8 @@ Task<api::KeyValue> RemoteCursor::next() {
     next_message.set_op(remote::Op::NEXT);
     next_message.set_cursor(cursor_id_);
     auto next_pair = co_await tx_rpc_.write_and_read(next_message);
-    const auto k = silkworm::bytes_of_string(next_pair.k());
-    const auto v = silkworm::bytes_of_string(next_pair.v());
+    const auto k = string_to_bytes(next_pair.k());
+    const auto v = string_to_bytes(next_pair.v());
     SILK_DEBUG << "RemoteCursor::next k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return api::KeyValue{k, v};
 }
@@ -86,8 +87,8 @@ Task<api::KeyValue> RemoteCursor::previous() {
     next_message.set_op(remote::Op::PREV);
     next_message.set_cursor(cursor_id_);
     auto next_pair = co_await tx_rpc_.write_and_read(next_message);
-    const auto k = silkworm::bytes_of_string(next_pair.k());
-    const auto v = silkworm::bytes_of_string(next_pair.v());
+    const auto k = string_to_bytes(next_pair.k());
+    const auto v = string_to_bytes(next_pair.v());
     SILK_DEBUG << "RemoteCursor::previous k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return api::KeyValue{k, v};
 }
@@ -98,8 +99,8 @@ Task<api::KeyValue> RemoteCursor::next_dup() {
     next_message.set_op(remote::Op::NEXT_DUP);
     next_message.set_cursor(cursor_id_);
     auto next_pair = co_await tx_rpc_.write_and_read(next_message);
-    const auto k = silkworm::bytes_of_string(next_pair.k());
-    const auto v = silkworm::bytes_of_string(next_pair.v());
+    const auto k = string_to_bytes(next_pair.k());
+    const auto v = string_to_bytes(next_pair.v());
     SILK_DEBUG << "RemoteCursor::next k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return api::KeyValue{k, v};
 }
@@ -113,8 +114,8 @@ Task<Bytes> RemoteCursor::seek_both(ByteView key, ByteView value) {
     seek_message.set_k(key.data(), key.length());
     seek_message.set_v(value.data(), value.length());
     auto seek_pair = co_await tx_rpc_.write_and_read(seek_message);
-    const auto k = silkworm::bytes_of_string(seek_pair.k());
-    const auto v = silkworm::bytes_of_string(seek_pair.v());
+    const auto k = string_to_bytes(seek_pair.k());
+    const auto v = string_to_bytes(seek_pair.v());
     SILK_DEBUG << "RemoteCursor::seek_both k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return v;
 }
@@ -128,8 +129,8 @@ Task<api::KeyValue> RemoteCursor::seek_both_exact(ByteView key, ByteView value) 
     seek_message.set_k(key.data(), key.length());
     seek_message.set_v(value.data(), value.length());
     auto seek_pair = co_await tx_rpc_.write_and_read(seek_message);
-    const auto k = silkworm::bytes_of_string(seek_pair.k());
-    const auto v = silkworm::bytes_of_string(seek_pair.v());
+    const auto k = string_to_bytes(seek_pair.k());
+    const auto v = string_to_bytes(seek_pair.v());
     SILK_DEBUG << "RemoteCursor::seek_both_exact k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return api::KeyValue{k, v};
 }

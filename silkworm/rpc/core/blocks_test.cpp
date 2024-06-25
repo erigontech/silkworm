@@ -37,7 +37,7 @@ using testing::_;
 using testing::InvokeWithoutArgs;
 
 static silkworm::Bytes kNumber{*silkworm::from_hex("00000000003D0900")};
-static silkworm::Bytes block_hash = silkworm::bytes_of_string(std::string("0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"));
+static silkworm::Bytes block_hash = string_to_bytes(std::string("0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"));
 static silkworm::Bytes kHeader{*silkworm::from_hex(
     "f9025ca0209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad"
     "7524ef8ee7a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000"

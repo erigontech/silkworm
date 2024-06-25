@@ -17,7 +17,6 @@
 #include "account_walker.hpp"
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -27,7 +26,7 @@ namespace silkworm::rpc {
 Task<void> AccountWalker::walk_of_accounts(BlockNum block_number, const evmc::address& start_address, Collector& collector) {
     auto ps_cursor = co_await transaction_.cursor(db::table::kPlainStateName);
 
-    auto start_key = full_view(start_address);
+    const ByteView start_key{start_address.bytes};
     auto ps_kv = co_await seek(*ps_cursor, start_key, kAddressLength);
     if (ps_kv.key.empty()) {
         co_return;

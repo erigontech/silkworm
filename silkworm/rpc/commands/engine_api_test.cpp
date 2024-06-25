@@ -27,6 +27,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
@@ -565,7 +566,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: EL conf
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, Bytes{byte_view_of_string(kChainConfig.to_json().dump())}};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -603,7 +604,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: termina
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, Bytes{byte_view_of_string(kChainConfig.to_json().dump())}};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -641,7 +642,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorre
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, Bytes{byte_view_of_string(kChainConfig.to_json().dump())}};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -678,7 +679,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: EL does
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, Bytes{byte_view_of_string(kChainConfigNoTerminalTotalDifficulty.to_json().dump())}};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfigNoTerminalTotalDifficulty.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -715,7 +716,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, Bytes{byte_view_of_string(kChainConfig.to_json().dump())}};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -752,7 +753,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, Bytes{byte_view_of_string(kChainConfig.to_json().dump())}};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -789,7 +790,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: no matc
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, Bytes{byte_view_of_string(kChainConfig.to_json().dump())}};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;

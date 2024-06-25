@@ -24,7 +24,6 @@
 #include <gsl/narrow>
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/ethdb/walk.hpp>
 

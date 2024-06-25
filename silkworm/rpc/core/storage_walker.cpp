@@ -21,7 +21,6 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -32,17 +31,17 @@
 
 namespace silkworm::rpc {
 
-silkworm::Bytes make_key(const evmc::address& address, const evmc::bytes32& location) {
-    silkworm::Bytes res(silkworm::kAddressLength + silkworm::kHashLength, '\0');
-    std::memcpy(&res[0], address.bytes, silkworm::kAddressLength);
-    std::memcpy(&res[silkworm::kAddressLength], location.bytes, silkworm::kHashLength);
+Bytes make_key(const evmc::address& address, const evmc::bytes32& location) {
+    Bytes res(silkworm::kAddressLength + kHashLength, '\0');
+    std::memcpy(&res[0], address.bytes, kAddressLength);
+    std::memcpy(&res[kAddressLength], location.bytes, kHashLength);
     return res;
 }
 
 struct StorageItem {
-    silkworm::Bytes key;
-    silkworm::Bytes sec_key;
-    silkworm::Bytes value;
+    Bytes key;
+    Bytes sec_key;
+    Bytes value;
 };
 
 bool operator<(const StorageItem& k1, const StorageItem& k2) {
@@ -174,7 +173,7 @@ Task<void> StorageWalker::storage_range_at(
     const evmc::bytes32& start_location,
     size_t max_result,
     StorageCollector& collector) {
-    auto account_data = co_await transaction_.get_one(db::table::kPlainStateName, full_view(address));
+    auto account_data = co_await transaction_.get_one(db::table::kPlainStateName, address.bytes);
 
     auto account = silkworm::Account::from_encoded_storage(account_data);
     silkworm::success_or_throw(account);
@@ -192,7 +191,7 @@ Task<void> StorageWalker::storage_range_at(
 
         StorageItem storage_item;
         storage_item.key = loc;
-        storage_item.sec_key = full_view(hash);
+        storage_item.sec_key = ByteView{hash.bytes};
         storage_item.value = data;
 
         if (storage.find(storage_item) != storage.end()) {

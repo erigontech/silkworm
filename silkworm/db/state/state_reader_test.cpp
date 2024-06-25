@@ -23,7 +23,6 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/kv/api/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
@@ -70,7 +69,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
             co_return KeyValue{};
         }));
         // 2. DatabaseReader::get_one call on kPlainState returns empty value
-        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, ByteView{kZeroAddress.bytes})).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
 
@@ -87,7 +86,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
             co_return KeyValue{};
         }));
         // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, ByteView{kZeroAddress.bytes})).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kEncodedAccount;
         }));
 
@@ -107,7 +106,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns the account bitmap
         EXPECT_CALL(transaction_, get(db::table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{Bytes{full_view(kZeroAddress)}, kEncodedAccountHistory};
+            co_return KeyValue{Bytes{ByteView{kZeroAddress.bytes}}, kEncodedAccountHistory};
         }));
         // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet returns the account data
         EXPECT_CALL(transaction_, get_both_range(db::table::kAccountChangeSetName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
@@ -133,7 +132,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
             co_return KeyValue{};
         }));
         // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction_, get_one(db::table::kPlainStateName, ByteView{kZeroAddress.bytes})).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kEncodedAccountWithoutCodeHash;
         }));
         // 3. DatabaseReader::get_one call on kPlainContractCode returns account code hash

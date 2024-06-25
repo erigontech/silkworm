@@ -287,7 +287,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto account_history_cursor = co_await tx->cursor(db::table::kAccountHistoryName);
         auto account_change_set_cursor = co_await tx->cursor_dup_sort(db::table::kAccountChangeSetName);
         const ByteView sender_byte_view{sender.bytes};
-        auto key_value = co_await account_history_cursor->seek(sender.bytes);
+        auto key_value = co_await account_history_cursor->seek(sender_byte_view);
 
         std::vector<BlockNum> account_block_numbers;
 

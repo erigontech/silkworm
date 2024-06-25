@@ -126,7 +126,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
         auto& address = it.first;
         auto& account = it.second;
 
-        std::map<Bytes, Bytes> collected_entries;
+        std::map<Bytes, Bytes> collected_entries;  // TODO(canepat) switch to ByteView?
         StorageWalker::AccountCollector collector = [&](const evmc::address& /*address*/, ByteView loc, ByteView data) {
             if (!account.storage.has_value()) {
                 account.storage = Storage{};
@@ -134,7 +134,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
             auto& storage = *account.storage;
             storage[to_bytes32(loc)] = data;
             const auto hash = hash_of(loc);
-            collected_entries[Bytes{hash.bytes}] = data;
+            collected_entries[Bytes{hash.bytes, kHashLength}] = data;
 
             return true;
         };

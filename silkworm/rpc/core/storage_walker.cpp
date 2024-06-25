@@ -191,7 +191,7 @@ Task<void> StorageWalker::storage_range_at(
 
         StorageItem storage_item;
         storage_item.key = loc;
-        storage_item.sec_key = hash.bytes;
+        storage_item.sec_key = ByteView{hash.bytes};
         storage_item.value = data;
 
         if (storage.find(storage_item) != storage.end()) {

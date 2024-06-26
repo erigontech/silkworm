@@ -30,6 +30,7 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/json/types.hpp>
+#include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -41,7 +42,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
     if (params.size() != 1) {
         auto error_msg = "invalid parity_getBlockReceipts params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -72,14 +73,13 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
@@ -87,7 +87,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
     if (params.size() < 2) {
         auto error_msg = "invalid parity_listStorageKeys params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
@@ -139,14 +139,13 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 }  // namespace silkworm::rpc::commands

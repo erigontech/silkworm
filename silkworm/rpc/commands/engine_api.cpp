@@ -103,16 +103,13 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& requ
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        // TODO(canepat) the error code should be se.code().value() here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        // TODO(canepat) the error code should be kInternalError here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 #endif
 }
@@ -139,16 +136,13 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& requ
         reply = make_json_content(request, payload_and_value);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        // TODO(canepat) the error code should be se.code().value() here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        // TODO(canepat) the error code should be kInternalError here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 }
 
@@ -175,16 +169,13 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v3(const nlohmann::json& requ
         reply = make_json_content(request, payload_and_value);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        // TODO(canepat) the error code should be se.code().value() here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, se.code().message());
+        reply = make_json_error(request, se.code().value(), se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        // TODO(canepat) the error code should be kInternalError here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
-        reply = make_json_error(request, kUnknownPayload, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 }
 

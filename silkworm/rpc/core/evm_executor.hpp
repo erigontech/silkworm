@@ -40,7 +40,7 @@
 
 namespace silkworm::rpc {
 
-enum PreCheckErrorCode {
+enum class PreCheckErrorCode {
     kFeeCapLessThanBlockFeePerGas,
     kInsufficientFunds,
     kInternalError,

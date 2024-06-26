@@ -51,7 +51,7 @@ class SnapshotFileWriter {
             return *this;
         }
 
-        Iterator& operator=(value_type value);
+        Iterator& operator=(const value_type& value);
 
         std::shared_ptr<SnapshotWordSerializer> serializer() const { return serializer_; }
 

@@ -25,7 +25,7 @@ SnapshotFileWriter::SnapshotFileWriter(
       compressor_(path_.path(), tmp_dir_path) {
 }
 
-SnapshotFileWriter::Iterator& SnapshotFileWriter::Iterator::operator=(SnapshotFileWriter::Iterator::value_type value) {
+SnapshotFileWriter::Iterator& SnapshotFileWriter::Iterator::operator=(const SnapshotFileWriter::Iterator::value_type& value) {
     *it_ = value->encode_word();
     return *this;
 }

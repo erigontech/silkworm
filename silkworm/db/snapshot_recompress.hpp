@@ -16,17 +16,10 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/snapshot_reader.hpp>
-#include <silkworm/db/snapshots/snapshot_writer.hpp>
-
-#include "txn_snapshot_word_serializer.hpp"
+#include <filesystem>
 
 namespace silkworm::snapshots {
 
-using TransactionSnapshotReader = SnapshotReader<TransactionSnapshotWordDeserializer>;
-using TransactionSnapshotWriter = SnapshotWriter<TransactionSnapshotWordSerializer>;
+void snapshot_file_recompress(const std::filesystem::path& path);
 
-template <BytesOrByteView TBytes>
-using TransactionSnapshotPayloadRlpReader = SnapshotReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>>;
-
-}  // namespace silkworm::snapshots
+}

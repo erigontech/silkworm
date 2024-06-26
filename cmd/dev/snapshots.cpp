@@ -36,6 +36,7 @@
 #include <silkworm/db/headers/header_index.hpp>
 #include <silkworm/db/headers/header_queries.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
@@ -87,6 +88,7 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
     lookup_header,
     lookup_body,
     lookup_txn,
+    recompress,
     seg_zip,
     seg_unzip,
     sync
@@ -192,6 +194,11 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
             ->required()
             ->capture_default_str();
     }
+
+    commands[SnapshotTool::recompress]
+        ->add_option("file", snapshot_settings.input_file_path, ".seg file to decompress and compress again")
+        ->required()
+        ->check(CLI::ExistingFile);
     commands[SnapshotTool::seg_zip]
         ->add_option("file", snapshot_settings.input_file_path, "Raw words file to compress")
         ->required()
@@ -773,6 +780,9 @@ int main(int argc, char* argv[]) {
                 break;
             case SnapshotTool::lookup_txn:
                 lookup_transaction(settings.snapshot_settings);
+                break;
+            case SnapshotTool::recompress:
+                snapshot_file_recompress(settings.snapshot_settings.input_file_path);
                 break;
             case SnapshotTool::seg_zip:
                 seg::seg_zip(settings.snapshot_settings.input_file_path);

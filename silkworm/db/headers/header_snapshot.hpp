@@ -20,11 +20,28 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/snapshot_word_serializer.hpp>
+#include <silkworm/db/snapshots/snapshot_writer.hpp>
 
 namespace silkworm::snapshots {
 
+void encode_word_from_header(Bytes& word, const BlockHeader& header);
 void decode_word_into_header(ByteView word, BlockHeader& header);
 void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNum block_from, BlockNum block_to);
+
+struct HeaderSnapshotWordSerializer : public SnapshotWordSerializer {
+    BlockHeader value;
+    Bytes word;
+
+    ~HeaderSnapshotWordSerializer() override = default;
+
+    ByteView encode_word() override {
+        word.clear();
+        encode_word_from_header(word, value);
+        return word;
+    }
+};
+
+static_assert(SnapshotWordSerializerConcept<HeaderSnapshotWordSerializer>);
 
 struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
     BlockHeader value;
@@ -43,5 +60,6 @@ struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
 static_assert(SnapshotWordDeserializerConcept<HeaderSnapshotWordDeserializer>);
 
 using HeaderSnapshotReader = SnapshotReader<HeaderSnapshotWordDeserializer>;
+using HeaderSnapshotWriter = SnapshotWriter<HeaderSnapshotWordSerializer>;
 
 }  // namespace silkworm::snapshots

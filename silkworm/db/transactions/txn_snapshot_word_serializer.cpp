@@ -87,6 +87,21 @@ Transaction empty_system_tx() {
     return tx;
 }
 
+void encode_word_from_tx(Bytes& word, const Transaction& tx) {
+    if (tx.type == TransactionType::kSystem) {
+        // empty word
+        return;
+    }
+
+    auto hash = tx.hash();
+    word.push_back(hash.bytes[0]);
+
+    evmc::address sender = tx.sender().value_or(evmc::address{});
+    word.append(sender.bytes, kAddressLength);
+
+    rlp::encode(word, tx);
+}
+
 void decode_word_into_tx(ByteView word, Transaction& tx) {
     if (word.empty()) {
         tx = empty_system_tx();

@@ -21,6 +21,13 @@
 
 namespace silkworm::snapshots {
 
+void encode_word_from_header(Bytes& word, const BlockHeader& header) {
+    auto hash = header.hash();
+    word.push_back(hash.bytes[0]);
+
+    rlp::encode(word, header);
+}
+
 void decode_word_into_header(ByteView word, BlockHeader& header) {
     // First byte in data is first byte of header hash.
     ensure(!word.empty(), [&]() { return "decode_word_into_header: first hash byte missing"; });

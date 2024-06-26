@@ -21,6 +21,15 @@
 
 namespace silkworm::snapshots {
 
+struct SnapshotWordSerializer {
+    virtual ~SnapshotWordSerializer() = default;
+    virtual ByteView encode_word() = 0;
+};
+
+template <class TWordSerializer>
+concept SnapshotWordSerializerConcept = std::derived_from<TWordSerializer, SnapshotWordSerializer> &&
+                                        requires(TWordSerializer serializer) { serializer.value; };
+
 struct SnapshotWordDeserializer {
     virtual ~SnapshotWordDeserializer() = default;
     virtual void decode_word(ByteView word) = 0;

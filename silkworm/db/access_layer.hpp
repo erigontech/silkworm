@@ -30,6 +30,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
@@ -109,6 +110,10 @@ void write_canonical_header_hash(RWTxn& txn, const uint8_t (&hash)[kHashLength],
                              bool read_senders, BlockBody& out);
 [[nodiscard]] bool read_body(ROTxn& txn, const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
 [[nodiscard]] bool read_body(ROTxn& txn, const evmc::bytes32& hash, BlockBody& body);
+[[nodiscard]] bool read_canonical_body(ROTxn& txn, BlockNum block_number, bool read_senders, BlockBody& body);
+
+[[nodiscard]] std::optional<BlockBodyForStorage> read_body_for_storage(ROTxn& txn, const Bytes& key);
+[[nodiscard]] std::optional<BlockBodyForStorage> read_canonical_body_for_storage(ROTxn& txn, BlockNum height);
 
 //! \brief Read the canonical block at specified height
 [[nodiscard]] bool read_canonical_block(ROTxn& txn, BlockNum height, Block& block);

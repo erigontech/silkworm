@@ -20,6 +20,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -53,13 +54,14 @@ class SnapshotRepository {
 
     [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
     [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
+    [[nodiscard]] const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
 
     void reopen_folder();
     void close();
 
     void add_snapshot_bundle(SnapshotBundle bundle);
 
-    [[nodiscard]] std::size_t bundles_count() const { return bundles_.size(); }
+    [[nodiscard]] std::size_t bundles_count() const;
     [[nodiscard]] std::size_t total_snapshots_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
     [[nodiscard]] std::size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
 
@@ -99,6 +101,7 @@ class SnapshotRepository {
 
     //! Full snapshot bundles ordered by block_from
     std::map<BlockNum, SnapshotBundle> bundles_;
+    mutable std::mutex bundles_mutex_;
 };
 
 }  // namespace silkworm::snapshots

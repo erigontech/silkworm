@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <utility>
 
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -38,39 +39,32 @@ SnapshotRepository::~SnapshotRepository() {
 
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
     bundle.reopen();
+    std::scoped_lock lock(bundles_mutex_);
     bundles_.emplace(bundle.block_from(), std::move(bundle));
 }
 
-void SnapshotBundle::reopen() {
-    for (auto& snapshot_ref : snapshots()) {
-        snapshot_ref.get().reopen_segment();
-        ensure(!snapshot_ref.get().empty(), [&]() {
-            return "invalid empty snapshot " + snapshot_ref.get().fs_path().string();
-        });
-    }
-    for (auto& index_ref : indexes()) {
-        index_ref.get().reopen_index();
-    }
-}
-
-void SnapshotBundle::close() {
-    for (auto& index_ref : indexes()) {
-        index_ref.get().close_index();
-    }
-    for (auto& snapshot_ref : snapshots()) {
-        snapshot_ref.get().close();
-    }
+std::size_t SnapshotRepository::bundles_count() const {
+    std::scoped_lock lock(bundles_mutex_);
+    return bundles_.size();
 }
 
 void SnapshotRepository::close() {
     SILK_TRACE << "Close snapshot repository folder: " << settings_.repository_dir.string();
-    for (auto& entry : bundles_) {
+
+    std::map<BlockNum, SnapshotBundle> bundles;
+    {
+        std::scoped_lock lock(bundles_mutex_);
+        bundles = std::exchange(bundles_, {});
+    }
+
+    for (auto& entry : bundles) {
         auto& bundle = entry.second;
         bundle.close();
     }
 }
 
 BlockNum SnapshotRepository::max_block_available() const {
+    std::scoped_lock lock(bundles_mutex_);
     if (bundles_.empty())
         return 0;
 
@@ -143,6 +137,8 @@ void SnapshotRepository::reopen_folder() {
         num = groups.begin()->first;
     }
 
+    std::unique_lock lock(bundles_mutex_);
+
     while (groups.contains(num) &&
            (groups[num][false].size() == SnapshotBundle::kSnapshotsCount) &&
            (groups[num][true].size() == SnapshotBundle::kIndexesCount)) {
@@ -168,12 +164,16 @@ void SnapshotRepository::reopen_folder() {
         }
     }
 
+    lock.unlock();
+
     SILK_INFO << "Total reopened bundles: " << bundles_count()
               << " snapshots: " << total_snapshots_count()
               << " indexes: " << total_indexes_count();
 }
 
 const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
+    std::scoped_lock lock(bundles_mutex_);
+
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     for (const auto& bundle : this->view_bundles_reverse()) {
         // We're looking for the segment containing the target block number in its block range

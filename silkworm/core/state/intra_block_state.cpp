@@ -199,29 +199,32 @@ void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) no
     obj.current->nonce = nonce;
 }
 
-ByteView IntraBlockState::get_code(const evmc::address& address) const noexcept {
+const evmone::baseline::CodeAnalysis& IntraBlockState::get_code(const evmc::address& address) const noexcept {
+    static const evmone::baseline::CodeAnalysis null_code{nullptr, 0, {}};
+
     auto* obj{get_object(address)};
 
     if (!obj || !obj->current) {
-        return {};
+        return null_code;
     }
 
     const auto& code_hash{obj->current->code_hash};
     if (code_hash == kEmptyHash) {
-        return {};
+        return null_code;
     }
 
     if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
-        return {it->second.data(), it->second.size()};
+        return it->second;
     }
 
     if (auto it{existing_code_.find(code_hash)}; it != existing_code_.end()) {
         return it->second;
     }
 
-    ByteView code{db_.read_code(code_hash)};
-    existing_code_[code_hash] = code;
-    return code;
+    ByteView raw_code{db_.read_code(code_hash)};
+    auto code = evmone::baseline::analyze(EVMC_FRONTIER, raw_code);
+    auto [it, _] = existing_code_.insert({code_hash, std::move(code)});
+    return it->second;
 }
 
 evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const noexcept {
@@ -236,7 +239,8 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
 
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
-    new_code_.try_emplace(obj.current->code_hash, code.begin(), code.end());
+    auto code2 = evmone::baseline::analyze(EVMC_FRONTIER, code);
+    new_code_.try_emplace(obj.current->code_hash, std::move(code2));
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {
@@ -349,7 +353,7 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
         if (code_hash != kEmptyHash &&
             (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
             if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
-                ByteView code_view{it->second.data(), it->second.size()};
+                ByteView code_view{it->second.executable_code.data(), it->second.executable_code.size()};
                 db_.update_account_code(address, obj.current->incarnation, code_hash, code_view);
             }
         }

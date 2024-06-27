@@ -229,9 +229,9 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
-            CallTraces traces;
-            CallTracer tracer{traces};
-            processor.evm().add_tracer(tracer);
+            // CallTraces traces;
+            // CallTracer tracer{traces};
+            // processor.evm().add_tracer(tracer);
 
             if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
                 // Persist work done so far
@@ -263,9 +263,10 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             if (block_num_ >= prune_receipts_threshold) {
                 buffer.insert_receipts(block_num_, receipts);
             }
-            if (block_num_ >= prune_call_traces_threshold) {
-                buffer.insert_call_traces(block_num_, traces);
-            }
+            (void)prune_call_traces_threshold;
+            // if (block_num_ >= prune_call_traces_threshold) {
+            //     buffer.insert_call_traces(block_num_, traces);
+            // }
 
             buffer.write_history_to_db();
 

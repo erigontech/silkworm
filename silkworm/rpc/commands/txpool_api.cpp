@@ -22,6 +22,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/json/types.hpp>
+#include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -33,13 +34,11 @@ Task<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::json& request, nlo
         reply = make_json_content(request, txpool_status);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://geth.ethereum.org/docs/rpc/ns-txpool
@@ -54,12 +53,12 @@ Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nl
 
         bool error = false;
         for (std::size_t i{0}; i < txpool_transactions.size(); i++) {
-            silkworm::ByteView from{txpool_transactions[i].rlp};
+            ByteView from{txpool_transactions[i].rlp};
             std::string sender = address_to_hex(txpool_transactions[i].sender);
             Transaction txn{};
-            const auto result = silkworm::rlp::decode_transaction(from, txn, rlp::Eip2718Wrapping::kBoth);
+            const auto result = rlp::decode_transaction(from, txn, rlp::Eip2718Wrapping::kBoth);
             if (!result) {
-                SILK_ERROR << "handle_txpool_content  rlp::decode failed sender: " << sender;
+                SILK_ERROR << "handle_txpool_content rlp::decode_transaction failed sender: " << sender;
                 error = true;
                 break;
             }
@@ -76,17 +75,15 @@ Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nl
         if (!error) {
             reply = make_json_content(request, transactions_content);
         } else {
-            reply = make_json_error(request, 100, "RLP decoding error");
+            reply = make_json_error(request, kInternalError, "RLP decoding error");
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 }  // namespace silkworm::rpc::commands

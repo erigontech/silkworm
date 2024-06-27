@@ -59,7 +59,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request method return f
         "jsonrpc":"2.0",
         "id":3,
         "error":{
-             "code":100,
+             "code":-32602,
              "message":"invalid eth_getBlockByNumber params: []"
         }
     })"_json);

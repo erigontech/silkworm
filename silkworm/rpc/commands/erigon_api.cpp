@@ -33,6 +33,7 @@
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/json/types.hpp>
+#include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -44,14 +45,13 @@ Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getbalancechangesinblock
@@ -60,7 +60,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
     if (params.empty()) {
         auto error_msg = "invalid erigon_getBalanceChangesInBlock params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
 
         co_return;
     }
@@ -89,14 +89,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
         reply = make_json_content(request, json);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockByTimestamp
@@ -106,7 +105,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
     if (params.size() != 2) {
         auto error_msg = "invalid erigon_getBlockByTimestamp params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(request, 100, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     const auto block_timestamp = params[0].get<std::string>();
@@ -168,15 +167,14 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         make_glaze_json_content(request, extended_block, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     // Close remote database transaction, RAII not available with coroutines
     co_await tx->close();
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockReceiptsByBlockHash
@@ -185,7 +183,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getBlockReceiptsByBlockHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
@@ -218,14 +216,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getHeaderByHash
@@ -234,7 +231,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
@@ -248,20 +245,19 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
         const auto header{co_await chain_storage->read_header(block_hash)};
         if (!header) {
             auto error_msg = "block header not found: 0x" + silkworm::to_hex(block_hash);
-            reply = make_json_error(request, -32000, error_msg);
+            reply = make_json_error(request, kServerError, error_msg);
         } else {
             reply = make_json_content(request, *header);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getHeaderByNumber
@@ -270,7 +266,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
@@ -280,7 +276,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
         // TODO(canepat): add pending block only known to the miner
         auto error_msg = "pending block not implemented in erigon_getHeaderByNumber";
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
 
@@ -294,20 +290,19 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
 
         if (!header) {
             const auto error_msg = "block header not found: " + std::to_string(block_number);
-            reply = make_json_error(request, -32000, error_msg);
+            reply = make_json_error(request, kServerError, error_msg);
         } else {
             reply = make_json_content(request, *header);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getlatestlogs
@@ -315,14 +310,14 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     auto params = request["params"];
     if (params.size() > 2) {
         auto error_msg = "too many arguments, want at most 2";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -330,7 +325,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     if (filter.block_hash && (filter.from_block || filter.to_block)) {
         auto error_msg = "invalid argument 0: cannot specify both BlockHash and FromBlock/ToBlock, choose one or the other";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request, -32602, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -343,7 +338,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     if (options.log_count != 0 && options.block_count != 0) {
         auto error_msg = "logs count & block count are ambiguous";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request, -32000, error_msg);
+        reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
 
@@ -360,14 +355,14 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
             SILK_ERROR << error_msg;
-            reply = make_json_error(request, 100, error_msg);
+            reply = make_json_error(request, kInternalError, error_msg);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         } else if (end < start) {
             std::ostringstream oss;
             oss << "end (" << end << ") < begin (" << start << ")";
             SILK_ERROR << oss.str();
-            reply = make_json_error(request, -32000, oss.str());
+            reply = make_json_error(request, kServerError, oss.str());
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -378,14 +373,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
         reply = make_json_content(request, logs);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_getlogsbyhash
@@ -394,7 +388,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getLogsByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
@@ -425,14 +419,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
         reply = make_json_content(request, logs);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_forks
@@ -448,14 +441,13 @@ Task<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nloh
         reply = make_json_content(request, forks);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_blockNumber
@@ -469,7 +461,7 @@ Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& reques
     } else {
         auto error_msg = "invalid erigon_blockNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     SILK_DEBUG << "block: " << block_id;
@@ -481,14 +473,13 @@ Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& reques
         reply = make_json_content(request, to_quantity(block_number));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#erigon_nodeInfo
@@ -499,13 +490,11 @@ Task<void> ErigonRpcApi::handle_erigon_node_info(const nlohmann::json& request, 
         reply = make_json_content(request, node_info_data);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 }  // namespace silkworm::rpc::commands

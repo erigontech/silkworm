@@ -48,6 +48,7 @@
 #include <silkworm/rpc/core/gas_price_oracle.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
+#include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
 
 namespace silkworm::rpc::commands {
@@ -63,14 +64,13 @@ Task<void> EthereumRpcApi::handle_eth_block_number(const nlohmann::json& request
         reply = make_json_content(request, to_quantity(block_height));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_chainid
@@ -83,14 +83,13 @@ Task<void> EthereumRpcApi::handle_eth_chain_id(const nlohmann::json& request, nl
         reply = make_json_content(request, to_quantity(chain_config.chain_id));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_protocolversion
@@ -100,13 +99,11 @@ Task<void> EthereumRpcApi::handle_eth_protocol_version(const nlohmann::json& req
         reply = make_json_content(request, to_quantity(protocol_version));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, -32000, e.what());
+        reply = make_json_error(request, kServerError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_syncing
@@ -133,14 +130,13 @@ Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlo
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_gasprice
@@ -171,14 +167,13 @@ Task<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, n
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblockbyhash
@@ -187,7 +182,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(request, 100, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     auto block_hash = params[0].get<evmc::bytes32>();
@@ -212,14 +207,13 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblockbynumber
@@ -228,7 +222,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(request, 100, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -254,14 +248,13 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
         make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbyhash
@@ -270,7 +263,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const 
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getBlockTransactionCountByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     auto block_hash = params[0].get<evmc::bytes32>();
@@ -291,14 +284,13 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const 
         reply = make_json_content(request, 0x0);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbynumber
@@ -307,7 +299,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(cons
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getBlockTransactionCountByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -329,14 +321,13 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(cons
         reply = make_json_content(request, 0x0);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblockhashandindex
@@ -345,7 +336,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockHashAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(request, 100, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
@@ -385,14 +376,13 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
         make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblocknumberandindex
@@ -401,7 +391,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockNumberAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(request, 100, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -441,14 +431,13 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
         make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclecountbyblockhash
@@ -457,7 +446,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getUncleCountByBlockHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     auto block_hash = params[0].get<evmc::bytes32>();
@@ -476,14 +465,13 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
         reply = make_json_content(request, to_quantity(ommers));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getunclecountbyblocknumber
@@ -492,7 +480,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nloh
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getUncleCountByBlockNumber params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -513,14 +501,13 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nloh
         reply = make_json_content(request, to_quantity(ommers));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyhash
@@ -529,7 +516,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(request, 100, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -568,14 +555,13 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
         make_glaze_json_null_content(request, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyhash
@@ -584,7 +570,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getRawTransactionByHash params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -615,14 +601,13 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann
         reply = make_json_content(request, rlp);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyblockhashandindex
@@ -631,7 +616,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(co
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionByBlockHashAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
@@ -663,14 +648,13 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(co
         reply = make_json_content(request, nullptr);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyblockhashandindex
@@ -679,7 +663,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_inde
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getRawTransactionByBlockHashAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
@@ -713,14 +697,13 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_inde
         reply = make_json_content(request, rlp);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyblocknumberandindex
@@ -729,7 +712,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_index(
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionByBlockNumberAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -764,14 +747,13 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_index(
         reply = make_json_content(request, rlp);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyblocknumberandindex
@@ -780,7 +762,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_and_in
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getRawTransactionByBlockNumberAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
@@ -815,14 +797,13 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_and_in
         reply = make_json_content(request, rlp);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionreceipt
@@ -831,7 +812,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionReceipt params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
@@ -878,11 +859,10 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
         reply = make_json_content(request, {});
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_estimategas
@@ -891,7 +871,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     if (params.size() != 1) {
         auto error_msg = "invalid eth_estimateGas params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto call = params[0].get<Call>();
@@ -939,14 +919,13 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getbalance
@@ -955,7 +934,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBalance params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
@@ -975,14 +954,13 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
         reply = make_json_content(request, "0x" + (account ? intx::hex(account->balance) : "0"));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getcode
@@ -991,7 +969,7 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getCode params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
@@ -1016,14 +994,13 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_gettransactioncount
@@ -1032,7 +1009,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionCount params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
@@ -1056,14 +1033,13 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getstorageat
@@ -1072,7 +1048,7 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
     if (params.size() != 3 || !is_valid_address(params[0].get<std::string>())) {
         const auto error_msg = "invalid eth_getStorageAt params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
@@ -1080,7 +1056,7 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
     if (!is_valid_hex(position) || position.length() > 2 + kHashLength * 2) {
         const auto error_msg = "invalid position in eth_getStorageAt params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto location = bytes32_from_hex(position);
@@ -1105,14 +1081,13 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_call
@@ -1120,14 +1095,14 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        make_glaze_json_error(request, -32602, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_call params: " + params.dump();
         SILK_ERROR << error_msg;
-        make_glaze_json_error(request, -32602, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     const auto call = params[0].get<Call>();
@@ -1160,21 +1135,20 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         } else {
             const auto error_message = execution_result.error_message();
             if (execution_result.data.empty()) {
-                make_glaze_json_error(request, -32000, error_message, reply);
+                make_glaze_json_error(request, kServerError, error_message, reply);
             } else {
                 make_glaze_json_error(request, RevertError{{3, error_message}, execution_result.data}, reply);
             }
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_callMany
@@ -1182,7 +1156,7 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
     if (!request.contains("params")) {
         auto error_msg = "missing value for required arguments";
         SILK_ERROR << error_msg << request.dump();
-        reply = make_json_error(request, -32602, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
 
         co_return;
     }
@@ -1190,7 +1164,7 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
     if (params.size() < 2) {
         auto error_msg = "invalid eth_callMany params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, -32602, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -1199,7 +1173,7 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
     if (bundles.empty()) {
         const auto error_msg = "invalid eth_callMany bundle list: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
 
         co_return;
     }
@@ -1227,20 +1201,19 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
         const auto result = co_await executor.execute(bundles, simulation_context, accounts_overrides, timeout);
 
         if (result.error) {
-            reply = make_json_error(request, -32000, result.error.value());
+            reply = make_json_error(request, kServerError, result.error.value());
         } else {
             reply = make_json_content(request, result.results);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_maxpriorityfeepergas
@@ -1264,14 +1237,13 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
         reply = make_json_content(request, to_quantity(gas_price));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://geth.ethereum.org/docs/rpc/ns-eth#eth_createaccesslist
@@ -1280,7 +1252,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     if (params.size() != 2 && params.size() != 3) {
         auto error_msg = "invalid eth_createAccessList params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto call = params[0].get<Call>();
@@ -1344,7 +1316,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 tracers, /* refund */ true, /* gasBailout */ false);
 
             if (execution_result.pre_check_error) {
-                reply = make_json_error(request, -32000, execution_result.pre_check_error.value());
+                reply = make_json_error(request, kServerError, execution_result.pre_check_error.value());
                 break;
             }
             const AccessList& current_access_list = tracer->get_access_list();
@@ -1368,14 +1340,13 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://docs.flashbots.net/flashbots-auction/miners/mev-geth-spec/v06-rpc/eth_callBundle
@@ -1384,7 +1355,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
     if (params.size() != 3) {
         auto error_msg = "invalid eth_callBundle params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -1395,7 +1366,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
     if (tx_hash_list.empty()) {
         const auto error_msg = "invalid eth_callBundle hash list: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -1429,7 +1400,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             if (!tx_with_block) {
                 const auto error_msg = "invalid transaction hash";
                 SILK_ERROR << error_msg;
-                reply = make_json_error(request, 100, error_msg);
+                reply = make_json_error(request, kInvalidParams, error_msg);
                 break;
             }
 
@@ -1438,7 +1409,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
                     return tx->create_state(io_executor, storage, block_num);
                 });
             if (execution_result.pre_check_error) {
-                reply = make_json_error(request, -32000, execution_result.pre_check_error.value());
+                reply = make_json_error(request, kServerError, execution_result.pre_check_error.value());
                 error = true;
                 break;
             }
@@ -1446,7 +1417,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             if ((clock_time::since(start_time) / 1000000) > timeout) {
                 const auto error_msg = "execution aborted (timeout)";
                 SILK_ERROR << error_msg;
-                reply = make_json_error(request, -32000, error_msg);
+                reply = make_json_error(request, kServerError, error_msg);
                 error = true;
                 break;
             }
@@ -1470,14 +1441,13 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_newfilter
@@ -1486,7 +1456,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
     if (params.size() != 1) {
         auto error_msg = "invalid eth_newFilter params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     auto filter = params[0].get<StoredFilter>();
@@ -1494,7 +1464,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
 
     if ((filter.from_block && filter.from_block.value() == core::kPendingBlockId) ||
         (filter.to_block && filter.to_block.value() == core::kPendingBlockId)) {
-        reply = make_json_error(request, -32002, "pending logs not supported");
+        reply = make_json_error(request, kInvalidParams, "pending logs not supported");
         co_return;
     }
 
@@ -1512,21 +1482,19 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
         if (filter_id) {
             reply = make_json_content(request, filter_id.value());
         } else {
-            reply = make_json_error(request, -32000, "TODO");
+            reply = make_json_error(request, kServerError, "TODO");
         }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_newblockfilter
@@ -1537,14 +1505,13 @@ Task<void> EthereumRpcApi::handle_eth_new_block_filter(const nlohmann::json& req
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_newpendingtransactionfilter
@@ -1555,14 +1522,13 @@ Task<void> EthereumRpcApi::handle_eth_new_pending_transaction_filter(const nlohm
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getfilterlogs
@@ -1571,7 +1537,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getFilterLogs params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     auto filter_id = params[0].get<std::string>();
@@ -1579,7 +1545,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
 
     const auto filter_ref = filter_storage_->get_filter(filter_id);
     if (!filter_ref) {
-        reply = make_json_error(request, -32000, "filter not found");
+        reply = make_json_error(request, kServerError, "filter not found");
         co_return;
     }
 
@@ -1605,15 +1571,13 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getfilterchanges
@@ -1622,7 +1586,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getFilterChanges params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     auto filter_id = params[0].get<std::string>();
@@ -1631,7 +1595,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
     const auto filter_opt = filter_storage_->get_filter(filter_id);
 
     if (!filter_opt) {
-        reply = make_json_error(request, -32000, "filter not found");
+        reply = make_json_error(request, kServerError, "filter not found");
         co_return;
     }
 
@@ -1657,14 +1621,13 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
         reply = make_json_content(request, logs);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_uninstallfilter
@@ -1684,8 +1647,6 @@ Task<void> EthereumRpcApi::handle_eth_uninstall_filter(const nlohmann::json& req
     SILK_TRACE << "Removing filter " << (success ? "succeeded" : "failed") << ", storage size: " << filter_storage_->size();
 
     reply = make_json_content(request, success);
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getlogs
@@ -1693,14 +1654,14 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
-        make_glaze_json_error(request, -32602, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
     auto params = request["params"];
     if (params.size() > 1) {
         auto error_msg = "too many arguments, want at most 1";
         SILK_ERROR << error_msg << request.dump();
-        make_glaze_json_error(request, -32602, error_msg, reply);
+        make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
 
@@ -1729,14 +1690,13 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
         make_glaze_json_content(request, log, reply);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        make_glaze_json_error(request, 100, e.what(), reply);
+        make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        make_glaze_json_error(request, 100, "unexpected exception", reply);
+        make_glaze_json_error(request, kServerError, "unexpected exception", reply);
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_sendrawtransaction
@@ -1745,7 +1705,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     if (params.size() != 1) {
         auto error_msg = "invalid eth_sendRawTransaction params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     const auto encoded_tx_string = params[0].get<std::string>();
@@ -1753,7 +1713,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     if (!encoded_tx_bytes.has_value()) {
         const auto error_msg = "invalid eth_sendRawTransaction encoded tx: " + encoded_tx_string;
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, -32602, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
     silkworm::ByteView encoded_tx_view{*encoded_tx_bytes};
@@ -1762,7 +1722,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     if (!decoding_result) {
         const auto error_msg = decoding_result_to_string(decoding_result.error());
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, -32000, error_msg);
+        reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
 
@@ -1771,14 +1731,14 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     if (!check_tx_fee_less_cap(kTxFeeCap, txn.max_fee_per_gas, txn.gas_limit)) {
         const auto error_msg = "tx fee exceeds the configured cap";
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, -32000, error_msg);
+        reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
 
     if (!is_replay_protected(txn)) {
         const auto error_msg = "only replay-protected (EIP-155) transactions allowed over RPC";
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, -32000, error_msg);
+        reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
 
@@ -1786,14 +1746,14 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     const auto result = co_await tx_pool_->add_transaction(encoded_tx);
     if (!result.success) {
         SILK_ERROR << "cannot add transaction: " << result.error_descr;
-        reply = make_json_error(request, -32000, result.error_descr);
+        reply = make_json_error(request, kServerError, result.error_descr);
         co_return;
     }
 
     if (!txn.sender()) {
         const auto error_msg = "cannot recover sender";
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, -32000, error_msg);
+        reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
 
@@ -1807,8 +1767,6 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
     }
 
     reply = make_json_content(request, hash);
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_sendtransaction
@@ -1819,14 +1777,13 @@ Task<void> EthereumRpcApi::handle_eth_send_transaction(const nlohmann::json& req
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_signtransaction
@@ -1837,14 +1794,13 @@ Task<void> EthereumRpcApi::handle_eth_sign_transaction(const nlohmann::json& req
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getproof
@@ -1855,14 +1811,13 @@ Task<void> EthereumRpcApi::handle_eth_get_proof(const nlohmann::json& request, n
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_mining
@@ -1872,16 +1827,14 @@ Task<void> EthereumRpcApi::handle_eth_mining(const nlohmann::json& request, nloh
         reply = make_json_content(request, mining_result.enabled && mining_result.running);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request, -32000, se.code().message());
+        reply = make_json_error(request, kServerError, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, -32000, e.what());
+        reply = make_json_error(request, kServerError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_coinbase
@@ -1891,16 +1844,14 @@ Task<void> EthereumRpcApi::handle_eth_coinbase(const nlohmann::json& request, nl
         reply = make_json_content(request, coinbase_address);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request, -32000, se.code().message());
+        reply = make_json_error(request, kServerError, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, -32000, e.what());
+        reply = make_json_error(request, kServerError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_hashrate
@@ -1910,16 +1861,14 @@ Task<void> EthereumRpcApi::handle_eth_hashrate(const nlohmann::json& request, nl
         reply = make_json_content(request, to_quantity(hash_rate));
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request, -32000, se.code().message());
+        reply = make_json_error(request, kServerError, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, -32000, e.what());
+        reply = make_json_error(request, kServerError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_submithashrate
@@ -1928,7 +1877,7 @@ Task<void> EthereumRpcApi::handle_eth_submit_hashrate(const nlohmann::json& requ
     if (params.size() != 2) {
         const auto error_msg = "invalid eth_submitHashrate params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -1939,16 +1888,14 @@ Task<void> EthereumRpcApi::handle_eth_submit_hashrate(const nlohmann::json& requ
         reply = make_json_content(request, success);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request, -32000, se.code().message());
+        reply = make_json_error(request, kServerError, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, -32000, e.what());
+        reply = make_json_error(request, kServerError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_getwork
@@ -1963,16 +1910,14 @@ Task<void> EthereumRpcApi::handle_eth_get_work(const nlohmann::json& request, nl
         reply = make_json_content(request, current_work);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request, -32000, se.code().message());
+        reply = make_json_error(request, kServerError, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, -32000, e.what());
+        reply = make_json_error(request, kServerError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_submitwork
@@ -1981,7 +1926,7 @@ Task<void> EthereumRpcApi::handle_eth_submit_work(const nlohmann::json& request,
     if (params.size() != 3) {
         const auto error_msg = "invalid eth_submitWork params: " + params.dump();
         SILK_ERROR << error_msg;
-        reply = make_json_error(request, 100, error_msg);
+        reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
 
@@ -1999,16 +1944,14 @@ Task<void> EthereumRpcApi::handle_eth_submit_work(const nlohmann::json& request,
         reply = make_json_content(request, success);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
-        reply = make_json_error(request, -32000, se.code().message());
+        reply = make_json_error(request, kServerError, se.code().message());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, -32000, e.what());
+        reply = make_json_error(request, kServerError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
-
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_subscribe
@@ -2019,14 +1962,13 @@ Task<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann::json& request, n
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_unsubscribe
@@ -2037,14 +1979,13 @@ Task<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& request,
         reply = make_json_content(request, to_quantity(0));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 // https://eth.wiki/json-rpc/API#eth_feehistory
@@ -2103,20 +2044,19 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         const auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentiles);
 
         if (fee_history.error) {
-            reply = make_json_error(request, -32000, fee_history.error.value());
+            reply = make_json_error(request, kServerError, fee_history.error.value());
         } else {
             reply = make_json_content(request, fee_history);
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, 100, e.what());
+        reply = make_json_error(request, kInternalError, e.what());
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
-        reply = make_json_error(request, 100, "unexpected exception");
+        reply = make_json_error(request, kServerError, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
 }
 
 }  // namespace silkworm::rpc::commands

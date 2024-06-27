@@ -69,7 +69,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             })"_json,
             reply));
 
-        std::string expected_rsp{R"({"jsonrpc":"2.0","id":1,"error":{"code":100,"message":"invalid erigon_getBlockByTimestamp params: []"}})"};
+        std::string expected_rsp{R"({"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"invalid erigon_getBlockByTimestamp params: []"}})"};
         CHECK(reply == expected_rsp);
     }
     SECTION("request params are incomplete: return error") {
@@ -86,7 +86,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             "id":1,
             "error":{"code":100,"message":"invalid erigon_getBlockByTimestamp params: [\"1658865942\"]"}
         })"_json;
-        std::string expected_rsp{R"({"jsonrpc":"2.0","id":1,"error":{"code":100,"message":"invalid erigon_getBlockByTimestamp params: [\"1658865942\"]"}})"};
+        std::string expected_rsp{R"({"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"invalid erigon_getBlockByTimestamp params: [\"1658865942\"]"}})"};
         CHECK(reply == expected_rsp);
     }
     SECTION("request 1st param is invalid: return error") {
@@ -140,7 +140,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_header_by_ha
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
-            "error":{"code":100,"message":"invalid erigon_getHeaderByHash params: []"}
+            "error":{"code":-32602,"message":"invalid erigon_getHeaderByHash params: []"}
         })"_json);
     }
 }
@@ -160,7 +160,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_header_by_nu
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
-            "error":{"code":100,"message":"invalid erigon_getHeaderByNumber params: []"}
+            "error":{"code":-32602,"message":"invalid erigon_getHeaderByNumber params: []"}
         })"_json);
     }
 }
@@ -180,7 +180,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_logs_by_hash
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
-            "error":{"code":100,"message":"invalid erigon_getLogsByHash params: []"}
+            "error":{"code":-32602,"message":"invalid erigon_getLogsByHash params: []"}
         })"_json);
     }
 }
@@ -217,7 +217,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
-            "error":{"code":100,"message":"invalid erigon_blockNumber params: [\"earliest\",\"3\"]"} 
+            "error":{"code":-32602,"message":"invalid erigon_blockNumber params: [\"earliest\",\"3\"]"}
         })"_json);
     }
 #endif  // _WIN32

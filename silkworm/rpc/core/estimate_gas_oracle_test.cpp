@@ -196,7 +196,9 @@ TEST_CASE("estimate gas") {
 
     SECTION("Call empty, alternatively succeeds and fails with intrinsic") {
         ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail_pre_check{.pre_check_error = "intrinsic ", .pre_check_error_code = kIntrinsicGasTooLow};
+        ExecutionResult expect_result_fail_pre_check{
+            .pre_check_error = "intrinsic ",
+            .pre_check_error_code = PreCheckErrorCode::kIntrinsicGasTooLow};
         ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(14)
@@ -417,7 +419,9 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call fail, try exception") {
-        ExecutionResult expect_result_fail_pre_check{.pre_check_error = "insufficient funds", .pre_check_error_code = kInsufficientFunds};
+        ExecutionResult expect_result_fail_pre_check{
+            .pre_check_error = "insufficient funds",
+            .pre_check_error_code = PreCheckErrorCode::kInsufficientFunds};
         ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
@@ -442,7 +446,9 @@ TEST_CASE("estimate gas") {
 
     SECTION("Call fail, try exception with data") {
         auto data = *silkworm::from_hex("2ac3c1d3e24b45c6c310534bc2dd84b5ed576335");
-        ExecutionResult expect_result_fail_pre_check{.pre_check_error = "insufficient funds", .pre_check_error_code = kInsufficientFunds};
+        ExecutionResult expect_result_fail_pre_check{
+            .pre_check_error = "insufficient funds",
+            .pre_check_error_code = PreCheckErrorCode::kInsufficientFunds};
         ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS, .data = data};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
@@ -466,7 +472,9 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call fail-EVMC_INVALID_INSTRUCTION, try exception") {
-        ExecutionResult expect_result_fail_pre_check{.pre_check_error = "insufficient funds", .pre_check_error_code = kInsufficientFunds};
+        ExecutionResult expect_result_fail_pre_check{
+            .pre_check_error = "insufficient funds",
+            .pre_check_error_code = PreCheckErrorCode::kInsufficientFunds};
         ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_INVALID_INSTRUCTION};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};

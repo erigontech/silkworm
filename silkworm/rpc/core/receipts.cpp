@@ -48,10 +48,10 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const 
     if (!raw_receipts || raw_receipts->empty()) {
         co_return raw_receipts;
     }
-    auto receipts = *raw_receipts;
+    auto receipts = std::move(*raw_receipts);
 
     // Add derived fields to the receipts
-    auto transactions = block_with_hash.block.transactions;
+    auto& transactions = block_with_hash.block.transactions;
     SILK_DEBUG << "#transactions=" << block_with_hash.block.transactions.size() << " #receipts=" << receipts.size();
     if (transactions.size() != receipts.size()) {
         throw std::runtime_error{"#transactions and #receipts do not match in read_receipts"};

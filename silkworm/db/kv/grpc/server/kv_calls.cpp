@@ -27,7 +27,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 
-namespace silkworm::kv::grpc::server {
+namespace silkworm::db::kv::grpc::server {
 
 using boost::asio::as_tuple;
 using namespace boost::asio::experimental::awaitable_operators;
@@ -766,4 +766,4 @@ Task<void> DomainRangeCall::operator()() {
                << " next_page_token: " << response.next_page_token();
 }
 
-}  // namespace silkworm::kv::grpc::server
+}  // namespace silkworm::db::kv::grpc::server

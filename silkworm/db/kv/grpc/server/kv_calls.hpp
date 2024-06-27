@@ -40,7 +40,7 @@
 // KV API protocol versions
 // 5.1.0 - first issue
 
-namespace silkworm::kv::grpc::server {
+namespace silkworm::db::kv::grpc::server {
 
 api::Version higher_version_ignoring_patch(api::Version lhs, api::Version rhs);
 
@@ -211,4 +211,4 @@ class DomainRangeCall : public rpc::server::UnaryCall<remote::DomainRangeReq, re
     Task<void> operator()();
 };
 
-}  // namespace silkworm::kv::grpc::server
+}  // namespace silkworm::db::kv::grpc::server

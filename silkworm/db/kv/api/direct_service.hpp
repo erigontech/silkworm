@@ -18,7 +18,7 @@
 
 #include "service.hpp"
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 //! Straightforward asynchronous implementation of KV API service relying on \code Domains.
 //! This is used both client-side by 'direct' (i.e. no-gRPC) implementation and server-side by gRPC server.
@@ -59,4 +59,4 @@ class DirectService : public Service {
     Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) override;
 };
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

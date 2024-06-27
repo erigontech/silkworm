@@ -25,7 +25,7 @@
 #include "../../api/client.hpp"
 #include "../../api/service.hpp"
 
-namespace silkworm::kv::grpc::client {
+namespace silkworm::db::kv::grpc::client {
 
 class RemoteClientImpl;
 
@@ -40,4 +40,4 @@ struct RemoteClient : public api::Client {
     std::shared_ptr<RemoteClientImpl> p_impl_;
 };
 
-}  // namespace silkworm::kv::grpc::client
+}  // namespace silkworm::db::kv::grpc::client

@@ -21,7 +21,7 @@
 #include "../api/client.hpp"
 #include "../api/direct_service.hpp"
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 struct DirectClient : public api::Client {
     explicit DirectClient(std::shared_ptr<DirectService> direct_service);
@@ -33,4 +33,4 @@ struct DirectClient : public api::Client {
     std::shared_ptr<DirectService> direct_service_;
 };
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

@@ -21,7 +21,7 @@
 
 #include "common.hpp"
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 struct PointResult {
     bool success{false};
@@ -47,4 +47,4 @@ struct DomainPointQuery {
 
 using DomainPointResult = PointResult;
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

@@ -23,7 +23,7 @@
 #include "endpoint/version.hpp"
 #include "transaction.hpp"
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 struct Service {
     virtual ~Service() = default;
@@ -54,4 +54,4 @@ struct Service {
     virtual Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) = 0;
 };
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

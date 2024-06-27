@@ -20,7 +20,7 @@
 
 #include "../../../api/endpoint/temporal_point.hpp"
 
-namespace silkworm::kv::grpc::client {
+namespace silkworm::db::kv::grpc::client {
 
 ::remote::HistoryGetReq history_get_request_from_query(const api::HistoryPointQuery&);
 api::HistoryPointResult history_get_result_from_response(const ::remote::HistoryGetReply&);
@@ -28,4 +28,4 @@ api::HistoryPointResult history_get_result_from_response(const ::remote::History
 ::remote::DomainGetReq domain_get_request_from_query(const api::DomainPointQuery&);
 api::DomainPointResult domain_get_result_from_response(const ::remote::DomainGetReply&);
 
-}  // namespace silkworm::kv::grpc::client
+}  // namespace silkworm::db::kv::grpc::client

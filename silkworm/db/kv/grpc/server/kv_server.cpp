@@ -22,7 +22,7 @@
 
 #include "kv_calls.hpp"
 
-namespace silkworm::kv::grpc::server {
+namespace silkworm::db::kv::grpc::server {
 
 using rpc::request_repeatedly;
 
@@ -97,4 +97,4 @@ void KvServer::register_request_calls() {
     }
 }
 
-}  // namespace silkworm::kv::grpc::server
+}  // namespace silkworm::db::kv::grpc::server

@@ -16,7 +16,7 @@
 
 #include "direct_service.hpp"
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 DirectService::DirectService() = default;
 
@@ -65,4 +65,4 @@ Task<DomainRangeResult> DirectService::get_domain_range(const DomainRangeQuery&)
     co_return DomainRangeResult{};
 }
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

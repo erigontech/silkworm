@@ -20,7 +20,7 @@
 
 #include "../../../api/endpoint/temporal_range.hpp"
 
-namespace silkworm::kv::grpc::client {
+namespace silkworm::db::kv::grpc::client {
 
 ::remote::IndexRangeReq index_range_request_from_query(const api::IndexRangeQuery&);
 api::IndexRangeResult index_range_result_from_response(const ::remote::IndexRangeReply&);
@@ -31,4 +31,4 @@ api::HistoryRangeResult history_range_result_from_response(const ::remote::Pairs
 ::remote::DomainRangeReq domain_range_request_from_query(const api::DomainRangeQuery&);
 api::DomainRangeResult domain_range_result_from_response(const ::remote::Pairs&);
 
-}  // namespace silkworm::kv::grpc::client
+}  // namespace silkworm::db::kv::grpc::client

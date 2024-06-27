@@ -23,7 +23,7 @@
 
 #include "common.hpp"
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 struct IndexRangeQuery {
     TxId tx_id{0};
@@ -74,4 +74,4 @@ struct DomainRangeQuery {
 
 using DomainRangeResult = RangeResult;
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

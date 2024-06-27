@@ -202,7 +202,7 @@ struct TestableStateChangeCollection : public StateChangeCollection {
     StateChangeTokenObserver token_observer_;
 };
 
-using KvServer = kv::grpc::server::KvServer;
+using KvServer = db::kv::grpc::server::KvServer;
 
 struct KvEnd2EndTest {
     explicit KvEnd2EndTest(silkworm::log::Level log_verbosity = silkworm::log::Level::kNone)
@@ -274,7 +274,7 @@ struct KvEnd2EndTest {
 
 }  // namespace
 
-namespace silkworm::kv::grpc::server {
+namespace silkworm::db::kv::grpc::server {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
@@ -2184,4 +2184,4 @@ TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::kv::grpc::server
+}  // namespace silkworm::db::kv::grpc::server

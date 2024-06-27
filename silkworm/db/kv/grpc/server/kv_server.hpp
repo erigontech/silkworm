@@ -26,7 +26,7 @@
 
 #include "state_change_collection.hpp"
 
-namespace silkworm::kv::grpc::server {
+namespace silkworm::db::kv::grpc::server {
 
 class KvServer : public virtual rpc::Server {
   public:
@@ -53,4 +53,4 @@ class KvServer : public virtual rpc::Server {
     StateChangeCollection* state_change_source_;
 };
 
-}  // namespace silkworm::kv::grpc::server
+}  // namespace silkworm::db::kv::grpc::server

@@ -44,11 +44,11 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
 Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash) {
     const evmc::bytes32 block_hash = block_with_hash.hash;
     uint64_t block_number = block_with_hash.block.header.number;
-    const auto raw_receipts = co_await read_raw_receipts(tx, block_number);
+    auto raw_receipts = co_await read_raw_receipts(tx, block_number);
     if (!raw_receipts || raw_receipts->empty()) {
         co_return raw_receipts;
     }
-    auto receipts = std::move(*raw_receipts);
+    auto& receipts = *raw_receipts;
 
     // Add derived fields to the receipts
     auto& transactions = block_with_hash.block.transactions;
@@ -93,7 +93,7 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const 
         }
     }
 
-    co_return receipts;
+    co_return raw_receipts;
 }
 
 Task<std::optional<Receipts>> read_raw_receipts(db::kv::api::Transaction& tx, BlockNum block_number) {

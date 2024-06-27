@@ -24,7 +24,7 @@
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 
-namespace silkworm::kv::grpc::client {
+namespace silkworm::db::kv::grpc::client {
 
 namespace proto = ::remote;
 using Stub = proto::KV::StubInterface;
@@ -117,4 +117,4 @@ std::shared_ptr<api::Service> RemoteClient::service() {
     return p_impl_;
 }
 
-}  // namespace silkworm::kv::grpc::client
+}  // namespace silkworm::db::kv::grpc::client

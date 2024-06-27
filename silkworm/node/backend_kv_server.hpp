@@ -23,7 +23,7 @@
 
 namespace silkworm::node {
 
-class BackEndKvServer : public ethbackend::grpc::server::BackEndServer, public kv::grpc::server::KvServer {
+class BackEndKvServer : public ethbackend::grpc::server::BackEndServer, public db::kv::grpc::server::KvServer {
   public:
     BackEndKvServer(const rpc::ServerSettings& settings, const EthereumBackEnd& backend);
 

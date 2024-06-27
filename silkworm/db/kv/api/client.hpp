@@ -20,7 +20,7 @@
 
 #include "service.hpp"
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 struct Client {
     virtual ~Client() = default;
@@ -28,4 +28,4 @@ struct Client {
     virtual std::shared_ptr<Service> service() = 0;
 };
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

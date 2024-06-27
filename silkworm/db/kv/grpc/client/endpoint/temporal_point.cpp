@@ -18,7 +18,7 @@
 
 #include <silkworm/core/common/util.hpp>
 
-namespace silkworm::kv::grpc::client {
+namespace silkworm::db::kv::grpc::client {
 
 namespace proto = ::remote;
 
@@ -65,4 +65,4 @@ api::DomainPointResult domain_get_result_from_response(const proto::DomainGetRep
     return result;
 }
 
-}  // namespace silkworm::kv::grpc::client
+}  // namespace silkworm::db::kv::grpc::client

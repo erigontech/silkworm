@@ -21,7 +21,7 @@
 
 #include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::kv::api {
+namespace silkworm::db::kv::api {
 
 using TxId = uint64_t;
 using Timestamp = int64_t;
@@ -29,4 +29,4 @@ using Timestamp = int64_t;
 using ListOfBytes = std::vector<Bytes>;
 using ListOfTimestamp = std::vector<Timestamp>;
 
-}  // namespace silkworm::kv::api
+}  // namespace silkworm::db::kv::api

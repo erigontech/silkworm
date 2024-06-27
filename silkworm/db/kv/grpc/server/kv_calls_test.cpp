@@ -22,7 +22,7 @@
 
 #include <silkworm/infra/common/directories.hpp>
 
-namespace silkworm::kv::grpc::server {
+namespace silkworm::db::kv::grpc::server {
 
 TEST_CASE("higher_version_ignoring_patch", "[silkworm][rpc][kv_calls]") {
     SECTION("lhs.major > rhs.major") {
@@ -90,4 +90,4 @@ TEST_CASE("dump_mdbx_result", "[silkworm][rpc][kv_calls]") {
     ro_txn.abort();
 }
 
-}  // namespace silkworm::kv::grpc::server
+}  // namespace silkworm::db::kv::grpc::server

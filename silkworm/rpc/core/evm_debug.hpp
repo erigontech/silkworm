@@ -74,6 +74,7 @@ struct CallFixes {
     int32_t depth{0};
     int64_t stipend{0};
     int16_t code_cost{0};
+    int64_t gas_cost{0};
 };
 
 class DebugTracer : public EvmTracer {
@@ -103,7 +104,6 @@ class DebugTracer : public EvmTracer {
     std::map<evmc::address, Storage> storage_;
     const char* const* opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
-//    std::int64_t start_gas_{0};
     std::stack<std::int64_t> start_gas_;
     std::int64_t gas_on_precompiled_{0};
     std::unique_ptr<CallFixes> call_fixes_;

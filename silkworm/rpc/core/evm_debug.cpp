@@ -106,7 +106,7 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
-//    start_gas_ = msg.gas;
+    //    start_gas_ = msg.gas;
     start_gas_.push(msg.gas);
 
     const evmc::address recipient(msg.recipient);
@@ -446,10 +446,10 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 
             stream.write_json_field("failed", !execution_result.success());
             if (!execution_result.pre_check_error) {
-//                SILK_LOG << "DebugExecutor::execute:"
-//                         << " txn.gas_limit: " << std::dec << txn.gas_limit
-//                         << " execution_result.gas_left: " << std::dec << execution_result.gas_left
-//                         << " gas: " << std::dec << txn.gas_limit - execution_result.gas_left;
+                //                SILK_LOG << "DebugExecutor::execute:"
+                //                         << " txn.gas_limit: " << std::dec << txn.gas_limit
+                //                         << " execution_result.gas_left: " << std::dec << execution_result.gas_left
+                //                         << " gas: " << std::dec << txn.gas_limit - execution_result.gas_left;
 
                 stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
                 stream.write_field("returnValue", silkworm::to_hex(execution_result.data));

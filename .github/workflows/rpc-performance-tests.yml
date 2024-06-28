@@ -65,6 +65,7 @@ jobs:
         run: |
           set +e # Disable exit on error
           failed_test=0
+          commit=$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)
           
           run_perf () {
             servers=("silkworm" "erigon")
@@ -96,7 +97,7 @@ jobs:
                perf_exit_status=$?
 
                # Save test results to a directory with timestamp and commit hash
-               cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)
+               cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
                
                # Detect the pre-built db version
                db_version=$(python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/prod_info.py $ERIGON_DIR/production.ini production erigon_repo_commit) 
@@ -123,11 +124,13 @@ jobs:
                     --outcome success \
                     --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json
           
-                  echo "Execute Latency Percentile HDR Analysis"                                             
+                  echo "Execute Latency Percentile HDR Analysis"   
+                  cd ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/
                   python3 $ERIGON_QA_PATH/test_system/qa-tests/rpc-tests/perf_hdr_analysis.py \
                     --test_name ${servers[i-1]}-$method \
-                    --input_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json \
-                    --output_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/${servers[i-1]}-${method}-latency_hdr_analysis.pdf
+                    --input_file ./result.json \
+                    --output_file ./${servers[i-1]}-${method}-latency_hdr_analysis.pdf                  
+                  cp -r . $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
                else
                   failed_test=1
                   cd ${{runner.workspace}}/silkworm

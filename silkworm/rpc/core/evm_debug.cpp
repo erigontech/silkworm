@@ -90,6 +90,8 @@ void insert_error(DebugLog& log, evmc_status_code status_code) {
     switch (status_code) {
         case evmc_status_code::EVMC_FAILURE:
         case evmc_status_code::EVMC_OUT_OF_GAS:
+        case evmc_status_code::EVMC_STACK_OVERFLOW:
+        case evmc_status_code::EVMC_STACK_UNDERFLOW:
             log.error = true;
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
@@ -102,10 +104,13 @@ void insert_error(DebugLog& log, evmc_status_code status_code) {
 void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
+        metrics_ = evmc_get_instruction_metrics_table(rev);
     }
-    start_gas_ = msg.gas;
+    start_gas_.push(msg.gas);
+
     const evmc::address recipient(msg.recipient);
     const evmc::address sender(msg.sender);
+
     SILK_DEBUG << "on_execution_start: gas: " << std::dec << msg.gas
                << " depth: " << msg.depth
                << " recipient: " << recipient
@@ -137,12 +142,12 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     bool output_storage = false;
     if (!config_.disableStorage) {
-        if (opcode_name == "SLOAD" && stack_height >= 1) {
+        if (opcode == OP_SLOAD && stack_height >= 1) {
             const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
             const auto value = intra_block_state.get_current_storage(recipient, address);
             storage_[recipient][silkworm::to_hex(address)] = silkworm::to_hex(value);
             output_storage = true;
-        } else if (opcode_name == "SSTORE" && stack_height >= 2) {
+        } else if (opcode == OP_SSTORE && stack_height >= 2) {
             const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
             const auto value = silkworm::bytes32_from_hex(intx::hex(stack_top[-1]));
             storage_[recipient][silkworm::to_hex(address)] = silkworm::to_hex(value);
@@ -163,6 +168,19 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         } else if (depth == execution_state.msg->depth) {
             log.gas_cost = log.gas - gas;
         }
+        if (call_fixes_) {
+            if (execution_state.msg->depth == call_fixes_->depth) {
+                if (call_fixes_->gas_cost) {
+                    log.gas_cost = call_fixes_->gas_cost;
+                } else {
+                    log.gas_cost = log.gas_cost + call_fixes_->stipend;
+                }
+            } else {
+                log.gas_cost = gas + call_fixes_->stipend + call_fixes_->code_cost;
+            }
+
+            call_fixes_.reset();
+        }
     }
     if (logs_.size() > 1) {
         auto& log = logs_.front();
@@ -170,10 +188,20 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         logs_.erase(logs_.begin());
     }
 
+    if (opcode == OP_CALL || opcode == OP_CALLCODE || opcode == OP_DELEGATECALL || opcode == OP_CREATE || opcode == OP_CREATE2) {
+        call_fixes_ = std::make_unique<CallFixes>(CallFixes{execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
+        if (opcode == OP_CALL && stack_height >= 7 && stack_top[-2] != 0) {
+            call_fixes_->stipend = 2300;  // for CALLs with value, include stipend
+        }
+
+        call_fixes_->code_cost = metrics_[opcode].gas_cost;
+    }
+
     DebugLog log;
     log.pc = pc;
     log.op = opcode_name;
     log.gas = gas;
+    log.gas_cost = metrics_[opcode].gas_cost;
     log.depth = execution_state.msg->depth + 1;
 
     if (!config_.disableStack) {
@@ -199,23 +227,33 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
                << ", gas: " << std::dec << gas;
 
     gas_on_precompiled_ = gas;
+    if (call_fixes_) {
+        call_fixes_->gas_cost = gas + call_fixes_->code_cost;
+    }
 }
 
 void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+    auto start_gas = start_gas_.top();
+    start_gas_.pop();
+
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
+
+        if (call_fixes_) {
+            log.gas_cost += call_fixes_->stipend;
+        }
 
         insert_error(log, result.status_code);
 
         switch (result.status_code) {
             case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
+            case evmc_status_code::EVMC_INVALID_INSTRUCTION:
+            case evmc_status_code::EVMC_STACK_OVERFLOW:
+            case evmc_status_code::EVMC_STACK_UNDERFLOW:
                 log.gas_cost = 0;
                 break;
 
-            case evmc_status_code::EVMC_REVERT:
-            case evmc_status_code::EVMC_OUT_OF_GAS:
             default:
-                log.gas_cost = log.gas - result.gas_left;
                 break;
         }
     }
@@ -228,7 +266,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
 
     SILK_DEBUG << "on_execution_end:"
                << " result.status_code: " << result.status_code
-               << " start_gas: " << std::dec << start_gas_
+               << " start_gas: " << std::dec << start_gas
                << " gas_left: " << std::dec << result.gas_left;
 }
 

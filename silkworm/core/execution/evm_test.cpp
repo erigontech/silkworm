@@ -1407,7 +1407,7 @@ TEST_CASE("Missing call traces for CREATE/CREATE2 when completed w/o executing",
     CHECK(!call_traces.recipients.contains(item2_address));   // item2_address not traced because creation failed
 }
 
-//! CallTracer collects source and destination account addresses touched during execution by tracing EVM calls.
+//! CallGasTracer collects gas cost for CALL opcodes
 class CallGasTracer : public EvmTracer {
   public:
     explicit CallGasTracer() = default;
@@ -1415,7 +1415,6 @@ class CallGasTracer : public EvmTracer {
     CallGasTracer(const CallGasTracer&) = delete;
     CallGasTracer& operator=(const CallGasTracer&) = delete;
 
-    void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept override;
     void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, int64_t gas,
                               const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept override;
 
@@ -1423,111 +1422,34 @@ class CallGasTracer : public EvmTracer {
         return call_gas_cost_;
     }
 
-  private:
-    //    CallTraces& traces_;
-    const char* const* opcode_names_ = nullptr;
+private:
     std::optional<long> temporary_gas_;
     std::vector<long> call_gas_cost_;
 };
-
-std::string get_opcode_name(const char* const*, std::uint8_t opcode) {
-    return "0x" + evmc::hex(opcode);
-    //    const auto name = names[opcode];
-    //    return (name != nullptr) ? name : "0x" + evmc::hex(opcode);
-}
-
-std::string uint256_to_hex(const evmone::uint256& x) {
-    std::stringstream ss;
-    ss << "0x";
-
-    bool leading_zeros = true;
-    const uint64_t* px = &x[0];
-    for (int i = 3; i >= 0; i--) {
-        if (px[i] == 0 && leading_zeros) {
-            continue;
-        }
-        if (leading_zeros) {
-            ss << std::hex << px[i];
-            leading_zeros = false;
-        } else {
-            ss << std::setfill('0') << std::setw(16) << std::hex << px[i];
-        }
-    }
-
-    if (leading_zeros) {
-        ss << "0";
-    }
-
-    return ss.str();
-}
-
-void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
-    vect.reserve(stack_size);
-    for (int i = int(stack_size - 1); i >= 0; --i) {
-        vect.push_back(uint256_to_hex(stack[-i]));
-    }
-}
-
-void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory) {
-    const auto data = memory.data();
-    vect.push_back(silkworm::to_hex({data, memory.size()}));
-}
-
-void CallGasTracer::on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept {
-    //    if (opcode_names_ == nullptr) {
-    //        opcode_names_ = evmc_get_instruction_names_table(rev);
-    //    }
-}
 
 void CallGasTracer::on_instruction_start(unsigned int pc, const intx::uint256*, int, long gas,
                                          const evmone::ExecutionState& execution_state,
                                          const IntraBlockState&) noexcept {
     const auto opcode = execution_state.original_code[pc];
-    const auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
-    std::cout << "pc: " << pc << ", gas: " << gas;
     if (temporary_gas_) {
         auto cost = temporary_gas_.value() - gas;
-        std::cout << ", gasCost: " << cost;
-        if (opcode == 0xf1) {
-            call_gas_cost_.push_back(cost);
-        }
+        call_gas_cost_.push_back(cost);
+        temporary_gas_.reset();
     }
-    std::cout << ", opcode: " << opcode_name;
+    if (opcode == 0xf1) { // CALL
+        temporary_gas_ = gas;
+    }
 
     temporary_gas_ = gas;
 
-    //    std::vector<std::string> memory;
-    //    output_memory(memory, execution_state.memory);
-    //    std::cout << "memory: \n";
-    //    for (const auto& item : memory) {
-    //        const std::size_t len = 64;
-    //        const auto data = item.data();
-    //        for (std::size_t start = 0; start < item.size(); start += len) {
-    //            std::string_view value{data + start, len};
-    //            std::cout << "   " << value << "\n";
-    //        }
-    //    }
-
-    //    std::vector<std::string> stack;
-    //    output_stack(stack, stack_top, uint32_t(stack_height));
-    //    std::cout << "stack: \n";
-    //    for (const auto& item : stack) {
-    //        std::cout << "   " << item << "\n";
-    //    }
-
-    //    std::cout << "storage: \n";
-    //    for (const auto& entry : storage) {
-    //        std::cout << "   " << item << "\n";
-    //        stream_.write_field(entry.first, entry.second);
-    //    }
-
-    std::cout << "\n";
 }
 
 TEST_CASE("Get gas for CALL", "[core][execution]") {
     Block block{};
-    block.header.number = 1'029'553;  // real block on GOERLI chain
+    block.header.number = 1'029'553; // real block on GOERLI chain see https://goerli.etherscan.io/block/1029553
+//    block.header.timestamp = 1564461581;
+
     evmc::address caller_address{0x8882042B8E93C85312f623F058eF252c8025a7Ae_address};
     evmc::address callee_address{0x37803fC1b1FA2075B6D79f3e4CDF2873B9237281_address};
 
@@ -1539,19 +1461,23 @@ TEST_CASE("Get gas for CALL", "[core][execution]") {
 
     InMemoryState db;
     IntraBlockState state{db};
+
+    state.set_balance(0x0000000000000000000000000000000000000000_address, intx::from_string<intx::uint256>("0x01"));
     state.set_code(caller_address, caller_code);
-    state.set_balance(caller_address, intx::from_string<intx::uint256>("0x70155dca4fd46a6b49"));  // 0x70155dca4fd46a6b49
+    state.set_balance(caller_address, intx::from_string<intx::uint256>("0x70155dca4fd46a6b49"));
     state.set_nonce(caller_address, 0xb02);
     state.set_code(callee_address, callee_code);
-    state.set_balance(callee_address, intx::from_string<intx::uint256>("0x1ab6f94d08a0800000"));  // 0x1ab6f94d08a0800000
+    state.set_balance(callee_address, intx::from_string<intx::uint256>("0x1ab6f94d08a0800000"));
     state.set_nonce(callee_address, 0x1);
 
-    EVM evm{block, state, kMainnetConfig};
+    ChainConfig cc{kGoerliConfig};
+    cc.petersburg_block = 0;
+    EVM evm{block, state, cc};
 
     CallGasTracer tracer;
     evm.add_tracer(tracer);
 
-    Transaction txn{};
+    Transaction txn{}; // txn #o in block 1'029'553, see https://goerli.etherscan.io/tx/0x81b9951cde95115515c6049382e8227dc9a96972793df7da814ab22cc62dd091
     txn.set_sender(caller_address);
     txn.to = callee_address;
     txn.data = ByteView{*from_hex("9890220b")};

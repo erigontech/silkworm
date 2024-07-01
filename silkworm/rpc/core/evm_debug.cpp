@@ -185,12 +185,6 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         gas_cost = log.gas_cost;
     }
 
-    SILK_LOG << " pc: " << std::dec << pc
-             << ", gas: " << std::dec << gas
-             << ", gasCost: " << std::dec << gas_cost
-             << ", opcode: 0x" << evmc::hex(opcode)
-             << " (" << opcode_name << ")";
-
     if (logs_.size() > 1) {
         auto& log = logs_.front();
         write_log(log);

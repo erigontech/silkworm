@@ -22,7 +22,6 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/bodies/body_queries.hpp>
 #include <silkworm/db/headers/header_queries.hpp>
@@ -456,14 +455,23 @@ bool read_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLen
     return read_body(txn, key, read_senders, out);
 }
 
-bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) {
+std::optional<BlockBodyForStorage> read_body_for_storage(ROTxn& txn, const Bytes& key) {
     auto cursor = txn.ro_cursor(table::kBlockBodies);
     auto data{cursor->find(to_slice(key), false)};
     if (!data) {
-        return false;
+        return std::nullopt;
     }
     ByteView data_view{from_slice(data.value)};
     auto body{unwrap_or_throw(decode_stored_block_body(data_view))};
+    return body;
+}
+
+bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) {
+    auto body_opt = read_body_for_storage(txn, key);
+    if (!body_opt) {
+        return false;
+    }
+    BlockBodyForStorage& body = *body_opt;
 
     std::swap(out.ommers, body.ommers);
     std::swap(out.withdrawals, body.withdrawals);
@@ -477,12 +485,10 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
 
 bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) {
     const auto key{block_key(height, hash.bytes)};
-    auto cursor = txn.ro_cursor(table::kBlockBodies);
-    const auto data{cursor->find(to_slice(key), false)};
-    if (!data) return false;
+    auto body_opt = read_body_for_storage(txn, key);
+    if (!body_opt) return false;
+    auto& body = *body_opt;
 
-    ByteView data_view{from_slice(data.value)};
-    const auto body{unwrap_or_throw(decode_stored_block_body(data_view))};
     ensure(body.txn_count > 1, [&]() { return "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(height); });
     read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, rlp_txs);
 
@@ -495,6 +501,18 @@ bool read_body(ROTxn& txn, const evmc::bytes32& h, BlockBody& body) {
         return false;
     }
     return db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body);
+}
+
+bool read_canonical_body(ROTxn& txn, BlockNum block_number, bool read_senders, BlockBody& body) {
+    auto hash = read_canonical_hash(txn, block_number);
+    if (!hash) return false;
+    return read_body(txn, block_number, hash->bytes, read_senders, body);
+}
+
+std::optional<BlockBodyForStorage> read_canonical_body_for_storage(ROTxn& txn, BlockNum height) {
+    auto hash = read_canonical_hash(txn, height);
+    if (!hash) return std::nullopt;
+    return read_body_for_storage(txn, block_key(height, hash->bytes));
 }
 
 bool read_canonical_block(ROTxn& txn, BlockNum height, Block& block) {

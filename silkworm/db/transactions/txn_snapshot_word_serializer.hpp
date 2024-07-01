@@ -44,6 +44,8 @@ void encode_word_from_tx(Bytes& word, const Transaction& tx);
 //! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
 void decode_word_into_tx(ByteView word, Transaction& tx);
 
+Transaction empty_system_tx();
+
 struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
     Transaction value;
     Bytes word;

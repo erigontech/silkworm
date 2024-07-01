@@ -20,6 +20,7 @@
 
 #include <silkworm/db/bodies/body_index.hpp>
 #include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
 
@@ -41,7 +42,17 @@ SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path,
     };
 }
 
-std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(SnapshotPath seg_file) const {
+SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, BlockNumRange range) const {
+    PathByTypeProvider snapshot_path = [&](silkworm::snapshots::SnapshotType type) {
+        return SnapshotPath::from(dir_path, kSnapshotV1, range.first, range.second, type);
+    };
+    PathByTypeProvider index_path = [&](silkworm::snapshots::SnapshotType type) {
+        return SnapshotPath::from(dir_path, kSnapshotV1, range.first, range.second, type, kIdxExtension);
+    };
+    return make(std::move(snapshot_path), std::move(index_path));
+}
+
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPath& seg_file) const {
     switch (seg_file.type()) {
         case SnapshotType::headers:
             return {std::make_shared<IndexBuilder>(HeaderIndex::make(seg_file))};

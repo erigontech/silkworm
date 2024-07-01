@@ -14,18 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include <silkworm/db/snapshots/snapshot_bundle_factory.hpp>
+#include "data_migration.hpp"
 
 namespace silkworm::db {
 
-struct SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
-    ~SnapshotBundleFactoryImpl() override = default;
-
-    snapshots::SnapshotBundle make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const override;
-    snapshots::SnapshotBundle make(const std::filesystem::path& dir_path, BlockNumRange range) const override;
-    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& seg_file) const override;
-};
+void DataMigration::run() {
+    cleanup();
+    auto command = next_command();
+    if (!command) return;
+    auto result = migrate(std::move(command));
+    index(result);
+    commit(result);
+    cleanup();
+}
 
 }  // namespace silkworm::db

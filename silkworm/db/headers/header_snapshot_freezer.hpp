@@ -16,16 +16,14 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/snapshot_bundle_factory.hpp>
+#include <silkworm/db/snapshot_freezer.hpp>
 
 namespace silkworm::db {
 
-struct SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
-    ~SnapshotBundleFactoryImpl() override = default;
-
-    snapshots::SnapshotBundle make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const override;
-    snapshots::SnapshotBundle make(const std::filesystem::path& dir_path, BlockNumRange range) const override;
-    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& seg_file) const override;
+class HeaderSnapshotFreezer : public SnapshotFreezer {
+  public:
+    ~HeaderSnapshotFreezer() override = default;
+    void copy(ROTxn& txn, BlockNumRange range, snapshots::SnapshotFileWriter& file_writer) const override;
 };
 
 }  // namespace silkworm::db

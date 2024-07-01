@@ -63,6 +63,23 @@ struct SnapshotBundle {
         };
     }
 
+    std::array<SnapshotType, kSnapshotsCount> snapshot_types() {
+        return {
+            SnapshotType::headers,
+            SnapshotType::bodies,
+            SnapshotType::transactions,
+        };
+    }
+
+    std::array<SnapshotType, kIndexesCount> index_types() {
+        return {
+            SnapshotType::headers,
+            SnapshotType::bodies,
+            SnapshotType::transactions,
+            SnapshotType::transactions_to_block,
+        };
+    }
+
     const Snapshot& snapshot(SnapshotType type) const {
         switch (type) {
             case headers:
@@ -99,6 +116,7 @@ struct SnapshotBundle {
     // assume that all snapshots have the same block range, and use one of them
     BlockNum block_from() const { return header_snapshot.block_from(); }
     BlockNum block_to() const { return header_snapshot.block_to(); }
+    BlockNumRange block_range() const { return {block_from(), block_to()}; }
 
     void reopen();
     void close();

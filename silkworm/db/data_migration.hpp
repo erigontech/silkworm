@@ -16,16 +16,29 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/snapshot_bundle_factory.hpp>
+#include <memory>
 
 namespace silkworm::db {
 
-struct SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
-    ~SnapshotBundleFactoryImpl() override = default;
+struct DataMigrationCommand {
+    virtual ~DataMigrationCommand() = default;
+};
 
-    snapshots::SnapshotBundle make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const override;
-    snapshots::SnapshotBundle make(const std::filesystem::path& dir_path, BlockNumRange range) const override;
-    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& seg_file) const override;
+struct DataMigrationResult {
+    virtual ~DataMigrationResult() = default;
+};
+
+struct DataMigration {
+    virtual ~DataMigration() = default;
+
+    void run();
+
+  protected:
+    virtual std::unique_ptr<DataMigrationCommand> next_command();
+    virtual std::shared_ptr<DataMigrationResult> migrate(std::unique_ptr<DataMigrationCommand> command) = 0;
+    virtual void index(std::shared_ptr<DataMigrationResult> result) = 0;
+    virtual void commit(std::shared_ptr<DataMigrationResult> result) = 0;
+    virtual void cleanup() = 0;
 };
 
 }  // namespace silkworm::db

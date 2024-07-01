@@ -155,6 +155,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         }
     }
 
+    std::int64_t gas_cost = 0;
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
         const auto depth = log.depth;
@@ -181,7 +182,15 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
             call_fixes_.reset();
         }
+        gas_cost = log.gas_cost;
     }
+
+    SILK_LOG << " pc: " << std::dec << pc
+             << ", gas: " << std::dec << gas
+             << ", gasCost: " << std::dec << gas_cost
+             << ", opcode: 0x" << evmc::hex(opcode)
+             << " (" << opcode_name << ")";
+
     if (logs_.size() > 1) {
         auto& log = logs_.front();
         write_log(log);

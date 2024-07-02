@@ -66,8 +66,4 @@ target_link_libraries(
 set(TEST_TARGET ${TARGET}_test)
 file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
 add_executable(${TEST_TARGET} ${TEST_SRC})
-target_link_libraries(
-  ${TEST_TARGET}
-  PRIVATE ${TARGET} Catch2::Catch2WithMain GTest::gmock
-  silkworm_infra_test_util
-)
+target_link_libraries(${TEST_TARGET} PRIVATE ${TARGET} Catch2::Catch2WithMain GTest::gmock silkworm_infra_test_util)

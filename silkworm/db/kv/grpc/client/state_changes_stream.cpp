@@ -25,7 +25,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/infra/grpc/client/util.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 
 namespace silkworm::db::kv::grpc::client {
 

@@ -62,12 +62,15 @@ Task<Response> unary_rpc(
     grpc::ClientContext client_context;
     client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
 
+    auto io_context_executor = co_await ThisTask::executor;
+
     std::unique_ptr<grpc::ClientAsyncResponseReaderInterface<Response>> reader =
         agrpc::request(rpc, stub, client_context, request, grpc_context);
 
     Response reply;
     grpc::Status status;
     co_await agrpc::finish(reader, reply, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
+    co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
 
     if (!status.ok()) {
         throw GrpcStatusError(std::move(status), error_message);
@@ -77,14 +80,22 @@ Task<Response> unary_rpc(
 }
 
 template <class Stub, class Request, class Response>
-Task<void> streaming_rpc(
+Task<void> server_streaming_rpc(
     agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReaderInterface<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
     std::function<Task<void>(Response)> consumer,
+    boost::asio::cancellation_slot* cancellation_slot = nullptr,
     const std::string& error_message = "") {
     grpc::ClientContext client_context;
+    if (cancellation_slot) {
+        cancellation_slot->assign([&client_context](boost::asio::cancellation_type /*type*/) {
+            client_context.TryCancel();
+        });
+    }
+
+    auto io_context_executor = co_await ThisTask::executor;
 
     std::unique_ptr<grpc::ClientAsyncReaderInterface<Response>> reader;
     bool ok = co_await agrpc::request(
@@ -94,10 +105,12 @@ Task<void> streaming_rpc(
         std::move(request),
         reader,
         boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
+    co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
 
     while (ok) {
         Response response;
         ok = co_await agrpc::read(reader, response, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
+        co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
         if (ok) {
             co_await consumer(std::move(response));
         }
@@ -105,11 +118,14 @@ Task<void> streaming_rpc(
 
     grpc::Status status;
     co_await agrpc::finish(reader, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
+    co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
 
     if (!status.ok()) {
         throw GrpcStatusError(std::move(status), error_message);
     }
 }
+
+using DisconnectHook = std::function<Task<void>()>;
 
 template <class Stub, class Request, class Response>
 Task<Response> unary_rpc_with_retries(
@@ -117,16 +133,18 @@ Task<Response> unary_rpc_with_retries(
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
-    std::function<Task<void>()>& on_disconnect,
+    DisconnectHook& on_disconnect,
     grpc::Channel& channel,
-    std::string log_prefix) {
+    std::string log_prefix,
+    int64_t min_msec = kDefaultMinBackoffReconnectTimeout,
+    int64_t max_msec = kDefaultMaxBackoffReconnectTimeout) {
     // loop until a successful return or cancellation
     while (true) {
         try {
             co_return (co_await unary_rpc(rpc, stub, request, grpc_context));
         } catch (const GrpcStatusError& ex) {
             if (is_disconnect_error(ex.status(), channel)) {
-                log::Warning(log_prefix) << "GRPC call failed: " << ex.what();
+                log::Warning(log_prefix) << "GRPC unary call failed: " << ex.what();
             } else {
                 throw;
             }
@@ -134,29 +152,32 @@ Task<Response> unary_rpc_with_retries(
 
         co_await on_disconnect();
         if (channel.GetState(false) != GRPC_CHANNEL_READY) {
-            co_await reconnect_channel(channel, log_prefix);
+            co_await reconnect_channel(channel, log_prefix, min_msec, max_msec);
         }
     }
 }
 
 template <class Stub, class Request, class Response>
-Task<void> streaming_rpc_with_retries(
+Task<void> server_streaming_rpc_with_retries(
     agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReaderInterface<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
-    std::function<Task<void>()>& on_disconnect,
+    DisconnectHook& on_disconnect,
     grpc::Channel& channel,
     std::string log_prefix,
-    std::function<Task<void>(Response)> consumer) {
+    std::function<Task<void>(Response)> consumer,
+    boost::asio::cancellation_slot* cancellation_signal = nullptr,
+    int64_t min_backoff_timeout_msec = kDefaultMinBackoffReconnectTimeout,
+    int64_t max_backoff_timeout_msec = kDefaultMaxBackoffReconnectTimeout) {
     // loop until a successful return or cancellation
     while (true) {
         try {
-            co_await streaming_rpc(rpc, stub, request, grpc_context, consumer);
+            co_await server_streaming_rpc(rpc, stub, request, grpc_context, consumer, cancellation_signal);
             break;
         } catch (const GrpcStatusError& ex) {
             if (is_disconnect_error(ex.status(), channel)) {
-                log::Warning(log_prefix) << "GRPC streaming call failed: " << ex.what();
+                log::Warning(log_prefix) << "GRPC server-streaming call failed: " << ex.what();
             } else {
                 throw;
             }
@@ -164,7 +185,7 @@ Task<void> streaming_rpc_with_retries(
 
         co_await on_disconnect();
         if (channel.GetState(false) != GRPC_CHANNEL_READY) {
-            co_await reconnect_channel(channel, log_prefix);
+            co_await reconnect_channel(channel, log_prefix, min_backoff_timeout_msec, max_backoff_timeout_msec);
         }
     }
 }

@@ -28,9 +28,9 @@
 
 #include <silkworm/infra/common/log.hpp>
 
+#include "../common/util.hpp"
 #include "dispatcher.hpp"
 #include "error.hpp"
-#include "util.hpp"
 
 namespace silkworm {
 

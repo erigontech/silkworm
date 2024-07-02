@@ -25,6 +25,13 @@
 namespace silkworm::rpc {
 
 bool is_disconnect_error(const grpc::Status& status, grpc::Channel& channel);
-Task<void> reconnect_channel(grpc::Channel& channel, std::string log_prefix);
+
+inline static constexpr int64_t kDefaultMinBackoffReconnectTimeout{5'000};
+inline static constexpr int64_t kDefaultMaxBackoffReconnectTimeout{600'000};
+
+Task<void> reconnect_channel(grpc::Channel& channel,
+                             std::string log_prefix,
+                             int64_t min_msec = kDefaultMinBackoffReconnectTimeout,
+                             int64_t max_msec = kDefaultMaxBackoffReconnectTimeout);
 
 }  // namespace silkworm::rpc

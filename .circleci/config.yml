@@ -88,7 +88,7 @@ commands:
             sudo apt install -y pipx
       - run:
           name: "Install Conan"
-          command: pipx install conan==1.64.1 chardet
+          command: pipx install conan==1.64.1
 
   build_using_conan:
     parameters:

@@ -69,5 +69,5 @@ add_executable(${TEST_TARGET} ${TEST_SRC})
 target_link_libraries(
   ${TEST_TARGET}
   PRIVATE ${TARGET} Catch2::Catch2WithMain GTest::gmock
-  INTERFACE silkworm_infra_test_util
+  silkworm_infra_test_util
 )

@@ -102,12 +102,20 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
     StrictMockKVStateChangesAsyncReader* statechanges_reader_{statechanges_reader_ptr_.get()};
 };
 
+// We need to chain
 TEST_CASE_METHOD(CallTest, "Unary gRPC threading: unary_rpc", "[grpc][client]") {
+    // We need to use nested call expectations because AsyncVersionRaw must return mock response reader
+    // after all expectations have been set, given that pointer ownership is then moved
+
     // Set the call expectations:
-    // 1. remote::KV::StubInterface::AsyncVersionRaw call succeeds and returns mock response reader
-    EXPECT_CALL(*stub_, AsyncVersionRaw).WillOnce(Return(version_reader_ptr_.release()));
-    // 2. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-    EXPECT_CALL(*version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+    // 1. remote::KV::StubInterface::AsyncVersionRaw call succeeds
+    EXPECT_CALL(*stub_, AsyncVersionRaw)
+        .WillOnce(InvokeWithoutArgs([&]() {
+            // 2. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
+            EXPECT_CALL(*version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+
+            return version_reader_ptr_.release();
+        }));
 
     // Trick necessary because expectations require MockKVStub, whilst production code wants remote::KV::StubInterface
     std::unique_ptr<proto::KV::StubInterface> stub{std::move(stub_)};
@@ -117,12 +125,20 @@ TEST_CASE_METHOD(CallTest, "Unary gRPC threading: unary_rpc", "[grpc][client]") 
 }
 
 TEST_CASE_METHOD(CallTest, "Unary gRPC threading: agrpc::ClientRPC", "[grpc][client]") {
+    // We need to use nested call expectations because AsyncVersionRaw must return mock response reader
+    // after all expectations have been set, given that pointer ownership is then moved
+
     // Set the call expectations:
-    // 1. remote::KV::StubInterface::PrepareAsyncVersionRaw call succeeds and returns mock response reader
-    EXPECT_CALL(*stub_, PrepareAsyncVersionRaw).WillOnce(Return(version_reader_ptr_.release()));
-    EXPECT_CALL(*version_reader_, StartCall).WillOnce([]() {});
-    // 2. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-    EXPECT_CALL(*version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+    // 1. remote::KV::StubInterface::PrepareAsyncVersionRaw call succeeds
+    EXPECT_CALL(*stub_, PrepareAsyncVersionRaw)
+        .WillOnce(InvokeWithoutArgs([&]() {
+            // 2. AsyncResponseReader<types::VersionReply>::StartCall call succeeds
+            EXPECT_CALL(*version_reader_, StartCall).WillOnce([&]() {
+                // 3. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
+                EXPECT_CALL(*version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+            });
+            return version_reader_ptr_.release();
+        }));
 
     // Execute the test: check threading assumptions during async Version RPC execution
     spawn_and_wait(check_unary_agrpc_client_threading(*stub_, google::protobuf::Empty{}, grpc_context_));

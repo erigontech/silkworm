@@ -268,7 +268,7 @@ jobs:
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
@@ -282,7 +282,7 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
@@ -318,7 +318,7 @@ jobs:
       # see: https://clang.llvm.org/extra/clang-tidy/
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_TIDY=ON
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - run:
@@ -415,7 +415,7 @@ parameters:
     default: 15
   clang_version_latest:
     type: integer
-    default: 15
+    default: 16
   gcc_version_min:
     type: integer
     default: 11

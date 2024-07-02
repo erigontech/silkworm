@@ -83,7 +83,7 @@ commands:
     steps:
       - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.64.1 chardet
+          command: sudo pip3 install conan==1.64.1 chardet --break-system-packages
 
   build_using_conan:
     parameters:

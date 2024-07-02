@@ -89,17 +89,7 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
     //! Mocked reader for Version unary RPC of gRPC KV interface
     std::unique_ptr<StrictMockKVVersionAsyncResponseReader> version_reader_ptr_{
         std::make_unique<StrictMockKVVersionAsyncResponseReader>()};
-    StrictMockKVVersionAsyncResponseReader* version_reader_{version_reader_ptr_.get()};
-
-    //! Mocked reader/writer for Tx bidi streaming RPC of gRPC KV interface
-    std::unique_ptr<StrictMockKVTxAsyncReaderWriter> reader_writer_ptr_{
-        std::make_unique<StrictMockKVTxAsyncReaderWriter>()};
-    StrictMockKVTxAsyncReaderWriter& reader_writer_{*reader_writer_ptr_};
-
-    //! Mocked reader for StateChanges server streaming RPC of gRPC KV interface
-    std::unique_ptr<StrictMockKVStateChangesAsyncReader> statechanges_reader_ptr_{
-        std::make_unique<StrictMockKVStateChangesAsyncReader>()};
-    StrictMockKVStateChangesAsyncReader* statechanges_reader_{statechanges_reader_ptr_.get()};
+    StrictMockKVVersionAsyncResponseReader& version_reader_{*version_reader_ptr_};
 };
 
 // We need to chain
@@ -112,7 +102,7 @@ TEST_CASE_METHOD(CallTest, "Unary gRPC threading: unary_rpc", "[grpc][client]") 
     EXPECT_CALL(*stub_, AsyncVersionRaw)
         .WillOnce(InvokeWithoutArgs([&]() {
             // 2. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-            EXPECT_CALL(*version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+            EXPECT_CALL(version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
 
             return version_reader_ptr_.release();
         }));
@@ -133,9 +123,9 @@ TEST_CASE_METHOD(CallTest, "Unary gRPC threading: agrpc::ClientRPC", "[grpc][cli
     EXPECT_CALL(*stub_, PrepareAsyncVersionRaw)
         .WillOnce(InvokeWithoutArgs([&]() {
             // 2. AsyncResponseReader<types::VersionReply>::StartCall call succeeds
-            EXPECT_CALL(*version_reader_, StartCall).WillOnce([&]() {
+            EXPECT_CALL(version_reader_, StartCall).WillOnce([&]() {
                 // 3. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-                EXPECT_CALL(*version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+                EXPECT_CALL(version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
             });
             return version_reader_ptr_.release();
         }));

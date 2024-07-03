@@ -45,7 +45,7 @@ void PeerDiscoveryFeedback::on_peer_added(std::shared_ptr<rlpx::Peer> /*peer*/) 
 void PeerDiscoveryFeedback::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
     auto public_key = peer->peer_public_key();
     if (public_key) {
-        peer_disconnected_events_.try_send({*public_key, peer->disconnect_reason()});
+        peer_disconnected_events_.try_send({public_key, peer->disconnect_reason()});
     }
 }
 

@@ -18,35 +18,35 @@
 
 #include <cstdint>
 #include <span>
-#include <string>
-#include <string_view>
+
+#include <evmc/bytes.hpp>
 
 namespace silkworm {
 
-using Bytes = std::basic_string<uint8_t>;
+using Bytes = evmc::bytes;
 
-class ByteView : public std::basic_string_view<uint8_t> {
+class ByteView : public evmc::bytes_view {
   public:
     constexpr ByteView() noexcept = default;
 
-    constexpr ByteView(const std::basic_string_view<uint8_t>& other) noexcept
-        : std::basic_string_view<uint8_t>{other.data(), other.length()} {}
+    constexpr ByteView(const evmc::bytes_view& other) noexcept
+        : evmc::bytes_view{other.data(), other.length()} {}
 
-    ByteView(const Bytes& str) noexcept : std::basic_string_view<uint8_t>{str.data(), str.length()} {}
+    ByteView(const Bytes& str) noexcept : evmc::bytes_view{str.data(), str.length()} {}
 
     constexpr ByteView(const uint8_t* data, size_type length) noexcept
-        : std::basic_string_view<uint8_t>{data, length} {}
+        : evmc::bytes_view{data, length} {}
 
     template <std::size_t N>
-    constexpr ByteView(const uint8_t (&array)[N]) noexcept : std::basic_string_view<uint8_t>{array, N} {}
+    constexpr ByteView(const uint8_t (&array)[N]) noexcept : evmc::bytes_view{array, N} {}
 
     template <std::size_t N>
     constexpr ByteView(const std::array<uint8_t, N>& array) noexcept
-        : std::basic_string_view<uint8_t>{array.data(), N} {}
+        : evmc::bytes_view{array.data(), N} {}
 
     template <std::size_t Extent>
     constexpr ByteView(std::span<const uint8_t, Extent> span) noexcept
-        : std::basic_string_view<uint8_t>{span.data(), span.size()} {}
+        : evmc::bytes_view{span.data(), span.size()} {}
 
     [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
 };

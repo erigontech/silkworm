@@ -788,6 +788,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                 break;
             case evmc_call_kind::EVMC_CREATE:
             case evmc_call_kind::EVMC_CREATE2:
+            case evmc_call_kind::EVMC_EOFCREATE:
                 break;
         }
     }

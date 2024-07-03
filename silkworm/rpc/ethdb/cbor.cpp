@@ -161,7 +161,7 @@ class LogCborListener : public cbor::listener {
     }
 
   private:
-    ProcessingState state_;
+    ProcessingState state_{ProcessingState::kWaitNLogs};
     int num_logs_{0};
     int num_topics_{0};
     std::vector<Log>& logs_;

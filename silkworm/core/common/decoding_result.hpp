@@ -16,14 +16,12 @@
 
 #pragma once
 
-#include <cstdint>
-
 #include <tl/expected.hpp>
 
 namespace silkworm {
 
 // Error codes for RLP and other decoding
-enum class [[nodiscard]] DecodingError : uint8_t {
+enum class [[nodiscard]] DecodingError {
     kOverflow,
     kLeadingZero,
     kInputTooShort,

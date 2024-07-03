@@ -40,11 +40,8 @@ namespace silkworm::rpc {
 
 class GrpcStatusError : public std::runtime_error {
   public:
-    explicit GrpcStatusError(grpc::Status status, const std::string& message)
-        : std::runtime_error(message.empty() ? status.error_message() : message + ": " + status.error_message()),
-          status_(std::move(status)) {}
     explicit GrpcStatusError(grpc::Status status)
-        : GrpcStatusError(std::move(status), "") {}
+        : std::runtime_error(status.error_message()), status_(std::move(status)) {}
 
     [[nodiscard]] const grpc::Status& status() const { return status_; }
 
@@ -58,8 +55,7 @@ Task<Response> unary_rpc(
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
-    boost::asio::cancellation_slot* cancellation_slot = nullptr,
-    const std::string& error_message = "") {
+    boost::asio::cancellation_slot* cancellation_slot = nullptr) {
     grpc::ClientContext client_context;
     client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
     if (cancellation_slot) {
@@ -79,7 +75,7 @@ Task<Response> unary_rpc(
     co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
 
     if (!status.ok()) {
-        throw GrpcStatusError(std::move(status), error_message);
+        throw GrpcStatusError(std::move(status));
     }
 
     co_return reply;
@@ -92,8 +88,7 @@ Task<void> server_streaming_rpc(
     Request request,
     agrpc::GrpcContext& grpc_context,
     std::function<Task<void>(Response)> consumer,
-    boost::asio::cancellation_slot* cancellation_slot = nullptr,
-    const std::string& error_message = "") {
+    boost::asio::cancellation_slot* cancellation_slot = nullptr) {
     grpc::ClientContext client_context;
     if (cancellation_slot) {
         cancellation_slot->assign([&client_context](boost::asio::cancellation_type /*type*/) {
@@ -127,7 +122,7 @@ Task<void> server_streaming_rpc(
     co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
 
     if (!status.ok()) {
-        throw GrpcStatusError(std::move(status), error_message);
+        throw GrpcStatusError(std::move(status));
     }
 }
 

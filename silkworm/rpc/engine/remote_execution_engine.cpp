@@ -102,7 +102,7 @@ Task<ExecutionPayloadBodies> RemoteExecutionEngine::get_payload_bodies_by_hash(c
 }
 
 Task<ExecutionPayloadBodies> RemoteExecutionEngine::get_payload_bodies_by_range(BlockNum start, uint64_t count, Msec timeout) {
-    ensure(count > 1, "get_payload_bodies_by_range: invalid count zero");
+    ensure(count >= 1, "get_payload_bodies_by_range: invalid count zero");
     const BlockNumRange block_range{start, start + count - 1};
     const auto result = co_await (execution_service_->get_bodies_by_range(block_range) || concurrency::timeout(timeout));
     ensure(std::holds_alternative<BlockBodies>(result), "get_payload_bodies_by_hash: unexpected awaitable operators outcome");

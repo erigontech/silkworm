@@ -240,12 +240,14 @@ Task<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const nloh
             const auto error_msg = "count 0 is invalid";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kInvalidParams, error_msg);
+            co_return;
         }
         // We MUST support count values of at least 32 and MUST check if number is too large for us [Specification 2.]
         if (count > 32) {
             const auto error_msg = "count value > 32 is too large";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kTooLargeRequest, error_msg);
+            co_return;
         }
         const auto payload_bodies = co_await engine_->get_payload_bodies_by_range(start, count, kGetPayloadBodiesTimeout);
         reply = make_json_content(request, payload_bodies);

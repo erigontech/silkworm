@@ -165,7 +165,7 @@ class SentryClientImpl final : public api::Service {
             co_await consumer(std::move(message_from_peer));
         };
 
-        co_await sw_rpc::streaming_rpc_with_retries(
+        co_await sw_rpc::server_streaming_rpc_with_retries(
             &Stub::PrepareAsyncMessages,
             stub_,
             std::move(request),
@@ -219,7 +219,7 @@ class SentryClientImpl final : public api::Service {
             co_await consumer(interfaces::peer_event_from_proto_peer_event(event));
         };
 
-        co_await sw_rpc::streaming_rpc_with_retries(
+        co_await sw_rpc::server_streaming_rpc_with_retries(
             &Stub::PrepareAsyncPeerEvents,
             stub_,
             std::move(request),

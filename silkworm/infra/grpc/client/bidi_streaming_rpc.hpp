@@ -30,8 +30,8 @@
 
 #include <silkworm/infra/common/log.hpp>
 
+#include "../common/util.hpp"
 #include "error.hpp"
-#include "util.hpp"
 
 namespace silkworm {
 

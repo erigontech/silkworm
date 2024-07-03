@@ -48,7 +48,9 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
             container_->push_back(&value);
             return *this;
         }
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         BackInsertPtrIterator& operator=(T&& value) {
+            // FIXME(yperbasis) pointer to a temporary
             container_->push_back(&value);
             return *this;
         }

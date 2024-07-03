@@ -72,7 +72,7 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
         CHECK(this_thread_id == std::this_thread::get_id());
 
         if (!status.ok()) {
-            throw GrpcStatusError(std::move(status), "");
+            throw GrpcStatusError(std::move(status));
         }
 
         co_return response;

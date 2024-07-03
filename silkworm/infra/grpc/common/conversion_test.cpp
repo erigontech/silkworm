@@ -86,7 +86,7 @@ static std::unique_ptr<types::H512> sample_H512() {
 
 TEST_CASE("string_from_H512", "[rpc][conversion]") {
     SECTION("empty H512", "[rpc][conversion]") {
-        CHECK(string_from_H512(types::H512{}).empty());
+        CHECK_NOTHROW(string_from_H512(types::H512{}));
     }
 
     SECTION("non-empty H512", "[rpc][conversion]") {

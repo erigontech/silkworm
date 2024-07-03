@@ -169,6 +169,9 @@ void MurmurHash3_x64_128(const void* key, const uint64_t len,
             k1 = ROTL64(k1, 31);
             k1 *= c2;
             h1 ^= k1;
+            [[fallthrough]];
+        case 0:
+            break;  // do nothing
     }
 
     //----------

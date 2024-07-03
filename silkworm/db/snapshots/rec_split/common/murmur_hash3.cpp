@@ -170,7 +170,7 @@ void MurmurHash3_x64_128(const void* key, const uint64_t len,
             k1 *= c2;
             h1 ^= k1;
             [[fallthrough]];
-        case 0:
+        default:
             break;  // do nothing
     }
 

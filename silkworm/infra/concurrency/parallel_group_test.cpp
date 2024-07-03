@@ -74,8 +74,6 @@ awaitable<void> co_spawn_cancellation_handler_bug() {
 
 TEST_CASE("parallel_group.co_spawn_cancellation_handler_bug") {
     io_context context;
-    // TODO(yperbasis) is it OK to just drop "auto run_future =" to fix the warning?
-    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
-    auto run_future = co_spawn_sw(context, co_spawn_cancellation_handler_bug(), use_future);
+    co_spawn_sw(context, co_spawn_cancellation_handler_bug(), use_future);
     context.run();
 }

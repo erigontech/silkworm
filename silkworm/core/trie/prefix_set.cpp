@@ -17,13 +17,14 @@
 #include "prefix_set.hpp"
 
 #include <algorithm>
+#include <utility>
 
 namespace silkworm::trie {
 
 void PrefixSet::insert(ByteView key, bool marker) { insert(Bytes(key), marker); }
 
 void PrefixSet::insert(Bytes&& key, bool marker) {
-    keys_.emplace_back(key, marker);
+    keys_.emplace_back(std::move(key), marker);
     sorted_ = false;
 }
 

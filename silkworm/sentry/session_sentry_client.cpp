@@ -172,8 +172,8 @@ class SessionSentryClientImpl : public api::SentryClient {
 
     std::shared_ptr<api::SentryClient> sentry_client_;
     StatusDataProvider status_data_provider_;
-    uint8_t eth_version_;
-    State state_;
+    uint8_t eth_version_{0};
+    State state_{State::kInit};
     std::mutex state_mutex_;
     concurrency::AwaitableConditionVariable ready_cond_var_;
 };

@@ -267,7 +267,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
                 plainstate_account = *item;
             } else {
                 auto ps_data{plain_state->find(db::to_slice(address), false)};
-                if (ps_data && ps_data.value.length()) {
+                if (ps_data && !ps_data.value.empty()) {
                     const auto account{Account::from_encoded_storage(db::from_slice(ps_data.value))};
                     success_or_throw(account);
                     plainstate_account.emplace(*account);

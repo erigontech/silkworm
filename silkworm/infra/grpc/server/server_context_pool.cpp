@@ -100,7 +100,7 @@ void ServerContext::execute_loop_single_threaded(IdleStrategy&& idle_strategy) {
         std::size_t work_count = server_grpc_context_->poll();
         work_count += client_grpc_context_->poll_completion_queue();
         work_count += io_context()->poll();
-        idle_strategy.idle(work_count);
+        std::forward<IdleStrategy>(idle_strategy).idle(work_count);
     }
     SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
 }

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 
 #include <evmc/evmc.h>
@@ -27,7 +28,7 @@
 namespace silkworm {
 
 // Classification of invalid transactions and blocks.
-enum class [[nodiscard]] ValidationResult {
+enum class [[nodiscard]] ValidationResult : uint8_t {
     kOk,  // All checks passed
 
     kUnknownProtocolRuleSet,  // Unsupported protocol rule set

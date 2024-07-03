@@ -133,7 +133,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
                 }));
             EXPECT_CALL(*execution_service, get_td(parent_number_or_hash))
                 .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
-                    co_return kGoerliConfig.terminal_total_difficulty;
+                    co_return kSepoliaConfig.terminal_total_difficulty;
                 }));
             EXPECT_CALL(*execution_service, insert_blocks(_))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> { co_return execution::api::InsertionResult{}; }));

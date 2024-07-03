@@ -23,6 +23,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>

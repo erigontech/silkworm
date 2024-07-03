@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "execution_engine.hpp"
-
 #include <agrpc/asio_grpc.hpp>
 
 #include <silkworm/node/execution/grpc/client/remote_client.hpp>
+
+#include "execution_engine.hpp"
 
 namespace silkworm::rpc::engine {
 

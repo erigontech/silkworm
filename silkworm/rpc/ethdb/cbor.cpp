@@ -41,8 +41,7 @@ class LogCborListener : public cbor::listener {
     };
 
   public:
-    explicit LogCborListener(std::vector<Log>& logs)
-        : state_(ProcessingState::kWaitNLogs), logs_(logs), current_log_{} {}
+    explicit LogCborListener(std::vector<Log>& logs) : logs_(logs), current_log_{} {}
 
     void on_integer(int) override {
         throw std::invalid_argument("Log CBOR: unexpected format(on_integer)");

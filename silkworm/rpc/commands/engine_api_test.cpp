@@ -186,7 +186,6 @@ static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
     "227465726d696e616c426c6f636b48617368223a223078"
     "30303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d")};
 
-
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
 

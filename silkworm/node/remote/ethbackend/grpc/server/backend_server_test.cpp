@@ -224,7 +224,7 @@ using BackEndServer = ethbackend::grpc::server::BackEndServer;
 struct BackEndE2ETest {
     explicit BackEndE2ETest(
         silkworm::log::Level log_verbosity = silkworm::log::Level::kNone,
-        NodeSettings&& options = {})
+        const NodeSettings& options = {})
         : set_verbosity_log_guard{log_verbosity} {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());

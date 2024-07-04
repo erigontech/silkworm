@@ -57,7 +57,6 @@ int main(int argc, char* argv[]) {
     auto transactions_table{db::open_cursor(txn, db::table::kBlockTransactions)};
 
     uint64_t expected_block_number{0};
-    Bytes buffer{};  // To extract compacted data
 
     try {
         log::Info() << "Checking Transaction Lookups...";

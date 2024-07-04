@@ -163,7 +163,7 @@ TEST_CASE("MemoryMutationCursor: to_first", "[silkworm][node][db][memory_mutatio
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": to_first on nonexistent table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.to_first(), mdbx::not_found);
@@ -248,7 +248,7 @@ TEST_CASE("MemoryMutationCursor: to_previous", "[silkworm][node][db][memory_muta
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": to_previous on nonexistent table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.to_previous(), mdbx::not_found);
@@ -347,7 +347,7 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": to_next on nonexistent table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.to_next(), mdbx::not_found);
@@ -427,7 +427,7 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": to_current_next_multi on nonexistent table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.to_current_next_multi(), mdbx::not_found);
@@ -528,7 +528,7 @@ TEST_CASE("MemoryMutationCursor: to_last", "[silkworm][node][db][memory_mutation
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": to_last on nonexistent table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.to_last(), mdbx::not_found);
@@ -615,7 +615,7 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": current on nonexistent table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.current(), mdbx::not_found);
@@ -728,7 +728,7 @@ TEST_CASE("MemoryMutationCursor: seek", "[silkworm][node][db][memory_mutation]")
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": seek on nonexistent table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK(!mutation_cursor1.seek("k"));
@@ -773,7 +773,7 @@ TEST_CASE("MemoryMutationCursor: seek", "[silkworm][node][db][memory_mutation]")
     test1.alter_main_tables();
     test2.alter_mutation_tables();
 
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": seek after alter: OK") {
             // Single-value table
             MemoryMutationCursor mutation_cursor1{test2.mutation, db::table::kCode};
@@ -801,7 +801,7 @@ TEST_CASE("MemoryMutationCursor: lower_bound", "[silkworm][node][db][memory_muta
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": lower_bound on nonexistent single-value table: mdbx::incompatible_operation") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.lower_bound("k", /*throw_notfound=*/true), mdbx::not_found);
@@ -866,7 +866,7 @@ TEST_CASE("MemoryMutationCursor: lower_bound_multivalue", "[silkworm][node][db][
         {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
-    for (auto [tag, test] : mutation_tests) {
+    for (const auto& [tag, test] : mutation_tests) {
         SECTION(tag + ": lower_bound_multivalue on nonexistent single-value table: mdbx::incompatible_operation") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
             CHECK_THROWS_AS(mutation_cursor1.lower_bound_multivalue("k", "v", /*throw_notfound=*/true), mdbx::incompatible_operation);

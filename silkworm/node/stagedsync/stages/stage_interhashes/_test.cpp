@@ -315,7 +315,7 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
     HashBuilder storage_hb;
     Bytes value_rlp{};
 
-    for (auto [location, value] : locations) {
+    for (const auto& [location, value] : locations) {
         db::upsert_storage_value(hashed_storage, storage_key, location.bytes, value);
         value_rlp.clear();
         rlp::encode(value_rlp, value);

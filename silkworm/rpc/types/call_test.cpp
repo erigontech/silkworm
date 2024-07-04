@@ -182,7 +182,7 @@ TEST_CASE("call with no gas price and valid max_fee_per_gas and max_priority_fee
         10000,                                               // max_fee_per_gas
         10000,                                               // max_priority_fee_per_gas
         31337,                                               // value
-        *silkworm::from_hex("001122aabbcc")};
+        silkworm::from_hex("001122aabbcc")};
     silkworm::Transaction txn = call.to_transaction(10000);
     CHECK(txn.sender() == 0x99f9b87991262f6ba471f09758cde1c0fc1de734_address);
     CHECK(txn.to == 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address);
@@ -190,7 +190,7 @@ TEST_CASE("call with no gas price and valid max_fee_per_gas and max_priority_fee
     CHECK(txn.max_fee_per_gas == 10000);
     CHECK(txn.max_priority_fee_per_gas == 10000);
     CHECK(txn.value == 31337);
-    CHECK(txn.data == *silkworm::from_hex("001122aabbcc"));
+    CHECK(txn.data == silkworm::from_hex("001122aabbcc"));
 }
 
 TEST_CASE("call with no gas", "[rpc][types][call]") {

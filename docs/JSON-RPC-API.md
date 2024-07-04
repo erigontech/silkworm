@@ -37,7 +37,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getRawTransactionByBlockHashAndIndex   |     Yes      |                                           |     Yes     |             |
 | eth_getTransactionByBlockNumberAndIndex    |     Yes      |                                           |     Yes     |             |
 | eth_getRawTransactionByBlockNumberAndIndex |     Yes      |                                           |     Yes     |             |
-| eth_getTransactionReceipt                  |     Yes      |   partial: retrieve receipts by exec tx   |     Yes     |     Yes     |
+| eth_getTransactionReceipt                  |     Yes      |    partial: retrieve receipts by exec txn |     Yes     |     Yes     |
 | eth_getBlockReceipts                       |     Yes      |           same as parity_getBlockReceipts |     Yes     |             |
 | eth_getTransactionReceiptsByBlock          |     Yes      |           same as parity_getBlockReceipts |             |             |
 |                                            |              |                                           |             |             |
@@ -47,7 +47,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getTransactionCount                    |     Yes      |                                           |     Yes     |             |
 | eth_getStorageAt                           |     Yes      |                                           |     Yes     |             |
 | eth_call                                   |     Yes      |                                           |     Yes     |     Yes     |
-| eth_callMany                               |     Yes      |    partial: timeout param mgt             |     Yes     |             |
+| eth_callMany                               |     Yes      |   partial: timeout param handling missing |     Yes     |             |
 | eth_callBundle                             |     Yes      |                                           |     Yes     |             |
 | eth_createAccessList                       |     Yes      |                                           |     Yes     |     Yes     |
 |                                            |              |                                           |             |             |

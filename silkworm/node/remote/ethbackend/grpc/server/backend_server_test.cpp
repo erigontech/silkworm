@@ -445,7 +445,7 @@ TEST_CASE("BackEndServer E2E: mainnet chain with zero etherbase", "[silkworm][no
     NodeSettings node_settings;
     node_settings.chain_config = kMainnetConfig;
     node_settings.etherbase = evmc::address{};
-    BackEndE2ETest test{silkworm::log::Level::kNone, std::move(node_settings)};
+    BackEndE2ETest test{silkworm::log::Level::kNone, node_settings};
     auto backend_client = *test.backend_client;
 
     SECTION("Etherbase: return coinbase address") {

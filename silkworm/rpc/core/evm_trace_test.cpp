@@ -47,11 +47,18 @@ using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
 
-static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
-static Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
+static const Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
+static const Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
 
-static Bytes kConfigKey{kZeroHeader};
-static Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};
+static const Bytes kConfigKey{kZeroHeader};
+static const Bytes kConfigValue{*from_hex(
+    "7b226265726c696e426c6f636b223a302c2262797a616e7469756d426c6f636b223a302c2263616e63756e54696d65223a31373036363535"
+    "3037322c22636861696e4964223a31313135353131312c22636f6e7374616e74696e6f706c65426c6f636b223a302c22656970313530426c"
+    "6f636b223a302c22656970313535426c6f636b223a302c22657468617368223a7b7d2c22686f6d657374656164426c6f636b223a302c2269"
+    "7374616e62756c426c6f636b223a302c226c6f6e646f6e426c6f636b223a302c226d657267654e657473706c6974426c6f636b223a313733"
+    "353337312c226d756972476c6163696572426c6f636b223a302c2270657465727362757267426c6f636b223a302c227368616e6768616954"
+    "696d65223a313637373535373038382c227465726d696e616c546f74616c446966666963756c7479223a2231373030303030303030303030"
+    "30303030227d")};
 
 struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     db::test_util::MockTransaction transaction;

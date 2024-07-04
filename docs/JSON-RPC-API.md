@@ -31,13 +31,13 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getUncleCountByBlockHash               |     Yes      |                                           |     Yes     |             |
 | eth_getUncleCountByBlockNumber             |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
-| eth_getTransactionByHash                   |     Yes      |                     partially implemented |     Yes     |     Yes     |
-| eth_getRawTransactionByHash                |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getTransactionByHash                   |     Yes      |                                           |     Yes     |     Yes     |
+| eth_getRawTransactionByHash                |     Yes      |                                           |     Yes     |             |
 | eth_getTransactionByBlockHashAndIndex      |     Yes      |                                           |     Yes     |             |
-| eth_getRawTransactionByBlockHashAndIndex   |     Yes      |                     partially implemented |     Yes     |             |
+| eth_getRawTransactionByBlockHashAndIndex   |     Yes      |                                           |     Yes     |             |
 | eth_getTransactionByBlockNumberAndIndex    |     Yes      |                                           |     Yes     |             |
-| eth_getRawTransactionByBlockNumberAndIndex |     Yes      |                     partially implemented |     Yes     |             |
-| eth_getTransactionReceipt                  |     Yes      |                     partially implemented |     Yes     |     Yes     |
+| eth_getRawTransactionByBlockNumberAndIndex |     Yes      |                                           |     Yes     |             |
+| eth_getTransactionReceipt                  |     Yes      |   partial: retrieve receipts by exec tx   |     Yes     |     Yes     |
 | eth_getBlockReceipts                       |     Yes      |           same as parity_getBlockReceipts |     Yes     |             |
 | eth_getTransactionReceiptsByBlock          |     Yes      |           same as parity_getBlockReceipts |             |             |
 |                                            |              |                                           |             |             |
@@ -47,9 +47,9 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getTransactionCount                    |     Yes      |                                           |     Yes     |             |
 | eth_getStorageAt                           |     Yes      |                                           |     Yes     |             |
 | eth_call                                   |     Yes      |                                           |     Yes     |     Yes     |
-| eth_callMany                               |     Yes      |                     partially implemented |     Yes     |             |
+| eth_callMany                               |     Yes      |    partial: timeout param mgt             |     Yes     |             |
 | eth_callBundle                             |     Yes      |                                           |     Yes     |             |
-| eth_createAccessList                       |     Yes      |                                           |     Yes     |             |
+| eth_createAccessList                       |     Yes      |                                           |     Yes     |     Yes     |
 |                                            |              |                                           |             |             |
 | eth_newFilter                              |     Yes      |                                           |             |             |
 | eth_newBlockFilter                         |      -       |                       not yet implemented |             |             |

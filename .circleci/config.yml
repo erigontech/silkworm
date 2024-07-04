@@ -340,7 +340,7 @@ jobs:
       - run:
           name: "Generate report"
           command: |
-            sudo pip install clang-html
+            pipx install clang-html
             sudo cp ~/project/third_party/clang-tidy-html/clang_visualizer.py /usr/local/lib/python3.10/dist-packages/clang_html/clang_visualizer.py
             curl --output build.log "https://circleci.com/api/v1.1/project/github/torquem-ch/silkworm/$CIRCLE_BUILD_NUM/output/109/0?file=true"
             clang-tidy-html build.log -o /tmp/report.html

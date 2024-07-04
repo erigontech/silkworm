@@ -51,9 +51,7 @@ class SessionSentryClientImpl : public api::SentryClient {
         std::shared_ptr<api::SentryClient> sentry_client,
         StatusDataProvider status_data_provider)
         : sentry_client_(std::move(sentry_client)),
-          status_data_provider_(std::move(status_data_provider)),
-          eth_version_(0),
-          state_(State::kInit) {
+          status_data_provider_(std::move(status_data_provider)) {
         sentry_client_->on_disconnect([this] { return this->handle_disconnect(); });
     }
 

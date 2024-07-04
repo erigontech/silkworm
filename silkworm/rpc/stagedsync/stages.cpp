@@ -26,7 +26,7 @@ namespace silkworm::rpc::stages {
 Task<BlockNum> get_sync_stage_progress(db::kv::api::Transaction& tx, const Bytes& stage_key) {
     const auto kv_pair = co_await tx.get(db::table::kSyncStageProgressName, stage_key);
     const auto value = kv_pair.value;
-    if (value.length() == 0) {
+    if (value.empty()) {
         co_return 0;
     }
     if (value.length() < 8) {

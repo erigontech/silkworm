@@ -106,7 +106,7 @@ std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
 
     std::string out{};
 
-    if (bytes.length() == 0) {
+    if (bytes.empty()) {
         out.reserve(1);
         out.push_back('0');
         return out;

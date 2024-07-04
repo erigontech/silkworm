@@ -59,7 +59,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     RemoteChainStorage storage{transaction,
                                ethdb::kv::block_provider(&backend),
                                ethdb::kv::block_number_from_txn_hash_provider(&backend)};
-    const uint64_t chain_id{5};
+    const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};
     std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number)};

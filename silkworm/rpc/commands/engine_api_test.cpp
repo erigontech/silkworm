@@ -127,64 +127,35 @@ struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApi_ForTest
 
 #ifndef SILKWORM_SANITIZE
 static const silkworm::Bytes kBlockHash(32, '\0');
-static silkworm::Bytes kChainConfig{*silkworm::from_hex(
-    "7b22436861696e4e616d65223a22676f65726c69222c"
-    "22636861696e4964223a352c"
-    "22636f6e73656e737573223a22636c69717565222c"
-    "22686f6d657374656164426c6f636b223a302c"
-    "2264616f466f726b537570706f7274223a747275652c"
-    "22656970313530426c6f636b223a302c"
-    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-    "22656970313535426c6f636b223a302c"
-    "2262797a616e7469756d426c6f636b223a302c"
-    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-    "2270657465727362757267426c6f636b223a302c"
-    "22697374616e62756c426c6f636b223a313536313635312c"
-    "226265726c696e426c6f636b223a343436303634342c"
-    "226c6f6e646f6e426c6f636b223a353036323630352c"
-    "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
-    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-    "227465726d696e616c426c6f636b48617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-    "22636c69717565223a7b22706572696f64223a31352c"
-    "2265706f6368223a33303030307d7d")};
-static silkworm::Bytes kChainConfigNoTerminalTotalDifficulty{*silkworm::from_hex(
-    "7b22436861696e4e616d65223a22676f65726c69222c"
-    "22636861696e4964223a352c"
-    "22636f6e73656e737573223a22636c69717565222c"
-    "22686f6d657374656164426c6f636b223a302c"
-    "2264616f466f726b537570706f7274223a747275652c"
-    "22656970313530426c6f636b223a302c"
-    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-    "22656970313535426c6f636b223a302c"
-    "2262797a616e7469756d426c6f636b223a302c"
-    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-    "2270657465727362757267426c6f636b223a302c"
-    "22697374616e62756c426c6f636b223a313536313635312c"
-    "226265726c696e426c6f636b223a343436303634342c"
-    "226c6f6e646f6e426c6f636b223a353036323630352c"
-    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-    "227465726d696e616c426c6f636b48617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-    "22636c69717565223a7b22706572696f64223a31352c"
-    "2265706f6368223a33303030307d7d")};
-static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
-    "7b22436861696e4e616d65223a22676f65726c69222c"
-    "22636861696e4964223a352c"
-    "22636f6e73656e737573223a22636c69717565222c"
-    "22686f6d657374656164426c6f636b223a302c"
-    "2264616f466f726b537570706f7274223a747275652c"
-    "22656970313530426c6f636b223a302c"
-    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-    "22656970313535426c6f636b223a302c"
-    "2262797a616e7469756d426c6f636b223a302c"
-    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-    "2270657465727362757267426c6f636b223a302c"
-    "22697374616e62756c426c6f636b223a313536313635312c"
-    "226265726c696e426c6f636b223a343436303634342c"
-    "226c6f6e646f6e426c6f636b223a353036323630352c"
-    "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
-    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-    "227465726d696e616c426c6f636b48617368223a223078"
-    "30303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d")};
+
+
+static const silkworm::ChainConfig kChainConfig{
+    .chain_id = 11155111,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 0,
+    .berlin_block = 0,
+    .london_block = 0,
+    .terminal_total_difficulty = 10790000,
+    .rule_set_config = protocol::EthashConfig{}};
+
+static const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
+    .chain_id = 11155111,
+    .homestead_block = 0,
+    .tangerine_whistle_block = 0,
+    .spurious_dragon_block = 0,
+    .byzantium_block = 0,
+    .constantinople_block = 0,
+    .petersburg_block = 0,
+    .istanbul_block = 0,
+    .berlin_block = 0,
+    .london_block = 0,
+    .rule_set_config = protocol::EthashConfig{}};
+
 
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;
@@ -598,7 +569,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: EL conf
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -636,7 +607,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: termina
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalBlockNumber};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -674,7 +645,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorre
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -711,7 +682,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: EL does
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalTotalDifficulty};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfigNoTerminalTotalDifficulty.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -748,7 +719,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -785,7 +756,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;
@@ -822,7 +793,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: no matc
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+        co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
 
     nlohmann::json reply;

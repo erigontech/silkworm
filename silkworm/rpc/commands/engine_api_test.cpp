@@ -128,7 +128,6 @@ struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApi_ForTest
 #ifndef SILKWORM_SANITIZE
 static const silkworm::Bytes kBlockHash(32, '\0');
 
-
 static const silkworm::ChainConfig kChainConfig{
     .chain_id = 11155111,
     .homestead_block = 0,
@@ -155,7 +154,6 @@ static const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
     .berlin_block = 0,
     .london_block = 0,
     .rule_set_config = protocol::EthashConfig{}};
-
 
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;

@@ -31,6 +31,7 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     silkworm_db
     silkworm_core
     silkworm_interfaces
+    silkworm_node
     asio-grpc::asio-grpc
     cborcpp
     evmone

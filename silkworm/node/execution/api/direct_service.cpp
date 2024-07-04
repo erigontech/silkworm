@@ -163,6 +163,9 @@ Task<BlockBodies> DirectService::get_bodies_by_range(BlockNumRange number_range)
         auto block_hash{exec_engine_.get_canonical_hash(number)};
         if (block_body && block_hash) {
             bodies.push_back(Body{std::move(*block_body), *block_hash, number});
+        } else {
+            // Add an empty body anyway because we must respond w/ one payload for each number
+            bodies.emplace_back();
         }
     }
     co_return bodies;
@@ -177,6 +180,9 @@ Task<BlockBodies> DirectService::get_bodies_by_hashes(const BlockHashes& hashes)
         auto block_number{exec_engine_.get_block_number(block_hash)};
         if (block_body && block_number) {
             bodies.push_back(Body{std::move(*block_body), block_hash, *block_number});
+        } else {
+            // Add an empty body anyway because we must respond w/ one payload for each hash
+            bodies.emplace_back();
         }
     }
     co_return bodies;

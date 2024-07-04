@@ -52,7 +52,6 @@ nlohmann::json ChainConfig::to_json() const noexcept {
         Overloaded{
             [&](const protocol::NoPreMergeConfig&) {},
             [&](const protocol::EthashConfig& x) { ret.emplace("ethash", x.to_json()); },
-            [&](const protocol::CliqueConfig&) { ret.emplace("clique", empty_object); },
             [&](const protocol::bor::Config& x) { ret.emplace("bor", x.to_json()); },
         },
         rule_set_config);
@@ -116,8 +115,6 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
             return std::nullopt;
         }
         config.rule_set_config = *ethash_config;
-    } else if (json.contains("clique")) {
-        config.rule_set_config = protocol::CliqueConfig{};
     } else if (json.contains("bor")) {
         std::optional<protocol::bor::Config> bor_config{protocol::bor::Config::from_json(json["bor"])};
         if (!bor_config) {
@@ -279,23 +276,6 @@ SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
     .shanghai_time = 1681338455,
     .cancun_time = 1710338135,
     .rule_set_config = protocol::EthashConfig{},
-};
-
-SILKWORM_CONSTINIT const ChainConfig kGoerliConfig{
-    .chain_id = 5,
-    .homestead_block = 0,
-    .tangerine_whistle_block = 0,
-    .spurious_dragon_block = 0,
-    .byzantium_block = 0,
-    .constantinople_block = 0,
-    .petersburg_block = 0,
-    .istanbul_block = 1'561'651,
-    .berlin_block = 4'460'644,
-    .london_block = 5'062'605,
-    .terminal_total_difficulty = 10790000,
-    .shanghai_time = 1678832736,
-    .cancun_time = 1705473120,
-    .rule_set_config = protocol::CliqueConfig{},
 };
 
 SILKWORM_CONSTINIT const ChainConfig kHoleskyConfig{

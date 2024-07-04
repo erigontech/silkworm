@@ -24,6 +24,7 @@
 #include <evmc/instructions.h>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
@@ -49,16 +50,8 @@ using testing::InvokeWithoutArgs;
 static Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
 
-static Bytes kConfigKey{
-    *silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
-static Bytes kConfigValue{*silkworm::from_hex(
-    "7b22436861696e4e616d65223a22676f65726c69222c22636861696e4964223a352c22636f6e73656e737573223a22636c69717565222c2268"
-    "6f6d657374656164426c6f636b223a302c2264616f466f726b537570706f7274223a747275652c22656970313530426c6f636b223a302c2265"
-    "697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030"
-    "303030303030303030303030303030303030303030222c22656970313535426c6f636b223a302c22656970313538426c6f636b223a302c2262"
-    "797a616e7469756d426c6f636b223a302c22636f6e7374616e74696e6f706c65426c6f636b223a302c2270657465727362757267426c6f636b"
-    "223a302c22697374616e62756c426c6f636b223a313536313635312c226265726c696e426c6f636b223a343436303634342c226c6f6e646f6e"
-    "426c6f636b223a353036323630352c22636c69717565223a7b22706572696f64223a31352c2265706f6368223a33303030307d7d")};
+static Bytes kConfigKey{kZeroHeader};
+static Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};
 
 struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     db::test_util::MockTransaction transaction;
@@ -1990,7 +1983,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                 "balance": {
                 "*": {
                     "from": "0x28ded68c33d1401",
-                    "to": "0x28e53cd88f61a01"
+                    "to": "0x28e46f23db3ea01"
                 }
                 },
                 "code": "=",
@@ -2013,7 +2006,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                 "balance": {
                 "*": {
                     "from": "0x334e1d62a9e3440",
-                    "to": "0x3347b7164e52e40"
+                    "to": "0x334884cb0275e40"
                 }
                 },
                 "code": "=",
@@ -2030,14 +2023,14 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
             {
                 "action": {
                 "from": "0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5",
-                "gas": "0x46ae34",
+                "gas": "0x46da7c",
                 "init": "0x60806040526000805534801561001457600080fd5b5060c6806100236000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
                 "value": "0x0"
                 },
                 "result": {
                 "address": "0xa85b4c37cd8f447848d49851a1bb06d10d410c13",
                 "code": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
-                "gasUsed": "0xae9b"
+                "gasUsed": "0xa3ab"
                 },
                 "subtraces": 0,
                 "traceAddress": [],
@@ -2056,7 +2049,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x80"
                     ],
                     "store": null,
-                    "used": 4632113
+                    "used": 4643449
                 },
                 "idx": "0-0",
                 "op": "PUSH1",
@@ -2071,7 +2064,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x40"
                     ],
                     "store": null,
-                    "used": 4632110
+                    "used": 4643446
                 },
                 "idx": "0-1",
                 "op": "PUSH1",
@@ -2087,7 +2080,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     },
                     "push": [],
                     "store": null,
-                    "used": 4632098
+                    "used": 4643434
                 },
                 "idx": "0-2",
                 "op": "MSTORE",
@@ -2102,7 +2095,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x0"
                     ],
                     "store": null,
-                    "used": 4632095
+                    "used": 4643431
                 },
                 "idx": "0-3",
                 "op": "PUSH1",
@@ -2118,7 +2111,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x0"
                     ],
                     "store": null,
-                    "used": 4632092
+                    "used": 4643428
                 },
                 "idx": "0-4",
                 "op": "DUP1",
@@ -2126,7 +2119,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                 "sub": null
                 },
                 {
-                "cost": 5000,
+                "cost": 2200,
                 "ex": {
                     "mem": null,
                     "push": [],
@@ -2134,7 +2127,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "key": "0x0",
                     "val": "0x0"
                     },
-                    "used": 4627092
+                    "used": 4641228
                 },
                 "idx": "0-5",
                 "op": "SSTORE",
@@ -2149,7 +2142,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x0"
                     ],
                     "store": null,
-                    "used": 4627090
+                    "used": 4641226
                 },
                 "idx": "0-6",
                 "op": "CALLVALUE",
@@ -2165,7 +2158,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x0"
                     ],
                     "store": null,
-                    "used": 4627087
+                    "used": 4641223
                 },
                 "idx": "0-7",
                 "op": "DUP1",
@@ -2180,7 +2173,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x1"
                     ],
                     "store": null,
-                    "used": 4627084
+                    "used": 4641220
                 },
                 "idx": "0-8",
                 "op": "ISZERO",
@@ -2195,7 +2188,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x14"
                     ],
                     "store": null,
-                    "used": 4627081
+                    "used": 4641217
                 },
                 "idx": "0-9",
                 "op": "PUSH2",
@@ -2208,7 +2201,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627071
+                    "used": 4641207
                 },
                 "idx": "0-10",
                 "op": "JUMPI",
@@ -2221,7 +2214,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627070
+                    "used": 4641206
                 },
                 "idx": "0-11",
                 "op": "JUMPDEST",
@@ -2234,7 +2227,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627068
+                    "used": 4641204
                 },
                 "idx": "0-12",
                 "op": "POP",
@@ -2249,7 +2242,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0xc6"
                     ],
                     "store": null,
-                    "used": 4627065
+                    "used": 4641201
                 },
                 "idx": "0-13",
                 "op": "PUSH1",
@@ -2265,7 +2258,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0xc6"
                     ],
                     "store": null,
-                    "used": 4627062
+                    "used": 4641198
                 },
                 "idx": "0-14",
                 "op": "DUP1",
@@ -2280,7 +2273,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x23"
                     ],
                     "store": null,
-                    "used": 4627059
+                    "used": 4641195
                 },
                 "idx": "0-15",
                 "op": "PUSH2",
@@ -2295,7 +2288,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x0"
                     ],
                     "store": null,
-                    "used": 4627056
+                    "used": 4641192
                 },
                 "idx": "0-16",
                 "op": "PUSH1",
@@ -2311,7 +2304,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     },
                     "push": [],
                     "store": null,
-                    "used": 4627020
+                    "used": 4641156
                 },
                 "idx": "0-17",
                 "op": "CODECOPY",
@@ -2326,7 +2319,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "0x0"
                     ],
                     "store": null,
-                    "used": 4627017
+                    "used": 4641153
                 },
                 "idx": "0-18",
                 "op": "PUSH1",
@@ -2339,7 +2332,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627017
+                    "used": 4641153
                 },
                 "idx": "0-19",
                 "op": "RETURN",
@@ -2531,7 +2524,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
         {
             "action": {
             "from": "0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5",
-            "gas": "0x46ae34",
+            "gas": "0x46da7c",
             "init": "0x60806040526000805534801561001457600080fd5b5060c6806100236000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
             "value": "0x0"
             },
@@ -2540,7 +2533,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
             "result": {
             "address": "0xa85b4c37cd8f447848d49851a1bb06d10d410c13",
             "code": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
-            "gasUsed": "0xae9b"
+            "gasUsed": "0xa3ab"
             },
             "subtraces": 0,
             "traceAddress": [],
@@ -2745,7 +2738,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x80"
                     ],
                     "store": null,
-                    "used": 4632113
+                    "used": 4643449
                     },
                     "idx": "0-0",
                     "op": "PUSH1",
@@ -2760,7 +2753,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x40"
                     ],
                     "store": null,
-                    "used": 4632110
+                    "used": 4643446
                     },
                     "idx": "0-1",
                     "op": "PUSH1",
@@ -2776,7 +2769,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     },
                     "push": [],
                     "store": null,
-                    "used": 4632098
+                    "used": 4643434
                     },
                     "idx": "0-2",
                     "op": "MSTORE",
@@ -2791,7 +2784,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4632095
+                    "used": 4643431
                     },
                     "idx": "0-3",
                     "op": "PUSH1",
@@ -2807,7 +2800,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4632092
+                    "used": 4643428
                     },
                     "idx": "0-4",
                     "op": "DUP1",
@@ -2815,7 +2808,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "sub": null
                 },
                 {
-                    "cost": 5000,
+                    "cost": 2200,
                     "ex": {
                     "mem": null,
                     "push": [],
@@ -2823,7 +2816,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "key": "0x0",
                         "val": "0x0"
                     },
-                    "used": 4627092
+                    "used": 4641228
                     },
                     "idx": "0-5",
                     "op": "SSTORE",
@@ -2838,7 +2831,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627090
+                    "used": 4641226
                     },
                     "idx": "0-6",
                     "op": "CALLVALUE",
@@ -2854,7 +2847,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627087
+                    "used": 4641223
                     },
                     "idx": "0-7",
                     "op": "DUP1",
@@ -2869,7 +2862,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x1"
                     ],
                     "store": null,
-                    "used": 4627084
+                    "used": 4641220
                     },
                     "idx": "0-8",
                     "op": "ISZERO",
@@ -2884,7 +2877,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x14"
                     ],
                     "store": null,
-                    "used": 4627081
+                    "used": 4641217
                     },
                     "idx": "0-9",
                     "op": "PUSH2",
@@ -2897,7 +2890,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627071
+                    "used": 4641207
                     },
                     "idx": "0-10",
                     "op": "JUMPI",
@@ -2910,7 +2903,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627070
+                    "used": 4641206
                     },
                     "idx": "0-11",
                     "op": "JUMPDEST",
@@ -2923,7 +2916,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627068
+                    "used": 4641204
                     },
                     "idx": "0-12",
                     "op": "POP",
@@ -2938,7 +2931,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0xc6"
                     ],
                     "store": null,
-                    "used": 4627065
+                    "used": 4641201
                     },
                     "idx": "0-13",
                     "op": "PUSH1",
@@ -2954,7 +2947,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0xc6"
                     ],
                     "store": null,
-                    "used": 4627062
+                    "used": 4641198
                     },
                     "idx": "0-14",
                     "op": "DUP1",
@@ -2969,7 +2962,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x23"
                     ],
                     "store": null,
-                    "used": 4627059
+                    "used": 4641195
                     },
                     "idx": "0-15",
                     "op": "PUSH2",
@@ -2984,7 +2977,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627056
+                    "used": 4641192
                     },
                     "idx": "0-16",
                     "op": "PUSH1",
@@ -3000,7 +2993,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     },
                     "push": [],
                     "store": null,
-                    "used": 4627020
+                    "used": 4641156
                     },
                     "idx": "0-17",
                     "op": "CODECOPY",
@@ -3015,7 +3008,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627017
+                    "used": 4641153
                     },
                     "idx": "0-18",
                     "op": "PUSH1",
@@ -3028,7 +3021,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627017
+                    "used": 4641153
                     },
                     "idx": "0-19",
                     "op": "RETURN",
@@ -3053,14 +3046,14 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                 {
                 "action": {
                     "from": "0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5",
-                    "gas": "0x46ae34",
+                    "gas": "0x46da7c",
                     "init": "0x60806040526000805534801561001457600080fd5b5060c6806100236000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
                     "value": "0x0"
                 },
                 "result": {
                     "address": "0xa85b4c37cd8f447848d49851a1bb06d10d410c13",
                     "code": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
-                    "gasUsed": "0xae9b"
+                    "gasUsed": "0xa3ab"
                 },
                 "subtraces": 0,
                 "traceAddress": [],
@@ -3083,7 +3076,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                 "balance": {
                     "*": {
                     "from": "0x28ded68c33d1401",
-                    "to": "0x28e53cd88f61a01"
+                    "to": "0x28e46f23db3ea01"
                     }
                 },
                 "code": "=",
@@ -3106,7 +3099,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                 "balance": {
                     "*": {
                     "from": "0x334e1d62a9e3440",
-                    "to": "0x3347b7164e52e40"
+                    "to": "0x334884cb0275e40"
                     }
                 },
                 "code": "=",
@@ -3136,7 +3129,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                 "balance": {
                     "*": {
                     "from": "0x28ded68c33d1401",
-                    "to": "0x28e53cd88f61a01"
+                    "to": "0x28e46f23db3ea01"
                     }
                 },
                 "code": "=",
@@ -3159,7 +3152,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                 "balance": {
                     "*": {
                     "from": "0x334e1d62a9e3440",
-                    "to": "0x3347b7164e52e40"
+                    "to": "0x334884cb0275e40"
                     }
                 },
                 "code": "=",
@@ -3176,14 +3169,14 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                 {
                 "action": {
                     "from": "0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5",
-                    "gas": "0x46ae34",
+                    "gas": "0x46da7c",
                     "init": "0x60806040526000805534801561001457600080fd5b5060c6806100236000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
                     "value": "0x0"
                 },
                 "result": {
                     "address": "0xa85b4c37cd8f447848d49851a1bb06d10d410c13",
                     "code": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
-                    "gasUsed": "0xae9b"
+                    "gasUsed": "0xa3ab"
                 },
                 "subtraces": 0,
                 "traceAddress": [],
@@ -3201,7 +3194,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x80"
                     ],
                     "store": null,
-                    "used": 4632113
+                    "used": 4643449
                     },
                     "idx": "0-0",
                     "op": "PUSH1",
@@ -3216,7 +3209,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x40"
                     ],
                     "store": null,
-                    "used": 4632110
+                    "used": 4643446
                     },
                     "idx": "0-1",
                     "op": "PUSH1",
@@ -3232,7 +3225,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     },
                     "push": [],
                     "store": null,
-                    "used": 4632098
+                    "used": 4643434
                     },
                     "idx": "0-2",
                     "op": "MSTORE",
@@ -3247,7 +3240,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4632095
+                    "used": 4643431
                     },
                     "idx": "0-3",
                     "op": "PUSH1",
@@ -3263,7 +3256,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4632092
+                    "used": 4643428
                     },
                     "idx": "0-4",
                     "op": "DUP1",
@@ -3271,7 +3264,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "sub": null
                 },
                 {
-                    "cost": 5000,
+                    "cost": 2200,
                     "ex": {
                     "mem": null,
                     "push": [],
@@ -3279,7 +3272,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "key": "0x0",
                         "val": "0x0"
                     },
-                    "used": 4627092
+                    "used": 4641228
                     },
                     "idx": "0-5",
                     "op": "SSTORE",
@@ -3294,7 +3287,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627090
+                    "used": 4641226
                     },
                     "idx": "0-6",
                     "op": "CALLVALUE",
@@ -3310,7 +3303,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627087
+                    "used": 4641223
                     },
                     "idx": "0-7",
                     "op": "DUP1",
@@ -3325,7 +3318,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x1"
                     ],
                     "store": null,
-                    "used": 4627084
+                    "used": 4641220
                     },
                     "idx": "0-8",
                     "op": "ISZERO",
@@ -3340,7 +3333,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x14"
                     ],
                     "store": null,
-                    "used": 4627081
+                    "used": 4641217
                     },
                     "idx": "0-9",
                     "op": "PUSH2",
@@ -3353,7 +3346,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627071
+                    "used": 4641207
                     },
                     "idx": "0-10",
                     "op": "JUMPI",
@@ -3366,7 +3359,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627070
+                    "used": 4641206
                     },
                     "idx": "0-11",
                     "op": "JUMPDEST",
@@ -3379,7 +3372,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627068
+                    "used": 4641204
                     },
                     "idx": "0-12",
                     "op": "POP",
@@ -3394,7 +3387,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0xc6"
                     ],
                     "store": null,
-                    "used": 4627065
+                    "used": 4641201
                     },
                     "idx": "0-13",
                     "op": "PUSH1",
@@ -3410,7 +3403,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0xc6"
                     ],
                     "store": null,
-                    "used": 4627062
+                    "used": 4641198
                     },
                     "idx": "0-14",
                     "op": "DUP1",
@@ -3425,7 +3418,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x23"
                     ],
                     "store": null,
-                    "used": 4627059
+                    "used": 4641195
                     },
                     "idx": "0-15",
                     "op": "PUSH2",
@@ -3440,7 +3433,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627056
+                    "used": 4641192
                     },
                     "idx": "0-16",
                     "op": "PUSH1",
@@ -3456,7 +3449,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     },
                     "push": [],
                     "store": null,
-                    "used": 4627020
+                    "used": 4641156
                     },
                     "idx": "0-17",
                     "op": "CODECOPY",
@@ -3471,7 +3464,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                         "0x0"
                     ],
                     "store": null,
-                    "used": 4627017
+                    "used": 4641153
                     },
                     "idx": "0-18",
                     "op": "PUSH1",
@@ -3484,7 +3477,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
                     "mem": null,
                     "push": [],
                     "store": null,
-                    "used": 4627017
+                    "used": 4641153
                     },
                     "idx": "0-19",
                     "op": "RETURN",
@@ -3677,7 +3670,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
         {
             "action": {
             "from": "0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5",
-            "gas": "0x46ae34",
+            "gas": "0x46da7c",
             "init": "0x60806040526000805534801561001457600080fd5b5060c6806100236000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
             "value": "0x0"
             },
@@ -3686,7 +3679,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
             "result": {
             "address": "0xa85b4c37cd8f447848d49851a1bb06d10d410c13",
             "code": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
-            "gasUsed": "0xae9b"
+            "gasUsed": "0xa3ab"
             },
             "subtraces": 0,
             "traceAddress": [],

@@ -285,17 +285,18 @@ void Daemon::add_shared_services() {
     auto state_cache = std::make_shared<db::kv::api::CoherentStateCache>();
     // Create the unique filter storage to be shared among the execution contexts
     auto filter_storage = std::make_shared<FilterStorage>(context_pool_.num_contexts() * kDefaultFilterStorageSize);
-    // Create the unique Execution remote client to be shared among the execution contexts
-    auto remote_execution_engine = std::make_shared<engine::RemoteExecutionEngine>();
 
     // Add the shared state to the execution contexts
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
-        auto& io_context = context_pool_.next_io_context();
+        auto& context = context_pool_.next_context();
+        auto& io_context = *context.io_context();
+
+        auto engine{std::make_shared<engine::RemoteExecutionEngine>(settings_.private_api_addr, *context.grpc_context())};
 
         add_shared_service(io_context, block_cache);
         add_shared_service<db::kv::api::StateCache>(io_context, std::move(state_cache));
         add_shared_service(io_context, filter_storage);
-        add_shared_service<engine::ExecutionEngine>(io_context, remote_execution_engine);
+        add_shared_service<engine::ExecutionEngine>(io_context, std::move(engine));
     }
 }
 

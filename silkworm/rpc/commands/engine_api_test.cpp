@@ -127,32 +127,33 @@ struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApi_ForTest
 
 #ifndef SILKWORM_SANITIZE
 static const silkworm::Bytes kBlockHash(32, '\0');
+
 static const silkworm::ChainConfig kChainConfig{
-    .chain_id = 5,
+    .chain_id = 11155111,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
     .byzantium_block = 0,
     .constantinople_block = 0,
     .petersburg_block = 0,
-    .istanbul_block = 1561651,
-    .berlin_block = 4460644,
-    .london_block = 5062605,
+    .istanbul_block = 0,
+    .berlin_block = 0,
+    .london_block = 0,
     .terminal_total_difficulty = 10790000,
-    .rule_set_config = protocol::CliqueConfig{}};
+    .rule_set_config = protocol::EthashConfig{}};
 
 static const silkworm::ChainConfig kChainConfigNoTerminalTotalDifficulty{
-    .chain_id = 5,
+    .chain_id = 11155111,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
     .byzantium_block = 0,
     .constantinople_block = 0,
     .petersburg_block = 0,
-    .istanbul_block = 1561651,
-    .berlin_block = 4460644,
-    .london_block = 5062605,
-    .rule_set_config = protocol::CliqueConfig{}};
+    .istanbul_block = 0,
+    .berlin_block = 0,
+    .london_block = 0,
+    .rule_set_config = protocol::EthashConfig{}};
 
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;

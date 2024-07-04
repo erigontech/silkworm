@@ -20,7 +20,6 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis_bor_mainnet.hpp>
-#include <silkworm/core/chain/genesis_goerli.hpp>
 #include <silkworm/core/chain/genesis_holesky.hpp>
 #include <silkworm/core/chain/genesis_mainnet.hpp>
 #include <silkworm/core/chain/genesis_mumbai.hpp>
@@ -38,8 +37,6 @@ std::string_view read_genesis_data(ChainId chain_id) {
     switch (chain_id) {
         case *kKnownChainNameToId.find("mainnet"sv):
             return genesis_mainnet_json;
-        case *kKnownChainNameToId.find("goerli"sv):
-            return genesis_goerli_json;
         case *kKnownChainNameToId.find("holesky"sv):
             return genesis_holesky_json;
         case *kKnownChainNameToId.find("sepolia"sv):

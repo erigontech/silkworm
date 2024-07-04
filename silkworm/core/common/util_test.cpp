@@ -200,10 +200,6 @@ TEST_CASE("intx::uint256 from scientific notation string") {
     CHECK(from_string_sci<intx::uint256>("1.7e+16") == kSepoliaTTD);
     CHECK(from_string_sci<intx::uint256>("17000000000000000") == kSepoliaTTD);
 
-    const intx::uint256 kGoerliTTD{intx::from_string<intx::uint256>("10790000")};
-    CHECK(from_string_sci<intx::uint256>("1.079e+7") == kGoerliTTD);
-    CHECK(from_string_sci<intx::uint256>("10790000") == kGoerliTTD);
-
     CHECK(from_string_sci<intx::uint256>("0") == intx::from_string<intx::uint256>("0"));
     CHECK(from_string_sci<intx::uint256>("0e+0") == intx::from_string<intx::uint256>("0"));
     CHECK(from_string_sci<intx::uint256>("0.0e+1") == intx::from_string<intx::uint256>("0"));

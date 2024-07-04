@@ -43,13 +43,8 @@ namespace protocol {
         bool operator==(const NoPreMergeConfig&) const = default;
     };
 
-    //! \see CliqueRuleSet
-    struct CliqueConfig {
-        bool operator==(const CliqueConfig&) const = default;
-    };
-
-    //! \see RuleSet
-    using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, CliqueConfig, bor::Config>;
+    //! \see IRuleSet
+    using PreMergeRuleSetConfig = std::variant<NoPreMergeConfig, EthashConfig, bor::Config>;
 
 }  // namespace protocol
 
@@ -142,9 +137,6 @@ using namespace evmc::literals;
 inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kMainnetConfig;
 
-inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kGoerliConfig;
-
 inline constexpr evmc::bytes32 kHoleskyGenesisHash{0xb5f7f912443c940f21fd611f12828d75b534364ed9e95ca4e307729a4661bde4_bytes32};
 SILKWORM_CONSTINIT extern const ChainConfig kHoleskyConfig;
 
@@ -160,7 +152,6 @@ SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
 //! \brief Known chain names mapped to their respective chain IDs
 inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
     {"bor-mainnet"sv, 137},
-    {"goerli"sv, 5},
     {"holesky"sv, 17000},
     {"mainnet"sv, 1},
     {"mumbai"sv, 80001},
@@ -170,7 +161,6 @@ inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
 //! \brief Known chain IDs mapped to their respective chain configs
 inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
     {*kKnownChainNameToId.find("mainnet"sv), &kMainnetConfig},
-    {*kKnownChainNameToId.find("goerli"sv), &kGoerliConfig},
     {*kKnownChainNameToId.find("holesky"sv), &kHoleskyConfig},
     {*kKnownChainNameToId.find("sepolia"sv), &kSepoliaConfig},
     {*kKnownChainNameToId.find("bor-mainnet"sv), &kBorMainnetConfig},

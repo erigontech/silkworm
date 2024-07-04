@@ -130,23 +130,6 @@ TEST_CASE("distinct_fork_points") {
     CHECK(kMainnetConfig.distinct_fork_numbers() == kExpectedMainnetForkNumbers);
     CHECK(kMainnetConfig.distinct_fork_times() == kExpectedMainnetForkTimes);
     CHECK(kMainnetConfig.distinct_fork_points() == kExpectedMainnetForkPoints);
-
-    const std::vector<BlockNum> kExpectedGoerliForkNumbers{
-        1'561'651,
-        4'460'644,
-        5'062'605,
-    };
-    const std::vector<BlockTime> kExpectedGoerliForkTimes{
-        1678832736,
-        1705473120,
-    };
-    std::vector<uint64_t> kExpectedGoerliForkPoints{kExpectedGoerliForkNumbers};
-    kExpectedGoerliForkPoints.insert(kExpectedGoerliForkPoints.end(),
-                                     kExpectedGoerliForkTimes.cbegin(), kExpectedGoerliForkTimes.cend());
-
-    CHECK(kGoerliConfig.distinct_fork_numbers() == kExpectedGoerliForkNumbers);
-    CHECK(kGoerliConfig.distinct_fork_times() == kExpectedGoerliForkTimes);
-    CHECK(kGoerliConfig.distinct_fork_points() == kExpectedGoerliForkPoints);
 }
 
 TEST_CASE("JSON serialization") {
@@ -210,28 +193,6 @@ TEST_CASE("terminalTotalDifficulty as JSON number (Erigon compatibility)") {
     CHECK(config1->to_json() != mainnet_json_ttd_number);  // "58750000000000000000000" vs 5.875e+22
     CHECK(config1->terminal_total_difficulty == intx::from_string<intx::uint256>("58750000000000000000000"));
 
-    const auto goerli_json_ttd_number = nlohmann::json::parse(R"({
-            "chainId":5,
-            "homesteadBlock":0,
-            "eip150Block":0,
-            "eip155Block":0,
-            "byzantiumBlock":0,
-            "constantinopleBlock":0,
-            "petersburgBlock":0,
-            "istanbulBlock":1561651,
-            "berlinBlock":4460644,
-            "londonBlock":5062605,
-            "terminalTotalDifficulty":10790000,
-            "shanghaiTime":1678832736,
-            "clique":{}
-        })");
-
-    const std::optional<ChainConfig> config2{ChainConfig::from_json(goerli_json_ttd_number)};
-
-    REQUIRE(config2);
-    CHECK(config2->to_json() != goerli_json_ttd_number);  // "10790000" vs 10790000
-    CHECK(config2->terminal_total_difficulty == intx::from_string<intx::uint256>("10790000"));
-
     const auto sepolia_json_ttd_number = nlohmann::json::parse(R"({
             "chainId":11155111,
             "homesteadBlock":0,
@@ -250,11 +211,11 @@ TEST_CASE("terminalTotalDifficulty as JSON number (Erigon compatibility)") {
             "ethash":{}
         })");
 
-    const std::optional<ChainConfig> config3{ChainConfig::from_json(sepolia_json_ttd_number)};
+    const std::optional<ChainConfig> config2{ChainConfig::from_json(sepolia_json_ttd_number)};
 
-    REQUIRE(config3);
-    CHECK(config3->to_json() != sepolia_json_ttd_number);  // "17000000000000000" vs 17000000000000000
-    CHECK(config3->terminal_total_difficulty == intx::from_string<intx::uint256>("17000000000000000"));
+    REQUIRE(config2);
+    CHECK(config2->to_json() != sepolia_json_ttd_number);  // "17000000000000000" vs 17000000000000000
+    CHECK(config2->terminal_total_difficulty == intx::from_string<intx::uint256>("17000000000000000"));
 }
 
 }  // namespace silkworm

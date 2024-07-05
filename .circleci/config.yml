@@ -82,8 +82,14 @@ commands:
   install_conan:
     steps:
       - run:
+          name: "Ensure pipx"
+          command: |
+            sudo apt-get update
+            sudo apt install -y pipx
+      - run:
           name: "Install Conan"
           command: sudo pip3 install conan==1.64.1 chardet
+          command: pipx install conan==1.64.1
 
   build_using_conan:
     parameters:
@@ -231,7 +237,7 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
@@ -421,7 +427,7 @@ parameters:
     default: 11
   gcc_version_latest:
     type: integer
-    default: 12
+    default: 13
 
 workflows:
   light:
@@ -431,9 +437,9 @@ workflows:
     jobs:
       - lint
       - linux-release:
-          name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
+          name: linux-gcc-12-release
           compiler_id: gcc
-          compiler_version: <<pipeline.parameters.gcc_version_latest>>
+          compiler_version: 12
           ethereum_tests: false
           requires:
             - lint

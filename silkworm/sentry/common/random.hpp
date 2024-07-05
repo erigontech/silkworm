@@ -48,6 +48,7 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
             container_->push_back(&value);
             return *this;
         }
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         BackInsertPtrIterator& operator=(T&&) {  // required to conform to std::output_iterator
             container_->push_back(nullptr);      // but we can't push the temporary's address
             return *this;

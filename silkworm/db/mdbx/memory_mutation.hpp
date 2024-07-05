@@ -78,6 +78,7 @@ class MemoryMutation : public RWTxnManaged {
 
     [[nodiscard]] bool is_table_cleared(const std::string& table) const;
     [[nodiscard]] bool is_entry_deleted(const std::string& table, const Slice& key) const;
+    [[nodiscard]] bool is_dup_deleted(const std::string& table, const Slice& key, const Slice& value) const;
     [[nodiscard]] bool has_map(const std::string& bucket_name) const;
 
     [[nodiscard]] db::ROTxn* external_txn() const { return overlay_.external_txn(); }
@@ -91,6 +92,7 @@ class MemoryMutation : public RWTxnManaged {
 
     bool erase(const MapConfig& config, const Slice& key);
     bool erase(const MapConfig& config, const Slice& key, const Slice& value);
+    void upsert(const MapConfig& config, const Slice& key, const Slice& value);
 
     bool clear_table(const std::string& table);
 
@@ -103,6 +105,7 @@ class MemoryMutation : public RWTxnManaged {
 
     MemoryOverlay& overlay_;
     std::map<std::string, std::map<Slice, bool>> deleted_entries_;
+    std::map<std::string, std::map<Slice, std::map<Slice, bool>>> deleted_dups_;
     std::map<std::string, bool> cleared_tables_;
 };
 

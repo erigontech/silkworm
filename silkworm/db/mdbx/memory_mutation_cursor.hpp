@@ -30,7 +30,7 @@ class MemoryMutationCursor : public RWCursorDupSort {
     ~MemoryMutationCursor() override = default;
 
     [[nodiscard]] bool is_table_cleared() const;
-    [[nodiscard]] bool is_entry_deleted(const Slice& key) const;
+    [[nodiscard]] bool is_entry_deleted(const Slice& key, const Slice& value) const;
 
     void bind(ROTxn& txn, const MapConfig& config) override;
 

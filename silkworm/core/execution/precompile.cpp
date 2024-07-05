@@ -40,6 +40,7 @@
 #include <silkworm/core/crypto/rmd160.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/crypto/sha256.h>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/types/hash.hpp>
 
 namespace silkworm::precompile {
@@ -78,7 +79,7 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 }
 
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept {
-    return 60 + 12 * ((input.length() + 31) / 32);
+    return 60 + 12 * num_words(input.length());
 }
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
@@ -88,7 +89,7 @@ std::optional<Bytes> sha256_run(ByteView input) noexcept {
 }
 
 uint64_t rip160_gas(ByteView input, evmc_revision) noexcept {
-    return 600 + 120 * ((input.length() + 31) / 32);
+    return 600 + 120 * num_words(input.length());
 }
 
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
@@ -99,7 +100,7 @@ std::optional<Bytes> rip160_run(ByteView input) noexcept {
 }
 
 uint64_t id_gas(ByteView input, evmc_revision) noexcept {
-    return 15 + 3 * ((input.length() + 31) / 32);
+    return 15 + 3 * num_words(input.length());
 }
 
 std::optional<Bytes> id_run(ByteView input) noexcept {

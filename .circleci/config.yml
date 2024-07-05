@@ -426,7 +426,7 @@ parameters:
     default: 11
   gcc_version_latest:
     type: integer
-    default: 13
+    default: 14
 
 workflows:
   light:

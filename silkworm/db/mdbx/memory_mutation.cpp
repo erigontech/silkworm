@@ -195,6 +195,21 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
         }
     }
 
+    // Obliterate dups that need to be deleted
+    for (const auto& [table, keys] : this->deleted_dups_) {
+        const auto table_config = overlay_.map_config(table);
+        if (!table_config) {
+            SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
+            continue;
+        }
+        const auto map_handle = db::open_map(rw_txn, *table_config);
+        for (const auto& [key, vals] : keys) {
+            for (const auto& [val, _] : vals) {
+                rw_txn->erase(map_handle, key, val);
+            }
+        }
+    }
+
     // Iterate over each touched bucket and apply changes accordingly
     const auto tables = db::list_maps(managed_txn_);
     for (const auto& table : tables) {

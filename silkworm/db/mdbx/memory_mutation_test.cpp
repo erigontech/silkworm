@@ -169,6 +169,28 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
         CHECK(!mutation.is_dup_deleted(kTestMultiMap.name, "key1", "value2"));
     }
 
+    SECTION("Check for deleted dup entry - persisted in db") {
+        main_rw_txn.rw_cursor_dup_sort(kTestMultiMap)->upsert("key1", "value1");
+        main_rw_txn.rw_cursor_dup_sort(kTestMultiMap)->upsert("key1", "value2");
+        main_rw_txn.commit_and_renew();
+
+        MemoryMutation mutation{overlay};
+        open_map(mutation, kTestMultiMap);
+        const auto mutation_cursor_dupsort = mutation.ro_cursor_dup_sort(kTestMultiMap);
+
+        CHECK(mutation_cursor_dupsort->seek("key1"));
+
+        mutation.erase(kTestMultiMap, "key1", "value1");
+
+        mutation.commit_and_stop();
+        mutation.flush(main_rw_txn);
+        main_rw_txn.commit_and_renew();
+
+        auto cursor2 = main_rw_txn.ro_cursor_dup_sort(kTestMultiMap);
+        CHECK_THROWS(cursor2->find_multivalue("key1", "value1", true));
+        cursor2->find_multivalue("key1", "value2", true);
+    }
+
     SECTION("Deleted dup entry removed after upserting again") {
         MemoryMutation mutation{overlay};
         open_map(mutation, kTestMultiMap);

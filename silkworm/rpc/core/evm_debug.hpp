@@ -105,7 +105,6 @@ class DebugTracer : public EvmTracer {
     const char* const* opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<std::int64_t> start_gas_;
-    std::int64_t gas_on_precompiled_{0};
     std::unique_ptr<CallFixes> call_fixes_;
 };
 

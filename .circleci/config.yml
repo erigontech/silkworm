@@ -240,6 +240,9 @@ jobs:
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
+      - run:
+          name: "TSAN hack"
+          command: sudo sysctl vm.mmap_rnd_bits=30
       - build_using_conan:
           compiler_id: gcc
           compiler_version: <<pipeline.parameters.gcc_version_latest>>
@@ -426,7 +429,7 @@ parameters:
     default: 11
   gcc_version_latest:
     type: integer
-    default: 14
+    default: 13
 
 workflows:
   light:

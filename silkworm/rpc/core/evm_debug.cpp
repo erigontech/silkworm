@@ -157,7 +157,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
-        if (call_fixes_) { // previuos opcodw was a CALL*
+        if (call_fixes_) {  // previuos opcodw was a CALL*
             if (execution_state.msg->depth == call_fixes_->depth) {
                 if (call_fixes_->gas_cost) {
                     log.gas_cost = call_fixes_->gas_cost;

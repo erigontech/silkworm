@@ -242,6 +242,7 @@ jobs:
       - checkout_with_submodules
       - run:
           name: "TSAN hack"
+# https://stackoverflow.com/questions/77850769/fatal-threadsanitizer-unexpected-memory-mapping-when-running-on-linux-kernels
           command: sudo sysctl vm.mmap_rnd_bits=30
       - build_using_conan:
           compiler_id: gcc
@@ -429,7 +430,7 @@ parameters:
     default: 11
   gcc_version_latest:
     type: integer
-    default: 13
+    default: 14
 
 workflows:
   light:

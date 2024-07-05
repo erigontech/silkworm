@@ -52,14 +52,14 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     }
 
     if (!fh.rewards.empty()) {
-        std::vector<nlohmann::json> reward_list;
-        reward_list.reserve(fh.rewards.size());
+        std::vector<nlohmann::json> json_list;
+        json_list.reserve(fh.rewards.size());
         for (const auto& rewards : fh.rewards) {
             nlohmann::json item;
             to_json(item, rewards);
-            reward_list.push_back(item);
+            json_list.push_back(item);
         }
-        json["reward"] = reward_list;
+        json["reward"] = json_list;
     }
 }
 

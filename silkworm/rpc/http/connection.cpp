@@ -45,6 +45,7 @@ static constexpr std::string_view kMaxAge{"600"};
 static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
 static constexpr auto kGzipEncoding{"gzip"};
+static constexpr auto kIdentity{"Identity"};
 static constexpr auto kBearerTokenPrefix{"Bearer "sv};  // space matters: format is `Bearer <token>`
 
 Task<void> Connection::run_read_loop(std::shared_ptr<Connection> connection) {
@@ -191,7 +192,7 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req) {
     }
 
     gzip_encoding_requested_ = accept_encoding.contains(kGzipEncoding);
-    if (http_compression_ && !accept_encoding.empty() && !gzip_encoding_requested_) {
+    if (http_compression_ && !accept_encoding.empty() && !accept_encoding.contains(kIdentity) && !gzip_encoding_requested_) {
         co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, kGzipEncoding);
         co_return;
     }
@@ -273,7 +274,6 @@ Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
         if (gzip_encoding_requested_) {
             std::string compressed_content;
             co_await compress(content.data(), compressed_content);
-            std::cout << "Clear Data: " << content.size() << " " << compressed_content.size() << "\n";
             boost::asio::const_buffer buffer{compressed_content.data(), compressed_content.size()};
             bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
         } else {

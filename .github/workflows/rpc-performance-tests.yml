@@ -67,6 +67,10 @@ jobs:
           failed_test=0
           commit=$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)
           
+          # Prepare historical test results directory
+          mkdir -p $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
+          mkdir -p $RPC_PAST_TEST_DIR/mainnet_bin
+          
           run_perf () {
             servers=("silkworm" "erigon")
             for i in 1 2
@@ -96,11 +100,7 @@ jobs:
                perf_exit_status=$?
 
                # Preserve test results
-               mv ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/${servers[i-1]}-$method-result.json
-               
-               # Prepare historical test results directory
-               mkdir -p $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
-               mkdir -p $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit_bin
+               mv ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/result.json ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/${servers[i-1]}-$method-result.json              
           
                # Detect the pre-built db version
                db_version=$(python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/prod_info.py $ERIGON_DIR/production.ini production erigon_repo_commit) 
@@ -110,7 +110,7 @@ jobs:
 
                   # save all vegeta binary report
                   echo "Save current vegeta binary files"
-                  cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit_bin
+                  cp -r ${{runner.workspace}}/rpc-tests/perf/reports/bin $RPC_PAST_TEST_DIR/mainnet_bin
 
                   echo "Save test result on DB"
                   cd ${{runner.workspace}}/silkworm                                             

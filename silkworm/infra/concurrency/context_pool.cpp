@@ -56,6 +56,7 @@ void Context::execute_loop() {
 }
 
 void Context::stop() {
+    work_.reset();
     io_context_->stop();
 }
 

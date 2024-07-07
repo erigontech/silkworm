@@ -16,11 +16,16 @@
 
 #include "remote_client.hpp"
 
+#include <agrpc/client_rpc.hpp>
 #include <grpcpp/grpcpp.h>
+#include <gsl/util>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
+#include <silkworm/infra/grpc/client/reconnect.hpp>
+#include <silkworm/infra/grpc/client/server_streaming_rpc.hpp>
 
+#include "endpoint/state_change.hpp"
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 
@@ -29,19 +34,21 @@ namespace silkworm::db::kv::grpc::client {
 namespace proto = ::remote;
 using Stub = proto::KV::StubInterface;
 
-static std::shared_ptr<::grpc::Channel> make_grpc_channel(const std::string& address_uri) {
-    return ::grpc::CreateChannel(address_uri, ::grpc::InsecureChannelCredentials());
-}
-
 class RemoteClientImpl final : public api::Service {
   public:
-    explicit RemoteClientImpl(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
-        : channel_{make_grpc_channel(address_uri)},
+    explicit RemoteClientImpl(const rpc::ChannelFactory& create_channel,
+                              agrpc::GrpcContext& grpc_context,
+                              rpc::DisconnectHook on_disconnect)
+        : channel_{create_channel()},
           stub_{proto::KV::NewStub(channel_)},
-          grpc_context_{grpc_context} {}
-    explicit RemoteClientImpl(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+          grpc_context_{grpc_context},
+          on_disconnect_{std::move(on_disconnect)} {}
+    explicit RemoteClientImpl(std::unique_ptr<Stub> stub,
+                              agrpc::GrpcContext& grpc_context,
+                              rpc::DisconnectHook on_disconnect)
         : stub_{std::move(stub)},
-          grpc_context_{grpc_context} {}
+          grpc_context_{grpc_context},
+          on_disconnect_{std::move(on_disconnect)} {}
 
     ~RemoteClientImpl() override = default;
 
@@ -54,9 +61,67 @@ class RemoteClientImpl final : public api::Service {
     }
 
     // rpc Tx(stream Cursor) returns (stream Pair);
-    Task<std::unique_ptr<db::kv::api::Transaction>> begin_transaction() override {
+    Task<std::unique_ptr<api::Transaction>> begin_transaction() override {
         // TODO(canepat) implement
         co_return nullptr;
+    }
+
+    // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
+    Task<void> state_changes(const api::StateChangeOptions& options, api::StateChangeConsumer consumer) override {
+        static int iteration{0};
+        while (true) {
+            SILK_TRACE << "State changes RPC iteration=" << ++iteration;
+            try {
+                // using StateChangeRpc = ServerStreamingRpc<&Stub::PrepareAsyncStateChanges>;
+                proto::StateChangeRequest request = request_from_state_change_options(options);
+
+                using RPC = boost::asio::use_awaitable_t<>::as_default_on_t<agrpc::ClientRPC<&Stub::PrepareAsyncStateChanges>>;
+
+                RPC rpc{grpc_context_};
+                if (options.cancellation_token) {
+                    const bool cancelled = options.cancellation_token->assign([&rpc](boost::asio::cancellation_type /*type*/) {
+                        rpc.cancel();
+                    });
+                    if (cancelled) {
+                        SILK_TRACE << "State changes RPC cancelled while retrying ptr=" << &rpc;
+                        throw rpc::GrpcStatusError{::grpc::Status::CANCELLED};
+                    }
+                    SILK_TRACE << "State changes RPC cancellation handler registered ptr=" << &rpc;
+                }
+                auto _ = gsl::finally([&options, &rpc]() {
+                    if (options.cancellation_token) {
+                        options.cancellation_token->clear();
+                        SILK_TRACE << "State changes RPC cancellation handler cleared ptr=" << &rpc;
+                    }
+                });
+                if (!co_await rpc.start(*stub_, request)) {
+                    ::grpc::Status status = co_await rpc.finish();
+                    SILK_TRACE << "State changes RPC start failed status=" << status;
+                    throw rpc::GrpcStatusError{std::move(status)};
+                }
+                proto::StateChangeBatch batch;
+                while (co_await rpc.read(batch)) {
+                    co_await consumer(state_change_set_from_batch(batch));
+                }
+
+                ::grpc::Status status = co_await rpc.finish();
+                if (!status.ok()) {
+                    SILK_TRACE << "State changes RPC finish failed status=" << status;
+                    throw rpc::GrpcStatusError{std::move(status)};
+                }
+                co_return;
+            } catch (const rpc::GrpcStatusError& gse) {
+                const auto error_code = gse.status().error_code();
+                if (error_code == ::grpc::StatusCode::ABORTED || error_code == ::grpc::StatusCode::CANCELLED) {
+                    co_return;
+                }
+                SILK_TRACE << "State changes RPC error occurred status=" << gse.status();
+            }
+            // Next line must be here even if logically belongs to catch clause (no co_await within catch block)
+            if (channel_) {
+                co_await rpc::reconnect_channel(*channel_, "kv", min_backoff_timeout_.count(), max_backoff_timeout_.count());
+            }
+        }
     }
 
     /** Temporal Point Queries **/
@@ -98,23 +163,42 @@ class RemoteClientImpl final : public api::Service {
         co_return domain_range_result_from_response(reply);
     }
 
+    void set_min_backoff_timeout(const std::chrono::milliseconds& min_backoff_timeout) {
+        min_backoff_timeout_ = min_backoff_timeout;
+    }
+
+    void set_max_backoff_timeout(const std::chrono::milliseconds& max_backoff_timeout) {
+        max_backoff_timeout_ = max_backoff_timeout;
+    }
+
   private:
     std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
+    rpc::DisconnectHook on_disconnect_;
+    std::chrono::milliseconds min_backoff_timeout_{rpc::kDefaultMinBackoffReconnectTimeout};
+    std::chrono::milliseconds max_backoff_timeout_{rpc::kDefaultMaxBackoffReconnectTimeout};
 };
 
-RemoteClient::RemoteClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
-    : p_impl_{std::make_shared<RemoteClientImpl>(address_uri, grpc_context)} {}
+RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel, agrpc::GrpcContext& grpc_context, rpc::DisconnectHook on_disconnect)
+    : p_impl_{std::make_shared<RemoteClientImpl>(create_channel, grpc_context, std::move(on_disconnect))} {}
 
-RemoteClient::RemoteClient(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
-    : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub), grpc_context)} {}
+RemoteClient::RemoteClient(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context, rpc::DisconnectHook on_disconnect)
+    : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub), grpc_context, std::move(on_disconnect))} {}
 
 // Must be here (not in header) because RemoteClientImpl size is necessary for std::unique_ptr in PIMPL idiom
 RemoteClient::~RemoteClient() = default;
 
 std::shared_ptr<api::Service> RemoteClient::service() {
     return p_impl_;
+}
+
+void RemoteClient::set_min_backoff_timeout(const std::chrono::milliseconds& min_timeout) {
+    p_impl_->set_min_backoff_timeout(min_timeout);
+}
+
+void RemoteClient::set_max_backoff_timeout(const std::chrono::milliseconds& max_timeout) {
+    p_impl_->set_max_backoff_timeout(max_timeout);
 }
 
 }  // namespace silkworm::db::kv::grpc::client

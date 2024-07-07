@@ -21,7 +21,8 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/db/kv/grpc/client/state_changes_stream.hpp>
+#include <silkworm/db/kv/api/client.hpp>
+#include <silkworm/db/kv/state_changes_stream.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -86,11 +87,11 @@ class Daemon {
     //! The JSON RPC API services.
     std::vector<std::unique_ptr<http::Server>> rpc_services_;
 
-    //! The gRPC KV interface client stub.
-    std::unique_ptr<::remote::KV::StubInterface> kv_stub_;
+    //! The gRPC KV interface client.
+    std::unique_ptr<db::kv::api::Client> kv_client_;
 
     //! The stream handling StateChanges server-streaming RPC.
-    std::unique_ptr<db::kv::grpc::client::StateChangesStream> state_changes_stream_;
+    std::unique_ptr<db::kv::StateChangesStream> state_changes_stream_;
 
     //! The secret key for communication from CL & EL
     std::optional<std::string> jwt_secret_;

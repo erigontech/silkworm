@@ -18,6 +18,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include "endpoint/state_change.hpp"
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 #include "endpoint/version.hpp"
@@ -32,7 +33,10 @@ struct Service {
     virtual Task<Version> version() = 0;
 
     // rpc Tx(stream Cursor) returns (stream Pair);
-    virtual Task<std::unique_ptr<db::kv::api::Transaction>> begin_transaction() = 0;
+    virtual Task<std::unique_ptr<Transaction>> begin_transaction() = 0;
+
+    // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
+    virtual Task<void> state_changes(const StateChangeOptions& options, StateChangeConsumer consumer) = 0;
 
     /** Temporal Point Queries **/
 

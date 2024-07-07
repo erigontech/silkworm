@@ -157,38 +157,33 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
-        const auto depth = log.depth;
-        if (depth == execution_state.msg->depth + 1) {
-            if (gas_on_precompiled_) {
-                log.gas_cost = log.gas - gas_on_precompiled_;
-                gas_on_precompiled_ = 0;
-            } else {
-                log.gas_cost = log.gas - gas;
-            }
-        } else if (depth == execution_state.msg->depth) {
-            log.gas_cost = log.gas - gas;
-        }
-        if (call_fixes_) {
+        if (call_fixes_) {  // previuos opcodw was a CALL*
             if (execution_state.msg->depth == call_fixes_->depth) {
                 if (call_fixes_->gas_cost) {
                     log.gas_cost = call_fixes_->gas_cost;
                 } else {
-                    log.gas_cost = log.gas_cost + call_fixes_->stipend;
+                    log.gas_cost = log.gas - gas + call_fixes_->stipend;
                 }
             } else {
                 log.gas_cost = gas + call_fixes_->stipend + call_fixes_->code_cost;
             }
 
             call_fixes_.reset();
+        } else {
+            const auto depth = log.depth;
+            if (depth == execution_state.msg->depth + 1 || depth == execution_state.msg->depth) {
+                log.gas_cost = log.gas - gas;
+            }
         }
     }
+
     if (logs_.size() > 1) {
         auto& log = logs_.front();
         write_log(log);
         logs_.erase(logs_.begin());
     }
 
-    if (opcode == OP_CALL || opcode == OP_CALLCODE || opcode == OP_DELEGATECALL || opcode == OP_CREATE || opcode == OP_CREATE2) {
+    if (opcode == OP_CALL || opcode == OP_CALLCODE || opcode == OP_STATICCALL || opcode == OP_DELEGATECALL || opcode == OP_CREATE || opcode == OP_CREATE2) {
         call_fixes_ = std::make_unique<CallFixes>(CallFixes{execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
         if (opcode == OP_CALL && stack_height >= 7 && stack_top[-2] != 0) {
             call_fixes_->stipend = 2300;  // for CALLs with value, include stipend
@@ -226,7 +221,6 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
                << " status: " << result.status_code
                << ", gas: " << std::dec << gas;
 
-    gas_on_precompiled_ = gas;
     if (call_fixes_) {
         call_fixes_->gas_cost = gas + call_fixes_->code_cost;
     }

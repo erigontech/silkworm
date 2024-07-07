@@ -26,7 +26,6 @@
 namespace silkworm {
 
 TEST_CASE("links") {
-    PeerId peer_id{byte_ptr_cast("dummy")};
     bool persisted = false;
 
     std::array<BlockHeader, 5> headers;

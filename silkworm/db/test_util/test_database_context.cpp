@@ -96,7 +96,7 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
     std::vector<Bytes> rlps;
     std::vector<uint8_t> line;
 
-    std::basic_string<uint8_t> rlp_buffer(std::istreambuf_iterator<char>(file), {});
+    Bytes rlp_buffer(std::istreambuf_iterator<char>(file), {});
     file.close();
     ByteView rlp_view{rlp_buffer};
 

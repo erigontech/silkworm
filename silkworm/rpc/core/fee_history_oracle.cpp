@@ -27,6 +27,7 @@ namespace silkworm::rpc::fee_history {
 
 void to_json(nlohmann::json& json, const Rewards& rewards) {
     std::vector<std::string> rewards_list;
+    rewards_list.reserve(rewards.size());
     for (const auto& reward : rewards) {
         rewards_list.push_back(to_quantity(reward));
     }
@@ -43,6 +44,7 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
 
     if (!fh.base_fees_per_gas.empty()) {
         std::vector<std::string> fee_string_list;
+        fee_string_list.reserve(fh.base_fees_per_gas.size());
         for (const auto& fee : fh.base_fees_per_gas) {
             fee_string_list.push_back(to_quantity(fee));
         }
@@ -51,6 +53,7 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
 
     if (!fh.rewards.empty()) {
         std::vector<nlohmann::json> json_list;
+        json_list.reserve(fh.rewards.size());
         for (const auto& rewards : fh.rewards) {
             nlohmann::json item;
             to_json(item, rewards);

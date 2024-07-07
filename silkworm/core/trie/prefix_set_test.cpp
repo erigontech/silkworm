@@ -29,8 +29,6 @@ TEST_CASE("Prefix set - no prefix") {
     CHECK(!ps.contains(string_view_to_byte_view("")));
     CHECK(!ps.contains(string_view_to_byte_view("a")));
 
-    Bytes prefix{};
-
     ps.insert(string_view_to_byte_view("abc"));
     ps.insert(string_view_to_byte_view("fg"));
     ps.insert(string_view_to_byte_view("abc"));        // duplicate

@@ -274,7 +274,7 @@ evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc:
 
     if (exo_evm) {
         EvmHost host{*this};
-        return exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &message,
+        return exo_evm->execute(exo_evm, &EvmHost::get_interface(), host.to_context(), rev, &message,
                                 code.data(), code.size());
     } else {
         return execute_with_baseline_interpreter(rev, message, code, code_hash);
@@ -319,7 +319,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     EvmHost host{*this};
     gsl::owner<evmone::ExecutionState*> state{acquire_state()};
-    state->reset(message, rev, host.get_interface(), host.to_context(), code, {});
+    state->reset(message, rev, EvmHost::get_interface(), host.to_context(), code, {});
 
     evmc_result res{evmone::baseline::execute(*evm1_, message.gas, *state, *analysis)};
 

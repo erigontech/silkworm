@@ -18,8 +18,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/rpc/json/access_list_entry.hpp>
 #include <silkworm/rpc/json/glaze.hpp>
-#include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm {

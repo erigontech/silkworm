@@ -74,6 +74,6 @@ awaitable<void> co_spawn_cancellation_handler_bug() {
 
 TEST_CASE("parallel_group.co_spawn_cancellation_handler_bug") {
     io_context context;
-    auto run_future = co_spawn_sw(context, co_spawn_cancellation_handler_bug(), use_future);
+    co_spawn_sw(context, co_spawn_cancellation_handler_bug(), use_future);
     context.run();
 }

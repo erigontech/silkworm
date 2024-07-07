@@ -1963,7 +1963,6 @@ void do_trie_root(db::EnvConfig& config) {
     auto env{silkworm::db::open_env(config)};
     db::ROTxnManaged txn{env};
     db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
-    std::string source{db::table::kTrieOfAccounts.name};
 
     // Retrieve expected state root
     auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};

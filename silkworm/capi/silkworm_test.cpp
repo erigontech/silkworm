@@ -256,7 +256,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: chain id not
 
 static void insert_block(mdbx::env& env, Block& block) {
     auto block_hash = block.header.hash();
-    auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
 
     db::RWTxnManaged rw_txn{env};
     db::write_senders(rw_txn, block_hash, block.header.number, block);

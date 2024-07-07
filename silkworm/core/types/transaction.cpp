@@ -129,7 +129,7 @@ namespace rlp {
 
     size_t length(const Transaction& txn, bool wrap_eip2718_into_string) {
         Header h{header(txn)};
-        auto rlp_len{static_cast<size_t>(length_of_length(h.payload_length) + h.payload_length)};
+        size_t rlp_len{length_of_length(h.payload_length) + h.payload_length};
         if (txn.type != TransactionType::kLegacy && wrap_eip2718_into_string) {
             return length_of_length(rlp_len + 1) + rlp_len + 1;
         } else {

@@ -34,15 +34,15 @@ void encode(Bytes& to, const Hash& h) { rlp::encode(to, ByteView{h}); }
 
 size_t length(const BlockBodiesPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 
-void encode(Bytes& to, const BlockBodiesPacket66& from) { return rlp::encode_eth66_packet(to, from); }
+void encode(Bytes& to, const BlockBodiesPacket66& from) { rlp::encode_eth66_packet(to, from); }
 
 size_t length(const BlockHeadersPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 
-void encode(Bytes& to, const BlockHeadersPacket66& from) { return rlp::encode_eth66_packet(to, from); }
+void encode(Bytes& to, const BlockHeadersPacket66& from) { rlp::encode_eth66_packet(to, from); }
 
 size_t length(const GetBlockBodiesPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 
-void encode(Bytes& to, const GetBlockBodiesPacket66& from) { return rlp::encode_eth66_packet(to, from); }
+void encode(Bytes& to, const GetBlockBodiesPacket66& from) { rlp::encode_eth66_packet(to, from); }
 
 // NewBlockHash
 size_t length(const NewBlockHash& from) noexcept {
@@ -110,6 +110,6 @@ void encode(Bytes& to, const GetBlockHeadersPacket& from) noexcept {
 
 size_t length(const GetBlockHeadersPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 
-void encode(Bytes& to, const GetBlockHeadersPacket66& from) noexcept { return rlp::encode_eth66_packet(to, from); }
+void encode(Bytes& to, const GetBlockHeadersPacket66& from) noexcept { rlp::encode_eth66_packet(to, from); }
 
 }  // namespace silkworm::rlp

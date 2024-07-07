@@ -31,7 +31,7 @@ class SocketStream {
     explicit SocketStream(const boost::asio::any_io_executor& executor) : socket_(executor) {}
 
     SocketStream(SocketStream&&) = default;
-    SocketStream& operator=(SocketStream&&) = default;
+    SocketStream& operator=(SocketStream&&) noexcept = default;
 
     [[nodiscard]] boost::asio::ip::tcp::socket& socket() { return socket_; }
     [[nodiscard]] const boost::asio::ip::tcp::socket& socket() const { return socket_; }

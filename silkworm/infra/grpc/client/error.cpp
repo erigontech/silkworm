@@ -24,7 +24,7 @@ class GrpcErrorCategory : public std::error_category {
     [[nodiscard]] std::string message(int ev) const override;
 
     void set_error(std::string&& error_message) {
-        error_message_ = error_message;
+        error_message_ = std::move(error_message);
     }
 
   private:

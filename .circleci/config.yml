@@ -82,8 +82,13 @@ commands:
   install_conan:
     steps:
       - run:
+          name: "Ensure pipx"
+          command: |
+            sudo apt-get update
+            sudo apt install -y pipx
+      - run:
           name: "Install Conan"
-          command: sudo pip3 install conan==1.64.1 chardet
+          command: pipx install conan==1.64.1
 
   build_using_conan:
     parameters:
@@ -275,14 +280,14 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          compiler_version: 15
       - test
 
   linux-clang-coverage:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
@@ -318,7 +323,7 @@ jobs:
       # see: https://clang.llvm.org/extra/clang-tidy/
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_TIDY=ON
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - run:
@@ -332,15 +337,6 @@ jobs:
           build_type: Debug
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
-      - run:
-          name: "Generate report"
-          command: |
-            sudo pip install clang-html
-            sudo cp ~/project/third_party/clang-tidy-html/clang_visualizer.py /usr/local/lib/python3.10/dist-packages/clang_html/clang_visualizer.py
-            curl --output build.log "https://circleci.com/api/v1.1/project/github/torquem-ch/silkworm/$CIRCLE_BUILD_NUM/output/109/0?file=true"
-            clang-tidy-html build.log -o /tmp/report.html
-      - store_artifacts:
-          path: /tmp/report.html
 
   linux-clang-fuzzer:
     parameters:
@@ -415,7 +411,7 @@ parameters:
     default: 15
   clang_version_latest:
     type: integer
-    default: 15
+    default: 16
   gcc_version_min:
     type: integer
     default: 11

@@ -146,6 +146,21 @@ TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
         context_pool.stop();
         CHECK_NOTHROW(context_pool.join());
     }
+
+    SECTION("stop/start w/o contexts") {
+        ContextPool context_pool{2};
+        REQUIRE(context_pool.num_contexts() == 0);
+        CHECK_NOTHROW(context_pool.stop());
+        CHECK_NOTHROW(context_pool.start());
+    }
+
+    SECTION("stop/start w/ contexts") {
+        ContextPool context_pool{2};
+        context_pool.add_context(Context{0, WaitMode::blocking});
+        context_pool.add_context(Context{1, WaitMode::blocking});
+        CHECK_NOTHROW(context_pool.stop());
+        CHECK_NOTHROW(context_pool.start());
+    }
 }
 #endif  // SILKWORM_SANITIZE
 

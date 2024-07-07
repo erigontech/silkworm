@@ -42,7 +42,7 @@ Task<void> reconnect_channel(grpc::Channel& channel, std::string log_prefix, int
         bool is_connected = false;
         size_t attempt = 0;
         while (!is_connected && !is_stopped && (channel.GetState(false) != GRPC_CHANNEL_SHUTDOWN)) {
-            log::Info(log_prefix) << "Reconnecting grpc::Channel...";
+            log::Info(log_prefix) << "Reconnecting gRPC channel...";
             auto timeout = backoff_timeout(attempt++, min_msec, max_msec);
             auto deadline = gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_millis(timeout, GPR_TIMESPAN));
             is_connected = channel.WaitForConnected(deadline);

@@ -68,6 +68,9 @@ class RemoteClientImpl final : public api::Service {
 
     // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
     Task<void> state_changes(const api::StateChangeOptions& options, api::StateChangeConsumer consumer) override {
+        using StateChangesRpc =
+            boost::asio::use_awaitable_t<>::as_default_on_t<agrpc::ClientRPC<&Stub::PrepareAsyncStateChanges>>;
+
         static int iteration{0};
         while (true) {
             SILK_TRACE << "State changes RPC iteration=" << ++iteration;
@@ -75,9 +78,7 @@ class RemoteClientImpl final : public api::Service {
                 // using StateChangeRpc = ServerStreamingRpc<&Stub::PrepareAsyncStateChanges>;
                 proto::StateChangeRequest request = request_from_state_change_options(options);
 
-                using RPC = boost::asio::use_awaitable_t<>::as_default_on_t<agrpc::ClientRPC<&Stub::PrepareAsyncStateChanges>>;
-
-                RPC rpc{grpc_context_};
+                StateChangesRpc rpc{grpc_context_};
                 if (options.cancellation_token) {
                     const bool cancelled = options.cancellation_token->assign([&rpc](boost::asio::cancellation_type /*type*/) {
                         rpc.cancel();
@@ -119,7 +120,10 @@ class RemoteClientImpl final : public api::Service {
             }
             // Next line must be here even if logically belongs to catch clause (no co_await within catch block)
             if (channel_) {
-                co_await rpc::reconnect_channel(*channel_, "kv", min_backoff_timeout_.count(), max_backoff_timeout_.count());
+                co_await rpc::reconnect_channel(*channel_,
+                                                "KV state changes stream failed",
+                                                min_backoff_timeout_.count(),
+                                                max_backoff_timeout_.count());
             }
         }
     }

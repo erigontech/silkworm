@@ -103,6 +103,21 @@ bool MemoryMutation::is_entry_deleted(const std::string& table, const Slice& key
     return deleted_slices.find(key) != deleted_slices.cend();
 }
 
+bool MemoryMutation::is_dup_deleted(const std::string& table, const Slice& key, const Slice& value) const {
+    auto const deleted_table = deleted_dups_.find(table);
+    if (deleted_table == deleted_dups_.end()) {
+        return false;
+    }
+
+    auto const deleted_key = deleted_table->second.find(key);
+    if (deleted_key == deleted_table->second.end()) {
+        return false;
+    }
+
+    auto const deleted_value = deleted_key->second.find(value);
+    return deleted_value != deleted_key->second.end();
+}
+
 bool MemoryMutation::has_map(const std::string& bucket_name) const {
     return db::has_map(*overlay_.external_txn(), bucket_name.c_str());
 }
@@ -134,9 +149,24 @@ bool MemoryMutation::erase(const MapConfig& config, const Slice& key) {
 }
 
 bool MemoryMutation::erase(const MapConfig& config, const Slice& key, const Slice& value) {
-    deleted_entries_[config.name][key] = true;
+    deleted_dups_[config.name][key][value] = true;
     const auto handle{managed_txn_.open_map(config.name, config.key_mode, config.value_mode)};
     return managed_txn_.erase(handle, key, value);
+}
+
+void MemoryMutation::upsert(const MapConfig& config, const Slice& key, const Slice& value) {
+    if (static_cast<MDBX_db_flags_t>(config.value_mode) & MDBX_db_flags_t::MDBX_DUPSORT) {
+        if (is_dup_deleted(config.name, key, value)) {
+            deleted_dups_[config.name][key].erase(value);
+        }
+    } else {
+        if (is_entry_deleted(config.name, key)) {
+            deleted_entries_[config.name].erase(key);
+        }
+    }
+
+    const auto handle{managed_txn_.open_map(config.name, config.key_mode, config.value_mode)};
+    managed_txn_.upsert(handle, key, value);
 }
 
 bool MemoryMutation::clear_table(const std::string& table) {
@@ -162,6 +192,21 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
         const auto map_handle = db::open_map(rw_txn, *table_config);
         for (const auto& [key, _] : keys) {
             rw_txn->erase(map_handle, key);
+        }
+    }
+
+    // Obliterate dups that need to be deleted
+    for (const auto& [table, keys] : this->deleted_dups_) {
+        const auto table_config = overlay_.map_config(table);
+        if (!table_config) {
+            SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
+            continue;
+        }
+        const auto map_handle = db::open_map(rw_txn, *table_config);
+        for (const auto& [key, vals] : keys) {
+            for (const auto& [val, _] : vals) {
+                rw_txn->erase(map_handle, key, val);
+            }
         }
     }
 

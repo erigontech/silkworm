@@ -34,7 +34,10 @@ bool MemoryMutationCursor::is_table_cleared() const {
     return memory_mutation_.is_table_cleared(config_.name);
 }
 
-bool MemoryMutationCursor::is_entry_deleted(const Slice& key) const {
+bool MemoryMutationCursor::is_entry_deleted(const Slice& key, const Slice& value) const {
+    if (is_multi_value()) {
+        return memory_mutation_.is_dup_deleted(config_.name, key, value);
+    }
     return memory_mutation_.is_entry_deleted(config_.name, key);
 }
 
@@ -87,7 +90,7 @@ CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
         SILK_TRACE << "to_first: db_result.key=" << db_key << " db_result.value=" << db_value;
     }
 
-    if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.done && db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         current_pair_ = current_memory_entry_;
         current_db_entry_ = CursorResult{{}, {}, true};
         is_previous_from_db_ = false;
@@ -162,7 +165,7 @@ CursorResult MemoryMutationCursor::to_previous(bool throw_notfound) {
         SILK_TRACE << "to_previous: db_result.key=" << db_key << " db_result.value=" << db_value;
     }
 
-    if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.done && db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         current_pair_ = current_memory_entry_;
         current_db_entry_ = CursorResult{{}, {}, true};
         is_previous_from_db_ = false;
@@ -282,7 +285,7 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
         SILK_TRACE << "to_last: db_result.key=" << db_key << " db_result.value=" << db_value;
     }
 
-    if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.done && db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         current_pair_ = current_memory_entry_;
         current_db_entry_ = CursorResult{{}, {}, true};
         is_previous_from_db_ = false;
@@ -346,7 +349,7 @@ CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
     SILK_TRACE << "find: memory_result=" << memory_result;
 
     auto db_result = cursor_->lower_bound(key, false);
-    if (db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         db_result = next_on_db(MoveType::kNext, throw_notfound);
     }
     SILK_TRACE << "find: db_result=" << db_result;
@@ -377,7 +380,7 @@ CursorResult MemoryMutationCursor::lower_bound(const Slice& key, bool throw_notf
     const auto memory_result = memory_cursor_->lower_bound(key, false);
 
     auto db_result = cursor_->lower_bound(key, false);
-    if (db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         db_result = next_on_db(MoveType::kNext, throw_notfound);
     }
 
@@ -398,7 +401,7 @@ MoveResult MemoryMutationCursor::move(MoveOperation operation, bool throw_notfou
     const auto memory_result = memory_cursor_->move(operation, false);
 
     auto db_result = cursor_->move(operation, false);
-    if (db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         auto result = operation == MoveOperation::next ? next_on_db(MoveType::kNext, throw_notfound) : previous_on_db(MoveType::kPrevious, throw_notfound);
         std::tie(db_result.done, db_result.key, db_result.value) = std::tuple{result.done, result.key, result.value};
     }
@@ -426,7 +429,7 @@ bool MemoryMutationCursor::seek(const Slice& key) {
     CursorResult memory_result{key, found_in_memory ? memory_cursor_->current().value : mdbx::slice{}, found_in_memory};
 
     bool found_in_db = cursor_->seek(key);
-    if (is_entry_deleted(key)) {
+    if (is_entry_deleted(key, memory_result.value)) {
         found_in_db = next_on_db(MoveType::kNext, /*throw_notfound=*/false);
     }
     CursorResult db_result{key, found_in_db ? cursor_->current().value : mdbx::slice{}, found_in_db};
@@ -583,7 +586,7 @@ CursorResult MemoryMutationCursor::find_multivalue(const Slice& key, const Slice
     const auto memory_result = memory_cursor_->find_multivalue(key, value, false);
 
     auto db_result = cursor_->find_multivalue(key, value, false);
-    if (db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         db_result = next_on_db(MoveType::kNextDup, throw_notfound);
     }
 
@@ -604,7 +607,7 @@ CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& key, cons
     const auto memory_result = memory_cursor_->lower_bound_multivalue(key, value, false);
 
     auto db_result = cursor_->lower_bound_multivalue(key, value, false);
-    if (db_result.key && is_entry_deleted(db_result.key)) {
+    if (db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
         db_result = next_on_db(MoveType::kNextDup, throw_notfound);
     }
 
@@ -631,7 +634,7 @@ void MemoryMutationCursor::insert(const Slice& key, Slice value) {
 }
 
 void MemoryMutationCursor::upsert(const Slice& key, const Slice& value) {
-    memory_mutation_->upsert(memory_cursor_->map(), key, value);
+    memory_mutation_.upsert(config_, key, value);
 }
 
 void MemoryMutationCursor::update(const Slice& key, const Slice& value) {
@@ -641,7 +644,7 @@ void MemoryMutationCursor::update(const Slice& key, const Slice& value) {
         throw_error_notfound();
     }
     // *UPSERT* because we need to insert key in memory if it doesn't exist
-    memory_mutation_->upsert(memory_cursor_->map(), key, value);
+    memory_mutation_.upsert(config_, key, value);
 }
 
 bool MemoryMutationCursor::erase() {
@@ -682,7 +685,7 @@ CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::MoveType typ
     CursorResult result = next_by_type(type, throw_notfound);
     if (!result.done) return result;
 
-    while (result.key && result.value && is_entry_deleted(result.key)) {
+    while (result.key && result.value && is_entry_deleted(result.key, result.value)) {
         result = next_by_type(type, throw_notfound);
         if (!result.done) return result;
     }
@@ -711,7 +714,7 @@ CursorResult MemoryMutationCursor::previous_on_db(MemoryMutationCursor::MoveType
     CursorResult result = previous_by_type(type, throw_notfound);
     if (!result.done) return result;
 
-    while (result.key && result.value && is_entry_deleted(result.key)) {
+    while (result.key && result.value && is_entry_deleted(result.key, result.value)) {
         result = previous_by_type(type, throw_notfound);
         if (!result.done) return result;
     }

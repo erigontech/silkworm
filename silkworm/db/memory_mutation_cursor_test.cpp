@@ -114,12 +114,12 @@ TEST_CASE("MemoryMutationCursor: initialization", "[silkworm][node][db][memory_m
         CHECK(mutation_cursor1.size() == 2);
         CHECK(!mutation_cursor1.empty());
         CHECK(!mutation_cursor1.is_table_cleared());
-        CHECK(!mutation_cursor1.is_entry_deleted(Slice{}));
+        CHECK(!mutation_cursor1.is_entry_deleted(Slice{}, Slice{}));
         MemoryMutationCursor mutation_cursor2{test1.mutation, db::table::kAccountChangeSet};
         CHECK(mutation_cursor2.size() == 4);
         CHECK(!mutation_cursor2.empty());
         CHECK(!mutation_cursor2.is_table_cleared());
-        CHECK(!mutation_cursor2.is_entry_deleted(Slice{}));
+        CHECK(!mutation_cursor2.is_entry_deleted(Slice{}, Slice{}));
 
         // Create many cursors
         std::vector<std::unique_ptr<MemoryMutationCursor>> memory_cursors;
@@ -133,7 +133,7 @@ TEST_CASE("MemoryMutationCursor: initialization", "[silkworm][node][db][memory_m
             MemoryMutationCursor mutation_cursor{test1.mutation, table};
             CHECK(has_map(test1.mutation, table.name));
             CHECK(!mutation_cursor.is_table_cleared());
-            CHECK(!mutation_cursor.is_entry_deleted(Slice{}));
+            CHECK(!mutation_cursor.is_entry_deleted(Slice{}, Slice{}));
         }
     }
 
@@ -146,7 +146,7 @@ TEST_CASE("MemoryMutationCursor: initialization", "[silkworm][node][db][memory_m
             MemoryMutationCursor mutation_cursor{test2.mutation, table};
             CHECK_NOTHROW(mutation_cursor.to_first());
             CHECK_NOTHROW(!mutation_cursor.is_table_cleared());
-            CHECK_NOTHROW(!mutation_cursor.is_entry_deleted(Slice{}));
+            CHECK_NOTHROW(!mutation_cursor.is_entry_deleted(Slice{}, Slice{}));
         }
     }
 }

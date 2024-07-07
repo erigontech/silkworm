@@ -242,11 +242,11 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
-    if (chaindata_env_) {
+    if (settings_.standalone) {
+        kv_client_ = std::make_unique<db::kv::grpc::client::RemoteClient>(create_channel_, *context.grpc_context());
+    } else {
         // TODO(canepat) finish implementation and clean-up composition of objects here
         kv_client_ = std::make_unique<db::kv::api::DirectClient>(nullptr);
-    } else {
-        kv_client_ = std::make_unique<db::kv::grpc::client::RemoteClient>(create_channel_, *context.grpc_context());
     }
     state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client_);
 

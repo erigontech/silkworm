@@ -121,7 +121,7 @@ class Connection : public StreamWriter {
     bool http_compression_;
 
     WorkerPool& workers_;
-    bool gzip_encoding_requested_;
+    bool gzip_encoding_requested_{false};
 
     std::string vary_;
     std::string origin_;

@@ -24,6 +24,4 @@ namespace silkworm::db::kv::grpc::client {
 
 using TxRpc = BidiStreamingRpc<&::remote::KV::StubInterface::PrepareAsyncTx>;
 
-using StateChangesRpc = ServerStreamingRpc<&::remote::KV::StubInterface::PrepareAsyncStateChanges>;
-
 }  // namespace silkworm::db::kv::grpc::client

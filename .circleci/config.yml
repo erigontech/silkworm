@@ -241,7 +241,7 @@ jobs:
     steps:
       - checkout_with_submodules
       - run:
-          name: "TSAN hack"
+          name: "Sanitizer hack"
 # https://stackoverflow.com/questions/77850769/fatal-threadsanitizer-unexpected-memory-mapping-when-running-on-linux-kernels
           command: sudo sysctl vm.mmap_rnd_bits=30
       - build_using_conan:
@@ -280,6 +280,9 @@ jobs:
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
+      - run:
+          name: "Sanitizer hack" # https://github.com/google/sanitizers/issues/856
+          command: sudo sysctl vm.mmap_rnd_bits=30
       - build_using_conan:
           build_type: Debug
           compiler_id: clang

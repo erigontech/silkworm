@@ -274,17 +274,16 @@ jobs:
   linux-clang-address-sanitizer:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
-      ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 15
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
       - test
 
   linux-clang-coverage:

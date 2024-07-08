@@ -30,6 +30,7 @@ add_library(
   evmone/lib/evmone/baseline_instruction_table.hpp
   evmone/lib/evmone/baseline.cpp
   evmone/lib/evmone/baseline.hpp
+  evmone/lib/evmone/constants.hpp
   evmone/lib/evmone/eof.cpp
   evmone/lib/evmone/eof.hpp
   evmone/lib/evmone/execution_state.hpp
@@ -39,13 +40,12 @@ add_library(
   evmone/lib/evmone/instructions_traits.hpp
   evmone/lib/evmone/instructions_xmacro.hpp
   evmone/lib/evmone/instructions.hpp
-  evmone/lib/evmone/opcodes_helpers.h
   evmone/lib/evmone/tracing.cpp
   evmone/lib/evmone/tracing.hpp
   evmone/lib/evmone/vm.cpp
   evmone/lib/evmone/vm.hpp
 )
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.11.0")
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.12.0-dev")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(
   evmone

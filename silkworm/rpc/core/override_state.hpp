@@ -56,34 +56,34 @@ class OverrideState : public silkworm::State {
     std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const override;
 
     void insert_block(const silkworm::Block& block, const evmc::bytes32& hash) override {
-        return inner_state_.insert_block(block, hash);
+        inner_state_.insert_block(block, hash);
     }
 
     void canonize_block(BlockNum block_number, const evmc::bytes32& block_hash) override {
-        return inner_state_.canonize_block(block_number, block_hash);
+        inner_state_.canonize_block(block_number, block_hash);
     }
 
     void decanonize_block(BlockNum block_number) override {
-        return inner_state_.decanonize_block(block_number);
+        inner_state_.decanonize_block(block_number);
     }
 
     void insert_receipts(BlockNum block_number, const std::vector<silkworm::Receipt>& receipts) override {
-        return inner_state_.insert_receipts(block_number, receipts);
+        inner_state_.insert_receipts(block_number, receipts);
     }
 
     void insert_call_traces(BlockNum block_number, const CallTraces& traces) override {
-        return inner_state_.insert_call_traces(block_number, traces);
+        inner_state_.insert_call_traces(block_number, traces);
     }
 
     void begin_block(BlockNum block_number, size_t updated_accounts_count) override {
-        return inner_state_.begin_block(block_number, updated_accounts_count);
+        inner_state_.begin_block(block_number, updated_accounts_count);
     }
 
     void update_account(
         const evmc::address& address,
         std::optional<silkworm::Account> initial,
         std::optional<silkworm::Account> current) override {
-        return inner_state_.update_account(address, initial, current);
+        inner_state_.update_account(address, initial, current);
     }
 
     void update_account_code(
@@ -91,7 +91,7 @@ class OverrideState : public silkworm::State {
         uint64_t incarnation,
         const evmc::bytes32& code_hash,
         silkworm::ByteView code) override {
-        return inner_state_.update_account_code(address, incarnation, code_hash, code);
+        inner_state_.update_account_code(address, incarnation, code_hash, code);
     }
 
     void update_storage(
@@ -100,11 +100,11 @@ class OverrideState : public silkworm::State {
         const evmc::bytes32& location,
         const evmc::bytes32& initial,
         const evmc::bytes32& current) override {
-        return inner_state_.update_storage(address, incarnation, location, initial, current);
+        inner_state_.update_storage(address, incarnation, location, initial, current);
     }
 
     void unwind_state_changes(BlockNum block_number) override {
-        return inner_state_.unwind_state_changes(block_number);
+        inner_state_.unwind_state_changes(block_number);
     }
 
   private:

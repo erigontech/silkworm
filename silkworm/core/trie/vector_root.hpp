@@ -17,6 +17,7 @@
 #pragma once
 
 #include <concepts>
+#include <utility>
 
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
@@ -50,7 +51,7 @@ evmc::bytes32 root_hash(const std::vector<Value>& v, Encoder&& value_encoder) {
         index_rlp.clear();
         rlp::encode(index_rlp, index);
         value_rlp.clear();
-        value_encoder(value_rlp, v[index]);
+        std::forward<Encoder>(value_encoder)(value_rlp, v[index]);
 
         hb.add_leaf(unpack_nibbles(index_rlp), value_rlp);
     }

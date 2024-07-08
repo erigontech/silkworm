@@ -222,7 +222,7 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
                 // Hash account
                 // data.key == Address
                 // data.value == Account encoded for storage (must exist)
-                if (!data.value.length()) {
+                if (data.value.empty()) {
                     const std::string what("Unexpected empty value in PlainState for Account " + current_key_);
                     throw StageError(Stage::Result::kUnexpectedError, what);
                 }

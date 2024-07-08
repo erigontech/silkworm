@@ -22,6 +22,7 @@
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions.hpp>
 
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/types/address.hpp>
 
 using namespace evmone;
@@ -72,7 +73,7 @@ inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t&
 
 //! Adaptation of evmone::grow_memory: we need just to check gas requirements w/o growing memory
 inline int64_t check_memory_gas(int64_t gas_left, Memory& memory, uint64_t new_size) noexcept {
-    const auto new_words = num_words(new_size);
+    const auto new_words = static_cast<int64_t>(silkworm::num_words(new_size));
     const auto current_words = static_cast<int64_t>(memory.size() / word_size);
     const auto new_cost = 3 * new_words + new_words * new_words / 512;
     const auto current_cost = 3 * current_words + current_words * current_words / 512;
@@ -164,7 +165,7 @@ void on_create_start(const intx::uint256* stack_top, int stack_height, int64_t g
         return;  // The execution has run of out-of-gas during contract deployment, do not trace anything
     }
     const auto init_code_word_cost = 6 * (Op == Opcode::OP_CREATE2) + 2 * (state.rev >= EVMC_SHANGHAI);
-    const auto init_code_cost = num_words(init_code_size) * init_code_word_cost;
+    const auto init_code_cost = static_cast<int64_t>(silkworm::num_words(init_code_size)) * init_code_word_cost;
     if (gas - init_code_cost < 0) {
         return;  // The execution has run of out-of-gas during contract deployment, do not trace anything
     }

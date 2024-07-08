@@ -135,14 +135,16 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     }
 
     SECTION("Settings disables colorized output depending on TTY") {
+        const bool is_terminal = is_terminal_stdout() && is_terminal_stderr();
+
         // Default output is NOT colorized on non-TTY terminal
         LogBuffer_ForTest<Level::kInfo>{"test0", {"key1", "value1", "key2", "value2"}};  // temporary log object, flush on dtor
         const auto cerr_output0{string_cerr.str()};
         CHECK(absl::StrContains(cerr_output0, "test0"));
-        CHECK(absl::StrContains(cerr_output0, key_value("key1", "value1")));
-        CHECK(absl::StrContains(cerr_output0, key_value("key2", "value2")));
-        CHECK(!absl::StrContains(cerr_output0, prettified_key_value("key1", "value1")));
-        CHECK(!absl::StrContains(cerr_output0, prettified_key_value("key2", "value2")));
+        CHECK(absl::StrContains(cerr_output0, key_value("key1", "value1")) == !is_terminal);
+        CHECK(absl::StrContains(cerr_output0, key_value("key2", "value2")) == !is_terminal);
+        CHECK(absl::StrContains(cerr_output0, prettified_key_value("key1", "value1")) == is_terminal);
+        CHECK(absl::StrContains(cerr_output0, prettified_key_value("key2", "value2")) == is_terminal);
 
         // Reset cerr replacement stream
         string_cerr.str("");
@@ -156,10 +158,10 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         LogBuffer_ForTest<Level::kInfo>{"test2", {"key3", "value3", "key4", "value4"}};  // temporary log object, flush on dtor
         const auto cerr_output2{string_cerr.str()};
         CHECK(absl::StrContains(cerr_output2, "test2"));
-        CHECK(absl::StrContains(cerr_output2, key_value("key3", "value3")));
-        CHECK(absl::StrContains(cerr_output2, key_value("key4", "value4")));
-        CHECK(!absl::StrContains(cerr_output2, prettified_key_value("key3", "value3")));
-        CHECK(!absl::StrContains(cerr_output2, prettified_key_value("key4", "value4")));
+        CHECK(absl::StrContains(cerr_output2, key_value("key3", "value3")) == !is_terminal);
+        CHECK(absl::StrContains(cerr_output2, key_value("key4", "value4")) == !is_terminal);
+        CHECK(absl::StrContains(cerr_output2, prettified_key_value("key3", "value3")) == is_terminal);
+        CHECK(absl::StrContains(cerr_output2, prettified_key_value("key4", "value4")) == is_terminal);
     }
 
     SECTION("Settings disable colorized output if log file present") {

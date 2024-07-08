@@ -86,7 +86,8 @@ static std::unique_ptr<types::H512> sample_H512() {
 
 TEST_CASE("string_from_H512", "[rpc][conversion]") {
     SECTION("empty H512", "[rpc][conversion]") {
-        CHECK_NOTHROW(string_from_H512(types::H512{}).empty());
+        std::string zeros(64, 0);
+        CHECK(string_from_H512(types::H512{}) == zeros);
     }
 
     SECTION("non-empty H512", "[rpc][conversion]") {
@@ -99,9 +100,10 @@ TEST_CASE("string_from_H512", "[rpc][conversion]") {
 
 TEST_CASE("span_from_H512", "[rpc][conversion]") {
     SECTION("empty H512", "[rpc][conversion]") {
+        std::array<uint8_t, 64> zeros{};
         std::array<uint8_t, 64> uint8_array{};
         span_from_H512(types::H512{}, uint8_array);
-        CHECK_NOTHROW(uint8_array.empty());
+        CHECK(uint8_array == zeros);
     }
 
     SECTION("non-empty H512", "[rpc][conversion]") {
@@ -178,7 +180,8 @@ static std::unique_ptr<types::H128> sample_H128() {
 
 TEST_CASE("bytes_from_H128", "[rpc][conversion]") {
     SECTION("empty H128", "[rpc][conversion]") {
-        CHECK_NOTHROW(bytes_from_H128(::types::H128{}).empty());
+        Bytes zeros(16, 0);
+        CHECK(bytes_from_H128(::types::H128{}) == zeros);
     }
 
     SECTION("non-empty H128", "[rpc][conversion]") {
@@ -189,9 +192,10 @@ TEST_CASE("bytes_from_H128", "[rpc][conversion]") {
 
 TEST_CASE("span_from_H128", "[rpc][conversion]") {
     SECTION("empty H128", "[rpc][conversion]") {
+        std::array<uint8_t, 16> zeros{};
         std::array<uint8_t, 16> uint8_array{};
         span_from_H128(::types::H128{}, uint8_array);
-        CHECK_NOTHROW(uint8_array.empty());
+        CHECK(uint8_array == zeros);
     }
 
     SECTION("non-empty H128", "[rpc][conversion]") {

@@ -42,7 +42,7 @@ std::string to_hex(const evmc::bytes32& value, bool with_prefix) {
 namespace silkworm::rlp {
 
 void encode(Bytes& to, const evmc::bytes32& value) {
-    return silkworm::rlp::encode(to, ByteView{value.bytes});
+    silkworm::rlp::encode(to, ByteView{value.bytes});
 }
 
 size_t length(const evmc::bytes32& value) noexcept {

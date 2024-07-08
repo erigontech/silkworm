@@ -415,7 +415,7 @@ parameters:
     default: 15
   clang_version_latest:
     type: integer
-    default: 17
+    default: 18
   gcc_version_min:
     type: integer
     default: 11

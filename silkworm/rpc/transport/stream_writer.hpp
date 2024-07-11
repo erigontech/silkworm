@@ -31,6 +31,7 @@ class StreamWriter {
     virtual Task<void> open_stream() = 0;
     virtual Task<void> close_stream() = 0;
     virtual Task<std::size_t> write(std::string_view content, bool last) = 0;
+    virtual size_t get_capacity() = 0;
 };
 
 class StringWriter : public StreamWriter {
@@ -41,6 +42,7 @@ class StringWriter : public StreamWriter {
         content_.reserve(initial_capacity);
     }
 
+    size_t get_capacity() override { return 4096; }
     Task<void> open_stream() override { co_return; }
 
     Task<void> close_stream() override { co_return; }

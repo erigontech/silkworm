@@ -52,6 +52,7 @@ namespace silkworm::rpc::test_util {
 class ChannelForTest : public StreamWriter {
   public:
     Task<void> open_stream() override { co_return; }
+    size_t get_capacity() override { return 4096; }
     Task<void> close_stream() override { co_return; }
     Task<std::size_t> write(std::string_view /* content */, bool /* last */) override { co_return 0; }
 };

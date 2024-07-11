@@ -50,9 +50,9 @@ static constexpr std::string_view kDoubleQuotes{"\""};
 //! The maximum number of items enqueued in the chunk channel
 static constexpr std::size_t kChannelCapacity{100};
 
-Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t buffer_capacity)
+Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, size_t new_buffer_capacity)
     : writer_(writer),
-      buffer_capacity_(buffer_capacity),
+      buffer_capacity_{new_buffer_capacity ? new_buffer_capacity : writer_.get_capacity()},
       channel_{executor, kChannelCapacity},
 // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
 #ifndef _WIN32

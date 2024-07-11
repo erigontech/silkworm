@@ -65,6 +65,7 @@ class Connection : public StreamWriter {
     /* StreamWriter Interface */
     Task<void> open_stream() override;
     Task<void> close_stream() override;
+    size_t get_capacity() override { return 4 * 1024; }
     Task<std::size_t> write(std::string_view content, bool last) override;
 
   protected:

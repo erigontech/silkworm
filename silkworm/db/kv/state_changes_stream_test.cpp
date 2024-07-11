@@ -28,7 +28,13 @@
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
+#if !defined(__APPLE__) || defined(NDEBUG)
+#include <silkworm/infra/common/terminal.hpp>
+#endif  // !defined(__APPLE__) || defined(NDEBUG)
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#if !defined(__APPLE__) || defined(NDEBUG)
+#include <silkworm/infra/concurrency/signal_handler.hpp>
+#endif  // !defined(__APPLE__) || defined(NDEBUG)
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/interfaces/kv_mock_fix24351.grpc.pb.h>
 #include <silkworm/infra/grpc/test_util/test_runner.hpp>
@@ -258,6 +264,41 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
         REQUIRE_NOTHROW(run_result.get());
     }
 }
+
+// Skip this test in macOS Debug build because raising signals triggers a suspension in the CLion Debug console
+#if !defined(__APPLE__) || defined(NDEBUG)
+TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest: signals", "[db][kv][state_changes_stream]") {
+    // Skip this test if it is executed *NOT* on a TTY (e.g. CLion Run console) because it gets stuck :-(
+    const bool is_terminal = is_terminal_stdout() && is_terminal_stderr();
+    if (!is_terminal) {
+        return;  // Silently skipped not to be counted explicitly as skipped
+    }
+
+    const auto signal_delay = GENERATE(0ms, 1ms, 10ms, 50ms);
+    const auto signal_number = GENERATE(SIGQUIT, SIGTERM);
+
+    // We need a gRPC channel instance to stimulate the real connection scenario and trigger signal in such context
+    auto make_channel_factory = []() {
+        return ::grpc::CreateChannel("localhost:12345", ::grpc::InsecureChannelCredentials());
+    };
+    grpc::client::RemoteClient remote_client{make_channel_factory, grpc_context_};
+    remote_client.set_min_backoff_timeout(5ms);
+    remote_client.set_max_backoff_timeout(10ms);
+    StateChangesStream stream{context_, remote_client};
+    SignalHandler::init([&stream](int) { stream.close(); }, /*silent=*/true);
+
+    // Execute the pre-condition: the stream must be running at least for <close_delay>ms
+    std::future<void> run_result;
+    REQUIRE_NOTHROW(run_result = spawn(stream.run()));
+    if (signal_delay > 0ms) {
+        sleep_for(signal_delay);
+    }
+
+    // Execute the test: sending the signal should terminate the running stream w/o throwing exceptions
+    REQUIRE(std::raise(signal_number) == 0);
+    CHECK_NOTHROW(run_result.get());
+}
+#endif  // !defined(__APPLE__) || defined(NDEBUG)
 
 #endif  // SILKWORM_SANITIZE
 

@@ -30,7 +30,7 @@ bool is_disconnect_error(const grpc::Status& status, grpc::Channel& channel) {
 }
 
 // min_sec, min_sec*2, min_sec*4, ... max_sec, max_sec, ...
-static int64_t backoff_timeout(size_t attempt, int64_t min_msec, int64_t max_msec) {
+int64_t backoff_timeout(size_t attempt, int64_t min_msec, int64_t max_msec) {
     if (attempt >= 20) return max_msec;
     return std::min(min_msec << attempt, max_msec);
 }

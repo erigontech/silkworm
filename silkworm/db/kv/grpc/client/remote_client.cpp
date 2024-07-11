@@ -17,6 +17,8 @@
 #include "remote_client.hpp"
 
 #include <agrpc/client_rpc.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 #include <gsl/util>
 
@@ -33,6 +35,16 @@ namespace silkworm::db::kv::grpc::client {
 
 namespace proto = ::remote;
 using Stub = proto::KV::StubInterface;
+
+// TODO(canepat) remove after moving sleep from sentry to infra START
+using namespace boost::asio;
+Task<void> sleep(std::chrono::milliseconds duration) {
+    auto executor = co_await ThisTask::executor;
+    steady_timer timer(executor);
+    timer.expires_after(duration);
+    co_await timer.async_wait(use_awaitable);
+}
+// TODO(canepat) remove after moving sleep from sentry to infra END
 
 class RemoteClientImpl final : public api::Service {
   public:
@@ -71,41 +83,34 @@ class RemoteClientImpl final : public api::Service {
         using StateChangesRpc =
             boost::asio::use_awaitable_t<>::as_default_on_t<agrpc::ClientRPC<&Stub::PrepareAsyncStateChanges>>;
 
-        static int iteration{0};
+        size_t attempt = 0;
         while (true) {
-            SILK_TRACE << "State changes RPC iteration=" << ++iteration;
+            SILK_TRACE << "State changes RPC attempt=" << attempt;
             try {
-                // using StateChangeRpc = ServerStreamingRpc<&Stub::PrepareAsyncStateChanges>;
                 proto::StateChangeRequest request = request_from_state_change_options(options);
 
-                StateChangesRpc rpc{grpc_context_};
+                auto rpc = std::make_shared<StateChangesRpc>(grpc_context_);
                 if (options.cancellation_token) {
-                    const bool cancelled = options.cancellation_token->assign([&rpc](boost::asio::cancellation_type /*type*/) {
-                        rpc.cancel();
+                    const bool cancelled = options.cancellation_token->assign([rpc](boost::asio::cancellation_type /*type*/) {
+                        rpc->cancel();
                     });
                     if (cancelled) {
-                        SILK_TRACE << "State changes RPC cancelled while retrying ptr=" << &rpc;
+                        SILK_TRACE << "State changes RPC cancelled while retrying ptr=" << rpc.get();
                         throw rpc::GrpcStatusError{::grpc::Status::CANCELLED};
                     }
-                    SILK_TRACE << "State changes RPC cancellation handler registered ptr=" << &rpc;
+                    SILK_TRACE << "State changes RPC cancellation handler registered ptr=" << rpc.get();
                 }
-                auto _ = gsl::finally([&options, &rpc]() {
-                    if (options.cancellation_token) {
-                        options.cancellation_token->clear();
-                        SILK_TRACE << "State changes RPC cancellation handler cleared ptr=" << &rpc;
-                    }
-                });
-                if (!co_await rpc.start(*stub_, request)) {
-                    ::grpc::Status status = co_await rpc.finish();
+                if (!co_await rpc->start(*stub_, request)) {
+                    ::grpc::Status status = co_await rpc->finish();
                     SILK_TRACE << "State changes RPC start failed status=" << status;
                     throw rpc::GrpcStatusError{std::move(status)};
                 }
                 proto::StateChangeBatch batch;
-                while (co_await rpc.read(batch)) {
+                while (co_await rpc->read(batch)) {
                     co_await consumer(state_change_set_from_batch(batch));
                 }
 
-                ::grpc::Status status = co_await rpc.finish();
+                ::grpc::Status status = co_await rpc->finish();
                 if (!status.ok()) {
                     SILK_TRACE << "State changes RPC finish failed status=" << status;
                     throw rpc::GrpcStatusError{std::move(status)};
@@ -118,13 +123,9 @@ class RemoteClientImpl final : public api::Service {
                 }
                 SILK_TRACE << "State changes RPC error occurred status=" << gse.status();
             }
-            // Next line must be here even if logically belongs to catch clause (no co_await within catch block)
-            if (channel_) {
-                co_await rpc::reconnect_channel(*channel_,
-                                                "KV state changes stream failed",
-                                                min_backoff_timeout_.count(),
-                                                max_backoff_timeout_.count());
-            }
+            // Next lines must be here even if logically they belong to catch clause (no co_await within catch block)
+            const auto timeout = rpc::backoff_timeout(attempt++, min_backoff_timeout_.count(), max_backoff_timeout_.count());
+            co_await sleep(std::chrono::milliseconds(timeout));
         }
     }
 

@@ -84,8 +84,13 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
         [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
 
-    RemoteClient make_remote_client(auto&& stub) {
-        return {std::forward<decltype(stub)>(stub), grpc_context_, state_cache.get(), block_provider, block_number_from_txn_hash_provider};
+    RemoteClient make_remote_client(auto&& channel_or_stub) {
+        return {
+            std::forward<decltype(channel_or_stub)>(channel_or_stub),
+            grpc_context_,
+            state_cache.get(),
+            block_provider,
+            block_number_from_txn_hash_provider};
     }
 };
 
@@ -213,7 +218,6 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
         remote_client.set_min_backoff_timeout(5ms);
         remote_client.set_max_backoff_timeout(10ms);
         StateChangesStream stream{context_, remote_client};
-        // StateChangesStream stream{context_, stub_.get()};
 
         // Execute the pre-condition: the stream must be running for at least for <close_delay>ms
         std::future<void> run_result;
@@ -293,7 +297,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest: si
     auto make_channel_factory = []() {
         return ::grpc::CreateChannel("localhost:12345", ::grpc::InsecureChannelCredentials());
     };
-    grpc::client::RemoteClient remote_client{make_channel_factory, grpc_context_};
+    grpc::client::RemoteClient remote_client{make_remote_client(make_channel_factory)};
     remote_client.set_min_backoff_timeout(5ms);
     remote_client.set_max_backoff_timeout(10ms);
     StateChangesStream stream{context_, remote_client};

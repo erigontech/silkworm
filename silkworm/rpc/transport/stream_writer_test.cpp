@@ -33,7 +33,7 @@ class JsonChunkWriter : public StreamWriter {
     explicit JsonChunkWriter(StreamWriter& writer, std::size_t chunk_size = kDefaultChunkSize);
 
     Task<void> open_stream() override { co_return; }
-    size_t get_capacity() override { return 0; }
+    size_t get_capacity() const noexcept override { return 0; }
     Task<void> close_stream() override;
     Task<std::size_t> write(std::string_view content, bool last) override;
 

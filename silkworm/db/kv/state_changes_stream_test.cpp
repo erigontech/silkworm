@@ -278,7 +278,11 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest: si
     }
 
     const auto signal_delay = GENERATE(0ms, 1ms, 10ms, 50ms);
+#if defined(_WIN32)
+    const auto signal_number = GENERATE(SIGBREAK, SIGTERM);
+#else
     const auto signal_number = GENERATE(SIGQUIT, SIGTERM);
+#endif  // defined(_WIN32)
 
     // We need a gRPC channel instance to stimulate the real connection scenario and trigger signal in such context
     auto make_channel_factory = []() {

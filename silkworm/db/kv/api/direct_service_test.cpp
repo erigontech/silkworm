@@ -44,7 +44,8 @@ TEST_CASE_METHOD(DirectServiceTest, "state_changes: state change sets", "[db][kv
         {StateChangeSet{}, StateChangeSet{}},
         {StateChangeSet{}, StateChangeSet{}, StateChangeSet{}},
     };
-    auto state_changes_future = spawn(service.state_changes(StateChangeOptions{}, [this](auto cs) -> Task<void> {
+    StateChangeOptions options;
+    auto state_changes_future = spawn(service.state_changes(options, [this](auto cs) -> Task<void> {
         co_await consumer(cs);
     }));
     for (const auto& expected_change_sets : fixtures) {

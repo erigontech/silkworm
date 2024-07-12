@@ -39,6 +39,7 @@ class TestDatabaseContext {
         std::filesystem::remove_all(db_path);
     }
 
+    mdbx::env& mdbx_env() { return db_; }
     mdbx::env_managed& get_mdbx_env() { return db_; }
     db::EnvConfig get_env_config() { return env_config_; }
     silkworm::ChainConfig get_chain_config();

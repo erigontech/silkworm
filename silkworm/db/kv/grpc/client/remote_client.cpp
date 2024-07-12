@@ -25,11 +25,11 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/client/reconnect.hpp>
-#include <silkworm/infra/grpc/client/server_streaming_rpc.hpp>
 
 #include "endpoint/state_change.hpp"
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
+#include "remote_transaction.hpp"
 
 namespace silkworm::db::kv::grpc::client {
 
@@ -48,18 +48,30 @@ Task<void> sleep(std::chrono::milliseconds duration) {
 
 class RemoteClientImpl final : public api::Service {
   public:
-    explicit RemoteClientImpl(const rpc::ChannelFactory& create_channel,
-                              agrpc::GrpcContext& grpc_context,
-                              rpc::DisconnectHook on_disconnect)
+    RemoteClientImpl(const rpc::ChannelFactory& create_channel,
+                     agrpc::GrpcContext& grpc_context,
+                     api::StateCache* state_cache,
+                     chain::BlockProvider block_provider,
+                     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                     rpc::DisconnectHook on_disconnect)
         : channel_{create_channel()},
           stub_{proto::KV::NewStub(channel_)},
           grpc_context_{grpc_context},
+          state_cache_{state_cache},
+          block_provider_{std::move(block_provider)},
+          block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
           on_disconnect_{std::move(on_disconnect)} {}
-    explicit RemoteClientImpl(std::unique_ptr<Stub> stub,
-                              agrpc::GrpcContext& grpc_context,
-                              rpc::DisconnectHook on_disconnect)
+    RemoteClientImpl(std::unique_ptr<Stub> stub,
+                     agrpc::GrpcContext& grpc_context,
+                     api::StateCache* state_cache,
+                     chain::BlockProvider block_provider,
+                     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                     rpc::DisconnectHook on_disconnect)
         : stub_{std::move(stub)},
           grpc_context_{grpc_context},
+          state_cache_{state_cache},
+          block_provider_{std::move(block_provider)},
+          block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
           on_disconnect_{std::move(on_disconnect)} {}
 
     ~RemoteClientImpl() override = default;
@@ -74,8 +86,11 @@ class RemoteClientImpl final : public api::Service {
 
     // rpc Tx(stream Cursor) returns (stream Pair);
     Task<std::unique_ptr<api::Transaction>> begin_transaction() override {
-        // TODO(canepat) implement
-        co_return nullptr;
+        co_return std::make_unique<RemoteTransaction>(*stub_,
+                                                      grpc_context_,
+                                                      state_cache_,
+                                                      block_provider_,
+                                                      block_number_from_txn_hash_provider_);
     }
 
     // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
@@ -180,16 +195,39 @@ class RemoteClientImpl final : public api::Service {
     std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
+    api::StateCache* state_cache_;
+    chain::BlockProvider block_provider_;
+    chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider_;
     rpc::DisconnectHook on_disconnect_;
     std::chrono::milliseconds min_backoff_timeout_{rpc::kDefaultMinBackoffReconnectTimeout};
     std::chrono::milliseconds max_backoff_timeout_{rpc::kDefaultMaxBackoffReconnectTimeout};
 };
 
-RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel, agrpc::GrpcContext& grpc_context, rpc::DisconnectHook on_disconnect)
-    : p_impl_{std::make_shared<RemoteClientImpl>(create_channel, grpc_context, std::move(on_disconnect))} {}
+RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel,
+                           agrpc::GrpcContext& grpc_context,
+                           api::StateCache* state_cache,
+                           chain::BlockProvider block_provider,
+                           chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                           rpc::DisconnectHook on_disconnect)
+    : p_impl_{std::make_shared<RemoteClientImpl>(create_channel,
+                                                 grpc_context,
+                                                 state_cache,
+                                                 std::move(block_provider),
+                                                 std::move(block_number_from_txn_hash_provider),
+                                                 std::move(on_disconnect))} {}
 
-RemoteClient::RemoteClient(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context, rpc::DisconnectHook on_disconnect)
-    : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub), grpc_context, std::move(on_disconnect))} {}
+RemoteClient::RemoteClient(std::unique_ptr<Stub> stub,
+                           agrpc::GrpcContext& grpc_context,
+                           api::StateCache* state_cache,
+                           chain::BlockProvider block_provider,
+                           chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                           rpc::DisconnectHook on_disconnect)
+    : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub),
+                                                 grpc_context,
+                                                 state_cache,
+                                                 std::move(block_provider),
+                                                 std::move(block_number_from_txn_hash_provider),
+                                                 std::move(on_disconnect))} {}
 
 // Must be here (not in header) because RemoteClientImpl size is necessary for std::unique_ptr in PIMPL idiom
 RemoteClient::~RemoteClient() = default;

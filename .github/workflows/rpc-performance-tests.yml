@@ -71,6 +71,7 @@ jobs:
           
           # Prepare historical test results directory
           mkdir -p $past_test_dir
+          rm -rf $RPC_PAST_TEST_DIR/mainnet_bin  # we want only the latest binary files
           mkdir -p $RPC_PAST_TEST_DIR/mainnet_bin
           
           run_perf () {

@@ -30,7 +30,7 @@ bool is_disconnect_error(const grpc::Status& status, grpc::Channel& channel) {
 }
 
 // min_sec, min_sec*2, min_sec*4, ... max_sec, max_sec, ...
-static int64_t backoff_timeout(size_t attempt, int64_t min_msec, int64_t max_msec) {
+int64_t backoff_timeout(size_t attempt, int64_t min_msec, int64_t max_msec) {
     if (attempt >= 20) return max_msec;
     return std::min(min_msec << attempt, max_msec);
 }
@@ -42,7 +42,7 @@ Task<void> reconnect_channel(grpc::Channel& channel, std::string log_prefix, int
         bool is_connected = false;
         size_t attempt = 0;
         while (!is_connected && !is_stopped && (channel.GetState(false) != GRPC_CHANNEL_SHUTDOWN)) {
-            log::Info(log_prefix) << "Reconnecting grpc::Channel...";
+            log::Info(log_prefix) << "Reconnecting gRPC channel...";
             auto timeout = backoff_timeout(attempt++, min_msec, max_msec);
             auto deadline = gpr_time_add(gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_millis(timeout, GPR_TIMESPAN));
             is_connected = channel.WaitForConnected(deadline);

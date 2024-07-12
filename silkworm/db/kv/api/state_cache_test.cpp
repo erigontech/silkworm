@@ -94,103 +94,115 @@ TEST_CASE("CoherentCacheConfig", "[rpc][ethdb][kv][state_cache]") {
     }
 }
 
-remote::StateChangeBatch new_batch(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
-                                   const std::vector<Bytes>& tx_rlps, bool unwind) {
-    remote::StateChangeBatch state_changes;
-    state_changes.set_state_version_id(view_id);
+StateChangeSet new_batch(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+                         const ListOfBytes& rlp_txs, bool unwind) {
+    StateChangeSet state_change_set;
+    state_change_set.state_version_id = view_id;
 
-    remote::StateChange* latest_change = state_changes.add_change_batch();
-    latest_change->set_block_height(block_height);
-    latest_change->set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
-    latest_change->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
-    for (auto& tx_rlp : tx_rlps) {
-        latest_change->add_txs(to_hex(tx_rlp));
-    }
+    state_change_set.state_changes.emplace_back(StateChange{
+        .direction = unwind ? Direction::kUnwind : Direction::kForward,
+        .block_height = block_height,
+        .block_hash = block_hash,
+        .rlp_txs = rlp_txs,
+    });
 
-    return state_changes;
+    return state_change_set;
 }
 
-remote::StateChangeBatch new_batch_with_upsert(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
-                                               const std::vector<Bytes>& tx_rlps, bool unwind) {
-    remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
+StateChangeSet new_batch_with_upsert(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+                                     const ListOfBytes& rlp_txs, bool unwind) {
+    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChange& latest_change = state_change_set.state_changes[0];
 
-    remote::AccountChange* account_change = latest_change->add_changes();
-    account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
-    account_change->set_action(remote::Action::UPSERT);
-    account_change->set_incarnation(kTestIncarnation);
-    account_change->set_data(kTestAccountData.data(), kTestAccountData.size());
+    latest_change.account_changes.emplace_back(AccountChange{
+        .address = kTestAddress1,
+        .incarnation = kTestIncarnation,
+        .change_type = Action::kUpsert,
+        .data = kTestAccountData,
+    });
 
-    return state_changes;
+    return state_change_set;
 }
 
-remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, BlockNum block_height,
-                                                    const evmc::bytes32& block_hash, const std::vector<Bytes>& tx_rlps,
-                                                    bool unwind, uint64_t num_changes, uint64_t offset = 0) {
-    remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
-
+StateChangeSet new_batch_with_upsert_code(uint64_t view_id, BlockNum block_height,
+                                          const Hash& block_hash, const ListOfBytes& rlp_txs,
+                                          bool unwind, uint64_t num_changes, uint64_t offset = 0) {
     SILKWORM_ASSERT(num_changes <= kTestAddresses.size());
     SILKWORM_ASSERT(num_changes <= kTestCodes.size());
+    SILKWORM_ASSERT(offset < num_changes);
+
+    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChange& latest_change = state_change_set.state_changes[0];
+
     for (auto i{offset}; i < num_changes; ++i) {
-        remote::AccountChange* account_change = latest_change->add_changes();
-        account_change->set_allocated_address(rpc::H160_from_address(kTestAddresses[i]).release());
-        account_change->set_action(remote::Action::UPSERT_CODE);
-        account_change->set_incarnation(kTestIncarnation);
-        account_change->set_data(kTestAccountData.data(), kTestAccountData.size());
-        account_change->set_code(kTestCodes[i].data(), kTestCodes[i].size());
+        latest_change.account_changes.emplace_back(AccountChange{
+            .address = kTestAddresses[i],
+            .incarnation = kTestIncarnation,
+            .change_type = Action::kUpsertCode,
+            .data = kTestAccountData,
+            .code = kTestCodes[i],
+        });
     }
 
-    return state_changes;
+    return state_change_set;
 }
 
-remote::StateChangeBatch new_batch_with_delete(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
-                                               const std::vector<Bytes>& tx_rlps, bool unwind) {
-    remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
+StateChangeSet new_batch_with_delete(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+                                     const ListOfBytes& rlp_txs, bool unwind) {
+    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChange& latest_change = state_change_set.state_changes[0];
 
-    remote::AccountChange* account_change = latest_change->add_changes();
-    account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
-    account_change->set_action(remote::Action::REMOVE);
+    latest_change.account_changes.emplace_back(AccountChange{
+        .address = kTestAddress1,
+        .change_type = Action::kRemove,
+    });
 
-    return state_changes;
+    return state_change_set;
 }
 
-remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, BlockNum block_height,
-                                                const evmc::bytes32& block_hash, const std::vector<Bytes>& tx_rlps,
-                                                bool unwind, uint64_t num_storage_changes) {
-    remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
-
-    remote::AccountChange* account_change = latest_change->add_changes();
-    account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
-    account_change->set_action(remote::Action::STORAGE);
-    account_change->set_incarnation(kTestIncarnation);
+StateChangeSet new_batch_with_storage(uint64_t view_id, BlockNum block_height,
+                                      const Hash& block_hash, const ListOfBytes& tx_rlps,
+                                      bool unwind, uint64_t num_storage_changes) {
     SILKWORM_ASSERT(num_storage_changes <= kTestHashedLocations.size());
     SILKWORM_ASSERT(num_storage_changes <= kTestStorageData.size());
+
+    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
+    StateChange& latest_change = state_change_set.state_changes[0];
+
+    StorageChangeSequence storage_change_set;
     for (auto i{0u}; i < num_storage_changes; ++i) {
-        remote::StorageChange* storage_change = account_change->add_storage_changes();
-        storage_change->set_allocated_location(rpc::H256_from_bytes32(kTestHashedLocations[i]).release());
-        storage_change->set_data(kTestStorageData[i].data(), kTestStorageData[i].size());
+        storage_change_set.emplace_back(StorageChange{
+            .location = kTestHashedLocations[i],
+            .data = kTestStorageData[i],
+        });
     }
 
-    return state_changes;
+    latest_change.account_changes.emplace_back(AccountChange{
+        .address = kTestAddress1,
+        .incarnation = kTestIncarnation,
+        .change_type = Action::kStorage,
+        .storage_changes = std::move(storage_change_set),
+    });
+
+    return state_change_set;
 }
 
-remote::StateChangeBatch new_batch_with_code(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
-                                             const std::vector<Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
-    remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
-
+StateChangeSet new_batch_with_code(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
+                                   const std::vector<Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
     SILKWORM_ASSERT(num_code_changes <= kTestCodes.size());
+
+    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
+    StateChange& latest_change = state_change_set.state_changes[0];
+
     for (auto i{0u}; i < num_code_changes; ++i) {
-        remote::AccountChange* account_change = latest_change->add_changes();
-        account_change->set_allocated_address(rpc::H160_from_address(kTestAddress1).release());
-        account_change->set_action(remote::Action::CODE);
-        account_change->set_code(kTestCodes[i].data(), kTestCodes[i].size());
+        latest_change.account_changes.emplace_back(AccountChange{
+            .address = kTestAddress1,
+            .change_type = Action::kCode,
+            .code = kTestCodes[i],
+        });
     }
 
-    return state_changes;
+    return state_change_set;
 }
 
 struct StateCacheTest : public silkworm::test_util::ContextTestBase {
@@ -255,7 +267,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view returns no view",
 
     SECTION("empty batch") {
         CoherentStateCache cache;
-        cache.on_new_block(remote::StateChangeBatch{});
+        cache.on_new_block(StateChangeSet{});
         CHECK(cache.latest_data_size() == 0);
         test_util::MockTransaction txn;
         EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0));

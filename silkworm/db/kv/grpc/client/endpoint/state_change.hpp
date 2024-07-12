@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 #pragma once
 
-#include <silkworm/infra/grpc/client/bidi_streaming_rpc.hpp>
-#include <silkworm/infra/grpc/client/server_streaming_rpc.hpp>
-#include <silkworm/interfaces/remote/kv.grpc.pb.h>
+#include <silkworm/interfaces/remote/kv.pb.h>
+
+#include "../../../api/endpoint/state_change.hpp"
 
 namespace silkworm::db::kv::grpc::client {
 
-using TxRpc = BidiStreamingRpc<&::remote::KV::StubInterface::PrepareAsyncTx>;
+::remote::StateChangeRequest request_from_state_change_options(const api::StateChangeOptions&);
+
+api::StateChangeSet state_change_set_from_batch(const ::remote::StateChangeBatch&);
 
 }  // namespace silkworm::db::kv::grpc::client

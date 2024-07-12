@@ -16,9 +16,11 @@
 
 #include "direct_service.hpp"
 
-namespace silkworm::db::kv::api {
+#include <gsl/util>
 
-DirectService::DirectService() = default;
+#include "endpoint/state_changes_call.hpp"
+
+namespace silkworm::db::kv::api {
 
 // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
 Task<Version> DirectService::version() {
@@ -26,9 +28,31 @@ Task<Version> DirectService::version() {
 }
 
 // rpc Tx(stream Cursor) returns (stream Pair);
-Task<std::unique_ptr<db::kv::api::Transaction>> DirectService::begin_transaction() {
+Task<std::unique_ptr<Transaction>> DirectService::begin_transaction() {
     // TODO(canepat) implement
     co_return nullptr;
+}
+
+// rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
+Task<void> DirectService::state_changes(const api::StateChangeOptions& options, api::StateChangeConsumer consumer) {
+    auto executor = co_await ThisTask::executor;
+    api::StateChangesCall call{options, executor};
+
+    auto unsubscribe_signal = call.unsubscribe_signal();
+    [[maybe_unused]] auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+
+    co_await router_.state_changes_calls_channel.send(call);
+    auto channel = co_await call.result();
+
+    // Loop until stream completed (i.e. no message received) or cancelled exception
+    bool stream_completed{false};
+    while (!stream_completed) {
+        auto message = co_await channel->receive();
+        if (!message) {
+            stream_completed = true;
+        }
+        co_await consumer(std::move(message));
+    }
 }
 
 /** Temporal Point Queries **/

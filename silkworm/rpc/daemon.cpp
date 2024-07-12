@@ -29,6 +29,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/kv/api/direct_client.hpp>
+#include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -223,8 +225,7 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
-      worker_pool_{settings_.num_workers},
-      kv_stub_{::remote::KV::NewStub(create_channel_())} {
+      worker_pool_{settings_.num_workers} {
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_file) {
         jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);
@@ -241,7 +242,13 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
-    state_changes_stream_ = std::make_unique<db::kv::grpc::client::StateChangesStream>(context, kv_stub_.get());
+    if (settings_.standalone) {
+        kv_client_ = std::make_unique<db::kv::grpc::client::RemoteClient>(create_channel_, *context.grpc_context());
+    } else {
+        // TODO(canepat) finish implementation and clean-up composition of objects here
+        kv_client_ = std::make_unique<db::kv::api::DirectClient>(nullptr);
+    }
+    state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client_);
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);

@@ -29,8 +29,9 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/interfaces/remote/kv.pb.h>  // weird but currently needed
 
+#include "endpoint/key_value.hpp"
+#include "endpoint/state_change.hpp"
 #include "transaction.hpp"
 
 namespace silkworm::db::kv::api {
@@ -50,7 +51,7 @@ class StateCache {
 
     virtual std::unique_ptr<StateView> get_view(Transaction& tx) = 0;
 
-    virtual void on_new_block(const remote::StateChangeBatch& state_changes) = 0;
+    virtual void on_new_block(const api::StateChangeSet& state_changes) = 0;
 
     virtual std::size_t latest_data_size() = 0;
     virtual std::size_t latest_code_size() = 0;
@@ -89,7 +90,7 @@ class CoherentStateCache;
 
 class CoherentStateView : public StateView {
   public:
-    explicit CoherentStateView(Transaction& txn, CoherentStateCache* cache);
+    explicit CoherentStateView(Transaction& tx, CoherentStateCache* cache);
 
     CoherentStateView(const CoherentStateView&) = delete;
     CoherentStateView& operator=(const CoherentStateView&) = delete;
@@ -99,7 +100,7 @@ class CoherentStateView : public StateView {
     Task<std::optional<Bytes>> get_code(ByteView key) override;
 
   private:
-    Transaction& txn_;
+    Transaction& tx_;
     CoherentStateCache* cache_;
 };
 
@@ -112,7 +113,7 @@ class CoherentStateCache : public StateCache {
 
     std::unique_ptr<StateView> get_view(Transaction& tx) override;
 
-    void on_new_block(const ::remote::StateChangeBatch& state_changes) override;
+    void on_new_block(const api::StateChangeSet& state_changes) override;
 
     std::size_t latest_data_size() override;
     std::size_t latest_code_size() override;
@@ -129,14 +130,14 @@ class CoherentStateCache : public StateCache {
   private:
     friend class CoherentStateView;
 
-    void process_upsert_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change);
-    void process_code_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change);
-    void process_delete_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change);
-    void process_storage_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change);
+    void process_upsert_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
+    void process_code_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
+    void process_delete_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
+    void process_storage_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
     bool add(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id);
     bool add_code(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id);
-    Task<std::optional<Bytes>> get(ByteView key, Transaction& txn);
-    Task<std::optional<Bytes>> get_code(ByteView key, Transaction& txn);
+    Task<std::optional<Bytes>> get(ByteView key, Transaction& tx);
+    Task<std::optional<Bytes>> get_code(ByteView key, Transaction& tx);
     CoherentStateRoot* get_root(StateViewId view_id);
     CoherentStateRoot* advance_root(StateViewId view_id);
     void evict_roots(StateViewId next_view_id);

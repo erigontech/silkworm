@@ -30,14 +30,14 @@
 
 namespace silkworm::db::kv::api {
 
-CoherentStateView::CoherentStateView(Transaction& txn, CoherentStateCache* cache) : txn_(txn), cache_(cache) {}
+CoherentStateView::CoherentStateView(Transaction& tx, CoherentStateCache* cache) : tx_(tx), cache_(cache) {}
 
 Task<std::optional<Bytes>> CoherentStateView::get(ByteView key) {
-    co_return co_await cache_->get(key, txn_);
+    co_return co_await cache_->get(key, tx_);
 }
 
 Task<std::optional<Bytes>> CoherentStateView::get_code(ByteView key) {
-    co_return co_await cache_->get_code(key, txn_);
+    co_return co_await cache_->get_code(key, tx_);
 }
 
 CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(config) {
@@ -46,11 +46,11 @@ CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(con
     }
 }
 
-std::unique_ptr<StateView> CoherentStateCache::get_view(Transaction& txn) {
-    const auto view_id = txn.view_id();
+std::unique_ptr<StateView> CoherentStateCache::get_view(Transaction& tx) {
+    const auto view_id = tx.view_id();
     std::unique_lock write_lock{rw_mutex_};
     CoherentStateRoot* root = get_root(view_id);
-    return root->ready ? std::make_unique<CoherentStateView>(txn, this) : nullptr;
+    return root->ready ? std::make_unique<CoherentStateView>(tx, this) : nullptr;
 }
 
 std::size_t CoherentStateCache::latest_data_size() {
@@ -69,44 +69,45 @@ std::size_t CoherentStateCache::latest_code_size() {
     return static_cast<std::size_t>(latest_state_view_->code_cache.size());
 }
 
-void CoherentStateCache::on_new_block(const ::remote::StateChangeBatch& state_changes) {
-    if (state_changes.change_batch_size() == 0) {
+void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_set) {
+    const auto& state_changes = state_changes_set.state_changes;
+    if (state_changes.empty()) {
         SILK_WARN << "Unexpected empty batch received and skipped";
         return;
     }
 
     std::unique_lock write_lock{rw_mutex_};
 
-    const auto view_id = state_changes.state_version_id();
+    const auto view_id = state_changes_set.state_version_id;
     CoherentStateRoot* root = advance_root(view_id);
-    for (const auto& state_change : state_changes.change_batch()) {
-        for (const auto& account_change : state_change.changes()) {
-            switch (account_change.action()) {
-                case remote::Action::UPSERT: {
+    for (const auto& state_change : state_changes) {
+        for (const auto& account_change : state_change.account_changes) {
+            switch (account_change.change_type) {
+                case Action::kUpsert: {
                     process_upsert_change(root, view_id, account_change);
                     break;
                 }
-                case remote::Action::UPSERT_CODE: {
+                case Action::kUpsertCode: {
                     process_upsert_change(root, view_id, account_change);
                     process_code_change(root, view_id, account_change);
                     break;
                 }
-                case remote::Action::REMOVE: {
+                case Action::kRemove: {
                     process_delete_change(root, view_id, account_change);
                     break;
                 }
-                case remote::Action::STORAGE: {
-                    if (config_.with_storage && account_change.storage_changes_size() > 0) {
+                case Action::kStorage: {
+                    if (config_.with_storage && !account_change.storage_changes.empty()) {
                         process_storage_change(root, view_id, account_change);
                     }
                     break;
                 }
-                case remote::Action::CODE: {
+                case Action::kCode: {
                     process_code_change(root, view_id, account_change);
                     break;
                 }
                 default: {
-                    SILK_ERROR << "Unexpected action: " << magic_enum::enum_name(account_change.action()) << " skipped";
+                    SILK_ERROR << "Unexpected action: " << magic_enum::enum_name(account_change.change_type) << " skipped";
                 }
             }
         }
@@ -118,39 +119,36 @@ void CoherentStateCache::on_new_block(const ::remote::StateChangeBatch& state_ch
     root->ready = true;
 }
 
-void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateViewId view_id,
-                                               const remote::AccountChange& change) {
-    const auto address = rpc::address_from_H160(change.address());
-    const auto data_bytes = string_to_bytes(change.data());
+void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+    const auto& address = change.address;
+    const auto& data_bytes = change.data;
     SILK_DEBUG << "CoherentStateCache::process_upsert_change address: " << address << " data: " << data_bytes;
     const Bytes address_key{address.bytes, kAddressLength};
     add({address_key, data_bytes}, root, view_id);
 }
 
-void CoherentStateCache::process_code_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change) {
-    const auto code_bytes = string_to_bytes(change.code());
+void CoherentStateCache::process_code_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+    const auto& code_bytes = change.code;
     const ethash::hash256 code_hash{keccak256(code_bytes)};
     const Bytes code_hash_key{code_hash.bytes, kHashLength};
     SILK_DEBUG << "CoherentStateCache::process_code_change code_hash_key: " << code_hash_key;
     add_code({code_hash_key, code_bytes}, root, view_id);
 }
 
-void CoherentStateCache::process_delete_change(CoherentStateRoot* root, StateViewId view_id,
-                                               const remote::AccountChange& change) {
-    const auto address = rpc::address_from_H160(change.address());
+void CoherentStateCache::process_delete_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+    const auto& address = change.address;
     SILK_DEBUG << "CoherentStateCache::process_delete_change address: " << address;
     const Bytes address_key{address.bytes, kAddressLength};
     add({address_key, {}}, root, view_id);
 }
 
-void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateViewId view_id,
-                                                const remote::AccountChange& change) {
-    const auto address = rpc::address_from_H160(change.address());
+void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+    const auto& address = change.address;
     SILK_DEBUG << "CoherentStateCache::process_storage_change address=" << address;
-    for (const auto& storage_change : change.storage_changes()) {
-        const auto location_hash = rpc::bytes32_from_H256(storage_change.location());
-        const auto storage_key = composite_storage_key(address, change.incarnation(), location_hash.bytes);
-        const auto value = string_to_bytes(storage_change.data());
+    for (const auto& storage_change : change.storage_changes) {
+        const auto& location_hash = storage_change.location;
+        const auto storage_key = composite_storage_key(address, change.incarnation, location_hash.bytes);
+        const auto& value = storage_change.data;
         SILK_DEBUG << "CoherentStateCache::process_storage_change key=" << storage_key << " value=" << value;
         add({storage_key, value}, root, view_id);
     }

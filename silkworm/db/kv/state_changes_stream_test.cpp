@@ -28,6 +28,7 @@
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
+#include <silkworm/db/test_util/test_database_context.hpp>
 #if !defined(__APPLE__) || defined(NDEBUG)
 #include <silkworm/infra/common/terminal.hpp>
 #endif  // !defined(__APPLE__) || defined(NDEBUG)
@@ -66,15 +67,26 @@ struct StateChangesStreamTest : public StateCacheTestBase {
     api::StateChangeChannelPtr channel{std::make_shared<api::StateChangeChannel>(io_context_.get_executor())};
     concurrency::Channel<api::StateChangesCall> state_changes_calls_channel{io_context_.get_executor()};
     api::ServiceRouter router{state_changes_calls_channel};
+    std::unique_ptr<api::StateCache> state_cache{std::make_unique<api::CoherentStateCache>()};
 };
 
-struct DirectStateChangesStreamTest : public StateChangesStreamTest {
-    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router)};
+struct DirectStateChangesStreamTest : public StateChangesStreamTest, test_util::TestDatabaseContext {
+    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router, mdbx_env(), state_cache.get())};
     api::DirectClient direct_client{direct_service};
-    StateChangesStream stream_{context_, direct_client};
+    StateChangesStream stream{context_, direct_client};
 };
 
 struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
+    // We're not testing blocks here, so we don't care about proper block provider
+    chain::BlockProvider block_provider{
+        [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
+    // We're not testing blocks here, so we don't care about proper block-number-from-txn-hash provider
+    chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
+        [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+
+    RemoteClient make_remote_client(auto&& stub) {
+        return {std::forward<decltype(stub)>(stub), grpc_context_, state_cache.get(), block_provider, block_number_from_txn_hash_provider};
+    }
 };
 
 static remote::StateChangeBatch make_batch() {
@@ -94,7 +106,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::op
     // 2. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status cancelled
     EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
     // Execute the test: opening the stream should succeed until finishes
-    grpc::client::RemoteClient remote_client{std::move(stub_), grpc_context_};
+    RemoteClient remote_client{make_remote_client(std::move(stub_))};
     StateChangesStream stream{context_, remote_client};
     std::future<void> run_completed;
     CHECK_NOTHROW(run_completed = stream.open());
@@ -127,7 +139,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::ru
                 return statechanges_reader_ptr_.release();
             }));
 
-        RemoteClient remote_client{std::move(stub_), grpc_context_};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         // remote_client.set_min_backoff_timeout(10ms);
         // remote_client.set_max_backoff_timeout(100ms);
         StateChangesStream stream{context_, remote_client};
@@ -144,7 +156,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::ru
         // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status aborted
         EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
-        RemoteClient remote_client{std::move(stub_), grpc_context_};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         StateChangesStream stream{context_, remote_client};
 
         // Execute the test: running the stream should succeed until finishes
@@ -161,7 +173,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::ru
         // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status aborted
         EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
-        RemoteClient remote_client{std::move(stub_), grpc_context_};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         StateChangesStream stream{context_, remote_client};
 
         // Execute the test: running the stream should succeed until finishes
@@ -197,7 +209,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
                 return statechanges_reader_ptr_.release();
             }));
 
-        grpc::client::RemoteClient remote_client{std::move(stub_), grpc_context_};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         remote_client.set_min_backoff_timeout(5ms);
         remote_client.set_max_backoff_timeout(10ms);
         StateChangesStream stream{context_, remote_client};
@@ -245,7 +257,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
                 return statechanges_reader_ptr_.release();
             }));
 
-        grpc::client::RemoteClient remote_client{std::move(stub_), grpc_context_};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         remote_client.set_min_backoff_timeout(5ms);
         remote_client.set_max_backoff_timeout(10ms);
         StateChangesStream stream{context_, remote_client};

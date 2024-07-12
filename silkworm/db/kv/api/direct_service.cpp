@@ -19,8 +19,12 @@
 #include <gsl/util>
 
 #include "endpoint/state_changes_call.hpp"
+#include "local_transaction.hpp"
 
 namespace silkworm::db::kv::api {
+
+DirectService::DirectService(ServiceRouter router, ::mdbx::env chaindata_env, StateCache* state_cache)
+    : router_{router}, chaindata_env_{std::move(chaindata_env)}, state_cache_{state_cache} {}
 
 // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
 Task<Version> DirectService::version() {
@@ -29,8 +33,7 @@ Task<Version> DirectService::version() {
 
 // rpc Tx(stream Cursor) returns (stream Pair);
 Task<std::unique_ptr<Transaction>> DirectService::begin_transaction() {
-    // TODO(canepat) implement
-    co_return nullptr;
+    co_return std::make_unique<LocalTransaction>(chaindata_env_, state_cache_);
 }
 
 // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);

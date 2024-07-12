@@ -40,6 +40,7 @@
 #include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/http/jwt.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
@@ -78,6 +79,9 @@ static std::string get_library_versions() {
     library_versions.append(std::to_string(BOOST_ASIO_VERSION));
     return library_versions;
 }
+
+using ethdb::kv::block_number_from_txn_hash_provider;
+using ethdb::kv::block_provider;
 
 int Daemon::run(const DaemonSettings& settings) {
     const bool are_settings_valid{validate_settings(settings)};
@@ -242,11 +246,19 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
+    auto& io_context = *context.io_context();
+    auto& grpc_context = *context.grpc_context();
+    auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
+    auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(io_context)};
     if (settings_.standalone) {
-        kv_client_ = std::make_unique<db::kv::grpc::client::RemoteClient>(create_channel_, *context.grpc_context());
+        kv_client_ = std::make_unique<db::kv::grpc::client::RemoteClient>(
+            create_channel_, grpc_context, state_cache, block_provider(backend), block_number_from_txn_hash_provider(backend));
     } else {
         // TODO(canepat) finish implementation and clean-up composition of objects here
-        kv_client_ = std::make_unique<db::kv::api::DirectClient>(nullptr);
+        db::kv::api::StateChangeRunner runner{io_context.get_executor()};
+        db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
+        kv_client_ = std::make_unique<db::kv::api::DirectClient>(
+            std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
     }
     state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client_);
 

@@ -17,6 +17,9 @@
 #include "state_changes_stream.hpp"
 
 #include <chrono>
+#if !defined(__APPLE__) || defined(NDEBUG)
+#include <csignal>
+#endif  // !defined(__APPLE__) || defined(NDEBUG)
 #include <future>
 #include <system_error>
 

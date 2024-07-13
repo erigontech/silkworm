@@ -128,8 +128,8 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     }
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {
-        EXPECT_CALL(transaction, get(_, _)).Times(7).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        EXPECT_CALL(transaction, get_one(_, _)).Times(7).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
+        EXPECT_CALL(transaction, get(_, _)).Times(8).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction, get_one(_, _)).Times(8).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
 
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x1;

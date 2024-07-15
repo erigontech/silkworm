@@ -23,6 +23,7 @@
 #include <gsl/util>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/client/reconnect.hpp>
 
@@ -35,16 +36,6 @@ namespace silkworm::db::kv::grpc::client {
 
 namespace proto = ::remote;
 using Stub = proto::KV::StubInterface;
-
-// TODO(canepat) remove after moving sleep from sentry to infra START
-using namespace boost::asio;
-Task<void> sleep(std::chrono::milliseconds duration) {
-    auto executor = co_await ThisTask::executor;
-    steady_timer timer(executor);
-    timer.expires_after(duration);
-    co_await timer.async_wait(use_awaitable);
-}
-// TODO(canepat) remove after moving sleep from sentry to infra END
 
 class RemoteClientImpl final : public api::Service {
   public:

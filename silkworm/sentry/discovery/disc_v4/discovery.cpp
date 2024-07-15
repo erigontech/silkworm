@@ -27,8 +27,8 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/infra/concurrency/task_group.hpp>
-#include <silkworm/sentry/common/sleep.hpp>
 
 #include "enr/enr_request_handler.hpp"
 #include "enr/fetch_enr_record.hpp"

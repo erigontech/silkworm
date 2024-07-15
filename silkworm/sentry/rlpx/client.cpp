@@ -23,7 +23,7 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/sleep.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
 namespace silkworm::sentry::rlpx {

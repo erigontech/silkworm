@@ -21,7 +21,7 @@
 #include <tuple>
 
 #include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
-#include <silkworm/sentry/common/sleep.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
 
 namespace silkworm::sentry {
 

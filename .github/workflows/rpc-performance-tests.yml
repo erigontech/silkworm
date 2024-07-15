@@ -65,10 +65,13 @@ jobs:
         run: |
           set +e # Disable exit on error
           failed_test=0
-          commit=$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)
+          commit=$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD) # use ${{ github.sha }} or GITHUB_SHA
+          past_test_dir=$RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
+          echo "past_test_dir=$past_test_dir" >> $GITHUB_ENV
           
           # Prepare historical test results directory
-          mkdir -p $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
+          mkdir -p $past_test_dir
+          rm -rf $RPC_PAST_TEST_DIR/mainnet_bin  # we want only the latest binary files
           mkdir -p $RPC_PAST_TEST_DIR/mainnet_bin
           
           run_perf () {
@@ -145,7 +148,7 @@ jobs:
                      --outcome failure
                fi
                # Save test results to a directory with timestamp and commit hash
-               cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
+               cp -r ${{runner.workspace}}/rpc-tests/perf/reports/mainnet $past_test_dir
             done
 
           }
@@ -206,7 +209,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_perf_$commit
+          path: ${{ env.past_test_dir }}
 
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'

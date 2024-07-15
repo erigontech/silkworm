@@ -100,7 +100,8 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     evmc::Result res{EVMC_SUCCESS, message.gas, 0};
 
     auto value{intx::be::load<intx::uint256>(message.value)};
-    if (!gas_bailout_ && state_.get_balance(message.sender) < value) {
+    const auto have = state_.get_balance(message.sender);
+    if (!gas_bailout_ && have < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
 
         for (auto tracer : tracers_) {
@@ -149,7 +150,9 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         state_.set_nonce(contract_addr, 1);
     }
 
-    state_.subtract_from_balance(message.sender, value);
+    if (!gas_bailout_ || have >= value) {
+        state_.subtract_from_balance(message.sender, value);
+    }
     state_.add_to_balance(contract_addr, value);
 
     const evmc_message deploy_message{
@@ -204,7 +207,8 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     evmc::Result res{EVMC_SUCCESS, message.gas};
 
     const auto value{intx::be::load<intx::uint256>(message.value)};
-    if (!gas_bailout_ && message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
+    const auto have = state_.get_balance(message.sender);
+    if (!gas_bailout_ && message.kind != EVMC_DELEGATECALL && have < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
@@ -217,7 +221,9 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             state_.touch(message.recipient);
         } else {
-            state_.subtract_from_balance(message.sender, value);
+            if (!gas_bailout_ || have >= value) {
+                state_.subtract_from_balance(message.sender, value);
+            }
             state_.add_to_balance(message.recipient, value);
         }
     }

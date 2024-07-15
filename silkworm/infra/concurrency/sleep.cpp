@@ -20,7 +20,7 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm {
 
 using namespace boost::asio;
 
@@ -31,4 +31,4 @@ Task<void> sleep(std::chrono::milliseconds duration) {
     co_await timer.async_wait(use_awaitable);
 }
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm

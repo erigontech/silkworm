@@ -28,8 +28,8 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
-#include <silkworm/sentry/common/sleep.hpp>
 
 #include "auth/auth_message_error.hpp"
 #include "auth/handshake.hpp"

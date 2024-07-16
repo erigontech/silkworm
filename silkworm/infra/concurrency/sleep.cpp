@@ -14,14 +14,21 @@
    limitations under the License.
 */
 
-#pragma once
+#include "sleep.hpp"
 
-#include <silkworm/infra/grpc/client/bidi_streaming_rpc.hpp>
-#include <silkworm/infra/grpc/client/server_streaming_rpc.hpp>
-#include <silkworm/interfaces/remote/kv.grpc.pb.h>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/this_coro.hpp>
+#include <boost/asio/use_awaitable.hpp>
 
-namespace silkworm::db::kv::grpc::client {
+namespace silkworm {
 
-using TxRpc = BidiStreamingRpc<&::remote::KV::StubInterface::PrepareAsyncTx>;
+using namespace boost::asio;
 
-}  // namespace silkworm::db::kv::grpc::client
+Task<void> sleep(std::chrono::milliseconds duration) {
+    auto executor = co_await this_coro::executor;
+    steady_timer timer(executor);
+    timer.expires_after(duration);
+    co_await timer.async_wait(use_awaitable);
+}
+
+}  // namespace silkworm

@@ -41,6 +41,8 @@ namespace silkworm::rpc::http {
 
 using RequestWithStringBody = boost::beast::http::request<boost::beast::http::string_body>;
 
+static constexpr std::size_t kDefaultCapacity{4 * 1024};
+
 //! Represents a single connection from a client.
 class Connection : public StreamWriter {
   public:
@@ -65,6 +67,7 @@ class Connection : public StreamWriter {
     /* StreamWriter Interface */
     Task<void> open_stream() override;
     Task<void> close_stream() override;
+    size_t get_capacity() const noexcept override { return kDefaultCapacity; }
     Task<std::size_t> write(std::string_view content, bool last) override;
 
   protected:

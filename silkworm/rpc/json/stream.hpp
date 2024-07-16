@@ -44,9 +44,7 @@ struct DataChunk {
 //! Stream can be used to send big JSON data split into multiple fragments.
 class Stream {
   public:
-    inline static constexpr std::size_t kDefaultCapacity{5 * 1024 * 1024};
-
-    Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, std::size_t buffer_capacity = kDefaultCapacity);
+    Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, size_t buffer_capacity = 0);
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 

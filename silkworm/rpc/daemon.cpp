@@ -29,6 +29,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/kv/api/direct_client.hpp>
+#include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -38,6 +40,7 @@
 #include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/http/jwt.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
@@ -76,6 +79,9 @@ static std::string get_library_versions() {
     library_versions.append(std::to_string(BOOST_ASIO_VERSION));
     return library_versions;
 }
+
+using ethdb::kv::block_number_from_txn_hash_provider;
+using ethdb::kv::block_provider;
 
 int Daemon::run(const DaemonSettings& settings) {
     const bool are_settings_valid{validate_settings(settings)};
@@ -223,8 +229,7 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
-      worker_pool_{settings_.num_workers},
-      kv_stub_{::remote::KV::NewStub(create_channel_())} {
+      worker_pool_{settings_.num_workers} {
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_file) {
         jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);
@@ -241,7 +246,21 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
-    state_changes_stream_ = std::make_unique<db::kv::grpc::client::StateChangesStream>(context, kv_stub_.get());
+    auto& io_context = *context.io_context();
+    auto& grpc_context = *context.grpc_context();
+    auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
+    auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(io_context)};
+    if (settings_.standalone) {
+        kv_client_ = std::make_unique<db::kv::grpc::client::RemoteClient>(
+            create_channel_, grpc_context, state_cache, block_provider(backend), block_number_from_txn_hash_provider(backend));
+    } else {
+        // TODO(canepat) finish implementation and clean-up composition of objects here
+        db::kv::api::StateChangeRunner runner{io_context.get_executor()};
+        db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
+        kv_client_ = std::make_unique<db::kv::api::DirectClient>(
+            std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
+    }
+    state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client_);
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);

@@ -43,6 +43,7 @@ struct DaemonSettings {
     uint32_t num_workers{kDefaultNumWorkers};
     std::vector<std::string> cors_domain;
     std::optional<std::string> jwt_secret_file;
+    bool standalone{true};
     bool skip_protocol_check{false};
     bool erigon_json_rpc_compatibility{false};
     bool use_websocket{false};

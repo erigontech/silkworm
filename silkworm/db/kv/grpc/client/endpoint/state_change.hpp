@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,21 +14,16 @@
    limitations under the License.
 */
 
-#include "sleep.hpp"
+#pragma once
 
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
+#include <silkworm/interfaces/remote/kv.pb.h>
 
-namespace silkworm::sentry {
+#include "../../../api/endpoint/state_change.hpp"
 
-using namespace boost::asio;
+namespace silkworm::db::kv::grpc::client {
 
-Task<void> sleep(std::chrono::milliseconds duration) {
-    auto executor = co_await this_coro::executor;
-    steady_timer timer(executor);
-    timer.expires_after(duration);
-    co_await timer.async_wait(use_awaitable);
-}
+::remote::StateChangeRequest request_from_state_change_options(const api::StateChangeOptions&);
 
-}  // namespace silkworm::sentry
+api::StateChangeSet state_change_set_from_batch(const ::remote::StateChangeBatch&);
+
+}  // namespace silkworm::db::kv::grpc::client

@@ -30,21 +30,14 @@ using namespace silkworm::test_util;
 /**
  * A helper to run gRPC calls on boost::asio::io_context + agrpc::GrpcContext in tests
  */
-template <typename GrpcApi, typename Stub>
+template <typename GrpcApiClient, typename Stub>
 class TestRunner : public TaskRunner {
   public:
-    explicit TestRunner()
-        : grpc_context_work_{boost::asio::make_work_guard(grpc_context_.get_executor())} {}
-
-    template <auto method, typename... Args>
-    auto run_method(Args&&... args) {
-        GrpcApi api{io_context_.get_executor(), std::move(stub_), grpc_context_};
-        return run((api.*method)(std::forward<Args>(args)...));
-    }
+    TestRunner() : grpc_context_work_{boost::asio::make_work_guard(grpc_context_.get_executor())} {}
 
     template <auto method, typename... Args>
     auto run_service_method(Args&&... args) {
-        GrpcApi api{std::move(stub_), grpc_context_};
+        GrpcApiClient api = make_api_client();
         auto service = api.service();
         return run((service.get()->*method)(std::forward<Args>(args)...));
     }
@@ -63,6 +56,8 @@ class TestRunner : public TaskRunner {
         TaskRunner::poll_context_once();
         grpc_context_.poll_completion_queue();
     }
+
+    virtual GrpcApiClient make_api_client() = 0;
 };
 
 }  // namespace silkworm::grpc::test_util

@@ -71,6 +71,10 @@ inline auto finish_streaming_aborted(agrpc::GrpcContext& grpc_context) {
     return finish_streaming_with_status(grpc_context, ::grpc::Status{::grpc::StatusCode::ABORTED, ""}, /*ok=*/true);
 }
 
+inline auto finish_streaming_unavailable(agrpc::GrpcContext& grpc_context) {
+    return finish_streaming_with_status(grpc_context, ::grpc::Status{::grpc::StatusCode::UNAVAILABLE, ""}, /*ok=*/true);
+}
+
 inline auto finish_streaming_error(agrpc::GrpcContext& grpc_context) {
     return finish_streaming_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/false);
 }
@@ -95,12 +99,12 @@ template <typename Reply>
 auto read_success_with(agrpc::GrpcContext& grpc_context, Reply&& reply) {
     return [&grpc_context, reply = std::forward<Reply>(reply)](auto* reply_ptr, void* tag) mutable {
         *reply_ptr = std::move(reply);
-        agrpc::process_grpc_tag(grpc_context, tag, true);
+        agrpc::process_grpc_tag(grpc_context, tag, /*ok=*/true);
     };
 }
 
 inline auto read_failure(agrpc::GrpcContext& grpc_context) {
-    return [&grpc_context](auto*, void* tag) { agrpc::process_grpc_tag(grpc_context, tag, false); };
+    return [&grpc_context](auto*, void* tag) { agrpc::process_grpc_tag(grpc_context, tag, /*ok=*/false); };
 }
 
 }  // namespace silkworm::rpc::test

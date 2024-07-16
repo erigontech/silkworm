@@ -49,9 +49,12 @@
 
 namespace silkworm::rpc::test_util {
 
+static constexpr std::size_t kDefaultCapacity{4 * 1024};
+
 class ChannelForTest : public StreamWriter {
   public:
     Task<void> open_stream() override { co_return; }
+    size_t get_capacity() const noexcept override { return kDefaultCapacity; }
     Task<void> close_stream() override { co_return; }
     Task<std::size_t> write(std::string_view /* content */, bool /* last */) override { co_return 0; }
 };

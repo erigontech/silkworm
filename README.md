@@ -171,7 +171,7 @@ Use the following steps to detect/enable/disable memory compression:
 
 You can try to run Silkworm to test just the sync on the *pre-Merge* Ethereum chain. In order to do that you need to:
 
-- run an instance of `Erigon Sentry` component from `devel` branch
+- run an instance of `Erigon Sentry` component from branch `release/2.60`
 - set the environment variable `STOP_AT_BLOCK` to a value < 15'537'351 (e.g. STOP_AT_BLOCK=15000000)
 
 ### Linux and macOS
@@ -180,7 +180,7 @@ You can try to run Silkworm to test just the sync on the *pre-Merge* Ethereum ch
 ```
 git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
 cd erigon
-git checkout devel
+git checkout release/2.60
 make sentry
 ./build/bin/sentry
 ```
@@ -197,7 +197,7 @@ export STOP_AT_BLOCK=15000000
 ```
 git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
 cd erigon
-git checkout devel
+git checkout release/2.60
 make sentry
 ./build/bin/sentry.exe
 ```
@@ -225,12 +225,12 @@ See [LICENSE](LICENSE) for more information.
 [Ethereum]: https://ethereum.org
 [Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
-[Erigon architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
+[Erigon architecture]: https://github.com/erigontech/interfaces/blob/master/_docs/README.md
 [Erigon++]: https://erigon.tech/erigonpp
 [Cgo]: https://go.dev/blog/cgo
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
-[staged sync]: https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md
+[staged sync]: https://github.com/ledgerwatch/erigon/blob/main/eth/stagedsync/README.md
 [Visual Studio]: https://www.visualstudio.com/downloads
 [Yellow Paper]: https://ethereum.github.io/yellowpaper/paper.pdf
 

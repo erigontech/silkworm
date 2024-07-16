@@ -171,7 +171,7 @@ Use the following steps to detect/enable/disable memory compression:
 
 You can try to run Silkworm to test just the sync on the *pre-Merge* Ethereum chain. In order to do that you need to:
 
-- run an instance of `Erigon Sentry` component from `devel` branch
+- run an instance of `Erigon Sentry` component from branch `release/2.60`
 - set the environment variable `STOP_AT_BLOCK` to a value < 15'537'351 (e.g. STOP_AT_BLOCK=15000000)
 
 ### Linux and macOS
@@ -180,7 +180,7 @@ You can try to run Silkworm to test just the sync on the *pre-Merge* Ethereum ch
 ```
 git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
 cd erigon
-git checkout devel
+git checkout release/2.60
 make sentry
 ./build/bin/sentry
 ```
@@ -197,7 +197,7 @@ export STOP_AT_BLOCK=15000000
 ```
 git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
 cd erigon
-git checkout devel
+git checkout release/2.60
 make sentry
 ./build/bin/sentry.exe
 ```

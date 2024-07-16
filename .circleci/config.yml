@@ -287,7 +287,7 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          compiler_version: 16
       - test
 
   linux-clang-coverage:

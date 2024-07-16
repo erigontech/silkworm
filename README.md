@@ -225,12 +225,12 @@ See [LICENSE](LICENSE) for more information.
 [Ethereum]: https://ethereum.org
 [Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
-[Erigon architecture]: https://github.com/ledgerwatch/interfaces/blob/master/_docs/README.md
+[Erigon architecture]: https://github.com/erigontech/interfaces/blob/master/_docs/README.md
 [Erigon++]: https://erigon.tech/erigonpp
 [Cgo]: https://go.dev/blog/cgo
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
-[staged sync]: https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md
+[staged sync]: https://github.com/ledgerwatch/erigon/blob/main/eth/stagedsync/README.md
 [Visual Studio]: https://www.visualstudio.com/downloads
 [Yellow Paper]: https://ethereum.github.io/yellowpaper/paper.pdf
 

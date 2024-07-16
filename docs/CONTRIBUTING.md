@@ -222,8 +222,8 @@ Updating the version of Silkworm included in Erigon requires the following steps
 [conan]: https://conan.io
 [grpc]: https://grpc.io
 [erigon]: https://github.com/ledgerwatch/erigon
-[erigon-interfaces]: https://github.com/ledgerwatch/interfaces
-[erigon-interfaces-version]: https://github.com/ledgerwatch/erigon/blob/devel/erigon-lib/go.mod
+[erigon-interfaces]: https://github.com/erigontech/interfaces
+[erigon-interfaces-version]: https://github.com/ledgerwatch/erigon/blob/main/erigon-lib/go.mod
 [ethereum-execution-api]: https://github.com/ethereum/execution-apis
 
 [^1]: You may need to use `GOPRIVATE=github.com/erigontech/silkworm-go go get github.com/erigontech/silkworm-go@v<x.y.z>`

@@ -10,8 +10,7 @@
 	url = https://github.com/torquem-ch/cbor-cpp.git
 [submodule "interfaces"]
 	path = third_party/erigon-interfaces
-	url = https://github.com/ledgerwatch/interfaces.git
-	branch = stable
+	url = https://github.com/erigontech/interfaces.git
 [submodule "stbrumme-crc32"]
 	path = third_party/stbrumme-crc32/stbrumme-crc32
 	url = https://github.com/battlmonstr/stbrumme-crc32.git

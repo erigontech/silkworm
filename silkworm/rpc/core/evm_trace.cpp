@@ -716,6 +716,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
             op.gas_cost -= result.gas_left;
             break;
 
+        // We need to adjust gas used and gas cost from evmone to match evm.go values
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:

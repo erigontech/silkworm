@@ -26,6 +26,7 @@
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
+#include <evmone/instructions_traits.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/endian.hpp>
@@ -573,6 +574,7 @@ std::string to_string(intx::uint256 value) {
 void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
+        metrics_ = evmc_get_instruction_metrics_table(rev);
     }
     if (precompile::is_precompile(msg.code_address, rev)) {
         is_precompile_ = true;
@@ -714,10 +716,18 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
             op.gas_cost -= result.gas_left;
             break;
 
+        // We need to adjust gas used and gas cost from evmone to match evm.go values
+        case evmc_status_code::EVMC_STACK_UNDERFLOW:
+        case evmc_status_code::EVMC_STACK_OVERFLOW:
+        case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
+            op.trace_ex.used = op.gas_cost - metrics_[op.op_code].gas_cost;
+            op.gas_cost = metrics_[op.op_code].gas_cost;
+            break;
+
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
+        case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             op.trace_ex.used = op.gas_cost;
             op.gas_cost = 0;
-            op.trace_ex.used -= op.gas_cost;
             break;
 
         case evmc_status_code::EVMC_REVERT:
@@ -818,10 +828,14 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                << ", code: " << silkworm::to_hex(code);
 }
 
-void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
+void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
     current_opcode_ = opcode;
+
+    Trace& last_trace = traces_[traces_.size() - 1];
+    last_trace.stack_height = stack_height;
+    last_trace.op_code = opcode;
 
     if (opcode == OP_SELFDESTRUCT) {
         std::size_t idx = traces_.size();
@@ -913,10 +927,12 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.error = "invalid opcode: INVALID";
             trace.trace_result.reset();
             break;
-        case evmc_status_code::EVMC_STACK_UNDERFLOW:
-            trace.error = "stack underflow";
+        case evmc_status_code::EVMC_STACK_UNDERFLOW: {
+            std::string trace_error{"stack underflow (" + std::to_string(trace.stack_height) + " <=> " + std::to_string(evmone::instr::traits[trace.op_code].stack_height_required) + ")"};
+            trace.error = trace_error;
             trace.trace_result.reset();
             break;
+        }
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
             trace.error = "invalid jump destination";
             trace.trace_result.reset();

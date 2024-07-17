@@ -29,6 +29,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <evmc/instructions.h>
 #include <gsl/narrow>
 #include <nlohmann/json.hpp>
 
@@ -151,6 +152,7 @@ class VmTraceTracer : public silkworm::EvmTracer {
     const char* const* opcode_names_ = nullptr;
     std::stack<int64_t> start_gas_;
     std::stack<TraceMemory> trace_memory_stack_;
+    const evmc_instruction_metrics* metrics_ = nullptr;
 };
 
 struct TraceAction {
@@ -195,6 +197,8 @@ struct Trace {
     std::optional<BlockNum> block_number;
     std::optional<evmc::bytes32> transaction_hash;
     std::optional<std::uint32_t> transaction_position;
+    int stack_height{0};
+    uint8_t op_code{0};
 };
 
 void to_json(nlohmann::json& json, const TraceAction& action);

@@ -98,11 +98,11 @@ class DebugTracer : public EvmTracer {
 
   private:
     void write_log(const DebugLog& log);
-    void evaluate_call_fixes(unsigned char opcode,
-                             const evmone::ExecutionState& execution_state,
-                             const intx::uint256* stack_top,
-                             int stack_height,
-                             const silkworm::IntraBlockState& intra_block_state);
+    void fill_call_gas_info(unsigned char opcode,
+                            const evmone::ExecutionState& execution_state,
+                            const intx::uint256* stack_top,
+                            int stack_height,
+                            const silkworm::IntraBlockState& intra_block_state);
 
     json::Stream& stream_;
     const DebugConfig& config_;

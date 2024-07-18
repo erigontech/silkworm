@@ -185,7 +185,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         logs_.erase(logs_.begin());
     }
 
-    evaluate_call_fixes(opcode, execution_state, stack_top, stack_height, intra_block_state);
+    fill_call_gas_info(opcode, execution_state, stack_top, stack_height, intra_block_state);
 
     DebugLog log;
     log.pc = pc;
@@ -282,7 +282,7 @@ void DebugTracer::flush_logs() {
     }
 }
 
-void DebugTracer::evaluate_call_fixes(unsigned char opcode, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
+void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
     if (opcode == OP_CALL || opcode == OP_CALLCODE || opcode == OP_STATICCALL || opcode == OP_DELEGATECALL || opcode == OP_CREATE || opcode == OP_CREATE2) {
         fix_call_gas_info_ = std::make_unique<FixCallGasInfo>(FixCallGasInfo{execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
         const auto value = stack_top[-2];  // value

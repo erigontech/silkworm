@@ -70,7 +70,7 @@ struct DebugLog {
     Storage storage;
 };
 
-struct CallFixes {
+struct FixCallGasInfo {
     int32_t depth{0};
     int64_t stipend{0};
     int16_t code_cost{0};
@@ -111,7 +111,7 @@ class DebugTracer : public EvmTracer {
     const char* const* opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<std::int64_t> start_gas_;
-    std::unique_ptr<CallFixes> call_fixes_;
+    std::unique_ptr<FixCallGasInfo> fix_call_gas_info_;
 };
 
 class AccountTracer : public EvmTracer {

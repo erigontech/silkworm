@@ -48,10 +48,14 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: non-empty uint64 se
     PaginatedUint64::Paginator paginator = []() -> Task<PaginatedUint64::PageResult> {
         static int count{0};
         switch (++count) {
-            case 1: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{1, 2, 3}, /*has_more=*/true};
-            case 2: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{4, 5, 6}, /*has_more=*/true};
-            case 3: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{7}, /*has_more=*/false};
-            default: throw std::logic_error{"unexpected call to paginator"};
+            case 1:
+                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{1, 2, 3}, /*has_more=*/true};
+            case 2:
+                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{4, 5, 6}, /*has_more=*/true};
+            case 3:
+                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{7}, /*has_more=*/false};
+            default:
+                throw std::logic_error{"unexpected call to paginator"};
         }
     };
     PaginatedUint64 paginated{paginator};
@@ -62,10 +66,14 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: error", "[db][kv][a
     PaginatedUint64::Paginator paginator = []() -> Task<PaginatedUint64::PageResult> {
         static int count{0};
         switch (++count) {
-            case 1: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{1, 2, 3}, /*has_more=*/true};
-            case 2: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{4, 5, 6}, /*has_more=*/true};
-            case 3: throw std::runtime_error{"error during pagination"};
-            default: throw std::logic_error{"unexpected call to paginator"};
+            case 1:
+                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{1, 2, 3}, /*has_more=*/true};
+            case 2:
+                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{4, 5, 6}, /*has_more=*/true};
+            case 3:
+                throw std::runtime_error{"error during pagination"};
+            default:
+                throw std::logic_error{"unexpected call to paginator"};
         }
     };
     PaginatedUint64 paginated{paginator};

@@ -18,7 +18,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 
 namespace silkworm::db::kv::api {
@@ -52,9 +51,8 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: non-empty uint64 se
             case 1: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{1, 2, 3}, /*has_more=*/true};
             case 2: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{4, 5, 6}, /*has_more=*/true};
             case 3: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{7}, /*has_more=*/false};
-            default: SILKWORM_ASSERT(false);
+            default: throw std::logic_error{"unexpected call to paginator"};
         }
-        co_return PaginatedUint64::PageResult{};
     };
     PaginatedUint64 paginated{paginator};
     CHECK(spawn_and_wait(to_vector(paginated)) == std::vector<uint64_t>{1, 2, 3, 4, 5, 6, 7});
@@ -66,10 +64,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: error", "[db][kv][a
         switch (++count) {
             case 1: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{1, 2, 3}, /*has_more=*/true};
             case 2: co_return PaginatedUint64::PageResult{PaginatedUint64::Page{4, 5, 6}, /*has_more=*/true};
-            case 3: throw std::runtime_error{"pagination error"};
-            default: SILKWORM_ASSERT(false);
+            case 3: throw std::runtime_error{"error during pagination"};
+            default: throw std::logic_error{"unexpected call to paginator"};
         }
-        co_return PaginatedUint64::PageResult{};
     };
     PaginatedUint64 paginated{paginator};
     CHECK_THROWS_AS(spawn_and_wait(to_vector(paginated)), std::runtime_error);

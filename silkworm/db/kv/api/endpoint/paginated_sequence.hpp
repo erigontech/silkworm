@@ -17,7 +17,6 @@
 #pragma once
 
 #include <functional>
-#include <iostream>
 #include <optional>
 #include <vector>
 
@@ -25,6 +24,7 @@
 
 namespace silkworm::db::kv::api {
 
+//! Sequence of values produced by pagination using some asynchronous page provider function.
 template <typename T>
 class PaginatedSequence {
   public:

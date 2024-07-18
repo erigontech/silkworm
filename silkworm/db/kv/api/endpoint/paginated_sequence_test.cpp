@@ -30,8 +30,10 @@ struct PaginatedSequenceTest : public test_util::ContextTestBase {
 template <typename T>
 Task<std::vector<T>> to_vector(PaginatedSequence<T>& paginated) {
     std::vector<T> all_values;
-    for (auto it = co_await paginated.begin(); it != paginated.end(); co_await ++it) {
+    auto it = co_await paginated.begin();
+    while (it != paginated.end()) {
         all_values.emplace_back(*it);
+        co_await ++it;
     }
     co_return all_values;
 }

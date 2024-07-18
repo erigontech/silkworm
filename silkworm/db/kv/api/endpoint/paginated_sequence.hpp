@@ -69,7 +69,7 @@ class PaginatedSequence {
       private:
         Paginator& next_page_provider_;
         PageResult current_;
-        Page::const_iterator it_;  // empty i.e. sentinel value
+        typename Page::const_iterator it_;  // empty i.e. sentinel value
     };
 
     explicit PaginatedSequence(Paginator next_page_provider) noexcept

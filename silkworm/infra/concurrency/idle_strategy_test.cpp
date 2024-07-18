@@ -62,7 +62,7 @@ TEST_CASE("unparse wait mode", "[silkworm][infra][concurrency][idle_strategy]") 
         WaitMode::yielding,
         WaitMode::busy_spin,
     };
-    std::vector<absl::string_view> expected_texts{
+    std::vector<std::string> expected_texts{
         "backoff", "blocking", "sleeping", "yielding", "busy_spin"};
     for (std::size_t i{0}; i < input_wait_modes.size(); i++) {
         const auto text{AbslUnparseFlag(input_wait_modes[i])};

@@ -241,7 +241,7 @@ jobs:
     steps:
       - checkout_with_submodules
       - run:
-          name: "TSAN hack"
+          name: "Sanitizer hack"
 # https://stackoverflow.com/questions/77850769/fatal-threadsanitizer-unexpected-memory-mapping-when-running-on-linux-kernels
           command: sudo sysctl vm.mmap_rnd_bits=30
       - build_using_conan:
@@ -277,14 +277,17 @@ jobs:
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules
+      - run:
+          name: "Sanitizer hack" # https://github.com/google/sanitizers/issues/856
+          command: sudo sysctl vm.mmap_rnd_bits=30
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 15
+          compiler_version: 17
       - test
 
   linux-clang-coverage:
@@ -415,7 +418,7 @@ parameters:
     default: 15
   clang_version_latest:
     type: integer
-    default: 16
+    default: 18
   gcc_version_min:
     type: integer
     default: 11

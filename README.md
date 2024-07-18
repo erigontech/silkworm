@@ -178,7 +178,7 @@ You can try to run Silkworm to test just the sync on the *pre-Merge* Ethereum ch
 
 #### Erigon Sentry
 ```
-git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
+git clone --recurse-submodules https://github.com/erigontech/erigon.git
 cd erigon
 git checkout release/2.60
 make sentry
@@ -195,7 +195,7 @@ export STOP_AT_BLOCK=15000000
 
 #### Erigon Sentry
 ```
-git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
+git clone --recurse-submodules https://github.com/erigontech/erigon.git
 cd erigon
 git checkout release/2.60
 make sentry
@@ -224,13 +224,13 @@ See [LICENSE](LICENSE) for more information.
 
 [Ethereum]: https://ethereum.org
 [Ethereum EL Tests]: https://github.com/ethereum/tests
-[Erigon]: https://github.com/ledgerwatch/erigon
+[Erigon]: https://github.com/erigontech/erigon
 [Erigon architecture]: https://github.com/erigontech/interfaces/blob/master/_docs/README.md
 [Erigon++]: https://erigon.tech/erigonpp
 [Cgo]: https://go.dev/blog/cgo
 [GMP]: http://gmplib.org
 [libmdbx]: https://github.com/erthink/libmdbx
-[staged sync]: https://github.com/ledgerwatch/erigon/blob/main/eth/stagedsync/README.md
+[staged sync]: https://github.com/erigontech/erigon/blob/main/eth/stagedsync/README.md
 [Visual Studio]: https://www.visualstudio.com/downloads
 [Yellow Paper]: https://ethereum.github.io/yellowpaper/paper.pdf
 

@@ -19,7 +19,7 @@
 	url = https://github.com/erigontech/mdbx-go.git
 [submodule "erigon-snapshot"]
 	path = third_party/erigon-snapshot
-	url = https://github.com/ledgerwatch/erigon-snapshot
+	url = https://github.com/erigontech/erigon-snapshot
 [submodule "secp256k1"]
 	path = third_party/secp256k1/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1.git

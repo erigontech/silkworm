@@ -221,9 +221,9 @@ Updating the version of Silkworm included in Erigon requires the following steps
 [ethereum-yellow-paper]: https://ethereum.github.io/yellowpaper/paper.pdf
 [conan]: https://conan.io
 [grpc]: https://grpc.io
-[erigon]: https://github.com/ledgerwatch/erigon
+[erigon]: https://github.com/erigontech/erigon
 [erigon-interfaces]: https://github.com/erigontech/interfaces
-[erigon-interfaces-version]: https://github.com/ledgerwatch/erigon/blob/main/erigon-lib/go.mod
+[erigon-interfaces-version]: https://github.com/erigontech/erigon/blob/main/erigon-lib/go.mod
 [ethereum-execution-api]: https://github.com/ethereum/execution-apis
 
 [^1]: You may need to use `GOPRIVATE=github.com/erigontech/silkworm-go go get github.com/erigontech/silkworm-go@v<x.y.z>`

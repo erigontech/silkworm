@@ -110,7 +110,8 @@ struct TraceOp {
     std::shared_ptr<VmTrace> sub;
 };
 
-struct VmTrace {    std::string code{"0x"};
+struct VmTrace {
+    std::string code{"0x"};
     std::vector<TraceOp> ops;
 };
 

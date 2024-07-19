@@ -575,10 +575,10 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
-//    if (precompile::is_precompile(msg.code_address, rev)) {
-//        is_precompile_ = true;
-//        return;
-//    }
+    //    if (precompile::is_precompile(msg.code_address, rev)) {
+    //        is_precompile_ = true;
+    //        return;
+    //    }
 
     start_gas_.push(msg.gas);
 

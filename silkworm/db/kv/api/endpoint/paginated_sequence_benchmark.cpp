@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "paginated_sequence.hpp"
-
 #include <benchmark/benchmark.h>
 
 #include <silkworm/infra/test_util/context_test_base.hpp>
+
+#include "paginated_sequence.hpp"
 
 namespace silkworm::db::kv::api {
 

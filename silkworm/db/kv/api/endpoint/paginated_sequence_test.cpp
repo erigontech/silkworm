@@ -27,23 +27,12 @@ using PaginatedUint64 = PaginatedSequence<uint64_t>;
 struct PaginatedSequenceTest : public test_util::ContextTestBase {
 };
 
-template <typename T>
-Task<std::vector<T>> to_vector(PaginatedSequence<T>& paginated) {
-    std::vector<T> all_values;
-    auto it = co_await paginated.begin();
-    while (it != paginated.end()) {
-        all_values.emplace_back(*it);
-        co_await ++it;
-    }
-    co_return all_values;
-}
-
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: empty uint64 sequence", "[db][kv][api][paginated_sequence]") {
     PaginatedUint64::Paginator paginator = []() -> Task<PaginatedUint64::PageResult> {
         co_return PaginatedUint64::PageResult{};  // has_more=false as default
     };
     PaginatedUint64 paginated{paginator};
-    CHECK(spawn_and_wait(to_vector(paginated)).empty());
+    CHECK(spawn_and_wait(paginated_to_vector(paginated)).empty());
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: non-empty uint64 sequence", "[db][kv][api][paginated_sequence]") {
@@ -61,7 +50,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: non-empty uint64 se
         }
     };
     PaginatedUint64 paginated{paginator};
-    CHECK(spawn_and_wait(to_vector(paginated)) == std::vector<uint64_t>{1, 2, 3, 4, 5, 6, 7});
+    CHECK(spawn_and_wait(paginated_to_vector(paginated)) == std::vector<uint64_t>{1, 2, 3, 4, 5, 6, 7});
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: error", "[db][kv][api][paginated_sequence]") {
@@ -79,7 +68,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_sequence: error", "[db][kv][a
         }
     };
     PaginatedUint64 paginated{paginator};
-    CHECK_THROWS_AS(spawn_and_wait(to_vector(paginated)), std::runtime_error);
+    CHECK_THROWS_AS(spawn_and_wait(paginated_to_vector(paginated)), std::runtime_error);
 }
 
 }  // namespace silkworm::db::kv::api

@@ -88,4 +88,15 @@ class PaginatedSequence {
     Paginator next_page_provider_;
 };
 
+template <typename T>
+Task<std::vector<T>> paginated_to_vector(PaginatedSequence<T>& paginated) {
+    std::vector<T> all_values;
+    auto it = co_await paginated.begin();
+    while (it != paginated.end()) {
+        all_values.emplace_back(*it);
+        co_await ++it;
+    }
+    co_return all_values;
+}
+
 }  // namespace silkworm::db::kv::api

@@ -77,6 +77,9 @@ BENCHMARK(benchmark_paginated_sequence_iteration)->Args({10'000, 1'000'001});
 BENCHMARK(benchmark_paginated_sequence_iteration)->Args({100'000, 100'001});
 BENCHMARK(benchmark_paginated_sequence_iteration)->Args({100'000, 1'000'001});
 
+// Modified version of PaginatedSequence to check performance tradeoffs w/ different impl
+// - PaginatedSequence: async operator++ (more convenient at call site)
+// - PaginatedSequence2: sync operator++ plus async next_page
 template <typename T>
 class PaginatedSequence2 {
   public:

@@ -70,7 +70,7 @@ struct DebugLog {
     Storage storage;
 };
 
-struct CallFixes {
+struct FixCallGasInfo {
     int32_t depth{0};
     int64_t stipend{0};
     int16_t code_cost{0};
@@ -98,11 +98,11 @@ class DebugTracer : public EvmTracer {
 
   private:
     void write_log(const DebugLog& log);
-    void evaluate_call_fixes(unsigned char opcode,
-                             const evmone::ExecutionState& execution_state,
-                             const intx::uint256* stack_top,
-                             int stack_height,
-                             const silkworm::IntraBlockState& intra_block_state);
+    void fill_call_gas_info(unsigned char opcode,
+                            const evmone::ExecutionState& execution_state,
+                            const intx::uint256* stack_top,
+                            int stack_height,
+                            const silkworm::IntraBlockState& intra_block_state);
 
     json::Stream& stream_;
     const DebugConfig& config_;
@@ -111,7 +111,7 @@ class DebugTracer : public EvmTracer {
     const char* const* opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<std::int64_t> start_gas_;
-    std::unique_ptr<CallFixes> call_fixes_;
+    std::unique_ptr<FixCallGasInfo> fix_call_gas_info_;
 };
 
 class AccountTracer : public EvmTracer {

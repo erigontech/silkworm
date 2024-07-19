@@ -159,18 +159,18 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
-        if (call_fixes_) {  // previuos opcodw was a CALL*
-            if (execution_state.msg->depth == call_fixes_->depth) {
-                if (call_fixes_->gas_cost) {
-                    log.gas_cost = call_fixes_->gas_cost + call_fixes_->code_cost;
-                } else if (!call_fixes_->precompiled) {
-                    log.gas_cost = log.gas - gas + call_fixes_->stipend;
+        if (fix_call_gas_info_) {  // previuos opcodw was a CALL*
+            if (execution_state.msg->depth == fix_call_gas_info_->depth) {
+                if (fix_call_gas_info_->gas_cost) {
+                    log.gas_cost = fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
+                } else if (!fix_call_gas_info_->precompiled) {
+                    log.gas_cost = log.gas - gas + fix_call_gas_info_->stipend;
                 }
             } else {
-                log.gas_cost = gas + call_fixes_->stipend + call_fixes_->code_cost;
+                log.gas_cost = gas + fix_call_gas_info_->stipend + fix_call_gas_info_->code_cost;
             }
 
-            call_fixes_.reset();
+            fix_call_gas_info_.reset();
         } else {
             const auto depth = log.depth;
             if (depth == execution_state.msg->depth + 1 || depth == execution_state.msg->depth) {
@@ -185,7 +185,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         logs_.erase(logs_.begin());
     }
 
-    evaluate_call_fixes(opcode, execution_state, stack_top, stack_height, intra_block_state);
+    fill_call_gas_info(opcode, execution_state, stack_top, stack_height, intra_block_state);
 
     DebugLog log;
     log.pc = pc;
@@ -216,10 +216,10 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
                << " status: " << result.status_code
                << ", gas: " << std::dec << gas;
 
-    if (call_fixes_) {
-        call_fixes_->gas_cost += gas + call_fixes_->code_cost;
-        call_fixes_->code_cost = 0;
-        call_fixes_->precompiled = true;
+    if (fix_call_gas_info_) {
+        fix_call_gas_info_->gas_cost += gas + fix_call_gas_info_->code_cost;
+        fix_call_gas_info_->code_cost = 0;
+        fix_call_gas_info_->precompiled = true;
     }
 }
 
@@ -241,23 +241,23 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
                 break;
 
             case evmc_status_code::EVMC_OUT_OF_GAS:
-                if (call_fixes_) {
-                    log.gas_cost += call_fixes_->gas_cost;
+                if (fix_call_gas_info_) {
+                    log.gas_cost += fix_call_gas_info_->gas_cost;
                 }
                 break;
 
             default:
-                if (call_fixes_) {
-                    if (result.gas_left == 0 && !call_fixes_->precompiled) {
-                        log.gas_cost = call_fixes_->stipend + call_fixes_->gas_cost;
-                    } else if (!call_fixes_->precompiled) {
-                        log.gas_cost = result.gas_left + call_fixes_->gas_cost + call_fixes_->code_cost;
-                        call_fixes_->gas_cost = 0;
-                    } else if (call_fixes_->precompiled) {
-                        log.gas_cost = call_fixes_->gas_cost;
-                        call_fixes_->gas_cost = 0;
+                if (fix_call_gas_info_) {
+                    if (result.gas_left == 0 && !fix_call_gas_info_->precompiled) {
+                        log.gas_cost = fix_call_gas_info_->stipend + fix_call_gas_info_->gas_cost;
+                    } else if (!fix_call_gas_info_->precompiled) {
+                        log.gas_cost = result.gas_left + fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
+                        fix_call_gas_info_->gas_cost = 0;
+                    } else if (fix_call_gas_info_->precompiled) {
+                        log.gas_cost = fix_call_gas_info_->gas_cost;
+                        fix_call_gas_info_->gas_cost = 0;
                     } else {
-                        call_fixes_->gas_cost = 0;
+                        fix_call_gas_info_->gas_cost = 0;
                     }
                 }
                 break;
@@ -282,29 +282,29 @@ void DebugTracer::flush_logs() {
     }
 }
 
-void DebugTracer::evaluate_call_fixes(unsigned char opcode, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
+void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
     if (opcode == OP_CALL || opcode == OP_CALLCODE || opcode == OP_STATICCALL || opcode == OP_DELEGATECALL || opcode == OP_CREATE || opcode == OP_CREATE2) {
-        call_fixes_ = std::make_unique<CallFixes>(CallFixes{execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
+        fix_call_gas_info_ = std::make_unique<FixCallGasInfo>(FixCallGasInfo{execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
         const auto value = stack_top[-2];  // value
         if (value != 0) {
-            call_fixes_->gas_cost += 9000;
+            fix_call_gas_info_->gas_cost += 9000;
         }
         if (opcode == OP_CALL) {
             if (opcode == OP_CALL && stack_height >= 7 && value != 0) {
-                call_fixes_->stipend = 2300;  // for CALLs with value, include stipend
+                fix_call_gas_info_->stipend = 2300;  // for CALLs with value, include stipend
             }
             const auto call_gas = stack_top[0];                              // gas
             const auto dst = intx::be::trunc<evmc::address>(stack_top[-1]);  // dst
 
             if ((value != 0 || execution_state.rev < EVMC_SPURIOUS_DRAGON) && !intra_block_state.exists(dst)) {
-                call_fixes_->gas_cost += 25000;
+                fix_call_gas_info_->gas_cost += 25000;
             }
             SILK_DEBUG << "DebugTracer::evaluate_call_fixes:"
                        << " call_gas: " << call_gas
                        << " dst: " << dst
                        << " value: " << value
-                       << " gas_cost: " << call_fixes_->gas_cost
-                       << " stipend: " << call_fixes_->stipend;
+                       << " gas_cost: " << fix_call_gas_info_->gas_cost
+                       << " stipend: " << fix_call_gas_info_->stipend;
         }
     }
 }

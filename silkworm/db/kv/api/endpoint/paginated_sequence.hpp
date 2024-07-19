@@ -73,7 +73,7 @@ class PaginatedSequence {
     };
 
     explicit PaginatedSequence(Paginator next_page_provider) noexcept
-        : next_page_provider_(next_page_provider) {}
+        : next_page_provider_(std::move(next_page_provider)) {}
 
     Task<Iterator> begin() {
         auto current = co_await next_page_provider_();

@@ -257,7 +257,7 @@ std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
-SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
+constinit const ChainConfig kMainnetConfig{
     .chain_id = 1,
     .homestead_block = 1'150'000,
     .dao_block = 1'920'000,
@@ -278,7 +278,7 @@ SILKWORM_CONSTINIT const ChainConfig kMainnetConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kHoleskyConfig{
+constinit const ChainConfig kHoleskyConfig{
     .chain_id = 17000,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -295,7 +295,7 @@ SILKWORM_CONSTINIT const ChainConfig kHoleskyConfig{
     .rule_set_config = protocol::NoPreMergeConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
+constinit const ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -314,7 +314,7 @@ SILKWORM_CONSTINIT const ChainConfig kSepoliaConfig{
     .rule_set_config = protocol::EthashConfig{},
 };
 
-SILKWORM_CONSTINIT const ChainConfig kBorMainnetConfig{
+constinit const ChainConfig kBorMainnetConfig{
     .chain_id = 137,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
@@ -791,7 +791,7 @@ SILKWORM_CONSTINIT const ChainConfig kBorMainnetConfig{
     },
 };
 
-SILKWORM_CONSTINIT const ChainConfig kMumbaiConfig{
+constinit const ChainConfig kMumbaiConfig{
     .chain_id = 80001,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,

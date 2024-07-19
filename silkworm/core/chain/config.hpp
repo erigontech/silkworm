@@ -135,19 +135,19 @@ std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 using namespace evmc::literals;
 
 inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kMainnetConfig;
+constinit extern const ChainConfig kMainnetConfig;
 
 inline constexpr evmc::bytes32 kHoleskyGenesisHash{0xb5f7f912443c940f21fd611f12828d75b534364ed9e95ca4e307729a4661bde4_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kHoleskyConfig;
+constinit extern const ChainConfig kHoleskyConfig;
 
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kSepoliaConfig;
+constinit extern const ChainConfig kSepoliaConfig;
 
 inline constexpr evmc::bytes32 kBorMainnetGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kBorMainnetConfig;
+constinit extern const ChainConfig kBorMainnetConfig;
 
 inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
-SILKWORM_CONSTINIT extern const ChainConfig kMumbaiConfig;
+constinit extern const ChainConfig kMumbaiConfig;
 
 //! \brief Known chain names mapped to their respective chain IDs
 inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{

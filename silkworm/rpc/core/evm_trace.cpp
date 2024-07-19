@@ -24,7 +24,6 @@
 
 #include <boost/asio/use_awaitable.hpp>
 #include <evmc/hex.hpp>
-#include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions_traits.hpp>
 #include <intx/intx.hpp>
@@ -576,10 +575,10 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
-    if (precompile::is_precompile(msg.code_address, rev)) {
-        is_precompile_ = true;
-        return;
-    }
+//    if (precompile::is_precompile(msg.code_address, rev)) {
+//        is_precompile_ = true;
+//        return;
+//    }
 
     start_gas_.push(msg.gas);
 
@@ -622,10 +621,23 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
                << ", index_prefix: " << index_prefix;
 }
 
-void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
-                                         const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
+                                         const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
     const auto op_code = execution_state.original_code[pc];
     auto op_name = get_opcode_name(opcode_names_, op_code);
+
+    if (fix_call_gas_info_) {  // previuos opcodw was a CALL
+        auto& trace_op = fix_call_gas_info_->trace_op_;
+        if (execution_state.msg->depth == fix_call_gas_info_->depth) {
+            if (fix_call_gas_info_->gas_cost) {
+                trace_op.gas_cost = fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
+            }
+        } else {
+            trace_op.gas_cost = gas + fix_call_gas_info_->stipend + fix_call_gas_info_->code_cost;
+        }
+
+        fix_call_gas_info_.reset();
+    }
 
     auto& vm_trace = traces_stack_.top().get();
     if (!vm_trace.ops.empty()) {
@@ -655,6 +667,9 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     copy_store(op_code, stack_top, trace_op.trace_ex.storage);
 
     vm_trace.ops.push_back(trace_op);
+
+    fill_call_gas_info(vm_trace.ops.back(), execution_state, stack_top, stack_height, intra_block_state);
+
     SILK_DEBUG << "VmTraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(op_code)
@@ -680,13 +695,14 @@ void VmTraceTracer::on_precompiled_run(const evmc_result& result, int64_t gas, c
             op.sub->code = "0x";
         }
     }
+    if (fix_call_gas_info_) {
+        fix_call_gas_info_->gas_cost += gas + fix_call_gas_info_->code_cost;
+        fix_call_gas_info_->code_cost = 0;
+        fix_call_gas_info_->precompiled = true;
+    }
 }
 
 void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    if (is_precompile_) {
-        is_precompile_ = false;
-        return;
-    }
     auto& vm_trace = traces_stack_.top().get();
     traces_stack_.pop();
 
@@ -736,15 +752,61 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
             break;
 
         case evmc_status_code::EVMC_REVERT:
+            op.gas_cost = op.gas_cost - result.gas_left;
+            op.trace_ex.used = result.gas_left;
+            break;
+
         default:
             op.gas_cost = op.gas_cost - result.gas_left;
             op.trace_ex.used = result.gas_left;
+            if (fix_call_gas_info_) {
+                auto& trace_op = fix_call_gas_info_->trace_op_;
+                if (result.gas_left == 0 && !fix_call_gas_info_->precompiled) {
+                    trace_op.gas_cost = fix_call_gas_info_->stipend + fix_call_gas_info_->gas_cost;
+                } else if (!fix_call_gas_info_->precompiled) {
+                    trace_op.gas_cost = result.gas_left + fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
+                    fix_call_gas_info_->gas_cost = 0;
+                } else if (fix_call_gas_info_->precompiled) {
+                    trace_op.gas_cost = fix_call_gas_info_->gas_cost;
+                    fix_call_gas_info_->gas_cost = 0;
+                } else {
+                    fix_call_gas_info_->gas_cost = 0;
+                }
+            }
             break;
     }
 }
 
 void VmTraceTracer::on_pre_check_failed(const evmc_result& /*result*/, const evmc_message& msg) noexcept {
     vm_trace_.code = "0x" + silkworm::to_hex(ByteView{msg.input_data, msg.input_size});
+}
+
+void VmTraceTracer::fill_call_gas_info(TraceOp& trace_op, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
+    auto op_code = trace_op.op_code;
+    if (op_code == evmc_opcode::OP_CALL || op_code == evmc_opcode::OP_CALLCODE || op_code == evmc_opcode::OP_STATICCALL || op_code == evmc_opcode::OP_DELEGATECALL || op_code == evmc_opcode::OP_CREATE || op_code == evmc_opcode::OP_CREATE2) {
+        fix_call_gas_info_ = std::make_unique<FixCallGasInfo>(FixCallGasInfo{execution_state.msg->depth, 0, metrics_[op_code].gas_cost, trace_op});
+        const auto value = stack_top[-2];  // value
+        if (value != 0) {
+            fix_call_gas_info_->gas_cost += 9000;
+        }
+        if (op_code == OP_CALL) {
+            if (op_code == OP_CALL && stack_height >= 7 && value != 0) {
+                fix_call_gas_info_->stipend = 2300;  // for CALLs with value, include stipend
+            }
+            const auto call_gas = stack_top[0];                              // gas
+            const auto dst = intx::be::trunc<evmc::address>(stack_top[-1]);  // dst
+
+            if ((value != 0 || execution_state.rev < EVMC_SPURIOUS_DRAGON) && !intra_block_state.exists(dst)) {
+                fix_call_gas_info_->gas_cost += 25000;
+            }
+            SILK_DEBUG << "DebugTracer::evaluate_call_fixes:"
+                       << " call_gas: " << call_gas
+                       << " dst: " << dst
+                       << " value: " << value
+                       << " gas_cost: " << fix_call_gas_info_->gas_cost
+                       << " stipend: " << fix_call_gas_info_->stipend;
+        }
+    }
 }
 
 void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {

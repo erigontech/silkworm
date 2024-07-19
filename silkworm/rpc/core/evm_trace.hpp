@@ -110,8 +110,7 @@ struct TraceOp {
     std::shared_ptr<VmTrace> sub;
 };
 
-struct VmTrace {
-    std::string code{"0x"};
+struct VmTrace {    std::string code{"0x"};
     std::vector<TraceOp> ops;
 };
 
@@ -127,6 +126,15 @@ void copy_memory(const evmone::Memory& memory, std::optional<TraceMemory>& trace
 void copy_store(std::uint8_t op_code, const evmone::uint256* stack, std::optional<TraceStorage>& trace_storage);
 void copy_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, std::optional<TraceMemory>& trace_memory);
 void push_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, std::stack<TraceMemory>& tms);
+
+struct FixCallGasInfo {
+    int32_t depth{0};
+    int64_t stipend{0};
+    int16_t code_cost{0};
+    TraceOp& trace_op_;
+    int64_t gas_cost{0};
+    bool precompiled{false};
+};
 
 class VmTraceTracer : public silkworm::EvmTracer {
   public:
@@ -144,15 +152,21 @@ class VmTraceTracer : public silkworm::EvmTracer {
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
   private:
-    bool is_precompile_{false};
+    void fill_call_gas_info(TraceOp& trace_op,
+                            const evmone::ExecutionState& execution_state,
+                            const intx::uint256* stack_top,
+                            int stack_height,
+                            const silkworm::IntraBlockState& intra_block_state);
+
     VmTrace& vm_trace_;
     std::int32_t transaction_index_;
     std::stack<std::string> index_prefix_;
     std::stack<std::reference_wrapper<VmTrace>> traces_stack_;
     const char* const* opcode_names_ = nullptr;
+    const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<int64_t> start_gas_;
     std::stack<TraceMemory> trace_memory_stack_;
-    const evmc_instruction_metrics* metrics_ = nullptr;
+    std::unique_ptr<FixCallGasInfo> fix_call_gas_info_;
 };
 
 struct TraceAction {

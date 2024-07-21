@@ -199,6 +199,13 @@ class DummyTransaction : public BaseTransaction {
         co_return;
     }
 
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
+        auto paginator = [query = std::move(query)]() mutable -> Task<db::kv::api::PaginatedTimestamps::PageResult> {
+            co_return db::kv::api::PaginatedTimestamps::PageResult{};
+        };
+        co_return db::kv::api::PaginatedTimestamps{std::move(paginator)};
+    }
+
   private:
     const nlohmann::json& json_;
 };

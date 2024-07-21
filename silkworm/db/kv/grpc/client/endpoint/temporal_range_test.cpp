@@ -31,7 +31,7 @@ namespace proto = ::remote;
 
 TEST_CASE("index_range_request_from_query", "[node][remote][kv][grpc]") {
     const Fixtures<api::IndexRangeQuery, proto::IndexRangeReq> fixtures{
-        {{}, {}},
+        {{}, default_proto_index_range_request()},
         {sample_index_range_query(), sample_proto_index_range_request()},
     };
     for (const auto& [query, expected_range_request] : fixtures) {
@@ -68,7 +68,7 @@ TEST_CASE("index_range_result_from_response", "[node][remote][kv][grpc]") {
 
 TEST_CASE("history_range_request_from_query", "[node][remote][kv][grpc]") {
     const Fixtures<api::HistoryRangeQuery, proto::HistoryRangeReq> fixtures{
-        {{}, {}},
+        {{}, default_proto_history_range_request()},
         {sample_history_range_query(), sample_proto_history_range_request()},
     };
     for (const auto& [query, expected_range_request] : fixtures) {
@@ -105,7 +105,7 @@ TEST_CASE("history_range_result_from_response", "[node][remote][kv][grpc]") {
 
 TEST_CASE("domain_range_request_from_query", "[node][remote][kv][grpc]") {
     const Fixtures<api::DomainRangeQuery, proto::DomainRangeReq> fixtures{
-        {{}, {}},
+        {{}, default_proto_domain_range_request()},
         {sample_domain_range_query(), sample_proto_domain_range_request()},
     };
     for (const auto& [query, expected_range_request] : fixtures) {

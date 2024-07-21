@@ -112,7 +112,7 @@ TEST_CASE_METHOD(RemoteClientTestRunner, "KV::DomainGet", "[node][remote][kv][gr
     }
 }
 
-TEST_CASE_METHOD(RemoteClientTestRunner, "KV::IndexRange", "[node][remote][kv][grpc]") {
+/*TEST_CASE_METHOD(RemoteClientTestRunner, "KV::IndexRange", "[node][remote][kv][grpc]") {
     const api::IndexRangeQuery query{};  // input query doesn't matter here, we tweak the reply
 
     rpc::test::StrictMockAsyncResponseReader<proto::IndexRangeReply> reader;
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(RemoteClientTestRunner, "KV::IndexRange", "[node][remote][kv][g
 
         CHECK_THROWS_AS((run_service_method<&api::Service::get_index_range>(query)), rpc::GrpcStatusError);
     }
-}
+}*/
 
 TEST_CASE_METHOD(RemoteClientTestRunner, "KV::HistoryRange", "[node][remote][kv][grpc]") {
     const api::HistoryRangeQuery query{};  // input query doesn't matter here, we tweak the reply

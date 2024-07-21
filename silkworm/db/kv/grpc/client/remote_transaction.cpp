@@ -16,15 +16,20 @@
 
 #include "remote_transaction.hpp"
 
-#include <grpcpp/grpcpp.h>
-
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
+#include <silkworm/infra/grpc/common/errors.hpp>
+
+#include "endpoint/temporal_range.hpp"
 
 namespace silkworm::db::kv::grpc::client {
 
+namespace proto = ::remote;
+using Stub = proto::KV::StubInterface;
+
 RemoteTransaction::RemoteTransaction(
-    ::remote::KV::StubInterface& stub,
+    Stub& stub,
     agrpc::GrpcContext& grpc_context,
     api::StateCache* state_cache,
     chain::BlockProvider block_provider,
@@ -32,7 +37,9 @@ RemoteTransaction::RemoteTransaction(
     : BaseTransaction(state_cache),
       block_provider_{std::move(block_provider)},
       block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
-      tx_rpc_{stub, grpc_context} {}
+      stub_{stub},
+      grpc_context_{grpc_context},
+      tx_rpc_{stub_, grpc_context_} {}
 
 Task<void> RemoteTransaction::open() {
     const auto tx_result = co_await tx_rpc_.request_and_read();
@@ -83,6 +90,25 @@ std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::an
 
 std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {
     return std::make_shared<chain::RemoteChainStorage>(*this, block_provider_, block_number_from_txn_hash_provider_);
+}
+
+Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQuery&& query) {
+    auto paginator = [&, query = std::move(query)]() mutable -> Task<api::PaginatedTimestamps::PageResult> {
+        static std::string page_token{query.page_token};
+        query.tx_id = tx_id_;
+        query.page_token = page_token;
+        auto request = index_range_request_from_query(query);
+        try {
+            auto reply = co_await rpc::unary_rpc(&Stub::AsyncIndexRange, stub_, std::move(request), grpc_context_);
+            auto result = index_range_result_from_response(reply);
+            page_token = std::move(result.next_page_token);
+            co_return api::PaginatedTimestamps::PageResult{std::move(result.timestamps), !page_token.empty()};
+        } catch (rpc::GrpcStatusError& gse) {
+            SILK_WARN << "KV::IndexRange RPC failed status=" << gse.status();
+            throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
+        }
+    };
+    co_return api::PaginatedTimestamps{std::move(paginator)};
 }
 
 }  // namespace silkworm::db::kv::grpc::client

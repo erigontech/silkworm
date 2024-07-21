@@ -77,11 +77,13 @@ class RemoteClientImpl final : public api::Service {
 
     // rpc Tx(stream Cursor) returns (stream Pair);
     Task<std::unique_ptr<api::Transaction>> begin_transaction() override {
-        co_return std::make_unique<RemoteTransaction>(*stub_,
+        auto tx = std::make_unique<RemoteTransaction>(*stub_,
                                                       grpc_context_,
                                                       state_cache_,
                                                       block_provider_,
                                                       block_number_from_txn_hash_provider_);
+        co_await tx->open();
+        co_return tx;
     }
 
     // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
@@ -140,37 +142,30 @@ class RemoteClientImpl final : public api::Service {
     // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
     Task<api::HistoryPointResult> get_history(const api::HistoryPointQuery& query) override {
         auto request = history_get_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryGet, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryGet, *stub_, std::move(request), grpc_context_);
         co_return history_get_result_from_response(reply);
     }
 
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
     Task<api::DomainPointResult> get_domain(const api::DomainPointQuery& query) override {
         auto request = domain_get_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainGet, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainGet, *stub_, std::move(request), grpc_context_);
         co_return domain_get_result_from_response(reply);
     }
 
     /** Temporal Range Queries **/
 
-    // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    Task<api::IndexRangeResult> get_index_range(const api::IndexRangeQuery& query) override {
-        auto request = index_range_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncIndexRange, stub_, std::move(request), grpc_context_);
-        co_return index_range_result_from_response(reply);
-    }
-
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<api::HistoryRangeResult> get_history_range(const api::HistoryRangeQuery& query) override {
         auto request = history_range_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, *stub_, std::move(request), grpc_context_);
         co_return history_range_result_from_response(reply);
     }
 
     // rpc DomainRange(DomainRangeReq) returns (Pairs);
     Task<api::DomainRangeResult> get_domain_range(const api::DomainRangeQuery& query) override {
         auto request = domain_range_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, *stub_, std::move(request), grpc_context_);
         co_return domain_range_result_from_response(reply);
     }
 

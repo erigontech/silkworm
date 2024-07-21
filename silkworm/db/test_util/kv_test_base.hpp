@@ -56,6 +56,7 @@ struct KVTestBase : public silkworm::test_util::ContextTestBase {
     using StrictMockKVStub = testing::StrictMock<remote::MockKVStub>;
     using StrictMockKVTxAsyncReaderWriter = rpc::test::StrictMockAsyncReaderWriter<remote::Cursor, remote::Pair>;
     using StrictMockKVStateChangesAsyncReader = rpc::test::StrictMockAsyncReader<remote::StateChangeBatch>;
+    using StrictMockKVIndexRangeAsyncResponseReader = rpc::test::StrictMockAsyncResponseReader<::remote::IndexRangeReply>;
 
     //! Mocked stub of gRPC KV interface
     std::unique_ptr<StrictMockKVStub> stub_{std::make_unique<StrictMockKVStub>()};
@@ -69,6 +70,11 @@ struct KVTestBase : public silkworm::test_util::ContextTestBase {
     std::unique_ptr<StrictMockKVStateChangesAsyncReader> statechanges_reader_ptr_{
         std::make_unique<StrictMockKVStateChangesAsyncReader>()};
     StrictMockKVStateChangesAsyncReader* statechanges_reader_{statechanges_reader_ptr_.get()};
+
+    //! Mocked response reader for IndexRange server streaming RPC of gRPC KV interface
+    std::unique_ptr<StrictMockKVIndexRangeAsyncResponseReader> index_range_reader_ptr_{
+        std::make_unique<StrictMockKVIndexRangeAsyncResponseReader>()};
+    StrictMockKVIndexRangeAsyncResponseReader* index_range_reader_{index_range_reader_ptr_.get()};
 };
 
 }  // namespace silkworm::db::test_util

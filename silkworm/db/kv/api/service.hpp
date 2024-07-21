@@ -48,9 +48,6 @@ struct Service {
 
     /** Temporal Range Queries **/
 
-    // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    virtual Task<IndexRangeResult> get_index_range(const IndexRangeQuery&) = 0;
-
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     virtual Task<HistoryRangeResult> get_history_range(const HistoryRangeQuery&) = 0;
 

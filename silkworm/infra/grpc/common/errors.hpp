@@ -16,24 +16,13 @@
 
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <utility>
-#include <vector>
+#include <boost/system/system_error.hpp>
+#include <grpcpp/grpcpp.h>
 
-#include <silkworm/core/common/bytes.hpp>
+namespace silkworm::rpc {
 
-namespace silkworm::db::kv::api {
+//! \details To raise a boost::system::system_error exception:
+//! \code throw boost::system::system_error{rpc::to_system_code(grpc_status_code)};
+boost::system::error_code to_system_code(::grpc::StatusCode);
 
-using TxId = uint64_t;
-using Timestamp = int64_t;
-using TimestampRange = std::pair<Timestamp, Timestamp>;
-
-using ListOfBytes = std::vector<Bytes>;
-using ListOfTimestamp = std::vector<Timestamp>;
-
-using Domain = uint16_t;
-using History = std::string_view;
-using InvertedIndex = std::string_view;
-
-}  // namespace silkworm::db::kv::api
+}  // namespace silkworm::rpc

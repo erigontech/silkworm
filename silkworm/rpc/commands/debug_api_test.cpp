@@ -210,6 +210,13 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return;
     }
 
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
+        auto paginator = [query = std::move(query)]() mutable -> Task<db::kv::api::PaginatedTimestamps::PageResult> {
+            co_return db::kv::api::PaginatedTimestamps::PageResult{};
+        };
+        co_return db::kv::api::PaginatedTimestamps{std::move(paginator)};
+    }
+
   private:
     inline static uint64_t next_tx_id{0};
     inline static uint64_t next_view_id{0};

@@ -22,26 +22,34 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/ethdb/transaction.hpp>
-#include <silkworm/rpc/test/dummy_transaction.hpp>
+#include <silkworm/rpc/test_util/dummy_transaction.hpp>
 
 namespace silkworm::rpc::test {
 
 //! This dummy database acts as a factory for dummy transactions using the same cursor.
 class DummyDatabase : public ethdb::Database {
   public:
-    explicit DummyDatabase(uint64_t tx_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
-        : tx_id_(tx_id), cursor_(std::move(cursor)) {}
+    explicit DummyDatabase(std::shared_ptr<db::kv::api::Cursor> cursor,
+                           std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort)
+        : DummyDatabase(0, 0, std::move(cursor), std::move(cursor_dup_sort)) {}
+    DummyDatabase(uint64_t tx_id,
+                  uint64_t view_id,
+                  std::shared_ptr<db::kv::api::Cursor> cursor,
+                  std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort)
+        : tx_id_(tx_id), view_id_(view_id), cursor_(std::move(cursor)), cursor_dup_sort_(std::move(cursor_dup_sort)) {}
 
-    Task<std::unique_ptr<ethdb::Transaction>> begin() override {
-        co_return std::make_unique<DummyTransaction>(tx_id_, cursor_);
+    Task<std::unique_ptr<db::kv::api::Transaction>> begin() override {
+        co_return std::make_unique<DummyTransaction>(tx_id_, view_id_, cursor_, cursor_dup_sort_);
     }
 
   private:
     uint64_t tx_id_;
-    std::shared_ptr<ethdb::CursorDupSort> cursor_;
+    uint64_t view_id_;
+    std::shared_ptr<db::kv::api::Cursor> cursor_;
+    std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort_;
 };
 
 }  // namespace silkworm::rpc::test

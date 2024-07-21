@@ -32,6 +32,8 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
@@ -40,6 +42,7 @@
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
 using namespace silkworm;
 using namespace silkworm::rpc;
@@ -691,6 +694,7 @@ ABSL_FLAG(std::string, tool, "", "gRPC remote interface tool name as string");
 ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "Silkworm location as string <address>:<port>");
 ABSL_FLAG(std::string, table, "", "database table name as string");
 ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as integer");
+ABSL_FLAG(bool, verbose, false, "verbose output");
 
 int ethbackend_async() {
     auto target{absl::GetFlag(FLAGS_target)};
@@ -841,6 +845,111 @@ int kv_seek() {
     return kv_seek(target, table_name, key_bytes.value());
 }
 
+Task<void> kv_index_range_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
+                                db::kv::api::IndexRangeQuery&& query,
+                                const bool verbose) {
+    try {
+        auto tx = co_await kv_service->begin_transaction();
+        std::cout << "KV IndexRange -> " << query.table << "\n";
+        auto paginated_result = co_await tx->index_range(std::move(query));
+        auto it = co_await paginated_result.begin();
+        std::cout << "KV IndexRange <- #timestamps: ";
+        int count{0};
+        db::kv::api::ListOfTimestamp timestamps;
+        while (it != paginated_result.end()) {
+            timestamps.emplace_back(*it);
+            ++count;
+            co_await ++it;
+        }
+        std::cout << count << "\n";
+        if (verbose) {
+            for (const auto ts : timestamps) {
+                std::cout << ts << "\n";
+            }
+        }
+        co_await tx->close();
+    } catch (const std::exception& e) {
+        std::cout << "KV IndexRange <- error: " << e.what() << "\n";
+    }
+}
+
+int kv_index_range_coro(const std::string& target, const std::string& table, const Bytes& key, const bool verbose) {
+    try {
+        ClientContextPool context_pool{1};
+        auto& context = context_pool.next_context();
+        auto io_context = context.io_context();
+        auto grpc_context = context.grpc_context();
+
+        boost::asio::signal_set signals(*io_context, SIGINT, SIGTERM);
+        signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
+            std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl
+                      << std::flush;
+            context_pool.stop();
+        });
+
+        auto channel_factory = [target]() -> std::shared_ptr<::grpc::Channel> {
+            return ::grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
+        };
+
+        // ETHBACKEND
+        ethbackend::RemoteBackEnd eth_backend{*io_context, channel_factory(), *grpc_context};
+        // DB KV API client
+        db::kv::api::CoherentStateCache state_cache;
+        db::kv::grpc::client::RemoteClient client{channel_factory,
+                                                  *grpc_context,
+                                                  &state_cache,
+                                                  rpc::ethdb::kv::block_provider(&eth_backend),
+                                                  rpc::ethdb::kv::block_number_from_txn_hash_provider(&eth_backend)};
+        auto kv_service = client.service();
+        db::kv::api::IndexRangeQuery query{
+            .table = table,
+            .key = key,
+            .from_timestamp = 0,
+            .to_timestamp = -1,
+            .ascending_order = true,
+        };
+        // NOLINTNEXTLINE(performance-unnecessary-value-param)
+        boost::asio::co_spawn(*io_context, kv_index_range_query(kv_service, std::move(query), verbose), [&](std::exception_ptr) {
+            context_pool.stop();
+        });
+
+        context_pool.run();
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << "\n";
+    } catch (...) {
+        std::cerr << "Unexpected exception\n";
+    }
+    return 0;
+}
+
+int kv_index_range() {
+    const auto target{absl::GetFlag(FLAGS_target)};
+    if (target.empty() || !absl::StrContains(target, ":")) {
+        std::cerr << "Parameter target is invalid: [" << target << "]\n";
+        std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
+        return -1;
+    }
+
+    const auto table_name{absl::GetFlag(FLAGS_table)};
+    if (table_name.empty()) {
+        std::cerr << "Parameter table is invalid: [" << table_name << "]\n";
+        std::cerr << "Use --table flag to specify the name of Erigon database table\n";
+        return -1;
+    }
+
+    const auto key{absl::GetFlag(FLAGS_key)};
+    const auto key_bytes = silkworm::from_hex(key);
+    if (key.empty() || !key_bytes.has_value()) {
+        std::cerr << "Parameter key is invalid: [" << key << "]\n";
+        std::cerr << "Use --key flag to specify the key in key-value dupsort table\n";
+        return -1;
+    }
+
+    const auto verbose{absl::GetFlag(FLAGS_verbose)};
+
+    return kv_index_range_coro(target, table_name, *key_bytes, verbose);
+}
+
 int main(int argc, char* argv[]) {
     absl::SetProgramUsageMessage(
         "Execute specified internal gRPC I/F tool:\n"
@@ -850,7 +959,8 @@ int main(int argc, char* argv[]) {
         "\tkv_seek\t\t\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_async\t\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_async_callback\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
-        "\tkv_seek_both\t\t\tquery using SEEK_BOTH the Erigon/Silkworm Key-Value (KV) remote interface to database\n");
+        "\tkv_seek_both\t\t\tquery using SEEK_BOTH the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
+        "\tkv_index_range\t\tquery using INDEX_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to database\n");
     const auto positional_args = absl::ParseCommandLine(argc, argv);
     if (positional_args.size() < 2) {
         std::cerr << "No gRPC tool specified as first positional argument\n\n";
@@ -881,6 +991,9 @@ int main(int argc, char* argv[]) {
     }
     if (tool == "kv_seek") {
         return kv_seek();
+    }
+    if (tool == "kv_index_range") {
+        return kv_index_range();
     }
 
     std::cerr << "Unknown tool " << tool << " specified as first argument\n\n";

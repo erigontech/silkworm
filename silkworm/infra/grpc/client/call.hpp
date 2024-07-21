@@ -52,7 +52,7 @@ class GrpcStatusError : public std::runtime_error {
 template <class Stub, class Request, class Response>
 Task<Response> unary_rpc(
     agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReaderInterface<Response>> rpc,
-    std::unique_ptr<Stub>& stub,
+    Stub& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
     boost::asio::cancellation_slot* cancellation_slot = nullptr) {
@@ -131,7 +131,7 @@ using DisconnectHook = std::function<Task<void>()>;
 template <class Stub, class Request, class Response>
 Task<Response> unary_rpc_with_retries(
     agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReaderInterface<Response>> rpc,
-    std::unique_ptr<Stub>& stub,
+    Stub& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
     DisconnectHook& on_disconnect,

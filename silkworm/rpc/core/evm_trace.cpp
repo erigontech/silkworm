@@ -720,8 +720,13 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            op.trace_ex.used = op.gas_cost - metrics_[op.op_code].gas_cost;
-            op.gas_cost = metrics_[op.op_code].gas_cost;
+            if (op.op_code == evmc_opcode::OP_EXP) {  // Erigon the static part is 0
+                op.trace_ex.used = op.gas_cost;
+                op.gas_cost = 0;
+            } else {
+                op.trace_ex.used = op.gas_cost - metrics_[op.op_code].gas_cost;
+                op.gas_cost = metrics_[op.op_code].gas_cost;
+            }
             break;
 
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:

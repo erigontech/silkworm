@@ -28,6 +28,7 @@
 namespace silkworm::db::kv::grpc::client {
 
 using testing::_;
+namespace proto = ::remote;
 namespace test = rpc::test;
 
 struct RemoteTransactionTest : test_util::KVTestBase {
@@ -417,21 +418,22 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc]
         auto paginated_timestamps = co_await remote_tx_.index_range(api::IndexRangeQuery{});
         co_return co_await paginated_to_vector(paginated_timestamps);
     };
+    rpc::test::StrictMockAsyncResponseReader<proto::IndexRangeReply> reader;
     SECTION("throw on error") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillOnce(Return(index_range_reader_ptr_.release()));
+        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillOnce(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call fails
-        EXPECT_CALL(*index_range_reader_, Finish).WillOnce(test::finish_error_aborted(grpc_context_, ::remote::IndexRangeReply{}));
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, ::remote::IndexRangeReply{}));
         // Execute the test: trying to *use* index_range lazy result should throw
         CHECK_THROWS_AS(spawn_and_wait(flatten_index_range), boost::system::system_error);
     }
     SECTION("success: empty") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(index_range_reader_ptr_.release()));
+        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds 3 times
-        EXPECT_CALL(*index_range_reader_, Finish)
+        EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({}, /*has_more*/ false)));
 
         // Execute the test: call index_range and flatten the data matches the expected data
@@ -440,9 +442,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc]
     SECTION("success: one page") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(index_range_reader_ptr_.release()));
+        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds
-        EXPECT_CALL(*index_range_reader_, Finish)
+        EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({19}, /*has_more*/ false)));
 
         // Execute the test: call index_range and flatten the data matches the expected data
@@ -463,9 +465,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc]
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
         // 5. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(index_range_reader_ptr_.release()));
+        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
         // 6. AsyncResponseReader<>::Finish call succeeds 3 times
-        EXPECT_CALL(*index_range_reader_, Finish)
+        EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({1, 2, 3}, /*has_more*/ true)))
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({4, 5, 6}, /*has_more*/ true)))
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({7}, /*has_more*/ false)));

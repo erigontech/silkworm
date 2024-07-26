@@ -122,10 +122,12 @@ class ForwardBlockProvider : public BlockProvider {
     void advance_if_needed(BlockNum min_block);
 
   public:
-    ForwardBlockProvider(db::kv::api::Cursor* cursor, const evmc::address& address, BlockNum min_block) : chunk_locator_(cursor, address, true), chunk_provider_() {
-        cursor_ = cursor;
-        address_ = address;
-        min_block_ = min_block;
+    ForwardBlockProvider(db::kv::api::Cursor* cursor, const evmc::address& address, BlockNum min_block)
+        : cursor_(cursor),
+          address_(address),
+          min_block_(min_block),
+          chunk_locator_(cursor, address, true),
+          chunk_provider_() {
     }
 
     Task<BlockProviderResponse> get() override;
@@ -153,11 +155,12 @@ class BackwardBlockProvider : public BlockProvider {
     void reverse_iterator(roaring::Roaring64Map& bitmap);
 
   public:
-    BackwardBlockProvider(db::kv::api::Cursor* cursor, const evmc::address& address, BlockNum max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
-        cursor_ = cursor;
-        address_ = address;
-        max_block_ = max_block;
-
+    BackwardBlockProvider(db::kv::api::Cursor* cursor, const evmc::address& address, BlockNum max_block)
+        : cursor_(cursor),
+          address_(address),
+          max_block_(max_block),
+          chunk_locator_(cursor, address, false),
+          chunk_provider_() {
         if (max_block_ == 0) {
             max_block_ = std::numeric_limits<BlockNum>::max();
         }

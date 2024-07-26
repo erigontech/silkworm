@@ -42,11 +42,11 @@ struct Link {
     bool persisted = false;                   // Whether this link comes from the database record
     bool preverified = false;                 // Ancestor of pre-verified header
 
-    Link(BlockHeader h, bool persisted_) {
-        blockHeight = h.number;
-        hash = h.hash();  // save computation
+    Link(BlockHeader h, bool persisted_)
+        : blockHeight{h.number},
+          hash{h.hash()},  // save computation
+          persisted{persisted_} {
         header = std::make_shared<BlockHeader>(std::move(h));
-        persisted = persisted_;
     }
 
     void remove_child(const Link& child) {
@@ -71,12 +71,12 @@ struct Anchor {
     BlockNum lastLinkHeight{0};                // the blockHeight of the last link of the chain bundle anchored to this
     PeerId peerId;
 
-    Anchor(const BlockHeader& header, PeerId p) {
-        parentHash = header.parent_hash;
-        blockHeight = header.number;
-        lastLinkHeight = blockHeight;
-        // timestamp = 0;  // ready to get extended
-        peerId = std::move(p);
+    Anchor(const BlockHeader& header, PeerId p)
+        : parentHash{header.parent_hash},
+          blockHeight{header.number},
+          lastLinkHeight{blockHeight},
+          // timestamp{0},  // ready to get extended
+          peerId{std::move(p)} {
     }
 
     BlockNum chainLength() const { return lastLinkHeight - blockHeight + 1; }

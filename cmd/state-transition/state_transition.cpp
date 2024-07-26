@@ -47,20 +47,15 @@ StateTransition::StateTransition(const std::string& file_path) noexcept {
     auto testObject = baseJson.begin();
     test_name_ = testObject.key();
     test_data_ = testObject.value();
-
-    terminate_on_error_ = false;
-    show_diagnostics_ = false;
 }
 
-StateTransition::StateTransition(const nlohmann::json& json, const bool terminate_on_error, const bool show_diagnostics) noexcept {
+StateTransition::StateTransition(const nlohmann::json& json, const bool terminate_on_error, const bool show_diagnostics) noexcept
+    : terminate_on_error_{terminate_on_error},
+      show_diagnostics_{show_diagnostics} {
     auto testObject = json.begin();
     test_name_ = testObject.key();
     std::cout << test_name_ << ":" << std::endl;
-
     test_data_ = testObject.value();
-
-    terminate_on_error_ = terminate_on_error;
-    show_diagnostics_ = show_diagnostics;
 }
 
 std::string StateTransition::name() {

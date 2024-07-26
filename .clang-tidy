@@ -26,7 +26,6 @@ Checks: >
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-avoid-reference-coroutine-parameters,
   -cppcoreguidelines-macro-usage,
-  -cppcoreguidelines-macro-to-enum,
   -cppcoreguidelines-missing-std-forward,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -cppcoreguidelines-owning-memory,

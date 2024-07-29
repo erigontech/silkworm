@@ -36,8 +36,8 @@ class StateTransition {
     std::string test_name_;
     unsigned total_count_{};
     unsigned failed_count_{};
-    bool terminate_on_error_;
-    bool show_diagnostics_;
+    bool terminate_on_error_{false};
+    bool show_diagnostics_{false};
 
     void print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
     void print_error_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);

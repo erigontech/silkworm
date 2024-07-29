@@ -20,9 +20,12 @@ namespace silkworm::rpc::ethdb {
 
 SplitCursor::SplitCursor(Cursor& inner_cursor, ByteView key, uint64_t match_bits, uint64_t part1_end,
                          uint64_t part2_start, uint64_t part3_start)
-    : inner_cursor_{inner_cursor}, key_{key}, part1_end_{part1_end}, part2_start_{part2_start}, part3_start_{part3_start} {
-    match_bytes_ = (match_bits + 7) / 8;
-
+    : inner_cursor_{inner_cursor},
+      key_{key},
+      part1_end_{part1_end},
+      part2_start_{part2_start},
+      part3_start_{part3_start},
+      match_bytes_{(match_bits + 7) / 8} {
     uint8_t shift_bits = match_bits & 7;
     if (shift_bits != 0) {
         mask_ = static_cast<uint8_t>(0xff << (8 - shift_bits));
@@ -88,9 +91,12 @@ SplittedKeyValue SplitCursor::split_key_value(const KeyValue& kv) {
 
 SplitCursorDupSort::SplitCursorDupSort(CursorDupSort& inner_cursor, ByteView key, ByteView subkey,
                                        uint64_t match_bits, uint64_t part1_end, uint64_t value_offset)
-    : inner_cursor_{inner_cursor}, key_{key}, subkey_{subkey}, part1_end_{part1_end}, value_offset_{value_offset} {
-    match_bytes_ = (match_bits + 7) / 8;
-
+    : inner_cursor_{inner_cursor},
+      key_{key},
+      subkey_{subkey},
+      part1_end_{part1_end},
+      match_bytes_{(match_bits + 7) / 8},
+      value_offset_{value_offset} {
     uint8_t shift_bits = match_bits & 7;
     if (shift_bits != 0) {
         mask_ = static_cast<uint8_t>(0xff << (8 - shift_bits));

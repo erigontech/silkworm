@@ -47,9 +47,9 @@ Fork::Fork(BlockId forking_point, db::ROTxnManaged&& main_chain_tx, NodeSettings
       memory_tx_{memory_db_},
       data_model_{memory_tx_},
       pipeline_{&ns},
-      canonical_chain_(memory_tx_) {
-    // actual head
-    current_head_ = forking_point;
+      canonical_chain_(memory_tx_),
+      current_head_{forking_point}  // actual head
+{
     // go down if needed
     if (canonical_chain_.initial_head() != forking_point) {
         reduce_down_to(forking_point);

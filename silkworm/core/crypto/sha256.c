@@ -49,8 +49,12 @@
 #define ALWAYS_INLINE
 #endif
 
-#define CHUNK_SIZE 64
-#define TOTAL_LEN_LEN 8
+enum {
+    CHUNK_SIZE = 64
+};
+enum {
+    TOTAL_LEN_LEN = 8
+};
 
 /*
  * Comments from pseudo-code at https://en.wikipedia.org/wiki/SHA-2 are reproduced here.

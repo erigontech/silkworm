@@ -94,8 +94,10 @@ class AsyncUnaryCall : public AsyncCall {
     static UnaryStats stats() { return unary_stats_; }
 
     explicit AsyncUnaryCall(grpc::CompletionQueue* queue, StubInterface* stub, CompletionFunc completion_handler = {})
-        : AsyncCall(queue), stub_(stub), completion_handler_(std::move(completion_handler)) {
-        finish_processor_ = [&](bool ok) { process_finish(ok); };
+        : AsyncCall(queue),
+          stub_(stub),
+          finish_processor_([&](bool ok) { process_finish(ok); }),
+          completion_handler_(std::move(completion_handler)) {
     }
 
     void start(const Request& request) {
@@ -164,10 +166,11 @@ class AsyncServerStreamingCall : public AsyncCall {
     static ServerStreamingStats stats() { return server_streaming_stats_; }
 
     explicit AsyncServerStreamingCall(grpc::CompletionQueue* queue, StubInterface* stub)
-        : AsyncCall(queue), stub_(stub) {
-        start_processor_ = [&](bool ok) { process_start(ok); };
-        read_processor_ = [&](bool ok) { process_read(ok); };
-        finish_processor_ = [&](bool ok) { process_finish(ok); };
+        : AsyncCall(queue),
+          start_processor_([&](bool ok) { process_start(ok); }),
+          read_processor_([&](bool ok) { process_read(ok); }),
+          finish_processor_([&](bool ok) { process_finish(ok); }),
+          stub_(stub) {
     }
 
     void start(const Request& request) {
@@ -290,12 +293,13 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
     static BidirectionalStreamingStats stats() { return bidi_streaming_stats_; }
 
     explicit AsyncBidirectionalStreamingCall(grpc::CompletionQueue* queue, StubInterface* stub)
-        : AsyncCall(queue), stub_(stub) {
-        start_processor_ = [&](bool ok) { process_start(ok); };
-        read_processor_ = [&](bool ok) { process_read(ok); };
-        write_processor_ = [&](bool ok) { process_write(ok); };
-        writes_done_processor_ = [&](bool ok) { process_writes_done(ok); };
-        finish_processor_ = [&](bool ok) { process_finish(ok); };
+        : AsyncCall(queue),
+          start_processor_([&](bool ok) { process_start(ok); }),
+          read_processor_([&](bool ok) { process_read(ok); }),
+          write_processor_([&](bool ok) { process_write(ok); }),
+          writes_done_processor_([&](bool ok) { process_writes_done(ok); }),
+          finish_processor_([&](bool ok) { process_finish(ok); }),
+          stub_(stub) {
     }
 
     void start() {

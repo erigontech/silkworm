@@ -932,11 +932,12 @@ Task<ChunkProviderResponse> ChunkProvider::get() {
     co_return ChunkProviderResponse{key_value.value, true, false};
 }
 
-ChunkProvider::ChunkProvider(db::kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward, db::kv::api::KeyValue first_seek_key_value) {
-    cursor_ = cursor;
-    address_ = address;
-    navigate_forward_ = navigate_forward;
-    first_seek_key_value_ = std::move(first_seek_key_value);
+ChunkProvider::ChunkProvider(db::kv::api::Cursor* cursor, const evmc::address& address,
+                             bool navigate_forward, db::kv::api::KeyValue first_seek_key_value)
+    : cursor_{cursor},
+      address_{address},
+      navigate_forward_{navigate_forward},
+      first_seek_key_value_{std::move(first_seek_key_value)} {
 }
 
 Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
@@ -955,10 +956,10 @@ Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
     }
 }
 
-ChunkLocator::ChunkLocator(db::kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward) {
-    cursor_ = cursor;
-    address_ = address;
-    navigate_forward_ = navigate_forward;
+ChunkLocator::ChunkLocator(db::kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward)
+    : cursor_{cursor},
+      address_{address},
+      navigate_forward_{navigate_forward} {
 }
 
 Task<BlockProviderResponse> ForwardBlockProvider::get() {
@@ -1257,11 +1258,10 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
     co_return BlockProviderResponse{block_num, has_more_from_ || has_more_to_, false};
 }
 
-FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider) {
-    is_backwards_ = is_backwards;
-    callFromProvider_ = callFromProvider;
-    callToProvider_ = callToProvider;
-    initialized_ = false;
+FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider)
+    : is_backwards_{is_backwards},
+      callFromProvider_{callFromProvider},
+      callToProvider_{callToProvider} {
 }
 
 }  // namespace silkworm::rpc::commands

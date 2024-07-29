@@ -31,8 +31,9 @@
 namespace silkworm {
 
 InboundNewBlockHashes::InboundNewBlockHashes(ByteView data, PeerId peer_id)
-    : peerId_(std::move(peer_id)) {
-    reqId_ = Singleton<RandomNumber>::instance().generate_one();  // for trace purposes
+    : peerId_(std::move(peer_id)),
+      reqId_(Singleton<RandomNumber>::instance().generate_one())  // for trace purposes
+{
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;
 }

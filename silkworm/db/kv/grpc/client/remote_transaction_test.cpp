@@ -415,7 +415,15 @@ static ::remote::IndexRangeReply make_index_range_reply(const api::ListOfTimesta
 
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc][ethdb][kv][remote_transaction]") {
     auto flatten_index_range = [&]() -> Task<api::ListOfTimestamp> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::IndexRangeQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::IndexRangeQuery query;
+        auto paginated_timestamps = co_await remote_tx_.index_range(std::move(query));
+#else
         auto paginated_timestamps = co_await remote_tx_.index_range(api::IndexRangeQuery{});
+#endif
         co_return co_await paginated_to_vector(paginated_timestamps);
     };
     rpc::test::StrictMockAsyncResponseReader<proto::IndexRangeReply> reader;

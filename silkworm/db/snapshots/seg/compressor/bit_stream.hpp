@@ -23,7 +23,7 @@ namespace silkworm::snapshots::seg {
 
 class BitStream {
   public:
-    BitStream(std::function<void(uint8_t)> byte_writer)
+    explicit BitStream(std::function<void(uint8_t)> byte_writer)
         : byte_writer_(std::move(byte_writer)) {}
     ~BitStream();
 

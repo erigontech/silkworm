@@ -30,7 +30,7 @@ class InternalMessage : public Message {
   public:
     using ExecutionFunc = std::function<R(HeaderChain&, BodySequence&)>;
 
-    InternalMessage(ExecutionFunc);
+    explicit InternalMessage(ExecutionFunc);
 
     std::string name() const override { return "InternalMessage"; }
 

@@ -35,6 +35,7 @@ struct ByteWriter {
     void write(uint8_t b) {
         storage.push_back(b);
     }
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     operator std::function<void(uint8_t)>() const {
         return func;
     }

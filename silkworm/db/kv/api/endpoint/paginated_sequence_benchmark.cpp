@@ -123,7 +123,7 @@ class PaginatedSequence2 {
 
         Iterator(Paginator& next_page_provider, PageResult current) noexcept
             : next_page_provider_(next_page_provider), current_(std::move(current)), it_{current_.values.cbegin()} {}
-        Iterator(Paginator& next_page_provider) noexcept
+        explicit Iterator(Paginator& next_page_provider) noexcept
             : next_page_provider_(next_page_provider) {}
 
       private:

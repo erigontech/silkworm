@@ -29,7 +29,7 @@ namespace silkworm::sentry {
 
 class StatusManager {
   public:
-    StatusManager(const boost::asio::any_io_executor& executor)
+    explicit StatusManager(const boost::asio::any_io_executor& executor)
         : status_channel_(executor),
           status_(eth::StatusData{}) {}
 

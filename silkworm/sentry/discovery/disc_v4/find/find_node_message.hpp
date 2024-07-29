@@ -35,7 +35,8 @@ struct FindNodeMessage {
 
     class DecodeTargetPublicKeyError : public std::runtime_error {
       public:
-        DecodeTargetPublicKeyError(const std::exception& ex) : std::runtime_error(std::string("Failed to decode FindNodeMessage.target_public_key: ") + ex.what()) {}
+        explicit DecodeTargetPublicKeyError(const std::exception& ex)
+            : std::runtime_error(std::string("Failed to decode FindNodeMessage.target_public_key: ") + ex.what()) {}
     };
 };
 

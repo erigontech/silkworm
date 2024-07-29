@@ -213,7 +213,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 
   private:
     // ctor is private because instances need to stay in the heap, use the provided make() method to create an instance
-    HeaderList(std::vector<BlockHeader> headers) : headers_(std::move(headers)) {}
+    explicit HeaderList(std::vector<BlockHeader> headers) : headers_(std::move(headers)) {}
 
     std::vector<BlockHeader> headers_;
 
@@ -242,7 +242,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 struct Segment
     : public std::vector<HeaderList::Header_Ref> {  // pointers/iterators to the headers that belongs to this segment
 
-    Segment(std::shared_ptr<HeaderList> line) : line_(std::move(line)) {}
+    explicit Segment(std::shared_ptr<HeaderList> line) : line_(std::move(line)) {}
 
     void push_back(const HeaderList::Header_Ref& val) {
         assert(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive

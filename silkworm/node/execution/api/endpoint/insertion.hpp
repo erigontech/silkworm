@@ -30,7 +30,7 @@ using Blocks = std::vector<std::shared_ptr<Block>>;
 struct InsertionResult {
     ExecutionStatus status;
 
-    operator bool() const { return success(status); }
+    explicit operator bool() const { return success(status); }
 };
 
 }  // namespace silkworm::execution::api

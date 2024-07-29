@@ -32,6 +32,12 @@
 
 namespace silkworm::rpc::test {
 
+inline db::kv::api::PaginatedTimestamps::Paginator empty_paginator(db::kv::api::IndexRangeQuery&& query) {
+    return [query = std::move(query)]() mutable -> Task<db::kv::api::PaginatedTimestamps::PageResult> {
+        co_return db::kv::api::PaginatedTimestamps::PageResult{};
+    };
+}
+
 //! This dummy transaction just gives you the same cursor over and over again.
 class DummyTransaction : public db::kv::api::BaseTransaction {
   public:
@@ -65,10 +71,7 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     Task<void> close() override { co_return; }
 
     Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
-        auto paginator = [query = std::move(query)]() mutable -> Task<db::kv::api::PaginatedTimestamps::PageResult> {
-            co_return db::kv::api::PaginatedTimestamps::PageResult{};
-        };
-        co_return db::kv::api::PaginatedTimestamps{std::move(paginator)};
+        co_return db::kv::api::PaginatedTimestamps{empty_paginator(std::move(query))};
     }
 
   private:

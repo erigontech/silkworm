@@ -29,6 +29,7 @@
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
+#include <silkworm/rpc/test_util/dummy_transaction.hpp>
 
 namespace silkworm::rpc {
 
@@ -200,10 +201,7 @@ class DummyTransaction : public BaseTransaction {
     }
 
     Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
-        auto paginator = [query = std::move(query)]() mutable -> Task<db::kv::api::PaginatedTimestamps::PageResult> {
-            co_return db::kv::api::PaginatedTimestamps::PageResult{};
-        };
-        co_return db::kv::api::PaginatedTimestamps{std::move(paginator)};
+        co_return db::kv::api::PaginatedTimestamps{test::empty_paginator(std::move(query))};
     }
 
   private:

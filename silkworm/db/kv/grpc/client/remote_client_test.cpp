@@ -112,34 +112,6 @@ TEST_CASE_METHOD(RemoteClientTestRunner, "KV::DomainGet", "[node][remote][kv][gr
     }
 }
 
-TEST_CASE_METHOD(RemoteClientTestRunner, "KV::IndexRange", "[node][remote][kv][grpc]") {
-    const api::IndexRangeQuery query{};  // input query doesn't matter here, we tweak the reply
-
-    rpc::test::StrictMockAsyncResponseReader<proto::IndexRangeReply> reader;
-    EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillOnce(testing::Return(&reader));
-
-    SECTION("call get_index_range and get result") {
-        proto::IndexRangeReply reply{sample_proto_index_range_response()};
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
-
-        const api::IndexRangeResult result = run_service_method<&api::Service::get_index_range>(query);
-        CHECK(result.timestamps == std::vector<api::Timestamp>{1234567, 1234568});
-        CHECK(result.next_page_token == "token2");
-    }
-    SECTION("call get_index_range and get empty result") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
-
-        const api::IndexRangeResult result = run_service_method<&api::Service::get_index_range>(query);
-        CHECK(result.timestamps.empty());
-        CHECK(result.next_page_token.empty());
-    }
-    SECTION("call get_index_range and get error") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
-
-        CHECK_THROWS_AS((run_service_method<&api::Service::get_index_range>(query)), rpc::GrpcStatusError);
-    }
-}
-
 TEST_CASE_METHOD(RemoteClientTestRunner, "KV::HistoryRange", "[node][remote][kv][grpc]") {
     const api::HistoryRangeQuery query{};  // input query doesn't matter here, we tweak the reply
 

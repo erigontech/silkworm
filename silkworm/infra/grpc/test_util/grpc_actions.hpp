@@ -48,8 +48,28 @@ auto finish_with(agrpc::GrpcContext& grpc_context, Reply&& reply) {
     };
 }
 
-inline auto finish_error(agrpc::GrpcContext& grpc_context) {
-    return finish_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/false);
+inline auto finish_error(agrpc::GrpcContext& grpc_context, const ::grpc::Status& status) {
+    return finish_with_status(grpc_context, status, /*ok=*/false);
+}
+
+template <typename Reply>
+auto finish_error(agrpc::GrpcContext& grpc_context, ::grpc::Status&& status, Reply&& reply) {
+    return [&grpc_context, status = std::move(status), reply = std::forward<Reply>(reply)](auto* reply_ptr,
+                                                                                           ::grpc::Status* status_ptr,
+                                                                                           void* tag) mutable {
+        *reply_ptr = std::move(reply);
+        finish_with_status(grpc_context, status, /*ok=*/false)(reply_ptr, status_ptr, tag);
+    };
+}
+
+template <typename Reply>
+auto finish_error_aborted(agrpc::GrpcContext& grpc_context, Reply&& reply) {
+    return finish_error(grpc_context, ::grpc::Status{::grpc::StatusCode::ABORTED, "internal failure"}, std::forward<Reply>(reply));
+}
+
+template <typename Reply>
+auto finish_error_cancelled(agrpc::GrpcContext& grpc_context, Reply&& reply) {
+    return finish_error(grpc_context, ::grpc::Status::CANCELLED, std::forward<Reply>(reply));
 }
 
 inline auto finish_streaming_with_status(agrpc::GrpcContext& grpc_context, const ::grpc::Status& status, bool ok) {

@@ -74,12 +74,6 @@ Task<DomainPointResult> DirectService::get_domain(const DomainPointQuery&) {
 
 /** Temporal Range Queries **/
 
-// rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-Task<IndexRangeResult> DirectService::get_index_range(const IndexRangeQuery&) {
-    // TODO(canepat) implement
-    co_return IndexRangeResult{};
-}
-
 // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
 Task<HistoryRangeResult> DirectService::get_history_range(const HistoryRangeQuery&) {
     // TODO(canepat) implement

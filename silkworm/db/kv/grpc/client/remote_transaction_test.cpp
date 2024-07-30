@@ -40,8 +40,6 @@ struct RemoteTransactionTest : test_util::KVTestBase {
                                  {}};
 };
 
-#ifndef SILKWORM_SANITIZE
-
 static remote::Pair make_fake_tx_created_pair() {
     remote::Pair pair;
     pair.set_tx_id(1);
@@ -57,6 +55,7 @@ bool ensure_fake_tx_created_view_id(const RemoteTransaction& remote_tx) {
     return remote_tx.view_id() == 4;
 }
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[rpc][ethdb][kv][remote_transaction]") {
     SECTION("success") {
         // Set the call expectations:
@@ -423,7 +422,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc]
         auto paginated_timestamps = co_await remote_tx_.index_range(std::move(query));
 #else
         auto paginated_timestamps = co_await remote_tx_.index_range(api::IndexRangeQuery{});
-#endif
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_timestamps);
     };
     rpc::test::StrictMockAsyncResponseReader<proto::IndexRangeReply> reader;

@@ -68,6 +68,7 @@ std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
     return std::make_shared<chain::LocalChainStorage>(txn_);
 }
 
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
 Task<PaginatedTimestamps> LocalTransaction::index_range(api::IndexRangeQuery&& /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = []() mutable -> Task<api::PaginatedTimestamps::PageResult> {

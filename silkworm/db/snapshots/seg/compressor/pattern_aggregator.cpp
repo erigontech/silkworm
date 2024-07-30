@@ -46,7 +46,7 @@ static bool operator>(const Pattern& p1, const Pattern& p2) {
 
 class PatternAggregatorImpl {
   public:
-    PatternAggregatorImpl(const filesystem::path& etl_work_path)
+    explicit PatternAggregatorImpl(const filesystem::path& etl_work_path)
         : etl_work_path_(etl_work_path),
           collector_(make_unique<db::etl::Collector>(etl_work_path, db::etl::kOptimalBufferSize / 2)) {}
 

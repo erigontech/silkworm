@@ -38,7 +38,8 @@ struct EnrResponseMessage {
 
     class DecodeEnrRecordError : public std::runtime_error {
       public:
-        DecodeEnrRecordError(const std::exception& ex) : std::runtime_error(std::string("Failed to decode EnrResponseMessage.record: ") + ex.what()) {}
+        explicit DecodeEnrRecordError(const std::exception& ex)
+            : std::runtime_error(std::string("Failed to decode EnrResponseMessage.record: ") + ex.what()) {}
     };
 };
 

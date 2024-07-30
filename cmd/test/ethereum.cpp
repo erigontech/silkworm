@@ -181,6 +181,7 @@ struct [[nodiscard]] RunResults {
 
     constexpr RunResults() = default;
 
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     constexpr RunResults(Status status) {
         switch (status) {
             case Status::kPassed:

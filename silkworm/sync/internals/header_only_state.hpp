@@ -29,7 +29,7 @@ class CustomHeaderOnlyChainState : public BlockState {
     OldestFirstLinkMap& persisted_link_queue_;  // not nice
 
   public:
-    CustomHeaderOnlyChainState(OldestFirstLinkMap& persisted_link_queue);
+    explicit CustomHeaderOnlyChainState(OldestFirstLinkMap& persisted_link_queue);
 
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;

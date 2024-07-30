@@ -38,6 +38,7 @@ struct NodeAddress {
     uint16_t port_disc{};
     uint16_t port_rlpx{};
 
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     NodeAddress(boost::asio::ip::address ip1) : ip(std::move(ip1)) {}
 
     NodeAddress(boost::asio::ip::address ip1, uint16_t port_disc1, uint16_t port_rlpx1)
@@ -45,6 +46,7 @@ struct NodeAddress {
           port_disc(port_disc1),
           port_rlpx(port_rlpx1) {}
 
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     NodeAddress(const discovery::NodeAddress& address)
         : ip(address.endpoint.address()),
           port_disc(address.endpoint.port()),

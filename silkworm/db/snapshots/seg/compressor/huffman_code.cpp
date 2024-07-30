@@ -56,7 +56,7 @@ using Node = HuffmanTreeNode;
 
 class HuffmanTree {
   public:
-    HuffmanTree(const vector<uint64_t>& symbol_uses)
+    explicit HuffmanTree(const vector<uint64_t>& symbol_uses)
         : root_(build(symbol_uses)) {}
 
     void dfs_visit_leaves(absl::FunctionRef<void(Leaf&)> visit) {

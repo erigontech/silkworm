@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <tuple>
+
 #include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::db::kv::api {
@@ -23,6 +25,17 @@ namespace silkworm::db::kv::api {
 struct KeyValue {
     Bytes key;
     Bytes value;
+
+    constexpr KeyValue() noexcept = default;
+
+    constexpr KeyValue(Bytes k, Bytes v) : key{std::move(k)}, value{std::move(v)} {}
+
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
+    constexpr KeyValue(Bytes k) : key{std::move(k)} {}
+
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
+    constexpr KeyValue(std::pair<Bytes, Bytes> kv_pair)
+        : key{std::move(kv_pair.first)}, value{std::move(kv_pair.second)} {}
 };
 
 inline bool operator<(const KeyValue& lhs, const KeyValue& rhs) {

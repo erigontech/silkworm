@@ -211,8 +211,12 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return;
     }
 
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
-        co_return db::kv::api::PaginatedTimestamps{test::empty_paginator(std::move(query))};
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_timestamps();
+    }
+
+    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_keys_and_values();
     }
 
   private:

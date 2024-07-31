@@ -69,6 +69,9 @@ class Transaction {
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
     virtual Task<PaginatedTimestamps> index_range(IndexRangeQuery&& query) = 0;
+
+    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
+    virtual Task<PaginatedKeysValues> history_range(HistoryRangeQuery&& query) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

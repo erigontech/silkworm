@@ -37,7 +37,7 @@ namespace proto = ::execution;
         case api::ExecutionStatus::kBusy:
             return proto::ExecutionStatus::Busy;
         default:
-            throw std::logic_error{"unsupported api::ExecutionStatus value " + std::to_string(int(status))};
+            throw std::logic_error{"unsupported api::ExecutionStatus value " + std::to_string(int{status})};
     }
 }
 

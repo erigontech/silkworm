@@ -27,9 +27,9 @@ namespace detail {
         std::string dump{"done="};
         dump.append(std::to_string(result.done));
         dump.append(" bool(key)=");
-        dump.append(std::to_string(bool(result.key)));
+        dump.append(std::to_string(bool{result.key}));
         dump.append(" bool(value)=");
-        dump.append(std::to_string(bool(result.value)));
+        dump.append(std::to_string(bool{result.value}));
         return dump;
     }
 

@@ -345,7 +345,7 @@ void open_index(const SnapSettings& settings) {
             for (size_t i{0}; i < idx.key_count(); ++i) {
                 if (i % (idx.key_count() / 10) == 0) {
                     SILK_INFO << "Offset by ordinal lookup for " << i << ": " << idx.lookup_by_ordinal(i)
-                              << " [existence filter: " << int(idx.existence_filter()[i]) << "]";
+                              << " [existence filter: " << int{idx.existence_filter()[i]} << "]";
                 }
             }
         }

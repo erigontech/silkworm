@@ -38,7 +38,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     } else {
         json["to"] = nullptr;
     }
-    json["type"] = rpc::to_quantity(uint64_t(transaction.type));
+    json["type"] = rpc::to_quantity(static_cast<uint64_t>(transaction.type));
 
     if (transaction.type == silkworm::TransactionType::kDynamicFee) {
         json["maxPriorityFeePerGas"] = rpc::to_quantity(transaction.max_priority_fee_per_gas);
@@ -46,7 +46,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
     if (transaction.type != silkworm::TransactionType::kLegacy) {
         json["chainId"] = rpc::to_quantity(*transaction.chain_id);
-        json["v"] = rpc::to_quantity(uint64_t(transaction.odd_y_parity));
+        json["v"] = rpc::to_quantity(uint64_t{transaction.odd_y_parity});
         json["accessList"] = transaction.access_list;  // EIP2930
         json["yParity"] = rpc::to_quantity(transaction.odd_y_parity);
     } else if (transaction.chain_id) {
@@ -80,11 +80,11 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
     json_tx.input.reserve(tx.data.size() * 2 + 3);
     json_tx.input = "0x" + silkworm::to_hex(tx.data);
     to_quantity(std::span(json_tx.nonce), tx.nonce);
-    to_quantity(std::span(json_tx.type), uint64_t(tx.type));
+    to_quantity(std::span(json_tx.type), static_cast<uint64_t>(tx.type));
 
     if (tx.type != silkworm::TransactionType::kLegacy) {
         json_tx.chain_id = std::make_optional(to_quantity(*tx.chain_id));
-        to_quantity(std::span(json_tx.v), uint64_t(tx.odd_y_parity));
+        to_quantity(std::span(json_tx.v), uint64_t{tx.odd_y_parity});
 
         std::vector<GlazeJsonAccessList> glaze_access_list;
         glaze_access_list.reserve(tx.access_list.size());

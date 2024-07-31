@@ -115,7 +115,7 @@ Task<void> Peer::handle() {
 
         co_await message_stream.send(protocol_->first_message());
         auto first_message = co_await message_stream.receive();
-        log::Trace("sentry") << "Peer::handle first_message: " << int(first_message.id);
+        log::Trace("sentry") << "Peer::handle first_message: " << int{first_message.id};
 
         if (first_message.id == DisconnectMessage::kId) {
             auto disconnect_message = DisconnectMessage::from_message(first_message);

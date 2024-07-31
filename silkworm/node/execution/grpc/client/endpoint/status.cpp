@@ -37,7 +37,7 @@ api::ExecutionStatus execution_status_from_proto(const proto::ExecutionStatus& p
         case proto::ExecutionStatus::Busy:
             return api::ExecutionStatus::kBusy;
         default:
-            throw std::logic_error{"unsupported ::execution::ExecutionStatus value " + std::to_string(int(proto_status))};
+            throw std::logic_error{"unsupported ::execution::ExecutionStatus value " + std::to_string(int{proto_status})};
     }
 }
 

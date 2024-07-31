@@ -61,9 +61,9 @@ TEST_CASE("bloom from one empty log", "[rpc][types][receipt]") {
     Logs logs{
         Log{}};
     silkworm::Bloom expected_bloom{};
-    expected_bloom[9] = uint8_t(128);
-    expected_bloom[47] = uint8_t(2);
-    expected_bloom[143] = uint8_t(1);
+    expected_bloom[9] = uint8_t{128};
+    expected_bloom[47] = uint8_t{2};
+    expected_bloom[143] = uint8_t{1};
     CHECK(bloom_from_logs(logs) == expected_bloom);
 }
 

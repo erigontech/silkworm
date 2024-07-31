@@ -172,7 +172,7 @@ class LogCborListener : public cbor::listener {
 };
 
 void cbor_decode(ByteView data, LogCborConsumer& consumer) {
-    cbor::input input(std::remove_const_t<uint8_t*>(data.data()), static_cast<int>(data.size()));
+    cbor::input input(data.data(), static_cast<int>(data.size()));
     LogCborListener listener{consumer};
     cbor::decoder decoder(input, listener);
     decoder.run();

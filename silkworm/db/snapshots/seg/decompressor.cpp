@@ -99,7 +99,7 @@ static PatternTable::WordDistances build_word_distances() {
     PatternTable::WordDistances word_distances{};
     for (std::size_t i{1}; i < PatternTable::kNumPowers; ++i) {
         std::vector<int> distances{};
-        distances.reserve((std::size_t(1) << (PatternTable::kNumPowers - 1 - i)) - 1);
+        distances.reserve((size_t{1} << (PatternTable::kNumPowers - 1 - i)) - 1);
         for (int j{1 << i}; 0 < j && j < PatternTable::kMaxPower; j += (1 << i)) {
             distances.push_back(j);
         }
@@ -127,7 +127,7 @@ void PatternTable::set_condensed_table_bit_length_threshold(std::size_t condense
 
 PatternTable::PatternTable(std::size_t max_depth) : DecodingTable(max_depth) {
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
-        codewords_.resize(std::size_t(1) << bit_length_);
+        codewords_.resize(size_t{1} << bit_length_);
     }
 }
 
@@ -235,9 +235,9 @@ bool PatternTable::check_distance(std::size_t power, int distance) {
 }
 
 PositionTable::PositionTable(std::size_t max_depth) : DecodingTable(max_depth) {
-    positions_.resize(std::size_t(1) << bit_length_);
-    lengths_.resize(std::size_t(1) << bit_length_);
-    children_.resize(std::size_t(1) << bit_length_);
+    positions_.resize(size_t{1} << bit_length_);
+    lengths_.resize(size_t{1} << bit_length_);
+    children_.resize(size_t{1} << bit_length_);
 }
 
 int PositionTable::build(std::span<Position> positions) {
@@ -382,7 +382,7 @@ void Decompressor::open() {
 }
 
 Decompressor::Iterator Decompressor::begin() const {
-    ensure(bool(compressed_file_), "decompressor closed, call open first");
+    ensure(compressed_file_ != nullptr, "decompressor closed, call open first");
     auto read_mode_guard = std::make_shared<ReadModeGuard>(*compressed_file_, ReadMode::kSequential, ReadMode::kRandom);
     Iterator it{this, std::move(read_mode_guard)};
     if (it.has_next()) {
@@ -818,7 +818,7 @@ uint64_t Decompressor::Iterator::next_position(bool clean) {
         word_offset_++;
         bit_position_ = 0;
     }
-    SILK_TRACE << "Iterator::next_position word_offset_=" << word_offset_ << " bit_position_=" << int(bit_position_);
+    SILK_TRACE << "Iterator::next_position word_offset_=" << word_offset_ << " bit_position_=" << int{bit_position_};
     const PositionTable* table = decoder_->position_dict_.get();
     if (table->bit_length() == 0) {
         SILK_TRACE << "Iterator::next_position table->position(0)=" << table->position(0);

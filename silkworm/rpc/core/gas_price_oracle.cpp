@@ -100,10 +100,10 @@ Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t lim
 
     std::sort(block_prices.begin(), block_prices.end(), PriceComparator());
 
-    for (int count = 0; const auto& priority_fee_per_gas : block_prices) {
+    for (uint64_t count = 0; const auto& priority_fee_per_gas : block_prices) {
         SILK_TRACE << " priority_fee_per_gas : 0x" << intx::hex(priority_fee_per_gas);
         tx_prices.push_back(priority_fee_per_gas);
-        if (++count >= int(limit)) {
+        if (++count >= limit) {
             break;
         }
     }

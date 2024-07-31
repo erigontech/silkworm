@@ -26,7 +26,7 @@ namespace silkworm::rpc {
 std::ostream& operator<<(std::ostream& out, const Log& log) {
     out << "#topics: " << log.topics.size();
     out << " #data: " << log.data.size();
-    out << " block_number: " << uint32_t(log.block_number);
+    out << " block_number: " << static_cast<uint32_t>(log.block_number);
     out << " tx_hash: " << to_hex(log.tx_hash);
     out << " tx_index: " << log.tx_index;
     out << " block_hash: " << to_hex(log.block_hash);
@@ -34,7 +34,7 @@ std::ostream& operator<<(std::ostream& out, const Log& log) {
     out << " removed: " << log.removed;
     out << " address: ";
     for (const auto& b : log.address.bytes) {
-        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
+        out << std::hex << std::setw(2) << std::setfill('0') << int{b};
     }
     out << std::dec;
     return out;

@@ -291,7 +291,7 @@ class Decompressor {
         return compressed_file_->last_write_time();
     }
 
-    [[nodiscard]] bool is_open() const { return bool(compressed_file_); }
+    [[nodiscard]] bool is_open() const { return compressed_file_ != nullptr; }
 
     [[nodiscard]] const MemoryMappedFile* memory_file() const { return compressed_file_.get(); }
 

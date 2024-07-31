@@ -170,7 +170,7 @@ constexpr Int from_string_sci(const char* str) {
 
 inline std::ostream& operator<<(std::ostream& out, ByteView bytes) {
     for (const auto& b : bytes) {
-        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
+        out << std::hex << std::setw(2) << std::setfill('0') << int{b};
     }
     out << std::dec;
     return out;

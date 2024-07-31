@@ -67,7 +67,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
                       << ", sent " << intx::hex(call.value.value_or(0))
                       << ", gasprice " << intx::hex(*gas_price)
                       << ", allowance " << allowance;
-            hi = uint64_t(allowance);
+            hi = uint64_t{allowance};
         }
     }
 

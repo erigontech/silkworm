@@ -212,10 +212,10 @@ TEST_CASE("serialize block header", "[rpc][to_json]") {
         0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32,
         silkworm::Bloom{},
         intx::uint256{0},
-        BlockNum(5),
-        uint64_t(1000000),
-        uint64_t(1000000),
-        uint64_t(5405021),
+        BlockNum{5},
+        uint64_t{1000000},
+        uint64_t{1000000},
+        uint64_t{5405021},
         *silkworm::from_hex("0001FF0100"),
         0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
         {0, 0, 0, 0, 0, 0, 0, 255}};
@@ -267,10 +267,10 @@ TEST_CASE("serialize block header with baseFeePerGas", "[rpc][to_json]") {
         0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32,
         silkworm::Bloom{},
         intx::uint256{0},
-        BlockNum(5),
-        uint64_t(1000000),
-        uint64_t(1000000),
-        uint64_t(5405021),
+        BlockNum{5},
+        uint64_t{1000000},
+        uint64_t{1000000},
+        uint64_t{5405021},
         *silkworm::from_hex("0001FF0100"),                                           // extradata
         0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,  // mixhash
         {1, 2, 3, 4, 5, 6, 7, 8},                                                    // nonce

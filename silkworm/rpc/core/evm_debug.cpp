@@ -74,10 +74,10 @@ std::string uint256_to_hex(const evmone::uint256& x) {
     return ss.str();
 }
 
-void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
-    vect.reserve(stack_size);
-    for (int i = int(stack_size - 1); i >= 0; --i) {
-        vect.push_back(uint256_to_hex(stack[-i]));
+static void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, int stack_size) {
+    vect.reserve(static_cast<size_t>(stack_size));
+    for (int i = stack_size - 1; i >= 0; --i) {
+        vect.push_back(uint256_to_hex(stack[i]));
     }
 }
 
@@ -195,7 +195,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     log.depth = execution_state.msg->depth + 1;
 
     if (!config_.disableStack) {
-        output_stack(log.stack, stack_top, uint32_t(stack_height));
+        output_stack(log.stack, stack_top, stack_height);
     }
     if (!config_.disableMemory) {
         output_memory(log.memory, execution_state.memory);
@@ -517,7 +517,7 @@ Task<void> DebugExecutor::execute(
         EVMExecutor executor{chain_config, workers_, state};
 
         for (auto idx{0}; idx < index; idx++) {
-            silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
+            silkworm::Transaction txn{block.transactions[static_cast<size_t>(idx)]};
             executor.call(block, txn);
         }
         executor.reset();
@@ -568,7 +568,7 @@ Task<void> DebugExecutor::execute(
         EVMExecutor executor{chain_config, workers_, state};
 
         for (auto idx{0}; idx < transaction_index; idx++) {
-            silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
+            silkworm::Transaction txn{block_transactions[static_cast<size_t>(idx)]};
             executor.call(block, txn);
         }
         executor.reset();

@@ -1110,9 +1110,9 @@ static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* curso
 static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& table1, const DbTableInfo& table2, bool force_print = false) {
     ensure(table1.name == table2.name, [&]() { return "name mismatch: " + table1.name + " vs " + table2.name; });
     ensure(table1.info.key_mode() == table2.info.key_mode(),
-           [&]() { return "key_mode mismatch: " + std::to_string(int(table1.info.key_mode())) + " vs " + std::to_string(int(table2.info.key_mode())); });
+           [&]() { return "key_mode mismatch: " + std::to_string(static_cast<int>(table1.info.key_mode())) + " vs " + std::to_string(static_cast<int>(table2.info.key_mode())); });
     ensure(table1.info.value_mode() == table2.info.value_mode(),
-           [&]() { return "value_mode mismatch: " + std::to_string(int(table1.info.value_mode())) + " vs " + std::to_string(int(table2.info.value_mode())); });
+           [&]() { return "value_mode mismatch: " + std::to_string(static_cast<int>(table1.info.value_mode())) + " vs " + std::to_string(static_cast<int>(table2.info.value_mode())); });
 
     db::MapConfig table1_config{
         .name = table1.name.c_str(),

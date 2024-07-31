@@ -463,7 +463,7 @@ class RecSplit {
         // Write number of bytes per index record
         bytes_per_record_ = gsl::narrow<uint8_t>((std::bit_width(building_strategy_->max_offset()) + 7) / 8);
         index_output_stream.write(reinterpret_cast<const char*>(&bytes_per_record_), sizeof(uint8_t));
-        SILK_TRACE << "[index] written bytes per record: " << int(bytes_per_record_);
+        SILK_TRACE << "[index] written bytes per record: " << int{bytes_per_record_};
 
         SILK_TRACE << "[index] calculating file=" << index_path_.string();
 
@@ -503,7 +503,7 @@ class RecSplit {
         // Write out start seeds
         constexpr uint8_t start_seed_length = kStartSeed.size();
         index_output_stream.write(reinterpret_cast<const char*>(&start_seed_length), sizeof(uint8_t));
-        SILK_TRACE << "[index] written start seed length: " << int(start_seed_length);
+        SILK_TRACE << "[index] written start seed length: " << int{start_seed_length};
 
         for (const uint64_t s : kStartSeed) {
             endian::store_big_u64(uint64_buffer.data(), s);

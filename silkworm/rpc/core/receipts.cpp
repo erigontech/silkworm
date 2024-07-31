@@ -61,7 +61,7 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const 
         // The tx hash can be calculated by the tx content itself
         auto tx_hash{transactions[i].hash()};
         receipts[i].tx_hash = to_bytes32(tx_hash.bytes);
-        receipts[i].tx_index = uint32_t(i);
+        receipts[i].tx_index = static_cast<uint32_t>(i);
 
         receipts[i].block_hash = block_hash;
         receipts[i].block_number = block_number;
@@ -87,7 +87,7 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const 
             receipts[i].logs[j].block_number = block_number;
             receipts[i].logs[j].block_hash = block_hash;
             receipts[i].logs[j].tx_hash = receipts[i].tx_hash;
-            receipts[i].logs[j].tx_index = uint32_t(i);
+            receipts[i].logs[j].tx_index = static_cast<uint32_t>(i);
             receipts[i].logs[j].index = log_index++;
             receipts[i].logs[j].removed = false;
         }

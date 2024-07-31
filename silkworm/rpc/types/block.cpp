@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& out, const Block& b) {
     out << " ommers_hash: " << to_hex(block.header.ommers_hash);
     out << " beneficiary: ";
     for (const auto& byte : block.header.beneficiary.bytes) {
-        out << std::hex << std::setw(2) << std::setfill('0') << int(byte);
+        out << std::hex << std::setw(2) << std::setfill('0') << int{byte};
     }
     out << std::dec;
     out << " state_root: " << to_hex(block.header.state_root);

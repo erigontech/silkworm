@@ -51,7 +51,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     std::uint64_t timeout = opt_timeout.value_or(5000);
     const auto start_time = clock_time::now();
     for (auto idx{0}; idx < transaction_index; idx++) {
-        silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
+        silkworm::Transaction txn{block_transactions[static_cast<size_t>(idx)]};
         auto exec_result = executor.call(block, txn);
         if ((clock_time::since(start_time) / 1000000) > timeout) {
             std::ostringstream oss;

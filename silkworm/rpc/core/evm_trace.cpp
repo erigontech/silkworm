@@ -1012,7 +1012,7 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
     switch (result.status) {
         case evmc_status_code::EVMC_SUCCESS:
         case evmc_status_code::EVMC_REVERT:
-            trace.trace_result->gas_used = initial_gas_ - int64_t(result.gas_left);
+            trace.trace_result->gas_used = initial_gas_ - static_cast<int64_t>(result.gas_left);
             if (!result.data.empty()) {
                 if (trace.trace_result->code) {
                     trace.trace_result->code = result.data;

@@ -25,11 +25,11 @@ using std::chrono::nanoseconds;
 using std::chrono::steady_clock;
 
 TEST_CASE("check current time", "[infra][common][clock_time]") {
-    const auto now_before{uint64_t(duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count())};
-    const auto now_current{now()};
-    const auto now_after{uint64_t(duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count())};
-    CHECK(now_before <= now_current);
-    CHECK(now_current <= now_after);
+    const auto now_before{duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count()};
+    const uint64_t now_current{now()};
+    const auto now_after{duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count()};
+    CHECK(static_cast<uint64_t>(now_before) <= now_current);
+    CHECK(now_current <= static_cast<uint64_t>(now_after));
 }
 
 TEST_CASE("check elapsed time", "[infra][common][clock_time]") {

@@ -401,7 +401,7 @@ TEST_CASE("Oldest_First_Link_Map") {
         bool link1_present = queue.contains(link1);
         REQUIRE(link1_present == true);
 
-        auto [a, c] = queue.equal_range(BlockNum(1));
+        auto [a, c] = queue.equal_range(BlockNum{1});
         REQUIRE(a != queue.end());
         REQUIRE(c != queue.end());
         REQUIRE(a != c);
@@ -431,7 +431,7 @@ TEST_CASE("Oldest_First_Link_Map") {
         bool link1b_present = queue.contains(link1b);
         REQUIRE(link1b_present == true);
 
-        auto [a, c] = queue.equal_range(BlockNum(1));
+        auto [a, c] = queue.equal_range(BlockNum{1});
         REQUIRE(a != queue.end());
         REQUIRE(c != queue.end());
         REQUIRE(a != c);

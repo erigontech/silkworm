@@ -120,7 +120,7 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     };
     const auto added_connection = client_.added_subscription.connect(log_added);
 
-    const auto num_snapshots{std::ptrdiff_t(snapshot_config.preverified_snapshots().size())};
+    const auto num_snapshots{static_cast<std::ptrdiff_t>(snapshot_config.preverified_snapshots().size())};
     SILK_INFO << "SnapshotSync: sync started: [0/" << num_snapshots << "]";
 
     static int completed{0};

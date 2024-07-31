@@ -77,7 +77,7 @@ std::string uint256_to_hex(const evmone::uint256& x) {
 static void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, int stack_size) {
     vect.reserve(static_cast<size_t>(stack_size));
     for (int i = stack_size - 1; i >= 0; --i) {
-        vect.push_back(uint256_to_hex(stack[i]));
+        vect.push_back(uint256_to_hex(stack[-i]));
     }
 }
 

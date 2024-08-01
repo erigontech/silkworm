@@ -26,15 +26,15 @@ struct KeyValue {
     Bytes key;
     Bytes value;
 
-    constexpr KeyValue() noexcept = default;
+    KeyValue() noexcept = default;
 
-    constexpr KeyValue(Bytes k, Bytes v) : key{std::move(k)}, value{std::move(v)} {}
-
-    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    constexpr KeyValue(Bytes k) : key{std::move(k)} {}
+    KeyValue(Bytes k, Bytes v) : key{std::move(k)}, value{std::move(v)} {}
 
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    constexpr KeyValue(std::pair<Bytes, Bytes> kv_pair)
+    KeyValue(Bytes k) : key{std::move(k)} {}
+
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
+    KeyValue(std::pair<Bytes, Bytes> kv_pair)
         : key{std::move(kv_pair.first)}, value{std::move(kv_pair.second)} {}
 };
 

@@ -20,8 +20,8 @@
 // C API exported by Silkworm to be used in Erigon.
 
 #include <stdbool.h>  // NOLINT(*-deprecated-headers)
-#include <stddef.h>  // NOLINT(*-deprecated-headers)
-#include <stdint.h>  // NOLINT(*-deprecated-headers)
+#include <stddef.h>   // NOLINT(*-deprecated-headers)
+#include <stdint.h>   // NOLINT(*-deprecated-headers)
 
 #if defined _MSC_VER
 #define SILKWORM_EXPORT __declspec(dllexport)
@@ -252,23 +252,11 @@ SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEP
 #define SILKWORM_NODE_SETTINGS_ADDRESS_SIZE 200
 
 //! Silkworm Node configuration options
-struct SilkwormNodeSettings {
-    // silkworm::ApplicationInfo build_info;  // Application build info (human-readable)
-    // boost::asio::io_context asio_context;                  // Async context (e.g. for timers)
-    // std::unique_ptr<DataDirectory> data_directory;         // Pointer to data folder
-    // db::EnvConfig chaindata_env_config{};                  // Chaindata db config
-    uint64_t network_id;// {0}; // Network/Chain id
-    // std::optional<ChainConfig> chain_config;               // Chain config
-    size_t batch_size;// {512 * 1024 * 1024};                                                                     // Batch size to use in stages
-    size_t etl_buffer_size;// {256 * 1024 * 1024};                                                                // Buffer size for ETL operations
-    char remote_sentry_addresses[SILKWORM_NODE_SETTINGS_ADDRESSES_MAX][SILKWORM_NODE_SETTINGS_ADDRESS_SIZE];  // Remote Sentry API addresses (host:port,host2:port2,...)
-    // bool fake_pow{false};                                  // Whether to verify Proof-of-Work (PoW)
-    // std::optional<evmc::address> etherbase{std::nullopt};  // Coinbase address (PoW only)
-    // db::PruneMode prune_mode;                              // Prune mode
-    uint32_t sync_loop_throttle_seconds;// {0};       // Minimum interval amongst sync cycle
-    uint32_t sync_loop_log_interval_seconds;// {30};  // Interval for sync loop to emit logs
-    // bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
-    // bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
+struct SilkwormForkValidatorSettings {
+    size_t batch_size;                    // {512 * 1024 * 1024};  // Batch size to use in stages
+    size_t etl_buffer_size;               // {256 * 1024 * 1024};  // Buffer size for ETL operations
+    uint32_t sync_loop_throttle_seconds;  // {0};                  // Minimum interval amongst sync cycle
+    bool stop_before_senders_stage;       // {false};              // Stop before senders stage
 };
 
 typedef struct bytes_32 {
@@ -282,7 +270,7 @@ typedef struct bytes_32 {
  * \param[in] mdbx_env An valid MDBX environment. Must not be zero.
  * \param[in] settings The Node configuration settings. Must not be zero.
  */
-SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_env* mdbx_env, const struct SilkwormNodeSettings* settings) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_env* mdbx_env, const struct SilkwormForkValidatorSettings* settings) SILKWORM_NOEXCEPT;
 
 SILKWORM_EXPORT int silkworm_stop_fork_validator(SilkwormHandle handle) SILKWORM_NOEXCEPT;
 
@@ -317,7 +305,6 @@ SILKWORM_EXPORT int silkworm_execute_blocks_ephemeral(
     uint64_t batch_size, bool write_change_sets, bool write_receipts, bool write_call_traces,
     uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
 
-
 /**
  * \brief Execute a batch of blocks and write resulting changes into the database.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
@@ -340,10 +327,9 @@ SILKWORM_EXPORT int silkworm_execute_blocks_ephemeral(
  * (blocks up to and incl. last_executed_block were still executed).
  */
 SILKWORM_EXPORT int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env, uint64_t chain_id,
-                          uint64_t start_block, uint64_t max_block, uint64_t batch_size,
-                          bool write_change_sets, bool write_receipts, bool write_call_traces,
-                          uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
-
+                                                      uint64_t start_block, uint64_t max_block, uint64_t batch_size,
+                                                      bool write_change_sets, bool write_receipts, bool write_call_traces,
+                                                      uint64_t* last_executed_block, int* mdbx_error_code) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Finalize the Silkworm C API library.

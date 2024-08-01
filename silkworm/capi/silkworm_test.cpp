@@ -186,7 +186,7 @@ struct SilkwormLibrary {
         return silkworm_stop_rpcdaemon(handle_);
     }
 
-    int start_fork_validator(MDBX_env* env, const SilkwormNodeSettings* settings) const {
+    int start_fork_validator(MDBX_env* env, const SilkwormForkValidatorSettings* settings) const {
         return silkworm_start_fork_validator(handle_, env, settings);
     }
 
@@ -899,23 +899,21 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
     }
 }
 
-static SilkwormNodeSettings make_node_settings_for_test() {
-    SilkwormNodeSettings settings{
-        .network_id = 1,
+static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
+    SilkwormForkValidatorSettings settings{
         .batch_size = 512 * 1024 * 1024,
         .etl_buffer_size = 256 * 1024 * 1024,
         .sync_loop_throttle_seconds = 0,
-        .sync_loop_log_interval_seconds = 30,
+        .stop_before_senders_stage = true,
     };
 
     return settings;
 }
 
-static const SilkwormNodeSettings kValidNodeSettings{make_node_settings_for_test()};
+static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-    silkworm::Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
@@ -923,7 +921,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        CHECK(silkworm_start_fork_validator(handle, db, &kValidNodeSettings) == SILKWORM_INVALID_HANDLE);
+        CHECK(silkworm_start_fork_validator(handle, db, &kValidForkValidatorSettings) == SILKWORM_INVALID_HANDLE);
     }
 
     SECTION("invalid settings") {
@@ -931,12 +929,12 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     }
 
     SECTION("starts fork validator with valid settings") {
-        CHECK(silkworm_lib.start_fork_validator(db, &kValidNodeSettings) == SILKWORM_OK);
+        CHECK(silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings) == SILKWORM_OK);
         REQUIRE(silkworm_lib.stop_fork_validator() == SILKWORM_OK);
     }
 
     SECTION("validates chain") {
-        silkworm_lib.start_fork_validator(db, &kValidNodeSettings);
+        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
         CHECK(current_head_id.number == 9);
@@ -953,7 +951,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     }
 
     SECTION("executes fork choice update") {
-        silkworm_lib.start_fork_validator(db, &kValidNodeSettings);
+        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
         auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();
@@ -972,7 +970,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     }
 
     SECTION("executes fork choice update with final and safe blocks") {
-        silkworm_lib.start_fork_validator(db, &kValidNodeSettings);
+        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
         auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();

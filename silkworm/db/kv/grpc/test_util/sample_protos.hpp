@@ -18,7 +18,9 @@
 
 #include <string>
 
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
 
@@ -28,6 +30,14 @@
 namespace silkworm::db::kv::test_util {
 
 namespace proto = ::remote;
+
+inline std::string ascii_from_hex(const std::string& hex) {
+    const std::optional<Bytes> bytes{from_hex(hex)};
+    if (!bytes) {
+        throw std::runtime_error{"ascii_from_hex"};
+    }
+    return std::string{byte_view_to_string_view(*bytes)};
+}
 
 inline api::HistoryPointQuery sample_history_point_query() {
     return {
@@ -109,11 +119,17 @@ inline api::IndexRangeQuery sample_index_range_query() {
     };
 }
 
+inline proto::IndexRangeReq default_proto_index_range_request() {
+    proto::IndexRangeReq request;
+    request.set_limit(api::kUnlimited);  // default value for type is 0 whilst we're choosing unlimited (-1) in API
+    return request;
+}
+
 inline proto::IndexRangeReq sample_proto_index_range_request() {
     proto::IndexRangeReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
-    request.set_k("0011ff");
+    request.set_k(ascii_from_hex("0011ff"));
     request.set_from_ts(1234567);
     request.set_to_ts(1234967);
     request.set_order_ascend(true);
@@ -149,6 +165,12 @@ inline api::HistoryRangeQuery sample_history_range_query() {
         .page_size = 100,
         .page_token = "token1",
     };
+}
+
+inline proto::HistoryRangeReq default_proto_history_range_request() {
+    proto::HistoryRangeReq request;
+    request.set_limit(api::kUnlimited);  // default value for type is 0 whilst we're choosing unlimited (-1) in API
+    return request;
 }
 
 inline proto::HistoryRangeReq sample_proto_history_range_request() {
@@ -195,12 +217,18 @@ inline api::DomainRangeQuery sample_domain_range_query() {
     };
 }
 
+inline proto::DomainRangeReq default_proto_domain_range_request() {
+    proto::DomainRangeReq request;
+    request.set_limit(api::kUnlimited);  // default value for type is 0 whilst we're choosing unlimited (-1) in API
+    return request;
+}
+
 inline proto::DomainRangeReq sample_proto_domain_range_request() {
     proto::DomainRangeReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
-    request.set_from_key("0011aa");
-    request.set_to_key("0011ff");
+    request.set_from_key(ascii_from_hex("0011aa"));
+    request.set_to_key(ascii_from_hex("0011ff"));
     request.set_order_ascend(true);
     request.set_limit(1'000);
     request.set_page_size(100);

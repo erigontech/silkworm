@@ -698,7 +698,7 @@ std::pair<Bytes, size_t> PatriciaTreeMatchFinderImpl::current() {
                 b.push_back(0);
             }
             if (p & 0x80000000) {
-                b[depth / 8] |= uint8_t(1) << (7 - (depth % 8));
+                b[depth / 8] |= uint8_t{1} << (7 - (depth % 8));
             }
             depth++;
             p = ((p & 0xffffffe0) << 1) | ((p & 0x1f) - 1);

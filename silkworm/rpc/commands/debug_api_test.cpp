@@ -38,6 +38,7 @@
 #if !defined(__clang__)
 #include <silkworm/rpc/stagedsync/stages.hpp>
 #endif  // !defined(__clang__)
+#include <silkworm/rpc/test_util/dummy_transaction.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -208,6 +209,10 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
 
     Task<void> close() override {
         co_return;
+    }
+
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
+        co_return db::kv::api::PaginatedTimestamps{test::empty_paginator(std::move(query))};
     }
 
   private:

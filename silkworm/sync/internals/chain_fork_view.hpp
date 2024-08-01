@@ -35,7 +35,7 @@ namespace silkworm::chainsync {
 
 class ChainForkView {
   public:
-    ChainForkView(ChainHead headers_head);
+    explicit ChainForkView(ChainHead headers_head);
 
     void reset_head(ChainHead new_head);
 

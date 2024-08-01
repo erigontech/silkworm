@@ -359,7 +359,7 @@ class DoubleEliasFanoList16 {
     void get3(const uint64_t i, uint64_t& cum_keys, uint64_t& cum_keys_next, uint64_t& position) const {
         uint64_t window_cum_keys{0}, select_cum_keys{0}, curr_word_cum_keys{0}, lower{0}, cum_delta{0};
         get(i, cum_keys, position, window_cum_keys, select_cum_keys, curr_word_cum_keys, lower, cum_delta);
-        window_cum_keys &= (uint64_t(0xffffffffffffffff) << select_cum_keys) << 1;
+        window_cum_keys &= (uint64_t{0xffffffffffffffff} << select_cum_keys) << 1;
         while (window_cum_keys == 0) {
             curr_word_cum_keys++;
             window_cum_keys = upper_bits_cum_keys[curr_word_cum_keys];
@@ -420,8 +420,8 @@ class DoubleEliasFanoList16 {
 
         curr_word_cum_keys = jump_cum_keys / 64;
         uint64_t curr_word_position = jump_position / 64;
-        window_cum_keys = upper_bits_cum_keys[curr_word_cum_keys] & (uint64_t(0xffffffffffffffff) << (jump_cum_keys % 64));
-        uint64_t window_position = upper_bits_position[curr_word_position] & (uint64_t(0xffffffffffffffff) << (jump_position % 64));
+        window_cum_keys = upper_bits_cum_keys[curr_word_cum_keys] & (uint64_t{0xffffffffffffffff} << (jump_cum_keys % 64));
+        uint64_t window_position = upper_bits_position[curr_word_position] & (uint64_t{0xffffffffffffffff} << (jump_position % 64));
         uint64_t delta_cum_keys = i & kQMask;
         uint64_t delta_position = i & kQMask;
 

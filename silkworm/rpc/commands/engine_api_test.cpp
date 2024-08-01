@@ -17,11 +17,9 @@
 #include "engine_api.hpp"
 
 #include <string>
-#include <utility>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/co_spawn.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
@@ -33,9 +31,9 @@
 #include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/test_util/api_test_base.hpp>
+#include <silkworm/rpc/test_util/dummy_database.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_database.hpp>
 #include <silkworm/rpc/test_util/mock_execution_engine.hpp>
@@ -48,56 +46,7 @@ using db::kv::api::BaseTransaction;
 using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
-
-namespace {
-    //! This dummy transaction just gives you the same cursor over and over again.
-    class DummyTransaction : public BaseTransaction {
-      public:
-        explicit DummyTransaction(std::shared_ptr<Cursor> cursor)
-            : BaseTransaction(nullptr), cursor_(std::move(cursor)) {}
-
-        [[nodiscard]] uint64_t tx_id() const override { return 0; }
-        [[nodiscard]] uint64_t view_id() const override { return 0; }
-
-        Task<void> open() override { co_return; }
-
-        Task<std::shared_ptr<Cursor>> cursor(const std::string& /*table*/) override {
-            co_return cursor_;
-        }
-
-        Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
-            co_return nullptr;
-        }
-
-        std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const ChainStorage&, BlockNum) override {
-            return nullptr;
-        }
-
-        std::shared_ptr<ChainStorage> create_storage() override {
-            return std::make_shared<RemoteChainStorage>(*this, ethdb::kv::block_provider(&backend_), ethdb::kv::block_number_from_txn_hash_provider(&backend_));
-        }
-
-        Task<void> close() override { co_return; }
-
-      private:
-        std::shared_ptr<Cursor> cursor_;
-        test::BackEndMock backend_;
-    };
-
-    //! This dummy database acts as a factory for dummy transactions using the same cursor.
-    class DummyDatabase : public ethdb::Database {
-      public:
-        explicit DummyDatabase(std::shared_ptr<Cursor> cursor) : cursor_(std::move(cursor)) {}
-
-        Task<std::unique_ptr<db::kv::api::Transaction>> begin() override {
-            co_return std::make_unique<DummyTransaction>(cursor_);
-        }
-
-      private:
-        std::shared_ptr<Cursor> cursor_;
-    };
-
-}  // namespace
+using rpc::test::DummyDatabase;
 
 class EngineRpcApi_ForTest : public EngineRpcApi {
   public:
@@ -116,13 +65,14 @@ using testing::InvokeWithoutArgs;
 
 struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApi_ForTest> {
     EngineRpcApiTest() : test_util::JsonApiTestBase<EngineRpcApi_ForTest>() {
-        add_private_service<ethdb::Database>(io_context_, std::make_unique<DummyDatabase>(mock_cursor));
+        add_private_service<ethdb::Database>(io_context_, std::make_unique<DummyDatabase>(mock_cursor, mock_cursor_dup_sort));
         add_shared_service<engine::ExecutionEngine>(io_context_, mock_engine);
         add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<test::BackEndMock>());
     }
 
     std::shared_ptr<test_util::ExecutionEngineMock> mock_engine{std::make_shared<test_util::ExecutionEngineMock>()};
     std::shared_ptr<db::test_util::MockCursor> mock_cursor{std::make_shared<db::test_util::MockCursor>()};
+    std::shared_ptr<db::test_util::MockCursorDupSort> mock_cursor_dup_sort{std::make_shared<db::test_util::MockCursorDupSort>()};
 };
 
 #ifndef SILKWORM_SANITIZE

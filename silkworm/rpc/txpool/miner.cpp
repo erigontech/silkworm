@@ -71,7 +71,7 @@ Task<bool> Miner::submit_hash_rate(const intx::uint256& rate, const evmc::bytes3
     const auto start_time = clock_time::now();
     SILK_DEBUG << "Miner::submit_hash_rate rate=" << rate << " id=" << silkworm::to_hex(id);
     ::txpool::SubmitHashRateRequest submit_hash_rate_request;
-    submit_hash_rate_request.set_rate(uint64_t(rate));
+    submit_hash_rate_request.set_rate(uint64_t{rate});
     submit_hash_rate_request.set_id(id.bytes, silkworm::kHashLength);
     UnaryRpc<&::txpool::Mining::StubInterface::AsyncSubmitHashRate> submit_hash_rate_rpc{*stub_, grpc_context_};
     const auto reply = co_await submit_hash_rate_rpc.finish_on(executor_, submit_hash_rate_request);

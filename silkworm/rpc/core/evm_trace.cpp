@@ -720,8 +720,13 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            op.trace_ex.used = op.gas_cost - metrics_[op.op_code].gas_cost;
-            op.gas_cost = metrics_[op.op_code].gas_cost;
+            if (op.op_code == evmc_opcode::OP_EXP) {  // Erigon the static part is 0
+                op.trace_ex.used = op.gas_cost;
+                op.gas_cost = 0;
+            } else {
+                op.trace_ex.used = op.gas_cost - metrics_[op.op_code].gas_cost;
+                op.gas_cost = metrics_[op.op_code].gas_cost;
+            }
             break;
 
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
@@ -1007,7 +1012,7 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
     switch (result.status) {
         case evmc_status_code::EVMC_SUCCESS:
         case evmc_status_code::EVMC_REVERT:
-            trace.trace_result->gas_used = initial_gas_ - int64_t(result.gas_left);
+            trace.trace_result->gas_used = initial_gas_ - static_cast<int64_t>(result.gas_left);
             if (!result.data.empty()) {
                 if (trace.trace_result->code) {
                     trace.trace_result->code = result.data;

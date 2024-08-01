@@ -47,7 +47,7 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
         agrpc::GrpcContext& grpc_context) {
         const auto this_thread_id{std::this_thread::get_id()};
         CHECK(io_context_.get_executor().running_in_this_thread());
-        const auto response = co_await unary_rpc(rpc, stub, request, grpc_context);
+        const auto response = co_await unary_rpc(rpc, *stub, request, grpc_context);
         CHECK(io_context_.get_executor().running_in_this_thread());
         CHECK(this_thread_id == std::this_thread::get_id());
         co_return response;
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(CallTest, "Unary gRPC cancelling: unary_rpc", "[grpc][client]")
 
     // Execute the test: start and then cancel async Version RPC execution
     auto version_reply = spawn(unary_rpc(&proto::KV::StubInterface::AsyncVersion,
-                                         stub,
+                                         *stub,
                                          google::protobuf::Empty{},
                                          grpc_context_,
                                          &cancellation_slot));

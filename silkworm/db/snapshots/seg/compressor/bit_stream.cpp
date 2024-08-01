@@ -23,7 +23,7 @@ namespace silkworm::snapshots::seg {
 void BitStream::write(uint64_t code, uint8_t code_bits) {
     while (code_bits > 0) {
         uint8_t bits_used = (output_bits_ + code_bits > 8) ? (8 - output_bits_) : code_bits;
-        uint64_t mask = (uint64_t(1) << bits_used) - 1;
+        uint64_t mask = (uint64_t{1} << bits_used) - 1;
 
         output_byte_ |= static_cast<uint8_t>((code & mask) << output_bits_);
         code >>= bits_used;

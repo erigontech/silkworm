@@ -22,8 +22,12 @@
 #include <silkworm/core/common/bytes.hpp>
 
 #include "common.hpp"
+#include "paginated_sequence.hpp"
 
 namespace silkworm::db::kv::api {
+
+//! Unlimited range size in range queries
+inline constexpr int64_t kUnlimited{-1};
 
 struct IndexRangeQuery {
     TxId tx_id{0};
@@ -32,7 +36,7 @@ struct IndexRangeQuery {
     Timestamp from_timestamp;
     Timestamp to_timestamp;
     bool ascending_order{false};
-    uint64_t limit{0};
+    int64_t limit{kUnlimited};
     uint32_t page_size{0};
     std::string page_token;
 };
@@ -54,7 +58,7 @@ struct HistoryRangeQuery {
     Timestamp from_timestamp;
     Timestamp to_timestamp;
     bool ascending_order{false};
-    uint64_t limit{0};
+    int64_t limit{kUnlimited};
     uint32_t page_size{0};
     std::string page_token;
 };
@@ -67,11 +71,13 @@ struct DomainRangeQuery {
     Bytes from_key;
     Bytes to_key;
     bool ascending_order{false};
-    uint64_t limit{0};
+    int64_t limit{kUnlimited};
     uint32_t page_size{0};
     std::string page_token;
 };
 
 using DomainRangeResult = RangeResult;
+
+using PaginatedTimestamps = PaginatedSequence<Timestamp>;
 
 }  // namespace silkworm::db::kv::api

@@ -131,14 +131,14 @@ class MemoryMappedFile {
 };
 
 struct MemoryMappedStreamBuf : std::streambuf {
-    MemoryMappedStreamBuf(MemoryMappedRegion region) {
+    explicit MemoryMappedStreamBuf(MemoryMappedRegion region) {
         auto p = reinterpret_cast<char*>(region.data());
         this->setg(p, p, p + region.size());
     }
 };
 
 struct MemoryMappedInputStream : virtual MemoryMappedStreamBuf, std::istream {
-    MemoryMappedInputStream(MemoryMappedRegion region)
+    explicit MemoryMappedInputStream(MemoryMappedRegion region)
         : MemoryMappedStreamBuf(region), std::istream(static_cast<std::streambuf*>(this)) {}
 };
 

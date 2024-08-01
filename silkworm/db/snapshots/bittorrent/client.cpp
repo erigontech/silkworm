@@ -122,8 +122,8 @@ lt::session_params BitTorrentClient::load_or_create_session_parameters() const {
     settings.set_int(lt::settings_pack::alert_mask,
                      lt::alert_category::error | lt::alert_category::storage |
                          lt::alert_category::status | lt::alert_category::performance_warning);
-    settings.set_int(lt::settings_pack::download_rate_limit, settings_.download_rate_limit * int(1_Mebi));
-    settings.set_int(lt::settings_pack::upload_rate_limit, settings_.upload_rate_limit * int(1_Mebi));
+    settings.set_int(lt::settings_pack::download_rate_limit, settings_.download_rate_limit * int{1_Mebi});
+    settings.set_int(lt::settings_pack::upload_rate_limit, settings_.upload_rate_limit * int{1_Mebi});
     settings.set_int(lt::settings_pack::active_downloads, settings_.active_downloads);
     settings.set_int(lt::settings_pack::max_out_request_queue, settings_.max_out_request_queue);
     settings.set_int(lt::settings_pack::aio_threads, settings_.aio_threads);

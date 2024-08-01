@@ -44,7 +44,7 @@ class DummyEngine {
     asio::io_context& io_;
 
   public:
-    DummyEngine(asio::io_context& io) : io_{io} {}
+    explicit DummyEngine(asio::io_context& io) : io_{io} {}
 
     static Task<int> do_work() {
         co_return 42;

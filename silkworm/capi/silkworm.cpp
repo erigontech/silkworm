@@ -151,13 +151,13 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
     const auto elapsed{progress.end_time - progress.start_time};
     progress.start_time = progress.end_time;
     const auto duration_seconds{std::chrono::duration_cast<std::chrono::seconds>(elapsed)};
-    const auto elapsed_seconds = duration_seconds.count() != 0 ? float(duration_seconds.count()) : 1.0f;
+    const auto elapsed_seconds = duration_seconds.count() != 0 ? static_cast<float>(duration_seconds.count()) : 1.0f;
     if (progress.processed_blocks == 0) {
         return {"number", std::to_string(current_block), "db", "waiting..."};
     }
-    const auto speed_blocks = float(progress.processed_blocks) / elapsed_seconds;
-    const auto speed_transactions = float(progress.processed_transactions) / elapsed_seconds;
-    const auto speed_mgas = float(progress.processed_gas) / elapsed_seconds / 1'000'000;
+    const auto speed_blocks = static_cast<float>(progress.processed_blocks) / elapsed_seconds;
+    const auto speed_transactions = static_cast<float>(progress.processed_transactions) / elapsed_seconds;
+    const auto speed_mgas = static_cast<float>(progress.processed_gas) / elapsed_seconds / 1'000'000;
     progress.processed_blocks = 0;
     progress.processed_transactions = 0;
     progress.processed_gas = 0;
@@ -480,7 +480,7 @@ class BlockExecutor {
 
         const auto now{std::chrono::steady_clock::now()};
         if (log_time_ <= now) {
-            progress_.batch_progress_perc = float(state_buffer.current_batch_state_size()) / float(max_batch_size_);
+            progress_.batch_progress_perc = static_cast<float>(state_buffer.current_batch_state_size()) / static_cast<float>(max_batch_size_);
             progress_.end_time = now;
             log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
                       log_args_for_exec_progress(progress_, block.header.number)};
@@ -554,7 +554,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         while (block_number <= max_block) {
             while (block_number <= max_block) {
                 if (prefetched_blocks.empty()) {
-                    const auto num_blocks{std::min(size_t(max_block - block_number + 1), kMaxPrefetchedBlocks)};
+                    const auto num_blocks{std::min(size_t{max_block - block_number + 1}, kMaxPrefetchedBlocks)};
                     SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
                     for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
                         prefetched_blocks.push_back();

@@ -59,6 +59,9 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> close() override;
 
+    // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
+    Task<api::PaginatedTimestamps> index_range(api::IndexRangeQuery&& query) override;
+
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
@@ -66,6 +69,8 @@ class RemoteTransaction : public api::BaseTransaction {
     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider_;
     std::map<std::string, std::shared_ptr<api::CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<api::CursorDupSort>> dup_cursors_;
+    ::remote::KV::StubInterface& stub_;
+    agrpc::GrpcContext& grpc_context_;
     TxRpc tx_rpc_;
     uint64_t tx_id_{0};
     uint64_t view_id_{0};

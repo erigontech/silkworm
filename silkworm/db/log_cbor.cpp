@@ -172,7 +172,7 @@ class LogCborListener : public cbor::listener {
 };
 
 void cbor_decode(ByteView data, LogCborConsumer& consumer) {
-    cbor::input input(std::remove_const_t<uint8_t*>(data.data()), static_cast<int>(data.size()));
+    cbor::input input(data.data(), static_cast<int>(data.size()));
     LogCborListener listener{consumer};
     cbor::decoder decoder(input, listener);
     decoder.run();
@@ -181,7 +181,7 @@ void cbor_decode(ByteView data, LogCborConsumer& consumer) {
 //! LogBuilder is a CBOR consumer which builds a sequence of Logs from their CBOR representation
 class LogBuilder : public LogCborConsumer {
   public:
-    LogBuilder(std::vector<Log>& logs) : logs_{logs}, current_log_{} {}
+    explicit LogBuilder(std::vector<Log>& logs) : logs_{logs}, current_log_{} {}
 
     bool success() const {
         return std::cmp_equal(logs_.size(), current_num_logs_);

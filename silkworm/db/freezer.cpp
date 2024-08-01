@@ -40,7 +40,7 @@ using namespace silkworm::snapshots;
 struct FreezerCommand : public DataMigrationCommand {
     BlockNumRange range;
 
-    FreezerCommand(BlockNumRange range1)
+    explicit FreezerCommand(BlockNumRange range1)
         : range(std::move(range1)) {}
     ~FreezerCommand() override = default;
 };
@@ -48,7 +48,7 @@ struct FreezerCommand : public DataMigrationCommand {
 struct FreezerResult : public DataMigrationResult {
     SnapshotBundle bundle;
 
-    FreezerResult(SnapshotBundle bundle1)
+    explicit FreezerResult(SnapshotBundle bundle1)
         : bundle(std::move(bundle1)) {}
     ~FreezerResult() override = default;
 };

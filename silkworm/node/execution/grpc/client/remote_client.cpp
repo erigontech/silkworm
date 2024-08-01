@@ -55,7 +55,7 @@ class RemoteClientImpl final : public api::Service {
     // rpc InsertBlocks(InsertBlocksRequest) returns(InsertionResult);
     Task<api::InsertionResult> insert_blocks(const api::Blocks& blocks) override {
         auto request = insertion_request_from_blocks(blocks);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncInsertBlocks, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncInsertBlocks, *stub_, std::move(request), grpc_context_);
         co_return insertion_result_from_response(reply);
     }
 
@@ -64,14 +64,14 @@ class RemoteClientImpl final : public api::Service {
     // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
     Task<api::ValidationResult> validate_chain(api::BlockNumAndHash number_and_hash) override {
         auto request = request_from_block_num_and_hash(number_and_hash);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncValidateChain, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncValidateChain, *stub_, std::move(request), grpc_context_);
         co_return validation_result_from_response(reply);
     }
 
     // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);
     Task<api::ForkChoiceResult> update_fork_choice(const api::ForkChoice& fork_choice) override {
         auto request = request_from_fork_choice(fork_choice);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncUpdateForkChoice, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncUpdateForkChoice, *stub_, std::move(request), grpc_context_);
         co_return fork_choice_result_from_response(reply);
     }
 
@@ -80,14 +80,14 @@ class RemoteClientImpl final : public api::Service {
     // rpc AssembleBlock(AssembleBlockRequest) returns(AssembleBlockResponse);
     Task<api::AssembleBlockResult> assemble_block(const api::BlockUnderConstruction& block) override {
         auto request = assemble_request_from_block(block);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncAssembleBlock, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncAssembleBlock, *stub_, std::move(request), grpc_context_);
         co_return assemble_result_from_response(reply);
     }
 
     // rpc GetAssembledBlock(GetAssembledBlockRequest) returns(GetAssembledBlockResponse);
     Task<api::AssembledBlockResult> get_assembled_block(api::PayloadId id) override {
         auto request = get_assembled_request_from_payload_id(id);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetAssembledBlock, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetAssembledBlock, *stub_, std::move(request), grpc_context_);
         co_return get_assembled_result_from_response(reply);
     }
 
@@ -96,35 +96,35 @@ class RemoteClientImpl final : public api::Service {
     // rpc CurrentHeader(google.protobuf.Empty) returns(GetHeaderResponse);
     Task<std::optional<BlockHeader>> current_header() override {
         google::protobuf::Empty request;
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncCurrentHeader, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncCurrentHeader, *stub_, std::move(request), grpc_context_);
         co_return header_from_response(reply);
     }
 
     // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
     Task<std::optional<TotalDifficulty>> get_td(api::BlockNumberOrHash number_or_hash) override {
         auto request = request_from_block_number_or_hash(number_or_hash);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetTD, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetTD, *stub_, std::move(request), grpc_context_);
         co_return total_difficulty_from_response(reply);
     }
 
     // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
     Task<std::optional<BlockHeader>> get_header(api::BlockNumberOrHash number_or_hash) override {
         auto request = request_from_block_number_or_hash(number_or_hash);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetHeader, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetHeader, *stub_, std::move(request), grpc_context_);
         co_return header_from_response(reply);
     }
 
     // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
     Task<std::optional<BlockBody>> get_body(api::BlockNumberOrHash number_or_hash) override {
         auto request = request_from_block_number_or_hash(number_or_hash);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBody, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBody, *stub_, std::move(request), grpc_context_);
         co_return body_from_response(reply);
     }
 
     // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
     Task<bool> has_block(api::BlockNumberOrHash number_or_hash) override {
         auto request = request_from_block_number_or_hash(number_or_hash);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHasBlock, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHasBlock, *stub_, std::move(request), grpc_context_);
         co_return reply.has_block();
     }
 
@@ -133,14 +133,14 @@ class RemoteClientImpl final : public api::Service {
     // rpc GetBodiesByRange(GetBodiesByRangeRequest) returns(GetBodiesBatchResponse);
     Task<api::BlockBodies> get_bodies_by_range(BlockNumRange range) override {
         auto request = bodies_request_from_block_range(range);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBodiesByRange, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBodiesByRange, *stub_, std::move(request), grpc_context_);
         co_return block_bodies_from_response(reply);
     }
 
     // rpc GetBodiesByHashes(GetBodiesByHashesRequest) returns(GetBodiesBatchResponse);
     Task<api::BlockBodies> get_bodies_by_hashes(const api::BlockHashes& hashes) override {
         auto request = bodies_request_from_block_hashes(hashes);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBodiesByHashes, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBodiesByHashes, *stub_, std::move(request), grpc_context_);
         co_return block_bodies_from_response(reply);
     }
 
@@ -149,21 +149,21 @@ class RemoteClientImpl final : public api::Service {
     // rpc IsCanonicalHash(types.H256) returns(IsCanonicalResponse);
     Task<bool> is_canonical_hash(Hash block_hash) override {
         auto request = h256_from_block_hash(block_hash);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncIsCanonicalHash, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncIsCanonicalHash, *stub_, std::move(request), grpc_context_);
         co_return reply.canonical();
     }
 
     // rpc GetHeaderHashNumber(types.H256) returns(GetHeaderHashNumberResponse);
     Task<std::optional<BlockNum>> get_header_hash_number(Hash block_hash) override {
         auto request = h256_from_block_hash(block_hash);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetHeaderHashNumber, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetHeaderHashNumber, *stub_, std::move(request), grpc_context_);
         co_return block_number_from_response(reply);
     }
 
     // rpc GetForkChoice(google.protobuf.Empty) returns(ForkChoice);
     Task<api::ForkChoice> get_fork_choice() override {
         google::protobuf::Empty request;
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetForkChoice, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetForkChoice, *stub_, std::move(request), grpc_context_);
         co_return fork_choice_from_response(reply);
     }
 
@@ -172,14 +172,14 @@ class RemoteClientImpl final : public api::Service {
     // rpc Ready(google.protobuf.Empty) returns(ReadyResponse);
     Task<bool> ready() override {
         google::protobuf::Empty request;
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncReady, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncReady, *stub_, std::move(request), grpc_context_);
         co_return reply.ready();
     }
 
     // rpc FrozenBlocks(google.protobuf.Empty) returns(FrozenBlocksResponse);
     Task<uint64_t> frozen_blocks() override {
         google::protobuf::Empty request;
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncFrozenBlocks, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncFrozenBlocks, *stub_, std::move(request), grpc_context_);
         co_return reply.frozen_blocks();
     }
 

@@ -24,7 +24,7 @@ namespace silkworm {
 class RandomNumber {
   public:
     // Use to generate integers uniformly distributed on the closed interval [a, b]
-    RandomNumber(uint64_t a = 0, uint64_t b = std::numeric_limits<uint64_t>::max()) : distr_(a, b) {}
+    explicit RandomNumber(uint64_t a = 0, uint64_t b = std::numeric_limits<uint64_t>::max()) : distr_(a, b) {}
 
     // Not copyable nor movable
     RandomNumber(const RandomNumber&) = delete;

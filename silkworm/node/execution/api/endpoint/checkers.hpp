@@ -38,7 +38,7 @@ struct ForkChoiceResult {
     Hash latest_valid_head;
     std::string validation_error;
 
-    operator bool() const { return success(status); }
+    explicit operator bool() const { return success(status); }
 };
 
 }  // namespace silkworm::execution::api

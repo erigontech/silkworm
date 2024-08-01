@@ -33,7 +33,7 @@ Task<void> run(sentry::api::SentryClient& client) {
     try {
         auto eth_version = co_await service->handshake();
         log::Info() << "handshake success!";
-        log::Info() << "protocol: eth/" << int(eth_version);
+        log::Info() << "protocol: eth/" << int{eth_version};
 
         auto node_infos = co_await service->node_infos();
         auto node_info = node_infos[0];

@@ -138,6 +138,19 @@ std::optional<ExecutionEngine::ForkingPath> ExecutionEngine::find_forking_point(
     return {std::move(path)};
 }
 
+VerificationResult ExecutionEngine::verify_chain_no_fork_tracking(Hash head_block_hash) {
+    log::Info("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
+
+    SILKWORM_ASSERT(!fork_tracking_active_);
+
+    if (last_fork_choice_.hash == head_block_hash) {
+        SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
+        return ValidChain{last_fork_choice_};
+    }
+
+    return main_chain_.verify_chain(head_block_hash);  
+}
+
 Task<VerificationResult> ExecutionEngine::verify_chain(Hash head_block_hash) {
     log::Info("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
 

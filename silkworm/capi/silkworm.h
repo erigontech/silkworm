@@ -248,6 +248,48 @@ SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct Si
  */
 SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEPT;
 
+#define SILKWORM_NODE_SETTINGS_ADDRESSES_MAX 128
+#define SILKWORM_NODE_SETTINGS_ADDRESS_SIZE 200
+
+//! Silkworm Node configuration options
+struct SilkwormNodeSettings {
+    // silkworm::ApplicationInfo build_info;  // Application build info (human-readable)
+    // boost::asio::io_context asio_context;                  // Async context (e.g. for timers)
+    // std::unique_ptr<DataDirectory> data_directory;         // Pointer to data folder
+    // db::EnvConfig chaindata_env_config{};                  // Chaindata db config
+    uint64_t network_id;// {0}; // Network/Chain id
+    // std::optional<ChainConfig> chain_config;               // Chain config
+    size_t batch_size;// {512 * 1024 * 1024};                                                                     // Batch size to use in stages
+    size_t etl_buffer_size;// {256 * 1024 * 1024};                                                                // Buffer size for ETL operations
+    char remote_sentry_addresses[SILKWORM_NODE_SETTINGS_ADDRESSES_MAX][SILKWORM_NODE_SETTINGS_ADDRESS_SIZE];  // Remote Sentry API addresses (host:port,host2:port2,...)
+    // bool fake_pow{false};                                  // Whether to verify Proof-of-Work (PoW)
+    // std::optional<evmc::address> etherbase{std::nullopt};  // Coinbase address (PoW only)
+    // db::PruneMode prune_mode;                              // Prune mode
+    uint32_t sync_loop_throttle_seconds;// {0};       // Minimum interval amongst sync cycle
+    uint32_t sync_loop_log_interval_seconds;// {30};  // Interval for sync loop to emit logs
+    // bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
+    // bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
+};
+
+typedef struct bytes_32 {
+    /** The 32 bytes. */
+    uint8_t bytes[32];
+} bytes_32;
+
+/**
+ * \brief Start Silkworm fork validator.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init. Must not be zero.
+ * \param[in] mdbx_env An valid MDBX environment. Must not be zero.
+ * \param[in] settings The Node configuration settings. Must not be zero.
+ */
+SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_env* mdbx_env, const struct SilkwormNodeSettings* settings) SILKWORM_NOEXCEPT;
+
+SILKWORM_EXPORT int silkworm_stop_fork_validator(SilkwormHandle handle) SILKWORM_NOEXCEPT;
+
+SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, bytes_32 head_hash) SILKWORM_NOEXCEPT;
+
+SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle handle, bytes_32 head_hash, bytes_32 finalized_hash, bytes_32 safe_hash) SILKWORM_NOEXCEPT;
+
 /**
  * \brief Execute a batch of blocks and push changes to the given database transaction. No data is commited.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.

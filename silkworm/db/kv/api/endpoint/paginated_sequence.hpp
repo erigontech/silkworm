@@ -25,6 +25,8 @@
 
 #include <silkworm/infra/common/ensure.hpp>
 
+#include "key_value.hpp"
+
 namespace silkworm::db::kv::api {
 
 //! Sequence of values produced by pagination using some asynchronous page provider function.
@@ -178,8 +180,8 @@ class PaginatedSequencePair {
 };
 
 template <typename K, typename V>
-Task<std::vector<std::pair<K, V>>> paginated_to_vector(PaginatedSequencePair<K, V>& paginated) {
-    std::vector<std::pair<K, V>> all_keys_and_values;
+Task<std::vector<KeyValue>> paginated_to_vector(PaginatedSequencePair<K, V>& paginated) {
+    std::vector<KeyValue> all_keys_and_values;
     auto it = co_await paginated.begin();
     while (it != paginated.end()) {
         all_keys_and_values.emplace_back(*it);

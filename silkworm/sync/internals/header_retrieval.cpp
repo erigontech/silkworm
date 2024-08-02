@@ -16,6 +16,8 @@
 
 #include "header_retrieval.hpp"
 
+#include <cstdint>
+
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm {
@@ -27,7 +29,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
     uint64_t max_non_canonical = 100;
 
     std::vector<BlockHeader> headers;
-    long long bytes = 0;
+    int64_t bytes = 0;
     Hash hash = origin;
     bool unknown = false;
 
@@ -89,7 +91,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_number(BlockNum origin, uin
     using std::optional;
 
     std::vector<BlockHeader> headers;
-    long long bytes = 0;
+    int64_t bytes = 0;
     BlockNum block_num = origin;
 
     do {

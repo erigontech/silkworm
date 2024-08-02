@@ -86,7 +86,6 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
 
     silkworm::log::Info("Execution engine created");
 
-    // return SILKWORM_OK;
     handle->execution_engine->open();
 
     silkworm::log::Info("Execution engine opened");
@@ -162,23 +161,23 @@ SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle ha
 
     silkworm::Hash finalized_hash{};
     memcpy(finalized_hash.bytes, finalized_hash_bytes.bytes, sizeof(finalized_hash.bytes));
-    std::optional<silkworm::Hash> finalized_hash_opt{};
-    if (finalized_hash) {
-        finalized_hash_opt = finalized_hash;
-    }
+    std::optional<silkworm::Hash> finalized_hash_opt = finalized_hash ? std::optional<silkworm::Hash>(finalized_hash) : std::nullopt;
 
     silkworm::Hash safe_hash{};
     memcpy(safe_hash.bytes, safe_hash_bytes.bytes, sizeof(safe_hash.bytes));
-    std::optional<silkworm::Hash> safe_hash_opt{};
-    if (safe_hash) {
-        safe_hash_opt = safe_hash;
+    std::optional<silkworm::Hash> safe_hash_opt = safe_hash ? std::optional<silkworm::Hash>(safe_hash) : std::nullopt;
+
+    try {
+        auto result = handle->execution_engine->notify_fork_choice_update(head_hash, finalized_hash_opt, safe_hash_opt);
+
+        if (result) {
+            return SILKWORM_OK;
+        } else {
+            SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed with unknown error";
+        }
+
+    } catch (const std::exception& ex) {
+        SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed: " << ex.what();
     }
-
-    auto result = handle->execution_engine->notify_fork_choice_update(head_hash, finalized_hash_opt, safe_hash_opt);
-
-    if (result) {
-        return SILKWORM_OK;
-    }
-
     return SILKWORM_INTERNAL_ERROR;
 }

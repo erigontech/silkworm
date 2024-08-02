@@ -80,41 +80,28 @@ MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, db::RWAcces
 }
 
 void MainChain::open() {
-    silkworm::log::Info("MainChain::open, keep_db_txn_open=" + std::to_string(node_settings_.keep_db_txn_open));
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-
-    silkworm::log::Info("TX Handler created");
 
     // Load last finalized and last chosen blocks from persistence
     auto last_finalized_hash = db::read_last_finalized_block(tx_);
 
-    silkworm::log::Info("Last finalized block read " + std::to_string(last_finalized_hash.has_value()));
-    if (last_finalized_hash.has_value()) {
-        silkworm::log::Info("Reading the value");
+    if (last_finalized_hash) {
         auto header = get_header(*last_finalized_hash);
-        silkworm::log::Info("Header for hash " + to_hex(last_finalized_hash.value().bytes, true) + " found is " + std::to_string(header.has_value()));
         ensure_invariant(header.has_value(), "last finalized block not found in db");
         last_finalized_head_ = {header->number, *last_finalized_hash};
     } else {
-        silkworm::log::Info("Last finalized block not found, getting genesis");
         last_finalized_head_ = {0, node_settings_.chain_config.value().genesis_hash.value()};
     }
 
-    silkworm::log::Info("Last finalized block id: " + std::to_string(last_finalized_head_.number));
-
     auto last_head_hash = db::read_last_head_block(tx_);
-    silkworm::log::Info("Last head block read");
     if (last_head_hash) {
         auto header = get_header(*last_head_hash);
         ensure_invariant(header.has_value(), "last head block not found in db");
         last_fork_choice_ = {header->number, *last_head_hash};
     } else
         last_fork_choice_ = last_finalized_head_;
-    silkworm::log::Info("Last head block id: " + std::to_string(last_fork_choice_.number));
 
-    silkworm::log::Info("Last finalized and last head blocks read");
     interim_canonical_chain_.open();
-    silkworm::log::Info("Canonical chain opened");
 
     // Revalidate chain by executing forward cycle up to the canonical current head at startup:
     // - if last cycle completed successfully, this will simply do nothing (no hurt)

@@ -112,36 +112,6 @@ TEST_CASE_METHOD(RemoteClientTestRunner, "KV::DomainGet", "[node][remote][kv][gr
     }
 }
 
-TEST_CASE_METHOD(RemoteClientTestRunner, "KV::HistoryRange", "[node][remote][kv][grpc]") {
-    const api::HistoryRangeQuery query{};  // input query doesn't matter here, we tweak the reply
-
-    rpc::test::StrictMockAsyncResponseReader<proto::Pairs> reader;
-    EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillOnce(testing::Return(&reader));
-
-    SECTION("call get_history_range and get result") {
-        proto::Pairs reply{sample_proto_history_range_response()};
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
-
-        const api::HistoryRangeResult result = run_service_method<&api::Service::get_history_range>(query);
-        CHECK(result.keys == std::vector<Bytes>{*from_hex("00110011AA"), *from_hex("00110011BB")});
-        CHECK(result.values == std::vector<Bytes>{*from_hex("00110011EE"), *from_hex("00110011FF")});
-        CHECK(result.next_page_token == "token2");
-    }
-    SECTION("call get_history_range and get empty result") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
-
-        const api::HistoryRangeResult result = run_service_method<&api::Service::get_history_range>(query);
-        CHECK(result.keys.empty());
-        CHECK(result.values.empty());
-        CHECK(result.next_page_token.empty());
-    }
-    SECTION("call get_history_range and get error") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
-
-        CHECK_THROWS_AS((run_service_method<&api::Service::get_history_range>(query)), rpc::GrpcStatusError);
-    }
-}
-
 TEST_CASE_METHOD(RemoteClientTestRunner, "KV::DomainRange", "[node][remote][kv][grpc]") {
     const api::DomainRangeQuery query{};  // input query doesn't matter here, we tweak the reply
 

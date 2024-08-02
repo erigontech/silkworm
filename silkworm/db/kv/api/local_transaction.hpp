@@ -58,6 +58,9 @@ class LocalTransaction : public BaseTransaction {
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
     Task<PaginatedTimestamps> index_range(IndexRangeQuery&& query) override;
 
+    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
+    Task<PaginatedKeysValues> history_range(HistoryRangeQuery&& query) override;
+
   private:
     Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 

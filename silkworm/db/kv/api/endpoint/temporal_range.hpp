@@ -79,5 +79,6 @@ struct DomainRangeQuery {
 using DomainRangeResult = RangeResult;
 
 using PaginatedTimestamps = PaginatedSequence<Timestamp>;
+using PaginatedKeysValues = PaginatedSequencePair<Bytes, Bytes>;
 
 }  // namespace silkworm::db::kv::api

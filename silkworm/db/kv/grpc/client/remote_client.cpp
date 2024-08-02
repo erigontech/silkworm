@@ -155,13 +155,6 @@ class RemoteClientImpl final : public api::Service {
 
     /** Temporal Range Queries **/
 
-    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<api::HistoryRangeResult> get_history_range(const api::HistoryRangeQuery& query) override {
-        auto request = history_range_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, *stub_, std::move(request), grpc_context_);
-        co_return history_range_result_from_response(reply);
-    }
-
     // rpc DomainRange(DomainRangeReq) returns (Pairs);
     Task<api::DomainRangeResult> get_domain_range(const api::DomainRangeQuery& query) override {
         auto request = domain_range_request_from_query(query);

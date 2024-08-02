@@ -48,9 +48,6 @@ struct Service {
 
     /** Temporal Range Queries **/
 
-    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    virtual Task<HistoryRangeResult> get_history_range(const HistoryRangeQuery&) = 0;
-
     // rpc DomainRange(DomainRangeReq) returns (Pairs);
     virtual Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) = 0;
 };

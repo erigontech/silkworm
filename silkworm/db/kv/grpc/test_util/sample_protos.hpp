@@ -188,10 +188,10 @@ inline proto::HistoryRangeReq sample_proto_history_range_request() {
 
 inline proto::Pairs sample_proto_history_range_response() {
     proto::Pairs response;
-    response.add_keys("00110011AA");
-    response.add_keys("00110011BB");
-    response.add_values("00110011EE");
-    response.add_values("00110011FF");
+    response.add_keys(bytes_to_string(*from_hex("00110011AA")));
+    response.add_keys(bytes_to_string(*from_hex("00110011BB")));
+    response.add_values(bytes_to_string(*from_hex("00110011EE")));
+    response.add_values(bytes_to_string(*from_hex("00110011FF")));
     response.set_next_page_token("token2");
     return response;
 }

@@ -39,6 +39,7 @@ ByteView array_to_byte_view(const std::array<unsigned char, Size>& array) {
     return ByteView{reinterpret_cast<const uint8_t*>(array.data()), Size};
 }
 
+inline std::string bytes_to_string(Bytes b) { return {b.begin(), b.end()}; }
 inline std::string_view byte_view_to_string_view(ByteView v) { return {byte_ptr_cast(v.data()), v.length()}; }
 
 }  // namespace silkworm

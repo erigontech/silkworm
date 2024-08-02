@@ -56,9 +56,6 @@ class DirectService : public Service {
 
     /** Temporal Range Queries **/
 
-    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<HistoryRangeResult> get_history_range(const HistoryRangeQuery&) override;
-
     // rpc DomainRange(DomainRangeReq) returns (Pairs);
     Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) override;
 

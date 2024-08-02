@@ -16,6 +16,7 @@
 
 #include "temporal_range.hpp"
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/grpc/common/bytes.hpp>
 
@@ -61,11 +62,11 @@ proto::HistoryRangeReq history_range_request_from_query(const api::HistoryRangeQ
 
 api::HistoryRangeResult history_range_result_from_response(const proto::Pairs& response) {
     api::HistoryRangeResult result;
-    for (const auto& hex_key : response.keys()) {
-        rpc::deserialize_hex_as_bytes(hex_key, result.keys);
+    for (const auto& key : response.keys()) {
+        result.keys.emplace_back(string_to_bytes(key));
     }
-    for (const auto& hex_value : response.values()) {
-        rpc::deserialize_hex_as_bytes(hex_value, result.values);
+    for (const auto& value : response.values()) {
+        result.values.emplace_back(string_to_bytes(value));
     }
     result.next_page_token = response.next_page_token();
     return result;

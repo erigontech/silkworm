@@ -602,7 +602,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[rpc
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainRangeQuery query;
-        auto paginated_keys_and_values = co_await remote_tx_.history_range(std::move(query));
+        auto paginated_keys_and_values = co_await remote_tx_.domain_range(std::move(query));
 #else
         auto paginated_keys_and_values = co_await remote_tx_.domain_range(api::DomainRangeQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)

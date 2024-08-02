@@ -90,6 +90,11 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return empty_paginated_keys_and_values();
     }
 
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_keys_and_values();
+    }
+
   private:
     uint64_t tx_id_;
     uint64_t view_id_;

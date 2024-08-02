@@ -72,6 +72,9 @@ class Transaction {
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     virtual Task<PaginatedKeysValues> history_range(HistoryRangeQuery&& query) = 0;
+
+    // rpc DomainRange(DomainRangeReq) returns (Pairs);
+    virtual Task<PaginatedKeysValues> domain_range(DomainRangeQuery&& query) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

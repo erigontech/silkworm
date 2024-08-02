@@ -209,6 +209,11 @@ class DummyTransaction : public BaseTransaction {
         co_return test::empty_paginated_keys_and_values();
     }
 
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_keys_and_values();
+    }
+
   private:
     const nlohmann::json& json_;
 };

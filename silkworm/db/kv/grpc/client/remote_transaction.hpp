@@ -65,6 +65,9 @@ class RemoteTransaction : public api::BaseTransaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<api::PaginatedKeysValues> history_range(api::HistoryRangeQuery&& query) override;
 
+    // rpc DomainRange(DomainRangeReq) returns (Pairs);
+    Task<api::PaginatedKeysValues> domain_range(api::DomainRangeQuery&& query) override;
+
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 

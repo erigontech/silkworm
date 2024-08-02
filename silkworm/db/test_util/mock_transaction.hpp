@@ -48,6 +48,7 @@ class MockTransaction : public kv::api::Transaction {
                 (const std::string&, ByteView, ByteView), (override));
     MOCK_METHOD((Task<kv::api::PaginatedTimestamps>), index_range, (kv::api::IndexRangeQuery&&), (override));
     MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), history_range, (kv::api::HistoryRangeQuery&&), (override));
+    MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), domain_range, (kv::api::DomainRangeQuery&&), (override));
 };
 
 }  // namespace silkworm::db::test_util

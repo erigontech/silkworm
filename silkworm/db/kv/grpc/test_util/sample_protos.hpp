@@ -210,6 +210,7 @@ inline api::DomainRangeQuery sample_domain_range_query() {
         .table = "AAA",
         .from_key = {0x00, 0x11, 0xaa},
         .to_key = {0x00, 0x11, 0xff},
+        .timestamp = 180'000'000,
         .ascending_order = true,
         .limit = 1'000,
         .page_size = 100,
@@ -229,6 +230,7 @@ inline proto::DomainRangeReq sample_proto_domain_range_request() {
     request.set_table("AAA");
     request.set_from_key(ascii_from_hex("0011aa"));
     request.set_to_key(ascii_from_hex("0011ff"));
+    request.set_ts(180'000'000);
     request.set_order_ascend(true);
     request.set_limit(1'000);
     request.set_page_size(100);

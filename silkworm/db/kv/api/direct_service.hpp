@@ -54,11 +54,6 @@ class DirectService : public Service {
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
     Task<DomainPointResult> get_domain(const DomainPointQuery&) override;
 
-    /** Temporal Range Queries **/
-
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) override;
-
   private:
     //! The router to service endpoint implementation
     ServiceRouter router_;

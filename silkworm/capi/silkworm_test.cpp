@@ -197,7 +197,12 @@ struct SilkwormLibrary {
     int fork_validator_verify_chain(silkworm::Hash head_hash) const {
         bytes_32 head_hash_bytes{};
         std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
-        return silkworm_fork_validator_verify_chain(handle_, head_hash_bytes);
+
+        auto result = new SilkwormForkValidatorValidationResult();
+
+        return silkworm_fork_validator_verify_chain(handle_, head_hash_bytes, result);
+
+        delete result;
     }
 
     int execution_engine_fork_choice_update(silkworm::Hash head_hash, silkworm::Hash finalized_hash, silkworm::Hash safe_hash) const {

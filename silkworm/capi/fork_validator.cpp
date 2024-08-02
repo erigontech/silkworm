@@ -102,30 +102,50 @@ SILKWORM_EXPORT int silkworm_stop_fork_validator(SilkwormHandle handle) SILKWORM
     return SILKWORM_INTERNAL_ERROR;
 }
 
-SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, bytes_32 head_hash_bytes) SILKWORM_NOEXCEPT {
-    silkworm::log::Info("Verifying chain");
+SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, bytes_32 head_hash_bytes, struct SilkwormForkValidatorValidationResult* result) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
-
     if (!handle->execution_engine) {
         return SILKWORM_INTERNAL_ERROR;
     }
 
-    silkworm::log::Info("Head hash bytes: " + silkworm::to_hex(head_hash_bytes.bytes, sizeof(head_hash_bytes.bytes)));
-
     silkworm::Hash head_hash{};
     memcpy(head_hash.bytes, head_hash_bytes.bytes, sizeof(head_hash.bytes));
 
-    silkworm::log::Info("Head hash: " + silkworm::to_hex(head_hash.bytes, sizeof(head_hash.bytes)));
+    SILK_INFO << "[Silkworm Fork Validator] Starting Verify Chain for " << to_hex(head_hash);
+    try {
+        auto execution_result = handle->execution_engine->verify_chain_no_fork_tracking(head_hash);
 
-    auto result = handle->execution_engine->verify_chain_no_fork_tracking(head_hash);
+        if (std::holds_alternative<silkworm::stagedsync::ValidChain>(execution_result)) {
+            result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_SUCCESS;
+            memcpy(result->last_valid_hash.bytes, std::get<silkworm::stagedsync::ValidChain>(execution_result).current_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
+        }
 
-    if (std::holds_alternative<silkworm::stagedsync::ValidChain>(result)) {
+        if (std::holds_alternative<silkworm::stagedsync::InvalidChain>(execution_result)) {
+            result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_INVALID;
+            auto invalid_chain = std::get<silkworm::stagedsync::InvalidChain>(execution_result);
+            memcpy(result->last_valid_hash.bytes, invalid_chain.unwind_point.hash.bytes, sizeof(result->last_valid_hash.bytes));
+
+            if (invalid_chain.bad_block) {
+                result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_BAD_BLOCK;
+            }
+        }
+
+        if (std::holds_alternative<silkworm::stagedsync::ValidationError>(execution_result)) {
+            result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_INVALID;
+            auto validation_error = std::get<silkworm::stagedsync::ValidationError>(execution_result);
+            memcpy(result->last_valid_hash.bytes, validation_error.latest_valid_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
+            strcpy(result->error_message, "Validation error");
+        }
+
         return SILKWORM_OK;
-    }
 
-    return SILKWORM_INTERNAL_ERROR;
+    } catch (const std::exception& ex) {
+        SILK_ERROR << "[Silkworm  ork Validator] Verify Chain failed: " << ex.what();
+
+        return SILKWORM_INTERNAL_ERROR;
+    }
 }
 
 SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle handle, bytes_32 head_hash_bytes, bytes_32 finalized_hash_bytes, bytes_32 safe_hash_bytes) SILKWORM_NOEXCEPT {

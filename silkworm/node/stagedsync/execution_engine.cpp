@@ -148,7 +148,7 @@ VerificationResult ExecutionEngine::verify_chain_no_fork_tracking(Hash head_bloc
         return ValidChain{last_fork_choice_};
     }
 
-    return main_chain_.verify_chain(head_block_hash);  
+    return main_chain_.verify_chain(head_block_hash);
 }
 
 Task<VerificationResult> ExecutionEngine::verify_chain(Hash head_block_hash) {

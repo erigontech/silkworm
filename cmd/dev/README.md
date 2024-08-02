@@ -172,9 +172,9 @@ cmd/dev/snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transaction
 
 Silkworm keeps recent chain data in MDBX database for faster access.
 
-### The `toolbox` tool
+### The `db_toolbox` tool
 
-The `toolbox` tool is a collection of utilities to perform operations on Silkworm MDBX database.
+The `db_toolbox` tool is a collection of utilities to perform operations on Silkworm MDBX database.
 
 #### Synopsis
 
@@ -183,23 +183,56 @@ The `toolbox` tool is a collection of utilities to perform operations on Silkwor
 Dump the database table layout and stats
 
 ```
-cmd/dev/toolbox --datadir ~/Library/Silkworm/ tables
+cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ tables
 ```
 
 Dump the progress of sync stages (i.e. content of SyncStage table)
 
 ```
-cmd/dev/toolbox --datadir ~/Library/Silkworm/ stages
+cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ stages
 ```
 
 Clear content (i.e. delete all the rows) in LogAddressIndex and LogTopicIndex tables
 
 ```
-cmd/dev/toolbox --datadir ~/Library/Silkworm/ --exclusive clear --names LogAddressIndex LogTopicIndex
+cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ --exclusive clear --names LogAddressIndex LogTopicIndex
 ```
 
 Reset the LogIndex stage progress to zero
 
 ```
-cmd/dev/toolbox --datadir ~/Library/Silkworm/ --exclusive stage-set --name LogIndex --height 0
+cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ --exclusive stage-set --name LogIndex --height 0
+```
+
+## gRPC Toolbox
+
+### Overview
+
+Silkworm RPCDaemon may run in standalone mode using gRPC interfaces to communicate to other components.
+
+### The `grpc_toolbox` tool
+
+The `db_toolbox` tool is a collection of utilities to query the KV/ETHBACKEND gRPC interface of Erigon/Silkworm.
+
+#### Synopsis
+
+#### Examples
+
+Print the number of timestamps in which the specified account has changed state
+
+```
+cmd/dev/grpc_toolbox kv_index_range --table AccountsHistoryIdx --key 0x616a3E55a20dD54CC9fBb63D8333D89c275c9D90
+```
+
+Print the first 10 changes in account state history using verbose mode (i.e. print keys and values)
+
+```
+cmd/dev/grpc_toolbox kv_history_range --table AccountsHistory --limit 10 --verbose
+```
+
+Print the first 10 changes in account state for the specified key range using verbose mode (i.e. print keys and values)
+
+```
+cmd/dev/grpc_toolbox kv_domain_range --table accounts --from_key 0x616a3E55a20dD54CC9fBb63D8333D89c275c9D90 \
+--to_key 0x716a3E55a20dD54CC9fBb63D8333D89c275c9D90 --timestamp 100000000 --limit 10 --verbose
 ```

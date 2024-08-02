@@ -297,7 +297,7 @@ void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::Executi
             const auto dst = intx::be::trunc<evmc::address>(stack_top[-1]);  // dst
 
             if ((value != 0 || execution_state.rev < EVMC_SPURIOUS_DRAGON) && !intra_block_state.exists(dst)) {
-                fix_call_gas_info_->gas_cost += 25000;
+                fix_call_gas_info_->gas_cost += 25000; // add ACCOUNT_CREATION_COST as in instructions_calls.cpp:105
             }
             SILK_DEBUG << "DebugTracer::evaluate_call_fixes:"
                        << " call_gas: " << call_gas

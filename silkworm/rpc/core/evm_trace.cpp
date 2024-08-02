@@ -575,10 +575,6 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
-    //    if (precompile::is_precompile(msg.code_address, rev)) {
-    //        is_precompile_ = true;
-    //        return;
-    //    }
 
     start_gas_.push(msg.gas);
 
@@ -626,7 +622,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     const auto op_code = execution_state.original_code[pc];
     auto op_name = get_opcode_name(opcode_names_, op_code);
 
-    if (fix_call_gas_info_) {  // previuos opcodw was a CALL
+    if (fix_call_gas_info_) {  // previous opcode was a CALL
         auto& trace_op = fix_call_gas_info_->trace_op_;
         if (execution_state.msg->depth == fix_call_gas_info_->depth) {
             if (fix_call_gas_info_->gas_cost) {
@@ -784,7 +780,8 @@ void VmTraceTracer::on_pre_check_failed(const evmc_result& /*result*/, const evm
 void VmTraceTracer::fill_call_gas_info(TraceOp& trace_op, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
     auto op_code = trace_op.op_code;
     if (op_code == evmc_opcode::OP_CALL || op_code == evmc_opcode::OP_CALLCODE || op_code == evmc_opcode::OP_STATICCALL || op_code == evmc_opcode::OP_DELEGATECALL || op_code == evmc_opcode::OP_CREATE || op_code == evmc_opcode::OP_CREATE2) {
-        fix_call_gas_info_ = std::make_unique<FixCallGasInfo>(FixCallGasInfo{execution_state.msg->depth, 0, metrics_[op_code].gas_cost, trace_op});
+        fix_call_gas_info_.emplace(FixCallGasInfo{execution_state.msg->depth, 0, metrics_[op_code].gas_cost, trace_op});
+
         const auto value = stack_top[-2];  // value
         if (value != 0) {
             fix_call_gas_info_->gas_cost += 9000;
@@ -797,7 +794,7 @@ void VmTraceTracer::fill_call_gas_info(TraceOp& trace_op, const evmone::Executio
             const auto dst = intx::be::trunc<evmc::address>(stack_top[-1]);  // dst
 
             if ((value != 0 || execution_state.rev < EVMC_SPURIOUS_DRAGON) && !intra_block_state.exists(dst)) {
-                fix_call_gas_info_->gas_cost += 25000;
+                fix_call_gas_info_->gas_cost += 25000; // add ACCOUNT_CREATION_COST as in instructions_calls.cpp:105
             }
             SILK_DEBUG << "DebugTracer::evaluate_call_fixes:"
                        << " call_gas: " << call_gas

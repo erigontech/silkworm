@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <utility>
 
 #include <nlohmann/json.hpp>
@@ -29,9 +30,9 @@ class ExpectedSubState {
     unsigned index{};
     evmc::bytes32 stateHash;
     evmc::bytes32 logsHash;
-    unsigned long dataIndex{};
-    unsigned long gasIndex{};
-    unsigned long valueIndex{};
+    uint64_t dataIndex{};
+    uint64_t gasIndex{};
+    uint64_t valueIndex{};
     bool exceptionExpected{false};
     std::string exceptionMessage;
 };

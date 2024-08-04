@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
 
 namespace silkworm {
 
@@ -72,14 +73,14 @@ class RepeatedMeasure {
     }
 
     double high_res_throughput() {
-        auto nano_elapsed = static_cast<unsigned long>(high_res_elapsed().count());
+        auto nano_elapsed = static_cast<uint64_t>(high_res_elapsed().count());
         if (nano_elapsed == 0) nano_elapsed = 1;
         return static_cast<double>(delta()) / static_cast<double>(nano_elapsed);
     }
 
     template <typename DURATION = Duration>
     double high_res_throughput() {
-        auto nano_elapsed = static_cast<unsigned long>(high_res_elapsed().count());
+        auto nano_elapsed = static_cast<uint64_t>(high_res_elapsed().count());
         if (nano_elapsed == 0) nano_elapsed = 1;
         using conversion = std::ratio_divide<std::nano, typename DURATION::period>;
         auto res_num = static_cast<double>(delta()) * static_cast<double>(conversion::den);
@@ -93,7 +94,7 @@ class RepeatedMeasure {
     }
 
     auto throughput() {
-        auto secs_elapsed = static_cast<unsigned long>(elapsed().count());
+        auto secs_elapsed = static_cast<uint64_t>(elapsed().count());
         if (secs_elapsed == 0) secs_elapsed = 1;
         return delta() / secs_elapsed;
     }

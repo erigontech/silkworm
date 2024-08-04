@@ -269,7 +269,7 @@ Task<void> Connection::close_stream() {
 
 //! Write chunked response content to the underlying socket
 Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
-    unsigned long bytes_transferred{0};
+    size_t bytes_transferred{0};
     try {
         if (gzip_encoding_requested_) {
             std::string compressed_content;

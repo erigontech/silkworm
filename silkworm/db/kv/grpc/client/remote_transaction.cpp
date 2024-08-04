@@ -130,4 +130,23 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
+Task<api::PaginatedKeysValues> RemoteTransaction::domain_range(api::DomainRangeQuery&& query) {
+    auto paginator = [&, query = std::move(query)]() mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        static std::string page_token{query.page_token};
+        query.tx_id = tx_id_;
+        query.page_token = page_token;
+        auto request = domain_range_request_from_query(query);
+        try {
+            auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, stub_, std::move(request), grpc_context_);
+            auto result = history_range_result_from_response(reply);
+            page_token = std::move(result.next_page_token);
+            co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), !page_token.empty()};
+        } catch (rpc::GrpcStatusError& gse) {
+            SILK_WARN << "KV::DomainRange RPC failed status=" << gse.status();
+            throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
+        }
+    };
+    co_return api::PaginatedKeysValues{std::move(paginator)};
+}
+
 }  // namespace silkworm::db::kv::grpc::client

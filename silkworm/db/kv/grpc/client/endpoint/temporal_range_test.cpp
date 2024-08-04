@@ -116,6 +116,7 @@ TEST_CASE("domain_range_request_from_query", "[node][remote][kv][grpc]") {
             CHECK(range_request.table() == expected_range_request.table());
             CHECK(range_request.from_key() == expected_range_request.from_key());
             CHECK(range_request.to_key() == expected_range_request.to_key());
+            CHECK(range_request.ts() == expected_range_request.ts());
             CHECK(range_request.order_ascend() == expected_range_request.order_ascend());
             CHECK(range_request.limit() == expected_range_request.limit());
             CHECK(range_request.page_size() == expected_range_request.page_size());

@@ -86,4 +86,13 @@ Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery&& /*
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+Task<PaginatedKeysValues> LocalTransaction::domain_range(DomainRangeQuery&& /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    auto paginator = []() mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        co_return api::PaginatedKeysValues::PageResult{};
+    };
+    co_return api::PaginatedKeysValues{std::move(paginator)};
+}
+
 }  // namespace silkworm::db::kv::api

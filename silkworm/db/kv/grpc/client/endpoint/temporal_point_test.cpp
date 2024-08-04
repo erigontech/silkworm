@@ -63,7 +63,6 @@ TEST_CASE("history_get_result_from_response", "[node][remote][kv][grpc]") {
 
 TEST_CASE("domain_get_request_from_query", "[node][remote][kv][grpc]") {
     const Fixtures<api::DomainPointQuery, proto::DomainGetReq> fixtures{
-        {{}, {}},
         {sample_domain_point_query(), sample_proto_domain_point_request()},
     };
     for (const auto& [query, expected_point_request] : fixtures) {

@@ -63,7 +63,7 @@ class LogCborListener : public cbor::listener {
         throw std::invalid_argument("Log CBOR: unexpected format(on_undefined)");
     }
 
-    void on_extra_integer(unsigned long long, int) override {
+    void on_extra_integer(unsigned long long, int) override {  // NOLINT(google-runtime-int)
         throw std::invalid_argument("Log CBOR: unexpected format(on_extra_integer)");
     }
 
@@ -71,7 +71,7 @@ class LogCborListener : public cbor::listener {
         throw std::invalid_argument("Log CBOR: unexpected format(on_bool)");
     }
 
-    void on_extra_tag(unsigned long long) override {
+    void on_extra_tag(unsigned long long) override {  // NOLINT(google-runtime-int)
         throw std::invalid_argument("Log CBOR: unexpected format(on_extra_tag)");
     }
 
@@ -83,7 +83,7 @@ class LogCborListener : public cbor::listener {
         throw std::invalid_argument("Log CBOR: unexpected format(on_double)");
     }
 
-    void on_extra_special(unsigned long long) override {
+    void on_extra_special(unsigned long long) override {  // NOLINT(google-runtime-int)
         throw std::invalid_argument("Log CBOR: unexpected format(on_extra_special)");
     }
 

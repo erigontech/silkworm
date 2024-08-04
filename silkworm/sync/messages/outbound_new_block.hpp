@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include <silkworm/sync/internals/body_sequence.hpp>
@@ -45,7 +46,7 @@ class OutboundNewBlock : public OutboundMessage {
 
     static constexpr uint64_t kMaxPeers = 1024;
 
-    long sent_packets_{0};
+    int64_t sent_packets_{0};
     Blocks blocks_to_announce_;
     bool is_first_sync_;
     NewBlockPacket packet_;

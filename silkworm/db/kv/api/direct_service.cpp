@@ -72,12 +72,4 @@ Task<DomainPointResult> DirectService::get_domain(const DomainPointQuery&) {
     co_return DomainPointResult{};
 }
 
-/** Temporal Range Queries **/
-
-// rpc DomainRange(DomainRangeReq) returns (Pairs);
-Task<DomainRangeResult> DirectService::get_domain_range(const DomainRangeQuery&) {
-    // TODO(canepat) implement
-    co_return DomainRangeResult{};
-}
-
 }  // namespace silkworm::db::kv::api

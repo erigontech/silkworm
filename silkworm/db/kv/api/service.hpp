@@ -45,11 +45,6 @@ struct Service {
 
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
     virtual Task<DomainPointResult> get_domain(const DomainPointQuery&) = 0;
-
-    /** Temporal Range Queries **/
-
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    virtual Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

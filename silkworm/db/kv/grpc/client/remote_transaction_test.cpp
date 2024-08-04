@@ -495,7 +495,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc]
     }
 }
 
-static proto::Pairs make_history_range_reply(const std::vector<api::KeyValue>& keys_and_values, bool has_more) {
+static proto::Pairs make_key_value_range_reply(const std::vector<api::KeyValue>& keys_and_values, bool has_more) {
     proto::Pairs reply;
     for (const auto& kv : keys_and_values) {
         reply.add_keys(bytes_to_string(kv.key));
@@ -538,7 +538,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[rp
         EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
-            .WillOnce(test::finish_with(grpc_context_, make_history_range_reply({}, /*has_more*/ false)));
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({}, /*has_more*/ false)));
 
         // Execute the test: call index_range and flatten the data matches the expected data
         CHECK(spawn_and_wait(flatten_history_range).empty());
@@ -549,7 +549,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[rp
         EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds
         EXPECT_CALL(reader, Finish)
-            .WillOnce(test::finish_with(grpc_context_, make_history_range_reply({kv1}, /*has_more*/ false)));
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1}, /*has_more*/ false)));
 
         // Execute the test: call index_range and flatten the data matches the expected data
         CHECK(spawn_and_wait(flatten_history_range) == std::vector<api::KeyValue>{kv1});
@@ -572,9 +572,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[rp
         EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
         // 6. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
-            .WillOnce(test::finish_with(grpc_context_, make_history_range_reply({kv1, kv2}, /*has_more*/ true)))
-            .WillOnce(test::finish_with(grpc_context_, make_history_range_reply({kv2, kv1}, /*has_more*/ true)))
-            .WillOnce(test::finish_with(grpc_context_, make_history_range_reply({kv3}, /*has_more*/ false)));
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1, kv2}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv2, kv1}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv3}, /*has_more*/ false)));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -584,6 +584,92 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[rp
 
         // Execute the test: call index_range and flatten the data matches the expected data
         CHECK(spawn_and_wait(flatten_history_range) == std::vector<api::KeyValue>{kv1, kv2, kv2, kv1, kv3});
+
+        // Execute the test postconditions:
+        // close the transaction succeeds
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
+    }
+}
+
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[rpc][ethdb][kv][remote_transaction]") {
+    const api::KeyValue kv1{*from_hex("0011FF0011AA"), *from_hex("0011")};
+    const api::KeyValue kv2{*from_hex("0011FF0011BB"), *from_hex("0022")};
+    const api::KeyValue kv3{*from_hex("0011FF0011CC"), *from_hex("0033")};
+
+    auto flatten_domain_range = [&]() -> Task<std::vector<api::KeyValue>> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::DomainRangeQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::DomainRangeQuery query;
+        auto paginated_keys_and_values = co_await remote_tx_.domain_range(std::move(query));
+#else
+        auto paginated_keys_and_values = co_await remote_tx_.domain_range(api::DomainRangeQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return co_await paginated_to_vector(paginated_keys_and_values);
+    };
+    rpc::test::StrictMockAsyncResponseReader<proto::Pairs> reader;
+    SECTION("throw on error") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillOnce(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call fails
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::Pairs{}));
+        // Execute the test: trying to *use* index_range lazy result should throw
+        CHECK_THROWS_AS(spawn_and_wait(flatten_domain_range), boost::system::system_error);
+    }
+    SECTION("success: empty") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call succeeds 3 times
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({}, /*has_more*/ false)));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_domain_range).empty());
+    }
+    SECTION("success: one page") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call succeeds
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1}, /*has_more*/ false)));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_domain_range) == std::vector<api::KeyValue>{kv1});
+    }
+    SECTION("success: more than one page") {
+        // Set the call expectations: [just once let's do the whole procedure by calling Tx first]
+        // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
+        expect_request_async_tx(/*ok=*/true);
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
+        remote::Pair tx_id_pair{make_fake_tx_created_pair()};
+        remote::Pair cursor_id_pair;
+        cursor_id_pair.set_cursor_id(0x23);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
+        EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
+        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
+        // 5. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 6. AsyncResponseReader<>::Finish call succeeds 3 times
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1, kv2}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv2, kv1}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv3}, /*has_more*/ false)));
+
+        // Execute the test preconditions:
+        // open a new transaction w/ expected transaction ID
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_domain_range) == std::vector<api::KeyValue>{kv1, kv2, kv2, kv1, kv3});
 
         // Execute the test postconditions:
         // close the transaction succeeds

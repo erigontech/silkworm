@@ -153,15 +153,6 @@ class RemoteClientImpl final : public api::Service {
         co_return domain_get_result_from_response(reply);
     }
 
-    /** Temporal Range Queries **/
-
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    Task<api::DomainRangeResult> get_domain_range(const api::DomainRangeQuery& query) override {
-        auto request = domain_range_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, *stub_, std::move(request), grpc_context_);
-        co_return domain_range_result_from_response(reply);
-    }
-
     void set_min_backoff_timeout(const std::chrono::milliseconds& min_backoff_timeout) {
         min_backoff_timeout_ = min_backoff_timeout;
     }

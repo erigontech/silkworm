@@ -21,7 +21,7 @@
 
 namespace silkworm {
 
-void abort_due_to_assertion_failure(char const* expr, char const* file, long line) {
+void abort_due_to_assertion_failure(char const* expr, char const* file, int line) {
     std::cerr << "Assert failed: " << expr << " Source: " << file << ", line " << line << "\n";
     std::abort();
 }

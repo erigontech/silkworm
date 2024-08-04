@@ -106,7 +106,7 @@ ValidationResult Validator::validate_params(const nlohmann::json& request) {
         return tl::make_unexpected("Invalid number of parameters: " + std::to_string(params.size()));
     }
 
-    unsigned long idx = 0;
+    size_t idx = 0;
     for (const auto& spec : method_spec) {
         const auto& spec_name = spec["name"].get<std::string>();
         const auto& spec_schema = spec["schema"];

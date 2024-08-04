@@ -16,6 +16,7 @@
 
 #include "statistics.hpp"
 
+#include <cstdint>
 #include <iomanip>
 
 namespace silkworm {
@@ -86,7 +87,7 @@ std::ostream& operator<<(std::ostream& os, std::tuple<Network_Statistics&, Netwo
     Network_Statistics& prev = get<0>(stats);
     Network_Statistics& curr = get<1>(stats);
     seconds_t elapsed = get<2>(stats);
-    auto elapsed_s = static_cast<unsigned long>(elapsed.count());
+    auto elapsed_s = static_cast<uint64_t>(elapsed.count());
 
     os << std::setfill('_') << std::right;
 

@@ -82,7 +82,7 @@ class LogCborListener : public cbor::listener {
         ensure(false, "Log CBOR: unexpected format (on_undefined called)");
     }
 
-    void on_extra_integer(unsigned long long, int) override {
+    void on_extra_integer(unsigned long long, int) override {  // NOLINT(google-runtime-int)
         ensure(false, "Log CBOR: unexpected format (on_extra_integer called)");
     }
 
@@ -90,7 +90,7 @@ class LogCborListener : public cbor::listener {
         ensure(false, "Log CBOR: unexpected format (on_bool called)");
     }
 
-    void on_extra_tag(unsigned long long) override {
+    void on_extra_tag(unsigned long long) override {  // NOLINT(google-runtime-int)
         ensure(false, "Log CBOR: unexpected format (on_extra_tag called)");
     }
 
@@ -102,7 +102,7 @@ class LogCborListener : public cbor::listener {
         ensure(false, "Log CBOR: unexpected format (on_double called)");
     }
 
-    void on_extra_special(unsigned long long) override {
+    void on_extra_special(unsigned long long) override {  // NOLINT(google-runtime-int)
         ensure(false, "Log CBOR: unexpected format (on_extra_special called)");
     }
 

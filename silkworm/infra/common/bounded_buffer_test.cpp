@@ -65,11 +65,11 @@ template <class Buffer>
 class Consumer {
     using value_type = typename Buffer::value_type;
     Buffer* container_;
-    long iterations_;
+    int iterations_;
     bool delay_;
 
   public:
-    Consumer(Buffer* buffer, long iterations, bool delay)
+    Consumer(Buffer* buffer, int iterations, bool delay)
         : container_(buffer), iterations_(iterations), delay_(delay) {}
 
     void operator()() {

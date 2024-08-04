@@ -78,6 +78,11 @@ api::HistoryRangeResult history_range_result_from_response(const proto::Pairs& r
     request.set_table(query.table);
     request.set_from_key(query.from_key.data(), query.from_key.size());
     request.set_to_key(query.to_key.data(), query.to_key.size());
+    if (query.timestamp) {
+        request.set_ts(static_cast<uint64_t>(*query.timestamp));
+    } else {
+        request.set_latest(true);
+    }
     request.set_order_ascend(query.ascending_order);
     request.set_limit(static_cast<int64_t>(query.limit));
     request.set_page_size(static_cast<int32_t>(query.page_size));

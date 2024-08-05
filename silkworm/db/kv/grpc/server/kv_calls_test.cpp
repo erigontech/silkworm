@@ -85,8 +85,8 @@ TEST_CASE("dump_mdbx_result", "[silkworm][rpc][kv_calls]") {
     db::CursorResult result = cursor.to_first(/*throw_notfound=*/false);
     const auto result_dump = db::detail::dump_mdbx_result(result);
     CHECK(result_dump.find(std::to_string(result.done)) != std::string::npos);
-    CHECK(result_dump.find(std::to_string(bool{result.key})) != std::string::npos);
-    CHECK(result_dump.find(std::to_string(bool{result.value})) != std::string::npos);
+    CHECK(result_dump.find(std::to_string(static_cast<bool>(result.key))) != std::string::npos);
+    CHECK(result_dump.find(std::to_string(static_cast<bool>(result.value))) != std::string::npos);
     ro_txn.abort();
 }
 

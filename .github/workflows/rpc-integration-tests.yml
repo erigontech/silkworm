@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout Silkworm Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: "0"
@@ -108,12 +108,6 @@ jobs:
         with:
           name: test-results
           path: ${{runner.workspace}}/rpc-tests/integration/mainnet/results/
-
-      - name: Save test results
-        working-directory: ${{runner.workspace}}/silkworm
-        env:
-          TEST_RESULT: ${{ steps.test_step.outputs.TEST_RESULT }}
-        run: python3 $ERIGON_QA_PATH/test_system/qa-tests/uploads/upload_test_results.py --repo silkworm --branch ${{ github.ref_name }} --commit $(git rev-parse HEAD) --test_name rpc-integration-tests --chain mainnet --outcome $TEST_RESULT #--result_file ${{runner.workspace}}/rpc-tests/integration/mainnet/result.json
 
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'

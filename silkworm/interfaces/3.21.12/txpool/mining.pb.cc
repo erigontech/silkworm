@@ -415,8 +415,8 @@ const char descriptor_table_protodef_txpool_2fmining_2eproto[] PROTOBUF_SECTION_
   "Request\032\033.txpool.SubmitHashRateReply\022:\n\010"
   "HashRate\022\027.txpool.HashRateRequest\032\025.txpo"
   "ol.HashRateReply\0224\n\006Mining\022\025.txpool.Mini"
-  "ngRequest\032\023.txpool.MiningReplyB\021Z\017./txpo"
-  "ol;txpoolb\006proto3"
+  "ngRequest\032\023.txpool.MiningReplyB\026Z\024./txpo"
+  "ol;txpoolprotob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2fmining_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -424,7 +424,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2fmining_2ep
 };
 static ::_pbi::once_flag descriptor_table_txpool_2fmining_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_txpool_2fmining_2eproto = {
-    false, false, 1337, descriptor_table_protodef_txpool_2fmining_2eproto,
+    false, false, 1342, descriptor_table_protodef_txpool_2fmining_2eproto,
     "txpool/mining.proto",
     &descriptor_table_txpool_2fmining_2eproto_once, descriptor_table_txpool_2fmining_2eproto_deps, 2, 16,
     schemas, file_default_instances, TableStruct_txpool_2fmining_2eproto::offsets,

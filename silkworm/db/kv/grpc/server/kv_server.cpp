@@ -66,9 +66,9 @@ void KvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
                        [](auto&&... args) -> Task<void> {
                            co_await DomainGetCall{std::forward<decltype(args)>(args)...}();
                        });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestHistoryGet,
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestHistorySeek,
                        [](auto&&... args) -> Task<void> {
-                           co_await HistoryGetCall{std::forward<decltype(args)>(args)...}();
+                           co_await HistorySeekCall{std::forward<decltype(args)>(args)...}();
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestIndexRange,
                        [](auto&&... args) -> Task<void> {

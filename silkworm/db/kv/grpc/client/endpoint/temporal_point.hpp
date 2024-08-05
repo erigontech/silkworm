@@ -22,8 +22,8 @@
 
 namespace silkworm::db::kv::grpc::client {
 
-::remote::HistoryGetReq history_get_request_from_query(const api::HistoryPointQuery&);
-api::HistoryPointResult history_get_result_from_response(const ::remote::HistoryGetReply&);
+::remote::HistorySeekReq history_seek_request_from_query(const api::HistoryPointQuery&);
+api::HistoryPointResult history_seek_result_from_response(const ::remote::HistorySeekReply&);
 
 ::remote::DomainGetReq domain_get_request_from_query(const api::DomainPointQuery&);
 api::DomainPointResult domain_get_result_from_response(const ::remote::DomainGetReply&);

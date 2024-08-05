@@ -724,12 +724,12 @@ Task<void> SnapshotsCall::operator()() {
     SILK_TRACE << "SnapshotsCall END #blocks_files: " << response.blocks_files_size() << " #history_files: " << response.history_files_size();
 }
 
-Task<void> HistoryGetCall::operator()() {
-    SILK_TRACE << "HistoryGetCall START";
-    remote::HistoryGetReply response;
+Task<void> HistorySeekCall::operator()() {
+    SILK_TRACE << "HistorySeekCall START";
+    remote::HistorySeekReply response;
     // TODO(canepat) implement properly
     co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
-    SILK_TRACE << "HistoryGetCall END ok: " << response.ok() << " value: " << response.v();
+    SILK_TRACE << "HistorySeekCall END ok: " << response.ok() << " value: " << response.v();
 }
 
 Task<void> DomainGetCall::operator()() {

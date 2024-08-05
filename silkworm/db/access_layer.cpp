@@ -847,13 +847,7 @@ std::optional<ChainConfig> read_chain_config(ROTxn& txn) {
 
     // https://github.com/nlohmann/json/issues/2204
     const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, false);
-    auto chain_config = ChainConfig::from_json(json);
-
-    if (chain_config.has_value() && !chain_config->genesis_hash.has_value()) {
-        chain_config->genesis_hash = read_canonical_header_hash(txn, 0);
-    }
-
-    return chain_config;
+    return ChainConfig::from_json(json);
 }
 
 void update_chain_config(RWTxn& txn, const ChainConfig& config) {

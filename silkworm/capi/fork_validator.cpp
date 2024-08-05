@@ -28,9 +28,15 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
 
     auto txn = silkworm::db::ROTxnManaged{unmanaged_env};
     auto chain_config{silkworm::db::read_chain_config(txn)};
+    SILKWORM_ASSERT(chain_config);
+
+    // Erigon does not provide Genesis Hash as a part of chain config, so we need to read it separately
+    if (!chain_config->genesis_hash) {
+        chain_config->genesis_hash = silkworm::db::read_canonical_header_hash(txn, 0);
+    }
+
     auto prune_mode{silkworm::db::read_prune_mode(txn)};
     txn.abort();
-    SILKWORM_ASSERT(chain_config);
 
     auto data_dir = std::make_unique<silkworm::DataDirectory>(handle->data_dir_path);
     handle->node_settings.data_directory = std::move(data_dir);

@@ -284,7 +284,7 @@ void DebugTracer::flush_logs() {
 
 void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
     if (opcode == OP_CALL || opcode == OP_CALLCODE || opcode == OP_STATICCALL || opcode == OP_DELEGATECALL || opcode == OP_CREATE || opcode == OP_CREATE2) {
-        fix_call_gas_info_ = std::make_unique<FixCallGasInfo>(FixCallGasInfo{execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
+        fix_call_gas_info_ = FixCallGasInfo{execution_state.msg->depth, 0, metrics_[opcode].gas_cost};
         const auto value = stack_top[-2];  // value
         if (value != 0) {
             fix_call_gas_info_->gas_cost += 9000;

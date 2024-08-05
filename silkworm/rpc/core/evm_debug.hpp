@@ -17,6 +17,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <stack>
 #include <string>
 #include <vector>
@@ -111,7 +112,7 @@ class DebugTracer : public EvmTracer {
     const char* const* opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<std::int64_t> start_gas_;
-    std::unique_ptr<FixCallGasInfo> fix_call_gas_info_;
+    std::optional<FixCallGasInfo> fix_call_gas_info_;
 };
 
 class AccountTracer : public EvmTracer {

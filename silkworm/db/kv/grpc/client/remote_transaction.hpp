@@ -59,6 +59,9 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> close() override;
 
+    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
+    Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery&& query) override;
+
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
     Task<api::PaginatedTimestamps> index_range(api::IndexRangeQuery&& query) override;
 

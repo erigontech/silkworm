@@ -56,34 +56,6 @@ struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub
     }
 };
 
-TEST_CASE_METHOD(RemoteClientTestRunner, "KV::HistorySeek", "[node][remote][kv][grpc]") {
-    const api::HistoryPointQuery query{};  // input query doesn't matter here, we tweak the reply
-
-    rpc::test::StrictMockAsyncResponseReader<proto::HistorySeekReply> reader;
-    EXPECT_CALL(*stub_, AsyncHistorySeekRaw).WillOnce(testing::Return(&reader));
-
-    SECTION("call get_history and get result") {
-        proto::HistorySeekReply reply{sample_proto_history_seek_response()};
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
-
-        const api::HistoryPointResult result = run_service_method<&api::Service::get_history>(query);
-        CHECK(result.success);
-        CHECK(result.value == from_hex("ff00ff00"));
-    }
-    SECTION("call get_history and get empty result") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
-
-        const api::HistoryPointResult result = run_service_method<&api::Service::get_history>(query);
-        CHECK_FALSE(result.success);
-        CHECK(result.value.empty());
-    }
-    SECTION("call get_history and get error") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
-
-        CHECK_THROWS_AS((run_service_method<&api::Service::get_history>(query)), rpc::GrpcStatusError);
-    }
-}
-
 TEST_CASE_METHOD(RemoteClientTestRunner, "KV::DomainGet", "[node][remote][kv][grpc]") {
     const api::DomainPointQuery query{};  // input query doesn't matter here, we tweak the reply
 

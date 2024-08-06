@@ -139,13 +139,6 @@ class RemoteClientImpl final : public api::Service {
 
     /** Temporal Point Queries **/
 
-    // rpc HistoryGet(HistorySeekReq) returns (HistorySeekReply);
-    Task<api::HistoryPointResult> get_history(const api::HistoryPointQuery& query) override {
-        auto request = history_seek_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistorySeek, *stub_, std::move(request), grpc_context_);
-        co_return history_seek_result_from_response(reply);
-    }
-
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
     Task<api::DomainPointResult> get_domain(const api::DomainPointQuery& query) override {
         auto request = domain_get_request_from_query(query);

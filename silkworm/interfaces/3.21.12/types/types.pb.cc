@@ -126,6 +126,9 @@ PROTOBUF_CONSTEXPR ExecutionPayload::ExecutionPayload(
   , /*decltype(_impl_._cached_size_)*/{}
   , /*decltype(_impl_.transactions_)*/{}
   , /*decltype(_impl_.withdrawals_)*/{}
+  , /*decltype(_impl_.deposit_requests_)*/{}
+  , /*decltype(_impl_.withdrawal_requests_)*/{}
+  , /*decltype(_impl_.consolidation_requests_)*/{}
   , /*decltype(_impl_.extra_data_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.parent_hash_)*/nullptr
   , /*decltype(_impl_.coinbase_)*/nullptr
@@ -151,6 +154,53 @@ struct ExecutionPayloadDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExecutionPayloadDefaultTypeInternal _ExecutionPayload_default_instance_;
+PROTOBUF_CONSTEXPR DepositRequest::DepositRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.pubkey_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.signature_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.withdrawal_credentials_)*/nullptr
+  , /*decltype(_impl_.amount_)*/uint64_t{0u}
+  , /*decltype(_impl_.index_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct DepositRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR DepositRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~DepositRequestDefaultTypeInternal() {}
+  union {
+    DepositRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DepositRequestDefaultTypeInternal _DepositRequest_default_instance_;
+PROTOBUF_CONSTEXPR WithdrawalRequest::WithdrawalRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.validator_pubkey_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.source_address_)*/nullptr
+  , /*decltype(_impl_.amount_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct WithdrawalRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR WithdrawalRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~WithdrawalRequestDefaultTypeInternal() {}
+  union {
+    WithdrawalRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 WithdrawalRequestDefaultTypeInternal _WithdrawalRequest_default_instance_;
+PROTOBUF_CONSTEXPR ConsolidationRequest::ConsolidationRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.source_pubkey_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.target_pubkey_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.source_address_)*/nullptr
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct ConsolidationRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ConsolidationRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ConsolidationRequestDefaultTypeInternal() {}
+  union {
+    ConsolidationRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConsolidationRequestDefaultTypeInternal _ConsolidationRequest_default_instance_;
 PROTOBUF_CONSTEXPR Withdrawal::Withdrawal(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.address_)*/nullptr
@@ -252,7 +302,7 @@ struct ExecutionPayloadBodyV1DefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ExecutionPayloadBodyV1DefaultTypeInternal _ExecutionPayloadBodyV1_default_instance_;
 }  // namespace types
-static ::_pb::Metadata file_level_metadata_types_2ftypes_2eproto[14];
+static ::_pb::Metadata file_level_metadata_types_2ftypes_2eproto[17];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_types_2ftypes_2eproto = nullptr;
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_types_2ftypes_2eproto = nullptr;
 
@@ -338,6 +388,9 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.withdrawals_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.blob_gas_used_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.excess_blob_gas_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.deposit_requests_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.withdrawal_requests_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.consolidation_requests_),
   ~0u,
   ~0u,
   ~0u,
@@ -356,6 +409,38 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   ~0u,
   0,
   1,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::types::DepositRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::types::DepositRequest, _impl_.pubkey_),
+  PROTOBUF_FIELD_OFFSET(::types::DepositRequest, _impl_.withdrawal_credentials_),
+  PROTOBUF_FIELD_OFFSET(::types::DepositRequest, _impl_.amount_),
+  PROTOBUF_FIELD_OFFSET(::types::DepositRequest, _impl_.signature_),
+  PROTOBUF_FIELD_OFFSET(::types::DepositRequest, _impl_.index_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::types::WithdrawalRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::types::WithdrawalRequest, _impl_.source_address_),
+  PROTOBUF_FIELD_OFFSET(::types::WithdrawalRequest, _impl_.validator_pubkey_),
+  PROTOBUF_FIELD_OFFSET(::types::WithdrawalRequest, _impl_.amount_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::types::ConsolidationRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::types::ConsolidationRequest, _impl_.source_address_),
+  PROTOBUF_FIELD_OFFSET(::types::ConsolidationRequest, _impl_.source_pubkey_),
+  PROTOBUF_FIELD_OFFSET(::types::ConsolidationRequest, _impl_.target_pubkey_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -429,13 +514,16 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 32, -1, -1, sizeof(::types::H1024)},
   { 40, -1, -1, sizeof(::types::H2048)},
   { 48, -1, -1, sizeof(::types::VersionReply)},
-  { 57, 81, -1, sizeof(::types::ExecutionPayload)},
-  { 99, -1, -1, sizeof(::types::Withdrawal)},
-  { 109, -1, -1, sizeof(::types::BlobsBundleV1)},
-  { 118, -1, -1, sizeof(::types::NodeInfoPorts)},
-  { 126, -1, -1, sizeof(::types::NodeInfoReply)},
-  { 139, -1, -1, sizeof(::types::PeerInfo)},
-  { 155, -1, -1, sizeof(::types::ExecutionPayloadBodyV1)},
+  { 57, 84, -1, sizeof(::types::ExecutionPayload)},
+  { 105, -1, -1, sizeof(::types::DepositRequest)},
+  { 116, -1, -1, sizeof(::types::WithdrawalRequest)},
+  { 125, -1, -1, sizeof(::types::ConsolidationRequest)},
+  { 134, -1, -1, sizeof(::types::Withdrawal)},
+  { 144, -1, -1, sizeof(::types::BlobsBundleV1)},
+  { 153, -1, -1, sizeof(::types::NodeInfoPorts)},
+  { 161, -1, -1, sizeof(::types::NodeInfoReply)},
+  { 174, -1, -1, sizeof(::types::PeerInfo)},
+  { 190, -1, -1, sizeof(::types::ExecutionPayloadBodyV1)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -447,6 +535,9 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::types::_H2048_default_instance_._instance,
   &::types::_VersionReply_default_instance_._instance,
   &::types::_ExecutionPayload_default_instance_._instance,
+  &::types::_DepositRequest_default_instance_._instance,
+  &::types::_WithdrawalRequest_default_instance_._instance,
+  &::types::_ConsolidationRequest_default_instance_._instance,
   &::types::_Withdrawal_default_instance_._instance,
   &::types::_BlobsBundleV1_default_instance_._instance,
   &::types::_NodeInfoPorts_default_instance_._instance,
@@ -466,7 +557,7 @@ const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VA
   "es.H512\022\027\n\002lo\030\002 \001(\0132\013.types.H512\";\n\005H204"
   "8\022\030\n\002hi\030\001 \001(\0132\014.types.H1024\022\030\n\002lo\030\002 \001(\0132"
   "\014.types.H1024\";\n\014VersionReply\022\r\n\005major\030\001"
-  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\264\004\n\020E"
+  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\331\005\n\020E"
   "xecutionPayload\022\017\n\007version\030\001 \001(\r\022 \n\013pare"
   "nt_hash\030\002 \001(\0132\013.types.H256\022\035\n\010coinbase\030\003"
   " \001(\0132\013.types.H160\022\037\n\nstate_root\030\004 \001(\0132\013."
@@ -480,39 +571,51 @@ const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VA
   "256\022\024\n\014transactions\030\017 \003(\014\022&\n\013withdrawals"
   "\030\020 \003(\0132\021.types.Withdrawal\022\032\n\rblob_gas_us"
   "ed\030\021 \001(\004H\000\210\001\001\022\034\n\017excess_blob_gas\030\022 \001(\004H\001"
-  "\210\001\001B\020\n\016_blob_gas_usedB\022\n\020_excess_blob_ga"
-  "s\"b\n\nWithdrawal\022\r\n\005index\030\001 \001(\004\022\027\n\017valida"
-  "tor_index\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132\013.types"
-  ".H160\022\016\n\006amount\030\004 \001(\004\"C\n\rBlobsBundleV1\022\023"
-  "\n\013commitments\030\001 \003(\014\022\r\n\005blobs\030\002 \003(\014\022\016\n\006pr"
-  "oofs\030\003 \003(\014\"4\n\rNodeInfoPorts\022\021\n\tdiscovery"
-  "\030\001 \001(\r\022\020\n\010listener\030\002 \001(\r\"\224\001\n\rNodeInfoRep"
-  "ly\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003 "
-  "\001(\t\022\013\n\003enr\030\004 \001(\t\022#\n\005ports\030\005 \001(\0132\024.types."
-  "NodeInfoPorts\022\025\n\rlistener_addr\030\006 \001(\t\022\021\n\t"
-  "protocols\030\007 \001(\014\"\313\001\n\010PeerInfo\022\n\n\002id\030\001 \001(\t"
-  "\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001"
-  "(\t\022\014\n\004caps\030\005 \003(\t\022\027\n\017conn_local_addr\030\006 \001("
-  "\t\022\030\n\020conn_remote_addr\030\007 \001(\t\022\027\n\017conn_is_i"
-  "nbound\030\010 \001(\010\022\027\n\017conn_is_trusted\030\t \001(\010\022\026\n"
-  "\016conn_is_static\030\n \001(\010\"V\n\026ExecutionPayloa"
-  "dBodyV1\022\024\n\014transactions\030\001 \003(\014\022&\n\013withdra"
-  "wals\030\002 \003(\0132\021.types.Withdrawal:=\n\025service"
-  "_major_version\022\034.google.protobuf.FileOpt"
-  "ions\030\321\206\003 \001(\r:=\n\025service_minor_version\022\034."
-  "google.protobuf.FileOptions\030\322\206\003 \001(\r:=\n\025s"
-  "ervice_patch_version\022\034.google.protobuf.F"
-  "ileOptions\030\323\206\003 \001(\rB\017Z\r./types;typesb\006pro"
-  "to3"
+  "\210\001\001\022/\n\020deposit_requests\030\023 \003(\0132\025.types.De"
+  "positRequest\0225\n\023withdrawal_requests\030\024 \003("
+  "\0132\030.types.WithdrawalRequest\022;\n\026consolida"
+  "tion_requests\030\025 \003(\0132\033.types.Consolidatio"
+  "nRequestB\020\n\016_blob_gas_usedB\022\n\020_excess_bl"
+  "ob_gas\"\177\n\016DepositRequest\022\016\n\006pubkey\030\001 \001(\014"
+  "\022+\n\026withdrawal_credentials\030\002 \001(\0132\013.types"
+  ".H256\022\016\n\006amount\030\003 \001(\004\022\021\n\tsignature\030\004 \001(\014"
+  "\022\r\n\005index\030\005 \001(\004\"b\n\021WithdrawalRequest\022#\n\016"
+  "source_address\030\001 \001(\0132\013.types.H160\022\030\n\020val"
+  "idator_pubkey\030\002 \001(\014\022\016\n\006amount\030\003 \001(\004\"i\n\024C"
+  "onsolidationRequest\022#\n\016source_address\030\001 "
+  "\001(\0132\013.types.H160\022\025\n\rsource_pubkey\030\002 \001(\014\022"
+  "\025\n\rtarget_pubkey\030\003 \001(\014\"b\n\nWithdrawal\022\r\n\005"
+  "index\030\001 \001(\004\022\027\n\017validator_index\030\002 \001(\004\022\034\n\007"
+  "address\030\003 \001(\0132\013.types.H160\022\016\n\006amount\030\004 \001"
+  "(\004\"C\n\rBlobsBundleV1\022\023\n\013commitments\030\001 \003(\014"
+  "\022\r\n\005blobs\030\002 \003(\014\022\016\n\006proofs\030\003 \003(\014\"4\n\rNodeI"
+  "nfoPorts\022\021\n\tdiscovery\030\001 \001(\r\022\020\n\010listener\030"
+  "\002 \001(\r\"\224\001\n\rNodeInfoReply\022\n\n\002id\030\001 \001(\t\022\014\n\004n"
+  "ame\030\002 \001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022#\n"
+  "\005ports\030\005 \001(\0132\024.types.NodeInfoPorts\022\025\n\rli"
+  "stener_addr\030\006 \001(\t\022\021\n\tprotocols\030\007 \001(\014\"\313\001\n"
+  "\010PeerInfo\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005e"
+  "node\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022\014\n\004caps\030\005 \003(\t\022\027\n"
+  "\017conn_local_addr\030\006 \001(\t\022\030\n\020conn_remote_ad"
+  "dr\030\007 \001(\t\022\027\n\017conn_is_inbound\030\010 \001(\010\022\027\n\017con"
+  "n_is_trusted\030\t \001(\010\022\026\n\016conn_is_static\030\n \001"
+  "(\010\"V\n\026ExecutionPayloadBodyV1\022\024\n\014transact"
+  "ions\030\001 \003(\014\022&\n\013withdrawals\030\002 \003(\0132\021.types."
+  "Withdrawal:=\n\025service_major_version\022\034.go"
+  "ogle.protobuf.FileOptions\030\321\206\003 \001(\r:=\n\025ser"
+  "vice_minor_version\022\034.google.protobuf.Fil"
+  "eOptions\030\322\206\003 \001(\r:=\n\025service_patch_versio"
+  "n\022\034.google.protobuf.FileOptions\030\323\206\003 \001(\rB"
+  "\024Z\022./types;typesprotob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_types_2ftypes_2eproto_deps[1] = {
   &::descriptor_table_google_2fprotobuf_2fdescriptor_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_types_2ftypes_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_types_2ftypes_2eproto = {
-    false, false, 1883, descriptor_table_protodef_types_2ftypes_2eproto,
+    false, false, 2389, descriptor_table_protodef_types_2ftypes_2eproto,
     "types/types.proto",
-    &descriptor_table_types_2ftypes_2eproto_once, descriptor_table_types_2ftypes_2eproto_deps, 1, 14,
+    &descriptor_table_types_2ftypes_2eproto_once, descriptor_table_types_2ftypes_2eproto_deps, 1, 17,
     schemas, file_default_instances, TableStruct_types_2ftypes_2eproto::offsets,
     file_level_metadata_types_2ftypes_2eproto, file_level_enum_descriptors_types_2ftypes_2eproto,
     file_level_service_descriptors_types_2ftypes_2eproto,
@@ -2218,6 +2321,9 @@ ExecutionPayload::ExecutionPayload(const ExecutionPayload& from)
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.transactions_){from._impl_.transactions_}
     , decltype(_impl_.withdrawals_){from._impl_.withdrawals_}
+    , decltype(_impl_.deposit_requests_){from._impl_.deposit_requests_}
+    , decltype(_impl_.withdrawal_requests_){from._impl_.withdrawal_requests_}
+    , decltype(_impl_.consolidation_requests_){from._impl_.consolidation_requests_}
     , decltype(_impl_.extra_data_){}
     , decltype(_impl_.parent_hash_){nullptr}
     , decltype(_impl_.coinbase_){nullptr}
@@ -2283,6 +2389,9 @@ inline void ExecutionPayload::SharedCtor(
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.transactions_){arena}
     , decltype(_impl_.withdrawals_){arena}
+    , decltype(_impl_.deposit_requests_){arena}
+    , decltype(_impl_.withdrawal_requests_){arena}
+    , decltype(_impl_.consolidation_requests_){arena}
     , decltype(_impl_.extra_data_){}
     , decltype(_impl_.parent_hash_){nullptr}
     , decltype(_impl_.coinbase_){nullptr}
@@ -2319,6 +2428,9 @@ inline void ExecutionPayload::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.transactions_.~RepeatedPtrField();
   _impl_.withdrawals_.~RepeatedPtrField();
+  _impl_.deposit_requests_.~RepeatedPtrField();
+  _impl_.withdrawal_requests_.~RepeatedPtrField();
+  _impl_.consolidation_requests_.~RepeatedPtrField();
   _impl_.extra_data_.Destroy();
   if (this != internal_default_instance()) delete _impl_.parent_hash_;
   if (this != internal_default_instance()) delete _impl_.coinbase_;
@@ -2342,6 +2454,9 @@ void ExecutionPayload::Clear() {
 
   _impl_.transactions_.Clear();
   _impl_.withdrawals_.Clear();
+  _impl_.deposit_requests_.Clear();
+  _impl_.withdrawal_requests_.Clear();
+  _impl_.consolidation_requests_.Clear();
   _impl_.extra_data_.ClearToEmpty();
   if (GetArenaForAllocation() == nullptr && _impl_.parent_hash_ != nullptr) {
     delete _impl_.parent_hash_;
@@ -2554,6 +2669,45 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
+      // repeated .types.DepositRequest deposit_requests = 19;
+      case 19:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 154)) {
+          ptr -= 2;
+          do {
+            ptr += 2;
+            ptr = ctx->ParseMessage(_internal_add_deposit_requests(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<154>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .types.WithdrawalRequest withdrawal_requests = 20;
+      case 20:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 162)) {
+          ptr -= 2;
+          do {
+            ptr += 2;
+            ptr = ctx->ParseMessage(_internal_add_withdrawal_requests(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<162>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .types.ConsolidationRequest consolidation_requests = 21;
+      case 21:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 170)) {
+          ptr -= 2;
+          do {
+            ptr += 2;
+            ptr = ctx->ParseMessage(_internal_add_consolidation_requests(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<170>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -2702,6 +2856,30 @@ uint8_t* ExecutionPayload::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(18, this->_internal_excess_blob_gas(), target);
   }
 
+  // repeated .types.DepositRequest deposit_requests = 19;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_deposit_requests_size()); i < n; i++) {
+    const auto& repfield = this->_internal_deposit_requests(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(19, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  // repeated .types.WithdrawalRequest withdrawal_requests = 20;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_withdrawal_requests_size()); i < n; i++) {
+    const auto& repfield = this->_internal_withdrawal_requests(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(20, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  // repeated .types.ConsolidationRequest consolidation_requests = 21;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_consolidation_requests_size()); i < n; i++) {
+    const auto& repfield = this->_internal_consolidation_requests(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(21, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -2729,6 +2907,27 @@ size_t ExecutionPayload::ByteSizeLong() const {
   // repeated .types.Withdrawal withdrawals = 16;
   total_size += 2UL * this->_internal_withdrawals_size();
   for (const auto& msg : this->_impl_.withdrawals_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // repeated .types.DepositRequest deposit_requests = 19;
+  total_size += 2UL * this->_internal_deposit_requests_size();
+  for (const auto& msg : this->_impl_.deposit_requests_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // repeated .types.WithdrawalRequest withdrawal_requests = 20;
+  total_size += 2UL * this->_internal_withdrawal_requests_size();
+  for (const auto& msg : this->_impl_.withdrawal_requests_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // repeated .types.ConsolidationRequest consolidation_requests = 21;
+  total_size += 2UL * this->_internal_consolidation_requests_size();
+  for (const auto& msg : this->_impl_.consolidation_requests_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -2858,6 +3057,9 @@ void ExecutionPayload::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
 
   _this->_impl_.transactions_.MergeFrom(from._impl_.transactions_);
   _this->_impl_.withdrawals_.MergeFrom(from._impl_.withdrawals_);
+  _this->_impl_.deposit_requests_.MergeFrom(from._impl_.deposit_requests_);
+  _this->_impl_.withdrawal_requests_.MergeFrom(from._impl_.withdrawal_requests_);
+  _this->_impl_.consolidation_requests_.MergeFrom(from._impl_.consolidation_requests_);
   if (!from._internal_extra_data().empty()) {
     _this->_internal_set_extra_data(from._internal_extra_data());
   }
@@ -2940,6 +3142,9 @@ void ExecutionPayload::InternalSwap(ExecutionPayload* other) {
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.transactions_.InternalSwap(&other->_impl_.transactions_);
   _impl_.withdrawals_.InternalSwap(&other->_impl_.withdrawals_);
+  _impl_.deposit_requests_.InternalSwap(&other->_impl_.deposit_requests_);
+  _impl_.withdrawal_requests_.InternalSwap(&other->_impl_.withdrawal_requests_);
+  _impl_.consolidation_requests_.InternalSwap(&other->_impl_.consolidation_requests_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.extra_data_, lhs_arena,
       &other->_impl_.extra_data_, rhs_arena
@@ -2956,6 +3161,906 @@ void ExecutionPayload::InternalSwap(ExecutionPayload* other) {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
       file_level_metadata_types_2ftypes_2eproto[7]);
+}
+
+// ===================================================================
+
+class DepositRequest::_Internal {
+ public:
+  static const ::types::H256& withdrawal_credentials(const DepositRequest* msg);
+};
+
+const ::types::H256&
+DepositRequest::_Internal::withdrawal_credentials(const DepositRequest* msg) {
+  return *msg->_impl_.withdrawal_credentials_;
+}
+DepositRequest::DepositRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:types.DepositRequest)
+}
+DepositRequest::DepositRequest(const DepositRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  DepositRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.pubkey_){}
+    , decltype(_impl_.signature_){}
+    , decltype(_impl_.withdrawal_credentials_){nullptr}
+    , decltype(_impl_.amount_){}
+    , decltype(_impl_.index_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_pubkey().empty()) {
+    _this->_impl_.pubkey_.Set(from._internal_pubkey(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.signature_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.signature_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_signature().empty()) {
+    _this->_impl_.signature_.Set(from._internal_signature(), 
+      _this->GetArenaForAllocation());
+  }
+  if (from._internal_has_withdrawal_credentials()) {
+    _this->_impl_.withdrawal_credentials_ = new ::types::H256(*from._impl_.withdrawal_credentials_);
+  }
+  ::memcpy(&_impl_.amount_, &from._impl_.amount_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.index_) -
+    reinterpret_cast<char*>(&_impl_.amount_)) + sizeof(_impl_.index_));
+  // @@protoc_insertion_point(copy_constructor:types.DepositRequest)
+}
+
+inline void DepositRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.pubkey_){}
+    , decltype(_impl_.signature_){}
+    , decltype(_impl_.withdrawal_credentials_){nullptr}
+    , decltype(_impl_.amount_){uint64_t{0u}}
+    , decltype(_impl_.index_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.signature_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.signature_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+DepositRequest::~DepositRequest() {
+  // @@protoc_insertion_point(destructor:types.DepositRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void DepositRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.pubkey_.Destroy();
+  _impl_.signature_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.withdrawal_credentials_;
+}
+
+void DepositRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void DepositRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:types.DepositRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.pubkey_.ClearToEmpty();
+  _impl_.signature_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.withdrawal_credentials_ != nullptr) {
+    delete _impl_.withdrawal_credentials_;
+  }
+  _impl_.withdrawal_credentials_ = nullptr;
+  ::memset(&_impl_.amount_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.index_) -
+      reinterpret_cast<char*>(&_impl_.amount_)) + sizeof(_impl_.index_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* DepositRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // bytes pubkey = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_pubkey();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .types.H256 withdrawal_credentials = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_withdrawal_credentials(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 amount = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.amount_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes signature = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          auto str = _internal_mutable_signature();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 index = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _impl_.index_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* DepositRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:types.DepositRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bytes pubkey = 1;
+  if (!this->_internal_pubkey().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        1, this->_internal_pubkey(), target);
+  }
+
+  // .types.H256 withdrawal_credentials = 2;
+  if (this->_internal_has_withdrawal_credentials()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::withdrawal_credentials(this),
+        _Internal::withdrawal_credentials(this).GetCachedSize(), target, stream);
+  }
+
+  // uint64 amount = 3;
+  if (this->_internal_amount() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(3, this->_internal_amount(), target);
+  }
+
+  // bytes signature = 4;
+  if (!this->_internal_signature().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        4, this->_internal_signature(), target);
+  }
+
+  // uint64 index = 5;
+  if (this->_internal_index() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(5, this->_internal_index(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:types.DepositRequest)
+  return target;
+}
+
+size_t DepositRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:types.DepositRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // bytes pubkey = 1;
+  if (!this->_internal_pubkey().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_pubkey());
+  }
+
+  // bytes signature = 4;
+  if (!this->_internal_signature().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_signature());
+  }
+
+  // .types.H256 withdrawal_credentials = 2;
+  if (this->_internal_has_withdrawal_credentials()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.withdrawal_credentials_);
+  }
+
+  // uint64 amount = 3;
+  if (this->_internal_amount() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_amount());
+  }
+
+  // uint64 index = 5;
+  if (this->_internal_index() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_index());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData DepositRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    DepositRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*DepositRequest::GetClassData() const { return &_class_data_; }
+
+
+void DepositRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<DepositRequest*>(&to_msg);
+  auto& from = static_cast<const DepositRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:types.DepositRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_pubkey().empty()) {
+    _this->_internal_set_pubkey(from._internal_pubkey());
+  }
+  if (!from._internal_signature().empty()) {
+    _this->_internal_set_signature(from._internal_signature());
+  }
+  if (from._internal_has_withdrawal_credentials()) {
+    _this->_internal_mutable_withdrawal_credentials()->::types::H256::MergeFrom(
+        from._internal_withdrawal_credentials());
+  }
+  if (from._internal_amount() != 0) {
+    _this->_internal_set_amount(from._internal_amount());
+  }
+  if (from._internal_index() != 0) {
+    _this->_internal_set_index(from._internal_index());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void DepositRequest::CopyFrom(const DepositRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:types.DepositRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool DepositRequest::IsInitialized() const {
+  return true;
+}
+
+void DepositRequest::InternalSwap(DepositRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.pubkey_, lhs_arena,
+      &other->_impl_.pubkey_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.signature_, lhs_arena,
+      &other->_impl_.signature_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(DepositRequest, _impl_.index_)
+      + sizeof(DepositRequest::_impl_.index_)
+      - PROTOBUF_FIELD_OFFSET(DepositRequest, _impl_.withdrawal_credentials_)>(
+          reinterpret_cast<char*>(&_impl_.withdrawal_credentials_),
+          reinterpret_cast<char*>(&other->_impl_.withdrawal_credentials_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata DepositRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
+      file_level_metadata_types_2ftypes_2eproto[8]);
+}
+
+// ===================================================================
+
+class WithdrawalRequest::_Internal {
+ public:
+  static const ::types::H160& source_address(const WithdrawalRequest* msg);
+};
+
+const ::types::H160&
+WithdrawalRequest::_Internal::source_address(const WithdrawalRequest* msg) {
+  return *msg->_impl_.source_address_;
+}
+WithdrawalRequest::WithdrawalRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:types.WithdrawalRequest)
+}
+WithdrawalRequest::WithdrawalRequest(const WithdrawalRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  WithdrawalRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.validator_pubkey_){}
+    , decltype(_impl_.source_address_){nullptr}
+    , decltype(_impl_.amount_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.validator_pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.validator_pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_validator_pubkey().empty()) {
+    _this->_impl_.validator_pubkey_.Set(from._internal_validator_pubkey(), 
+      _this->GetArenaForAllocation());
+  }
+  if (from._internal_has_source_address()) {
+    _this->_impl_.source_address_ = new ::types::H160(*from._impl_.source_address_);
+  }
+  _this->_impl_.amount_ = from._impl_.amount_;
+  // @@protoc_insertion_point(copy_constructor:types.WithdrawalRequest)
+}
+
+inline void WithdrawalRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.validator_pubkey_){}
+    , decltype(_impl_.source_address_){nullptr}
+    , decltype(_impl_.amount_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.validator_pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.validator_pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+WithdrawalRequest::~WithdrawalRequest() {
+  // @@protoc_insertion_point(destructor:types.WithdrawalRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void WithdrawalRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.validator_pubkey_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.source_address_;
+}
+
+void WithdrawalRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void WithdrawalRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:types.WithdrawalRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.validator_pubkey_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.source_address_ != nullptr) {
+    delete _impl_.source_address_;
+  }
+  _impl_.source_address_ = nullptr;
+  _impl_.amount_ = uint64_t{0u};
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* WithdrawalRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .types.H160 source_address = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_source_address(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes validator_pubkey = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_validator_pubkey();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 amount = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.amount_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* WithdrawalRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:types.WithdrawalRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .types.H160 source_address = 1;
+  if (this->_internal_has_source_address()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::source_address(this),
+        _Internal::source_address(this).GetCachedSize(), target, stream);
+  }
+
+  // bytes validator_pubkey = 2;
+  if (!this->_internal_validator_pubkey().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        2, this->_internal_validator_pubkey(), target);
+  }
+
+  // uint64 amount = 3;
+  if (this->_internal_amount() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(3, this->_internal_amount(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:types.WithdrawalRequest)
+  return target;
+}
+
+size_t WithdrawalRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:types.WithdrawalRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // bytes validator_pubkey = 2;
+  if (!this->_internal_validator_pubkey().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_validator_pubkey());
+  }
+
+  // .types.H160 source_address = 1;
+  if (this->_internal_has_source_address()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.source_address_);
+  }
+
+  // uint64 amount = 3;
+  if (this->_internal_amount() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_amount());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData WithdrawalRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    WithdrawalRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*WithdrawalRequest::GetClassData() const { return &_class_data_; }
+
+
+void WithdrawalRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<WithdrawalRequest*>(&to_msg);
+  auto& from = static_cast<const WithdrawalRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:types.WithdrawalRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_validator_pubkey().empty()) {
+    _this->_internal_set_validator_pubkey(from._internal_validator_pubkey());
+  }
+  if (from._internal_has_source_address()) {
+    _this->_internal_mutable_source_address()->::types::H160::MergeFrom(
+        from._internal_source_address());
+  }
+  if (from._internal_amount() != 0) {
+    _this->_internal_set_amount(from._internal_amount());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void WithdrawalRequest::CopyFrom(const WithdrawalRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:types.WithdrawalRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool WithdrawalRequest::IsInitialized() const {
+  return true;
+}
+
+void WithdrawalRequest::InternalSwap(WithdrawalRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.validator_pubkey_, lhs_arena,
+      &other->_impl_.validator_pubkey_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(WithdrawalRequest, _impl_.amount_)
+      + sizeof(WithdrawalRequest::_impl_.amount_)
+      - PROTOBUF_FIELD_OFFSET(WithdrawalRequest, _impl_.source_address_)>(
+          reinterpret_cast<char*>(&_impl_.source_address_),
+          reinterpret_cast<char*>(&other->_impl_.source_address_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata WithdrawalRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
+      file_level_metadata_types_2ftypes_2eproto[9]);
+}
+
+// ===================================================================
+
+class ConsolidationRequest::_Internal {
+ public:
+  static const ::types::H160& source_address(const ConsolidationRequest* msg);
+};
+
+const ::types::H160&
+ConsolidationRequest::_Internal::source_address(const ConsolidationRequest* msg) {
+  return *msg->_impl_.source_address_;
+}
+ConsolidationRequest::ConsolidationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:types.ConsolidationRequest)
+}
+ConsolidationRequest::ConsolidationRequest(const ConsolidationRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ConsolidationRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.source_pubkey_){}
+    , decltype(_impl_.target_pubkey_){}
+    , decltype(_impl_.source_address_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.source_pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.source_pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_source_pubkey().empty()) {
+    _this->_impl_.source_pubkey_.Set(from._internal_source_pubkey(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.target_pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.target_pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_target_pubkey().empty()) {
+    _this->_impl_.target_pubkey_.Set(from._internal_target_pubkey(), 
+      _this->GetArenaForAllocation());
+  }
+  if (from._internal_has_source_address()) {
+    _this->_impl_.source_address_ = new ::types::H160(*from._impl_.source_address_);
+  }
+  // @@protoc_insertion_point(copy_constructor:types.ConsolidationRequest)
+}
+
+inline void ConsolidationRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.source_pubkey_){}
+    , decltype(_impl_.target_pubkey_){}
+    , decltype(_impl_.source_address_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.source_pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.source_pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.target_pubkey_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.target_pubkey_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+ConsolidationRequest::~ConsolidationRequest() {
+  // @@protoc_insertion_point(destructor:types.ConsolidationRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ConsolidationRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.source_pubkey_.Destroy();
+  _impl_.target_pubkey_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.source_address_;
+}
+
+void ConsolidationRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ConsolidationRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:types.ConsolidationRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.source_pubkey_.ClearToEmpty();
+  _impl_.target_pubkey_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.source_address_ != nullptr) {
+    delete _impl_.source_address_;
+  }
+  _impl_.source_address_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ConsolidationRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .types.H160 source_address = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_source_address(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes source_pubkey = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_source_pubkey();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes target_pubkey = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_target_pubkey();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* ConsolidationRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:types.ConsolidationRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .types.H160 source_address = 1;
+  if (this->_internal_has_source_address()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::source_address(this),
+        _Internal::source_address(this).GetCachedSize(), target, stream);
+  }
+
+  // bytes source_pubkey = 2;
+  if (!this->_internal_source_pubkey().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        2, this->_internal_source_pubkey(), target);
+  }
+
+  // bytes target_pubkey = 3;
+  if (!this->_internal_target_pubkey().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        3, this->_internal_target_pubkey(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:types.ConsolidationRequest)
+  return target;
+}
+
+size_t ConsolidationRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:types.ConsolidationRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // bytes source_pubkey = 2;
+  if (!this->_internal_source_pubkey().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_source_pubkey());
+  }
+
+  // bytes target_pubkey = 3;
+  if (!this->_internal_target_pubkey().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_target_pubkey());
+  }
+
+  // .types.H160 source_address = 1;
+  if (this->_internal_has_source_address()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.source_address_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ConsolidationRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ConsolidationRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ConsolidationRequest::GetClassData() const { return &_class_data_; }
+
+
+void ConsolidationRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ConsolidationRequest*>(&to_msg);
+  auto& from = static_cast<const ConsolidationRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:types.ConsolidationRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_source_pubkey().empty()) {
+    _this->_internal_set_source_pubkey(from._internal_source_pubkey());
+  }
+  if (!from._internal_target_pubkey().empty()) {
+    _this->_internal_set_target_pubkey(from._internal_target_pubkey());
+  }
+  if (from._internal_has_source_address()) {
+    _this->_internal_mutable_source_address()->::types::H160::MergeFrom(
+        from._internal_source_address());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ConsolidationRequest::CopyFrom(const ConsolidationRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:types.ConsolidationRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ConsolidationRequest::IsInitialized() const {
+  return true;
+}
+
+void ConsolidationRequest::InternalSwap(ConsolidationRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.source_pubkey_, lhs_arena,
+      &other->_impl_.source_pubkey_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.target_pubkey_, lhs_arena,
+      &other->_impl_.target_pubkey_, rhs_arena
+  );
+  swap(_impl_.source_address_, other->_impl_.source_address_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ConsolidationRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
+      file_level_metadata_types_2ftypes_2eproto[10]);
 }
 
 // ===================================================================
@@ -3231,7 +4336,7 @@ void Withdrawal::InternalSwap(Withdrawal* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Withdrawal::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
-      file_level_metadata_types_2ftypes_2eproto[8]);
+      file_level_metadata_types_2ftypes_2eproto[11]);
 }
 
 // ===================================================================
@@ -3484,7 +4589,7 @@ void BlobsBundleV1::InternalSwap(BlobsBundleV1* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BlobsBundleV1::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
-      file_level_metadata_types_2ftypes_2eproto[9]);
+      file_level_metadata_types_2ftypes_2eproto[12]);
 }
 
 // ===================================================================
@@ -3695,7 +4800,7 @@ void NodeInfoPorts::InternalSwap(NodeInfoPorts* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NodeInfoPorts::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
-      file_level_metadata_types_2ftypes_2eproto[10]);
+      file_level_metadata_types_2ftypes_2eproto[13]);
 }
 
 // ===================================================================
@@ -4185,7 +5290,7 @@ void NodeInfoReply::InternalSwap(NodeInfoReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NodeInfoReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
-      file_level_metadata_types_2ftypes_2eproto[11]);
+      file_level_metadata_types_2ftypes_2eproto[14]);
 }
 
 // ===================================================================
@@ -4761,7 +5866,7 @@ void PeerInfo::InternalSwap(PeerInfo* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerInfo::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
-      file_level_metadata_types_2ftypes_2eproto[12]);
+      file_level_metadata_types_2ftypes_2eproto[15]);
 }
 
 // ===================================================================
@@ -4980,7 +6085,7 @@ void ExecutionPayloadBodyV1::InternalSwap(ExecutionPayloadBodyV1* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ExecutionPayloadBodyV1::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_types_2ftypes_2eproto_getter, &descriptor_table_types_2ftypes_2eproto_once,
-      file_level_metadata_types_2ftypes_2eproto[13]);
+      file_level_metadata_types_2ftypes_2eproto[16]);
 }
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 ::PROTOBUF_NAMESPACE_ID::internal::ExtensionIdentifier< ::PROTOBUF_NAMESPACE_ID::FileOptions,
     ::PROTOBUF_NAMESPACE_ID::internal::PrimitiveTypeTraits< uint32_t >, 13, false>
@@ -5026,6 +6131,18 @@ Arena::CreateMaybeMessage< ::types::VersionReply >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::types::ExecutionPayload*
 Arena::CreateMaybeMessage< ::types::ExecutionPayload >(Arena* arena) {
   return Arena::CreateMessageInternal< ::types::ExecutionPayload >(arena);
+}
+template<> PROTOBUF_NOINLINE ::types::DepositRequest*
+Arena::CreateMaybeMessage< ::types::DepositRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::types::DepositRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::types::WithdrawalRequest*
+Arena::CreateMaybeMessage< ::types::WithdrawalRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::types::WithdrawalRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::types::ConsolidationRequest*
+Arena::CreateMaybeMessage< ::types::ConsolidationRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::types::ConsolidationRequest >(arena);
 }
 template<> PROTOBUF_NOINLINE ::types::Withdrawal*
 Arena::CreateMaybeMessage< ::types::Withdrawal >(Arena* arena) {

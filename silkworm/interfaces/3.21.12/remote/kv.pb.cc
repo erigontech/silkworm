@@ -213,36 +213,36 @@ struct DomainGetReplyDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DomainGetReplyDefaultTypeInternal _DomainGetReply_default_instance_;
-PROTOBUF_CONSTEXPR HistoryGetReq::HistoryGetReq(
+PROTOBUF_CONSTEXPR HistorySeekReq::HistorySeekReq(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.table_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.k_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.tx_id_)*/uint64_t{0u}
   , /*decltype(_impl_.ts_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct HistoryGetReqDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HistoryGetReqDefaultTypeInternal()
+struct HistorySeekReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HistorySeekReqDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~HistoryGetReqDefaultTypeInternal() {}
+  ~HistorySeekReqDefaultTypeInternal() {}
   union {
-    HistoryGetReq _instance;
+    HistorySeekReq _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HistoryGetReqDefaultTypeInternal _HistoryGetReq_default_instance_;
-PROTOBUF_CONSTEXPR HistoryGetReply::HistoryGetReply(
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HistorySeekReqDefaultTypeInternal _HistorySeekReq_default_instance_;
+PROTOBUF_CONSTEXPR HistorySeekReply::HistorySeekReply(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.v_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.ok_)*/false
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct HistoryGetReplyDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HistoryGetReplyDefaultTypeInternal()
+struct HistorySeekReplyDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HistorySeekReplyDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~HistoryGetReplyDefaultTypeInternal() {}
+  ~HistorySeekReplyDefaultTypeInternal() {}
   union {
-    HistoryGetReply _instance;
+    HistorySeekReply _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HistoryGetReplyDefaultTypeInternal _HistoryGetReply_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HistorySeekReplyDefaultTypeInternal _HistorySeekReply_default_instance_;
 PROTOBUF_CONSTEXPR IndexRangeReq::IndexRangeReq(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.table_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -492,23 +492,23 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::remote::DomainGetReply, _impl_.v_),
   PROTOBUF_FIELD_OFFSET(::remote::DomainGetReply, _impl_.ok_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReq, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReq, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReq, _impl_.tx_id_),
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReq, _impl_.table_),
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReq, _impl_.k_),
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReq, _impl_.ts_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReq, _impl_.tx_id_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReq, _impl_.table_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReq, _impl_.k_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReq, _impl_.ts_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReply, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReply, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReply, _impl_.v_),
-  PROTOBUF_FIELD_OFFSET(::remote::HistoryGetReply, _impl_.ok_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReply, _impl_.v_),
+  PROTOBUF_FIELD_OFFSET(::remote::HistorySeekReply, _impl_.ok_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::IndexRangeReq, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -601,8 +601,8 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 87, -1, -1, sizeof(::remote::RangeReq)},
   { 101, -1, -1, sizeof(::remote::DomainGetReq)},
   { 113, -1, -1, sizeof(::remote::DomainGetReply)},
-  { 121, -1, -1, sizeof(::remote::HistoryGetReq)},
-  { 131, -1, -1, sizeof(::remote::HistoryGetReply)},
+  { 121, -1, -1, sizeof(::remote::HistorySeekReq)},
+  { 131, -1, -1, sizeof(::remote::HistorySeekReply)},
   { 139, -1, -1, sizeof(::remote::IndexRangeReq)},
   { 154, -1, -1, sizeof(::remote::IndexRangeReply)},
   { 162, -1, -1, sizeof(::remote::HistoryRangeReq)},
@@ -625,8 +625,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::remote::_RangeReq_default_instance_._instance,
   &::remote::_DomainGetReq_default_instance_._instance,
   &::remote::_DomainGetReply_default_instance_._instance,
-  &::remote::_HistoryGetReq_default_instance_._instance,
-  &::remote::_HistoryGetReply_default_instance_._instance,
+  &::remote::_HistorySeekReq_default_instance_._instance,
+  &::remote::_HistorySeekReply_default_instance_._instance,
   &::remote::_IndexRangeReq_default_instance_._instance,
   &::remote::_IndexRangeReply_default_instance_._instance,
   &::remote::_HistoryRangeReq_default_instance_._instance,
@@ -669,53 +669,53 @@ const char descriptor_table_protodef_remote_2fkv_2eproto[] PROTOBUF_SECTION_VARI
   "n\030\010 \001(\t\"_\n\014DomainGetReq\022\r\n\005tx_id\030\001 \001(\004\022\r"
   "\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\n\n\002ts\030\004 \001(\004\022\n\n\002"
   "k2\030\005 \001(\014\022\016\n\006latest\030\006 \001(\010\"\'\n\016DomainGetRep"
-  "ly\022\t\n\001v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"D\n\rHistoryGetR"
-  "eq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003 "
-  "\001(\014\022\n\n\002ts\030\004 \001(\004\"(\n\017HistoryGetReply\022\t\n\001v\030"
-  "\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"\244\001\n\rIndexRangeReq\022\r\n\005t"
-  "x_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\017\n\007"
-  "from_ts\030\004 \001(\022\022\r\n\005to_ts\030\005 \001(\022\022\024\n\014order_as"
-  "cend\030\006 \001(\010\022\r\n\005limit\030\007 \001(\022\022\021\n\tpage_size\030\010"
-  " \001(\005\022\022\n\npage_token\030\t \001(\t\">\n\017IndexRangeRe"
-  "ply\022\022\n\ntimestamps\030\001 \003(\004\022\027\n\017next_page_tok"
-  "en\030\002 \001(\t\"\233\001\n\017HistoryRangeReq\022\r\n\005tx_id\030\001 "
-  "\001(\004\022\r\n\005table\030\002 \001(\t\022\017\n\007from_ts\030\004 \001(\022\022\r\n\005t"
-  "o_ts\030\005 \001(\022\022\024\n\014order_ascend\030\006 \001(\010\022\r\n\005limi"
-  "t\030\007 \001(\022\022\021\n\tpage_size\030\010 \001(\005\022\022\n\npage_token"
-  "\030\t \001(\t\"\270\001\n\016DomainRangeReq\022\r\n\005tx_id\030\001 \001(\004"
-  "\022\r\n\005table\030\002 \001(\t\022\020\n\010from_key\030\003 \001(\014\022\016\n\006to_"
-  "key\030\004 \001(\014\022\n\n\002ts\030\005 \001(\004\022\016\n\006latest\030\006 \001(\010\022\024\n"
-  "\014order_ascend\030\007 \001(\010\022\r\n\005limit\030\010 \001(\022\022\021\n\tpa"
-  "ge_size\030\t \001(\005\022\022\n\npage_token\030\n \001(\t\">\n\005Pai"
-  "rs\022\014\n\004keys\030\001 \003(\014\022\016\n\006values\030\002 \003(\014\022\027\n\017next"
-  "_page_token\030\003 \001(\t\"2\n\017ParisPagination\022\020\n\010"
-  "next_key\030\001 \001(\014\022\r\n\005limit\030\002 \001(\022\"9\n\017IndexPa"
-  "gination\022\027\n\017next_time_stamp\030\001 \001(\022\022\r\n\005lim"
-  "it\030\002 \001(\022*\206\002\n\002Op\022\t\n\005FIRST\020\000\022\r\n\tFIRST_DUP\020"
-  "\001\022\010\n\004SEEK\020\002\022\r\n\tSEEK_BOTH\020\003\022\013\n\007CURRENT\020\004\022"
-  "\010\n\004LAST\020\006\022\014\n\010LAST_DUP\020\007\022\010\n\004NEXT\020\010\022\014\n\010NEX"
-  "T_DUP\020\t\022\017\n\013NEXT_NO_DUP\020\013\022\010\n\004PREV\020\014\022\014\n\010PR"
-  "EV_DUP\020\r\022\017\n\013PREV_NO_DUP\020\016\022\016\n\nSEEK_EXACT\020"
-  "\017\022\023\n\017SEEK_BOTH_EXACT\020\020\022\010\n\004OPEN\020\036\022\t\n\005CLOS"
-  "E\020\037\022\021\n\rOPEN_DUP_SORT\020 \022\t\n\005COUNT\020!*H\n\006Act"
-  "ion\022\013\n\007STORAGE\020\000\022\n\n\006UPSERT\020\001\022\010\n\004CODE\020\002\022\017"
-  "\n\013UPSERT_CODE\020\003\022\n\n\006REMOVE\020\004*$\n\tDirection"
-  "\022\013\n\007FORWARD\020\000\022\n\n\006UNWIND\020\0012\272\004\n\002KV\0226\n\007Vers"
-  "ion\022\026.google.protobuf.Empty\032\023.types.Vers"
-  "ionReply\022&\n\002Tx\022\016.remote.Cursor\032\014.remote."
-  "Pair(\0010\001\022F\n\014StateChanges\022\032.remote.StateC"
-  "hangeRequest\032\030.remote.StateChangeBatch0\001"
-  "\022=\n\tSnapshots\022\030.remote.SnapshotsRequest\032"
-  "\026.remote.SnapshotsReply\022(\n\005Range\022\020.remot"
-  "e.RangeReq\032\r.remote.Pairs\0229\n\tDomainGet\022\024"
-  ".remote.DomainGetReq\032\026.remote.DomainGetR"
-  "eply\022<\n\nHistoryGet\022\025.remote.HistoryGetRe"
-  "q\032\027.remote.HistoryGetReply\022<\n\nIndexRange"
-  "\022\025.remote.IndexRangeReq\032\027.remote.IndexRa"
-  "ngeReply\0226\n\014HistoryRange\022\027.remote.Histor"
-  "yRangeReq\032\r.remote.Pairs\0224\n\013DomainRange\022"
-  "\026.remote.DomainRangeReq\032\r.remote.PairsB\021"
-  "Z\017./remote;remoteb\006proto3"
+  "ly\022\t\n\001v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"E\n\016HistorySeek"
+  "Req\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003"
+  " \001(\014\022\n\n\002ts\030\004 \001(\004\")\n\020HistorySeekReply\022\t\n\001"
+  "v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"\244\001\n\rIndexRangeReq\022\r\n"
+  "\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\017"
+  "\n\007from_ts\030\004 \001(\022\022\r\n\005to_ts\030\005 \001(\022\022\024\n\014order_"
+  "ascend\030\006 \001(\010\022\r\n\005limit\030\007 \001(\022\022\021\n\tpage_size"
+  "\030\010 \001(\005\022\022\n\npage_token\030\t \001(\t\">\n\017IndexRange"
+  "Reply\022\022\n\ntimestamps\030\001 \003(\004\022\027\n\017next_page_t"
+  "oken\030\002 \001(\t\"\233\001\n\017HistoryRangeReq\022\r\n\005tx_id\030"
+  "\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\017\n\007from_ts\030\004 \001(\022\022\r\n"
+  "\005to_ts\030\005 \001(\022\022\024\n\014order_ascend\030\006 \001(\010\022\r\n\005li"
+  "mit\030\007 \001(\022\022\021\n\tpage_size\030\010 \001(\005\022\022\n\npage_tok"
+  "en\030\t \001(\t\"\270\001\n\016DomainRangeReq\022\r\n\005tx_id\030\001 \001"
+  "(\004\022\r\n\005table\030\002 \001(\t\022\020\n\010from_key\030\003 \001(\014\022\016\n\006t"
+  "o_key\030\004 \001(\014\022\n\n\002ts\030\005 \001(\004\022\016\n\006latest\030\006 \001(\010\022"
+  "\024\n\014order_ascend\030\007 \001(\010\022\r\n\005limit\030\010 \001(\022\022\021\n\t"
+  "page_size\030\t \001(\005\022\022\n\npage_token\030\n \001(\t\">\n\005P"
+  "airs\022\014\n\004keys\030\001 \003(\014\022\016\n\006values\030\002 \003(\014\022\027\n\017ne"
+  "xt_page_token\030\003 \001(\t\"2\n\017ParisPagination\022\020"
+  "\n\010next_key\030\001 \001(\014\022\r\n\005limit\030\002 \001(\022\"9\n\017Index"
+  "Pagination\022\027\n\017next_time_stamp\030\001 \001(\022\022\r\n\005l"
+  "imit\030\002 \001(\022*\373\001\n\002Op\022\t\n\005FIRST\020\000\022\r\n\tFIRST_DU"
+  "P\020\001\022\010\n\004SEEK\020\002\022\r\n\tSEEK_BOTH\020\003\022\013\n\007CURRENT\020"
+  "\004\022\010\n\004LAST\020\006\022\014\n\010LAST_DUP\020\007\022\010\n\004NEXT\020\010\022\014\n\010N"
+  "EXT_DUP\020\t\022\017\n\013NEXT_NO_DUP\020\013\022\010\n\004PREV\020\014\022\014\n\010"
+  "PREV_DUP\020\r\022\017\n\013PREV_NO_DUP\020\016\022\016\n\nSEEK_EXAC"
+  "T\020\017\022\023\n\017SEEK_BOTH_EXACT\020\020\022\010\n\004OPEN\020\036\022\t\n\005CL"
+  "OSE\020\037\022\021\n\rOPEN_DUP_SORT\020 *H\n\006Action\022\013\n\007ST"
+  "ORAGE\020\000\022\n\n\006UPSERT\020\001\022\010\n\004CODE\020\002\022\017\n\013UPSERT_"
+  "CODE\020\003\022\n\n\006REMOVE\020\004*$\n\tDirection\022\013\n\007FORWA"
+  "RD\020\000\022\n\n\006UNWIND\020\0012\275\004\n\002KV\0226\n\007Version\022\026.goo"
+  "gle.protobuf.Empty\032\023.types.VersionReply\022"
+  "&\n\002Tx\022\016.remote.Cursor\032\014.remote.Pair(\0010\001\022"
+  "F\n\014StateChanges\022\032.remote.StateChangeRequ"
+  "est\032\030.remote.StateChangeBatch0\001\022=\n\tSnaps"
+  "hots\022\030.remote.SnapshotsRequest\032\026.remote."
+  "SnapshotsReply\022(\n\005Range\022\020.remote.RangeRe"
+  "q\032\r.remote.Pairs\0229\n\tDomainGet\022\024.remote.D"
+  "omainGetReq\032\026.remote.DomainGetReply\022\?\n\013H"
+  "istorySeek\022\026.remote.HistorySeekReq\032\030.rem"
+  "ote.HistorySeekReply\022<\n\nIndexRange\022\025.rem"
+  "ote.IndexRangeReq\032\027.remote.IndexRangeRep"
+  "ly\0226\n\014HistoryRange\022\027.remote.HistoryRange"
+  "Req\032\r.remote.Pairs\0224\n\013DomainRange\022\026.remo"
+  "te.DomainRangeReq\032\r.remote.PairsB\026Z\024./re"
+  "mote;remoteprotob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fkv_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -723,7 +723,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fkv_2eproto
 };
 static ::_pbi::once_flag descriptor_table_remote_2fkv_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_remote_2fkv_2eproto = {
-    false, false, 3145, descriptor_table_protodef_remote_2fkv_2eproto,
+    false, false, 3144, descriptor_table_protodef_remote_2fkv_2eproto,
     "remote/kv.proto",
     &descriptor_table_remote_2fkv_2eproto_once, descriptor_table_remote_2fkv_2eproto_deps, 2, 21,
     schemas, file_default_instances, TableStruct_remote_2fkv_2eproto::offsets,
@@ -761,7 +761,6 @@ bool Op_IsValid(int value) {
     case 30:
     case 31:
     case 32:
-    case 33:
       return true;
     default:
       return false;
@@ -4297,19 +4296,19 @@ void DomainGetReply::InternalSwap(DomainGetReply* other) {
 
 // ===================================================================
 
-class HistoryGetReq::_Internal {
+class HistorySeekReq::_Internal {
  public:
 };
 
-HistoryGetReq::HistoryGetReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+HistorySeekReq::HistorySeekReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:remote.HistoryGetReq)
+  // @@protoc_insertion_point(arena_constructor:remote.HistorySeekReq)
 }
-HistoryGetReq::HistoryGetReq(const HistoryGetReq& from)
+HistorySeekReq::HistorySeekReq(const HistorySeekReq& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
-  HistoryGetReq* const _this = this; (void)_this;
+  HistorySeekReq* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.table_){}
     , decltype(_impl_.k_){}
@@ -4337,10 +4336,10 @@ HistoryGetReq::HistoryGetReq(const HistoryGetReq& from)
   ::memcpy(&_impl_.tx_id_, &from._impl_.tx_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.ts_) -
     reinterpret_cast<char*>(&_impl_.tx_id_)) + sizeof(_impl_.ts_));
-  // @@protoc_insertion_point(copy_constructor:remote.HistoryGetReq)
+  // @@protoc_insertion_point(copy_constructor:remote.HistorySeekReq)
 }
 
-inline void HistoryGetReq::SharedCtor(
+inline void HistorySeekReq::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -4361,8 +4360,8 @@ inline void HistoryGetReq::SharedCtor(
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
-HistoryGetReq::~HistoryGetReq() {
-  // @@protoc_insertion_point(destructor:remote.HistoryGetReq)
+HistorySeekReq::~HistorySeekReq() {
+  // @@protoc_insertion_point(destructor:remote.HistorySeekReq)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -4370,18 +4369,18 @@ HistoryGetReq::~HistoryGetReq() {
   SharedDtor();
 }
 
-inline void HistoryGetReq::SharedDtor() {
+inline void HistorySeekReq::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.table_.Destroy();
   _impl_.k_.Destroy();
 }
 
-void HistoryGetReq::SetCachedSize(int size) const {
+void HistorySeekReq::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void HistoryGetReq::Clear() {
-// @@protoc_insertion_point(message_clear_start:remote.HistoryGetReq)
+void HistorySeekReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.HistorySeekReq)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -4394,7 +4393,7 @@ void HistoryGetReq::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* HistoryGetReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* HistorySeekReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -4414,7 +4413,7 @@ const char* HistoryGetReq::_InternalParse(const char* ptr, ::_pbi::ParseContext*
           auto str = _internal_mutable_table();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "remote.HistoryGetReq.table"));
+          CHK_(::_pbi::VerifyUTF8(str, "remote.HistorySeekReq.table"));
         } else
           goto handle_unusual;
         continue;
@@ -4458,9 +4457,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* HistoryGetReq::_InternalSerialize(
+uint8_t* HistorySeekReq::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:remote.HistoryGetReq)
+  // @@protoc_insertion_point(serialize_to_array_start:remote.HistorySeekReq)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -4475,7 +4474,7 @@ uint8_t* HistoryGetReq::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_table().data(), static_cast<int>(this->_internal_table().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "remote.HistoryGetReq.table");
+      "remote.HistorySeekReq.table");
     target = stream->WriteStringMaybeAliased(
         2, this->_internal_table(), target);
   }
@@ -4496,12 +4495,12 @@ uint8_t* HistoryGetReq::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:remote.HistoryGetReq)
+  // @@protoc_insertion_point(serialize_to_array_end:remote.HistorySeekReq)
   return target;
 }
 
-size_t HistoryGetReq::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:remote.HistoryGetReq)
+size_t HistorySeekReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.HistorySeekReq)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -4535,17 +4534,17 @@ size_t HistoryGetReq::ByteSizeLong() const {
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HistoryGetReq::_class_data_ = {
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HistorySeekReq::_class_data_ = {
     ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    HistoryGetReq::MergeImpl
+    HistorySeekReq::MergeImpl
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HistoryGetReq::GetClassData() const { return &_class_data_; }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HistorySeekReq::GetClassData() const { return &_class_data_; }
 
 
-void HistoryGetReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<HistoryGetReq*>(&to_msg);
-  auto& from = static_cast<const HistoryGetReq&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:remote.HistoryGetReq)
+void HistorySeekReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<HistorySeekReq*>(&to_msg);
+  auto& from = static_cast<const HistorySeekReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.HistorySeekReq)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -4565,18 +4564,18 @@ void HistoryGetReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void HistoryGetReq::CopyFrom(const HistoryGetReq& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:remote.HistoryGetReq)
+void HistorySeekReq::CopyFrom(const HistorySeekReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.HistorySeekReq)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool HistoryGetReq::IsInitialized() const {
+bool HistorySeekReq::IsInitialized() const {
   return true;
 }
 
-void HistoryGetReq::InternalSwap(HistoryGetReq* other) {
+void HistorySeekReq::InternalSwap(HistorySeekReq* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
@@ -4590,14 +4589,14 @@ void HistoryGetReq::InternalSwap(HistoryGetReq* other) {
       &other->_impl_.k_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(HistoryGetReq, _impl_.ts_)
-      + sizeof(HistoryGetReq::_impl_.ts_)
-      - PROTOBUF_FIELD_OFFSET(HistoryGetReq, _impl_.tx_id_)>(
+      PROTOBUF_FIELD_OFFSET(HistorySeekReq, _impl_.ts_)
+      + sizeof(HistorySeekReq::_impl_.ts_)
+      - PROTOBUF_FIELD_OFFSET(HistorySeekReq, _impl_.tx_id_)>(
           reinterpret_cast<char*>(&_impl_.tx_id_),
           reinterpret_cast<char*>(&other->_impl_.tx_id_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata HistoryGetReq::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata HistorySeekReq::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fkv_2eproto_getter, &descriptor_table_remote_2fkv_2eproto_once,
       file_level_metadata_remote_2fkv_2eproto[12]);
@@ -4605,19 +4604,19 @@ void HistoryGetReq::InternalSwap(HistoryGetReq* other) {
 
 // ===================================================================
 
-class HistoryGetReply::_Internal {
+class HistorySeekReply::_Internal {
  public:
 };
 
-HistoryGetReply::HistoryGetReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+HistorySeekReply::HistorySeekReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:remote.HistoryGetReply)
+  // @@protoc_insertion_point(arena_constructor:remote.HistorySeekReply)
 }
-HistoryGetReply::HistoryGetReply(const HistoryGetReply& from)
+HistorySeekReply::HistorySeekReply(const HistorySeekReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
-  HistoryGetReply* const _this = this; (void)_this;
+  HistorySeekReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.v_){}
     , decltype(_impl_.ok_){}
@@ -4633,10 +4632,10 @@ HistoryGetReply::HistoryGetReply(const HistoryGetReply& from)
       _this->GetArenaForAllocation());
   }
   _this->_impl_.ok_ = from._impl_.ok_;
-  // @@protoc_insertion_point(copy_constructor:remote.HistoryGetReply)
+  // @@protoc_insertion_point(copy_constructor:remote.HistorySeekReply)
 }
 
-inline void HistoryGetReply::SharedCtor(
+inline void HistorySeekReply::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -4651,8 +4650,8 @@ inline void HistoryGetReply::SharedCtor(
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
-HistoryGetReply::~HistoryGetReply() {
-  // @@protoc_insertion_point(destructor:remote.HistoryGetReply)
+HistorySeekReply::~HistorySeekReply() {
+  // @@protoc_insertion_point(destructor:remote.HistorySeekReply)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -4660,17 +4659,17 @@ HistoryGetReply::~HistoryGetReply() {
   SharedDtor();
 }
 
-inline void HistoryGetReply::SharedDtor() {
+inline void HistorySeekReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.v_.Destroy();
 }
 
-void HistoryGetReply::SetCachedSize(int size) const {
+void HistorySeekReply::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void HistoryGetReply::Clear() {
-// @@protoc_insertion_point(message_clear_start:remote.HistoryGetReply)
+void HistorySeekReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.HistorySeekReply)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -4680,7 +4679,7 @@ void HistoryGetReply::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* HistoryGetReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* HistorySeekReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -4726,9 +4725,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* HistoryGetReply::_InternalSerialize(
+uint8_t* HistorySeekReply::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:remote.HistoryGetReply)
+  // @@protoc_insertion_point(serialize_to_array_start:remote.HistorySeekReply)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -4748,12 +4747,12 @@ uint8_t* HistoryGetReply::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:remote.HistoryGetReply)
+  // @@protoc_insertion_point(serialize_to_array_end:remote.HistorySeekReply)
   return target;
 }
 
-size_t HistoryGetReply::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:remote.HistoryGetReply)
+size_t HistorySeekReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.HistorySeekReply)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -4775,17 +4774,17 @@ size_t HistoryGetReply::ByteSizeLong() const {
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HistoryGetReply::_class_data_ = {
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HistorySeekReply::_class_data_ = {
     ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    HistoryGetReply::MergeImpl
+    HistorySeekReply::MergeImpl
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HistoryGetReply::GetClassData() const { return &_class_data_; }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HistorySeekReply::GetClassData() const { return &_class_data_; }
 
 
-void HistoryGetReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<HistoryGetReply*>(&to_msg);
-  auto& from = static_cast<const HistoryGetReply&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:remote.HistoryGetReply)
+void HistorySeekReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<HistorySeekReply*>(&to_msg);
+  auto& from = static_cast<const HistorySeekReply&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.HistorySeekReply)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -4799,18 +4798,18 @@ void HistoryGetReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void HistoryGetReply::CopyFrom(const HistoryGetReply& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:remote.HistoryGetReply)
+void HistorySeekReply::CopyFrom(const HistorySeekReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.HistorySeekReply)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool HistoryGetReply::IsInitialized() const {
+bool HistorySeekReply::IsInitialized() const {
   return true;
 }
 
-void HistoryGetReply::InternalSwap(HistoryGetReply* other) {
+void HistorySeekReply::InternalSwap(HistorySeekReply* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
@@ -4822,7 +4821,7 @@ void HistoryGetReply::InternalSwap(HistoryGetReply* other) {
   swap(_impl_.ok_, other->_impl_.ok_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata HistoryGetReply::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata HistorySeekReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fkv_2eproto_getter, &descriptor_table_remote_2fkv_2eproto_once,
       file_level_metadata_remote_2fkv_2eproto[13]);
@@ -7193,13 +7192,13 @@ template<> PROTOBUF_NOINLINE ::remote::DomainGetReply*
 Arena::CreateMaybeMessage< ::remote::DomainGetReply >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::DomainGetReply >(arena);
 }
-template<> PROTOBUF_NOINLINE ::remote::HistoryGetReq*
-Arena::CreateMaybeMessage< ::remote::HistoryGetReq >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::remote::HistoryGetReq >(arena);
+template<> PROTOBUF_NOINLINE ::remote::HistorySeekReq*
+Arena::CreateMaybeMessage< ::remote::HistorySeekReq >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::HistorySeekReq >(arena);
 }
-template<> PROTOBUF_NOINLINE ::remote::HistoryGetReply*
-Arena::CreateMaybeMessage< ::remote::HistoryGetReply >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::remote::HistoryGetReply >(arena);
+template<> PROTOBUF_NOINLINE ::remote::HistorySeekReply*
+Arena::CreateMaybeMessage< ::remote::HistorySeekReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::HistorySeekReply >(arena);
 }
 template<> PROTOBUF_NOINLINE ::remote::IndexRangeReq*
 Arena::CreateMaybeMessage< ::remote::IndexRangeReq >(Arena* arena) {

@@ -48,19 +48,19 @@ inline api::HistoryPointQuery sample_history_point_query() {
     };
 }
 
-inline proto::HistoryGetReq sample_proto_history_point_request() {
-    proto::HistoryGetReq request;
+inline proto::HistorySeekReq sample_proto_history_seek_request() {
+    proto::HistorySeekReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
-    request.set_k("0011ff");
+    request.set_k(ascii_from_hex("0011ff"));
     request.set_ts(1234567);
     return request;
 }
 
-inline proto::HistoryGetReply sample_proto_history_get_response() {
-    proto::HistoryGetReply response;
+inline proto::HistorySeekReply sample_proto_history_seek_response() {
+    proto::HistorySeekReply response;
     response.set_ok(true);
-    response.set_v("ff00ff00");
+    response.set_v(ascii_from_hex("ff00ff00"));
     return response;
 }
 

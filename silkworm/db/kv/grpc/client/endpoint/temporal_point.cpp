@@ -16,28 +16,26 @@
 
 #include "temporal_point.hpp"
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 
 namespace silkworm::db::kv::grpc::client {
 
 namespace proto = ::remote;
 
-proto::HistoryGetReq history_get_request_from_query(const api::HistoryPointQuery& query) {
-    proto::HistoryGetReq request;
+proto::HistorySeekReq history_seek_request_from_query(const api::HistoryPointQuery& query) {
+    proto::HistorySeekReq request;
     request.set_tx_id(query.tx_id);
     request.set_table(query.table);
-    request.set_k(to_hex(query.key));
+    request.set_k(query.key.data(), query.key.size());
     request.set_ts(static_cast<uint64_t>(query.timestamp));
     return request;
 }
 
-api::HistoryPointResult history_get_result_from_response(const proto::HistoryGetReply& response) {
+api::HistoryPointResult history_seek_result_from_response(const proto::HistorySeekReply& response) {
     api::HistoryPointResult result;
     result.success = response.ok();
-    auto hex{from_hex(response.v())};
-    if (hex) {
-        result.value = std::move(*hex);
-    }
+    result.value = string_to_bytes(response.v());
     return result;
 }
 

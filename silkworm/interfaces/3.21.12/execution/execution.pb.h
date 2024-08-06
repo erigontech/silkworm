@@ -826,7 +826,7 @@ class Header final :
 
   enum : int {
     kExtraDataFieldNumber = 12,
-    kAuraSealFieldNumber = 23,
+    kAuraSealFieldNumber = 24,
     kParentHashFieldNumber = 1,
     kCoinbaseFieldNumber = 2,
     kStateRootFieldNumber = 3,
@@ -840,6 +840,7 @@ class Header final :
     kBaseFeePerGasFieldNumber = 17,
     kWithdrawalHashFieldNumber = 18,
     kParentBeaconBlockRootFieldNumber = 21,
+    kRequestsRootFieldNumber = 22,
     kBlockNumberFieldNumber = 7,
     kGasLimitFieldNumber = 8,
     kGasUsedFieldNumber = 9,
@@ -847,7 +848,7 @@ class Header final :
     kNonceFieldNumber = 11,
     kBlobGasUsedFieldNumber = 19,
     kExcessBlobGasFieldNumber = 20,
-    kAuraStepFieldNumber = 22,
+    kAuraStepFieldNumber = 23,
   };
   // bytes extra_data = 12;
   void clear_extra_data();
@@ -863,7 +864,7 @@ class Header final :
   std::string* _internal_mutable_extra_data();
   public:
 
-  // optional bytes aura_seal = 23;
+  // optional bytes aura_seal = 24;
   bool has_aura_seal() const;
   private:
   bool _internal_has_aura_seal() const;
@@ -1115,6 +1116,24 @@ class Header final :
       ::types::H256* parent_beacon_block_root);
   ::types::H256* unsafe_arena_release_parent_beacon_block_root();
 
+  // optional .types.H256 requests_root = 22;
+  bool has_requests_root() const;
+  private:
+  bool _internal_has_requests_root() const;
+  public:
+  void clear_requests_root();
+  const ::types::H256& requests_root() const;
+  PROTOBUF_NODISCARD ::types::H256* release_requests_root();
+  ::types::H256* mutable_requests_root();
+  void set_allocated_requests_root(::types::H256* requests_root);
+  private:
+  const ::types::H256& _internal_requests_root() const;
+  ::types::H256* _internal_mutable_requests_root();
+  public:
+  void unsafe_arena_set_allocated_requests_root(
+      ::types::H256* requests_root);
+  ::types::H256* unsafe_arena_release_requests_root();
+
   // uint64 block_number = 7;
   void clear_block_number();
   uint64_t block_number() const;
@@ -1186,7 +1205,7 @@ class Header final :
   void _internal_set_excess_blob_gas(uint64_t value);
   public:
 
-  // optional uint64 aura_step = 22;
+  // optional uint64 aura_step = 23;
   bool has_aura_step() const;
   private:
   bool _internal_has_aura_step() const;
@@ -1224,6 +1243,7 @@ class Header final :
     ::types::H256* base_fee_per_gas_;
     ::types::H256* withdrawal_hash_;
     ::types::H256* parent_beacon_block_root_;
+    ::types::H256* requests_root_;
     uint64_t block_number_;
     uint64_t gas_limit_;
     uint64_t gas_used_;
@@ -1362,6 +1382,7 @@ class BlockBody final :
     kTransactionsFieldNumber = 3,
     kUnclesFieldNumber = 4,
     kWithdrawalsFieldNumber = 5,
+    kRequestsFieldNumber = 6,
     kBlockHashFieldNumber = 1,
     kBlockNumberFieldNumber = 2,
   };
@@ -1425,6 +1446,30 @@ class BlockBody final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
       withdrawals() const;
 
+  // repeated bytes requests = 6;
+  int requests_size() const;
+  private:
+  int _internal_requests_size() const;
+  public:
+  void clear_requests();
+  const std::string& requests(int index) const;
+  std::string* mutable_requests(int index);
+  void set_requests(int index, const std::string& value);
+  void set_requests(int index, std::string&& value);
+  void set_requests(int index, const char* value);
+  void set_requests(int index, const void* value, size_t size);
+  std::string* add_requests();
+  void add_requests(const std::string& value);
+  void add_requests(std::string&& value);
+  void add_requests(const char* value);
+  void add_requests(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& requests() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_requests();
+  private:
+  const std::string& _internal_requests(int index) const;
+  std::string* _internal_add_requests();
+  public:
+
   // .types.H256 block_hash = 1;
   bool has_block_hash() const;
   private:
@@ -1463,6 +1508,7 @@ class BlockBody final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> transactions_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::execution::Header > uncles_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal > withdrawals_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> requests_;
     ::types::H256* block_hash_;
     uint64_t block_number_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -4796,6 +4842,7 @@ class FrozenBlocksResponse final :
 
   enum : int {
     kFrozenBlocksFieldNumber = 1,
+    kHasGapFieldNumber = 2,
   };
   // uint64 frozen_blocks = 1;
   void clear_frozen_blocks();
@@ -4804,6 +4851,15 @@ class FrozenBlocksResponse final :
   private:
   uint64_t _internal_frozen_blocks() const;
   void _internal_set_frozen_blocks(uint64_t value);
+  public:
+
+  // bool has_gap = 2;
+  void clear_has_gap();
+  bool has_gap() const;
+  void set_has_gap(bool value);
+  private:
+  bool _internal_has_gap() const;
+  void _internal_set_has_gap(bool value);
   public:
 
   // @@protoc_insertion_point(class_scope:execution.FrozenBlocksResponse)
@@ -4815,6 +4871,7 @@ class FrozenBlocksResponse final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     uint64_t frozen_blocks_;
+    bool has_gap_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -6497,7 +6554,7 @@ inline void Header::set_allocated_withdrawal_hash(::types::H256* withdrawal_hash
 
 // optional uint64 blob_gas_used = 19;
 inline bool Header::_internal_has_blob_gas_used() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
   return value;
 }
 inline bool Header::has_blob_gas_used() const {
@@ -6505,7 +6562,7 @@ inline bool Header::has_blob_gas_used() const {
 }
 inline void Header::clear_blob_gas_used() {
   _impl_.blob_gas_used_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000010u;
+  _impl_._has_bits_[0] &= ~0x00000020u;
 }
 inline uint64_t Header::_internal_blob_gas_used() const {
   return _impl_.blob_gas_used_;
@@ -6515,7 +6572,7 @@ inline uint64_t Header::blob_gas_used() const {
   return _internal_blob_gas_used();
 }
 inline void Header::_internal_set_blob_gas_used(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_._has_bits_[0] |= 0x00000020u;
   _impl_.blob_gas_used_ = value;
 }
 inline void Header::set_blob_gas_used(uint64_t value) {
@@ -6525,7 +6582,7 @@ inline void Header::set_blob_gas_used(uint64_t value) {
 
 // optional uint64 excess_blob_gas = 20;
 inline bool Header::_internal_has_excess_blob_gas() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
   return value;
 }
 inline bool Header::has_excess_blob_gas() const {
@@ -6533,7 +6590,7 @@ inline bool Header::has_excess_blob_gas() const {
 }
 inline void Header::clear_excess_blob_gas() {
   _impl_.excess_blob_gas_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000020u;
+  _impl_._has_bits_[0] &= ~0x00000040u;
 }
 inline uint64_t Header::_internal_excess_blob_gas() const {
   return _impl_.excess_blob_gas_;
@@ -6543,7 +6600,7 @@ inline uint64_t Header::excess_blob_gas() const {
   return _internal_excess_blob_gas();
 }
 inline void Header::_internal_set_excess_blob_gas(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_._has_bits_[0] |= 0x00000040u;
   _impl_.excess_blob_gas_ = value;
 }
 inline void Header::set_excess_blob_gas(uint64_t value) {
@@ -6638,9 +6695,96 @@ inline void Header::set_allocated_parent_beacon_block_root(::types::H256* parent
   // @@protoc_insertion_point(field_set_allocated:execution.Header.parent_beacon_block_root)
 }
 
-// optional uint64 aura_step = 22;
+// optional .types.H256 requests_root = 22;
+inline bool Header::_internal_has_requests_root() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.requests_root_ != nullptr);
+  return value;
+}
+inline bool Header::has_requests_root() const {
+  return _internal_has_requests_root();
+}
+inline const ::types::H256& Header::_internal_requests_root() const {
+  const ::types::H256* p = _impl_.requests_root_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& Header::requests_root() const {
+  // @@protoc_insertion_point(field_get:execution.Header.requests_root)
+  return _internal_requests_root();
+}
+inline void Header::unsafe_arena_set_allocated_requests_root(
+    ::types::H256* requests_root) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_root_);
+  }
+  _impl_.requests_root_ = requests_root;
+  if (requests_root) {
+    _impl_._has_bits_[0] |= 0x00000010u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000010u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.requests_root)
+}
+inline ::types::H256* Header::release_requests_root() {
+  _impl_._has_bits_[0] &= ~0x00000010u;
+  ::types::H256* temp = _impl_.requests_root_;
+  _impl_.requests_root_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::types::H256* Header::unsafe_arena_release_requests_root() {
+  // @@protoc_insertion_point(field_release:execution.Header.requests_root)
+  _impl_._has_bits_[0] &= ~0x00000010u;
+  ::types::H256* temp = _impl_.requests_root_;
+  _impl_.requests_root_ = nullptr;
+  return temp;
+}
+inline ::types::H256* Header::_internal_mutable_requests_root() {
+  _impl_._has_bits_[0] |= 0x00000010u;
+  if (_impl_.requests_root_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
+    _impl_.requests_root_ = p;
+  }
+  return _impl_.requests_root_;
+}
+inline ::types::H256* Header::mutable_requests_root() {
+  ::types::H256* _msg = _internal_mutable_requests_root();
+  // @@protoc_insertion_point(field_mutable:execution.Header.requests_root)
+  return _msg;
+}
+inline void Header::set_allocated_requests_root(::types::H256* requests_root) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_root_);
+  }
+  if (requests_root) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(requests_root));
+    if (message_arena != submessage_arena) {
+      requests_root = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, requests_root, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000010u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000010u;
+  }
+  _impl_.requests_root_ = requests_root;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.requests_root)
+}
+
+// optional uint64 aura_step = 23;
 inline bool Header::_internal_has_aura_step() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
   return value;
 }
 inline bool Header::has_aura_step() const {
@@ -6648,7 +6792,7 @@ inline bool Header::has_aura_step() const {
 }
 inline void Header::clear_aura_step() {
   _impl_.aura_step_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000040u;
+  _impl_._has_bits_[0] &= ~0x00000080u;
 }
 inline uint64_t Header::_internal_aura_step() const {
   return _impl_.aura_step_;
@@ -6658,7 +6802,7 @@ inline uint64_t Header::aura_step() const {
   return _internal_aura_step();
 }
 inline void Header::_internal_set_aura_step(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000040u;
+  _impl_._has_bits_[0] |= 0x00000080u;
   _impl_.aura_step_ = value;
 }
 inline void Header::set_aura_step(uint64_t value) {
@@ -6666,7 +6810,7 @@ inline void Header::set_aura_step(uint64_t value) {
   // @@protoc_insertion_point(field_set:execution.Header.aura_step)
 }
 
-// optional bytes aura_seal = 23;
+// optional bytes aura_seal = 24;
 inline bool Header::_internal_has_aura_seal() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
@@ -6993,6 +7137,81 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
 BlockBody::withdrawals() const {
   // @@protoc_insertion_point(field_list:execution.BlockBody.withdrawals)
   return _impl_.withdrawals_;
+}
+
+// repeated bytes requests = 6;
+inline int BlockBody::_internal_requests_size() const {
+  return _impl_.requests_.size();
+}
+inline int BlockBody::requests_size() const {
+  return _internal_requests_size();
+}
+inline void BlockBody::clear_requests() {
+  _impl_.requests_.Clear();
+}
+inline std::string* BlockBody::add_requests() {
+  std::string* _s = _internal_add_requests();
+  // @@protoc_insertion_point(field_add_mutable:execution.BlockBody.requests)
+  return _s;
+}
+inline const std::string& BlockBody::_internal_requests(int index) const {
+  return _impl_.requests_.Get(index);
+}
+inline const std::string& BlockBody::requests(int index) const {
+  // @@protoc_insertion_point(field_get:execution.BlockBody.requests)
+  return _internal_requests(index);
+}
+inline std::string* BlockBody::mutable_requests(int index) {
+  // @@protoc_insertion_point(field_mutable:execution.BlockBody.requests)
+  return _impl_.requests_.Mutable(index);
+}
+inline void BlockBody::set_requests(int index, const std::string& value) {
+  _impl_.requests_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:execution.BlockBody.requests)
+}
+inline void BlockBody::set_requests(int index, std::string&& value) {
+  _impl_.requests_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:execution.BlockBody.requests)
+}
+inline void BlockBody::set_requests(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.requests_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:execution.BlockBody.requests)
+}
+inline void BlockBody::set_requests(int index, const void* value, size_t size) {
+  _impl_.requests_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:execution.BlockBody.requests)
+}
+inline std::string* BlockBody::_internal_add_requests() {
+  return _impl_.requests_.Add();
+}
+inline void BlockBody::add_requests(const std::string& value) {
+  _impl_.requests_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:execution.BlockBody.requests)
+}
+inline void BlockBody::add_requests(std::string&& value) {
+  _impl_.requests_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:execution.BlockBody.requests)
+}
+inline void BlockBody::add_requests(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.requests_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:execution.BlockBody.requests)
+}
+inline void BlockBody::add_requests(const void* value, size_t size) {
+  _impl_.requests_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:execution.BlockBody.requests)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+BlockBody::requests() const {
+  // @@protoc_insertion_point(field_list:execution.BlockBody.requests)
+  return _impl_.requests_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+BlockBody::mutable_requests() {
+  // @@protoc_insertion_point(field_mutable_list:execution.BlockBody.requests)
+  return &_impl_.requests_;
 }
 
 // -------------------------------------------------------------------
@@ -9088,6 +9307,26 @@ inline void FrozenBlocksResponse::_internal_set_frozen_blocks(uint64_t value) {
 inline void FrozenBlocksResponse::set_frozen_blocks(uint64_t value) {
   _internal_set_frozen_blocks(value);
   // @@protoc_insertion_point(field_set:execution.FrozenBlocksResponse.frozen_blocks)
+}
+
+// bool has_gap = 2;
+inline void FrozenBlocksResponse::clear_has_gap() {
+  _impl_.has_gap_ = false;
+}
+inline bool FrozenBlocksResponse::_internal_has_gap() const {
+  return _impl_.has_gap_;
+}
+inline bool FrozenBlocksResponse::has_gap() const {
+  // @@protoc_insertion_point(field_get:execution.FrozenBlocksResponse.has_gap)
+  return _internal_has_gap();
+}
+inline void FrozenBlocksResponse::_internal_set_has_gap(bool value) {
+  
+  _impl_.has_gap_ = value;
+}
+inline void FrozenBlocksResponse::set_has_gap(bool value) {
+  _internal_set_has_gap(value);
+  // @@protoc_insertion_point(field_set:execution.FrozenBlocksResponse.has_gap)
 }
 
 // -------------------------------------------------------------------

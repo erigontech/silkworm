@@ -663,8 +663,8 @@ const char descriptor_table_protodef_p2psentry_2fsentry_2eproto[] PROTOBUF_SECTI
   "try.PeerEventsRequest\032\021.sentry.PeerEvent"
   "0\001\0227\n\007AddPeer\022\026.sentry.AddPeerRequest\032\024."
   "sentry.AddPeerReply\0228\n\010NodeInfo\022\026.google"
-  ".protobuf.Empty\032\024.types.NodeInfoReplyB\021Z"
-  "\017./sentry;sentryb\006proto3"
+  ".protobuf.Empty\032\024.types.NodeInfoReplyB\026Z"
+  "\024./sentry;sentryprotob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_p2psentry_2fsentry_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -672,7 +672,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_p2psentry_2fsentry_
 };
 static ::_pbi::once_flag descriptor_table_p2psentry_2fsentry_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_p2psentry_2fsentry_2eproto = {
-    false, false, 3584, descriptor_table_protodef_p2psentry_2fsentry_2eproto,
+    false, false, 3589, descriptor_table_protodef_p2psentry_2fsentry_2eproto,
     "p2psentry/sentry.proto",
     &descriptor_table_p2psentry_2fsentry_2eproto_once, descriptor_table_p2psentry_2fsentry_2eproto_deps, 2, 23,
     schemas, file_default_instances, TableStruct_p2psentry_2fsentry_2eproto::offsets,

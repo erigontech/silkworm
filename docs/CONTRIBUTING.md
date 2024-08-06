@@ -111,11 +111,12 @@ If you need to update library `lib` in Silkworm submodules to `commit_hash`, the
 ## Updating Internal gRPC Interfaces
 
 If you need to update gRPC protocol definitions (i.e. `.proto` files) and related stubs/skeletons for internal
-[Erigon interfaces][erigon-interfaces], the following procedure  must be applied:
+[Erigon interfaces][erigon-interfaces], the following procedure must be applied:
 
 1. determine the current version used in Erigon as `commit_hash` from [here][erigon-interfaces-version]
 2. cd third_party/erigon-interfaces
-3. git checkout <commit_hash>
+3. git pull
+4. git checkout <commit_hash>
 
 
 ## Updating Snapshots

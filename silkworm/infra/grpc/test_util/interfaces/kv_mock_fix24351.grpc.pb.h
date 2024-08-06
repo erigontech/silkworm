@@ -32,8 +32,8 @@ class FixIssue24351_MockKVStub : public remote::MockKVStub {
   MOCK_METHOD3(PrepareAsyncReceiveStateChanges, ::grpc::ClientAsyncReaderInterface< ::remote::StateChange>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(AsyncDomainGet, ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>*(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncDomainGet, ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>*(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(AsyncHistoryGet, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>*(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(PrepareAsyncHistoryGet, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>*(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(AsyncHistorySeek, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>*(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncHistorySeek, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>*(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(AsyncIndexRange, ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>*(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncIndexRange, ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>*(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(AsyncHistoryRange, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq));

@@ -104,15 +104,6 @@ inline constexpr db::MapConfig kDifficulty{kDifficultyName};
 inline constexpr const char* kBlockReceiptsName{"Receipt"};
 inline constexpr db::MapConfig kBlockReceipts{kBlockReceiptsName};
 
-inline constexpr const char* kBloomBitsIndexName{"BloomBitsIndex"};
-inline constexpr db::MapConfig kBloomBitsIndex{kBloomBitsIndexName};
-
-inline constexpr const char* kBloomBitsName{"BloomBits"};
-inline constexpr db::MapConfig kBloomBits{kBloomBitsName};
-
-inline constexpr const char* kBodiesSnapshotInfoName{"BodiesSnapshotInfo"};
-inline constexpr db::MapConfig kBodiesSnapshotInfo{kBodiesSnapshotInfoName};
-
 //! \details Stores the mapping of block number to the set (sorted) of all accounts touched by call traces.
 //! \struct
 //! \verbatim
@@ -166,9 +157,6 @@ inline constexpr db::MapConfig kDatabaseInfo{kDatabaseInfoName};
 inline constexpr const char* kBlockTransactionsName{"BlockTransaction"};
 inline constexpr db::MapConfig kBlockTransactions{kBlockTransactionsName};
 
-inline constexpr const char* kNonCanonicalTransactionsName{"NonCanonicalTransaction"};
-inline constexpr db::MapConfig kNonCanonicalTransactions{kNonCanonicalTransactionsName};
-
 //! \details Store "current" state for accounts with hashed address key
 //! \remarks This table stores the same values for PlainState (Account record type) but with hashed key
 //! \struct
@@ -214,9 +202,6 @@ inline constexpr db::MapConfig kHeadHeader{kHeadHeaderName};
 
 inline constexpr const char* kHeaderNumbersName{"HeaderNumber"};
 inline constexpr db::MapConfig kHeaderNumbers{kHeaderNumbersName};
-
-inline constexpr const char* kHeadersSnapshotInfoName{"HeadersSnapshotInfo"};
-inline constexpr db::MapConfig kHeadersSnapshotInfo{kHeadersSnapshotInfoName};
 
 //! \details Stores the last incarnation of last contract SelfDestruct
 //! \struct
@@ -312,12 +297,6 @@ inline constexpr db::MapConfig kSenders{kSendersName};
 inline constexpr const char* kSequenceName{"Sequence"};
 inline constexpr db::MapConfig kSequence{kSequenceName};
 
-inline constexpr const char* kSnapshotInfoName{"SnapshotInfo"};
-inline constexpr db::MapConfig kSnapshotInfo{kSnapshotInfoName};
-
-inline constexpr const char* kStateSnapshotInfoName{"StateSnapshotInfo"};
-inline constexpr db::MapConfig kStateSnapshotInfo{kStateSnapshotInfoName};
-
 //! \details At block N stores value of state of storage for block N-1.
 //! \struct
 //! \verbatim
@@ -386,20 +365,11 @@ inline constexpr db::MapConfig kTxLookup{kTxLookupName};
 inline constexpr const char* kLastForkchoiceName{"LastForkchoice"};
 inline constexpr db::MapConfig kLastForkchoice{kLastForkchoiceName};
 
-inline constexpr const char* kIssuanceName{"Issuance"};
-inline constexpr db::MapConfig kIssuance{kIssuanceName};
-
-inline constexpr const char* kCumulativeGasIndexName{"CumulativeGasIndex"};
-inline constexpr db::MapConfig kCumulativeGasIndex{kCumulativeGasIndexName};
-
 inline constexpr db::MapConfig kChainDataTables[]{
     kAccountChangeSet,
     kAccountHistory,
     kBlockBodies,
     kBlockReceipts,
-    kBloomBits,
-    kBloomBitsIndex,
-    kBodiesSnapshotInfo,
     kCallFromIndex,
     kCallToIndex,
     kCallTraceSet,
@@ -416,7 +386,6 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kHeadBlock,
     kHeadHeader,
     kHeaderNumbers,
-    kHeadersSnapshotInfo,
     kIncarnationMap,
     kLastForkchoice,
     kLogAddressIndex,
@@ -427,8 +396,6 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kPlainState,
     kSenders,
     kSequence,
-    kSnapshotInfo,
-    kStateSnapshotInfo,
     kStorageChangeSet,
     kStorageHistory,
     kSyncStageProgress,

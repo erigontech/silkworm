@@ -68,8 +68,11 @@ class Transaction {
 
     /** Temporal Point Queries **/
 
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-    virtual Task<HistoryPointResult> history_seek(api::HistoryPointQuery&& query) = 0;
+    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
+    virtual Task<DomainPointResult> domain_get(DomainPointQuery&& query) = 0;
+
+    // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
+    virtual Task<HistoryPointResult> history_seek(HistoryPointQuery&& query) = 0;
 
     /** Temporal Range Queries **/
 

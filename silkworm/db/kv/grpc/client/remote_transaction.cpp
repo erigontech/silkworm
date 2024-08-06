@@ -93,11 +93,24 @@ std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {
     return std::make_shared<chain::RemoteChainStorage>(*this, block_provider_, block_number_from_txn_hash_provider_);
 }
 
+Task<api::DomainPointResult> RemoteTransaction::domain_get(api::DomainPointQuery&& query) {  // NOLINT(*-rvalue-reference-param-not-moved)
+    try {
+        query.tx_id = tx_id_;
+        auto request = domain_get_request_from_query(query);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainGet, stub_, std::move(request), grpc_context_);
+        auto result = domain_get_result_from_response(reply);
+        co_return result;
+    } catch (rpc::GrpcStatusError& gse) {
+        SILK_WARN << "KV::DomainGet RPC failed status=" << gse.status();
+        throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
+    }
+}
+
 Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQuery&& query) {  // NOLINT(*-rvalue-reference-param-not-moved)
     try {
         query.tx_id = tx_id_;
         auto request = history_seek_request_from_query(query);
-        auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistorySeek, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistorySeek, stub_, std::move(request), grpc_context_);
         auto result = history_seek_result_from_response(reply);
         co_return result;
     } catch (rpc::GrpcStatusError& gse) {
@@ -113,7 +126,7 @@ Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQue
         query.page_token = page_token;
         auto request = index_range_request_from_query(query);
         try {
-            auto reply = co_await rpc::unary_rpc(&Stub::AsyncIndexRange, stub_, std::move(request), grpc_context_);
+            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncIndexRange, stub_, std::move(request), grpc_context_);
             auto result = index_range_result_from_response(reply);
             page_token = std::move(result.next_page_token);
             co_return api::PaginatedTimestamps::PageResult{std::move(result.timestamps), !page_token.empty()};
@@ -132,7 +145,7 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
         query.page_token = page_token;
         auto request = history_range_request_from_query(query);
         try {
-            auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, stub_, std::move(request), grpc_context_);
+            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, stub_, std::move(request), grpc_context_);
             auto result = history_range_result_from_response(reply);
             page_token = std::move(result.next_page_token);
             co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), !page_token.empty()};
@@ -151,7 +164,7 @@ Task<api::PaginatedKeysValues> RemoteTransaction::domain_range(api::DomainRangeQ
         query.page_token = page_token;
         auto request = domain_range_request_from_query(query);
         try {
-            auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, stub_, std::move(request), grpc_context_);
+            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, stub_, std::move(request), grpc_context_);
             auto result = history_range_result_from_response(reply);
             page_token = std::move(result.next_page_token);
             co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), !page_token.empty()};

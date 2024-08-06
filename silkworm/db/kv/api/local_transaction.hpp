@@ -55,8 +55,11 @@ class LocalTransaction : public BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-    Task<HistoryPointResult> history_seek(api::HistoryPointQuery&& query) override;
+    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
+    Task<DomainPointResult> domain_get(DomainPointQuery&&) override;
+
+    // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
+    Task<HistoryPointResult> history_seek(HistoryPointQuery&& query) override;
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
     Task<PaginatedTimestamps> index_range(IndexRangeQuery&& query) override;

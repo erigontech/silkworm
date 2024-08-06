@@ -201,6 +201,11 @@ class DummyTransaction : public BaseTransaction {
     }
 
     // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery&& /*query*/) override {
+        co_return db::kv::api::DomainPointResult{};
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
     Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery&& /*query*/) override {
         co_return db::kv::api::HistoryPointResult{};
     }

@@ -56,32 +56,4 @@ struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub
     }
 };
 
-TEST_CASE_METHOD(RemoteClientTestRunner, "KV::DomainGet", "[node][remote][kv][grpc]") {
-    const api::DomainPointQuery query{};  // input query doesn't matter here, we tweak the reply
-
-    rpc::test::StrictMockAsyncResponseReader<proto::DomainGetReply> reader;
-    EXPECT_CALL(*stub_, AsyncDomainGetRaw).WillOnce(testing::Return(&reader));
-
-    SECTION("call get_domain and get result") {
-        proto::DomainGetReply reply{sample_proto_domain_get_response()};
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
-
-        const api::DomainPointResult result = run_service_method<&api::Service::get_domain>(query);
-        CHECK(result.success);
-        CHECK(result.value == from_hex("ff00ff00"));
-    }
-    SECTION("call get_domain and get empty result") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
-
-        const api::DomainPointResult result = run_service_method<&api::Service::get_domain>(query);
-        CHECK_FALSE(result.success);
-        CHECK(result.value.empty());
-    }
-    SECTION("call get_domain and get error") {
-        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
-
-        CHECK_THROWS_AS((run_service_method<&api::Service::get_domain>(query)), rpc::GrpcStatusError);
-    }
-}
-
 }  // namespace silkworm::db::kv::grpc::client

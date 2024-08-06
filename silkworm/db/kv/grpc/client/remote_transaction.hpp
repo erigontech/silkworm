@@ -59,7 +59,10 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
+    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
+    Task<api::DomainPointResult> domain_get(api::DomainPointQuery&&) override;
+
+    // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery&& query) override;
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);

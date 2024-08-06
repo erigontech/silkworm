@@ -85,16 +85,16 @@ inline proto::DomainGetReq sample_proto_domain_point_request() {
     proto::DomainGetReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
-    request.set_k("0011ff");
+    request.set_k(ascii_from_hex("0011ff"));
     request.set_ts(1234567);
-    request.set_k2("001122");
+    request.set_k2(ascii_from_hex("001122"));
     return request;
 }
 
 inline proto::DomainGetReply sample_proto_domain_get_response() {
     proto::DomainGetReply response;
     response.set_ok(true);
-    response.set_v("ff00ff00");
+    response.set_v(ascii_from_hex("ff00ff00"));
     return response;
 }
 

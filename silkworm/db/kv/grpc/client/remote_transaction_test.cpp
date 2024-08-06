@@ -406,12 +406,55 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 }
 #endif  // SILKWORM_SANITIZE
 
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_get", "[db][kv][grpc][client][remote_transaction]") {
+    using db::kv::test_util::sample_proto_domain_get_response;
+
+    auto domain_get = [&]() -> Task<api::DomainPointResult> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::DomainPointQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::DomainPointQuery query;
+        const api::DomainPointResult result = co_await remote_tx_.domain_get(std::move(query));
+#else
+        const api::DomainPointResult result = co_await remote_tx_.domain_get(api::DomainPointQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return result;
+    };
+
+    rpc::test::StrictMockAsyncResponseReader<proto::DomainGetReply> reader;
+    EXPECT_CALL(*stub_, AsyncDomainGetRaw).WillOnce(testing::Return(&reader));
+
+    api::DomainPointResult result;
+
+    SECTION("call domain_get and get result") {
+        proto::DomainGetReply reply{sample_proto_domain_get_response()};
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
+
+        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK(result.success);
+        CHECK(result.value == from_hex("ff00ff00"));
+    }
+    SECTION("call domain_get and get empty result") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
+
+        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK_FALSE(result.success);
+        CHECK(result.value.empty());
+    }
+    SECTION("call domain_get and get error") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
+
+        CHECK_THROWS_AS(spawn_and_wait(domain_get), boost::system::system_error);
+    }
+}
+
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_seek", "[db][kv][grpc][client][remote_transaction]") {
     using db::kv::test_util::sample_proto_history_seek_response;
 
     auto history_seek = [&]() -> Task<api::HistoryPointResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::IndexRangeQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::HistoryPointQuery as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::HistoryPointQuery query;
@@ -557,7 +600,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
 
     auto flatten_history_range = [&]() -> Task<std::vector<api::KeyValue>> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::IndexRangeQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::HistoryRangeQuery as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::HistoryRangeQuery query;

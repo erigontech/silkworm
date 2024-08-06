@@ -26,13 +26,15 @@
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_matcher.hpp>
 
+#include "../test_util/sample_protos.hpp"
+
 namespace silkworm::db::kv::grpc::client {
 
 using testing::_;
 namespace proto = ::remote;
 namespace test = rpc::test;
 
-struct RemoteTransactionTest : test_util::KVTestBase {
+struct RemoteTransactionTest : db::test_util::KVTestBase {
     api::CoherentStateCache state_cache_;
     RemoteTransaction remote_tx_{*stub_,
                                  grpc_context_,
@@ -57,7 +59,7 @@ bool ensure_fake_tx_created_view_id(const RemoteTransaction& remote_tx) {
 }
 
 #ifndef SILKWORM_SANITIZE
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("success") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
@@ -95,7 +97,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[rpc][ethdb]
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test: closing the transaction should throw
         CHECK_THROWS_AS(spawn_and_wait(remote_tx_.close()), boost::system::system_error);
@@ -194,7 +196,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[rpc][ethdb
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test: getting cursor from the transaction should throw
         CHECK_THROWS_AS(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error);
@@ -296,7 +298,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[rpc][ethd
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test preconditions: none
 
@@ -404,6 +406,49 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 }
 #endif  // SILKWORM_SANITIZE
 
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_seek", "[db][kv][grpc][client][remote_transaction]") {
+    using db::kv::test_util::sample_proto_history_seek_response;
+
+    auto history_seek = [&]() -> Task<api::HistoryPointResult> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::IndexRangeQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::HistoryPointQuery query;
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(std::move(query));
+#else
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(api::HistoryPointQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return result;
+    };
+
+    rpc::test::StrictMockAsyncResponseReader<proto::HistorySeekReply> reader;
+    EXPECT_CALL(*stub_, AsyncHistorySeekRaw).WillOnce(testing::Return(&reader));
+
+    api::HistoryPointResult result;
+
+    SECTION("call history_seek and get result") {
+        proto::HistorySeekReply reply{sample_proto_history_seek_response()};
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
+
+        CHECK_NOTHROW((result = spawn_and_wait(history_seek)));
+        CHECK(result.success);
+        CHECK(result.value == from_hex("ff00ff00"));
+    }
+    SECTION("call history_seek and get empty result") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
+
+        CHECK_NOTHROW((result = spawn_and_wait(history_seek)));
+        CHECK_FALSE(result.success);
+        CHECK(result.value.empty());
+    }
+    SECTION("call history_seek and get error") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
+
+        CHECK_THROWS_AS(spawn_and_wait(history_seek), boost::system::system_error);
+    }
+}
+
 static ::remote::IndexRangeReply make_index_range_reply(const api::ListOfTimestamp& timestamps, bool has_more) {
     proto::IndexRangeReply reply;
     for (const auto ts : timestamps) {
@@ -413,7 +458,7 @@ static ::remote::IndexRangeReply make_index_range_reply(const api::ListOfTimesta
     return reply;
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][kv][grpc][client][remote_transaction]") {
     auto flatten_index_range = [&]() -> Task<api::ListOfTimestamp> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
         // Before GCC 13, we must avoid passing api::IndexRangeQuery as temporary because co_await-ing expressions
@@ -505,7 +550,7 @@ static proto::Pairs make_key_value_range_reply(const std::vector<api::KeyValue>&
     return reply;
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db][kv][grpc][client][remote_transaction]") {
     const api::KeyValue kv1{*from_hex("0011FF0011AA"), *from_hex("0011")};
     const api::KeyValue kv2{*from_hex("0011FF0011BB"), *from_hex("0022")};
     const api::KeyValue kv3{*from_hex("0011FF0011CC"), *from_hex("0033")};
@@ -591,7 +636,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[rp
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db][kv][grpc][client][remote_transaction]") {
     const api::KeyValue kv1{*from_hex("0011FF0011AA"), *from_hex("0011")};
     const api::KeyValue kv2{*from_hex("0011FF0011BB"), *from_hex("0022")};
     const api::KeyValue kv3{*from_hex("0011FF0011CC"), *from_hex("0033")};

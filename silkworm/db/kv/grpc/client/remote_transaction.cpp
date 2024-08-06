@@ -21,6 +21,7 @@
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/errors.hpp>
 
+#include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 
 namespace silkworm::db::kv::grpc::client {
@@ -90,6 +91,19 @@ std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::an
 
 std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {
     return std::make_shared<chain::RemoteChainStorage>(*this, block_provider_, block_number_from_txn_hash_provider_);
+}
+
+Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQuery&& query) {  // NOLINT(*-rvalue-reference-param-not-moved)
+    try {
+        query.tx_id = tx_id_;
+        auto request = history_seek_request_from_query(query);
+        auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistorySeek, stub_, std::move(request), grpc_context_);
+        auto result = history_seek_result_from_response(reply);
+        co_return result;
+    } catch (rpc::GrpcStatusError& gse) {
+        SILK_WARN << "KV::HistorySeek RPC failed status=" << gse.status();
+        throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
+    }
 }
 
 Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQuery&& query) {

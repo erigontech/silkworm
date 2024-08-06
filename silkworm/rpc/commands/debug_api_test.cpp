@@ -212,6 +212,11 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     }
 
     // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery&& /*query*/) override {
+        co_return db::kv::api::HistoryPointResult{};
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
     Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& /*query*/) override {
         co_return test::empty_paginated_timestamps();
     }

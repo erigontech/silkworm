@@ -48,9 +48,6 @@ class DirectService : public Service {
 
     /** Temporal Point Queries **/
 
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-    Task<HistoryPointResult> get_history(const HistoryPointQuery&) override;
-
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
     Task<DomainPointResult> get_domain(const DomainPointQuery&) override;
 

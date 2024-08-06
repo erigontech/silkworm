@@ -27,6 +27,7 @@
 
 #include "cursor.hpp"
 #include "endpoint/key_value.hpp"
+#include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 
 namespace silkworm::db::kv::api {
@@ -64,6 +65,11 @@ class Transaction {
     virtual Task<Bytes> get_one(const std::string& table, ByteView key) = 0;
 
     virtual Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) = 0;
+
+    /** Temporal Point Queries **/
+
+    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
+    virtual Task<HistoryPointResult> history_seek(api::HistoryPointQuery&& query) = 0;
 
     /** Temporal Range Queries **/
 

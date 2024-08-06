@@ -40,9 +40,6 @@ struct Service {
 
     /** Temporal Point Queries **/
 
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-    virtual Task<HistoryPointResult> get_history(const HistoryPointQuery&) = 0;
-
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
     virtual Task<DomainPointResult> get_domain(const DomainPointQuery&) = 0;
 };

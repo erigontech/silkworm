@@ -335,11 +335,6 @@ inline constexpr db::MapConfig kStorageHistory{kStorageHistoryName};
 inline constexpr const char* kSyncStageProgressName{"SyncStage"};
 inline constexpr db::MapConfig kSyncStageProgress{kSyncStageProgressName};
 
-//! \brief Unwind point for stages
-//! \struct stage name -> block_num_u64 (BE)
-inline constexpr const char* kSyncStageUnwindName{"SyncStageUnwind"};
-inline constexpr db::MapConfig kSyncStageUnwind{kSyncStageUnwindName};
-
 //! \brief Hold the nodes composing the StateRoot
 //! \verbatim
 //!   key   : node key
@@ -399,7 +394,6 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kStorageChangeSet,
     kStorageHistory,
     kSyncStageProgress,
-    kSyncStageUnwind,
     kTrieOfAccounts,
     kTrieOfStorage,
     kTxLookup,

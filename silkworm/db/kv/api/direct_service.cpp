@@ -58,12 +58,4 @@ Task<void> DirectService::state_changes(const api::StateChangeOptions& options, 
     }
 }
 
-/** Temporal Point Queries **/
-
-// rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-Task<DomainPointResult> DirectService::get_domain(const DomainPointQuery&) {
-    // TODO(canepat) implement
-    co_return DomainPointResult{};
-}
-
 }  // namespace silkworm::db::kv::api

@@ -137,15 +137,6 @@ class RemoteClientImpl final : public api::Service {
         }
     }
 
-    /** Temporal Point Queries **/
-
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    Task<api::DomainPointResult> get_domain(const api::DomainPointQuery& query) override {
-        auto request = domain_get_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainGet, *stub_, std::move(request), grpc_context_);
-        co_return domain_get_result_from_response(reply);
-    }
-
     void set_min_backoff_timeout(const std::chrono::milliseconds& min_backoff_timeout) {
         min_backoff_timeout_ = min_backoff_timeout;
     }

@@ -69,13 +69,19 @@ std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
 }
 
 // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<HistoryPointResult> LocalTransaction::history_seek(api::HistoryPointQuery&& /*query*/) {
+Task<DomainPointResult> LocalTransaction::domain_get(DomainPointQuery&& /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    co_return DomainPointResult{};
+}
+
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery&& /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     co_return HistoryPointResult{};
 }
 
 // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<PaginatedTimestamps> LocalTransaction::index_range(api::IndexRangeQuery&& /*query*/) {
+Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery&& /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = []() mutable -> Task<api::PaginatedTimestamps::PageResult> {
         co_return api::PaginatedTimestamps::PageResult{};

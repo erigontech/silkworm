@@ -24,6 +24,7 @@ class BodySnapshotFreezer : public SnapshotFreezer {
   public:
     ~BodySnapshotFreezer() override = default;
     void copy(ROTxn& txn, BlockNumRange range, snapshots::SnapshotFileWriter& file_writer) const override;
+    void cleanup(RWTxn& txn, BlockNumRange range) const override;
 };
 
 }  // namespace silkworm::db

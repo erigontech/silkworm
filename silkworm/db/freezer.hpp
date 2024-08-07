@@ -40,6 +40,7 @@ class Freezer : public DataMigration {
     void index(std::shared_ptr<DataMigrationResult> result) override;
     void commit(std::shared_ptr<DataMigrationResult> result) override;
     void cleanup() override;
+    BlockNumRange cleanup_range();
 
     db::ROAccess db_access_;
     snapshots::SnapshotRepository& snapshots_;

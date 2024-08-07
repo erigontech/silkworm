@@ -195,7 +195,7 @@ struct SilkwormLibrary {
     }
 
     int fork_validator_verify_chain(silkworm::Hash head_hash) const {
-        struct SilkwormBytes32 head_hash_bytes {};
+        struct SilkwormBytes32 head_hash_bytes{};
         std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
 
         auto result = std::make_unique<SilkwormForkValidatorValidationResult>();
@@ -204,8 +204,7 @@ struct SilkwormLibrary {
     }
 
     int execution_engine_fork_choice_update(silkworm::Hash head_hash, silkworm::Hash finalized_hash, silkworm::Hash safe_hash) const {
-        struct SilkwormBytes32 head_hash_bytes {
-        }, finalized_hash_bytes{}, safe_hash_bytes{};
+        struct SilkwormBytes32 head_hash_bytes{}, finalized_hash_bytes{}, safe_hash_bytes{};
         std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
         std::memcpy(finalized_hash_bytes.bytes, finalized_hash.bytes, 32);
         std::memcpy(safe_hash_bytes.bytes, safe_hash.bytes, 32);

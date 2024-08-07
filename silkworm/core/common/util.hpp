@@ -88,7 +88,7 @@ namespace internal {
 //! \return A new view of the sequence
 ByteView zeroless_view(ByteView data);
 
-constexpr bool has_hex_prefix(std::string_view s) {
+inline bool has_hex_prefix(std::string_view s) {
     return s.length() >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X');
 }
 

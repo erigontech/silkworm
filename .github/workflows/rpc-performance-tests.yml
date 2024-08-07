@@ -127,6 +127,11 @@ jobs:
                     --db_version $db_version \
                     --outcome success \
                     --result_file ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/${servers[i-1]}-$method-result.json
+
+                  if [ $? -ne 0 ]; then
+                    failed_test=1
+                    echo "Failure saving test results on DB"
+                  fi
           
                   echo "Execute Latency Percentile HDR Analysis"   
                   cd ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/

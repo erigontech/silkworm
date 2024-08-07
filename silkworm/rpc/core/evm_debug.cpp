@@ -315,7 +315,7 @@ void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::Executi
     fix_call_gas_info_.emplace(FixCallGasInfo{opcode, execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
 
     auto idx = 0;
-    const auto call_gas = stack_top[idx--]; // gas
+    const auto call_gas = stack_top[idx--];  // gas
     const auto dst = intx::be::trunc<evmc::address>(stack_top[idx--]);
     const auto value = (opcode == OP_STATICCALL || opcode == OP_DELEGATECALL) ? 0 : stack_top[idx--];
     const auto input_offset = static_cast<std::uint64_t>(stack_top[idx--]);

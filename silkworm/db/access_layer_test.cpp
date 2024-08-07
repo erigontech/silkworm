@@ -417,23 +417,16 @@ TEST_CASE("Stages", "[db][access_layer]") {
 
     // Querying a non-existent stage name should throw
     CHECK_THROWS(stages::read_stage_progress(txn, "NonExistentStage"));
-    CHECK_THROWS(stages::read_stage_unwind(txn, "NonExistentStage"));
 
     // Not valued stage should return 0
     CHECK(stages::read_stage_progress(txn, stages::kBlockBodiesKey) == 0);
-    CHECK(stages::read_stage_unwind(txn, stages::kBlockBodiesKey) == 0);
 
     // Value a stage progress and check returned value
     uint64_t block_num{0};
     uint64_t expected_block_num{123456};
     CHECK_NOTHROW(stages::write_stage_progress(txn, stages::kBlockBodiesKey, expected_block_num));
-    CHECK_NOTHROW(stages::write_stage_unwind(txn, stages::kBlockBodiesKey, expected_block_num));
     CHECK_NOTHROW(block_num = stages::read_stage_progress(txn, stages::kBlockBodiesKey));
     CHECK(block_num == expected_block_num);
-    CHECK_NOTHROW(block_num = stages::read_stage_unwind(txn, stages::kBlockBodiesKey));
-    CHECK(block_num == expected_block_num);
-    CHECK_NOTHROW(stages::write_stage_unwind(txn, stages::kBlockBodiesKey));
-    CHECK(!stages::read_stage_unwind(txn, stages::kBlockBodiesKey));
 
     // Write voluntary wrong value in stage
     Bytes stage_progress(2, 0);

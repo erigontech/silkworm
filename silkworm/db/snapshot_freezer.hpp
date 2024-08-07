@@ -28,6 +28,9 @@ struct SnapshotFreezer {
 
     //! Copies data for a block range from db to the snapshot file.
     virtual void copy(ROTxn& txn, BlockNumRange range, snapshots::SnapshotFileWriter& file_writer) const = 0;
+
+    //! Cleans up data for a block range from db after it was copied to the snapshot file.
+    virtual void cleanup(RWTxn& txn, BlockNumRange range) const = 0;
 };
 
 }  // namespace silkworm::db

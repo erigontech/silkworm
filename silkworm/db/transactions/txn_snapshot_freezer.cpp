@@ -42,4 +42,20 @@ void TransactionSnapshotFreezer::copy(ROTxn& txn, BlockNumRange range, snapshots
     }
 }
 
+void TransactionSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
+    for (BlockNum i = range.first; i < range.second; i++) {
+        auto hash_opt = read_canonical_hash(txn, i);
+        if (!hash_opt) continue;
+        auto hash = *hash_opt;
+
+        delete_senders(txn, hash, i);
+
+        auto body_opt = read_canonical_body_for_storage(txn, i);
+        if (body_opt) {
+            auto& body = *body_opt;
+            delete_transactions(txn, body.base_txn_id + 1, body.txn_count - 2);
+        }
+    }
+}
+
 }  // namespace silkworm::db

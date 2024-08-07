@@ -34,4 +34,14 @@ void HeaderSnapshotFreezer::copy(ROTxn& txn, BlockNumRange range, snapshots::Sna
     }
 }
 
+void HeaderSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
+    for (BlockNum i = range.first; i < range.second; i++) {
+        auto hash_opt = read_canonical_hash(txn, i);
+        if (!hash_opt) continue;
+        auto& hash = *hash_opt;
+
+        delete_header(txn, i, hash);
+    }
+}
+
 }  // namespace silkworm::db

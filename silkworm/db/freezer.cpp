@@ -58,6 +58,11 @@ static BlockNum get_tip_num(ROTxn& txn) {
     return num;
 }
 
+static BlockNum get_first_stored_header_num(ROTxn& txn) {
+    auto num_opt = db::read_stored_header_number_after(txn, 1);
+    return num_opt.value_or(0);
+}
+
 std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
     BlockNum last_frozen = snapshots_.max_block_available();
     BlockNum start = (last_frozen > 0) ? last_frozen + 1 : 0;
@@ -80,11 +85,11 @@ static const SnapshotFreezer& get_snapshot_freezer(SnapshotType type) {
     static TransactionSnapshotFreezer txn_snapshot_freezer;
 
     switch (type) {
-        case snapshots::headers:
+        case SnapshotType::headers:
             return header_snapshot_freezer;
-        case snapshots::bodies:
+        case SnapshotType::bodies:
             return body_snapshot_freezer;
-        case snapshots::transactions:
+        case SnapshotType::transactions:
             return txn_snapshot_freezer;
         default:
             assert(false);
@@ -143,8 +148,29 @@ void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
 }
 
+BlockNumRange Freezer::cleanup_range() {
+    BlockNum last_frozen = snapshots_.max_block_available();
+
+    BlockNum first_stored_header_num = [this] {
+        auto db_tx = db_access_.start_ro_tx();
+        return get_first_stored_header_num(db_tx);
+    }();
+
+    BlockNum end = (last_frozen > 0) ? last_frozen + 1 : 0;
+    BlockNum start = (first_stored_header_num > 0) ? first_stored_header_num : end;
+    return BlockNumRange{start, end};
+}
+
 void Freezer::cleanup() {
+    BlockNumRange range = cleanup_range();
+    if (range.first >= range.second) return;
+
     // TODO
+    RWTxnManaged db_tx;
+
+    get_snapshot_freezer(SnapshotType::transactions).cleanup(db_tx, range);
+    get_snapshot_freezer(SnapshotType::bodies).cleanup(db_tx, range);
+    get_snapshot_freezer(SnapshotType::headers).cleanup(db_tx, range);
 }
 
 }  // namespace silkworm::db

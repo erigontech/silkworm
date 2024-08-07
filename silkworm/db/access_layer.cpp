@@ -191,12 +191,28 @@ evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_h
     return header_hash;
 }
 
+void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash) {
+    auto cursor = txn.rw_cursor(table::kHeaders);
+    auto key = block_key(number, hash.bytes);
+    cursor->erase(to_slice(key));
+}
+
 std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash) {
     auto header_cursor = txn.ro_cursor(db::table::kHeaders);
     auto key = db::block_key(bn, hash.bytes);
     auto data = header_cursor->find(db::to_slice(key), /*throw_notfound*/ false);
     if (!data) return std::nullopt;
     return db::from_slice(data.value);
+}
+
+std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number) {
+    auto cursor = txn.ro_cursor(db::table::kHeaders);
+    auto key = db::block_key(min_number);
+    auto result = cursor->find(db::to_slice(key), /* throw_notfound = */ false);
+    if (!result) {
+        return std::nullopt;
+    }
+    return block_number_from_key(result.key);
 }
 
 std::optional<BlockHeader> read_canonical_header(ROTxn& txn, BlockNum b) {  // also known as read-header-by-number
@@ -229,6 +245,12 @@ void write_header_number(RWTxn& txn, const uint8_t (&hash)[kHashLength], const B
     auto target = txn.rw_cursor(table::kHeaderNumbers);
     auto value{db::block_key(number)};
     target->upsert({hash, kHashLength}, to_slice(value));
+}
+
+void delete_header_number(RWTxn& txn, const evmc::bytes32& hash) {
+    auto cursor = txn.rw_cursor(table::kHeaderNumbers);
+    auto key = header_numbers_key(hash);
+    cursor->erase(to_slice(key));
 }
 
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum b, const evmc::bytes32& hash) {
@@ -372,6 +394,15 @@ static void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, 
         rlp_txs[i] = from_slice(data.value);
     }
     SILKWORM_ASSERT(i == count);
+}
+
+void delete_transactions(RWTxn& txn, uint64_t base_id, uint64_t count) {
+    auto cursor = txn.rw_cursor(table::kBlockTransactions);
+    auto first_key = db::block_key(base_id);
+    auto result = cursor->find(to_slice(first_key), /* throw_notfound = */ false);
+    for (uint64_t i = 0; result && (i < count); result = cursor->to_next(/* throw_notfound = */ false), i++) {
+        cursor->erase();
+    }
 }
 
 bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block& block) {
@@ -571,6 +602,12 @@ void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
 
+void delete_body(RWTxn& txn, const evmc::bytes32& hash, BlockNum number) {
+    auto cursor = txn.rw_cursor(table::kBlockBodies);
+    auto key = db::block_key(number, hash.bytes);
+    cursor->erase(to_slice(key));
+}
+
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {
     auto cursor = txn.ro_cursor(table::kSenders);
     auto data{cursor->find(to_slice(key), /*throw_notfound = */ false)};
@@ -624,6 +661,12 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
     }
 
     target->upsert(to_slice(key), to_slice(data));
+}
+
+void delete_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number) {
+    auto cursor = txn.rw_cursor(table::kSenders);
+    auto key = db::block_key(number, hash.bytes);
+    cursor->erase(to_slice(key));
 }
 
 void write_tx_lookup(RWTxn& txn, const Block& block) {

@@ -89,11 +89,20 @@ void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_number
 //! \brief Writes given header to table::kHeaders and returns its hash
 evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_header_numbers);
 
+//! \brief Deletes a header from table::kHeaders
+void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash);
+
+//! \brief Finds the first header with a number >= min_number in table::kHeaders
+std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number);
+
 //! \brief Read block number from hash
 std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash);
 
 //! \brief Writes header hash in table::kHeaderNumbers
 void write_header_number(RWTxn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
+
+//! \brief Deletes a header hash to number entry in table::kHeaderNumbers
+void delete_header_number(RWTxn& txn, const evmc::bytes32& hash);
 
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header(RWTxn& txn, const BlockHeader& header);
@@ -131,6 +140,9 @@ void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, Bl
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
 void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 
+//! \brief Deletes a block body from table::kBlockBodies
+void delete_body(RWTxn& txn, const evmc::bytes32& hash, BlockNum number);
+
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const evmc::bytes32& hash);
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const uint8_t (&hash)[kHashLength]);
@@ -158,6 +170,7 @@ std::vector<evmc::address> read_senders(ROTxn& txn, BlockNum block_number, const
 //! \brief Fills transactions' senders addresses directly in place
 void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
+void delete_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number);
 
 void write_tx_lookup(RWTxn& txn, const Block& block);
 void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number);
@@ -172,6 +185,9 @@ bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& has
 //! The key starts from base_id and is incremented by 1 for each transaction.
 //! \remarks Before calling this ensure you got a proper base_id by incrementing sequence for table::kBlockTransactions.
 void write_transactions(RWTxn& txn, const std::vector<Transaction>& transactions, uint64_t base_id);
+
+//! \brief Delete transactions from table::kBlockTransactions.
+void delete_transactions(RWTxn& txn, uint64_t base_id, uint64_t count);
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash);
 

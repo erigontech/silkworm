@@ -158,18 +158,12 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         }
     }
 
-    if (pc == 39 || pc == 40) {
-        std::cout << "";
-    }
-
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
         if (fix_call_gas_info_) {  // previuos opcodw was a CALL*
             if (execution_state.msg->depth == fix_call_gas_info_->depth) {
                 if (fix_call_gas_info_->gas_cost) {
                     log.gas_cost = fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
-                } else if (!fix_call_gas_info_->precompiled) {
-                    log.gas_cost = log.gas - gas + fix_call_gas_info_->stipend;
                 }
             } else {
                 if (fix_call_gas_info_->opcode == OP_CALLCODE) {
@@ -230,7 +224,6 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
             std::cout << "";
         }
         fix_call_gas_info_->gas_cost += gas + fix_call_gas_info_->code_cost;
-//        fix_call_gas_info_->gas_cost = gas + fix_call_gas_info_->code_cost;
         fix_call_gas_info_->code_cost = 0;
         fix_call_gas_info_->precompiled = true;
     }
@@ -255,7 +248,11 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
 
             case evmc_status_code::EVMC_OUT_OF_GAS:
                 if (fix_call_gas_info_) {
-                    log.gas_cost += fix_call_gas_info_->gas_cost;
+                    if (fix_call_gas_info_->opcode == OP_CALLCODE) {
+                        log.gas_cost = fix_call_gas_info_->code_cost;
+                    } else {
+                        log.gas_cost += fix_call_gas_info_->gas_cost;
+                    }
                 }
                 break;
 
@@ -264,12 +261,10 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
                     if (result.gas_left == 0 && !fix_call_gas_info_->precompiled) {
                         log.gas_cost = fix_call_gas_info_->stipend + fix_call_gas_info_->gas_cost;
                     } else if (!fix_call_gas_info_->precompiled) {
-                        log.gas_cost = result.gas_left + fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
+                        log.gas_cost = result.gas_left + fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost - fix_call_gas_info_->stipend;
                         fix_call_gas_info_->gas_cost = 0;
                     } else if (fix_call_gas_info_->precompiled) {
                         log.gas_cost = fix_call_gas_info_->gas_cost;
-                        fix_call_gas_info_->gas_cost = 0;
-                    } else {
                         fix_call_gas_info_->gas_cost = 0;
                     }
                 }
@@ -295,12 +290,15 @@ void DebugTracer::flush_logs() {
     }
 }
 
-int64_t memory_cost(const evmone::Memory& memory, std::uint64_t new_size) noexcept {
+int64_t memory_cost(const evmone::Memory& memory, std::uint64_t offset, std::uint64_t size) noexcept {
+    if (size == 0) {
+        return 0;
+    }
+    const auto new_size = offset + size;
     if (new_size <= memory.size()) {
         return 0;
     }
-    // This implementation recomputes memory.size(). This value is already known to the caller
-    // and can be passed as a parameter, but this make no difference to the performance.
+
     const auto new_words = evmone::num_words(new_size);
     const auto current_words = static_cast<int64_t>(memory.size() / evmone::word_size);
     const auto new_cost = 3 * new_words + new_words * new_words / 512;
@@ -314,33 +312,29 @@ void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::Executi
     if (opcode != OP_CALL && opcode != OP_CALLCODE && opcode != OP_STATICCALL && opcode != OP_DELEGATECALL && opcode != OP_CREATE && opcode != OP_CREATE2) {
         return;
     }
-    fix_call_gas_info_ = std::make_unique<FixCallGasInfo>(FixCallGasInfo{opcode, execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
+    fix_call_gas_info_.emplace(FixCallGasInfo{opcode, execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
 
     auto idx = 0;
     const auto call_gas = stack_top[idx--]; // gas
     const auto dst = intx::be::trunc<evmc::address>(stack_top[idx--]);
     const auto value = (opcode == OP_STATICCALL || opcode == OP_DELEGATECALL) ? 0 : stack_top[idx--];
-    idx--; //input_offset
+    const auto input_offset = static_cast<std::uint64_t>(stack_top[idx--]);
     const auto input_size = static_cast<std::uint64_t>(stack_top[idx--]);
-    idx--; // output_offset
+    const auto output_offset = static_cast<std::uint64_t>(stack_top[idx--]);
     const auto output_size = static_cast<std::uint64_t>(stack_top[idx--]);
 
-    SILK_LOG << "DebugTracer::evaluate_call_fixes:"
+    SILK_DEBUG << "DebugTracer::evaluate_call_fixes:"
                << " gas: " << std::dec << call_gas
-//                   << " gg_input_offset: " << std::dec << gg_input_offset
-               << " input_size: " << std::dec << input_size
-//                   << " gg_outout_offset: " << std::dec << gg_outout_offset
-               << " output_size: " << std::dec << output_size;
-//    if (opcode == OP_CALLCODE && call_gas < std::numeric_limits<int64_t>::max()) {
-//        fix_call_gas_info_->call_gas = static_cast<std::int64_t>(call_gas);
-//        fix_call_gas_info_->gas_cost += memory_cost(execution_state.memory, input_size);
-//        fix_call_gas_info_->gas_cost += memory_cost(execution_state.memory, output_size);
-//    }
+               << ", input_offset: " << std::dec << input_offset
+               << ", input_size: " << std::dec << input_size
+               << ", output_offset: " << std::dec << output_offset
+               << ", output_size: " << std::dec << output_size;
+
     if (call_gas < std::numeric_limits<int64_t>::max()) {
         fix_call_gas_info_->call_gas = static_cast<std::int64_t>(call_gas);
     }
-    fix_call_gas_info_->gas_cost += memory_cost(execution_state.memory, input_size);
-    fix_call_gas_info_->gas_cost += memory_cost(execution_state.memory, output_size);
+    fix_call_gas_info_->gas_cost += memory_cost(execution_state.memory, input_offset, input_size);
+    fix_call_gas_info_->gas_cost += memory_cost(execution_state.memory, output_offset, output_size);
 
     if (value != 0) {
         fix_call_gas_info_->gas_cost += 9000;
@@ -349,8 +343,6 @@ void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::Executi
         if (opcode == OP_CALL && stack_height >= 7 && value != 0) {
             fix_call_gas_info_->stipend = 2300;  // for CALLs with value, include stipend
         }
-//        const auto call_gas = stack_top[0];                              // gas
-//        const auto dst = intx::be::trunc<evmc::address>(stack_top[-1]);  // dst
         if ((value != 0 || execution_state.rev < EVMC_SPURIOUS_DRAGON) && !intra_block_state.exists(dst)) {
             fix_call_gas_info_->gas_cost += 25000;  // add ACCOUNT_CREATION_COST as in instructions_calls.cpp:105
         }

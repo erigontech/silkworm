@@ -84,12 +84,14 @@ void MainChain::open() {
 
     // Load last finalized and last chosen blocks from persistence
     auto last_finalized_hash = db::read_last_finalized_block(tx_);
+
     if (last_finalized_hash) {
         auto header = get_header(*last_finalized_hash);
         ensure_invariant(header.has_value(), "last finalized block not found in db");
         last_finalized_head_ = {header->number, *last_finalized_hash};
-    } else
+    } else {
         last_finalized_head_ = {0, node_settings_.chain_config.value().genesis_hash.value()};
+    }
 
     auto last_head_hash = db::read_last_head_block(tx_);
     if (last_head_hash) {

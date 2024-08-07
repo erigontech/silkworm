@@ -47,7 +47,13 @@ silkworm_library(
 
 if(NOT NO_TEST)
   target_link_libraries(
-    silkworm_capi_test PRIVATE silkworm_core silkworm_db silkworm_infra silkworm_rpcdaemon silkworm_db_test_util
+    silkworm_capi_test
+    PRIVATE silkworm_core
+            silkworm_db
+            silkworm_infra
+            silkworm_rpcdaemon
+            silkworm_node
+            silkworm_db_test_util
   )
 endif()
 

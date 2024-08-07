@@ -219,8 +219,10 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
             .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : silkworm::concurrency::kDefaultNumContexts,
         },
         .data_dir_path = parse_path(settings->data_dir_path),
+        .node_settings = {},
         .snapshot_repository = std::move(snapshot_repository),
         .rpcdaemon = {},
+        .execution_engine = {},
         .sentry_thread = {},
         .sentry_stop_signal = {},
     };

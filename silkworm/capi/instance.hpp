@@ -25,14 +25,17 @@
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 struct SilkwormInstance {
     silkworm::log::Settings log_settings;
     silkworm::concurrency::ContextPoolSettings context_pool_settings;
     std::filesystem::path data_dir_path;
+    silkworm::NodeSettings node_settings;
     std::unique_ptr<silkworm::snapshots::SnapshotRepository> snapshot_repository;
     std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
+    std::unique_ptr<silkworm::stagedsync::ExecutionEngine> execution_engine;
 
     // sentry
     std::unique_ptr<std::thread> sentry_thread;

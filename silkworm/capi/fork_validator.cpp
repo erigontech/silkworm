@@ -123,7 +123,7 @@ SILKWORM_EXPORT int silkworm_stop_fork_validator(SilkwormHandle handle) SILKWORM
     return SILKWORM_INTERNAL_ERROR;
 }
 
-SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, bytes_32 head_hash_bytes, struct SilkwormForkValidatorValidationResult* result) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, struct SilkwormBytes32 head_hash_bytes, struct SilkwormForkValidatorValidationResult* result) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -169,7 +169,7 @@ SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, 
     }
 }
 
-SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle handle, bytes_32 head_hash_bytes, bytes_32 finalized_hash_bytes, bytes_32 safe_hash_bytes) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle handle, struct SilkwormBytes32 head_hash_bytes, struct SilkwormBytes32 finalized_hash_bytes, struct SilkwormBytes32 safe_hash_bytes) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }

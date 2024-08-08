@@ -45,7 +45,6 @@ Checks: >
   -hicpp-braces-around-statements,
   -hicpp-named-parameter,
   -hicpp-no-array-decay,
-  -hicpp-no-malloc,
   -hicpp-signed-bitwise,
   -hicpp-uppercase-literal-suffix,
   -hicpp-vararg,

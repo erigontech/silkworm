@@ -287,10 +287,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
                                                                   " > target progress " + std::to_string(target_block_num));
         }
 
-        secp256k1_context* context = secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS);
+        static secp256k1_context* context = secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS);
         if (!context) throw std::runtime_error("Could not create elliptic curve context");
-        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
-        [[maybe_unused]] auto _ = gsl::finally([&]() { std::free(context); });
 
         BlockNum start_block_num{previous_progress + 1u};
 

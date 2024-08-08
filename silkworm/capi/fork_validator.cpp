@@ -15,7 +15,6 @@
 */
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/environment.hpp>
 
@@ -43,14 +42,14 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
 
     auto db_env_flags = unmanaged_env.get_flags();
     handle->node_settings.chaindata_env_config = silkworm::db::EnvConfig{
-        .path = handle->data_dir_path,
+        .path = handle->data_dir_path.string(),
         .create = false,
-        .readonly = db_env_flags & MDBX_RDONLY ? true : false,
-        .exclusive = db_env_flags & MDBX_EXCLUSIVE ? true : false,
-        .in_memory = db_env_flags & MDBX_NOMETASYNC ? true : false,
-        .shared = db_env_flags & MDBX_ACCEDE ? true : false,
-        .read_ahead = db_env_flags & MDBX_NORDAHEAD ? false : true,
-        .write_map = db_env_flags & MDBX_WRITEMAP ? true : false,
+        .readonly = (db_env_flags & MDBX_RDONLY) != 0,
+        .exclusive = (db_env_flags & MDBX_EXCLUSIVE) != 0,
+        .in_memory = (db_env_flags & MDBX_NOMETASYNC) != 0,
+        .shared = (db_env_flags & MDBX_ACCEDE) != 0,
+        .read_ahead = (db_env_flags & MDBX_NORDAHEAD) == 0,
+        .write_map = (db_env_flags & MDBX_WRITEMAP) != 0,
         .page_size = unmanaged_env.get_pagesize(),
         .max_size = unmanaged_env.dbsize_max(),
         //.growth_size = ?

@@ -72,9 +72,11 @@ struct DebugLog {
 };
 
 struct FixCallGasInfo {
+    unsigned char opcode;
     int32_t depth{0};
     int64_t stipend{0};
     int16_t code_cost{0};
+    int64_t call_gas{0};
     int64_t gas_cost{0};
     bool precompiled{false};
 };

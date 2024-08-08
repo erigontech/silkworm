@@ -53,7 +53,6 @@ Checks: >
   -misc-const-correctness,
   -misc-no-recursion,
   -misc-non-private-member-variables-in-classes,
-  -misc-redundant-expression,
   -misc-unused-using-decls,
   -misc-use-anonymous-namespace,
   -misc-include-cleaner,

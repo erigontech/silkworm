@@ -30,7 +30,6 @@
 
 namespace silkworm::rpc {
 
-using testing::InvokeWithoutArgs;
 using testing::Return;
 using namespace silkworm::grpc::test_util;
 namespace proto = ::remote;

@@ -40,11 +40,6 @@
 
 namespace silkworm::rpc::commands {
 
-using db::chain::ChainStorage;
-using db::chain::RemoteChainStorage;
-using db::kv::api::BaseTransaction;
-using db::kv::api::Cursor;
-using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 using rpc::test::DummyDatabase;
 

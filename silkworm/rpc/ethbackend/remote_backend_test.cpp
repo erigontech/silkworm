@@ -33,7 +33,6 @@
 namespace silkworm::rpc {
 
 using evmc::literals::operator""_address;
-using evmc::literals::operator""_bytes32;
 
 ::types::H160* make_h160(uint64_t hi_hi, uint64_t hi_lo, uint32_t lo) {
     auto h128_ptr{new ::types::H128()};

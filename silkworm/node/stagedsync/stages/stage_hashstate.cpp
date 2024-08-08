@@ -30,7 +30,6 @@
 namespace silkworm::stagedsync {
 
 using db::etl::Entry;
-using db::etl_mdbx::Collector;
 
 Stage::Result HashState::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};

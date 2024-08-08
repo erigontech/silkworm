@@ -24,8 +24,6 @@
 
 namespace silkworm::rpc {
 
-using evmc::literals::operator""_bytes32;
-
 /*TEST_CASE("create empty chain config", "[rpc][types][chain_config]") {
     ChainConfig chain_config{};
     CHECK(chain_config.genesis_hash == evmc::bytes32{});

@@ -220,9 +220,6 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
                << ", gas: " << std::dec << gas;
 
     if (fix_call_gas_info_) {
-        if (result.status_code != EVMC_SUCCESS) {
-            std::cout << "";
-        }
         fix_call_gas_info_->gas_cost += gas + fix_call_gas_info_->code_cost;
         fix_call_gas_info_->code_cost = 0;
         fix_call_gas_info_->precompiled = true;

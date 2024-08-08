@@ -41,22 +41,18 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
     handle->node_settings.data_directory = std::move(data_dir);
 
     auto db_env_flags = unmanaged_env.get_flags();
-    handle->node_settings.chaindata_env_config = {
-        .path = handle->data_dir_path,
-        .create = false,
-        .readonly = (db_env_flags & MDBX_RDONLY) != 0,
-        .exclusive = (db_env_flags & MDBX_EXCLUSIVE) != 0,
-        .in_memory = (db_env_flags & MDBX_NOMETASYNC) != 0,
-        .shared = (db_env_flags & MDBX_ACCEDE) != 0,
-        .read_ahead = (db_env_flags & MDBX_NORDAHEAD) == 0,
-        .write_map = (db_env_flags & MDBX_WRITEMAP) != 0,
-        .page_size = unmanaged_env.get_pagesize(),
-        .max_size = unmanaged_env.dbsize_max(),
-        //.growth_size = ?
-        .max_tables = unmanaged_env.max_maps(),
-        .max_readers = unmanaged_env.max_readers(),
-    };
-
+    handle->node_settings.chaindata_env_config.path = handle->data_dir_path;
+    handle->node_settings.chaindata_env_config.create = false;
+    handle->node_settings.chaindata_env_config.readonly = (db_env_flags & MDBX_RDONLY) != 0;
+    handle->node_settings.chaindata_env_config.exclusive = (db_env_flags & MDBX_EXCLUSIVE) != 0;
+    handle->node_settings.chaindata_env_config.in_memory = (db_env_flags & MDBX_NOMETASYNC) != 0;
+    handle->node_settings.chaindata_env_config.shared = (db_env_flags & MDBX_ACCEDE) != 0;
+    handle->node_settings.chaindata_env_config.read_ahead = (db_env_flags & MDBX_NORDAHEAD) == 0;
+    handle->node_settings.chaindata_env_config.write_map = (db_env_flags & MDBX_WRITEMAP) != 0;
+    handle->node_settings.chaindata_env_config.page_size = unmanaged_env.get_pagesize();
+    handle->node_settings.chaindata_env_config.max_size = unmanaged_env.dbsize_max();
+    handle->node_settings.chaindata_env_config.max_tables = unmanaged_env.max_maps();
+    handle->node_settings.chaindata_env_config.max_readers = unmanaged_env.max_readers();
     handle->node_settings.build_info = silkworm::make_application_info(silkworm_get_buildinfo());
     handle->node_settings.network_id = chain_config->chain_id;
     handle->node_settings.chain_config = chain_config;

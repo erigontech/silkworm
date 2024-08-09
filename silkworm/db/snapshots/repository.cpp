@@ -31,7 +31,8 @@ SnapshotRepository::SnapshotRepository(
     SnapshotSettings settings,
     std::unique_ptr<SnapshotBundleFactory> bundle_factory)
     : settings_(std::move(settings)),
-      bundle_factory_(std::move(bundle_factory)) {}
+      bundle_factory_(std::move(bundle_factory)),
+      bundles_(std::make_shared<TBundles>()) {}
 
 SnapshotRepository::~SnapshotRepository() {
     close();
@@ -40,36 +41,31 @@ SnapshotRepository::~SnapshotRepository() {
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
     bundle.reopen();
     std::scoped_lock lock(bundles_mutex_);
-    bundles_.emplace(bundle.block_from(), std::move(bundle));
+    // copy bundles prior to modification
+    auto bundles = std::make_shared<TBundles>(*bundles_);
+    BlockNum block_from = bundle.block_from();
+    bundles->insert_or_assign(block_from, std::make_shared<SnapshotBundle>(std::move(bundle)));
+    bundles_ = bundles;
 }
 
 std::size_t SnapshotRepository::bundles_count() const {
     std::scoped_lock lock(bundles_mutex_);
-    return bundles_.size();
+    return bundles_->size();
 }
 
 void SnapshotRepository::close() {
     SILK_TRACE << "Close snapshot repository folder: " << settings_.repository_dir.string();
-
-    std::map<BlockNum, SnapshotBundle> bundles;
-    {
-        std::scoped_lock lock(bundles_mutex_);
-        bundles = std::exchange(bundles_, {});
-    }
-
-    for (auto& entry : bundles) {
-        auto& bundle = entry.second;
-        bundle.close();
-    }
+    std::scoped_lock lock(bundles_mutex_);
+    bundles_ = std::make_shared<TBundles>();
 }
 
 BlockNum SnapshotRepository::max_block_available() const {
     std::scoped_lock lock(bundles_mutex_);
-    if (bundles_.empty())
+    if (bundles_->empty())
         return 0;
 
     // a bundle with the max block range is last in the sorted bundles map
-    auto& bundle = bundles_.rbegin()->second;
+    auto& bundle = *bundles_->rbegin()->second;
     return (bundle.block_from() < bundle.block_to()) ? bundle.block_to() - 1 : bundle.block_from();
 }
 
@@ -89,12 +85,12 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
     return missing_ranges;
 }
 
-std::optional<SnapshotAndIndex> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
+std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
     auto bundle = find_bundle(number);
     if (bundle) {
-        return bundle->snapshot_and_index(type);
+        return {bundle->snapshot_and_index(type), bundle};
     }
-    return std::nullopt;
+    return {std::nullopt, {}};
 }
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
@@ -138,11 +134,13 @@ void SnapshotRepository::reopen_folder() {
     }
 
     std::unique_lock lock(bundles_mutex_);
+    // copy bundles prior to modification
+    auto bundles = std::make_shared<TBundles>(*bundles_);
 
     while (groups.contains(num) &&
            (groups[num][false].size() == SnapshotBundle::kSnapshotsCount) &&
            (groups[num][true].size() == SnapshotBundle::kIndexesCount)) {
-        if (!bundles_.contains(num)) {
+        if (!bundles->contains(num)) {
             auto snapshot_path = [&](SnapshotType type) {
                 return all_snapshot_paths[groups[num][false][type]];
             };
@@ -152,10 +150,10 @@ void SnapshotRepository::reopen_folder() {
             SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path);
             bundle.reopen();
 
-            bundles_.emplace(num, std::move(bundle));
+            bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
         }
 
-        auto& bundle = bundles_.at(num);
+        auto& bundle = *bundles->at(num);
 
         if (num < bundle.block_to()) {
             num = bundle.block_to();
@@ -164,6 +162,7 @@ void SnapshotRepository::reopen_folder() {
         }
     }
 
+    bundles_ = bundles;
     lock.unlock();
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
@@ -171,18 +170,17 @@ void SnapshotRepository::reopen_folder() {
               << " indexes: " << total_indexes_count();
 }
 
-const SnapshotBundle* SnapshotRepository::find_bundle(BlockNum number) const {
-    std::scoped_lock lock(bundles_mutex_);
-
+const std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number) const {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
-    for (const auto& bundle : this->view_bundles_reverse()) {
+    for (const auto& bundle_ptr : this->view_bundles_reverse()) {
+        auto& bundle = *bundle_ptr;
         // We're looking for the segment containing the target block number in its block range
         if (((bundle.block_from() <= number) && (number < bundle.block_to())) ||
             ((bundle.block_from() == number) && (bundle.block_from() == bundle.block_to()))) {
-            return &bundle;
+            return bundle_ptr;
         }
     }
-    return nullptr;
+    return {};
 }
 
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {

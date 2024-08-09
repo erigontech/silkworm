@@ -33,8 +33,6 @@ namespace silkworm::db::chain {
 
 using Catch::Matchers::Message;
 using testing::_;
-using testing::InSequence;
-using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
 

@@ -56,7 +56,6 @@ using namespace silkworm;
 using silkworm::BlockNum;
 using silkworm::DataDirectory;
 using silkworm::human_size;
-using silkworm::parse_size;
 using silkworm::cmd::common::add_logging_options;
 using silkworm::cmd::common::add_node_options;
 using silkworm::cmd::common::add_option_data_dir;

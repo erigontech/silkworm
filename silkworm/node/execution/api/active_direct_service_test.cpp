@@ -33,7 +33,6 @@
 
 namespace silkworm::execution::api {
 
-using testing::_;
 using testing::InvokeWithoutArgs;
 
 using silkworm::db::test_util::TempChainData;

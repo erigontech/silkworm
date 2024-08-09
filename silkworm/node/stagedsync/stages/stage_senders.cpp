@@ -287,10 +287,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
                                                                   " > target progress " + std::to_string(target_block_num));
         }
 
-        secp256k1_context* context = secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS);
+        static secp256k1_context* context = secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS);
         if (!context) throw std::runtime_error("Could not create elliptic curve context");
-        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
-        [[maybe_unused]] auto _ = gsl::finally([&]() { std::free(context); });
 
         BlockNum start_block_num{previous_progress + 1u};
 
@@ -424,7 +422,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, const Hash& block_hash, 
     return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
-void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context) {
+void Senders::recover_batch(ThreadPool& worker_pool, const secp256k1_context* context) {
     // Launch parallel senders recovery
     log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_->cbegin()->block_num)});
 

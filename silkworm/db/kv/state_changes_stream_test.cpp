@@ -50,7 +50,6 @@ namespace silkworm::db::kv {
 using namespace std::chrono_literals;  // NOLINT(build/namespaces)
 using grpc::client::RemoteClient;
 using testing::InvokeWithoutArgs;
-using testing::Return;
 namespace test = rpc::test;
 
 #ifndef SILKWORM_SANITIZE

@@ -37,14 +37,6 @@ namespace silkworm::db {
 
 using namespace silkworm::snapshots;
 
-struct FreezerCommand : public DataMigrationCommand {
-    BlockNumRange range;
-
-    explicit FreezerCommand(BlockNumRange range1)
-        : range(std::move(range1)) {}
-    ~FreezerCommand() override = default;
-};
-
 struct FreezerResult : public DataMigrationResult {
     SnapshotBundle bundle;
 
@@ -63,6 +55,12 @@ static BlockNum get_first_stored_header_num(ROTxn& txn) {
     return num_opt.value_or(0);
 }
 
+static std::optional<uint64_t> get_next_base_txn_id(BlockNum number) {
+    auto body = DataModel::read_body_for_storage_from_snapshot(number);
+    if (!body) return std::nullopt;
+    return body->base_txn_id + body->txn_count;
+}
+
 std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
     BlockNum last_frozen = snapshots_.max_block_available();
     BlockNum start = (last_frozen > 0) ? last_frozen + 1 : 0;
@@ -73,8 +71,15 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
         return get_tip_num(db_tx);
     }();
 
+    uint64_t base_txn_id = [last_frozen]() -> uint64_t {
+        if (last_frozen == 0) return 0;
+        auto id = get_next_base_txn_id(last_frozen);
+        assert(id.has_value());
+        return *id;
+    }();
+
     if (end + kFullImmutabilityThreshold <= tip) {
-        return std::make_unique<FreezerCommand>(FreezerCommand{{start, end}});
+        return std::make_unique<FreezerCommand>(FreezerCommand{{start, end}, base_txn_id});
     }
     return {};
 }
@@ -108,7 +113,7 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
         {
             auto db_tx = db_access_.start_ro_tx();
             auto& freezer = get_snapshot_freezer(path.type());
-            freezer.copy(db_tx, range, file_writer);
+            freezer.copy(db_tx, freezer_command, file_writer);
         }
         SnapshotFileWriter::flush(std::move(file_writer));
     }

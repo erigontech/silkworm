@@ -1,7 +1,6 @@
 [submodule "evmone"]
 	path = third_party/evmone/evmone
-	url = https://github.com/erigontech/evmone.git
-	branch = revert_517
+	url = https://github.com/ethereum/evmone.git
 [submodule "ethereum-tests"]
 	path = third_party/ethereum-tests
 	url = https://github.com/ethereum/tests.git

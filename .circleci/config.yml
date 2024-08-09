@@ -260,7 +260,7 @@ jobs:
         type: boolean
         default: true
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules:
@@ -354,8 +354,8 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
       UBSAN_OPTIONS: print_stacktrace=1
-    docker:
-      - image: cimg/python:3.12
+    machine:
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - build_fuzzer

@@ -1320,16 +1320,21 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
     return block_header;
 }
 
-bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
+std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum height) {
     if (!repository_) {
-        return false;
+        return std::nullopt;
     }
 
     // We know the body snapshot in advance: find it based on target block number
     const auto snapshot_and_index = repository_->find_segment(SnapshotType::bodies, height);
-    if (!snapshot_and_index) return false;
+    if (!snapshot_and_index) return std::nullopt;
 
     auto stored_body = BodyFindByBlockNumQuery{*snapshot_and_index}.exec(height);
+    return stored_body;
+}
+
+bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
+    auto stored_body = read_body_for_storage_from_snapshot(height);
     if (!stored_body) return false;
 
     // Skip first and last *system transactions* in block body

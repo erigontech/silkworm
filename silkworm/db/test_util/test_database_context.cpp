@@ -63,7 +63,7 @@ InMemoryState populate_genesis(db::RWTxn& txn, const std::filesystem::path& test
         .withdrawals = std::vector<silkworm::Withdrawal>{0},
     };
 
-    // FIX 2: set empty receipts root, should be done in the main code, requires https://github.com/torquem-ch/silkworm/issues/1348
+    // FIX 2: set empty receipts root, should be done in the main code, requires https://github.com/erigontech/silkworm/issues/1348
     header.withdrawals_root = kEmptyRoot;
 
     auto block_hash{header.hash()};

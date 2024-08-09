@@ -17,10 +17,10 @@ fi
 BRANCH=$1
 
 if [ -z "$RENEW" ]; then
-    echo docker build --tag silkworm-clang:15 --progress=plain --build-arg="CACHEBUST=$(date +%s)" --build-arg="BRANCH=$BRANCH" -f ./Dockerfile ../..
+    echo docker build --tag silkworm-clang:16 --progress=plain --build-arg="CACHEBUST=$(date +%s)" --build-arg="BRANCH=$BRANCH" -f ./Dockerfile ../..
 else    
-    echo docker build --tag silkworm-clang:15 --progress=plain --no-cache --build-arg="BRANCH=$BRANCH" -f ./Dockerfile ../..
+    echo docker build --tag silkworm-clang:16 --progress=plain --no-cache --build-arg="BRANCH=$BRANCH" -f ./Dockerfile ../..
 fi
 
-echo docker rm -f $(docker ps -aq --filter name=silkworm-clang-15)
-echo docker run --name silkworm-clang-15 -d -t silkworm-clang:15
+echo docker rm -f $(docker ps -aq --filter name=silkworm-clang-16)
+echo docker run --name silkworm-clang-16 -d -t silkworm-clang:16

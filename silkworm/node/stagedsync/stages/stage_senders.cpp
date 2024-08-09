@@ -422,7 +422,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, const Hash& block_hash, 
     return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
-void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context) {
+void Senders::recover_batch(ThreadPool& worker_pool, const secp256k1_context* context) {
     // Launch parallel senders recovery
     log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_->cbegin()->block_num)});
 

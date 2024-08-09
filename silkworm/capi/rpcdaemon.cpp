@@ -23,7 +23,6 @@
 
 using namespace silkworm;
 using namespace silkworm::rpc;
-using silkworm::concurrency::ContextPoolSettings;
 
 //! Build interface log settings for ETH JSON-RPC from their C representation
 static InterfaceLogSettings make_eth_ifc_log_settings(const struct SilkwormRpcInterfaceLogSettings settings) {

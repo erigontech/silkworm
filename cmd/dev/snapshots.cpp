@@ -245,7 +245,8 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     int num_bodies{0};
     uint64_t num_txns{0};
     for (int i{0}; i < repetitions; ++i) {
-        for (const SnapshotBundle& bundle : snapshot_repo.view_bundles()) {
+        for (const auto& bundle_ptr : snapshot_repo.view_bundles()) {
+            const auto& bundle = *bundle_ptr;
             for (const BlockBodyForStorage& b : BodySnapshotReader{bundle.body_snapshot}) {
                 // If *system transactions* should not be counted, skip first and last tx in block body
                 const auto base_txn_id{settings.skip_system_txs ? b.base_txn_id + 1 : b.base_txn_id};
@@ -268,7 +269,8 @@ void count_headers(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
     for (int i{0}; i < repetitions; ++i) {
-        for (const SnapshotBundle& bundle : snapshot_repo.view_bundles()) {
+        for (const auto& bundle_ptr : snapshot_repo.view_bundles()) {
+            const auto& bundle = *bundle_ptr;
             for (const BlockHeader& h : HeaderSnapshotReader{bundle.header_snapshot}) {
                 ++count;
                 if (h.number % 50'000 == 0) {
@@ -418,7 +420,8 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     std::optional<BlockHeader> matching_header;
     SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repository.reopen_folder();
-    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
+    for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
+        const auto& bundle = *bundle_ptr;
         auto snapshot_and_index = bundle.snapshot_and_index(SnapshotType::headers);
         const auto header = HeaderFindByHashQuery{snapshot_and_index}.exec(*hash);
         if (header) {
@@ -447,7 +450,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
 
     SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     snapshot_repository.reopen_folder();
-    const auto snapshot_and_index = snapshot_repository.find_segment(SnapshotType::headers, block_number);
+    const auto [snapshot_and_index, _] = snapshot_repository.find_segment(SnapshotType::headers, block_number);
     if (snapshot_and_index) {
         const auto header = HeaderFindByBlockNumQuery{*snapshot_and_index}.exec(block_number);
         ensure(header.has_value(),
@@ -509,7 +512,7 @@ void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
     snapshot_repository.reopen_folder();
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto snapshot_and_index = snapshot_repository.find_segment(SnapshotType::bodies, block_number);
+    const auto [snapshot_and_index, _] = snapshot_repository.find_segment(SnapshotType::bodies, block_number);
     if (snapshot_and_index) {
         const auto body = BodyFindByBlockNumQuery{*snapshot_and_index}.exec(block_number);
         ensure(body.has_value(),
@@ -617,7 +620,8 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
+    for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
+        const auto& bundle = *bundle_ptr;
         auto snapshot_and_index = bundle.snapshot_and_index(SnapshotType::transactions);
         const auto transaction = TransactionFindByHashQuery{snapshot_and_index}.exec(hash);
         if (transaction) {
@@ -681,7 +685,8 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles_reverse()) {
+    for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
+        const auto& bundle = *bundle_ptr;
         auto snapshot_and_index = bundle.snapshot_and_index(SnapshotType::transactions);
         const auto transaction = TransactionFindByIdQuery{snapshot_and_index}.exec(txn_id);
         if (transaction) {

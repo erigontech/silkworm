@@ -151,7 +151,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
     std::vector<SilkwormBodiesSnapshot> bodies_snapshot_sequence;
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
 
-    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles()) {
+    for (const auto& bundle_ptr : snapshot_repository.view_bundles()) {
+        const auto& bundle = *bundle_ptr;
         {
             {
                 SilkwormHeadersSnapshot raw_headers_snapshot{

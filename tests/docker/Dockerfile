@@ -18,18 +18,7 @@ RUN git submodule sync
 RUN git submodule update --init --recursive
 
 # 3 Install compiler
-RUN cmake/setup/compiler_install.sh clang 15
-# Alternative way to install clang > 15
-# WORKDIR /app
-# ARG LLVM_VERSION=16
-# RUN sudo wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-# RUN wget https://apt.llvm.org/llvm.sh
-# RUN chmod +x llvm.sh
-# RUN sudo ./llvm.sh ${LLVM_VERSION} all
-# RUN sudo ln -sfv /usr/bin/clang-${LLVM_VERSION} /usr/bin/clang
-# RUN sudo ln -sfv /usr/bin/clang++-${LLVM_VERSION} /usr/bin/clang++
-# RUN sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-${LLVM_VERSION} 100
-# RUN sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-${LLVM_VERSION} 100
+RUN cmake/setup/compiler_install.sh clang 16
 
 # 4 Build all targets
 WORKDIR /app/build

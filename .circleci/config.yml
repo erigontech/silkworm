@@ -142,7 +142,7 @@ commands:
       - install_conan
       - run:
           name: "Install compiler"
-          command: cmake/setup/compiler_install.sh clang 15
+          command: cmake/setup/compiler_install.sh clang <<pipeline.parameters.clang_version_min>>
       - run:
           name: "CMake Fuzzer"
           working_directory: ~/build
@@ -415,7 +415,7 @@ jobs:
 parameters:
   clang_version_min:
     type: integer
-    default: 15
+    default: 16
   clang_version_latest:
     type: integer
     default: 18

@@ -393,7 +393,7 @@ jobs:
           name: "Build GMP"
           working_directory: ~/tmp3
           command: |
-            git clone https://github.com/torquem-ch/gmp-wasm
+            git clone https://github.com/erigontech/gmp-wasm
             cd gmp-wasm
             git checkout 87e9087
             ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none AR=llvm-ar RANLIB=llvm-ranlib --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong

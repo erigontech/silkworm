@@ -34,7 +34,7 @@ In addition to the [Boost libraries permitted in the style guide](https://google
 * System
 * Thread
 
-[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) runs on CI. The report is attached to the "ARTIFACTS" section of the linux-clang-tidy job that can be found [here](https://app.circleci.com/pipelines/github/torquem-ch/silkworm?branch=master).
+[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) runs on CI. The report is attached to the "ARTIFACTS" section of the linux-clang-tidy job that can be found [here](https://app.circleci.com/pipelines/github/erigontech/silkworm?branch=master).
 
 
 ## Code Structure

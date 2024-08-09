@@ -56,7 +56,7 @@ class RuleSet {
     //! \param [in] header: header to validate.
     //! \param [in] state: current state.
     //! \param [in] with_future_timestamp_check : whether to check header timestamp is in the future wrt host current
-    //! time \see https://github.com/torquem-ch/silkworm/issues/448
+    //! time \see https://github.com/erigontech/silkworm/issues/448
     //! \note Shouldn't be used for genesis block.
     virtual ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check);

@@ -498,10 +498,8 @@ class TraceCallExecutor {
     Task<std::vector<TraceCallResult>> trace_block_transactions(const silkworm::Block& block, const TraceConfig& config);
     Task<TraceCallResult> trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config);
     Task<TraceManyCallResult> trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls);
-    Task<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-        return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config);
-    }
     Task<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
+    Task<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config);
     Task<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
     Task<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
     Task<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);

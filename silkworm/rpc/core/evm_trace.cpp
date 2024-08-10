@@ -1561,6 +1561,10 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     co_return deploy_result;
 }
 
+Task<TraceCallResult> TraceCallExecutor::trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
+    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config);
+}
+
 Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
     std::vector<Trace> traces;
 

@@ -16,27 +16,10 @@
 
 #pragma once
 
-#include <memory>
-
-#include "data_migration_command.hpp"
-
 namespace silkworm::db {
 
-struct DataMigrationResult {
-    virtual ~DataMigrationResult() = default;
-};
-
-struct DataMigration {
-    virtual ~DataMigration() = default;
-
-    void run();
-
-  protected:
-    virtual std::unique_ptr<DataMigrationCommand> next_command() = 0;
-    virtual std::shared_ptr<DataMigrationResult> migrate(std::unique_ptr<DataMigrationCommand> command) = 0;
-    virtual void index(std::shared_ptr<DataMigrationResult> result) = 0;
-    virtual void commit(std::shared_ptr<DataMigrationResult> result) = 0;
-    virtual void cleanup() = 0;
+struct DataMigrationCommand {
+    virtual ~DataMigrationCommand() = default;
 };
 
 }  // namespace silkworm::db

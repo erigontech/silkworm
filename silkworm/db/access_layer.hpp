@@ -317,6 +317,9 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockNum height, BlockBody& body) const;
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
+    //! Read block body for storage from the snapshot repository
+    [[nodiscard]] static std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum height);
+
     //! Read the canonical block header at specified height
     [[nodiscard]] std::optional<Hash> read_canonical_hash(BlockNum height) const;
 

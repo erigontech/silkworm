@@ -24,13 +24,20 @@
 
 namespace silkworm::db {
 
-void BodySnapshotFreezer::copy(ROTxn& txn, BlockNumRange range, snapshots::SnapshotFileWriter& file_writer) const {
+void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SnapshotFileWriter& file_writer) const {
+    BlockNumRange range = command.range;
+    uint64_t base_txn_id = command.base_txn_id;
+
     snapshots::BodySnapshotWriter writer{file_writer};
     auto out = writer.out();
     for (BlockNum i = range.first; i < range.second; i++) {
         auto value_opt = read_canonical_body_for_storage(txn, i);
         if (!value_opt) throw std::runtime_error{"BodySnapshotFreezer::copy missing body for block " + std::to_string(i)};
-        *out++ = *value_opt;
+        BlockBodyForStorage& value = *value_opt;
+        // remap to sequential values without gaps (see txnum.go)
+        value.base_txn_id = base_txn_id;
+        base_txn_id += value.txn_count;
+        *out++ = value;
     }
 }
 

@@ -24,7 +24,8 @@
 
 namespace silkworm::db {
 
-void TransactionSnapshotFreezer::copy(ROTxn& txn, BlockNumRange range, snapshots::SnapshotFileWriter& file_writer) const {
+void TransactionSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SnapshotFileWriter& file_writer) const {
+    BlockNumRange range = command.range;
     snapshots::TransactionSnapshotWriter writer{file_writer};
     auto out = writer.out();
     auto system_tx = snapshots::empty_system_tx();

@@ -16,6 +16,8 @@
 
 #include "nibbles.hpp"
 
+#include <cstdint>
+
 namespace silkworm::trie {
 
 Bytes pack_nibbles(ByteView unpacked) {

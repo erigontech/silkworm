@@ -18,6 +18,8 @@
 
 #include <cassert>
 
+#include <evmc/evmc.h>
+
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/trie/vector_root.hpp>

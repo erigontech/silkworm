@@ -20,6 +20,7 @@
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::trie {

@@ -14,15 +14,20 @@
    limitations under the License.
 */
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <CLI/CLI.hpp>
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 namespace fs = std::filesystem;
 

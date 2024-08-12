@@ -22,6 +22,8 @@
 #include <string>
 #include <string_view>
 
+#include <evmc/evmc.h>
+
 #include <silkworm/core/common/overloaded.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -29,6 +31,7 @@
 namespace silkworm {
 
 using namespace std::string_view_literals;
+using namespace evmc::literals;
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 

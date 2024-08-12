@@ -20,6 +20,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/core/types/log.hpp>
 
 #include "param.hpp"
 

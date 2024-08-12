@@ -17,6 +17,7 @@
 #include "y_parity_and_chain_id.hpp"
 
 #include <cstdint>
+#include <optional>
 
 #include <intx/intx.hpp>
 

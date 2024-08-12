@@ -20,7 +20,9 @@
 #include <string>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/small_map.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 

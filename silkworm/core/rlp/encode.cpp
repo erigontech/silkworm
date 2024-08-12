@@ -16,6 +16,8 @@
 
 #include "encode.hpp"
 
+#include <silkworm/core/common/endian.hpp>
+
 namespace silkworm::rlp {
 
 void encode_header(Bytes& to, Header header) {

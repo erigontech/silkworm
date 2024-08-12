@@ -17,20 +17,21 @@
 #include "local_cursor.hpp"
 
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db::kv::api {
 
+using detail::slice_as_hex;
+
 Task<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "LocalCursor::open_cursor opening new cursor for table: " << table_name;
-    // table_name name must be a valid MDBX map name
-    if (!has_map(txn_, table_name.c_str())) {
-        const auto error_message = "unknown table: " + table_name;
-        SILK_ERROR << "open_cursor !has_map: " << table_name << " " << is_dup_sorted << error_message;
-        throw std::runtime_error(error_message);
-    }
+    db_cursor_ = PooledCursor{txn_,
+                              MapConfig{
+                                  .name = table_name.c_str(),
+                                  .value_mode = is_dup_sorted ? ::mdbx::value_mode::multi : ::mdbx::value_mode::single}};
     SILK_DEBUG << "LocalCursor::open_cursor [" << table_name << "] c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return;
 }
@@ -43,7 +44,7 @@ Task<KeyValue> LocalCursor::seek(ByteView key) {
     SILK_DEBUG << "LocalCursor::seek result: " << detail::dump_mdbx_result(result);
 
     if (result) {
-        SILK_DEBUG << "LocalCursor::seek found: key: " << key << " value: " << string_view_to_byte_view(result.value.as_string());
+        SILK_DEBUG << "LocalCursor::seek found: key: " << key << " value: " << slice_as_hex(result.value);
         co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
     } else {
         SILK_DEBUG << "LocalCursor::seek not found key: " << key;
@@ -59,13 +60,38 @@ Task<KeyValue> LocalCursor::seek_exact(ByteView key) {
         const auto result = db_cursor_.current(/*throw_notfound=*/false);
         SILK_DEBUG << "LocalCursor::seek_exact result: " << detail::dump_mdbx_result(result);
         if (result) {
-            SILK_DEBUG << "LocalCursor::seek_exact found: "
-                       << " key: " << key << " value: " << string_view_to_byte_view(result.value.as_string());
+            SILK_DEBUG << "LocalCursor::seek_exact found: key: " << key << " value: " << slice_as_hex(result.value);
             co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
         }
-        SILK_ERROR << "LocalCursor::seek_exact !result key: " << key;
+        SILK_ERROR << "LocalCursor::seek_exact !result key: " << key;  // TODO(canepat) handle properly?
     }
     co_return KeyValue{};
+}
+
+Task<KeyValue> LocalCursor::first() {
+    SILK_DEBUG << "LocalCursor::first: " << cursor_id_;
+
+    const auto result = db_cursor_.to_first(/*throw_notfound=*/false);
+    SILK_DEBUG << "LocalCursor::first result: " << detail::dump_mdbx_result(result);
+    if (!result.done) {
+        co_return KeyValue{};
+    }
+
+    SILK_DEBUG << "LocalCursor::first: key: " << slice_as_hex(result.key) << " value: " << slice_as_hex(result.value);
+    co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+}
+
+Task<KeyValue> LocalCursor::last() {
+    SILK_DEBUG << "LocalCursor::last: " << cursor_id_;
+
+    const auto result = db_cursor_.to_last(/*throw_notfound=*/false);
+    SILK_DEBUG << "LocalCursor::last result: " << detail::dump_mdbx_result(result);
+    if (!result.done) {
+        co_return KeyValue{};
+    }
+
+    SILK_DEBUG << "LocalCursor::last: key: " << slice_as_hex(result.key) << " value: " << slice_as_hex(result.value);
+    co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
 }
 
 Task<KeyValue> LocalCursor::next() {
@@ -79,7 +105,7 @@ Task<KeyValue> LocalCursor::next() {
                    << " key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
         co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
     } else {
-        SILK_ERROR << "LocalCursor::next !result";
+        SILK_ERROR << "LocalCursor::next !result";  // TODO(canepat) handle properly?
     }
     co_return KeyValue{};
 }
@@ -95,7 +121,7 @@ Task<KeyValue> LocalCursor::previous() {
                    << " key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
         co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
     } else {
-        SILK_ERROR << "LocalCursor::previous !result";
+        SILK_ERROR << "LocalCursor::previous !result";  // TODO(canepat) handle properly?
     }
     co_return KeyValue{};
 }
@@ -111,7 +137,7 @@ Task<KeyValue> LocalCursor::next_dup() {
                    << " key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
         co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
     } else {
-        SILK_ERROR << "LocalCursor::next_dup !result";
+        SILK_ERROR << "LocalCursor::next_dup !result";  // TODO(canepat) handle properly?
     }
     co_return KeyValue{};
 }

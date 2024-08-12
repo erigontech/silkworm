@@ -34,10 +34,7 @@ namespace silkworm::db::kv::api {
 
 class LocalCursor : public CursorDupSort {
   public:
-    explicit LocalCursor(mdbx::txn& txn, uint32_t cursor_id, const std::string& table_name)
-        : cursor_id_{cursor_id},
-          db_cursor_{txn, MapConfig{table_name.c_str()}},
-          txn_{txn} {}
+    LocalCursor(mdbx::txn& txn, uint32_t cursor_id) : cursor_id_{cursor_id}, txn_{txn} {}
 
     [[nodiscard]] uint32_t cursor_id() const override { return cursor_id_; };
 
@@ -46,6 +43,10 @@ class LocalCursor : public CursorDupSort {
     Task<KeyValue> seek(ByteView key) override;
 
     Task<KeyValue> seek_exact(ByteView key) override;
+
+    Task<KeyValue> first() override;
+
+    Task<KeyValue> last() override;
 
     Task<KeyValue> next() override;
 

@@ -370,6 +370,174 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_exact", "[rpc][ethdb][kv]
     }
 }
 
+TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::first", "[rpc][ethdb][kv][remote_cursor]") {
+    SECTION("success") {
+        // Set the call expectations:
+        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor succeeds
+        Expectation open = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::OPEN)), Property(&remote::Cursor::bucket_name, Eq("table1"))), _))
+                               .WillOnce(test::write_success(grpc_context_));
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to first w/ specified cursor ID succeeds
+        Expectation seek = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::FIRST)), Property(&remote::Cursor::cursor, Eq(3))), _))
+                               .After(open)
+                               .WillOnce(test::write_success(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed setting the specified cursor ID
+        remote::Pair open_pair;
+        open_pair.set_cursor_id(3);
+        remote::Pair first_pair;
+        first_pair.set_cursor_id(3);
+        first_pair.set_k(kPlainStateKey);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, open_pair))
+            .WillOnce(test::read_success_with(grpc_context_, first_pair));
+
+        // Execute the test preconditions: open a new cursor on specified table
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+
+        // Execute the test: seeking first key should succeed and return the expected value
+        api::KeyValue kv;
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.first()));
+        CHECK(kv.key == kPlainStateKeyBytes);
+        CHECK(kv.value == kPlainStateValueBytes);
+    }
+    SECTION("failure in write") {
+        // Set the call expectations:
+        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor succeeds
+        Expectation open = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::OPEN)), Property(&remote::Cursor::bucket_name, Eq("table1"))), _))
+                               .WillOnce(test::write_success(grpc_context_));
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to first w/ specified cursor ID succeeds
+        Expectation seek = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::FIRST)), Property(&remote::Cursor::cursor, Eq(3))), _))
+                               .After(open)
+                               .WillOnce(test::write_failure(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds setting the specified cursor ID
+        remote::Pair open_pair;
+        open_pair.set_cursor_id(3);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, open_pair));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
+
+        // Execute the test preconditions: open a new cursor on specified table
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+
+        // Execute the test: seeking first key should raise an exception w/ expected gRPC status code
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.first()), boost::system::system_error, test::exception_has_aborted_grpc_status_code());
+    }
+    SECTION("failure in read") {
+        // Set the call expectations:
+        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor succeeds
+        Expectation open = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::OPEN)), Property(&remote::Cursor::bucket_name, Eq("table1"))), _))
+                               .WillOnce(test::write_success(grpc_context_));
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to first w/ specified cursor ID succeeds
+        Expectation seek = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::FIRST)), Property(&remote::Cursor::cursor, Eq(3))), _))
+                               .After(open)
+                               .WillOnce(test::write_success(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read 1st call succeeds setting the specified cursor ID, 2nd fails
+        remote::Pair open_pair;
+        open_pair.set_cursor_id(3);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, open_pair))
+            .WillOnce(test::read_failure(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+
+        // Execute the test preconditions: open a new cursor on specified table
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+
+        // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.first()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
+    }
+}
+
+TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::last", "[rpc][ethdb][kv][remote_cursor]") {
+    SECTION("success") {
+        // Set the call expectations:
+        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor succeeds
+        Expectation open = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::OPEN)), Property(&remote::Cursor::bucket_name, Eq("table1"))), _))
+                               .WillOnce(test::write_success(grpc_context_));
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to last w/ specified cursor ID succeeds
+        Expectation seek = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::LAST)), Property(&remote::Cursor::cursor, Eq(3))), _))
+                               .After(open)
+                               .WillOnce(test::write_success(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed setting the specified cursor ID
+        remote::Pair open_pair;
+        open_pair.set_cursor_id(3);
+        remote::Pair first_pair;
+        first_pair.set_cursor_id(3);
+        first_pair.set_k(kPlainStateKey);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, open_pair))
+            .WillOnce(test::read_success_with(grpc_context_, first_pair));
+
+        // Execute the test preconditions: open a new cursor on specified table
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+
+        // Execute the test: seeking last key should succeed and return the expected value
+        api::KeyValue kv;
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.last()));
+        CHECK(kv.key == kPlainStateKeyBytes);
+        CHECK(kv.value == kPlainStateValueBytes);
+    }
+    SECTION("failure in write") {
+        // Set the call expectations:
+        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor succeeds
+        Expectation open = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::OPEN)), Property(&remote::Cursor::bucket_name, Eq("table1"))), _))
+                               .WillOnce(test::write_success(grpc_context_));
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to last w/ specified cursor ID succeeds
+        Expectation seek = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::LAST)), Property(&remote::Cursor::cursor, Eq(3))), _))
+                               .After(open)
+                               .WillOnce(test::write_failure(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds setting the specified cursor ID
+        remote::Pair open_pair;
+        open_pair.set_cursor_id(3);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, open_pair));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
+
+        // Execute the test preconditions: open a new cursor on specified table
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+
+        // Execute the test: seeking last key should raise an exception w/ expected gRPC status code
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.last()), boost::system::system_error, test::exception_has_aborted_grpc_status_code());
+    }
+    SECTION("failure in read") {
+        // Set the call expectations:
+        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor succeeds
+        Expectation open = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::OPEN)), Property(&remote::Cursor::bucket_name, Eq("table1"))), _))
+                               .WillOnce(test::write_success(grpc_context_));
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to last w/ specified cursor ID succeeds
+        Expectation seek = EXPECT_CALL(reader_writer_,
+                                       Write(AllOf(Property(&remote::Cursor::op, Eq(remote::Op::LAST)), Property(&remote::Cursor::cursor, Eq(3))), _))
+                               .After(open)
+                               .WillOnce(test::write_success(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read 1st call succeeds setting the specified cursor ID, 2nd fails
+        remote::Pair open_pair;
+        open_pair.set_cursor_id(3);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, open_pair))
+            .WillOnce(test::read_failure(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+
+        // Execute the test preconditions: open a new cursor on specified table
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+
+        // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.last()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
+    }
+}
+
 TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::next", "[rpc][ethdb][kv][remote_cursor]") {
     SECTION("success") {
         // Set the call expectations:

@@ -69,6 +69,30 @@ Task<api::KeyValue> RemoteCursor::seek_exact(ByteView key) {
     co_return api::KeyValue{std::move(k), std::move(v)};
 }
 
+Task<api::KeyValue> RemoteCursor::first() {
+    const auto start_time = clock_time::now();
+    auto next_message = remote::Cursor{};
+    next_message.set_op(remote::Op::FIRST);
+    next_message.set_cursor(cursor_id_);
+    auto first_pair = co_await tx_rpc_.write_and_read(next_message);
+    auto k = string_to_bytes(first_pair.k());
+    auto v = string_to_bytes(first_pair.v());
+    SILK_DEBUG << "RemoteCursor::first k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
+    co_return api::KeyValue{std::move(k), std::move(v)};
+}
+
+Task<api::KeyValue> RemoteCursor::last() {
+    const auto start_time = clock_time::now();
+    auto next_message = remote::Cursor{};
+    next_message.set_op(remote::Op::LAST);
+    next_message.set_cursor(cursor_id_);
+    auto last_pair = co_await tx_rpc_.write_and_read(next_message);
+    auto k = string_to_bytes(last_pair.k());
+    auto v = string_to_bytes(last_pair.v());
+    SILK_DEBUG << "RemoteCursor::last k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
+    co_return api::KeyValue{std::move(k), std::move(v)};
+}
+
 Task<api::KeyValue> RemoteCursor::next() {
     const auto start_time = clock_time::now();
     auto next_message = remote::Cursor{};

@@ -16,13 +16,15 @@
 
 #include "sha256.hpp"
 
-#include <silkworm/core/crypto/sha256.h>
+#include <evmone_precompiles/sha256.hpp>
 
 namespace silkworm::sentry::rlpx::crypto {
 
 Bytes sha256(ByteView data) {
     Bytes hash(32, 0);
-    silkworm_sha256(hash.data(), data.data(), data.size(), /* use_cpu_extensions = */ false);
+    evmone::crypto::sha256(reinterpret_cast<std::byte*>(hash.data()),
+                           reinterpret_cast<const std::byte*>(data.data()),
+                           data.size());
     return hash;
 }
 

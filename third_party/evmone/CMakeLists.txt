@@ -47,6 +47,7 @@ add_library(
   evmone/lib/evmone/vm.hpp
   evmone/lib/evmone_precompiles/blake2b.cpp
   evmone/lib/evmone_precompiles/ripemd160.cpp
+  evmone/lib/evmone_precompiles/sha256.cpp
 )
 set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.12.0")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)

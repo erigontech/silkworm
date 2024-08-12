@@ -25,6 +25,7 @@
 
 #include <evmone_precompiles/blake2b.hpp>
 #include <evmone_precompiles/ripemd160.hpp>
+#include <evmone_precompiles/sha256.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -40,7 +41,6 @@
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/kzg.hpp>
 #include <silkworm/core/crypto/secp256k1n.hpp>
-#include <silkworm/core/crypto/sha256.h>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/types/hash.hpp>
 
@@ -85,7 +85,9 @@ uint64_t sha256_gas(ByteView input, evmc_revision) noexcept {
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
     Bytes out(32, 0);
-    silkworm_sha256(out.data(), input.data(), input.length(), /*use_cpu_extensions=*/true);
+    evmone::crypto::sha256(reinterpret_cast<std::byte*>(out.data()),
+                           reinterpret_cast<const std::byte*>(input.data()),
+                           input.length());
     return out;
 }
 

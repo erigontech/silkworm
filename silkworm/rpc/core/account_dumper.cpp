@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
+#include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/address.hpp>

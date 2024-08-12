@@ -20,6 +20,7 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/db/freezer.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
@@ -61,7 +62,6 @@ class NodeImpl final {
   private:
     void setup_snapshots();
 
-    Task<void> run_tasks();
     Task<void> start_execution_server();
     Task<void> start_backend_kv_grpc_server();
     Task<void> start_bittorrent_client();
@@ -69,6 +69,7 @@ class NodeImpl final {
     Task<void> start_execution_log_timer();
 
     Settings& settings_;
+
     mdbx::env chaindata_db_;
 
     //! The repository for snapshots
@@ -80,10 +81,16 @@ class NodeImpl final {
     std::shared_ptr<execution::api::ActiveDirectService> execution_service_;
     execution::grpc::server::Server execution_server_;
     execution::api::DirectClient execution_direct_client_;
+
+    db::Freezer snapshot_freezer_;
+
     SentryClientPtr sentry_client_;
+
     std::unique_ptr<EthereumBackEnd> backend_;
     std::unique_ptr<BackEndKvServer> backend_kv_rpc_server_;
+
     ResourceUsageLog resource_usage_log_;
+
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
@@ -102,6 +109,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env 
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
+      snapshot_freezer_{db::ROAccess{chaindata_db_}, snapshot_repository_, execution_engine_.stage_scheduler(), settings_.data_directory->etl().path()},
       sentry_client_{std::move(sentry_client)},
       resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
@@ -141,12 +149,13 @@ void NodeImpl::setup_snapshots() {
 
 Task<void> NodeImpl::run() {
     using namespace concurrency::awaitable_wait_for_all;
-    return (run_tasks() && start_backend_kv_grpc_server() && start_bittorrent_client());
-}
-
-Task<void> NodeImpl::run_tasks() {
-    using namespace concurrency::awaitable_wait_for_all;
-    co_await (start_execution_server() && start_resource_usage_log() && start_execution_log_timer());
+    co_await (
+        start_execution_server() &&
+        start_resource_usage_log() &&
+        start_execution_log_timer() &&
+        snapshot_freezer_.run_loop() &&
+        start_backend_kv_grpc_server() &&
+        start_bittorrent_client());
 }
 
 Task<void> NodeImpl::start_execution_server() {

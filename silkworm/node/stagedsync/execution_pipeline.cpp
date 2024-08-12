@@ -34,6 +34,7 @@
 #include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_log_index.hpp>
 #include <silkworm/node/stagedsync/stages/stage_senders.hpp>
+#include <silkworm/node/stagedsync/stages/stage_triggers.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
 
 namespace silkworm::stagedsync {
@@ -134,6 +135,8 @@ void ExecutionPipeline::load_stages() {
                     std::make_unique<stagedsync::CallTraceIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.call_traces()));
     stages_.emplace(db::stages::kTxLookupKey,
                     std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
+    stages_.emplace(db::stages::kTriggersStageKey,
+                    std::make_unique<stagedsync::TriggersStage>(sync_context_.get()));
     stages_.emplace(db::stages::kFinishKey,
                     std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info.build_description));
     current_stage_ = stages_.begin();
@@ -179,6 +182,10 @@ bool ExecutionPipeline::stop() {
         }
     }
     return stopped;
+}
+
+StageScheduler& ExecutionPipeline::stage_scheduler() const {
+    return *dynamic_cast<StageScheduler*>(stages_.at(db::stages::kTriggersStageKey).get());
 }
 
 Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {

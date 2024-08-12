@@ -22,6 +22,7 @@
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/stage.hpp>
+#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 
 namespace silkworm::stagedsync {
@@ -41,6 +42,8 @@ class ExecutionPipeline : public Stoppable {
     std::optional<Hash> bad_block();
 
     bool stop() override;
+
+    StageScheduler& stage_scheduler() const;
 
   private:
     silkworm::NodeSettings* node_settings_;

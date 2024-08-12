@@ -166,13 +166,17 @@ BlockNumRange Freezer::cleanup_range() {
     return BlockNumRange{start, end};
 }
 
-void Freezer::cleanup() {
+Task<void> Freezer::cleanup() {
     BlockNumRange range = cleanup_range();
-    if (range.first >= range.second) return;
+    if (range.first >= range.second) co_return;
 
-    // TODO
-    RWTxnManaged db_tx;
+    co_await stage_scheduler_.schedule([this, range](RWTxn& db_tx) -> Task<void> {
+        this->cleanup(db_tx, range);
+        co_return;
+    });
+}
 
+void Freezer::cleanup(RWTxn& db_tx, BlockNumRange range) {
     get_snapshot_freezer(SnapshotType::transactions).cleanup(db_tx, range);
     get_snapshot_freezer(SnapshotType::bodies).cleanup(db_tx, range);
     get_snapshot_freezer(SnapshotType::headers).cleanup(db_tx, range);

@@ -360,6 +360,15 @@ inline constexpr db::MapConfig kTxLookup{kTxLookupName};
 inline constexpr const char* kLastForkchoiceName{"LastForkchoice"};
 inline constexpr db::MapConfig kLastForkchoice{kLastForkchoiceName};
 
+//! \brief Hold the maximum canonical transaction number for each block
+//! \verbatim
+//!  key: block_number_u64 (BE)
+//!  value: max_tx_num_in_block_u64 (BE)
+//! \endverbatim
+//! \details In Erigon3: table MaxTxNum storing TxNum (not TxnID). History/Indices are using TxNum (not TxnID).
+inline constexpr const char* kMaxTxNumName{"MaxTxNum"};
+inline constexpr db::MapConfig kMaxTxNum{kMaxTxNumName};
+
 inline constexpr db::MapConfig kChainDataTables[]{
     kAccountChangeSet,
     kAccountHistory,
@@ -386,6 +395,7 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kLogAddressIndex,
     kLogTopicIndex,
     kLogs,
+    kMaxTxNum,
     kMigrations,
     kPlainCodeHash,
     kPlainState,

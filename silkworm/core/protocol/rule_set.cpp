@@ -17,7 +17,7 @@
 #include "rule_set.hpp"
 
 #include <algorithm>
-#include <utilitiy>
+#include <utility>
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/overloaded.hpp>

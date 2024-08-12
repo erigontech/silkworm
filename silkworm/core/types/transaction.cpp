@@ -20,6 +20,7 @@
 #include <bit>
 
 #include <ethash/keccak.hpp>
+#include <tl/expected.hpp>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>

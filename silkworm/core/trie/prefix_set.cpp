@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstring>
 #include <utility>
 
 #include <silkworm/core/common/bytes.hpp>

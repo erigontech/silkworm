@@ -16,14 +16,19 @@
 
 #include "call_tracer.hpp"
 
+#include <cstddef>
 #include <cstdint>
 
+#include <evmc/evmc.h>
+#include <evmc/evmc.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/baseline_instruction_table.hpp>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions.hpp>
+#include <intx/intx.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block.hpp>

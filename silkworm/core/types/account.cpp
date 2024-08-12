@@ -16,8 +16,14 @@
 
 #include "account.hpp"
 
-#include <intx/intx.hpp>
+#include <cstdint>
+#include <cstring>
 
+#include <intx/intx.hpp>
+#include <tl/expected.hpp>
+
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/encode.hpp>

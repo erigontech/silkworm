@@ -17,15 +17,22 @@
 #include "ethash_rule_set.hpp"
 
 #include <cstddef>
+#include <cstdint>
+#include <ostream>
+#include <vector>
 
 #include <evmc/evmc.h>
 #include <evmone/evmone.h>
+#include <intx/intx.hpp>
 
 #include <silkworm/core/chain/dao.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
 
 #include "param.hpp"
+#include "rule_set.hpp"
 
 namespace silkworm::protocol {
 

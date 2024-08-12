@@ -21,6 +21,7 @@
 
 #include "sha256.h"
 
+#include <stdint.h>
 #include <string.h>
 
 #if defined(__x86_64__)

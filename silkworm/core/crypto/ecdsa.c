@@ -16,10 +16,12 @@
 
 #include "ecdsa.h"
 
+#include <secp256k1.h>
+#include <stdint.h>
 #include <string.h>
 
+#include <ethash/hash_types.h>
 #include <ethash/keccak.h>
-#include <secp256k1_ecdh.h>
 #include <secp256k1_recovery.h>
 
 //! \brief Tries recover public key used for message signing.

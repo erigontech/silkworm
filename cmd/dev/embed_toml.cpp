@@ -15,7 +15,9 @@
 */
 
 #include <cctype>
+#include <cstdef>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <regex>

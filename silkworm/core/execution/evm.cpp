@@ -22,6 +22,7 @@
 #include <iterator>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <ethash/keccak.hpp>
 #include <evmone/evmone.h>

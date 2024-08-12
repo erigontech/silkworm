@@ -20,12 +20,15 @@
 #include <functional>
 #include <set>
 #include <string>
+#include <string_view>
 
 #include <silkworm/core/common/overloaded.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
+
+using namespace std::string_view_literals;
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 

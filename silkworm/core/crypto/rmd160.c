@@ -36,6 +36,7 @@
 /*  header files */
 #include "rmd160.h"
 
+#include <stdint.h>
 #include <string.h>
 
 /********************************************************************/

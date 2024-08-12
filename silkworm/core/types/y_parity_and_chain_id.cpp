@@ -16,6 +16,10 @@
 
 #include "y_parity_and_chain_id.hpp"
 
+#include <cstdint>
+
+#include <intx/intx.hpp>
+
 namespace silkworm {
 
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) noexcept {

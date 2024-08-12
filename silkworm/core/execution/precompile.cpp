@@ -23,6 +23,9 @@
 #include <cstring>
 #include <limits>
 
+#include <evmone_precompiles/blake2b.hpp>
+#include <evmone_precompiles/ripemd160.hpp>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -34,10 +37,8 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/crypto/blake2b.h>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/kzg.hpp>
-#include <silkworm/core/crypto/rmd160.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/crypto/sha256.h>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
@@ -95,7 +96,9 @@ uint64_t rip160_gas(ByteView input, evmc_revision) noexcept {
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
     Bytes out(32, 0);
     SILKWORM_ASSERT(input.length() <= std::numeric_limits<uint32_t>::max());
-    silkworm_rmd160(&out[12], input.data(), static_cast<uint32_t>(input.length()));
+    evmone::crypto::ripemd160(reinterpret_cast<std::byte*>(&out[12]),
+                              reinterpret_cast<const std::byte*>(input.data()),
+                              input.size());
     return out;
 }
 
@@ -468,30 +471,25 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
     if (input.length() != 213) {
         return std::nullopt;
     }
-    uint8_t f{input[212]};
+    const uint8_t f{input[212]};
     if (f != 0 && f != 1) {
         return std::nullopt;
     }
 
-    SilkwormBlake2bState state{};
-    if (f) {
-        state.f[0] = std::numeric_limits<uint64_t>::max();
-    }
+    uint64_t h[8];
+    std::memcpy(h, &input[4], sizeof(h));
+    uint64_t m[16];
+    std::memcpy(m, &input[68], sizeof(m));
+    uint64_t t[2];
+    std::memcpy(t, &input[196], sizeof(t));
 
     static_assert(std::endian::native == std::endian::little);
-    static_assert(sizeof(state.h) == 8 * 8);
-    std::memcpy(&state.h, &input[4], 8 * 8);
-
-    uint8_t block[SILKWORM_BLAKE2B_BLOCKBYTES];
-    std::memcpy(block, &input[68], SILKWORM_BLAKE2B_BLOCKBYTES);
-
-    std::memcpy(&state.t, &input[196], 8 * 2);
 
     uint32_t r{endian::load_big_u32(input.data())};
-    silkworm_blake2b_compress(&state, block, r);
+    evmone::crypto::blake2b_compress(r, h, m, t, f != 0);
 
-    Bytes out(8 * 8, 0);
-    std::memcpy(&out[0], &state.h[0], 8 * 8);
+    Bytes out(sizeof(h), 0);
+    std::memcpy(&out[0], h, sizeof(h));
     return out;
 }
 

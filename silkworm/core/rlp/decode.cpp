@@ -17,7 +17,9 @@
 #include "decode.hpp"
 
 #include <cassert>
-#include <tuple>
+#include <cstdint>
+
+#include <tl/expected.hpp>
 
 #include <silkworm/core/common/endian.hpp>
 

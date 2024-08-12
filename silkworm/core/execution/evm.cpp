@@ -18,20 +18,26 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <cstring>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include <ethash/keccak.hpp>
+#include <evmc/evmc.h>
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
+#include <intx/intx.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/log.hpp>
 
 namespace silkworm {
 

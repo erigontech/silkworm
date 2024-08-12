@@ -16,6 +16,8 @@
 
 #include "call_tracer.hpp"
 
+#include <cstdint>
+
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/baseline_instruction_table.hpp>
@@ -24,6 +26,7 @@
 
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/block.hpp>
 
 using namespace evmone;
 using namespace evmone::baseline;

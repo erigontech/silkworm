@@ -16,6 +16,8 @@
 
 #include "processor.hpp"
 
+#include <optional>
+
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 

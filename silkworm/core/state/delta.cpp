@@ -18,6 +18,8 @@
 
 #include <utility>
 
+#include <evmc/evmc.hpp>
+
 #include <silkworm/core/state/intra_block_state.hpp>
 
 namespace silkworm::state {

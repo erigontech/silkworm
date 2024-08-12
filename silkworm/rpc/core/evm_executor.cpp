@@ -16,6 +16,7 @@
 
 #include "evm_executor.hpp"
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <utility>

@@ -17,14 +17,21 @@
 #include "in_memory_state.hpp"
 
 #include <map>
+#include <optional>
+#include <vector>
 
+#include <ethash/hash_types.hpp>
 #include <ethash/keccak.hpp>
+#include <evmc/evmc.hpp>
 
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {

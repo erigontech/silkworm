@@ -17,6 +17,7 @@
 #include "util.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <regex>
 

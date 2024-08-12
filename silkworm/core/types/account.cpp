@@ -16,9 +16,12 @@
 
 #include "account.hpp"
 
+#include <intx/intx.hpp>
+
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/encode.hpp>
+#include <silkworm/core/rlp/header.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {

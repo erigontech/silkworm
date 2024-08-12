@@ -16,6 +16,7 @@
 
 #include "withdrawal.hpp"
 
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>

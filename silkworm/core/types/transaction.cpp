@@ -16,6 +16,7 @@
 
 #include "transaction.hpp"
 
+#include <algorithm>
 #include <bit>
 
 #include <ethash/keccak.hpp>

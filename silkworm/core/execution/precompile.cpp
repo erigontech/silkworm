@@ -33,6 +33,7 @@
 #include <libff/common/profiling.hpp>
 #pragma GCC diagnostic pop
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/crypto/blake2b.h>
 #include <silkworm/core/crypto/ecdsa.h>

@@ -16,6 +16,7 @@
 
 find_package(Catch2 REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(gRPC REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
@@ -27,7 +28,10 @@ if(SILKWORM_WASM_API)
 else()
   add_executable(core_test ${SILKWORM_CORE_TESTS})
 endif()
-target_link_libraries(core_test silkworm_core Catch2::Catch2WithMain)
+target_link_libraries(core_test
+  PUBLIC silkworm_core Catch2::Catch2WithMain
+  PRIVATE gRPC::grpc++
+  )
 
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHa- /EHsc)

@@ -43,6 +43,10 @@ class Cursor {
 
     virtual Task<KeyValue> seek_exact(ByteView key) = 0;
 
+    virtual Task<KeyValue> first() = 0;
+
+    virtual Task<KeyValue> last() = 0;
+
     virtual Task<KeyValue> next() = 0;
 
     virtual Task<KeyValue> previous() = 0;

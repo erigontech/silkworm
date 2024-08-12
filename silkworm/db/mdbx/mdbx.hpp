@@ -72,6 +72,7 @@ namespace detail {
     };
 
     std::string dump_mdbx_result(const db::CursorResult& result);
+    std::string slice_as_hex(const db::Slice& data);
 }  // namespace detail
 
 class ROTxn;

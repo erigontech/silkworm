@@ -74,9 +74,6 @@ std::vector<BlockHeader> read_headers(ROTxn& txn, BlockNum height);
 //! \brief Apply a user defined func to the headers at specific height
 size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func);
 
-//! \brief Reads a header without rlp-decoding it
-std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash);
-
 //! \brief Reads the canonical head
 std::tuple<BlockNum, evmc::bytes32> read_canonical_head(ROTxn& txn);
 

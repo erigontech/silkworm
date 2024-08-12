@@ -197,14 +197,6 @@ void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash) {
     cursor->erase(to_slice(key));
 }
 
-std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash) {
-    auto header_cursor = txn.ro_cursor(db::table::kHeaders);
-    auto key = db::block_key(bn, hash.bytes);
-    auto data = header_cursor->find(db::to_slice(key), /*throw_notfound*/ false);
-    if (!data) return std::nullopt;
-    return db::from_slice(data.value);
-}
-
 std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number) {
     auto cursor = txn.ro_cursor(db::table::kHeaders);
     auto key = db::block_key(min_number);

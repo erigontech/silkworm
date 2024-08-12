@@ -28,6 +28,8 @@ class MockCursor : public kv::api::Cursor {
     MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek, (ByteView key));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek_exact, (ByteView key));
+    MOCK_METHOD((Task<kv::api::KeyValue>), first, ());
+    MOCK_METHOD((Task<kv::api::KeyValue>), last, ());
     MOCK_METHOD((Task<kv::api::KeyValue>), next, ());
     MOCK_METHOD((Task<kv::api::KeyValue>), previous, ());
     MOCK_METHOD((Task<void>), close_cursor, ());
@@ -39,6 +41,8 @@ class MockCursorDupSort : public kv::api::CursorDupSort {
     MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek, (ByteView key));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek_exact, (ByteView key));
+    MOCK_METHOD((Task<kv::api::KeyValue>), first, ());
+    MOCK_METHOD((Task<kv::api::KeyValue>), last, ());
     MOCK_METHOD((Task<kv::api::KeyValue>), next, ());
     MOCK_METHOD((Task<kv::api::KeyValue>), previous, ());
     MOCK_METHOD((Task<kv::api::KeyValue>), next_dup, ());

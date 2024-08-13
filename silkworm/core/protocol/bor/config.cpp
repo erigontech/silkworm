@@ -16,11 +16,20 @@
 
 #include "config.hpp"
 
+#include <optional>
 #include <set>
 #include <string>
+#include <utility>
+#include <vector>
+
+#include <evmc/evmc.hpp>
+#include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/small_map.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 

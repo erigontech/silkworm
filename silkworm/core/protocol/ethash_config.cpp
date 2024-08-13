@@ -16,6 +16,10 @@
 
 #include "ethash_config.hpp"
 
+#include <optional>
+
+#include <nlohmann/json.hpp>
+
 namespace silkworm::protocol {
 
 nlohmann::json EthashConfig::to_json() const noexcept {

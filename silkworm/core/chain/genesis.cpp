@@ -17,6 +17,7 @@
 #include "genesis.hpp"
 
 #include <bit>
+#include <optional>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis_bor_mainnet.hpp>

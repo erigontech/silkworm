@@ -16,6 +16,16 @@
 
 #include "encode.hpp"
 
+#include <cstddef>
+#include <cstdint>
+
+#include <intx/intx.hpp>
+
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/endian.hpp>
+
+#include "header.hpp"
+
 namespace silkworm::rlp {
 
 void encode_header(Bytes& to, Header header) {

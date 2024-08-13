@@ -17,9 +17,19 @@
 #include "node.hpp"
 
 #include <bit>
+#include <cstdint>
+#include <cstring>
+#include <optional>
 #include <utility>
+#include <vector>
+
+#include <evmc/evmc.hpp>
+#include <tl/expected.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::trie {

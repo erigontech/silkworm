@@ -18,6 +18,8 @@
 
 #include <blst.h>
 
+#include <cstdint>
+
 #include <silkworm/core/crypto/sha256.h>
 #include <silkworm/core/protocol/param.hpp>
 

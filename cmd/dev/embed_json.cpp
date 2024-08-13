@@ -14,14 +14,20 @@
    limitations under the License.
 */
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <CLI/CLI.hpp>
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 namespace fs = std::filesystem;
 
@@ -62,6 +68,7 @@ void to_byte_array(fs::path& in, fs::path& out, const std::string& ns) {
     std::ofstream out_stream{out.string()};
     out_stream << "/* Generated from " << in.filename().string() << " using silkworm embed_json tool */\n";
     out_stream << "#include \"" + var_name + ".hpp\"\n";
+    out_stream << "#include <string_view>\n";
     out_stream << "constexpr char " << var_name << "_data_internal[] = {\n";
 
     auto max{bytes.size()};

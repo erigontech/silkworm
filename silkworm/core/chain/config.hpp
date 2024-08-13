@@ -132,6 +132,7 @@ struct ChainConfig {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
+using namespace std::string_view_literals;
 using namespace evmc::literals;
 
 inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};

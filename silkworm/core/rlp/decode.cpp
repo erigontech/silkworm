@@ -17,9 +17,16 @@
 #include "decode.hpp"
 
 #include <cassert>
-#include <tuple>
+#include <cstddef>
+#include <cstdint>
 
+#include <tl/expected.hpp>
+
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/common/endian.hpp>
+
+#include "header.hpp"
 
 namespace silkworm::rlp {
 

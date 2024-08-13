@@ -18,7 +18,6 @@
 
 #include <iomanip>
 
-#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc {

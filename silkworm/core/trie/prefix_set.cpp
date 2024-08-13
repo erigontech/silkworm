@@ -17,7 +17,11 @@
 #include "prefix_set.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstring>
 #include <utility>
+
+#include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::trie {
 

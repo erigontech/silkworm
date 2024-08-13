@@ -16,8 +16,15 @@
 
 #include "blockchain.hpp"
 
+#include <optional>
+#include <utility>
+#include <vector>
+
+#include <intx/intx.hpp>
+
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/execution/processor.hpp>
+#include <silkworm/core/types/block.hpp>
 
 namespace silkworm::protocol {
 

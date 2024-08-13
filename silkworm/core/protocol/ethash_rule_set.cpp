@@ -16,11 +16,23 @@
 
 #include "ethash_rule_set.hpp"
 
+#include <cstddef>
+#include <cstdint>
+#include <ostream>
+#include <vector>
+
+#include <evmc/evmc.h>
+#include <evmone/evmone.h>
+#include <intx/intx.hpp>
+
 #include <silkworm/core/chain/dao.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
 
 #include "param.hpp"
+#include "rule_set.hpp"
 
 namespace silkworm::protocol {
 
@@ -181,7 +193,7 @@ intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t bl
 
 std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
     out << "miner_reward: " << intx::to_string(reward.miner) << " ommer_rewards: [";
-    for (std::size_t i{0}; i < reward.ommers.size(); ++i) {
+    for (size_t i{0}; i < reward.ommers.size(); ++i) {
         out << intx::to_string(reward.ommers[i]);
         if (i != reward.ommers.size() - 1) {
             out << " ";

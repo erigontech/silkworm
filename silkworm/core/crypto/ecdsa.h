@@ -20,7 +20,6 @@
 
 #include <secp256k1.h>
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 
 #if defined(__cplusplus)

@@ -16,11 +16,21 @@
 
 #include "address.hpp"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstring>
+#include <optional>
+#include <string_view>
+
 #include <ethash/keccak.hpp>
+#include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
+#include <silkworm/core/rlp/header.hpp>
 
 namespace silkworm {
 

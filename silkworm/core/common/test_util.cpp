@@ -16,8 +16,11 @@
 
 #include "test_util.hpp"
 
+#include <intx/intx.hpp>
+
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/log.hpp>
+#include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm::test {
 

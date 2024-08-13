@@ -24,13 +24,9 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/rlp/header.hpp>
 
 namespace silkworm::rlp {
-
-struct Header {
-    bool list{false};
-    size_t payload_length{0};
-};
 
 inline constexpr uint8_t kEmptyStringCode{0x80};
 inline constexpr uint8_t kEmptyListCode{0xC0};

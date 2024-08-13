@@ -16,8 +16,13 @@
 
 #include "receipt.hpp"
 
-#include <silkworm/core/common/util.hpp>
+#include <cstdint>
+
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/core/rlp/header.hpp>
+
+#include "transaction.hpp"
 
 namespace silkworm::rlp {
 

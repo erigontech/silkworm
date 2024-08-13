@@ -16,16 +16,28 @@
 
 #include "in_memory_state.hpp"
 
+#include <cstddef>
+#include <cstdint>
 #include <map>
+#include <optional>
+#include <vector>
 
-#include <ethash/keccak.hpp>
+#include <ethash/hash_types.hpp>
+#include <evmc/evmc.hpp>
+#include <intx/intx.hpp>
 
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/call_traces.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm {
 

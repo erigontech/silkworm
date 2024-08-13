@@ -14,24 +14,15 @@
    limitations under the License.
 */
 
-#include "secp256k1n.hpp"
+#pragma once
 
-#include <intx/intx.hpp>
+#include <cstddef>
 
-namespace silkworm {
+namespace silkworm::rlp {
 
-bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) noexcept {
-    if (!r || !s) {
-        return false;
-    }
-    if (r >= kSecp256k1n && s >= kSecp256k1n) {
-        return false;
-    }
-    // https://eips.ethereum.org/EIPS/eip-2
-    if (homestead && s > kSecp256k1Halfn) {
-        return false;
-    }
-    return true;
-}
+struct Header {
+    bool list{false};
+    size_t payload_length{0};
+};
 
-}  // namespace silkworm
+}  // namespace silkworm::rlp

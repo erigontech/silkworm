@@ -16,7 +16,13 @@
 
 #include "log.hpp"
 
+#include <cstddef>
+
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/core/rlp/header.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 

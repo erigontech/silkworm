@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/empty_hashes.hpp>
+#include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/db/tables.hpp>

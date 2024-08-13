@@ -17,9 +17,13 @@
 #include "intra_block_state.hpp"
 
 #include <bit>
+#include <cstddef>
+
+#include <evmc/evmc.h>
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/log.hpp>
 
 namespace silkworm {
 

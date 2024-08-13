@@ -36,11 +36,11 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
     // but it inserts pointers to the provided values instead of copying them to the target container
     class BackInsertPtrIterator {
       public:
-        [[maybe_unused]] typedef std::output_iterator_tag iterator_category;
-        [[maybe_unused]] typedef void value_type;
-        [[maybe_unused]] typedef std::ptrdiff_t difference_type;
-        [[maybe_unused]] typedef void pointer;
-        [[maybe_unused]] typedef void reference;
+        using iterator_category [[maybe_unused]] = std::output_iterator_tag;
+        using value_type = void;
+        using difference_type = std::ptrdiff_t;
+        using pointer = void;
+        using reference = void;
 
         explicit BackInsertPtrIterator(std::list<T*>& container) : container_(&container) {}
 

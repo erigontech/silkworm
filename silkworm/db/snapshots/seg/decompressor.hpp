@@ -223,7 +223,7 @@ class Decompressor {
 
         //! input_iterator concept boilerplate
 
-        using iterator_category = std::input_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = Bytes;
         using pointer = value_type*;

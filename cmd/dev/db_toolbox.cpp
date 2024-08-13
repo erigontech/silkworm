@@ -41,9 +41,14 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -51,6 +56,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
@@ -2152,6 +2158,36 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     SILK_INFO << "All done" << log::Args{"in", StopWatch::format(duration)};
 }
 
+void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
+    class StageSchedulerAdapter : public stagedsync::StageScheduler {
+      public:
+        explicit StageSchedulerAdapter(db::RWTxn& tx) : tx_(tx) {}
+        ~StageSchedulerAdapter() override = default;
+
+        Task<void> schedule(std::function<Task<void>(db::RWTxn&)> task) override {
+            co_await task(tx_);
+        }
+
+      private:
+        db::RWTxn& tx_;
+    };
+
+    auto env = db::open_env(config);
+    db::RWTxnManaged tx{env};
+    StageSchedulerAdapter stage_scheduler{tx};
+
+    snapshots::SnapshotSettings settings;
+    settings.repository_dir = data_dir.snapshots().path();
+    settings.no_downloader = true;
+    auto bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
+    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};  // NOLINT(cppcoreguidelines-slicing)
+
+    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.etl().path()};
+
+    test_util::TaskRunner runner;
+    runner.run(freezer.exec());
+}
+
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
@@ -2327,6 +2363,9 @@ int main(int argc, char* argv[]) {
     auto cmd_reset_to_download_keep_senders_opt =
         cmd_reset_to_download->add_flag("--keep-senders", "Keep the recovered transaction senders");
 
+    // Freeze command
+    auto cmd_freeze = app_main.add_subcommand("freeze", "Migrate data to snapshots");
+
     /*
      * Parse arguments and validate
      */
@@ -2432,6 +2471,8 @@ int main(int argc, char* argv[]) {
             do_trie_root(src_config);
         } else if (*cmd_reset_to_download) {
             do_reset_to_download(src_config, static_cast<bool>(*cmd_reset_to_download_keep_senders_opt));
+        } else if (*cmd_freeze) {
+            do_freeze(src_config, data_dir);
         }
 
         return 0;

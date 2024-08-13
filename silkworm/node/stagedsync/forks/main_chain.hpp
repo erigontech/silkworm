@@ -28,6 +28,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/mdbx/memory_mutation.hpp>
 #include <silkworm/db/stage.hpp>
+#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "canonical_chain.hpp"
@@ -85,6 +86,8 @@ class MainChain {
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
+
+    StageScheduler& stage_scheduler() const;
 
   protected:
     Hash insert_header(const BlockHeader&);

@@ -197,14 +197,6 @@ void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash) {
     cursor->erase(to_slice(key));
 }
 
-std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash) {
-    auto header_cursor = txn.ro_cursor(db::table::kHeaders);
-    auto key = db::block_key(bn, hash.bytes);
-    auto data = header_cursor->find(db::to_slice(key), /*throw_notfound*/ false);
-    if (!data) return std::nullopt;
-    return db::from_slice(data.value);
-}
-
 std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number) {
     auto cursor = txn.ro_cursor(db::table::kHeaders);
     auto key = db::block_key(min_number);
@@ -1298,7 +1290,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height)
 
     std::optional<BlockHeader> block_header;
     // We know the header snapshot in advance: find it based on target block number
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::headers, height);
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::headers, height);
     if (snapshot_and_index) {
         block_header = HeaderFindByBlockNumQuery{*snapshot_and_index}.exec(height);
     }
@@ -1312,7 +1304,8 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
 
     std::optional<BlockHeader> block_header;
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
-    for (const SnapshotBundle& bundle : repository_->view_bundles_reverse()) {
+    for (const auto& bundle_ptr : repository_->view_bundles_reverse()) {
+        const auto& bundle = *bundle_ptr;
         auto snapshot_and_index = bundle.snapshot_and_index(SnapshotType::headers);
         block_header = HeaderFindByHashQuery{snapshot_and_index}.exec(hash);
         if (block_header) break;
@@ -1326,7 +1319,7 @@ std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapsho
     }
 
     // We know the body snapshot in advance: find it based on target block number
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::bodies, height);
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
     if (!snapshot_and_index) return std::nullopt;
 
     auto stored_body = BodyFindByBlockNumQuery{*snapshot_and_index}.exec(height);
@@ -1357,7 +1350,7 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
     }
 
     // We know the body snapshot in advance: find it based on target block number
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::bodies, height);
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
     if (snapshot_and_index) {
         const auto stored_body = BodyFindByBlockNumQuery{*snapshot_and_index}.exec(height);
         return stored_body.has_value();
@@ -1371,7 +1364,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
         return true;
     }
 
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::transactions, height);
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::transactions, height);
     if (!snapshot_and_index) return false;
 
     txs = TransactionRangeFromIdQuery{*snapshot_and_index}.exec_into_vector(base_txn_id, txn_count);
@@ -1380,7 +1373,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
 }
 
 bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) {
-    const auto body_snapshot_and_index = repository_->find_segment(SnapshotType::bodies, height);
+    const auto [body_snapshot_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
     if (body_snapshot_and_index) {
         auto stored_body = BodyFindByBlockNumQuery{*body_snapshot_and_index}.exec(height);
         if (!stored_body) return false;
@@ -1391,7 +1384,7 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector
 
         if (txn_count == 0) return true;
 
-        const auto tx_snapshot_and_index = repository_->find_segment(SnapshotType::transactions, height);
+        const auto [tx_snapshot_and_index, _2] = repository_->find_segment(SnapshotType::transactions, height);
         if (!tx_snapshot_and_index) return false;
 
         rlp_txs = TransactionPayloadRlpRangeFromIdQuery{*tx_snapshot_and_index}.exec_into_vector(base_txn_id, txn_count);

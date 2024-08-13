@@ -33,6 +33,10 @@ namespace detail {
         return dump;
     }
 
+    std::string slice_as_hex(const db::Slice& data) {
+        return ::mdbx::to_hex(data).as_string();
+    }
+
     log::Args log_args_for_commit_latency(const MDBX_commit_latency& commit_latency) {
         return {
             "preparation",

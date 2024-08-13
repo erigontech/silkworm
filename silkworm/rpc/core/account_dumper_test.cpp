@@ -97,6 +97,14 @@ class DummyCursor : public CursorDupSort {
         co_return kv;
     }
 
+    Task<KeyValue> first() override {
+        throw std::logic_error{"not implemented"};
+    }
+
+    Task<KeyValue> last() override {
+        throw std::logic_error{"not implemented"};
+    }
+
     Task<KeyValue> next() override {
         KeyValue out;
 

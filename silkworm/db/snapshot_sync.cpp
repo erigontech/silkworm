@@ -247,7 +247,8 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
 
-    for (const SnapshotBundle& bundle : repository_->view_bundles()) {
+    for (const auto& bundle_ptr : repository_->view_bundles()) {
+        const auto& bundle = *bundle_ptr;
         for (const BlockHeader& header : HeaderSnapshotReader{bundle.header_snapshot}) {
             SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
             const auto block_number = header.number;
@@ -301,7 +302,7 @@ void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_availa
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto tx_snapshot = repository_->find_segment(SnapshotType::transactions, max_block_available);
+    const auto [tx_snapshot, _] = repository_->find_segment(SnapshotType::transactions, max_block_available);
     ensure(tx_snapshot.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
     const auto last_tx_id = tx_snapshot->index.base_data_id() + tx_snapshot->snapshot.item_count();
     db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);

@@ -44,6 +44,10 @@ class RemoteCursor : public api::CursorDupSort {
 
     Task<api::KeyValue> seek_exact(ByteView key) override;
 
+    Task<api::KeyValue> first() override;
+
+    Task<api::KeyValue> last() override;
+
     Task<api::KeyValue> next() override;
 
     Task<api::KeyValue> previous() override;

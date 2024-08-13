@@ -28,6 +28,10 @@ inline auto exception_has_grpc_status_code(::grpc::StatusCode status_code) {
         [status_code](auto& e) { return std::error_code(e.code()).value() == status_code; });
 }
 
+inline auto exception_has_aborted_grpc_status_code() {
+    return test::exception_has_grpc_status_code(::grpc::StatusCode::ABORTED);
+}
+
 inline auto exception_has_cancelled_grpc_status_code() {
     return test::exception_has_grpc_status_code(::grpc::StatusCode::CANCELLED);
 }

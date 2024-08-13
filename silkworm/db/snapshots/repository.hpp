@@ -24,6 +24,7 @@
 #include <optional>
 #include <ranges>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
@@ -73,13 +74,39 @@ class SnapshotRepository {
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
 
-    auto view_bundles() const { return make_map_values_view(bundles_); }
-    auto view_bundles_reverse() const { return std::ranges::reverse_view(view_bundles()); }
+    using TBundles = std::map<BlockNum, std::shared_ptr<SnapshotBundle>>;
 
-    [[nodiscard]] std::optional<SnapshotAndIndex> find_segment(SnapshotType type, BlockNum number) const;
+    template <class TBaseView>
+    class BundlesView : public std::ranges::view_interface<BundlesView<TBaseView>> {
+      public:
+        BundlesView(
+            TBaseView base_view,
+            std::shared_ptr<TBundles> bundles)
+            : base_view_(std::move(base_view)),
+              bundles_(std::move(bundles)) {}
+
+        auto begin() const { return base_view_.begin(); }
+        auto end() const { return base_view_.end(); }
+
+      private:
+        TBaseView base_view_;
+        std::shared_ptr<TBundles> bundles_{};
+    };
+
+    auto view_bundles() const {
+        std::scoped_lock lock(bundles_mutex_);
+        return BundlesView{make_map_values_view(*bundles_), bundles_};
+    }
+
+    auto view_bundles_reverse() const {
+        std::scoped_lock lock(bundles_mutex_);
+        return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
+    }
+
+    [[nodiscard]] std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, BlockNum number) const;
 
   private:
-    const SnapshotBundle* find_bundle(BlockNum number) const;
+    const std::shared_ptr<SnapshotBundle> find_bundle(BlockNum number) const;
 
     [[nodiscard]] SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);
@@ -100,7 +127,7 @@ class SnapshotRepository {
     std::unique_ptr<SnapshotBundleFactory> bundle_factory_;
 
     //! Full snapshot bundles ordered by block_from
-    std::map<BlockNum, SnapshotBundle> bundles_;
+    std::shared_ptr<TBundles> bundles_;
     mutable std::mutex bundles_mutex_;
 };
 

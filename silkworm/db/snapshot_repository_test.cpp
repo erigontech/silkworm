@@ -41,6 +41,9 @@ static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
     return std::make_unique<db::SnapshotBundleFactoryImpl>();
 }
 
+#define CHECK_FIRST(x) CHECK((x).first)
+#define CHECK_FALSE_FIRST(x) CHECK_FALSE((x).first)
+
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}, bundle_factory()});
@@ -70,9 +73,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     SECTION("no snapshots") {
         repository.reopen_folder();
 
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 14'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 11'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
         size_t bundles_count = 0;
         for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
@@ -80,9 +83,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         }
         CHECK(bundles_count == 0);
 
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 14'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 11'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 15'000'000));
     }
 
     SECTION("partial bundle") {
@@ -91,9 +94,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
         repository.reopen_folder();
 
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 14'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 11'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 15'000'000));
 
         size_t bundles_count = 0;
         for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
@@ -102,9 +105,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         // empty snapshots are ignored by repository
         CHECK(bundles_count == 0);
 
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 14'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 11'500'000));
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 15'000'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 14'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 11'500'000));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 15'000'000));
     }
 
     SECTION("non-empty snapshots") {
@@ -124,9 +127,9 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         }
         CHECK(bundles_count == 1);
 
-        CHECK(repository.find_segment(SnapshotType::headers, 1'500'000).has_value());
-        CHECK(repository.find_segment(SnapshotType::bodies, 1'500'000).has_value());
-        CHECK(repository.find_segment(SnapshotType::transactions, 1'500'000).has_value());
+        CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'000));
+        CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'000));
+        CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'000));
 
         bundles_count = 0;
         for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
@@ -164,22 +167,22 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
     SECTION("header w/o index") {
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 1'500'011));
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 1'500'012));
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 1'500'013));
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 1'500'014));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'011));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'012));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'013));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'014));
     }
     SECTION("body w/o index") {
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 1'500'011));
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 1'500'012));
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 1'500'013));
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 1'500'014));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'011));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'012));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'013));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'014));
     }
     SECTION("tx w/o index") {
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 1'500'011));
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 1'500'012));
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 1'500'013));
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 1'500'014));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'011));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'012));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'013));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'014));
     }
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
@@ -195,25 +198,25 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     REQUIRE_NOTHROW(repository.reopen_folder());
 
     SECTION("header w/ index") {
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 1'500'011));
-        // CHECK(repository.find_segment(SnapshotType::headers, 1'500'012) != nullptr);  // needs full block number in snapshot file names
-        // CHECK(repository.find_segment(SnapshotType::headers, 1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK_FALSE(repository.find_segment(SnapshotType::headers, 1'500'014));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'011));
+        // CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'012) != nullptr);  // needs full block number in snapshot file names
+        // CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'013) != nullptr);  // needs full block number in snapshot file names
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'014));
     }
     SECTION("body w/ index") {
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 1'500'011));
-        // CHECK(repository.find_segment(SnapshotType::bodies, 1'500'012) != nullptr);  // needs full block number in snapshot file names
-        // CHECK(repository.find_segment(SnapshotType::bodies, 1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, 1'500'014));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'011));
+        // CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'012) != nullptr);  // needs full block number in snapshot file names
+        // CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'013) != nullptr);  // needs full block number in snapshot file names
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'014));
     }
     SECTION("tx w/ index") {
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 1'500'011));
-        // CHECK(repository.find_segment(SnapshotType::transactions, 1'500'012) != nullptr);  // needs full block number in snapshot file names
-        // CHECK(repository.find_segment(SnapshotType::transactions, 1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK_FALSE(repository.find_segment(SnapshotType::transactions, 1'500'014));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'011));
+        // CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'012) != nullptr);  // needs full block number in snapshot file names
+        // CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'013) != nullptr);  // needs full block number in snapshot file names
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'014));
     }
     SECTION("greater than max_block_available") {
-        CHECK_FALSE(repository.find_segment(SnapshotType::bodies, repository.max_block_available() + 1));
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, repository.max_block_available() + 1));
     }
 }
 

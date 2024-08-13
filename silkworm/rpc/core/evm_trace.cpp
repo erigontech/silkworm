@@ -118,11 +118,13 @@ void to_json(nlohmann::json& json, const VmTrace& vm_trace) {
 
 void to_json(nlohmann::json& json, const TraceOp& trace_op) {
     json["cost"] = trace_op.gas_cost;
-    // fix to align response to erigon/rpcdaemon. In few case the trace_ex can be set to null
-    if (!trace_op.trace_ex)
+    // In case of out-of-gas Erigon gives null trace_ex, so we must handle it
+    if (!trace_op.trace_ex) {
         json["ex"] = nlohmann::json::value_t::null;
-    else
+    }
+    else {
         json["ex"] = *(trace_op.trace_ex);
+    }
     json["idx"] = trace_op.idx;
     json["op"] = trace_op.op_name;
     json["pc"] = trace_op.pc;
@@ -729,7 +731,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
 
     switch (result.status_code) {
         case evmc_status_code::EVMC_OUT_OF_GAS:
-            // fix to align response to rpcdaemon. In case of Case the trace_ex struct is set to null
+            // If we run out of gas, we reset trace_ex to null (no matter what the content is) as Erigon does
             op.trace_ex = std::nullopt;
             op.gas_cost -= result.gas_left;
             break;
@@ -738,7 +740,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            if (op.op_code == evmc_opcode::OP_EXP) {  // Erigon the static part is 0
+            if (op.op_code == evmc_opcode::OP_EXP) {  // In Erigon the static part is 0
                 op.trace_ex->used = op.gas_cost;
                 op.gas_cost = 0;
             } else {

@@ -121,8 +121,7 @@ void to_json(nlohmann::json& json, const TraceOp& trace_op) {
     // In case of out-of-gas Erigon gives null trace_ex, so we must handle it
     if (!trace_op.trace_ex) {
         json["ex"] = nlohmann::json::value_t::null;
-    }
-    else {
+    } else {
         json["ex"] = *(trace_op.trace_ex);
     }
     json["idx"] = trace_op.idx;

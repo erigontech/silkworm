@@ -37,10 +37,10 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
     class BackInsertPtrIterator {
       public:
         using iterator_category [[maybe_unused]] = std::output_iterator_tag;
-        using value_type = void;
-        using difference_type = std::ptrdiff_t;
-        using pointer = void;
-        using reference = void;
+        using value_type [[maybe_unused]] = void;
+        using difference_type [[maybe_unused]] = std::ptrdiff_t;
+        using pointer [[maybe_unused]] = void;
+        using reference [[maybe_unused]] = void;
 
         explicit BackInsertPtrIterator(std::list<T*>& container) : container_(&container) {}
 

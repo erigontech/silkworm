@@ -170,7 +170,7 @@ void SnapshotRepository::reopen_folder() {
               << " indexes: " << total_indexes_count();
 }
 
-const std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number) const {
+std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number) const {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     for (const auto& bundle_ptr : this->view_bundles_reverse()) {
         auto& bundle = *bundle_ptr;

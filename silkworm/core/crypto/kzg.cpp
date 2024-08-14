@@ -18,7 +18,8 @@
 
 #include <blst.h>
 
-#include <silkworm/core/crypto/sha256.h>
+#include <evmone_precompiles/sha256.hpp>
+
 #include <silkworm/core/protocol/param.hpp>
 
 // Based on https://github.com/ethereum/c-kzg-4844/blob/main/src/c_kzg_4844.c
@@ -60,7 +61,8 @@ static const G2 kKzgSetupG2_1{
 
 Hash kzg_to_versioned_hash(ByteView kzg) {
     Hash hash;
-    silkworm_sha256(hash.bytes, kzg.data(), kzg.length(), /*use_cpu_extensions=*/true);
+    evmone::crypto::sha256(reinterpret_cast<std::byte*>(hash.bytes),
+                           reinterpret_cast<const std::byte*>(kzg.data()), kzg.length());
     hash.bytes[0] = protocol::kBlobCommitmentVersionKzg;
     return hash;
 }

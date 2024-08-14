@@ -41,14 +41,16 @@
 					}
 				},
 				{
-					"name": "Hashed addresses",
+					"name": "Addresses prefix",
 					"required": true,
 					"schema": {
+						"title": "prefix of addresses expressed as array of bytes",
 						"type": "array",
 						"items": {
-							"title": "32 hex encoded bytes",
-							"type": "string",
-							"pattern": "^0x[0-9a-f]{0,64}$"
+							"title": "decimal 8-bit number",
+							"type": "number",
+							"minimum": 0,
+							"maximum": 255
 						}
 					}
 				},
@@ -79,14 +81,14 @@
 				},
 				{
 					"name": "No preimages",
-					"required": true,
+					"required": false,
 					"schema": {
 						"type": "boolean"
 					}
 				}
 			],
 			"result": {
-				"name": "DumpAccounts",
+				"name": "dumpAccounts",
 				"schema": {
 					"title": "Dumped Accounts",
 					"type": "object",

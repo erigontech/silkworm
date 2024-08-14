@@ -34,9 +34,9 @@
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/bodies/body_index.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/headers/header_index.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>

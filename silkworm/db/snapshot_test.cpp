@@ -19,10 +19,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/bodies/body_queries.hpp>
-#include <silkworm/db/headers/header_index.hpp>
-#include <silkworm/db/headers/header_queries.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/bodies/body_queries.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>

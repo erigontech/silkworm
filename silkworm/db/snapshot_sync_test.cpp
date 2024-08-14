@@ -19,8 +19,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>

@@ -23,7 +23,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/headers/header_snapshot.hpp>
+#include <silkworm/db/blocks/headers/header_snapshot.hpp>
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/snapshots/config.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>

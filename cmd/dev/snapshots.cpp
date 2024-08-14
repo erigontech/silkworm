@@ -31,10 +31,10 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/bodies/body_queries.hpp>
-#include <silkworm/db/headers/header_index.hpp>
-#include <silkworm/db/headers/header_queries.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/bodies/body_queries.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>

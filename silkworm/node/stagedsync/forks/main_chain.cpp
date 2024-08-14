@@ -137,6 +137,10 @@ db::RWTxn& MainChain::tx() {
     return tx_;
 }
 
+StageScheduler& MainChain::stage_scheduler() const {
+    return pipeline_.stage_scheduler();
+}
+
 BlockId MainChain::current_head() const {
     return interim_canonical_chain_.current_head();
 }

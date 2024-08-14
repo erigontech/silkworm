@@ -318,4 +318,8 @@ bool ExecutionEngine::is_canonical(Hash header_hash) const {
     return main_chain_.is_finalized_canonical(header_hash);
 }
 
+StageScheduler& ExecutionEngine::stage_scheduler() const {
+    return main_chain_.stage_scheduler();
+}
+
 }  // namespace silkworm::stagedsync

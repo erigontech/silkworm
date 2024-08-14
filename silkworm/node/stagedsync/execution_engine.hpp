@@ -29,6 +29,7 @@
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/stage.hpp>
+#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "forks/extending_fork.hpp"
@@ -86,6 +87,8 @@ class ExecutionEngine : public Stoppable {
     virtual std::optional<BlockNum> get_block_number(Hash) const;
     virtual std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
     std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum> = std::nullopt) const;
+
+    StageScheduler& stage_scheduler() const;
 
   protected:
     struct ForkingPath {

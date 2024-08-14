@@ -16,16 +16,29 @@
 
 #include "data_migration.hpp"
 
+#include <chrono>
+
+#include <silkworm/infra/concurrency/sleep.hpp>
+
 namespace silkworm::db {
 
-void DataMigration::run() {
-    cleanup();
+Task<bool> DataMigration::exec() {
+    co_await cleanup();
     auto command = next_command();
-    if (!command) return;
+    if (!command) co_return false;
     auto result = migrate(std::move(command));
     index(result);
     commit(result);
-    cleanup();
+    co_await cleanup();
+    co_return true;
+}
+
+Task<void> DataMigration::run_loop() {
+    using namespace std::chrono_literals;
+    while (true) {
+        bool has_migrated = co_await exec();
+        if (!has_migrated) co_await sleep(1min);
+    }
 }
 
 }  // namespace silkworm::db

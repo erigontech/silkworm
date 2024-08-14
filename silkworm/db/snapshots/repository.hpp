@@ -74,14 +74,14 @@ class SnapshotRepository {
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
 
-    using TBundles = std::map<BlockNum, std::shared_ptr<SnapshotBundle>>;
+    using Bundles = std::map<BlockNum, std::shared_ptr<SnapshotBundle>>;
 
     template <class TBaseView>
     class BundlesView : public std::ranges::view_interface<BundlesView<TBaseView>> {
       public:
         BundlesView(
             TBaseView base_view,
-            std::shared_ptr<TBundles> bundles)
+            std::shared_ptr<Bundles> bundles)
             : base_view_(std::move(base_view)),
               bundles_(std::move(bundles)) {}
 
@@ -90,7 +90,7 @@ class SnapshotRepository {
 
       private:
         TBaseView base_view_;
-        std::shared_ptr<TBundles> bundles_{};
+        std::shared_ptr<Bundles> bundles_{};
     };
 
     auto view_bundles() const {
@@ -106,7 +106,7 @@ class SnapshotRepository {
     [[nodiscard]] std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, BlockNum number) const;
 
   private:
-    const std::shared_ptr<SnapshotBundle> find_bundle(BlockNum number) const;
+    std::shared_ptr<SnapshotBundle> find_bundle(BlockNum number) const;
 
     [[nodiscard]] SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);
@@ -127,7 +127,7 @@ class SnapshotRepository {
     std::unique_ptr<SnapshotBundleFactory> bundle_factory_;
 
     //! Full snapshot bundles ordered by block_from
-    std::shared_ptr<TBundles> bundles_;
+    std::shared_ptr<Bundles> bundles_;
     mutable std::mutex bundles_mutex_;
 };
 

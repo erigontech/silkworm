@@ -101,7 +101,7 @@ struct TraceOp {
     int64_t gas_cost{0};
     std::optional<int64_t> precompiled_call_gas;
     std::optional<int64_t> call_gas_cap;
-    TraceEx trace_ex;
+    std::optional<TraceEx> trace_ex;
     std::string idx;
     int32_t depth{0};
     uint8_t op_code{0};

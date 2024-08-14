@@ -118,7 +118,12 @@ void to_json(nlohmann::json& json, const VmTrace& vm_trace) {
 
 void to_json(nlohmann::json& json, const TraceOp& trace_op) {
     json["cost"] = trace_op.gas_cost;
-    json["ex"] = trace_op.trace_ex;
+    // In case of out-of-gas Erigon gives null trace_ex, so we must handle it
+    if (!trace_op.trace_ex) {
+        json["ex"] = nlohmann::json::value_t::null;
+    } else {
+        json["ex"] = *(trace_op.trace_ex);
+    }
     json["idx"] = trace_op.idx;
     json["op"] = trace_op.op_name;
     json["pc"] = trace_op.pc;
@@ -595,7 +600,7 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
         auto& op = vm_trace.ops[vm_trace.ops.size() - 1];
         if (op.op_code == evmc_opcode::OP_STATICCALL || op.op_code == evmc_opcode::OP_DELEGATECALL || op.op_code == evmc_opcode::OP_CALL) {
             auto& op_1 = vm_trace.ops[vm_trace.ops.size() - 2];
-            auto cap = op_1.trace_ex.used - msg.gas;
+            auto cap = op_1.trace_ex->used - msg.gas;
             op.depth = msg.depth;
             op.gas_cost = op.gas_cost - msg.gas;
             op.call_gas_cap = cap;
@@ -643,10 +648,10 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
         } else if (op.depth == execution_state.msg->depth) {
             op.gas_cost = op.gas_cost - gas;
         }
-        op.trace_ex.used = gas;
+        op.trace_ex->used = gas;
 
-        copy_memory(execution_state.memory, op.trace_ex.memory);
-        copy_stack(op.op_code, stack_top, op.trace_ex.stack);
+        copy_memory(execution_state.memory, op.trace_ex->memory);
+        copy_stack(op.op_code, stack_top, op.trace_ex->stack);
     }
 
     auto index_prefix = index_prefix_.top() + std::to_string(vm_trace.ops.size());
@@ -658,9 +663,10 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     trace_op.op_code = op_code;
     trace_op.op_name = op_name;
     trace_op.pc = pc;
+    trace_op.trace_ex = std::make_optional<struct TraceEx>();
 
-    copy_memory_offset_len(op_code, stack_top, trace_op.trace_ex.memory);
-    copy_store(op_code, stack_top, trace_op.trace_ex.storage);
+    copy_memory_offset_len(op_code, stack_top, trace_op.trace_ex->memory);
+    copy_store(op_code, stack_top, trace_op.trace_ex->storage);
 
     vm_trace.ops.push_back(trace_op);
 
@@ -724,7 +730,8 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
 
     switch (result.status_code) {
         case evmc_status_code::EVMC_OUT_OF_GAS:
-            op.trace_ex.used = result.gas_left;
+            // If we run out of gas, we reset trace_ex to null (no matter what the content is) as Erigon does
+            op.trace_ex = std::nullopt;
             op.gas_cost -= result.gas_left;
             break;
 
@@ -732,29 +739,29 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            if (op.op_code == evmc_opcode::OP_EXP) {  // Erigon the static part is 0
-                op.trace_ex.used = op.gas_cost;
+            if (op.op_code == evmc_opcode::OP_EXP) {  // In Erigon the static part is 0
+                op.trace_ex->used = op.gas_cost;
                 op.gas_cost = 0;
             } else {
-                op.trace_ex.used = op.gas_cost - metrics_[op.op_code].gas_cost;
+                op.trace_ex->used = op.gas_cost - metrics_[op.op_code].gas_cost;
                 op.gas_cost = metrics_[op.op_code].gas_cost;
             }
             break;
 
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
-            op.trace_ex.used = op.gas_cost;
+            op.trace_ex->used = op.gas_cost;
             op.gas_cost = 0;
             break;
 
         case evmc_status_code::EVMC_REVERT:
             op.gas_cost = op.gas_cost - result.gas_left;
-            op.trace_ex.used = result.gas_left;
+            op.trace_ex->used = result.gas_left;
             break;
 
         default:
             op.gas_cost = op.gas_cost - result.gas_left;
-            op.trace_ex.used = result.gas_left;
+            op.trace_ex->used = result.gas_left;
             if (fix_call_gas_info_) {
                 auto& trace_op = fix_call_gas_info_->trace_op_;
                 if (result.gas_left == 0 && !fix_call_gas_info_->precompiled) {

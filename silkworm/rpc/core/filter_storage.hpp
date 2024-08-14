@@ -53,7 +53,7 @@ struct FilterEntry {
     std::chrono::system_clock::time_point last_access = std::chrono::system_clock::now();
 };
 
-typedef std::function<std::uint64_t()> Generator;
+using Generator = std::function<std::uint64_t()>;
 
 class FilterStorage {
   public:

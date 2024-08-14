@@ -962,10 +962,10 @@ Task<void> kv_domain_range_query(const std::shared_ptr<db::kv::api::Service>& kv
 }
 
 template <typename Q>
-using TKVQueryFunc = Task<void> (*)(const std::shared_ptr<db::kv::api::Service>&, Q&&, bool);
+using KVQueryFunc = Task<void> (*)(const std::shared_ptr<db::kv::api::Service>&, Q&&, bool);
 
 template <typename Q>
-int execute_temporal_kv_query(const std::string& target, TKVQueryFunc<Q> query_func, Q&& query, const bool verbose) {
+int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_func, Q&& query, const bool verbose) {
     try {
         ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();

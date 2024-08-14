@@ -26,7 +26,7 @@
 namespace silkworm {
 
 // HashOrNumber is a variant of Hash and BlockNum
-// It uses struct in place of "using", to obtain a strong typedef and avoid overload resolution ambiguities
+// It uses struct in place of "using", to obtain a strong type and avoid overload resolution ambiguities
 // in the rlp encoding/decoding functions
 struct HashOrNumber : public std::variant<Hash, BlockNum> {};
 

@@ -64,6 +64,9 @@ inline constexpr const char* kCallTracesKey{"CallTraces"};
 //! \brief Generating transactions lookup index
 inline constexpr const char* kTxLookupKey{"TxLookup"};
 
+//! \brief Triggers stage
+inline constexpr const char* kTriggersStageKey{"Triggers"};
+
 //! \brief Nominal stage after all other stages
 inline constexpr const char* kFinishKey{"Finish"};
 
@@ -82,6 +85,7 @@ inline constexpr const char* kAllStages[]{
     kLogIndexKey,
     kCallTracesKey,
     kTxLookupKey,
+    kTriggersStageKey,
     kFinishKey,
 };
 

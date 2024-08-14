@@ -48,7 +48,7 @@ class Snapshot {
     class Iterator {
       public:
         using value_type = std::shared_ptr<SnapshotWordDeserializer>;
-        using iterator_category = std::input_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;
@@ -121,7 +121,7 @@ class SnapshotReader {
     class Iterator {
       public:
         using value_type = decltype(TWordDeserializer::value);
-        using iterator_category = std::input_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;

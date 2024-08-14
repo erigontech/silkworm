@@ -32,7 +32,7 @@ SnapshotRepository::SnapshotRepository(
     std::unique_ptr<SnapshotBundleFactory> bundle_factory)
     : settings_(std::move(settings)),
       bundle_factory_(std::move(bundle_factory)),
-      bundles_(std::make_shared<TBundles>()) {}
+      bundles_(std::make_shared<Bundles>()) {}
 
 SnapshotRepository::~SnapshotRepository() {
     close();
@@ -42,7 +42,7 @@ void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
     bundle.reopen();
     std::scoped_lock lock(bundles_mutex_);
     // copy bundles prior to modification
-    auto bundles = std::make_shared<TBundles>(*bundles_);
+    auto bundles = std::make_shared<Bundles>(*bundles_);
     BlockNum block_from = bundle.block_from();
     bundles->insert_or_assign(block_from, std::make_shared<SnapshotBundle>(std::move(bundle)));
     bundles_ = bundles;
@@ -56,7 +56,7 @@ std::size_t SnapshotRepository::bundles_count() const {
 void SnapshotRepository::close() {
     SILK_TRACE << "Close snapshot repository folder: " << settings_.repository_dir.string();
     std::scoped_lock lock(bundles_mutex_);
-    bundles_ = std::make_shared<TBundles>();
+    bundles_ = std::make_shared<Bundles>();
 }
 
 BlockNum SnapshotRepository::max_block_available() const {
@@ -135,7 +135,7 @@ void SnapshotRepository::reopen_folder() {
 
     std::unique_lock lock(bundles_mutex_);
     // copy bundles prior to modification
-    auto bundles = std::make_shared<TBundles>(*bundles_);
+    auto bundles = std::make_shared<Bundles>(*bundles_);
 
     while (groups.contains(num) &&
            (groups[num][false].size() == SnapshotBundle::kSnapshotsCount) &&

@@ -33,7 +33,7 @@ class SnapshotFileWriter {
     class Iterator {
       public:
         using value_type = std::shared_ptr<SnapshotWordSerializer>;
-        using iterator_category = std::output_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::output_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = void;
         using reference = void;
@@ -86,7 +86,7 @@ class SnapshotWriter {
     class Iterator {
       public:
         using value_type = decltype(TWordSerializer::value);
-        using iterator_category = std::output_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::output_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = void;
         using reference = void;

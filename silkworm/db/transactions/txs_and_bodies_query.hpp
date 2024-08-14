@@ -53,7 +53,7 @@ class TxsAndBodiesQuery {
             ByteView tx_buffer;
         };
 
-        using iterator_category = std::input_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;

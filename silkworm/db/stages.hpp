@@ -64,17 +64,11 @@ inline constexpr const char* kCallTracesKey{"CallTraces"};
 //! \brief Generating transactions lookup index
 inline constexpr const char* kTxLookupKey{"TxLookup"};
 
-//! \brief Starts Backend
-inline constexpr const char* kTxPoolKey{"TxPool"};
-
 //! \brief Triggers stage
 inline constexpr const char* kTriggersStageKey{"Triggers"};
 
 //! \brief Nominal stage after all other stages
 inline constexpr const char* kFinishKey{"Finish"};
-
-//! \brief Not an actual stage rather placeholder for global unwind point
-inline constexpr const char* kUnwindKey{"Unwind"};
 
 //! \brief List of all known stages
 inline constexpr const char* kAllStages[]{
@@ -91,10 +85,8 @@ inline constexpr const char* kAllStages[]{
     kLogIndexKey,
     kCallTracesKey,
     kTxLookupKey,
-    kTxPoolKey,
     kTriggersStageKey,
     kFinishKey,
-    kUnwindKey,
 };
 
 //! \brief Stages won't log their "start" if segment is below this threshold

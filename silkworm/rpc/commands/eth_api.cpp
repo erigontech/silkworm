@@ -120,9 +120,9 @@ Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlo
 
             syncing_data.current_block = to_quantity(current_block_height);
             syncing_data.highest_block = to_quantity(highest_block_height);
-            for (std::size_t i{0}; i < sizeof(silkworm::db::stages::kAllStages) / sizeof(char*) - 1; i++) {  // no unWind
+            for (const char* stage_name : silkworm::db::stages::kAllStages) {
                 StageData current_stage;
-                current_stage.stage_name = silkworm::db::stages::kAllStages[i];
+                current_stage.stage_name = stage_name;
                 current_stage.block_number = to_quantity(co_await stages::get_sync_stage_progress(*tx, string_to_bytes(current_stage.stage_name)));
                 syncing_data.stages.push_back(current_stage);
             }

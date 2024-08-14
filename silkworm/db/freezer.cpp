@@ -24,8 +24,8 @@
 #include <silkworm/core/common/base.hpp>
 
 #include "access_layer.hpp"
-#include "bodies/body_snapshot_freezer.hpp"
-#include "headers/header_snapshot_freezer.hpp"
+#include "blocks/bodies/body_snapshot_freezer.hpp"
+#include "blocks/headers/header_snapshot_freezer.hpp"
 #include "prune_mode.hpp"
 #include "snapshot_freezer.hpp"
 #include "snapshots/path.hpp"

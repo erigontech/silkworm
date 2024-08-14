@@ -23,8 +23,8 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/bodies/body_queries.hpp>
-#include <silkworm/db/headers/header_queries.hpp>
+#include <silkworm/db/blocks/bodies/body_queries.hpp>
+#include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
 #include <silkworm/db/snapshots/repository.hpp>

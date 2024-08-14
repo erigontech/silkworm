@@ -22,8 +22,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/trie/vector_root.hpp>
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>

@@ -17,8 +17,8 @@
 #include <benchmark/benchmark.h>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <cstdint>
 #include <functional>
 #include <istream>
 #include <stdexcept>
@@ -45,7 +46,7 @@ using Roaring = roaring::Roaring;
 using namespace silkworm;
 using namespace silkworm::cmd::common;
 
-enum class TargetIndex {
+enum class TargetIndex : uint8_t {
     kLogAddress,
     kLogTopic,
     kBoth

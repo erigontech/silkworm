@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <cstdint>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
@@ -25,7 +26,7 @@
 
 using namespace silkworm;
 
-enum Operation {
+enum Operation : uint8_t {
     HashAccount,
     HashStorage,
     Code,

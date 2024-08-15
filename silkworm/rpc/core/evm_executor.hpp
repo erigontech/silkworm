@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -40,7 +41,7 @@
 
 namespace silkworm::rpc {
 
-enum class PreCheckErrorCode {
+enum class PreCheckErrorCode : uint8_t {
     kFeeCapLessThanBlockFeePerGas,
     kInsufficientFunds,
     kInternalError,

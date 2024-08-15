@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -67,7 +68,7 @@ static constexpr size_t kColumnWidth{80};
 ObjectPool<evmone::ExecutionState> execution_state_pool{/*thread_safe=*/true};
 evmc_vm* exo_evm{nullptr};
 
-enum class Status {
+enum class Status : uint8_t {
     kPassed,
     kFailed,
     kSkipped

@@ -17,6 +17,7 @@
 #include "cbor.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -31,7 +32,7 @@ namespace silkworm::rpc {
 
 class LogCborListener : public cbor::listener {
   private:
-    enum class ProcessingState {
+    enum class ProcessingState : uint8_t {
         kWaitNLogs,
         kWaitNFields,
         kWaitAddress,

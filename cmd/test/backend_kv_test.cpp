@@ -16,6 +16,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -447,7 +448,7 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
 
     inline static BidirectionalStreamingStats bidi_streaming_stats_;
 
-    enum class State {
+    enum class State : uint8_t {
         kIdle,
         kStarted,
         kWriting,
@@ -790,7 +791,7 @@ class AsyncStateChangesCall
     inline static std::vector<AsyncStateChangesCall*> pending_calls_;
 };
 
-enum class Rpc {
+enum class Rpc : uint8_t {
     etherbase = 0,
     net_version = 1,
     net_peer_count = 2,

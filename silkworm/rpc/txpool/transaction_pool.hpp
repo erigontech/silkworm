@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -49,7 +50,7 @@ struct StatusInfo {
     unsigned int base_fee_count{0};
 };
 
-enum TransactionType {
+enum TransactionType : uint8_t {
     QUEUED,
     PENDING,
     BASE_FEE

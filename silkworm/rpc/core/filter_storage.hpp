@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <map>
@@ -33,7 +34,7 @@ namespace silkworm::rpc {
 static const std::size_t kDefaultFilterStorageSize = 1024;  // default filter storage size, ie max num for filters in storage
 static const std::size_t kDefaultMaxFilterAge = 900;        // lasting time for unused filters in seconds (15 min)
 
-enum FilterType {
+enum FilterType : uint8_t {
     logs,
     block
 };

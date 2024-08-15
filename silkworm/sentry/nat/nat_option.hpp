@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -24,7 +25,7 @@
 
 namespace silkworm::sentry::nat {
 
-enum class NatMode {
+enum class NatMode : uint8_t {
     kNone,
     kExternalIP,
     kStun,

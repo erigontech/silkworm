@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <boost/asio/ip/address.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4 {
 
-enum class IpAddressType {
+enum class IpAddressType : uint8_t {
     kRegular,
     kUnspecified,
     kLoopback,

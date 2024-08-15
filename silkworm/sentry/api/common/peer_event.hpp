@@ -16,13 +16,14 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 
 namespace silkworm::sentry::api {
 
-enum class PeerEventId {
+enum class PeerEventId : uint8_t {
     kAdded,
     kRemoved,
 };

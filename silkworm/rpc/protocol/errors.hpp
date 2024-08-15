@@ -22,7 +22,7 @@
 
 namespace silkworm::rpc {
 
-enum ErrorCode : int64_t {
+enum ErrorCode : int32_t {
     /** Generic JSON-RPC API errors **/
     kParseError = -32700,      // Invalid JSON was received by the server
     kInvalidRequest = -32600,  // The JSON sent is not a valid Request object

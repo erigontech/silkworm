@@ -35,6 +35,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
@@ -79,7 +80,7 @@ class BusySpinIdleStrategy {
     }
 };
 
-enum class WaitMode {
+enum class WaitMode : uint8_t {
     backoff,
     blocking,
     sleeping,

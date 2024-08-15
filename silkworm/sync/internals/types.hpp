@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -46,7 +47,7 @@ inline Bytes human_readable_id(const PeerId& peer_id) {
     return {peer_id.data(), std::min<size_t>(peer_id.length(), 20)};
 }
 
-enum Penalty : int {
+enum Penalty : uint8_t {
     NoPenalty = 0,
     BadBlockPenalty,
     DuplicateHeaderPenalty,

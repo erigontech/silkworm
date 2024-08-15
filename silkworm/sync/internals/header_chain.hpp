@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <cstdio>
 #include <optional>
 
@@ -147,7 +148,7 @@ class HeaderChain {
     std::shared_ptr<Anchor> highest_anchor();
     void set_target_block(BlockNum);
 
-    enum VerificationResult {
+    enum VerificationResult : uint8_t {
         Preverified,
         Skip,
         Postpone,

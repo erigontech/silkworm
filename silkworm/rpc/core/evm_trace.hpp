@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -364,7 +365,7 @@ struct TraceEntry {
     std::optional<std::string> output;
 };
 
-enum OperationType : int {
+enum OperationType : uint8_t {
     OP_TRANSFER = 0,
     OP_SELF_DESTRUCT = 1,
     OP_CREATE = 2,

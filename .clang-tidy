@@ -61,7 +61,6 @@ Checks: >
   -modernize-use-trailing-return-type,
   performance-*,
   -performance-avoid-endl,
-  -performance-enum-size,
   portability-*,
   readability-*,
   -readability-avoid-nested-conditional-operator,

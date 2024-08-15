@@ -20,6 +20,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <cstring>
 #include <span>
 
@@ -34,7 +35,7 @@ namespace silkworm::rlp {
 
 // Whether to allow or prohibit trailing characters in an input after decoding.
 // If prohibited and the input does contain extra characters, decode() returns DecodingResult::kInputTooLong.
-enum class Leftover {
+enum class Leftover : uint8_t {
     kProhibit,
     kAllow,
 };

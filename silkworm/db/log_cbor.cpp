@@ -16,6 +16,7 @@
 
 #include "log_cbor.hpp"
 
+#include <cstdint>
 #include <cstring>
 #include <utility>
 
@@ -50,7 +51,7 @@ Bytes cbor_encode(const std::vector<Log>& v) {
 //! LogCborListener is a *stateful* CBOR consumer suitable for parsing a CBOR-encoded sequence of Logs
 class LogCborListener : public cbor::listener {
   private:
-    enum class ProcessingState {
+    enum class ProcessingState : uint8_t {
         kWaitLogs,
         kWaitLog,
         kWaitAddress,

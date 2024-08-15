@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <sstream>
 #include <vector>
@@ -25,7 +26,7 @@
 namespace silkworm::log {
 
 //! \brief Available verbosity levels
-enum class Level {
+enum class Level : uint8_t {
     kNone,      // Simple logging line with no severity (e.g. build info)
     kCritical,  // An error there's no way we can recover from
     kError,     // We encountered an error which we might be able to recover from

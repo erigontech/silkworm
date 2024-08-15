@@ -24,7 +24,7 @@
 
 namespace silkworm::sentry::discovery {
 
-enum class NetworkId : uint64_t {
+enum class NetworkId {
     kMainnet = *kKnownChainNameToId.find("mainnet"sv),
     kHolesky = *kKnownChainNameToId.find("holesky"sv),
     kSepolia = *kKnownChainNameToId.find("sepolia"sv),

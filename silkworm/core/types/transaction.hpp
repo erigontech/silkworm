@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -130,7 +131,7 @@ namespace rlp {
 
     DecodingResult decode(ByteView& from, AccessListEntry& to, Leftover mode = Leftover::kProhibit) noexcept;
 
-    enum class Eip2718Wrapping {
+    enum class Eip2718Wrapping : uint8_t {
         kNone,    // Serialized typed transactions must start with its type byte, e.g. 0x02
         kString,  // Serialized typed transactions must be additionally wrapped into an RLP string (=byte array)
         kBoth,    // Both options above are accepted

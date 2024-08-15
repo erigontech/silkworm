@@ -16,6 +16,7 @@
 
 #include "session_sentry_client.hpp"
 
+#include <cstdint>
 #include <mutex>
 #include <optional>
 #include <tuple>
@@ -29,7 +30,7 @@ using namespace boost::asio;
 
 class SessionSentryClientImpl : public api::SentryClient {
   private:
-    enum class State {
+    enum class State : uint8_t {
         kInit,
         kReconnect,
         kHandshake,
@@ -37,7 +38,7 @@ class SessionSentryClientImpl : public api::SentryClient {
         kReady,
     };
 
-    enum class Event {
+    enum class Event : uint8_t {
         kSessionRequired,
         kTransitioned,
         kDisconnected,

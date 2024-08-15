@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 
 #include <gsl/pointers>
@@ -29,7 +30,7 @@ namespace silkworm::sentry::rlpx::crypto {
 
 class AESCipher final {
   public:
-    enum class Direction {
+    enum class Direction : uint8_t {
         kEncrypt,
         kDecrypt,
     };

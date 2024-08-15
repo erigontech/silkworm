@@ -61,8 +61,8 @@ namespace silkworm {
 template <typename key_t, typename value_t>
 class lru_cache {
   public:
-    typedef typename std::pair<key_t, value_t> key_value_pair_t;
-    typedef typename std::list<key_value_pair_t>::iterator list_iterator_t;
+    using key_value_pair_t = std::pair<key_t, value_t>;
+    using list_iterator_t = std::list<key_value_pair_t>::iterator;
 
     explicit lru_cache(size_t max_size, bool thread_safe = false) : _max_size(max_size), _thread_safe(thread_safe) {}
     lru_cache(const lru_cache&) = default;

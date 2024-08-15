@@ -73,7 +73,7 @@ class HuffmanTree {
 
 Node HuffmanTree::build(const vector<uint64_t>& symbol_uses) {
     vector<Node> queue;
-    less<Node> comparator;
+    less<> comparator;
 
     uint64_t tie_breaker = 0;
     size_t i = 0;

@@ -59,7 +59,6 @@ Checks: >
   -modernize-avoid-c-arrays,
   -modernize-use-nodiscard,
   -modernize-use-trailing-return-type,
-  -modernize-use-transparent-functors,
   performance-*,
   -performance-avoid-endl,
   -performance-enum-size,

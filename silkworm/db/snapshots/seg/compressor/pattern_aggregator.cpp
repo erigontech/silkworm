@@ -92,7 +92,7 @@ void PatternAggregatorImpl::sum_score_group_by_pattern(db::etl::Collector& sourc
 
 vector<Pattern> PatternAggregatorImpl::order_by_score_and_limit(db::etl::Collector& source) {
     vector<Pattern> patterns;
-    std::greater<Pattern> comparator;
+    std::greater<> comparator;
 
     source.load([&](const db::etl::Entry& entry) {
         Pattern pattern{

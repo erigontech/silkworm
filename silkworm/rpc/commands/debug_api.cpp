@@ -87,7 +87,8 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     try {
         auto start = std::chrono::system_clock::now();
         core::AccountDumper dumper{*tx};
-        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
+        DumpAccounts dump_accounts;
+        co_await dumper.dump_accounts(*block_cache_, block_number_or_hash, start_address, max_result, exclude_code, exclude_storage, dump_accounts);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
         SILK_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec";

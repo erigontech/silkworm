@@ -39,14 +39,14 @@ namespace silkworm::rpc::core {
 
 using db::state::StateReader;
 
-Task<DumpAccounts> AccountDumper::dump_accounts(
+Task<void> AccountDumper::dump_accounts(
     BlockCache& cache,
     const BlockNumberOrHash& bnoh,
     const evmc::address& start_address,
     int16_t max_result,
     bool exclude_code,
-    bool exclude_storage) {
-    DumpAccounts dump_accounts;
+    bool exclude_storage,
+    DumpAccounts& dump_accounts) {
     const auto chain_storage = transaction_.create_storage();
 
     const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, transaction_, bnoh);
@@ -84,7 +84,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
         co_await load_storage(block_number, dump_accounts);
     }
 
-    co_return dump_accounts;
+    co_return;
 }
 
 Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
@@ -109,7 +109,7 @@ Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_d
             }
         }
         if (!exclude_code) {
-            auto code = co_await state_reader.read_code(account->code_hash);
+            auto code = co_await state_reader.read_code(dump_account.code_hash);
             dump_account.code.swap(code);
         }
         dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));

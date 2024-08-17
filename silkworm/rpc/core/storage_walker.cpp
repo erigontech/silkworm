@@ -118,12 +118,12 @@ Task<void> StorageWalker::walk_of_storages(
 
     auto go_on = true;
     while (go_on) {
-        if (ps_skv.key1.empty() && sh_skv.key1.empty()) {
+        if ((ps_skv.key1.empty() && !sh_skv.key1.empty()) || (!ps_skv.key1.empty() && sh_skv.key1.empty())) {
             break;
         }
         auto cmp = ps_skv.key1.compare(sh_skv.key1);
         if (cmp == 0) {
-            if (ps_skv.key2.empty() && h_loc.empty()) {
+            if ((ps_skv.key2.empty() && !h_loc.empty()) || (!ps_skv.key2.empty() && h_loc.empty())) {
                 break;
             }
             cmp = ps_skv.key2.compare(h_loc);

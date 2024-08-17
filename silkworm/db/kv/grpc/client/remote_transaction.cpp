@@ -17,9 +17,9 @@
 #include "remote_transaction.hpp"
 
 #include <silkworm/db/state/remote_state.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/errors.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
@@ -40,24 +40,48 @@ RemoteTransaction::RemoteTransaction(
       block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
       stub_{stub},
       grpc_context_{grpc_context},
-      tx_rpc_{stub_, grpc_context_} {}
+      tx_rpc_{grpc_context_} {}
 
 Task<void> RemoteTransaction::open() {
-    const auto tx_result = co_await tx_rpc_.request_and_read();
-    tx_id_ = tx_result.tx_id();
-    view_id_ = tx_result.view_id();
+    start_called_ = true;
+    if (!co_await tx_rpc_.start(stub_)) {
+        const ::grpc::Status status = co_await tx_rpc_.finish();
+        SILK_TRACE << "Tx RPC start failed status=" << status;
+        throw boost::system::system_error{rpc::to_system_code(status.error_code())};
+    }
+    TxRpc::Response tx_id_view_id_pair{};
+    if (!co_await tx_rpc_.read(tx_id_view_id_pair)) {
+        const ::grpc::Status status = co_await tx_rpc_.finish();
+        SILK_TRACE << "Tx RPC initial read failed status=" << status;
+        throw boost::system::system_error{rpc::to_system_code(status.error_code())};
+    }
+    tx_id_ = tx_id_view_id_pair.tx_id();
+    view_id_ = tx_id_view_id_pair.view_id();
 }
 
 Task<std::shared_ptr<api::Cursor>> RemoteTransaction::cursor(const std::string& table) {
+    if (!start_called_) {
+        throw boost::system::system_error{rpc::to_system_code(::grpc::StatusCode::INTERNAL)};
+    }
     co_return co_await get_cursor(table, false);
 }
 
 Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::cursor_dup_sort(const std::string& table) {
+    if (!start_called_) {
+        throw boost::system::system_error{rpc::to_system_code(::grpc::StatusCode::INTERNAL)};
+    }
     co_return co_await get_cursor(table, true);
 }
 
 Task<void> RemoteTransaction::close() {
-    co_await tx_rpc_.writes_done_and_finish();
+    if (!start_called_) {
+        throw boost::system::system_error{rpc::to_system_code(::grpc::StatusCode::INTERNAL)};
+    }
+    ::grpc::Status status = co_await tx_rpc_.finish();
+    if (!status.ok()) {
+        SILK_TRACE << "Tx RPC finish failed status=" << status;
+        throw boost::system::system_error{rpc::to_system_code(status.error_code())};
+    }
     cursors_.clear();
     tx_id_ = 0;
     view_id_ = 0;

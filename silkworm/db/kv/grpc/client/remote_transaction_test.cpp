@@ -77,7 +77,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[db][kv][grp
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call fails
         expect_request_async_tx(/*ok=*/false);
-        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_)).WillOnce(test::writes_done_failure(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a transaction should raise an exception w/ expected gRPC status code
@@ -89,7 +91,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[db][kv][grp
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call fails
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_failure(grpc_context_));
-        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_)).WillOnce(test::writes_done_failure(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a transaction should raise an exception w/ expected gRPC status code
@@ -251,8 +255,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][g
             .WillOnce(test::read_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
-        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_))
+            .WillOnce(test::writes_done_failure(grpc_context_))
+            .WillOnce(test::writes_done_failure(grpc_context_));
+        // 5. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -279,7 +289,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][g
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -358,8 +370,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
             .WillOnce(test::read_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
-        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_))
+            .WillOnce(test::writes_done_failure(grpc_context_))
+            .WillOnce(test::writes_done_failure(grpc_context_));
+        // 5. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -386,7 +404,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID

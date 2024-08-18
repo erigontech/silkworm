@@ -81,7 +81,7 @@ Task<void> AccountDumper::dump_accounts(
 
     co_await load_accounts(collected_data, dump_accounts, exclude_code);
     if (!exclude_storage) {
-        co_await load_storage(block_number, dump_accounts);
+        co_await load_storage(block_number + 1, dump_accounts);
     }
 
     co_return;

@@ -17,9 +17,6 @@
 #include "execution_engine.hpp"
 
 #include <future>
-#include <set>
-
-#include <boost/asio/use_future.hpp>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -209,7 +206,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
 
         // notify the fork of the update - we need to block here to restore the invariant
         auto fork_choice_aw_future = (*f)->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash);
-        std::future<bool> fork_choice_future = concurrency::co_spawn_sw(io_context_, fork_choice_aw_future.get(), use_future);
+        std::future<bool> fork_choice_future = concurrency::spawn(io_context_, fork_choice_aw_future.get());
         bool updated = fork_choice_future.get();  // BLOCKING
         if (!updated) return false;
 

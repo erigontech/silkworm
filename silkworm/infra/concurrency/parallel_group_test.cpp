@@ -52,12 +52,12 @@ awaitable<void> throw_op() {
 }
 
 awaitable<void> spawn_throw_op(strand<any_io_executor>& strand) {
-    co_await co_spawn_sw(strand, throw_op(), use_awaitable);
+    co_await spawn_and_async_wait(strand, throw_op());
 }
 
 awaitable<void> spawn_noop_loop(strand<any_io_executor>& strand) {
     while (true) {
-        co_await co_spawn_sw(strand, noop(), use_awaitable);
+        co_await spawn_and_async_wait(strand, noop());
     }
 }
 
@@ -74,6 +74,6 @@ awaitable<void> co_spawn_cancellation_handler_bug() {
 
 TEST_CASE("parallel_group.co_spawn_cancellation_handler_bug") {
     io_context context;
-    co_spawn_sw(context, co_spawn_cancellation_handler_bug(), use_future);
+    spawn(context, co_spawn_cancellation_handler_bug());
     context.run();
 }

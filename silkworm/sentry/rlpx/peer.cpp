@@ -77,7 +77,7 @@ Task<void> Peer::run(std::shared_ptr<Peer> peer) {
     using namespace concurrency::awaitable_wait_for_one;
 
     auto run = peer->handle() || peer->send_message_tasks_.wait();
-    co_await concurrency::co_spawn_sw(peer->strand_, std::move(run), use_awaitable);
+    co_await concurrency::spawn_and_async_wait(peer->strand_, std::move(run));
 }
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
@@ -244,7 +244,7 @@ Task<void> Peer::handle() {
 }
 
 Task<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
-    return concurrency::co_spawn_sw(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
+    return concurrency::spawn_and_async_wait(peer->strand_, Peer::drop_in_strand(peer, reason));
 }
 
 Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> peer, DisconnectReason reason) {

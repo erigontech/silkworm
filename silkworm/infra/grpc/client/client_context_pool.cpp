@@ -77,7 +77,8 @@ void ClientContext::execute_loop_single_threaded(IdleStrategy&& idle_strategy) {
 
 void ClientContext::execute_loop_multi_threaded() {
     SILK_DEBUG << "Multi-thread execution loop start [" << std::this_thread::get_id() << "]";
-    std::thread grpc_context_thread{[grpc_context = grpc_context_]() {
+    std::thread grpc_context_thread{[context_id = context_id_, grpc_context = grpc_context_]() {
+        log::set_thread_name(("grpc_ctx_s" + std::to_string(context_id)).c_str());
         grpc_context->run_completion_queue();
     }};
     std::exception_ptr run_exception;

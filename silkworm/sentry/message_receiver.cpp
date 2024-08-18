@@ -21,7 +21,6 @@
 
 #include <boost/asio/experimental/channel_error.hpp>
 #include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
@@ -42,7 +41,7 @@ Task<void> MessageReceiver::run(std::shared_ptr<MessageReceiver> self, PeerManag
         self->peer_tasks_.wait() &&
         self->unsubscription_tasks_.wait() &&
         self->handle_calls();
-    co_await concurrency::co_spawn_sw(self->strand_, std::move(run), use_awaitable);
+    co_await concurrency::spawn_and_async_wait(self->strand_, std::move(run));
 }
 
 Task<void> MessageReceiver::handle_calls() {

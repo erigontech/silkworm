@@ -46,7 +46,6 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     int16_t max_result,
     bool exclude_code,
     bool exclude_storage) {
-
     DumpAccounts dump_accounts;
     const auto chain_storage = transaction_.create_storage();
 

@@ -26,6 +26,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/interfaces/remote/kv.pb.h>
 
 #include "../../api/cursor.hpp"
 #include "rpc.hpp"
@@ -34,7 +35,7 @@ namespace silkworm::db::kv::grpc::client {
 
 class RemoteCursor : public api::CursorDupSort {
   public:
-    explicit RemoteCursor(TxRpc& tx_rpc) : tx_rpc_(tx_rpc), cursor_id_{0} {}
+    explicit RemoteCursor(TxRpc& tx_rpc) : tx_rpc_(tx_rpc) {}
 
     uint32_t cursor_id() const override { return cursor_id_; };
 
@@ -61,8 +62,10 @@ class RemoteCursor : public api::CursorDupSort {
     Task<api::KeyValue> seek_both_exact(ByteView key, ByteView value) override;
 
   private:
+    Task<::remote::Pair> write_and_read(const ::remote::Cursor& request);
+
     TxRpc& tx_rpc_;
-    uint32_t cursor_id_;
+    uint32_t cursor_id_{0};
 };
 
 }  // namespace silkworm::db::kv::grpc::client

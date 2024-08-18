@@ -96,7 +96,7 @@ inline auto finish_streaming_unavailable(agrpc::GrpcContext& grpc_context) {
 }
 
 inline auto finish_streaming_error(agrpc::GrpcContext& grpc_context) {
-    return finish_streaming_with_status(grpc_context, ::grpc::Status::OK, /*ok=*/false);
+    return finish_streaming_with_status(grpc_context, ::grpc::Status{::grpc::StatusCode::UNKNOWN, ""}, /*ok=*/false);
 }
 
 inline auto write(agrpc::GrpcContext& grpc_context, bool ok) {

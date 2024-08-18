@@ -81,7 +81,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     co_await load_accounts(collected_data, dump_accounts, exclude_code);
     if (!exclude_storage) {
-        co_await load_storage(block_number, dump_accounts);
+        co_await load_storage(block_number + 1, dump_accounts);
     }
 
     co_return dump_accounts;
@@ -109,7 +109,7 @@ Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_d
             }
         }
         if (!exclude_code) {
-            auto code = co_await state_reader.read_code(account->code_hash);
+            auto code = co_await state_reader.read_code(dump_account.code_hash);
             dump_account.code.swap(code);
         }
         dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));

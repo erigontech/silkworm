@@ -45,14 +45,13 @@ class AccountDumper {
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
 
-    Task<void> dump_accounts(
+    Task<DumpAccounts> dump_accounts(
         BlockCache& cache,
         const BlockNumberOrHash& bnoh,
         const evmc::address& start_address,
         int16_t max_result,
         bool exclude_code,
-        bool exclude_storage,
-        DumpAccounts& dump_accounts);
+        bool exclude_storage);
 
   private:
     Task<void> load_accounts(const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);

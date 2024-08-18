@@ -60,7 +60,7 @@ class StorageWalker {
         StorageCollector& collector);
 
   private:
-    int compare(const ByteView& key1, const ByteView& key2);
+    int compare_empty_greater(const ByteView& key1, const ByteView& key2);
 
     db::kv::api::Transaction& transaction_;
 };

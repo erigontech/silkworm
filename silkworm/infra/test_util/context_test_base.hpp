@@ -24,7 +24,7 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 

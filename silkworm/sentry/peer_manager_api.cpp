@@ -27,7 +27,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 
 namespace silkworm::sentry {

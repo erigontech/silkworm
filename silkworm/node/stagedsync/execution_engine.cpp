@@ -20,7 +20,7 @@
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/ensure.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -28,7 +28,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 
 using namespace boost::asio;
 using namespace boost::asio::experimental;

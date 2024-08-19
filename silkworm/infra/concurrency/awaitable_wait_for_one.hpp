@@ -34,7 +34,7 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include "co_spawn_sw.hpp"
+#include "spawn.hpp"
 
 namespace silkworm::concurrency::awaitable_wait_for_one {
 

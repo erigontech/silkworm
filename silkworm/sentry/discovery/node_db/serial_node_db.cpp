@@ -18,7 +18,7 @@
 
 #include <boost/asio/use_awaitable.hpp>
 
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 
 namespace silkworm::sentry::discovery::node_db {
 

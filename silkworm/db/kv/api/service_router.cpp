@@ -16,7 +16,7 @@
 
 #include "service_router.hpp"
 
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 
 namespace silkworm::db::kv::api {
 

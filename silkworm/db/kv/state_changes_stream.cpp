@@ -19,8 +19,8 @@
 #include <boost/system/error_code.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 
 namespace silkworm::db::kv {

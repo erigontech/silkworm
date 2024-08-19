@@ -16,7 +16,6 @@
 
 #include "state_changes_stream.hpp"
 
-#include <boost/asio/use_future.hpp>
 #include <boost/system/error_code.hpp>
 
 #include <silkworm/infra/common/log.hpp>
@@ -32,7 +31,7 @@ StateChangesStream::StateChangesStream(rpc::ClientContext& context, api::Client&
       cache_(must_use_shared_service<api::StateCache>(scheduler_)) {}
 
 std::future<void> StateChangesStream::open() {
-    return concurrency::co_spawn(scheduler_, run(), boost::asio::use_future);
+    return concurrency::spawn(scheduler_, run());
 }
 
 void StateChangesStream::close() {

@@ -16,8 +16,6 @@
 
 #include "service_router.hpp"
 
-#include <boost/asio/use_awaitable.hpp>
-
 #include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 
 namespace silkworm::db::kv::api {
@@ -26,7 +24,7 @@ using namespace boost::asio;
 
 Task<void> StateChangeRunner::run(std::shared_ptr<StateChangeRunner> self) {
     auto run = self->handle_calls();
-    co_await concurrency::co_spawn(self->strand_, std::move(run), use_awaitable);
+    co_await concurrency::spawn_and_async_wait(self->strand_, std::move(run));
 }
 
 StateChangeRunner::StateChangeRunner(const boost::asio::any_io_executor& executor)

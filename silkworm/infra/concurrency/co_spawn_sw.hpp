@@ -30,8 +30,6 @@
 
 namespace silkworm::concurrency {
 
-using namespace boost::asio;  // TODO(remove)
-
 template <typename Executor, typename F>
 auto spawn_and_async_wait(const Executor& ex, F&& f,
                           typename boost::asio::constraint<

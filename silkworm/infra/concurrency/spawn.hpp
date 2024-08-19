@@ -30,42 +30,39 @@
 
 namespace silkworm::concurrency {
 
-template <typename Executor, typename F>
-auto spawn_and_async_wait(const Executor& ex, F&& f,
-                          typename boost::asio::constraint<
-                              boost::asio::is_executor<Executor>::value || boost::asio::execution::is_executor<Executor>::value>::type = 0) {
+template <typename Executor>
+concept AsioExecutor = boost::asio::is_executor<Executor>::value || boost::asio::execution::is_executor<Executor>::value;
+
+template <typename ExecutionContext>
+concept AsioExecutionContext = std::is_convertible_v<ExecutionContext&, boost::asio::execution_context&>;
+
+template <AsioExecutor Executor, typename F>
+auto spawn_and_async_wait(const Executor& ex, F&& f) {
     return boost::asio::co_spawn(ex, std::forward<F>(f), boost::asio::use_awaitable);
 }
 
-template <typename ExecutionContext, typename F>
-auto spawn_and_async_wait(ExecutionContext& ctx, F&& f,
-                          typename boost::asio::constraint<std::is_convertible_v<ExecutionContext&, boost::asio::execution_context&>>::type = 0) {
+template <AsioExecutionContext ExecutionContext, typename F>
+auto spawn_and_async_wait(ExecutionContext& ctx, F&& f) {
     return boost::asio::co_spawn(ctx, std::forward<F>(f), boost::asio::use_awaitable);
 }
 
-template <typename Executor, typename F>
-auto spawn(const Executor& ex, F&& f,
-           typename boost::asio::constraint<
-               boost::asio::is_executor<Executor>::value || boost::asio::execution::is_executor<Executor>::value>::type = 0) {
+template <AsioExecutor Executor, typename F>
+auto spawn(const Executor& ex, F&& f) {
     return boost::asio::co_spawn(ex, std::forward<F>(f), boost::asio::use_future);
 }
 
-template <typename ExecutionContext, typename F>
-auto spawn(ExecutionContext& ctx, F&& f,
-           typename boost::asio::constraint<std::is_convertible_v<ExecutionContext&, boost::asio::execution_context&>>::type = 0) {
+template <AsioExecutionContext ExecutionContext, typename F>
+auto spawn(ExecutionContext& ctx, F&& f) {
     return boost::asio::co_spawn(ctx, std::forward<F>(f), boost::asio::use_future);
 }
 
-template <typename Executor, typename F>
-auto spawn_and_wait(const Executor& ex, F&& f,
-                    typename boost::asio::constraint<
-                        boost::asio::is_executor<Executor>::value || boost::asio::execution::is_executor<Executor>::value>::type = 0) {
+template <AsioExecutor Executor, typename F>
+auto spawn_and_wait(const Executor& ex, F&& f) {
     return spawn(ex, std::forward<F>(f)).get();
 }
 
-template <typename ExecutionContext, typename F>
-auto spawn_and_wait(ExecutionContext& ctx, F&& f,
-                    typename boost::asio::constraint<std::is_convertible_v<ExecutionContext&, boost::asio::execution_context&>>::type = 0) {
+template <AsioExecutionContext ExecutionContext, typename F>
+auto spawn_and_wait(ExecutionContext& ctx, F&& f) {
     return spawn(ctx, std::forward<F>(f)).get();
 }
 

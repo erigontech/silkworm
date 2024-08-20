@@ -68,7 +68,7 @@ BlockNum LocalState::current_canonical_block() const {
 
 std::optional<evmc::bytes32> LocalState::canonical_hash(BlockNum block_number) const {
     // This method should not be called by EVM::execute
-    return data_model_.read_canonical_hash(block_number);
+    return data_model_.read_canonical_header_hash(block_number);
 }
 
 }  // namespace silkworm::db::state

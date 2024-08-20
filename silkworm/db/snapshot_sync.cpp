@@ -281,7 +281,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     SILK_INFO << "SnapshotSync: database table HeaderNumbers updated";
 
     // Update head block header in kHeadHeader table
-    const auto canonical_hash{db::read_canonical_hash(txn, max_block_available)};
+    const auto canonical_hash{db::read_canonical_header_hash(txn, max_block_available)};
     ensure(canonical_hash.has_value(), "SnapshotSync::save no canonical head hash found");
     db::write_head_header_hash(txn, *canonical_hash);
     SILK_INFO << "SnapshotSync: database table HeadHeader updated";

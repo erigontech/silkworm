@@ -165,7 +165,7 @@ TEST_CASE("MainChain") {
 
     auto& tx = main_chain.tx();
 
-    auto header0_hash = db::read_canonical_hash(tx, 0);
+    auto header0_hash = db::read_canonical_header_hash(tx, 0);
     REQUIRE(header0_hash.has_value());
 
     auto header0 = db::read_canonical_header(tx, 0);

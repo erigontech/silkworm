@@ -32,7 +32,7 @@ namespace silkworm::stagedsync {
 
 HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height)
     : tx_(tx), data_model_(tx), previous_height_(headers_height) {
-    auto headers_hash = db::read_canonical_hash(tx, headers_height);
+    auto headers_hash = db::read_canonical_header_hash(tx, headers_height);
     ensure(headers_hash.has_value(),
            [&]() { return "Headers stage, inconsistent canonical table: not found hash at height " + std::to_string(headers_height); });
 
@@ -72,7 +72,7 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
 }
 
 void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RWTxn& tx) {
-    auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
+    auto canonical_hash = db::read_canonical_header_hash(tx, unwind_point);
     ensure(canonical_hash.has_value(), [&]() { return "Headers stage, expected canonical hash at height " + std::to_string(unwind_point); });
 
     db::write_head_header_hash(tx, *canonical_hash);

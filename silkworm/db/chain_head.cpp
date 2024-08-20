@@ -30,7 +30,7 @@ ChainHead read_chain_head(ROTxn& txn) {
     BlockNum head_height = db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey);
     chain_head.height = head_height;
 
-    auto head_hash = db::read_canonical_hash(txn, head_height);
+    auto head_hash = db::read_canonical_header_hash(txn, head_height);
     if (head_hash) {
         chain_head.hash = head_hash.value();
     } else {

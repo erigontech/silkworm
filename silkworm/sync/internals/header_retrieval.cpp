@@ -126,9 +126,9 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
     }
 
     while (ancestor_delta != 0) {
-        auto h = db::read_canonical_hash(db_tx_, block_num);
+        auto h = db::read_canonical_header_hash(db_tx_, block_num);
         if (h == hash) {
-            auto ancestorHash = db::read_canonical_hash(db_tx_, block_num - ancestor_delta);
+            auto ancestorHash = db::read_canonical_header_hash(db_tx_, block_num - ancestor_delta);
             if (!ancestorHash)
                 return {Hash{}, 0};
             else

@@ -362,7 +362,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     std::set<Hash> bad_headers;
     for (BlockNum current_height = interim_canonical_chain_.current_head().number;
          current_height > invalid_chain.unwind_point.number; current_height--) {
-        auto current_hash = db::read_canonical_hash(tx, current_height);
+        auto current_hash = db::read_canonical_header_hash(tx, current_height);
         bad_headers.insert(*current_hash);
     }
 
@@ -375,7 +375,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
 
         if (max_block_num == 0) {
             max_block_num = unwind_point;
-            max_hash = *db::read_canonical_hash(tx, max_block_num);
+            max_hash = *db::read_canonical_header_hash(tx, max_block_num);
         }
 
         db::write_head_header_hash(tx, max_hash);

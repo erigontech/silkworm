@@ -41,7 +41,7 @@ Task<void> MessageReceiver::run(std::shared_ptr<MessageReceiver> self, PeerManag
         self->peer_tasks_.wait() &&
         self->unsubscription_tasks_.wait() &&
         self->handle_calls();
-    co_await concurrency::spawn_and_async_wait(self->strand_, std::move(run));
+    co_await concurrency::spawn_task(self->strand_, std::move(run));
 }
 
 Task<void> MessageReceiver::handle_calls() {

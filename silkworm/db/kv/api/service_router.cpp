@@ -24,7 +24,7 @@ using namespace boost::asio;
 
 Task<void> StateChangeRunner::run(std::shared_ptr<StateChangeRunner> self) {
     auto run = self->handle_calls();
-    co_await concurrency::spawn_and_async_wait(self->strand_, std::move(run));
+    co_await concurrency::spawn_task(self->strand_, std::move(run));
 }
 
 StateChangeRunner::StateChangeRunner(const boost::asio::any_io_executor& executor)

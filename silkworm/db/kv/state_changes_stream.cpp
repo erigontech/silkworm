@@ -31,7 +31,7 @@ StateChangesStream::StateChangesStream(rpc::ClientContext& context, api::Client&
       cache_(must_use_shared_service<api::StateCache>(scheduler_)) {}
 
 std::future<void> StateChangesStream::open() {
-    return concurrency::spawn(scheduler_, run());
+    return concurrency::spawn_future(scheduler_, run());
 }
 
 void StateChangesStream::close() {

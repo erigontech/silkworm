@@ -46,7 +46,7 @@ Task<void> TriggersStage::schedule(std::function<Task<void>(db::RWTxn&)> task) {
         assert(tx);
         co_await t(*tx);
     };
-    return concurrency::spawn_and_async_wait(io_context_, task_caller());
+    return concurrency::spawn_task(io_context_, task_caller());
 }
 
 bool TriggersStage::stop() {

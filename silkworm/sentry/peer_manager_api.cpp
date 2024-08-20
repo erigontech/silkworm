@@ -47,7 +47,7 @@ Task<void> PeerManagerApi::run(std::shared_ptr<PeerManagerApi> self) {
         self->handle_peer_events_calls() &&
         self->events_unsubscription_tasks_.wait() &&
         self->forward_peer_events();
-    co_await concurrency::spawn_and_async_wait(self->strand_, std::move(run));
+    co_await concurrency::spawn_task(self->strand_, std::move(run));
 }
 
 Task<void> PeerManagerApi::handle_peer_count_calls() {

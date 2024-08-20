@@ -36,12 +36,12 @@ class ContextTestBase {
 
     template <typename AwaitableOrFunction>
     auto spawn(AwaitableOrFunction&& awaitable) {
-        return concurrency::spawn(io_context_, std::forward<AwaitableOrFunction>(awaitable));
+        return concurrency::spawn_future(io_context_, std::forward<AwaitableOrFunction>(awaitable));
     }
 
     template <typename AwaitableOrFunction>
     auto spawn_and_wait(AwaitableOrFunction&& awaitable) {
-        return concurrency::spawn_and_wait(io_context_, std::forward<AwaitableOrFunction>(awaitable));
+        return spawn(std::forward<AwaitableOrFunction>(awaitable)).get();
     }
 
     static void sleep_for(std::chrono::milliseconds sleep_time_ms) {

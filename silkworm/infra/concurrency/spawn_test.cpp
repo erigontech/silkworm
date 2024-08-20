@@ -73,18 +73,12 @@ struct SpawnTest {
 
 TEST_CASE_METHOD(SpawnTest, "spawn_and_wait") {
     SECTION("wait for function") {
-        CHECK_NOTHROW(spawn_and_wait(ioc, dummy_task()));
-
-        std::future<void> result = spawn(ioc, dummy_task());
-        CHECK_NOTHROW(result.get());
+        CHECK_NOTHROW(spawn_future_and_wait(ioc, dummy_task()));
     }
 
     SECTION("wait for method") {
         DummyEngine engine{ioc};
-        CHECK(spawn_and_wait(engine.get_executor(), DummyEngine::do_work()) == 42);
-
-        std::future<int> result = spawn(engine.get_executor(), DummyEngine::do_work());
-        CHECK(result.get() == 42);
+        CHECK(spawn_future_and_wait(engine.get_executor(), DummyEngine::do_work()) == 42);
     }
 }
 

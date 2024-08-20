@@ -24,7 +24,6 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
@@ -52,12 +51,12 @@ awaitable<void> throw_op() {
 }
 
 awaitable<void> spawn_throw_op(strand<any_io_executor>& strand) {
-    co_await spawn_and_async_wait(strand, throw_op());
+    co_await spawn_task(strand, throw_op());
 }
 
 awaitable<void> spawn_noop_loop(strand<any_io_executor>& strand) {
     while (true) {
-        co_await spawn_and_async_wait(strand, noop());
+        co_await spawn_task(strand, noop());
     }
 }
 
@@ -74,6 +73,6 @@ awaitable<void> co_spawn_cancellation_handler_bug() {
 
 TEST_CASE("parallel_group.co_spawn_cancellation_handler_bug") {
     io_context context;
-    spawn(context, co_spawn_cancellation_handler_bug());
+    spawn_future(context, co_spawn_cancellation_handler_bug());
     context.run();
 }

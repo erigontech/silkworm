@@ -56,7 +56,7 @@ struct NodeSettings {
     bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
 
     inline db::etl::CollectorSettings etl() const {
-        return {data_directory->etl().path(), etl_buffer_size};
+        return {data_directory->temp().path(), etl_buffer_size};
     }
 };
 

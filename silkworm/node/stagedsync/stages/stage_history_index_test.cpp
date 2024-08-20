@@ -42,7 +42,7 @@ stagedsync::HistoryIndex make_stage_history_index(
         sync_context,
         batch_size,
         db::etl::CollectorSettings{
-            .work_path = chain_data.dir().etl().path(),
+            .work_path = chain_data.dir().temp().path(),
             .buffer_size = 256_Mebi},
         chain_data.prune_mode().history(),
     };

@@ -32,7 +32,7 @@ stagedsync::TxLookup make_tx_lookup_stage(
     const db::test_util::TempChainData& chain_data) {
     return stagedsync::TxLookup{
         sync_context,
-        db::etl::CollectorSettings{chain_data.dir().etl().path(), 256_Mebi},
+        db::etl::CollectorSettings{chain_data.dir().temp().path(), 256_Mebi},
         chain_data.prune_mode().tx_index(),
     };
 }

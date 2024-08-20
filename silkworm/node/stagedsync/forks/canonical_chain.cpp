@@ -174,7 +174,7 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
 std::optional<Hash> CanonicalChain::get_hash(BlockNum height) const {
     auto canon_hash = canonical_hash_cache_->get_as_copy(height);  // look in the cache first
     if (!canon_hash) {
-        canon_hash = db::read_canonical_header_hash(tx_, height);                // then look in the db
+        canon_hash = db::read_canonical_header_hash(tx_, height);         // then look in the db
         if (canon_hash) canonical_hash_cache_->put(height, *canon_hash);  // and cache it
     }
     return canon_hash;

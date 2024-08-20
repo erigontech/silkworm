@@ -18,11 +18,9 @@
 
 #include <cassert>
 
-#include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <gsl/util>
 
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -48,7 +46,7 @@ Task<void> TriggersStage::schedule(std::function<Task<void>(db::RWTxn&)> task) {
         assert(tx);
         co_await t(*tx);
     };
-    return concurrency::co_spawn_sw(io_context_, task_caller(), boost::asio::use_awaitable);
+    return concurrency::spawn_task(io_context_, task_caller());
 }
 
 bool TriggersStage::stop() {

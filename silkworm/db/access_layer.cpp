@@ -393,6 +393,7 @@ void delete_transactions(RWTxn& txn, uint64_t base_id, uint64_t count) {
     auto first_key = db::block_key(base_id);
     auto result = cursor->find(to_slice(first_key), /* throw_notfound = */ false);
     for (uint64_t i = 0; result && (i < count); result = cursor->to_next(/* throw_notfound = */ false), i++) {
+        log::Debug("delete_transactions") << "deleting " << (base_id + i);
         cursor->erase();
     }
 }

@@ -2186,7 +2186,6 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
             co_await concurrency::spawn_task(io_context_, [this, c = std::move(callback)]() -> Task<void> {
                 auto tx = this->db_access_.start_rw_tx();
                 c(tx);
-                tx.commit_and_stop();
                 co_return;
             });
         }

@@ -38,6 +38,7 @@ class Freezer : public DataMigration {
   private:
     static constexpr size_t kChunkSize = 1000;
 
+    const char* name() const override { return "Freezer"; }
     std::unique_ptr<DataMigrationCommand> next_command() override;
     std::shared_ptr<DataMigrationResult> migrate(std::unique_ptr<DataMigrationCommand> command) override;
     void index(std::shared_ptr<DataMigrationResult> result) override;

@@ -63,6 +63,8 @@
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
+#include "../common/common.hpp"
+
 namespace fs = std::filesystem;
 using namespace silkworm;
 
@@ -2239,6 +2241,8 @@ int main(int argc, char* argv[]) {
     auto app_yes_opt = app_main.add_flag("-Y,--yes", "Assume yes to all requests of confirmation");
     auto app_dry_opt = app_main.add_flag("--dry", "Don't commit to db. Only simulate");
 
+    cmd::common::add_logging_options(app_main, log_settings);
+
     /*
      * Subcommands
      */
@@ -2404,6 +2408,8 @@ int main(int argc, char* argv[]) {
     };
 
     try {
+        log::init(log_settings);
+
         // Set origin data_dir
         DataDirectory data_dir{data_dir_factory()};
 

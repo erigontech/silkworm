@@ -50,7 +50,7 @@ void BodySnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
 
         delete_body(txn, hash, i);
 
-        if ((count > 1000) && ((count % 1000) == 0)) {
+        if ((count > 10000) && ((count % 10000) == 0)) {
             log::Debug("BodySnapshotFreezer") << "cleaned up until block " << i;
         }
     }

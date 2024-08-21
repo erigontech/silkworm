@@ -44,7 +44,7 @@ void HeaderSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
 
         delete_header(txn, i, hash);
 
-        if ((count > 1000) && ((count % 1000) == 0)) {
+        if ((count > 10000) && ((count % 10000) == 0)) {
             log::Debug("HeaderSnapshotFreezer") << "cleaned up until block " << i;
         }
     }

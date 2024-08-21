@@ -58,7 +58,7 @@ void TransactionSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const 
             delete_transactions(txn, body.base_txn_id + 1, body.txn_count - 2);
         }
 
-        if ((count > 1000) && ((count % 1000) == 0)) {
+        if ((count > 10000) && ((count % 10000) == 0)) {
             log::Debug("TransactionSnapshotFreezer") << "cleaned up until block " << i;
         }
     }

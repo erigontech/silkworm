@@ -87,7 +87,7 @@ class TemporaryDirectory final : public Directory {
 //! A typical DataDirectory has at least 3 subdirs
 //! <base_path>
 //! ├───chaindata   <-- Where main database is stored
-//! ├───temp    <-- Where temporary files from etl collector are stored
+//! ├───temp        <-- Where temporary files from etl collector are stored
 //! ├───nodes       <-- Where database(s) for discovered nodes are stored
 //! └───snapshots   <-- Where snapshot files for blocks/transactions/... are stored
 class DataDirectory final : public Directory {

@@ -26,7 +26,6 @@
 #include <string_view>
 
 #include <CLI/CLI.hpp>
-#include <boost/asio/strand.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 #include <tl/expected.hpp>
@@ -2168,8 +2167,7 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
     class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
       public:
         explicit StageSchedulerAdapter(db::RWAccess db_access)
-            : strand_(boost::asio::make_strand(io_context_.get_executor())),
-              db_access_(std::move(db_access)) {}
+            : db_access_(std::move(db_access)) {}
         ~StageSchedulerAdapter() override = default;
 
         void execution_loop() override {
@@ -2182,16 +2180,16 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
             return ActiveComponent::stop();
         }
 
-        Task<void> schedule(std::function<Task<void>(db::RWTxn&)> task) override {
-            co_await concurrency::spawn_task(strand_, [this, t = std::move(task)]() -> Task<void> {
+        Task<void> schedule(std::function<void(db::RWTxn&)> callback) override {
+            co_await concurrency::spawn_task(io_context_, [this, c = std::move(callback)]() -> Task<void> {
                 auto tx = this->db_access_.start_rw_tx();
-                co_await t(tx);
+                c(tx);
+                co_return;
             });
         }
 
       private:
         boost::asio::io_context io_context_;
-        boost::asio::strand<boost::asio::any_io_executor> strand_;
         db::RWAccess db_access_;
     };
 

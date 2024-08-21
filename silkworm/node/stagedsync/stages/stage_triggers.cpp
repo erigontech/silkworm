@@ -40,11 +40,12 @@ Stage::Result TriggersStage::forward(db::RWTxn& tx) {
     return Stage::Result::kSuccess;
 }
 
-Task<void> TriggersStage::schedule(std::function<Task<void>(db::RWTxn&)> task) {
-    auto task_caller = [this, t = std::move(task)]() -> Task<void> {
+Task<void> TriggersStage::schedule(std::function<void(db::RWTxn&)> callback) {
+    auto task_caller = [this, c = std::move(callback)]() -> Task<void> {
         db::RWTxn* tx = this->current_tx_;
         assert(tx);
-        co_await t(*tx);
+        c(*tx);
+        co_return;
     };
     return concurrency::spawn_task(io_context_, task_caller());
 }

@@ -47,7 +47,7 @@ Task<void> ResourceUsageLog::run() {
 
             log::Info("Resource usage", {"mem", human_size(os::get_mem_usage()),
                                          "chain", human_size(data_directory_.chaindata().size()),
-                                         "etl-tmp", human_size(data_directory_.temp().size()),
+                                         "temp", human_size(data_directory_.temp().size()),
                                          "uptime", StopWatch::format(steady_clock::now() - start_time)});
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled) {

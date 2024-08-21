@@ -44,6 +44,7 @@ Config Config::lookup_known_config(ChainId chain_id, const std::vector<std::stri
 
 Config::Config(PreverifiedList preverified_snapshots)
     : preverified_snapshots_(std::move(preverified_snapshots)), max_block_number_(compute_max_block()) {
+    remove_unsupported_snapshots();
 }
 
 BlockNum Config::compute_max_block() {
@@ -58,6 +59,19 @@ BlockNum Config::compute_max_block() {
         }
     }
     return max_block > 0 ? max_block - 1 : 0;
+}
+
+void Config::remove_unsupported_snapshots() {
+    constexpr std::array UNSUPPORTED_SNAPSHOT_NAME_TOKENS = {
+        "accessor/"sv, "domain/"sv, "history/"sv, "idx/"sv, "manifest.txt"sv, "salt-blocks.txt"sv, "salt-state.txt"sv, "blobsidecars.seg"sv
+    };
+
+    // Check if a snapshot contains any of unsupported tokens
+    std::erase_if(preverified_snapshots_, [&](const auto& snapshot) {
+        return std::any_of(UNSUPPORTED_SNAPSHOT_NAME_TOKENS.begin(), UNSUPPORTED_SNAPSHOT_NAME_TOKENS.end(), [&snapshot](const auto& token) {
+            return snapshot.file_name.find(token) != std::string::npos;
+        });
+    });
 }
 
 }  // namespace silkworm::snapshots

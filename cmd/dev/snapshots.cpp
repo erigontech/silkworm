@@ -131,7 +131,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     auto& snapshot_settings = settings.snapshot_settings;
     auto& bittorrent_settings = settings.download_settings;
 
-    bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
     bittorrent_settings.magnets_file_path = ".magnet_links";
 
     add_logging_options(app, log_settings);
@@ -210,7 +209,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
     app.parse(argc, argv);
 
-    bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
+    snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
 }
 
 //! Convert one duration into another one returning the number of ticks for the latter one
@@ -748,6 +747,9 @@ int main(int argc, char* argv[]) {
 
         // Initialize logging with custom settings
         log::init(settings.log_settings);
+
+        std::cerr << "Bit path: " << settings.snapshot_settings.bittorrent_settings.repository_path << std::endl;
+        std::cerr << "Repo path: " << settings.snapshot_settings.repository_dir << std::endl;
 
         const auto pid = boost::this_process::get_id();
         SILK_INFO << "Snapshots toolbox starting [pid=" << std::to_string(pid) << "]";

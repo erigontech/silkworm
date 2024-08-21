@@ -37,7 +37,7 @@ struct FreezerCommand : public DataMigrationCommand {
 
     std::string description() const override {
         std::stringstream stream;
-        stream << "FreezerCommand[" << range.first << ", " << range.second << ")";
+        stream << "FreezerCommand [" << range.first << ", " << range.second << ")";
         return stream.str();
     }
 };

@@ -192,6 +192,9 @@ tl::expected<Account, DecodingError> Account::from_encoded_storage_v3(ByteView e
                 intx::unreachable();
         }
         pos += len;
+        if (pos >= encoded_payload.length() && i < 3) {
+            return tl::unexpected{DecodingError::kInputTooShort};
+        }
     }
 
     return a;

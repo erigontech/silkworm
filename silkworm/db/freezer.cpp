@@ -175,10 +175,7 @@ Task<void> Freezer::cleanup() {
     });
 }
 
-void Freezer::cleanup(RWTxn& db_tx, BlockNumRange range) {
-    get_snapshot_freezer(SnapshotType::transactions).cleanup(db_tx, range);
-    get_snapshot_freezer(SnapshotType::bodies).cleanup(db_tx, range);
-    get_snapshot_freezer(SnapshotType::headers).cleanup(db_tx, range);
+void Freezer::cleanup(RWTxn&, BlockNumRange) {
 }
 
 }  // namespace silkworm::db

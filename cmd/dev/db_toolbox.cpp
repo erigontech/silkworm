@@ -26,6 +26,7 @@
 #include <string_view>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 #include <tl/expected.hpp>
@@ -55,7 +56,10 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/active_component.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
@@ -2159,22 +2163,40 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
 }
 
 void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
-    class StageSchedulerAdapter : public stagedsync::StageScheduler {
+    using namespace concurrency::awaitable_wait_for_one;
+
+    class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
       public:
-        explicit StageSchedulerAdapter(db::RWTxn& tx) : tx_(tx) {}
+        explicit StageSchedulerAdapter(db::RWAccess db_access)
+            : strand_(boost::asio::make_strand(io_context_.get_executor())),
+              db_access_(std::move(db_access)) {}
         ~StageSchedulerAdapter() override = default;
 
+        void execution_loop() override {
+            auto work_guard = boost::asio::make_work_guard(io_context_.get_executor());
+            io_context_.run();
+        }
+
+        bool stop() override {
+            io_context_.stop();
+            return ActiveComponent::stop();
+        }
+
         Task<void> schedule(std::function<Task<void>(db::RWTxn&)> task) override {
-            co_await task(tx_);
+            co_await concurrency::spawn_task(strand_, [this, t = std::move(task)]() -> Task<void> {
+                auto tx = this->db_access_.start_rw_tx();
+                co_await t(tx);
+            });
         }
 
       private:
-        db::RWTxn& tx_;
+        boost::asio::io_context io_context_;
+        boost::asio::strand<boost::asio::any_io_executor> strand_;
+        db::RWAccess db_access_;
     };
 
     auto env = db::open_env(config);
-    db::RWTxnManaged tx{env};
-    StageSchedulerAdapter stage_scheduler{tx};
+    StageSchedulerAdapter stage_scheduler{db::RWAccess{env}};
 
     snapshots::SnapshotSettings settings;
     settings.repository_dir = data_dir.snapshots().path();
@@ -2185,7 +2207,7 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
     db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.temp().path()};
 
     test_util::TaskRunner runner;
-    runner.run(freezer.exec());
+    runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));
 }
 
 int main(int argc, char* argv[]) {

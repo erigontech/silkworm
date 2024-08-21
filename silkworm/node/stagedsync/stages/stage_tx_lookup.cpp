@@ -344,7 +344,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
     Bytes etl_value{};
 
     for (BlockNum current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
-        auto current_hash = db::read_canonical_hash(txn, current_block_num);
+        auto current_hash = db::read_canonical_header_hash(txn, current_block_num);
         if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
                                             "Canonical hash at height " + std::to_string(current_block_num) + " not found");
         std::vector<Bytes> rlp_encoded_txs;

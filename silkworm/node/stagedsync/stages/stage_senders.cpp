@@ -301,7 +301,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         // Start from first block and read all in sequence
         for (auto current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
-            auto current_hash = db::read_canonical_hash(txn, current_block_num);
+            auto current_hash = db::read_canonical_header_hash(txn, current_block_num);
             if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
                                                 "Canonical hash at height " + std::to_string(current_block_num) + " not found");
             BlockBody block_body;

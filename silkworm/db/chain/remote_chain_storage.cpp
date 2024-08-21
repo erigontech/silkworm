@@ -124,7 +124,7 @@ Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockBody& body) cons
     co_return co_await read_body(number, hash.bytes, /*.read_senders=*/false, body);
 }
 
-Task<std::optional<Hash>> RemoteChainStorage::read_canonical_hash(BlockNum number) const {
+Task<std::optional<Hash>> RemoteChainStorage::read_canonical_header_hash(BlockNum number) const {
     co_return co_await read_canonical_block_hash(tx_, number);
 }
 

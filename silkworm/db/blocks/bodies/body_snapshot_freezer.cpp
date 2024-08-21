@@ -43,7 +43,7 @@ void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapsh
 
 void BodySnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
     for (BlockNum i = range.first; i < range.second; i++) {
-        auto hash_opt = read_canonical_hash(txn, i);
+        auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
         auto hash = *hash_opt;
 

@@ -49,7 +49,7 @@ TEST_CASE("BodiesStage - data model") {
     SECTION("one invalid body after the genesis") {
         db::RWTxnManaged tx(context.env());
 
-        auto header0_hash = db::read_canonical_hash(tx, 0);
+        auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);
@@ -84,7 +84,7 @@ TEST_CASE("BodiesStage - data model") {
     SECTION("one valid body after the genesis") {
         db::RWTxnManaged tx(context.env());
 
-        auto header0_hash = db::read_canonical_hash(tx, 0);
+        auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);

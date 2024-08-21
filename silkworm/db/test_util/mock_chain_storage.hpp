@@ -53,7 +53,7 @@ class MockChainStorage : public chain::ChainStorage {
     MOCK_METHOD((Task<bool>), read_body, (const Hash&, BlockNum, silkworm::BlockBody&), (const override));
     MOCK_METHOD((Task<bool>), read_body, (const Hash&, silkworm::BlockBody&), (const override));
 
-    MOCK_METHOD((Task<std::optional<Hash>>), read_canonical_hash, (BlockNum), (const override));
+    MOCK_METHOD((Task<std::optional<Hash>>), read_canonical_header_hash, (BlockNum), (const override));
 
     MOCK_METHOD((Task<std::optional<BlockHeader>>), read_canonical_header, (BlockNum), (const override));
 

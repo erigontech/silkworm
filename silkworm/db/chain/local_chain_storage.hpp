@@ -51,7 +51,7 @@ class LocalChainStorage : public ChainStorage {
     Task<bool> read_body(const Hash& hash, BlockNum number, BlockBody& body) const override;
     Task<bool> read_body(const Hash& hash, BlockBody& body) const override;
 
-    [[nodiscard]] Task<std::optional<Hash>> read_canonical_hash(BlockNum number) const override;
+    [[nodiscard]] Task<std::optional<Hash>> read_canonical_header_hash(BlockNum number) const override;
     [[nodiscard]] Task<std::optional<BlockHeader>> read_canonical_header(BlockNum number) const override;
 
     Task<bool> read_canonical_body(BlockNum number, BlockBody& body) const override;

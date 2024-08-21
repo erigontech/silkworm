@@ -77,7 +77,7 @@ Task<BlockNum> AsyncRemoteState::current_canonical_block() const {
 
 Task<std::optional<evmc::bytes32>> AsyncRemoteState::canonical_hash(BlockNum block_number) const {
     // This method should not be called by EVM::execute
-    co_return co_await storage_.read_canonical_hash(block_number);
+    co_return co_await storage_.read_canonical_header_hash(block_number);
 }
 
 std::optional<Account> RemoteState::read_account(const evmc::address& address) const noexcept {

@@ -218,9 +218,6 @@ void write_head_header_hash(RWTxn& txn, const evmc::bytes32& hash);
 //! \brief Reads highest header hash from table::kHeadHeader
 std::optional<evmc::bytes32> read_head_header_hash(ROTxn& txn);
 
-//! \brief Reads canonical hash from block number
-std::optional<evmc::bytes32> read_canonical_hash(ROTxn& txn, BlockNum b);
-
 //! \brief Delete a canonical hash associated to a block number
 void delete_canonical_hash(RWTxn& txn, BlockNum b);
 
@@ -318,7 +315,7 @@ class DataModel {
     [[nodiscard]] static std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum height);
 
     //! Read the canonical block header at specified height
-    [[nodiscard]] std::optional<Hash> read_canonical_hash(BlockNum height) const;
+    [[nodiscard]] std::optional<Hash> read_canonical_header_hash(BlockNum height) const;
 
     //! Read the canonical block header at specified height
     [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;

@@ -65,7 +65,7 @@ class Buffer : public State {
 
     [[nodiscard]] std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
-    [[nodiscard]] ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
+    [[nodiscard]] ByteView read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept override;
 
     [[nodiscard]] evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                                              const evmc::bytes32& location) const noexcept override;

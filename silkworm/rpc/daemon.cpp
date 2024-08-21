@@ -32,6 +32,7 @@
 #include <silkworm/db/kv/api/direct_client.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/state/version.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
@@ -266,6 +267,9 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
 
+    // Schedule the retrieval of Erigon data storage model as first task on the execution contexts
+    schedule_data_format_retrieval();
+
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();
 }
@@ -317,6 +321,20 @@ void Daemon::add_shared_services() {
         add_shared_service<db::kv::api::StateCache>(io_context, std::move(state_cache));
         add_shared_service(io_context, filter_storage);
         add_shared_service<engine::ExecutionEngine>(io_context, std::move(engine));
+    }
+}
+
+void Daemon::schedule_data_format_retrieval() {
+    // Schedule the retrieval of Erigon data storage model as first task on all the execution contexts
+    // This ensures that the data format is set in any case *before* any API request handling happens
+    for (size_t i{0}; i < context_pool_.num_contexts(); ++i) {
+        concurrency::spawn_future(context_pool_.any_executor(), [&]() -> Task<void> {
+            const auto kv_service = kv_client_->service();
+            const auto tx = co_await kv_service->begin_transaction();
+            co_await db::state::set_data_format(*tx);
+            co_await tx->close();
+            SILK_TRACE << "Erigon data format: " << (db::state::is_data_format_v3() ? "v3" : "v2");
+        });
     }
 }
 

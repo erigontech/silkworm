@@ -34,11 +34,11 @@ namespace silkworm::db::state {
 std::unordered_map<evmc::bytes32, Bytes> AsyncRemoteState::code_;
 
 Task<std::optional<Account>> AsyncRemoteState::read_account(const evmc::address& address) const noexcept {
-    co_return co_await state_reader_.read_account(address, block_number_ + 1);
+    co_return co_await state_reader_.read_account(address);
 }
 
-Task<ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
-    const auto optional_code{co_await state_reader_.read_code(code_hash)};
+Task<ByteView> AsyncRemoteState::read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept {
+    const auto optional_code{co_await state_reader_.read_code(address, code_hash)};
     if (optional_code) {
         code_[code_hash] = *optional_code;
         co_return code_[code_hash];  // NOLINT(runtime/arrays)
@@ -47,7 +47,7 @@ Task<ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const
 }
 
 Task<evmc::bytes32> AsyncRemoteState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
-    co_return co_await state_reader_.read_storage(address, incarnation, location, block_number_ + 1);
+    co_return co_await state_reader_.read_storage(address, incarnation, location);
 }
 
 Task<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& /*address*/) const noexcept {
@@ -93,10 +93,10 @@ std::optional<Account> RemoteState::read_account(const evmc::address& address) c
     }
 }
 
-ByteView RemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView RemoteState::read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept {
     SILK_DEBUG << "RemoteState::read_code code_hash=" << to_hex(code_hash) << " start";
     try {
-        std::future<ByteView> result{boost::asio::co_spawn(executor_, async_state_.read_code(code_hash), boost::asio::use_future)};
+        std::future<ByteView> result{boost::asio::co_spawn(executor_, async_state_.read_code(address, code_hash), boost::asio::use_future)};
         const auto code{result.get()};
         return code;
     } catch (const std::exception& e) {

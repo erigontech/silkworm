@@ -25,7 +25,11 @@
 
 namespace silkworm::db::table {
 
-inline constexpr VersionBase kRequiredSchemaVersion{3, 0, 0};  // We're compatible with this
+//! Database schema version for compatibility w/ Erigon
+//! 5.0 - BlockTransaction table has canonical IDs (txs of non-canonical blocks moved to NonCanonicalTransaction table)
+//! 6.0 - BlockTransaction table has system-txs before/after each block (absent if block has no system-tx, but sequence increasing)
+//! 6.1 - BlockTransaction table contains canonical/non-canonical/bad-block transactions; add BadBlockNumber table
+inline constexpr VersionBase kRequiredSchemaVersion{6, 1, 0};  // Erigon2 latest schema version
 
 /* Canonical tables */
 
@@ -414,5 +418,16 @@ void check_or_create_chaindata_tables(RWTxn& txn);
 
 //! \brief Get the table config associated to the table name (if any)
 std::optional<db::MapConfig> get_map_config(const std::string& map_name);
+
+/// Part of the compatibility layer with Erigon snapshot format
+
+//! \details Domain storing the account common information
+inline constexpr const char* kAccountDomain{"accounts"};
+
+//! \details Domain storing the account storage information
+inline constexpr const char* kStorageDomain{"storage"};
+
+//! \details Domain storing the account code information
+inline constexpr const char* kCodeDomain{"code"};
 
 }  // namespace silkworm::db::table

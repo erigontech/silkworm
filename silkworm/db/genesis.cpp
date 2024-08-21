@@ -123,7 +123,7 @@ void write_genesis_allocation_to_db(RWTxn& txn, const InMemoryState& genesis_all
 
         // Store code
         if (account.code_hash != kEmptyHash) {
-            ByteView code{genesis_allocation.read_code(account.code_hash)};
+            ByteView code{genesis_allocation.read_code(address, account.code_hash)};
             code_table.upsert(to_slice(account.code_hash), to_slice(code));
         }
     }

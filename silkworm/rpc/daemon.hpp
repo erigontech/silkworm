@@ -68,6 +68,7 @@ class Daemon {
 
     void add_private_services();
     void add_shared_services();
+    void schedule_data_format_retrieval();
 
     //! The RPC daemon configuration settings.
     DaemonSettings settings_;

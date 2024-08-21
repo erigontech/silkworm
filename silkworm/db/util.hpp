@@ -142,4 +142,13 @@ std::optional<ByteView> find_value_suffix(ROCursorDupSort& table, ByteView key, 
 // We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
 void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
 
+//! Build key for account domain given the target address and location
+Bytes account_domain_key(const evmc::address& address);
+
+//! Build key for storage domain given the target address and location
+Bytes storage_domain_key(const evmc::address& address, const evmc::bytes32& location);
+
+//! Build key for code domain given the target address and location
+Bytes code_domain_key(const evmc::address& address);
+
 }  // namespace silkworm::db

@@ -195,4 +195,19 @@ void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix
     }
 }
 
+Bytes account_domain_key(const evmc::address& address) {
+    return {address.bytes, kAddressLength};
+}
+
+Bytes storage_domain_key(const evmc::address& address, const evmc::bytes32& location) {
+    Bytes key(kAddressLength + kHashLength, '\0');
+    std::memcpy(key.data(), address.bytes, kAddressLength);
+    std::memcpy(key.data() + kAddressLength, location.bytes, kHashLength);
+    return key;
+}
+
+Bytes code_domain_key(const evmc::address& address) {
+    return {address.bytes, kAddressLength};
+}
+
 }  // namespace silkworm::db

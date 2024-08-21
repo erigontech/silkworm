@@ -36,19 +36,24 @@ struct Account {
     uint64_t incarnation{0};
     uint64_t previous_incarnation{0};
 
-    //! \remarks Erigon's (*Account)EncodeForStorage
+    //! \brief Encode the account into its binary representation for data storage
+    //! \remarks Erigon (*Account)EncodeForStorage
     [[nodiscard]] Bytes encode_for_storage(bool omit_code_hash = false) const;
 
-    //! \remarks Erigon's (*Account)EncodingLengthForStorage
+    //! \brief Compute the length of the account binary representation for data storage
+    //! \remarks Erigon (*Account)EncodingLengthForStorage
     [[nodiscard]] size_t encoding_length_for_storage() const;
 
-    //! \brief Rlp encodes Account
+    //! \brief Serialize the account into its Recursive-Length Prefix (RLP) representation
     [[nodiscard]] Bytes rlp(const evmc::bytes32& storage_root) const;
 
-    //! \brief Returns an Account from it's encoded representation
+    //! \brief Decode an Account from its binary representation for data storage
     [[nodiscard]] static tl::expected<Account, DecodingError> from_encoded_storage(ByteView encoded_payload) noexcept;
 
-    //! \brief Returns an Account Incarnation from it's encoded representation
+    //! \brief Decode an Account from its binary representation for data storage in E3 data format
+    [[nodiscard]] static tl::expected<Account, DecodingError> from_encoded_storage_v3(ByteView encoded_payload) noexcept;
+
+    //! \brief Return an Account Incarnation from its binary representation for data storage
     //! \remarks Similar to from_encoded_storage but faster as it parses only incarnation
     [[nodiscard]] static tl::expected<uint64_t, DecodingError> incarnation_from_encoded_storage(
         ByteView encoded_payload) noexcept;

@@ -18,6 +18,7 @@
 
 #include <array>
 #include <memory>
+#include <random>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -166,9 +167,14 @@ inline std::shared_ptr<Block> generate_sample_child_blocks(const BlockHeader& pa
     auto block = std::make_shared<Block>();
     auto parent_hash = parent.hash();
 
+    // Random number generator setup
+    std::random_device rd;                                          // Seed for the random number engine
+    std::mt19937 gen(rd());                                         // Mersenne Twister engine
+    std::uniform_int_distribution<uint64_t> dis(1, 1'000'000'000);  // Distribution range
+
     // BlockHeader
     block->header.number = parent.number + 1;
-    block->header.difficulty = 17'000'000'000 + block->header.number;
+    block->header.difficulty = 17'000'000'000 + dis(gen);
     block->header.parent_hash = parent_hash;
     block->header.beneficiary = 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address;
     block->header.state_root = kEmptyRoot;

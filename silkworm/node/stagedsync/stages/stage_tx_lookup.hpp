@@ -32,6 +32,8 @@ class TxLookup : public Stage {
         : Stage(sync_context, db::stages::kTxLookupKey),
           etl_settings_(std::move(etl_settings)),
           prune_mode_tx_index_(prune_mode_tx_index) {}
+    TxLookup(const TxLookup&) = delete;  // not copyable
+    TxLookup(TxLookup&&) = delete;       // nor movable
     ~TxLookup() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;

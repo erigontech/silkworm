@@ -44,7 +44,7 @@ Senders::Senders(
       prune_mode_senders_(prune_mode_senders),
       max_batch_size_{batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
       batch_{std::make_shared<std::vector<AddressRecovery>>()},
-      collector_{etl_settings} {
+      etl_settings_(std::move(etl_settings)) {
     // Reserve space for max batch in advance
     batch_->reserve(max_batch_size_);
 }
@@ -56,6 +56,8 @@ Stage::Result Senders::forward(db::RWTxn& txn) {
     total_collected_transactions_ = 0;
     log_lock.unlock();
 
+    collector_ = std::make_unique<db::etl_mdbx::Collector>(etl_settings_);
+
     const auto res{parallel_recover(txn)};
     if (res == Stage::Result::kSuccess) {
         txn.commit_and_renew();
@@ -64,6 +66,8 @@ Stage::Result Senders::forward(db::RWTxn& txn) {
     log_lock.lock();
     operation_ = OperationType::None;
     log_lock.unlock();
+
+    collector_.reset();
 
     return res;
 }
@@ -255,7 +259,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
     collected_senders_ = 0;
-    collector_.clear();
+    collector_->clear();
     batch_->clear();
     results_.clear();
 
@@ -344,9 +348,9 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
             std::this_thread::sleep_for(1ms);
         }
 
-        ensure(collector_.size() + total_empty_blocks == segment_width,
+        ensure(collector_->size() + total_empty_blocks == segment_width,
                [&]() { return "Senders: invalid number of ETL keys expected=" + std::to_string(segment_width) +
-                              "got=" + std::to_string(collector_.size() + total_empty_blocks); });
+                              "got=" + std::to_string(collector_->size() + total_empty_blocks); });
 
         // Store all recovered senders into db
         log::Trace(log_prefix_, {"op", "store senders", "reached_block_num", std::to_string(target_block_num)});
@@ -486,7 +490,7 @@ void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
     for (const auto& package : *batch) {
         if (package.block_num != block_num) {
             if (!key.empty()) {
-                collector_.collect({key, value});
+                collector_->collect({key, value});
                 key.clear();
                 value.clear();
             }
@@ -497,7 +501,7 @@ void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
         value.append(package.tx_from.bytes, sizeof(evmc::address));
     }
     if (!key.empty()) {
-        collector_.collect({key, value});
+        collector_->collect({key, value});
         key.clear();
         value.clear();
     }
@@ -508,12 +512,12 @@ void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
 }
 
 void Senders::store_senders(db::RWTxn& txn) {
-    if (!collector_.empty()) {
-        log::Trace(log_prefix_, {"load ETL items", std::to_string(collector_.size())});
+    if (!collector_->empty()) {
+        log::Trace(log_prefix_, {"load ETL items", std::to_string(collector_->size())});
         // Prepare target table
         auto senders_cursor = txn.rw_cursor_dup_sort(db::table::kSenders);
-        log::Trace(log_prefix_, {"load ETL data", human_size(collector_.bytes_size())});
-        collector_.load(*senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+        log::Trace(log_prefix_, {"load ETL data", human_size(collector_->bytes_size())});
+        collector_->load(*senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
     }
 }
 

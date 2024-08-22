@@ -31,6 +31,8 @@ class CallTraceIndex : public Stage {
                    size_t batch_size,
                    db::etl::CollectorSettings etl_settings,
                    db::BlockAmount prune_mode);
+    CallTraceIndex(const CallTraceIndex&) = delete;  // not copyable
+    CallTraceIndex(CallTraceIndex&&) = delete;       // nor movable
     ~CallTraceIndex() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;

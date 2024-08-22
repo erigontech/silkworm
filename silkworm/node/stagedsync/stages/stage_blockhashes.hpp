@@ -26,6 +26,8 @@ class BlockHashes final : public Stage {
     explicit BlockHashes(SyncContext* sync_context, db::etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kBlockHashesKey),
           etl_settings_(std::move(etl_settings)) {}
+    BlockHashes(const BlockHashes&) = delete;  // not copyable
+    BlockHashes(BlockHashes&&) = delete;       // nor movable
     ~BlockHashes() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;

@@ -917,7 +917,7 @@ static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
 static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kInfo);
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{db.get_path()};
@@ -937,7 +937,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         REQUIRE(silkworm_lib.stop_fork_validator() == SILKWORM_OK);
     }
 
-    SECTION("validates chain") {
+    SECTION("validates single chain") {
         silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
@@ -951,6 +951,29 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         CHECK(insert_block_success);
 
         auto result = silkworm_lib.fork_validator_verify_chain(new_block_hash);
+        CHECK(result == SILKWORM_OK);
+    }
+
+    SECTION("validates multiple chains") {
+        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
+
+        auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
+        CHECK(current_head_id.number == 9);
+        CHECK(current_head_id.hash != Hash{});
+        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();
+
+        auto new_block1 = silkworm::test_util::generate_sample_child_blocks(current_head);
+        auto insert_block_success = silkworm_lib.execution_engine().insert_block(new_block1);
+        CHECK(insert_block_success);
+
+        auto new_block2 = silkworm::test_util::generate_sample_child_blocks(current_head);
+        insert_block_success = silkworm_lib.execution_engine().insert_block(new_block2);
+        CHECK(insert_block_success);
+
+        auto result = silkworm_lib.fork_validator_verify_chain(new_block1->header.hash());
+        CHECK(result == SILKWORM_OK);
+
+        result = silkworm_lib.fork_validator_verify_chain(new_block2->header.hash());
         CHECK(result == SILKWORM_OK);
     }
 

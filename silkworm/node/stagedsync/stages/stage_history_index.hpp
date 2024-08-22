@@ -34,6 +34,8 @@ class HistoryIndex : public Stage {
           batch_size_(batch_size),
           etl_settings_(std::move(etl_settings)),
           prune_mode_history_(prune_mode_history) {}
+    HistoryIndex(const HistoryIndex&) = delete;  // not copyable
+    HistoryIndex(HistoryIndex&&) = delete;       // nor movable
     ~HistoryIndex() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;

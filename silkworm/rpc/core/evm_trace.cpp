@@ -1909,11 +1909,11 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     } else {
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL: {
-                bool is_static_call = false;
-                if (last_opcode_) {
-                    is_static_call = *last_opcode_ == OP_STATICCALL;
+                if (last_opcode_ == OP_STATICCALL) {
+                    result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input});
+                } else {
+                    result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
                 }
-                is_static_call ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
             } break;
             case evmc_call_kind::EVMC_DELEGATECALL:
                 result_.push_back(TraceEntry{"DELEGATECALL", msg.depth, recipient, code_address, "", str_input});

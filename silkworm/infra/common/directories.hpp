@@ -87,7 +87,7 @@ class TemporaryDirectory final : public Directory {
 //! A typical DataDirectory has at least 3 subdirs
 //! <base_path>
 //! ├───chaindata   <-- Where main database is stored
-//! ├───etl-temp    <-- Where temporary files from etl collector are stored
+//! ├───temp        <-- Where temporary files from etl collector are stored
 //! ├───nodes       <-- Where database(s) for discovered nodes are stored
 //! └───snapshots   <-- Where snapshot files for blocks/transactions/... are stored
 class DataDirectory final : public Directory {
@@ -98,7 +98,7 @@ class DataDirectory final : public Directory {
     explicit DataDirectory(const std::filesystem::path& base_path, bool create = false)
         : Directory(base_path, create),
           chaindata_(base_path / "chaindata", create),
-          etl_(base_path / "etl-temp", create),
+          temp_(base_path / "temp", create),
           nodes_(base_path / "nodes", create),
           snapshots_(base_path / "snapshots", create),
           forks_(base_path / "forks", create) {}
@@ -140,7 +140,7 @@ class DataDirectory final : public Directory {
     //! \brief Returns the "chaindata" directory (where chain database is stored)
     [[nodiscard]] const Directory& chaindata() const { return chaindata_; }
     //! \brief Returns the "etl" directory (where temporary etl files are stored)
-    [[nodiscard]] const Directory& etl() const { return etl_; }
+    [[nodiscard]] const Directory& temp() const { return temp_; }
     //! \brief Returns the "nodes" directory (where discovery nodes info are stored)
     [[nodiscard]] const Directory& nodes() const { return nodes_; }
     //! \brief Returns the "snapshots" directory (where snapshot files are stored)
@@ -150,7 +150,7 @@ class DataDirectory final : public Directory {
 
   private:
     Directory chaindata_;  // Database storage
-    Directory etl_;        // Temporary etl files
+    Directory temp_;       // Temporary etl files
     Directory nodes_;      // Nodes discovery databases
     Directory snapshots_;  // Snapshot files
     Directory forks_;      // Fork files

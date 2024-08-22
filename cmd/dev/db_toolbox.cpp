@@ -2182,7 +2182,7 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
     auto bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
     snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};  // NOLINT(cppcoreguidelines-slicing)
 
-    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.etl().path()};
+    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.temp().path()};
 
     test_util::TaskRunner runner;
     runner.run(freezer.exec());

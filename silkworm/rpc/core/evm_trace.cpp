@@ -854,10 +854,14 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         trace.trace_result->output.emplace();
         trace_action.input = silkworm::ByteView{msg.input_data, msg.input_size};
         trace_action.to = recipient;
-        bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
-                trace_action.call_type = in_static_mode ? "staticcall" : "call";
+                if (traces_.size() > 1) {
+                    Trace& prev_trace = traces_[traces_.size() - 2];
+                    trace_action.call_type = prev_trace.op_code == OP_STATICCALL ? "staticcall" : "call";
+                } else {
+                    trace_action.call_type = "call";
+                }
                 break;
             case evmc_call_kind::EVMC_DELEGATECALL:
                 trace_action.call_type = "delegatecall";

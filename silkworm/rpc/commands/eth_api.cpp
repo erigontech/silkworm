@@ -901,9 +901,9 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             return chain_storage->read_canonical_header(block_number);
         };
 
-        rpc::AccountReader account_reader = [&tx](const evmc::address& address, BlockNum block_number) {
+        rpc::AccountReader account_reader = [&tx](const evmc::address& address, BlockNum block_number) -> Task<std::optional<Account>> {
             StateReader state_reader{*tx, block_number + 1};
-            return state_reader.read_account(address);
+            co_return co_await state_reader.read_account(address);
         };
 
         rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};

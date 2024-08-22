@@ -255,7 +255,7 @@ class TraceTracer : public silkworm::EvmTracer {
     bool is_precompile_{false};
     std::vector<Trace>& traces_;
     silkworm::IntraBlockState& initial_ibs_;
-    std::optional<uint8_t> current_opcode_;
+    std::optional<uint8_t> last_opcode_;
     const char* const* opcode_names_ = nullptr;
     int64_t initial_gas_{0};
     int32_t current_depth_{-1};
@@ -427,6 +427,9 @@ class EntryTracer : public silkworm::EvmTracer {
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
+                              const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
     TraceEntriesResult result() const { return result_; }
@@ -436,6 +439,7 @@ class EntryTracer : public silkworm::EvmTracer {
     TraceEntriesResult result_;
     std::stack<uint64_t> traces_stack_idx_;
     int32_t current_depth_{-1};
+    std::optional<uint8_t> last_opcode_;
 };
 
 class OperationTracer : public silkworm::EvmTracer {

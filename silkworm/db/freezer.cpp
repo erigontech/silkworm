@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "access_layer.hpp"
 #include "blocks/bodies/body_snapshot_freezer.hpp"
@@ -169,10 +170,10 @@ BlockNumRange Freezer::cleanup_range() {
 Task<void> Freezer::cleanup() {
     BlockNumRange range = cleanup_range();
     if (range.first >= range.second) co_return;
+    log::Debug(name()) << "cleanup [" << range.first << ", " << range.second << ")";
 
-    co_await stage_scheduler_.schedule([this, range](RWTxn& db_tx) -> Task<void> {
+    co_await stage_scheduler_.schedule([this, range](RWTxn& db_tx) {
         this->cleanup(db_tx, range);
-        co_return;
     });
 }
 

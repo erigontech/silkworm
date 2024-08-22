@@ -812,7 +812,7 @@ TEST_CASE("ExecutionEngine") {
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
-    auto header0_hash = db::read_canonical_hash(tx, 0);
+    auto header0_hash = db::read_canonical_header_hash(tx, 0);
     REQUIRE(header0_hash.has_value());
 
     auto header0 = db::read_canonical_header(tx, 0);

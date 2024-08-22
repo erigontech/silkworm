@@ -854,10 +854,13 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         trace.trace_result->output.emplace();
         trace_action.input = silkworm::ByteView{msg.input_data, msg.input_size};
         trace_action.to = recipient;
-        bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
-                trace_action.call_type = in_static_mode ? "staticcall" : "call";
+                if (last_opcode_) {
+                    trace_action.call_type = last_opcode_ == OP_STATICCALL ? "staticcall" : "call";
+                } else {
+                    trace_action.call_type = "call";
+                }
                 break;
             case evmc_call_kind::EVMC_DELEGATECALL:
                 trace_action.call_type = "delegatecall";
@@ -866,6 +869,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                 break;
             case evmc_call_kind::EVMC_CALLCODE:
                 trace_action.call_type = "callcode";
+                trace_action.to = code_address;
                 break;
             case evmc_call_kind::EVMC_CREATE:
             case evmc_call_kind::EVMC_CREATE2:
@@ -902,7 +906,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
-    current_opcode_ = opcode;
+    last_opcode_ = opcode;
 
     Trace& last_trace = traces_[traces_.size() - 1];
     last_trace.stack_height = stack_height;
@@ -991,7 +995,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            trace.error = "invalid opcode: opcode " + get_opcode_hex(current_opcode_.value_or(0)) + " not defined";
+            trace.error = "invalid opcode: opcode " + get_opcode_hex(last_opcode_.value_or(0)) + " not defined";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
@@ -1014,7 +1018,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             break;
     }
 
-    current_opcode_.reset();
+    last_opcode_.reset();
 
     SILK_DEBUG << "TraceTracer::on_execution_end:"
                << " result.status_code: " << result.status_code
@@ -1903,11 +1907,14 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         str_input = "0x" + silkworm::to_hex(code);
         result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
     } else {
-        const bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
-            case evmc_call_kind::EVMC_CALL:
-                in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
-                break;
+            case evmc_call_kind::EVMC_CALL: {
+                if (last_opcode_ == OP_STATICCALL) {
+                    result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input});
+                } else {
+                    result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+                }
+            } break;
             case evmc_call_kind::EVMC_DELEGATECALL:
                 result_.push_back(TraceEntry{"DELEGATECALL", msg.depth, recipient, code_address, "", str_input});
                 break;
@@ -1931,6 +1938,11 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code)
                << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size});
+}
+
+void EntryTracer::on_instruction_start(uint32_t pc, const intx::uint256* /* stack_top */, const int /* stack_height */, const int64_t /* gas */,
+                                       const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /* intra_block_state */) noexcept {
+    last_opcode_ = execution_state.original_code[pc];
 }
 
 void OperationTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {

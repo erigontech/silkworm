@@ -27,8 +27,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/infra/concurrency/sleep.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 
 #include "auth/auth_message_error.hpp"
@@ -77,7 +77,7 @@ Task<void> Peer::run(std::shared_ptr<Peer> peer) {
     using namespace concurrency::awaitable_wait_for_one;
 
     auto run = peer->handle() || peer->send_message_tasks_.wait();
-    co_await concurrency::co_spawn_sw(peer->strand_, std::move(run), use_awaitable);
+    co_await concurrency::spawn_task(peer->strand_, std::move(run));
 }
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
@@ -244,7 +244,7 @@ Task<void> Peer::handle() {
 }
 
 Task<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
-    return concurrency::co_spawn_sw(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
+    return concurrency::spawn_task(peer->strand_, Peer::drop_in_strand(peer, reason));
 }
 
 Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> peer, DisconnectReason reason) {

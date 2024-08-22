@@ -23,12 +23,14 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <agrpc/client_rpc.hpp>
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
+#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
 #include "remote_cursor.hpp"
 #include "rpc.hpp"
@@ -83,7 +85,11 @@ class RemoteTransaction : public api::BaseTransaction {
     std::map<std::string, std::shared_ptr<api::CursorDupSort>> dup_cursors_;
     ::remote::KV::StubInterface& stub_;
     agrpc::GrpcContext& grpc_context_;
+    //! The wrapped Tx RPC client provided by agrpc
     TxRpc tx_rpc_;
+    //! Flag indicating if agrpc::ClientRPC<>::start has been called on Tx RPC or not. This is necessary to avoid
+    //! a crash in agrpc if you call agrpc::ClientRPC<>::finish before calling agrpc::ClientRPC<>::start
+    bool start_called_{false};
     uint64_t tx_id_{0};
     uint64_t view_id_{0};
 };

@@ -27,8 +27,8 @@ namespace silkworm::stagedsync {
 struct StageScheduler {
     virtual ~StageScheduler() = default;
 
-    //! Schedule a task to run inside the stage loop.
-    virtual Task<void> schedule(std::function<Task<void>(db::RWTxn&)> task) = 0;
+    //! Schedule a callback to run inside the stage loop.
+    virtual Task<void> schedule(std::function<void(db::RWTxn&)> callback) = 0;
 };
 
 }  // namespace silkworm::stagedsync

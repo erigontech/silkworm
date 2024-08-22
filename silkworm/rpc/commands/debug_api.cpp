@@ -707,7 +707,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
     try {
         const auto chain_storage = tx->create_storage();
         const auto block_number = co_await core::get_block_number(block_id, *tx);
-        const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
+        const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_number);
         const auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
         if (!header) {
             throw std::invalid_argument("header " + std::to_string(block_number) + " not found");

@@ -26,10 +26,9 @@
 #include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/client/reconnect.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 
 #include "endpoint/state_change.hpp"
-#include "endpoint/temporal_point.hpp"
-#include "endpoint/temporal_range.hpp"
 #include "remote_transaction.hpp"
 
 namespace silkworm::db::kv::grpc::client {

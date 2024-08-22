@@ -361,7 +361,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 co_return Bytes{};
             }));
         const BlockNum block_number = 1'000'000;
-        EXPECT_CALL(chain_storage, read_canonical_hash(block_number))
+        EXPECT_CALL(chain_storage, read_canonical_header_hash(block_number))
             .WillOnce(Invoke([](Unused) -> Task<std::optional<Hash>> { co_return std::nullopt; }));
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto canonical_hash{spawn_and_wait(state.canonical_hash(block_number))};

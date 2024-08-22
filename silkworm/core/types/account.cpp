@@ -148,6 +148,58 @@ tl::expected<Account, DecodingError> Account::from_encoded_storage(ByteView enco
     return a;
 }
 
+tl::expected<Account, DecodingError> Account::from_encoded_storage_v3(ByteView encoded_payload) noexcept {
+    Account a;
+    if (encoded_payload.empty()) {
+        return a;
+    }
+    size_t pos{0};
+    for (int i{0}; i < 4; ++i) {
+        uint8_t len = encoded_payload[pos++];
+        if (len == 0) {
+            if (encoded_payload.length() == pos && i < 3) {
+                return tl::unexpected{DecodingError::kUnexpectedLength};
+            }
+            continue;
+        }
+        if (encoded_payload.length() < pos + len) {
+            return tl::unexpected{DecodingError::kInputTooShort};
+        }
+        const auto encoded_value{encoded_payload.substr(pos, len)};
+        switch (i) {
+            case 0:
+                if (DecodingResult res{endian::from_big_compact(encoded_value, a.nonce)}; !res) {
+                    return tl::unexpected{res.error()};
+                }
+                break;
+            case 1:
+                if (DecodingResult res{endian::from_big_compact(encoded_value, a.balance)}; !res) {
+                    return tl::unexpected{res.error()};
+                }
+                break;
+            case 2:
+                if (len != kHashLength) {
+                    return tl::unexpected{DecodingError::kUnexpectedLength};
+                }
+                std::memcpy(a.code_hash.bytes, encoded_value.data(), kHashLength);
+                break;
+            case 3:
+                if (DecodingResult res{endian::from_big_compact(encoded_value, a.incarnation)}; !res) {
+                    return tl::unexpected{res.error()};
+                }
+                break;
+            default:
+                intx::unreachable();
+        }
+        pos += len;
+        if (pos >= encoded_payload.length() && i < 3) {
+            return tl::unexpected{DecodingError::kInputTooShort};
+        }
+    }
+
+    return a;
+}
+
 tl::expected<uint64_t, DecodingError> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
     const tl::expected<uint8_t, DecodingError> field_set{validate_encoded_head(encoded_payload)};
     if (!field_set) {

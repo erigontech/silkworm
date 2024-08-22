@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include <string>
+
 namespace silkworm::db {
 
 struct DataMigrationCommand {
     virtual ~DataMigrationCommand() = default;
+    virtual std::string description() const = 0;
 };
 
 }  // namespace silkworm::db

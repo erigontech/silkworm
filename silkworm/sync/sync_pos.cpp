@@ -220,7 +220,6 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         } else if (std::holds_alternative<execution::api::InvalidChain>(verification)) {
             // INVALID
             const auto invalid_chain = std::get<execution::api::InvalidChain>(verification);
-            // auto latest_valid_height = sync_wait(in(exec_engine_), exec_engine_.get_block_num(invalid_chain.latest_valid_head));
             auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.unwind_point.hash);
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash

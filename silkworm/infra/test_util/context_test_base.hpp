@@ -24,6 +24,7 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
@@ -35,7 +36,7 @@ class ContextTestBase {
 
     template <typename AwaitableOrFunction>
     auto spawn(AwaitableOrFunction&& awaitable) {
-        return boost::asio::co_spawn(io_context_, std::forward<AwaitableOrFunction>(awaitable), boost::asio::use_future);
+        return concurrency::spawn_future(io_context_, std::forward<AwaitableOrFunction>(awaitable));
     }
 
     template <typename AwaitableOrFunction>

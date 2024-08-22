@@ -211,8 +211,8 @@ TEST_CASE("Headers receiving and saving") {
 
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
-        REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
+        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1_hash);
+        REQUIRE(db::read_canonical_header_hash(tx, 2) == header2_hash);
 
         // update the fork choice
         exec_engine.notify_fork_choice_update(header2_hash, {}, {});
@@ -329,8 +329,8 @@ TEST_CASE("Headers receiving and saving") {
 
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
-        REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
+        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1_hash);
+        REQUIRE(db::read_canonical_header_hash(tx, 2) == header2_hash);
 
         // update the fork choice
         exec_engine.notify_fork_choice_update(header2_hash, {}, {});
@@ -452,8 +452,8 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(db::read_total_difficulty(tx, 1, header1b.hash()) == new_expected_td);
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        REQUIRE(db::read_canonical_hash(tx, 1) == header1b_hash);
-        REQUIRE(db::read_canonical_hash(tx, 2).has_value() == false);
+        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1b_hash);
+        REQUIRE(db::read_canonical_header_hash(tx, 2).has_value() == false);
 
         REQUIRE(db::read_canonical_head(tx) == std::make_tuple(1, header1b_hash));
 
@@ -576,8 +576,8 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(db::read_head_header_hash(tx) == header2_hash);
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td_bis);
 
-        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
-        REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
+        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1_hash);
+        REQUIRE(db::read_canonical_header_hash(tx, 2) == header2_hash);
 
         REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
 

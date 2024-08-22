@@ -33,8 +33,8 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include "co_spawn_sw.hpp"
 #include "parallel_group_utils.hpp"
+#include "spawn.hpp"
 
 namespace silkworm::concurrency::awaitable_wait_for_all {
 
@@ -71,8 +71,8 @@ awaitable<void, Executor> operator&&(
 
     auto [order, ex0, ex1] =
         co_await make_parallel_group(
-            co_spawn_sw(ex, std::move(t), deferred),
-            co_spawn_sw(ex, std::move(u), deferred))
+            co_spawn(ex, std::move(t), deferred),
+            co_spawn(ex, std::move(u), deferred))
             .async_wait(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
@@ -93,8 +93,8 @@ awaitable<U, Executor> operator&&(
 
     auto [order, ex0, ex1, r1] =
         co_await make_parallel_group(
-            co_spawn_sw(ex, std::move(t), deferred),
-            co_spawn_sw(ex, detail::awaitable_wrap(std::move(u)), deferred))
+            co_spawn(ex, std::move(t), deferred),
+            co_spawn(ex, detail::awaitable_wrap(std::move(u)), deferred))
             .async_wait(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
@@ -115,8 +115,8 @@ awaitable<T, Executor> operator&&(
 
     auto [order, ex0, r0, ex1] =
         co_await make_parallel_group(
-            co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-            co_spawn_sw(ex, std::move(u), deferred))
+            co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+            co_spawn(ex, std::move(u), deferred))
             .async_wait(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
@@ -137,8 +137,8 @@ awaitable<std::tuple<T, U>, Executor> operator&&(
 
     auto [order, ex0, r0, ex1, r1] =
         co_await make_parallel_group(
-            co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-            co_spawn_sw(ex, detail::awaitable_wrap(std::move(u)), deferred))
+            co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+            co_spawn(ex, detail::awaitable_wrap(std::move(u)), deferred))
             .async_wait(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
@@ -161,8 +161,8 @@ awaitable<std::tuple<T..., std::monostate>, Executor> operator&&(
 
     auto [order, ex0, r0, ex1, r1] =
         co_await make_parallel_group(
-            co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-            co_spawn_sw(ex, std::move(u), deferred))
+            co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+            co_spawn(ex, std::move(u), deferred))
             .async_wait(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
@@ -183,8 +183,8 @@ awaitable<std::tuple<T..., U>, Executor> operator&&(
 
     auto [order, ex0, r0, ex1, r1] =
         co_await make_parallel_group(
-            co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-            co_spawn_sw(ex, detail::awaitable_wrap(std::move(u)), deferred))
+            co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+            co_spawn(ex, detail::awaitable_wrap(std::move(u)), deferred))
             .async_wait(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});

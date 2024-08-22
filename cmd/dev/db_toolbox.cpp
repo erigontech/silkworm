@@ -55,10 +55,15 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/active_component.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
+
+#include "../common/common.hpp"
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -2159,33 +2164,54 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
 }
 
 void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
-    class StageSchedulerAdapter : public stagedsync::StageScheduler {
+    using namespace concurrency::awaitable_wait_for_one;
+
+    class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
       public:
-        explicit StageSchedulerAdapter(db::RWTxn& tx) : tx_(tx) {}
+        explicit StageSchedulerAdapter(db::RWAccess db_access)
+            : db_access_(std::move(db_access)) {}
         ~StageSchedulerAdapter() override = default;
 
-        Task<void> schedule(std::function<Task<void>(db::RWTxn&)> task) override {
-            co_await task(tx_);
+        void execution_loop() override {
+            auto work_guard = boost::asio::make_work_guard(io_context_.get_executor());
+            io_context_.run();
+        }
+
+        bool stop() override {
+            io_context_.stop();
+            return ActiveComponent::stop();
+        }
+
+        Task<void> schedule(std::function<void(db::RWTxn&)> callback) override {
+            co_await concurrency::spawn_task(io_context_, [this, c = std::move(callback)]() -> Task<void> {
+                auto tx = this->db_access_.start_rw_tx();
+                c(tx);
+                tx.commit_and_stop();
+                co_return;
+            });
         }
 
       private:
-        db::RWTxn& tx_;
+        boost::asio::io_context io_context_;
+        db::RWAccess db_access_;
     };
 
     auto env = db::open_env(config);
-    db::RWTxnManaged tx{env};
-    StageSchedulerAdapter stage_scheduler{tx};
+    StageSchedulerAdapter stage_scheduler{db::RWAccess{env}};
 
     snapshots::SnapshotSettings settings;
     settings.repository_dir = data_dir.snapshots().path();
     settings.no_downloader = true;
     auto bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
     snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};  // NOLINT(cppcoreguidelines-slicing)
+    repository.reopen_folder();
+    db::DataModel::set_snapshot_repository(&repository);
 
-    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.etl().path()};
+    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.temp().path()};
 
     test_util::TaskRunner runner;
-    runner.run(freezer.exec());
+    runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));
+    stage_scheduler.stop();
 }
 
 int main(int argc, char* argv[]) {
@@ -2215,6 +2241,8 @@ int main(int argc, char* argv[]) {
      */
     auto app_yes_opt = app_main.add_flag("-Y,--yes", "Assume yes to all requests of confirmation");
     auto app_dry_opt = app_main.add_flag("--dry", "Don't commit to db. Only simulate");
+
+    cmd::common::add_logging_options(app_main, log_settings);
 
     /*
      * Subcommands
@@ -2381,6 +2409,8 @@ int main(int argc, char* argv[]) {
     };
 
     try {
+        log::init(log_settings);
+
         // Set origin data_dir
         DataDirectory data_dir{data_dir_factory()};
 

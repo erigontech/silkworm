@@ -200,7 +200,7 @@ void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash) {
 std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number) {
     auto cursor = txn.ro_cursor(db::table::kHeaders);
     auto key = db::block_key(min_number);
-    auto result = cursor->find(db::to_slice(key), /* throw_notfound = */ false);
+    auto result = cursor->lower_bound(db::to_slice(key), /* throw_notfound = */ false);
     if (!result) {
         return std::nullopt;
     }
@@ -208,7 +208,7 @@ std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min
 }
 
 std::optional<BlockHeader> read_canonical_header(ROTxn& txn, BlockNum b) {  // also known as read-header-by-number
-    std::optional<evmc::bytes32> h = read_canonical_hash(txn, b);
+    std::optional<evmc::bytes32> h = read_canonical_header_hash(txn, b);
     if (!h) {
         return std::nullopt;  // not found
     }
@@ -527,19 +527,19 @@ bool read_body(ROTxn& txn, const evmc::bytes32& h, BlockBody& body) {
 }
 
 bool read_canonical_body(ROTxn& txn, BlockNum block_number, bool read_senders, BlockBody& body) {
-    auto hash = read_canonical_hash(txn, block_number);
+    auto hash = read_canonical_header_hash(txn, block_number);
     if (!hash) return false;
     return read_body(txn, block_number, hash->bytes, read_senders, body);
 }
 
 std::optional<BlockBodyForStorage> read_canonical_body_for_storage(ROTxn& txn, BlockNum height) {
-    auto hash = read_canonical_hash(txn, height);
+    auto hash = read_canonical_header_hash(txn, height);
     if (!hash) return std::nullopt;
     return read_body_for_storage(txn, block_key(height, hash->bytes));
 }
 
 bool read_canonical_block(ROTxn& txn, BlockNum height, Block& block) {
-    std::optional<evmc::bytes32> h = read_canonical_hash(txn, height);
+    std::optional<evmc::bytes32> h = read_canonical_header_hash(txn, height);
     if (!h) return false;
 
     bool present = read_header(txn, *h, height, block.header);
@@ -924,16 +924,6 @@ std::optional<evmc::bytes32> read_head_header_hash(ROTxn& txn) {
     return to_bytes32(from_slice(data.value));
 }
 
-std::optional<evmc::bytes32> read_canonical_hash(ROTxn& txn, BlockNum b) {  // throws db exceptions
-    auto hashes_table = txn.ro_cursor(db::table::kCanonicalHashes);
-    // accessing this table with only b we will get the hash of the canonical block at height b
-    auto key = db::block_key(b);
-    auto data = hashes_table->find(db::to_slice(key), /*throw_notfound*/ false);
-    if (!data) return std::nullopt;  // not found
-    assert(data.value.length() == kHashLength);
-    return to_bytes32(from_slice(data.value));  // copy
-}
-
 void write_canonical_hash(RWTxn& txn, BlockNum b, const evmc::bytes32& hash) {
     Bytes key = db::block_key(b);
     auto skey = db::to_slice(key);
@@ -1100,7 +1090,7 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_number) const {
     if (repository_ && block_number <= repository_->max_block_available()) {
         return read_header_from_snapshot(block_number);
     } else {
-        auto hash = db::read_canonical_hash(txn_, block_number);
+        auto hash = db::read_canonical_header_hash(txn_, block_number);
         return db::read_header(txn_, block_number, *hash);
     }
 }
@@ -1169,26 +1159,26 @@ bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
     return false;
 }
 
-std::optional<Hash> DataModel::read_canonical_hash(BlockNum height) const {
-    return db::read_canonical_hash(txn_, height);
+std::optional<Hash> DataModel::read_canonical_header_hash(BlockNum height) const {
+    return db::read_canonical_header_hash(txn_, height);
 }
 
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum height) const {
-    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    const auto canonical_hash{db::read_canonical_header_hash(txn_, height)};
     if (!canonical_hash) return {};
 
     return read_header(height, *canonical_hash);
 }
 
 bool DataModel::read_canonical_body(BlockNum height, BlockBody& body) const {
-    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    const auto canonical_hash{db::read_canonical_header_hash(txn_, height)};
     if (!canonical_hash) return {};
 
     return read_body(*canonical_hash, height, body);
 }
 
 bool DataModel::read_canonical_block(BlockNum height, Block& block) const {
-    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    const auto canonical_hash{db::read_canonical_header_hash(txn_, height)};
     if (!canonical_hash) return {};
 
     return read_block(*canonical_hash, height, block);
@@ -1263,7 +1253,7 @@ void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&
 }
 
 bool DataModel::read_block(BlockNum number, bool read_senders, Block& block) const {
-    const auto hash{db::read_canonical_hash(txn_, number)};
+    const auto hash{db::read_canonical_header_hash(txn_, number)};
     if (!hash) {
         return false;
     }

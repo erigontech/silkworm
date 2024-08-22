@@ -35,6 +35,7 @@ struct DataMigration {
     Task<void> run_loop();
 
   protected:
+    virtual const char* name() const = 0;
     virtual std::unique_ptr<DataMigrationCommand> next_command() = 0;
     virtual std::shared_ptr<DataMigrationResult> migrate(std::unique_ptr<DataMigrationCommand> command) = 0;
     virtual void index(std::shared_ptr<DataMigrationResult> result) = 0;

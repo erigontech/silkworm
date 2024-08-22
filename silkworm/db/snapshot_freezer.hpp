@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <sstream>
+
 #include <silkworm/core/common/base.hpp>
 
 #include "data_migration_command.hpp"
@@ -32,6 +34,12 @@ struct FreezerCommand : public DataMigrationCommand {
         : range(std::move(range1)),
           base_txn_id(base_txn_id1) {}
     ~FreezerCommand() override = default;
+
+    std::string description() const override {
+        std::stringstream stream;
+        stream << "FreezerCommand [" << range.first << ", " << range.second << ")";
+        return stream.str();
+    }
 };
 
 struct SnapshotFreezer {

@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "body_snapshot.hpp"
 
@@ -42,12 +43,16 @@ void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapsh
 }
 
 void BodySnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
-    for (BlockNum i = range.first; i < range.second; i++) {
-        auto hash_opt = read_canonical_hash(txn, i);
+    for (BlockNum i = range.first, count = 1; i < range.second; i++, count++) {
+        auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
         auto hash = *hash_opt;
 
         delete_body(txn, hash, i);
+
+        if ((count > 10000) && ((count % 10000) == 0)) {
+            log::Debug("BodySnapshotFreezer") << "cleaned up until block " << i;
+        }
     }
 }
 

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "sync_wait.hpp"
+#include "spawn.hpp"
 
 #include <chrono>
 
@@ -27,7 +27,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-namespace silkworm {
+namespace silkworm::concurrency {
 
 namespace asio = boost::asio;
 
@@ -55,31 +55,31 @@ class DummyEngine {
     }
 };
 
-TEST_CASE("sync wait") {
-    asio::io_context io;
-    asio::executor_work_guard<asio::io_context::executor_type> work_guard{io.get_executor()};
+struct SpawnTest {
+    SpawnTest() {
+        ioc_thread = std::thread{[this]() { ioc.run(); }};
+    }
+    ~SpawnTest() {
+        ioc.stop();
+        if (ioc_thread.joinable()) {
+            ioc_thread.join();
+        }
+    }
 
+    asio::io_context ioc;
+    asio::executor_work_guard<asio::io_context::executor_type> work_guard{ioc.get_executor()};
+    std::thread ioc_thread;
+};
+
+TEST_CASE_METHOD(SpawnTest, "spawn_and_wait") {
     SECTION("wait for function") {
-        std::thread io_execution([&io]() { io.run(); });
-
-        sync_wait(io, dummy_task());
-
-        io.stop();
-        io_execution.join();
+        CHECK_NOTHROW(spawn_future_and_wait(ioc, dummy_task()));
     }
 
     SECTION("wait for method") {
-        std::thread io_execution([&io]() { io.run(); });
-
-        DummyEngine engine{io};
-
-        auto value = sync_wait(in(engine), DummyEngine::do_work());
-
-        CHECK(value == 42);
-
-        io.stop();
-        io_execution.join();
+        DummyEngine engine{ioc};
+        CHECK(spawn_future_and_wait(engine.get_executor(), DummyEngine::do_work()) == 42);
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::concurrency

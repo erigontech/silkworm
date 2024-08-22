@@ -36,6 +36,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>

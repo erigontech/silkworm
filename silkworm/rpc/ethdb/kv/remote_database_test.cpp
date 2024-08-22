@@ -59,8 +59,10 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[rpc][ethdb][kv][
     SECTION("open failure") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call fails
-        expect_request_async_tx(*kv_stub_, false);
-        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        expect_request_async_tx(*kv_stub_, /*ok=*/false);
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call returns w/ failure
+        EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_failure(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: RemoteDatabase::begin should raise an exception w/ expected gRPC status code
@@ -77,6 +79,8 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[rpc][ethdb][kv][
         EXPECT_CALL(reader_writer_, Read).WillOnce([&](auto*, void* tag) {
             agrpc::process_grpc_tag(grpc_context_, tag, /*ok=*/false);
         });
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call returns w/ failure
+        EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 

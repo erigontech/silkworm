@@ -430,7 +430,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     evmc::bytes32 expected_root{hb.root_hash()};
-    evmc::bytes32 computed_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+    evmc::bytes32 computed_root{regenerate_intermediate_hashes(txn, context.dir().temp().path())};
     REQUIRE(to_hex(computed_root.bytes, true) == to_hex(expected_root.bytes, true));
 
     // ----------------------------------------------------------------
@@ -497,7 +497,7 @@ TEST_CASE("Account and storage trie") {
     account_changes.insert(unpack_nibbles(Bytes(&key4b.bytes[0], kHashLength)));
 
     expected_root = 0x8e263cd4eefb0c3cbbb14e5541a66a755cad25bcfab1e10dd9d706263e811b28_bytes32;
-    computed_root = increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes);
+    computed_root = increment_intermediate_hashes(txn, context.dir().temp().path(), &account_changes, &storage_changes);
     REQUIRE(to_hex(computed_root.bytes, true) == to_hex(expected_root.bytes, true));
 
     node_map = read_all_nodes(account_trie);
@@ -526,8 +526,8 @@ TEST_CASE("Account and storage trie") {
         expected_root = 0x986b623eac8b26c8624cbaffaa60c1b48a7b88be1574bd98bd88391fc34c0a9c_bytes32;
 
         {
-            Collector account_trie_node_collector{context.dir().etl().path()};
-            Collector storage_trie_node_collector{context.dir().etl().path()};
+            Collector account_trie_node_collector{context.dir().temp().path()};
+            Collector storage_trie_node_collector{context.dir().temp().path()};
             TrieLoader trie_loader(txn, &account_changes, &storage_changes, &account_trie_node_collector,
                                    &storage_trie_node_collector);
             computed_root = trie_loader.calculate_root();
@@ -573,7 +573,7 @@ TEST_CASE("Account and storage trie") {
 
         expected_root = 0xaa953dc994f3375a95f2c413ed5a1a5a2f84d34b377d7587e3aa8dba944c12bf_bytes32;
         computed_root =
-            increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes);
+            increment_intermediate_hashes(txn, context.dir().temp().path(), &account_changes, &storage_changes);
         REQUIRE(computed_root == expected_root);
 
         node_map = read_all_nodes(account_trie);
@@ -616,7 +616,7 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    const evmc::bytes32 computed_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+    const evmc::bytes32 computed_root{regenerate_intermediate_hashes(txn, context.dir().temp().path())};
     REQUIRE(to_hex(computed_root.bytes, true) == to_hex(expected_root.bytes, true));
 
     db::PooledCursor account_trie(txn, db::table::kTrieOfAccounts);
@@ -679,7 +679,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     }
 
     // This populates TrieAccounts for the first pass
-    (void)regenerate_intermediate_hashes(txn, context.dir().etl().path());
+    (void)regenerate_intermediate_hashes(txn, context.dir().temp().path());
 
     // Double the balance of the first third of the accounts
     static constexpr Account two_eth{0, 2 * kEther};
@@ -709,7 +709,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     }
 
     const auto incremental_root{
-        increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes)};
+        increment_intermediate_hashes(txn, context.dir().temp().path(), &account_changes, &storage_changes)};
 
     const std::map<Bytes, Node> incremental_nodes{read_all_nodes(account_trie)};
 
@@ -737,7 +737,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
 
     txn->clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
     txn->clear_map(db::open_map(txn, db::table::kTrieOfStorage));
-    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().temp().path())};
 
     const std::map<Bytes, Node> fused_nodes{read_all_nodes(account_trie)};
 
@@ -819,7 +819,7 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
         upsert_storage_for_two_test_accounts(i, value_x, false);
     }
 
-    (void)regenerate_intermediate_hashes(txn, context.dir().etl().path());
+    (void)regenerate_intermediate_hashes(txn, context.dir().temp().path());
 
     // Change the value of the first third of the storage
     static const Bytes value_y{*from_hex("71f602b294119bf452f1923814f5c6de768221254d3056b1bd63e72dc3142a29")};
@@ -843,7 +843,7 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     account_changes.insert(unpack_nibbles(hashed_address2.bytes));
 
     const auto incremental_root{
-        increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes)};
+        increment_intermediate_hashes(txn, context.dir().temp().path(), &account_changes, &storage_changes)};
 
     const std::map<Bytes, Node> incremental_nodes{read_all_nodes(storage_trie)};
 
@@ -867,7 +867,7 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
 
     txn->clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
     txn->clear_map(db::open_map(txn, db::table::kTrieOfStorage));
-    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().temp().path())};
 
     const std::map<Bytes, Node> fused_nodes{read_all_nodes(storage_trie)};
 

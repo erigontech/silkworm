@@ -44,7 +44,7 @@ TEST_CASE("HeadersStage - data model") {
     SECTION("one header after the genesis") {
         db::RWTxnManaged tx(context.env());
 
-        auto header0_hash = db::read_canonical_hash(tx, 0);
+        auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);

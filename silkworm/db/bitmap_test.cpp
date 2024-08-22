@@ -127,7 +127,7 @@ TEST_CASE("Bitmap Index Loader") {
         {Bytes(address3.bytes, kAddressLength), roaring3},
     };
 
-    etl_mdbx::Collector collector(context.dir().etl().path());
+    etl_mdbx::Collector collector(context.dir().temp().path());
     IndexLoader bm_loader(db::table::kLogAddressIndex);
     IndexLoader::flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
     REQUIRE(collector.bytes_size());

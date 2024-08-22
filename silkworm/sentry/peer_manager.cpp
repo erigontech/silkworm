@@ -23,8 +23,8 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
 #include <silkworm/infra/concurrency/sleep.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
 #include "peer_manager_observer.hpp"
@@ -49,7 +49,7 @@ Task<void> PeerManager::run(
         connect_peer_tasks_.wait() &&
         drop_peer_tasks_.wait() &&
         peer_tasks_.wait();
-    co_await concurrency::co_spawn_sw(strand_, std::move(run), use_awaitable);
+    co_await concurrency::spawn_task(strand_, std::move(run));
 }
 
 Task<void> PeerManager::run_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
@@ -122,15 +122,15 @@ Task<void> PeerManager::drop_peer(
 }
 
 Task<size_t> PeerManager::count_peers() {
-    co_return (co_await concurrency::co_spawn_sw(strand_, count_peers_in_strand(), use_awaitable));
+    co_return (co_await concurrency::spawn_task(strand_, count_peers_in_strand()));
 }
 
 Task<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {
-    co_await concurrency::co_spawn_sw(strand_, enumerate_peers_in_strand(callback), use_awaitable);
+    co_await concurrency::spawn_task(strand_, enumerate_peers_in_strand(callback));
 }
 
 Task<void> PeerManager::enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback) {
-    co_await concurrency::co_spawn_sw(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
+    co_await concurrency::spawn_task(strand_, enumerate_random_peers_in_strand(max_count, callback));
 }
 
 Task<size_t> PeerManager::count_peers_in_strand() {
@@ -251,7 +251,7 @@ Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std
     [[maybe_unused]] auto _ = gsl::finally([this, peer_url] { this->connecting_peer_urls_.erase(peer_url); });
 
     try {
-        auto peer1 = co_await concurrency::co_spawn_sw(executor_pool_.any_executor(), client->connect(peer_url, is_static_peer), use_awaitable);
+        auto peer1 = co_await concurrency::spawn_task(executor_pool_.any_executor(), client->connect(peer_url, is_static_peer));
         auto peer = std::shared_ptr(std::move(peer1));
         co_await client_peer_channel_.send(peer);
     } catch (const boost::system::system_error& ex) {

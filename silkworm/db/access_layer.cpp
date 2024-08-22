@@ -200,7 +200,7 @@ void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash) {
 std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number) {
     auto cursor = txn.ro_cursor(db::table::kHeaders);
     auto key = db::block_key(min_number);
-    auto result = cursor->find(db::to_slice(key), /* throw_notfound = */ false);
+    auto result = cursor->lower_bound(db::to_slice(key), /* throw_notfound = */ false);
     if (!result) {
         return std::nullopt;
     }

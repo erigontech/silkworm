@@ -33,7 +33,7 @@ class TriggersStage : public Stage, public StageScheduler {
     Stage::Result unwind(db::RWTxn&) override { return Stage::Result::kSuccess; }
     Stage::Result prune(db::RWTxn&) override { return Stage::Result::kSuccess; }
 
-    Task<void> schedule(std::function<Task<void>(db::RWTxn&)> task) override;
+    Task<void> schedule(std::function<void(db::RWTxn&)> callback) override;
 
     bool stop() override;
 

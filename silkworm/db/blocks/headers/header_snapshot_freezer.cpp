@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "header_snapshot.hpp"
 
@@ -36,12 +37,16 @@ void HeaderSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snap
 }
 
 void HeaderSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
-    for (BlockNum i = range.first; i < range.second; i++) {
+    for (BlockNum i = range.first, count = 1; i < range.second; i++, count++) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
         auto& hash = *hash_opt;
 
         delete_header(txn, i, hash);
+
+        if ((count > 10000) && ((count % 10000) == 0)) {
+            log::Debug("HeaderSnapshotFreezer") << "cleaned up until block " << i;
+        }
     }
 }
 

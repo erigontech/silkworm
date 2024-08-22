@@ -21,6 +21,8 @@
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
+#include <silkworm/infra/grpc/client/reconnect.hpp>
 
 #include "../tables.hpp"
 
@@ -34,12 +36,28 @@ static std::string erigon_data_format_version;
 //! String key in DbInfo table identifying the Erigon version
 constexpr auto kErigonVersionFinished{"ErigonVersionFinished"};
 
-Task<void> set_data_format(kv::api::Transaction& tx) {
-    const auto version_bytes = co_await tx.get_one(table::kDatabaseInfoName, string_to_bytes(kErigonVersionFinished));
-    std::call_once(erigon_data_format_flag, [&]() {
-        erigon_data_format_version = bytes_to_string(version_bytes);
-        SILK_INFO << "Erigon data format version: " << erigon_data_format_version;
-    });
+Task<void> set_data_format(kv::api::Client& kv_client) {
+    const auto kv_service = kv_client.service();
+    bool warning_emitted{false};
+    while (true) {
+        try {
+            const auto tx = co_await kv_service->begin_transaction();
+            const auto version_bytes = co_await tx->get_one(table::kDatabaseInfoName, string_to_bytes(kErigonVersionFinished));
+            std::call_once(erigon_data_format_flag, [&]() {
+                erigon_data_format_version = bytes_to_string(version_bytes);
+                SILK_INFO << "Erigon data format version: " << erigon_data_format_version;
+            });
+            co_await tx->close();
+            SILK_TRACE << "Erigon data format: " << (db::state::is_data_format_v3() ? "v3" : "v2");
+            break;
+        } catch (const boost::system::system_error& se) {
+            if (!warning_emitted) {
+                SILK_WARN << "Cannot retrieve Erigon data format: " << se.what();
+                warning_emitted = true;
+            }
+        }
+        co_await sleep(std::chrono::milliseconds(rpc::kDefaultMinBackoffReconnectTimeout));
+    }
 }
 
 bool is_data_format_v3() {

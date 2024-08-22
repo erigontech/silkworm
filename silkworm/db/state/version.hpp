@@ -18,11 +18,12 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 
 namespace silkworm::db::state {
 
-Task<void> set_data_format(kv::api::Transaction& tx);
+Task<void> set_data_format(kv::api::Client& kv_client);
 
 bool is_data_format_v3();
 

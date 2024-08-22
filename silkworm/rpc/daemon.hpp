@@ -68,6 +68,7 @@ class Daemon {
 
     void add_private_services();
     void add_shared_services();
+    std::unique_ptr<db::kv::api::Client> make_kv_client(rpc::ClientContext& context);
     void schedule_data_format_retrieval();
 
     //! The RPC daemon configuration settings.

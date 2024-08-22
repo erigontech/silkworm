@@ -25,6 +25,7 @@
 namespace silkworm::log {
 
 //! \brief Available verbosity levels
+// NOLINTNEXTLINE(performance-enum-size)
 enum class Level {
     kNone,      // Simple logging line with no severity (e.g. build info)
     kCritical,  // An error there's no way we can recover from

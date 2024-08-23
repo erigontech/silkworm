@@ -127,10 +127,11 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
 
     // Prefix
     auto log_tag{settings_.log_trim ? absl::StripAsciiWhitespace(log_level).substr(0, 4) : log_level};
+    std::string_view padding = settings_.log_trim ? "" : " ";
     ss_ << kColorReset
-        << (settings_.log_trim && !is_terminal ? "[" : (settings_.log_trim ? "" : " ")) << color << log_tag
+        << (settings_.log_trim && !is_terminal ? "[" : padding) << color << log_tag
         << kColorReset
-        << (settings_.log_trim && !is_terminal ? "] " : (settings_.log_trim ? "" : " "));
+        << (settings_.log_trim && !is_terminal ? "] " : padding);
 
     // TimeStamp
     static const absl::TimeZone tz{settings_.log_utc ? absl::UTCTimeZone() : absl::LocalTimeZone()};

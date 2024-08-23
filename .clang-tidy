@@ -64,7 +64,6 @@ Checks: >
   -performance-enum-size,
   portability-*,
   readability-*,
-  -readability-avoid-nested-conditional-operator,
   -readability-braces-around-statements,
   -readability-container-data-pointer,
   -readability-convert-member-functions-to-static,

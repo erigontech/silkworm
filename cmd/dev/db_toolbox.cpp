@@ -911,10 +911,14 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 
         auto src_table_crs{src_txn.open_cursor(src_table_map)};
         auto tgt_table_crs{tgt_txn.open_cursor(tgt_table_map)};
-        MDBX_put_flags_t put_flags{populated_on_target
-                                       ? MDBX_put_flags_t::MDBX_UPSERT
-                                       : ((src_table_info.flags & MDBX_DUPSORT) ? MDBX_put_flags_t::MDBX_APPENDDUP
-                                                                                : MDBX_put_flags_t::MDBX_APPEND)};
+        MDBX_put_flags_t put_flags{};
+        if (populated_on_target) {
+            put_flags = MDBX_put_flags_t::MDBX_UPSERT;
+        } else if (src_table_info.flags & MDBX_DUPSORT) {
+            put_flags = MDBX_put_flags_t::MDBX_APPENDDUP;
+        } else {
+            put_flags = MDBX_put_flags_t::MDBX_APPEND;
+        }
 
         auto data{src_table_crs.to_first(/*throw_notfound =*/false)};
         while (data) {

@@ -74,7 +74,6 @@ Checks: >
   -readability-magic-numbers,
   -readability-named-parameter,
   -readability-qualified-auto,
-  -readability-redundant-inline-specifier,
   -readability-redundant-member-init,
   -readability-redundant-smartptr-get,
   -readability-simplify-boolean-expr,

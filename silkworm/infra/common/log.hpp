@@ -89,7 +89,7 @@ class BufferBase {
 
     // Accumulators
     template <class T>
-    inline void append(const T& t) {
+    void append(const T& t) {
         if (should_print_) ss_ << t;
     }
     template <class T>
@@ -97,16 +97,16 @@ class BufferBase {
         append(t);
         return *this;
     }
-    inline void append(const Args& args) {
+    void append(const Args& args) {
         append("", args);
     }
-    inline BufferBase& operator<<(const Args& args) {
+    BufferBase& operator<<(const Args& args) {
         append(args);
         return *this;
     }
 
   protected:
-    inline void append(std::string_view msg, const Args& args) {
+    void append(std::string_view msg, const Args& args) {
         if (!should_print_) return;
         ss_ << std::left << std::setw(41) << std::setfill(' ') << msg;
         bool left{true};

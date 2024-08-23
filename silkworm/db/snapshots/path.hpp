@@ -72,6 +72,8 @@ class SnapshotPath {
 
     [[nodiscard]] SnapshotType type() const { return type_; }
 
+    [[nodiscard]] std::string type_string() const;
+
     [[nodiscard]] uint64_t segment_size() const { return block_to_ - block_from_; }
 
     [[nodiscard]] bool is_segment() const { return path_.extension().string() == kSegmentExtension; }

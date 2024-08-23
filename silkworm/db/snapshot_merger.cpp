@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include <silkworm/infra/common/filesystem.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "snapshots/path.hpp"
 #include "snapshots/seg/compressor.hpp"
@@ -93,6 +94,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
     auto new_bundle = snapshots_.bundle_factory().make(tmp_dir_path_, range);
     for (auto& snapshot_ref : new_bundle.snapshots()) {
         auto path = snapshot_ref.get().path();
+        log::Debug("SnapshotMerger") << "merging " << path.type_string() << " range [" << range.first << ", " << range.second << ")";
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
         for (auto& bundle_ptr : snapshots_.view_bundles()) {

@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include <silkworm/infra/common/filesystem.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "snapshots/path.hpp"
 #include "snapshots/seg/compressor.hpp"
@@ -58,15 +59,19 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
 
     for (auto& bundle_ptr : snapshots_.view_bundles()) {
         auto& bundle = *bundle_ptr;
+        log::Debug("next_command") << "block_from = " << bundle.block_from();
         if (bundle.block_count() >= kMaxSnapshotSize) {
+            log::Debug("next_command") << "2 skip block_from = " << bundle.block_from();
             continue;
         }
         if (bundle.block_count() != block_count) {
+            log::Debug("next_command") << "3 reset with block_count = " << bundle.block_count();
             first_block_num = bundle.block_from();
             block_count = bundle.block_count();
             batch_size = 0;
         }
         batch_size++;
+        log::Debug("next_command") << "4 batch_size = " << batch_size;
         if (batch_size == kBatchSize) {
             return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle.block_to()});
         }

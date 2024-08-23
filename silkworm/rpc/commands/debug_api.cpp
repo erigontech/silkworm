@@ -632,7 +632,8 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
         std::stringstream msg;
         msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
         throw std::invalid_argument(msg.str());
-    } else if (start_block_number <= end_block_number) {
+    }
+    if (start_block_number <= end_block_number) {
         auto walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
             auto block_number = static_cast<BlockNum>(std::stol(silkworm::to_hex(key), nullptr, 16));
             if (block_number <= end_block_number) {

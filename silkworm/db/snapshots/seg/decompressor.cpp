@@ -198,29 +198,28 @@ CodeWord* PatternTable::insert_word(CodeWord* codeword) {
 const CodeWord* PatternTable::search_condensed(uint16_t code) const {
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
         return codeword(code);
-    } else {
-        CodeWord* previous{nullptr};
-        for (auto* current = head_; current != nullptr; previous = current, current = current->next()) {
-            if (current->code() == code) {
-                if (previous != nullptr) {
-                    previous->set_next(current->next());
-                    current->set_next(head_);
-                    head_ = current;
-                }
-                return current;
+    }
+    CodeWord* previous{nullptr};
+    for (auto* current = head_; current != nullptr; previous = current, current = current->next()) {
+        if (current->code() == code) {
+            if (previous != nullptr) {
+                previous->set_next(current->next());
+                current->set_next(head_);
+                head_ = current;
             }
-            const auto distance = code - current->code();
-            if ((distance & 0x1) != 0) {
-                continue;
+            return current;
+        }
+        const auto distance = code - current->code();
+        if ((distance & 0x1) != 0) {
+            continue;
+        }
+        if (check_distance(current->code_length(), distance)) {
+            if (previous != nullptr) {
+                previous->set_next(current->next());
+                current->set_next(head_);
+                head_ = current;
             }
-            if (check_distance(current->code_length(), distance)) {
-                if (previous != nullptr) {
-                    previous->set_next(current->next());
-                    current->set_next(head_);
-                    head_ = current;
-                }
-                return current;
-            }
+            return current;
         }
     }
     return nullptr;

@@ -41,11 +41,11 @@ ProtocolVersionResult wait_for_protocol_check(const std::unique_ptr<StubInterfac
     vv_stream << "client=" << version << " server=" << server_version;
     if (version.major != server_version.major) {  // NOLINT(bugprone-branch-clone)
         return ProtocolVersionResult{false, name + " incompatible interface: " + vv_stream.str()};
-    } else if (version.minor != server_version.minor) {
-        return ProtocolVersionResult{false, name + " incompatible interface: " + vv_stream.str()};
-    } else {
-        return ProtocolVersionResult{true, name + " compatible interface: " + vv_stream.str()};
     }
+    if (version.minor != server_version.minor) {
+        return ProtocolVersionResult{false, name + " incompatible interface: " + vv_stream.str()};
+    }
+    return ProtocolVersionResult{true, name + " compatible interface: " + vv_stream.str()};
 }
 
 template <auto Func, typename StubInterface>

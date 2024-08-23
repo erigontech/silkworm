@@ -72,7 +72,8 @@ ValidationResult RuleSet::pre_validate_block_body(const Block& block, const Bloc
 
     if (block.ommers.empty()) {
         return header.ommers_hash == kEmptyListHash ? ValidationResult::kOk : ValidationResult::kWrongOmmersHash;
-    } else if (prohibit_ommers_) {
+    }
+    if (prohibit_ommers_) {
         return ValidationResult::kTooManyOmmers;
     }
 
@@ -86,11 +87,7 @@ ValidationResult RuleSet::pre_validate_block_body(const Block& block, const Bloc
 
 ValidationResult RuleSet::validate_ommers(const Block& block, const BlockState& state) {
     if (prohibit_ommers_) {
-        if (block.ommers.empty()) {
-            return ValidationResult::kOk;
-        } else {
-            return ValidationResult::kTooManyOmmers;
-        }
+        return block.ommers.empty() ? ValidationResult::kOk : ValidationResult::kTooManyOmmers;
     }
 
     if (block.ommers.size() > 2) {

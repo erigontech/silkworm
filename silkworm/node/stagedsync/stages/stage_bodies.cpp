@@ -117,7 +117,8 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         if (current_height_ == target_height) {
             // Nothing to process
             return Stage::Result::kSuccess;
-        } else if (current_height_ > target_height) {
+        }
+        if (current_height_ > target_height) {
             // Something bad had happened. Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress,
                              "Previous progress " + std::to_string(current_height_) +

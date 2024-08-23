@@ -101,9 +101,8 @@ class PaginatedSequence2 {
             if (it_ == current_.values.cend()) {
                 if (current_.has_more) {
                     return true;
-                } else {
-                    it_ = typename Page::const_iterator();  // empty i.e. sentinel value
                 }
+                it_ = typename Page::const_iterator();  // empty i.e. sentinel value
             }
             return false;
         }

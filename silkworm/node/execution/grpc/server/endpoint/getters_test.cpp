@@ -38,9 +38,8 @@ namespace proto = ::execution;
 static api::BlockNumberOrHash sample_block_number_or_hash(bool has_number) {
     if (has_number) {
         return kSampleBlockNumber;
-    } else {
-        return kSampleBlockHash;
     }
+    return kSampleBlockHash;
 }
 
 static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<BlockNum> number,

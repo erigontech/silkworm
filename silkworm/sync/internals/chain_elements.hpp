@@ -122,11 +122,11 @@ struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std:
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
         if (x->timestamp != y->timestamp) {
             return x->timestamp > y->timestamp;  // prefer smaller timestamp
-        } else if (x->blockHeight != y->blockHeight) {
-            return x->blockHeight > y->blockHeight;  // when timestamps are the same prioritise low blockHeight
-        } else {
-            return x > y;  // when blockHeight are the same preserve identity
         }
+        if (x->blockHeight != y->blockHeight) {
+            return x->blockHeight > y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        }
+        return x > y;  // when blockHeight are the same preserve identity
     }
 };
 
@@ -134,11 +134,11 @@ struct AnchorOlderThan : public std::function<bool(std::shared_ptr<Anchor>, std:
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
         if (x->timestamp != y->timestamp) {
             return x->timestamp < y->timestamp;  // prefer smaller timestamp
-        } else if (x->blockHeight != y->blockHeight) {
-            return x->blockHeight < y->blockHeight;  // when timestamps are the same prioritise low blockHeight
-        } else {
-            return x < y;  // when blockHeight are the same preserve identity
         }
+        if (x->blockHeight != y->blockHeight) {
+            return x->blockHeight < y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        }
+        return x < y;  // when blockHeight are the same preserve identity
     }
 };
 

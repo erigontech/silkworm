@@ -132,9 +132,8 @@ namespace rlp {
         size_t rlp_len{length_of_length(h.payload_length) + h.payload_length};
         if (txn.type != TransactionType::kLegacy && wrap_eip2718_into_string) {
             return length_of_length(rlp_len + 1) + rlp_len + 1;
-        } else {
-            return rlp_len;
         }
+        return rlp_len;
     }
 
     static void legacy_encode_base(Bytes& to, const UnsignedTransaction& txn) {

@@ -114,31 +114,36 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_number(BlockNum origin, uin
 
 std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum block_num, BlockNum ancestor_delta,
                                                          uint64_t& max_non_canonical) {
-    if (ancestor_delta > block_num) return {Hash{}, 0};
+    if (ancestor_delta > block_num) {
+        return {Hash{}, 0};
+    }
 
     if (ancestor_delta == 1) {
         auto header = data_model_.read_header(block_num, hash);
         if (header) {
             return {header->parent_hash, block_num - 1};
-        } else {
-            return {Hash{}, 0};
         }
+        return {Hash{}, 0};
     }
 
     while (ancestor_delta != 0) {
         auto h = db::read_canonical_header_hash(db_tx_, block_num);
         if (h == hash) {
             auto ancestorHash = db::read_canonical_header_hash(db_tx_, block_num - ancestor_delta);
-            if (!ancestorHash)
+            if (!ancestorHash) {
                 return {Hash{}, 0};
-            else
-                return {*ancestorHash, block_num - ancestor_delta};
+            }
+            return {*ancestorHash, block_num - ancestor_delta};
         }
-        if (max_non_canonical == 0) return {Hash{}, 0};
+        if (max_non_canonical == 0) {
+            return {Hash{}, 0};
+        }
         max_non_canonical--;
         ancestor_delta--;
         auto header = data_model_.read_header(block_num, hash);
-        if (!header) return {Hash{}, 0};
+        if (!header) {
+            return {Hash{}, 0};
+        }
         hash = header->parent_hash;
         block_num--;
     }

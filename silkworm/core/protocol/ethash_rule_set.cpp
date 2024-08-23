@@ -82,7 +82,8 @@ void EthashRuleSet::finalize(IntraBlockState& state, const Block& block) {
 static intx::uint256 block_reward_base(const evmc_revision rev) {
     if (rev >= EVMC_CONSTANTINOPLE) {
         return kBlockRewardConstantinople;
-    } else if (rev >= EVMC_BYZANTIUM) {
+    }
+    if (rev >= EVMC_BYZANTIUM) {
         return kBlockRewardByzantium;
     }
     return kBlockRewardFrontier;

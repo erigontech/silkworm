@@ -402,10 +402,12 @@ Task<void> Peer::receive_messages(framing::MessageStream& message_stream) {
         if (message.id == DisconnectMessage::kId) {
             auto disconnect_message = DisconnectMessage::from_message(message);
             throw auth::Handshake::DisconnectError(disconnect_message.reason);
-        } else if (message.id == PingMessage::kId) {
+        }
+        if (message.id == PingMessage::kId) {
             co_await message_stream.send(PongMessage{}.to_message());
             continue;
-        } else if (message.id == PongMessage::kId) {
+        }
+        if (message.id == PongMessage::kId) {
             try {
                 co_await pong_channel_.send(std::move(message));
             } catch (const boost::system::system_error& ex) {

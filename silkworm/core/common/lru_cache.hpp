@@ -134,10 +134,9 @@ class lru_cache {
         auto it = _cache_items_map.find(key);
         if (it == _cache_items_map.end()) {
             return nullptr;
-        } else {
-            _cache_items_list.splice(_cache_items_list.begin(), _cache_items_list, it->second);
-            return &(it->second->second);
         }
+        _cache_items_list.splice(_cache_items_list.begin(), _cache_items_list, it->second);
+        return &(it->second->second);
     }
 
     std::list<key_value_pair_t> _cache_items_list;

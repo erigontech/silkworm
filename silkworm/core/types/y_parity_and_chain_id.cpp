@@ -21,9 +21,8 @@ namespace silkworm {
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) noexcept {
     if (chain_id.has_value()) {
         return chain_id.value() * 2 + 35 + odd;
-    } else {
-        return odd ? 28 : 27;
     }
+    return odd ? 28 : 27;
 }
 
 std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v) noexcept {

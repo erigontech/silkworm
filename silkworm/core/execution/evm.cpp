@@ -277,14 +277,12 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
 
 evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {
     const evmc_revision rev{revision()};
-
     if (exo_evm) {
         EvmHost host{*this};
         return exo_evm->execute(exo_evm, &EvmHost::get_interface(), host.to_context(), rev, &message,
                                 code.data(), code.size());
-    } else {
-        return execute_with_baseline_interpreter(rev, message, code, code_hash);
     }
+    return execute_with_baseline_interpreter(rev, message, code, code_hash);
 }
 
 gsl::owner<evmone::ExecutionState*> EVM::acquire_state() const noexcept {
@@ -344,12 +342,10 @@ void EVM::add_tracer(EvmTracer& tracer) noexcept {
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     const evmc_revision rev{evm_.revision()};
-
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         return !evm_.state().is_dead(address);
-    } else {
-        return evm_.state().exists(address);
     }
+    return evm_.state().exists(address);
 }
 
 evmc_access_status EvmHost::access_account(const evmc::address& address) noexcept {
@@ -389,18 +385,16 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
         // !is_zero(original_val)
         if (is_zero(value)) {
             return EVMC_STORAGE_DELETED;
-        } else {
-            return EVMC_STORAGE_MODIFIED;
         }
+        return EVMC_STORAGE_MODIFIED;
     }
     // original_val != current_val
     if (!is_zero(original_val)) {
         if (is_zero(current_val)) {
             if (original_val == value) {
                 return EVMC_STORAGE_DELETED_RESTORED;
-            } else {
-                return EVMC_STORAGE_DELETED_ADDED;
             }
+            return EVMC_STORAGE_DELETED_ADDED;
         }
         // !is_zero(current_val)
         if (is_zero(value)) {
@@ -409,16 +403,14 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
         // !is_zero(value)
         if (original_val == value) {
             return EVMC_STORAGE_MODIFIED_RESTORED;
-        } else {
-            return EVMC_STORAGE_ASSIGNED;
         }
+        return EVMC_STORAGE_ASSIGNED;
     }
     // is_zero(original_val)
     if (original_val == value) {
         return EVMC_STORAGE_ADDED_DELETED;
-    } else {
-        return EVMC_STORAGE_ASSIGNED;
     }
+    return EVMC_STORAGE_ASSIGNED;
 }
 
 evmc::uint256be EvmHost::get_balance(const evmc::address& address) const noexcept {
@@ -433,9 +425,8 @@ size_t EvmHost::get_code_size(const evmc::address& address) const noexcept {
 evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcept {
     if (evm_.state().is_dead(address)) {
         return {};
-    } else {
-        return evm_.state().get_code_hash(address);
     }
+    return evm_.state().get_code_hash(address);
 }
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
@@ -475,14 +466,12 @@ evmc::Result EvmHost::call(const evmc_message& message) noexcept {
         if (res.status_code == EVMC_REVERT) {
             // geth returns CREATE output only in case of REVERT
             return res;
-        } else {
-            evmc::Result res_with_no_output{res.status_code, res.gas_left, res.gas_refund};
-            res_with_no_output.create_address = res.create_address;
-            return res_with_no_output;
         }
-    } else {
-        return evm_.call(message);
+        evmc::Result res_with_no_output{res.status_code, res.gas_left, res.gas_refund};
+        res_with_no_output.create_address = res.create_address;
+        return res_with_no_output;
     }
+    return evm_.call(message);
 }
 
 evmc_tx_context EvmHost::get_tx_context() const noexcept {

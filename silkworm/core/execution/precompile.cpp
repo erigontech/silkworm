@@ -116,11 +116,11 @@ static intx::uint256 mult_complexity_eip198(const intx::uint256& x) noexcept {
     const intx::uint256 x_squared{x * x};
     if (x <= 64) {
         return x_squared;
-    } else if (x <= 1024) {
-        return (x_squared >> 2) + 96 * x - 3072;
-    } else {
-        return (x_squared >> 4) + 480 * x - 199680;
     }
+    if (x <= 1024) {
+        return (x_squared >> 2) + 96 * x - 3072;
+    }
+    return (x_squared >> 4) + 480 * x - 199680;
 }
 
 static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) noexcept {
@@ -187,9 +187,8 @@ uint64_t expmod_gas(ByteView input_view, evmc_revision rev) noexcept {
 
     if (intx::count_significant_words(gas) > 1) {
         return UINT64_MAX;
-    } else {
-        return std::max(min_gas, static_cast<uint64_t>(gas));
     }
+    return std::max(min_gas, static_cast<uint64_t>(gas));
 }
 
 std::optional<Bytes> expmod_run(ByteView input_view) noexcept {

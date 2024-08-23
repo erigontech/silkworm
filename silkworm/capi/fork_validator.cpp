@@ -190,13 +190,10 @@ SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle ha
 
     try {
         auto result = handle->execution_engine->notify_fork_choice_update(head_hash, finalized_hash_opt, safe_hash_opt);
-
         if (result) {
             return SILKWORM_OK;
-        } else {
-            SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed with unknown error";
         }
-
+        SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed with unknown error";
     } catch (const std::exception& ex) {
         SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed: " << ex.what();
     }

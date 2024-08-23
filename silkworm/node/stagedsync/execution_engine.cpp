@@ -198,10 +198,9 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
             if (main_chain_.is_finalized_canonical(head_block_hash)) {
                 SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already chosen";
                 return true;
-            } else {
-                SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
-                return false;
             }
+            SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
+            return false;
         }
 
         // notify the fork of the update - we need to block here to restore the invariant
@@ -277,9 +276,8 @@ std::optional<TotalDifficulty> ExecutionEngine::get_header_td(Hash h, std::optio
     // is a duty of the sync component
     if (bn) {
         return main_chain_.get_header_td(*bn, h);
-    } else {
-        return main_chain_.get_header_td(h);
     }
+    return main_chain_.get_header_td(h);
 }
 
 std::optional<BlockBody> ExecutionEngine::get_body(Hash header_hash) const {

@@ -53,7 +53,8 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             // Nothing to process
             operation_ = OperationType::None;
             return ret;
-        } else if (previous_progress > senders_stage_progress) {
+        }
+        if (previous_progress > senders_stage_progress) {
             // Something bad had happened. Not possible execution stage is ahead of senders
             // Maybe we need to unwind ?
             std::string what{"Bad progress sequence. Execution stage progress " + std::to_string(previous_progress) +
@@ -163,7 +164,8 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
             if (reached_block_num != block_num) {
                 throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
                                          " got " + std::to_string(reached_block_num));
-            } else if (value.length() != kHashLength) {
+            }
+            if (value.length() != kHashLength) {
                 throw std::runtime_error("Invalid value for hash in " +
                                          std::string(db::table::kCanonicalHashes.name) +
                                          " expected=" + std::to_string(kHashLength) +

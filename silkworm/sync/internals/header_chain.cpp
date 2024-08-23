@@ -355,8 +355,8 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
         if (*lowest_anchor - highest_in_db_ <= stride) {  // the lowest_anchor is too close to highest_in_db
             skeleton_condition_ = "working";
             return nullptr;
-        } else
-            next_target = *lowest_anchor;
+        }
+        next_target = *lowest_anchor;
     } else {                                   // there are no anchors
         if (top - highest_in_db_ <= stride) {  // the top is too close to highest_in_db
             if (target_block_) {               // we are syncing to a specific block
@@ -365,10 +365,9 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
                 request_message->packet().requestId = generate_request_id();
                 request_message->packet().request = {{top}, max_len, 0, true};  // request top header only
                 return request_message;
-            } else {
-                skeleton_condition_ = "wait tip announce";
-                return nullptr;
             }
+            skeleton_condition_ = "wait tip announce";
+            return nullptr;
         }
     }
 
@@ -483,14 +482,14 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
 
             extension_condition_ = "ok";
             return request_message;  // try (again) to extend this anchor
-        } else {
-            // ancestors of this anchor seem to be unavailable, invalidate and move on
-            log::Warning("HeaderChain") << "invalidating anchor for suspected unavailability, "
-                                        << "height=" << anchor->blockHeight;
-            // no need to do anchor_queue_.pop(), implicitly done in the following
-            invalidate(anchor);
-            send_penalties->penalties().emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
         }
+
+        // ancestors of this anchor seem to be unavailable, invalidate and move on
+        log::Warning("HeaderChain") << "invalidating anchor for suspected unavailability, "
+                                    << "height=" << anchor->blockHeight;
+        // no need to do anchor_queue_.pop(), implicitly done in the following
+        invalidate(anchor);
+        send_penalties->penalties().emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
     }
 
     extension_condition_ = "void anchor queue";
@@ -805,7 +804,8 @@ std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> Header
 
     if (parent_link->persisted) {
         return {std::nullopt, parent_link};  // ok, no anchor because the link is in a segment attached to a
-    }                                        // persisted link that we return
+                                             // persisted link that we return
+    }
 
     auto a = anchors_.find(parent_link->header->parent_hash);
     if (a == anchors_.end()) {

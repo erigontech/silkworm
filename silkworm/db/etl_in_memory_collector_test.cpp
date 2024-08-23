@@ -81,9 +81,8 @@ static std::vector<Entry> generate_entry_set(size_t size) {
         if (keys.contains(key)) {
             // we want unique keys
             continue;
-        } else {
-            keys.insert(key);
         }
+        keys.insert(key);
         if (pairs.size() % 100) {
             Bytes value(8, '\0');
             endian::store_big_u64(&value[0], rnd.generate_one());

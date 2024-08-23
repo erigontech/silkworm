@@ -45,7 +45,8 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
             // Nothing to process
             operation_ = OperationType::None;
             return ret;
-        } else if (previous_progress > headers_stage_progress) {
+        }
+        if (previous_progress > headers_stage_progress) {
             // Something bad had happened.
             // Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress,

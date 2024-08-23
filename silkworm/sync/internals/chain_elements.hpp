@@ -120,17 +120,25 @@ struct LinkYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::s
 
 struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
-        return x->timestamp != y->timestamp ? x->timestamp > y->timestamp :               // prefer smaller timestamp
-                   (x->blockHeight != y->blockHeight ? x->blockHeight > y->blockHeight :  // when timestamps are the same prioritise low blockHeight
-                        x > y);                                                           // when blockHeight are the same preserve identity
+        if (x->timestamp != y->timestamp) {
+            return x->timestamp > y->timestamp;  // prefer smaller timestamp
+        }
+        if (x->blockHeight != y->blockHeight) {
+            return x->blockHeight > y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        }
+        return x > y;  // when blockHeight are the same preserve identity
     }
 };
 
 struct AnchorOlderThan : public std::function<bool(std::shared_ptr<Anchor>, std::shared_ptr<Anchor>)> {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
-        return x->timestamp != y->timestamp ? x->timestamp < y->timestamp :               // prefer smaller timestamp
-                   (x->blockHeight != y->blockHeight ? x->blockHeight < y->blockHeight :  // when timestamps are the same prioritise low blockHeight
-                        x < y);                                                           // when blockHeight are the same preserve identity
+        if (x->timestamp != y->timestamp) {
+            return x->timestamp < y->timestamp;  // prefer smaller timestamp
+        }
+        if (x->blockHeight != y->blockHeight) {
+            return x->blockHeight < y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        }
+        return x < y;  // when blockHeight are the same preserve identity
     }
 };
 

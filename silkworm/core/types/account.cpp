@@ -100,11 +100,12 @@ static inline tl::expected<uint8_t, DecodingError> validate_encoded_head(ByteVie
 }
 
 tl::expected<Account, DecodingError> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
-    Account a;
     const tl::expected<uint8_t, DecodingError> field_set{validate_encoded_head(encoded_payload)};
     if (!field_set) {
         return tl::unexpected{field_set.error()};
-    } else if (field_set == 0) {
+    }
+    Account a;
+    if (field_set == 0) {
         return a;
     }
 
@@ -204,7 +205,8 @@ tl::expected<uint64_t, DecodingError> Account::incarnation_from_encoded_storage(
     const tl::expected<uint8_t, DecodingError> field_set{validate_encoded_head(encoded_payload)};
     if (!field_set) {
         return tl::unexpected{field_set.error()};
-    } else if (!(*field_set & /*incarnation mask*/ 4)) {
+    }
+    if (!(*field_set & /*incarnation mask*/ 4)) {
         return 0;
     }
 

@@ -108,7 +108,8 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
 
     if (!config.create && !db_file_size) {
         throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
-    } else if (config.create && db_file_size) {
+    }
+    if (config.create && db_file_size) {
         throw std::runtime_error("File " + db_file.string() + " already exists but create was set");
     }
 

@@ -80,10 +80,12 @@ Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number, 
 }
 
 int StorageWalker::compare_empty_greater(const ByteView& key1, const ByteView& key2) {
-    if (key1.empty() && !key2.empty())
+    if (key1.empty() && !key2.empty()) {
         return 1;
-    else if (!key1.empty() && key2.empty())
+    }
+    if (!key1.empty() && key2.empty()) {
         return -1;
+    }
     return key1.compare(key2);
 }
 

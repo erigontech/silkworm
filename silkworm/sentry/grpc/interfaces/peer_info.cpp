@@ -92,12 +92,10 @@ api::PeerInfos peer_infos_from_proto_peers_reply(const ::sentry::PeersReply& rep
 }
 
 std::optional<api::PeerInfo> peer_info_opt_from_proto_peer_reply(const ::sentry::PeerByIdReply& reply) {
-    if (reply.has_peer()) {
-        auto result = peer_info_from_proto_peer_info(reply.peer());
-        return {result};
-    } else {
+    if (!reply.has_peer()) {
         return std::nullopt;
     }
+    return peer_info_from_proto_peer_info(reply.peer());
 }
 
 ::sentry::PeerByIdReply proto_peer_reply_from_peer_info_opt(const std::optional<api::PeerInfo>& peer_opt) {

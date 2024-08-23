@@ -529,11 +529,8 @@ ByteView Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
         return it->second;
     }
     std::optional<ByteView> code{db::read_code(txn_, code_hash)};
-    if (code.has_value()) {
-        return *code;
-    } else {
-        return {};
-    }
+    ByteView empty;
+    return code.value_or(empty);
 }
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,

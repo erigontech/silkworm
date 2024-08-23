@@ -50,14 +50,11 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
                                    std::optional<Hash> safe_block_hash) override {
         if (finalized_block_hash && safe_block_hash) {
             return notify_fork_choice_update3(head_block_hash, *finalized_block_hash, *safe_block_hash);
-        } else {
-            if (finalized_block_hash) {
-                return notify_fork_choice_update2(head_block_hash, *finalized_block_hash);
-            } else {
-                return notify_fork_choice_update1(head_block_hash);
-            }
         }
-        return false;
+        if (finalized_block_hash) {
+            return notify_fork_choice_update2(head_block_hash, *finalized_block_hash);
+        }
+        return notify_fork_choice_update1(head_block_hash);
     }
 
     MOCK_METHOD((BlockId), last_fork_choice, (), (const, override));

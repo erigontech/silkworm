@@ -91,7 +91,8 @@ DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
     size_t delta{effective_num_hashes - expected_num_hashes};
     if (delta > 1) {
         return tl::unexpected{DecodingError::kInvalidHashesLength};
-    } else if (delta == 1) {
+    }
+    if (delta == 1) {
         node.root_hash_.emplace();
         std::memcpy(node.root_hash_->bytes, raw.data(), kHashLength);
         raw.remove_prefix(kHashLength);

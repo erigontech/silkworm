@@ -40,7 +40,8 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
             // Nothing to process
             operation_ = OperationType::None;
             return ret;
-        } else if (previous_progress > target_progress) {
+        }
+        if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress,
                              "TxLookup progress " + std::to_string(previous_progress) +

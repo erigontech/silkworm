@@ -1081,18 +1081,16 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const H
             return header;
         }
         return {};
-    } else {
-        return db::read_header(txn_, block_number, block_hash);
     }
+    return db::read_header(txn_, block_number, block_hash);
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number) const {
     if (repository_ && block_number <= repository_->max_block_available()) {
         return read_header_from_snapshot(block_number);
-    } else {
-        auto hash = db::read_canonical_header_hash(txn_, block_number);
-        return db::read_header(txn_, block_number, *hash);
     }
+    auto hash = db::read_canonical_header_hash(txn_, block_number);
+    return db::read_header(txn_, block_number, *hash);
 }
 
 std::optional<BlockHeader> DataModel::read_header(const Hash& block_hash) const {

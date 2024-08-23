@@ -223,19 +223,20 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
         if (block_header->number <= last_fork_choice_.number) {
             // Last FCU block is greater than or equal to incoming canonical block, chain is valid up to last FCU block
             return ValidChain{last_fork_choice_.number, last_fork_choice_.hash};
-        } else if (std::holds_alternative<ValidChain>(interim_head_status_)) {
+        }
+        if (std::holds_alternative<ValidChain>(interim_head_status_)) {
             // Chain is valid up to canonical head
             return ValidChain{interim_canonical_chain_.current_head().number, interim_canonical_chain_.current_head().hash};
-        } else if (std::holds_alternative<InvalidChain>(interim_head_status_)) {
+        }
+        if (std::holds_alternative<InvalidChain>(interim_head_status_)) {
             // Chain is valid up to unwind point
             const auto& invalid_chain{std::get<InvalidChain>(interim_head_status_)};
             if (block_header->number <= invalid_chain.unwind_point.number) {
                 // Unwind point is greater than or equal incoming canonical block, chain is valid up to unwind point
                 return ValidChain{invalid_chain.unwind_point.number, invalid_chain.unwind_point.hash};
-            } else {
-                // Incoming canonical block is greater than unwind point, so chain is invalid
-                return invalid_chain;
             }
+            // Incoming canonical block is greater than unwind point, so chain is invalid
+            return invalid_chain;
         }
     }
 

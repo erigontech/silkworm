@@ -64,9 +64,8 @@ Task<void> Server::run(
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::address_in_use) {
             throw std::runtime_error("Sentry RLPx server has failed to start because port " + std::to_string(port_) + " is already in use. Try another one with --port.");
-        } else {
-            throw;
         }
+        throw;
     }
     acceptor.listen();
 
@@ -82,10 +81,9 @@ Task<void> Server::run(
             if (ex.code() == boost::system::errc::invalid_argument) {
                 log::Error("sentry") << "Sentry RLPx server got invalid_argument on accept port=" << port_;
                 continue;
-            } else {
-                log::Critical("sentry") << "Sentry RLPx server unexpected end [" + std::string{ex.what()} + "]";
-                throw;
             }
+            log::Critical("sentry") << "Sentry RLPx server unexpected end [" + std::string{ex.what()} + "]";
+            throw;
         }
 
         auto remote_endpoint = stream.socket().remote_endpoint();

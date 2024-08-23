@@ -37,7 +37,8 @@ static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const db::Map
         auto data{cursor->find(mdbx::slice(item_key.c_str()), /*throw_notfound*/ false)};
         if (!data) {
             return 0;
-        } else if (data.value.size() != sizeof(uint64_t)) {
+        }
+        if (data.value.size() != sizeof(uint64_t)) {
             throw std::length_error("Expected 8 bytes of data got " + std::to_string(data.value.size()));
         }
         return endian::load_big_u64(static_cast<uint8_t*>(data.value.data()));

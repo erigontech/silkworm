@@ -130,14 +130,12 @@ void EstimateGasOracle::throw_exception(ExecutionResult& result) {
     if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
         throw EstimateGasException{-32000, *result.pre_check_error};
-    } else {
-        auto error_message = result.error_message();
-        SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;
-        if (result.data.empty()) {
-            throw EstimateGasException{-32000, error_message};
-        } else {
-            throw EstimateGasException{3, error_message, result.data};
-        }
     }
+    auto error_message = result.error_message();
+    SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;
+    if (result.data.empty()) {
+        throw EstimateGasException{-32000, error_message};
+    }
+    throw EstimateGasException{3, error_message, result.data};
 }
 }  // namespace silkworm::rpc

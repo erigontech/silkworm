@@ -263,11 +263,10 @@ Task<void> SentryClient::receive_messages() {
 static std::string describe_peer_info(const std::optional<silkworm::sentry::api::PeerInfo>& peer_info_opt) {
     if (!peer_info_opt) {
         return "-info-not-found-";
-    } else {
-        const auto& peer_info = peer_info_opt.value();
-        std::string info = "client_id=" + peer_info.client_id + " / enode_url=" + peer_info.url.to_string();
-        return info;
     }
+    const auto& peer_info = peer_info_opt.value();
+    std::string info = "client_id=" + peer_info.client_id + " / enode_url=" + peer_info.url.to_string();
+    return info;
 }
 
 static std::string describe_peer_event(

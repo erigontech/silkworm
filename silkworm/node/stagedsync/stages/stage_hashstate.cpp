@@ -43,7 +43,8 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
         if (previous_progress == execution_stage_progress) {
             // Nothing to process
             return ret;
-        } else if (previous_progress > execution_stage_progress) {
+        }
+        if (previous_progress > execution_stage_progress) {
             // Something bad had happened. Not possible execution stage is ahead of bodies
             // Maybe we need to unwind ?
             std::string what{std::string(stage_name_) + " progress " + std::to_string(previous_progress) +

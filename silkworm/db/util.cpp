@@ -153,7 +153,8 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
         const Bytes address{value.substr(0, kAddressLength)};
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
-    } else if (key.length() == sizeof(BlockNum) + kPlainStoragePrefixLength) {
+    }
+    if (key.length() == sizeof(BlockNum) + kPlainStoragePrefixLength) {
         if (value.length() < kHashLength) {
             throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
                                      " for storage changeset in " + std::string(__FUNCTION__));

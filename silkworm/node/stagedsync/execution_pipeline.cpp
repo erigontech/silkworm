@@ -221,10 +221,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 if (start_stage_name != stage_id) {
                     log::Info("Skipping " + std::string(stage_id) + "...", {"START_AT_STAGE", *start_stage_name, "hit", "true"});
                     continue;
-                } else {
-                    // Start stage just found, avoid skipping next stages
-                    start_stage_name = std::nullopt;
                 }
+                // Start stage just found, avoid skipping next stages
+                start_stage_name = std::nullopt;
             }
 
             // Check if we have to stop due to environment variable

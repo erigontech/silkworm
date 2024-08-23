@@ -316,9 +316,8 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, Snapsh
     // Execute blocks
     if (settings.use_internal_txn) {
         return execute_with_internal_txn(handle, settings, env);
-    } else {
-        return execute_with_external_txn(handle, settings, env);
     }
+    return execute_with_external_txn(handle, settings, env);
 }
 
 int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const DataDirectory& data_dir) {

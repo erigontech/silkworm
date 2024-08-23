@@ -179,16 +179,15 @@ intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent) {
             base_fee_per_gas_delta = 1;
         }
         return parent_base_fee_per_gas + base_fee_per_gas_delta;
-    } else {
-        const intx::uint256 gas_used_delta{parent_gas_target - parent.gas_used};
-        const intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
-                                                   kBaseFeeMaxChangeDenominator};
-        if (parent_base_fee_per_gas > base_fee_per_gas_delta) {
-            return parent_base_fee_per_gas - base_fee_per_gas_delta;
-        } else {
-            return 0;
-        }
     }
+
+    const intx::uint256 gas_used_delta{parent_gas_target - parent.gas_used};
+    const intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
+                                               kBaseFeeMaxChangeDenominator};
+    if (parent_base_fee_per_gas > base_fee_per_gas_delta) {
+        return parent_base_fee_per_gas - base_fee_per_gas_delta;
+    }
+    return 0;
 }
 
 uint64_t calc_excess_blob_gas(const BlockHeader& parent) {
@@ -197,9 +196,8 @@ uint64_t calc_excess_blob_gas(const BlockHeader& parent) {
 
     if (parent_excess_blob_gas + consumed_blob_gas < kTargetBlobGasPerBlock) {
         return 0;
-    } else {
-        return parent_excess_blob_gas + consumed_blob_gas - kTargetBlobGasPerBlock;
     }
+    return parent_excess_blob_gas + consumed_blob_gas - kTargetBlobGasPerBlock;
 }
 
 evmc::bytes32 compute_transaction_root(const BlockBody& body) {

@@ -695,29 +695,27 @@ class AsyncTxCall
             if (cursor_id_ == kInvalidCursorId) {
                 SILK_DEBUG << "Tx cursor closed, closing tx";
                 return true;  // reads done, close tx
-            } else {
-                SILK_INFO << "Tx queried: " << reply_ << ", queries done closing cursor";
-                request_.set_op(remote::Op::CLOSE);
-                request_.set_cursor(cursor_id_);
-                cursor_id_ = kInvalidCursorId;
-                return false;
             }
-        } else {
-            if (cursor_id_ == kInvalidCursorId) {
-                SILK_INFO << "Tx opened: cursor=" << reply_.cursor_id();
-                cursor_id_ = reply_.cursor_id();
-                SILK_DEBUG << "Tx: prepare request FIRST cursor=" << cursor_id_;
-                request_.set_op(remote::Op::FIRST);
-                request_.set_cursor(cursor_id_);
-            } else {
-                SILK_INFO << "Tx queried: " << reply_;
-                --query_count_;
-                SILK_DEBUG << "Tx: prepare request NEXT cursor=" << cursor_id_;
-                request_.set_op(remote::Op::NEXT);
-                request_.set_cursor(cursor_id_);
-            }
+            SILK_INFO << "Tx queried: " << reply_ << ", queries done closing cursor";
+            request_.set_op(remote::Op::CLOSE);
+            request_.set_cursor(cursor_id_);
+            cursor_id_ = kInvalidCursorId;
             return false;
         }
+        if (cursor_id_ == kInvalidCursorId) {
+            SILK_INFO << "Tx opened: cursor=" << reply_.cursor_id();
+            cursor_id_ = reply_.cursor_id();
+            SILK_DEBUG << "Tx: prepare request FIRST cursor=" << cursor_id_;
+            request_.set_op(remote::Op::FIRST);
+            request_.set_cursor(cursor_id_);
+        } else {
+            SILK_INFO << "Tx queried: " << reply_;
+            --query_count_;
+            SILK_DEBUG << "Tx: prepare request NEXT cursor=" << cursor_id_;
+            request_.set_op(remote::Op::NEXT);
+            request_.set_cursor(cursor_id_);
+        }
+        return false;
     }
 
     bool handle_write() override {

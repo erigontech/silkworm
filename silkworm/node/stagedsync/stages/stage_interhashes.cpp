@@ -50,7 +50,8 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
             // Nothing to process
             operation_ = OperationType::None;
             return Stage::Result::kSuccess;
-        } else if (previous_progress > hashstate_stage_progress) {
+        }
+        if (previous_progress > hashstate_stage_progress) {
             // Something bad had happened. Not possible hashstate stage is ahead of bodies
             // Maybe we need to unwind ?
             // Something bad had happened.  Maybe we need to unwind ?
@@ -240,7 +241,8 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
         check_block_sequence(reached_blocknum, expected_blocknum);
         if (reached_blocknum > max_blocknum) {
             break;
-        } else if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        }
+        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
             log_time = now + 5s;
@@ -379,7 +381,8 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
         if (reached_blocknum > to) {
             break;
-        } else if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        }
+        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
             log_time = now + 5s;

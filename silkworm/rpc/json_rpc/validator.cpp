@@ -96,9 +96,8 @@ ValidationResult Validator::validate_params(const nlohmann::json& request) {
     if (method_spec_field == method_specs_.end()) {
         if (accept_unknown_methods_) {
             return {};
-        } else {
-            return tl::make_unexpected("Method not found in spec: " + method);
         }
+        return tl::make_unexpected("Method not found in spec: " + method);
     }
     const auto& method_spec = method_spec_field->second;
 
@@ -157,19 +156,23 @@ ValidationResult Validator::validate_type(const nlohmann::json& value, const nlo
 
     if (schema_type == "string") {
         return validate_string(value, schema);
-    } else if (schema_type == "array") {
-        return validate_array(value, schema);
-    } else if (schema_type == "object") {
-        return validate_object(value, schema);
-    } else if (schema_type == "boolean") {
-        return validate_boolean(value);
-    } else if (schema_type == "number") {
-        return validate_number(value);
-    } else if (schema_type == "null") {
-        return validate_null(value);
-    } else {
-        return tl::make_unexpected("Invalid schema type: " + schema_type);
     }
+    if (schema_type == "array") {
+        return validate_array(value, schema);
+    }
+    if (schema_type == "object") {
+        return validate_object(value, schema);
+    }
+    if (schema_type == "boolean") {
+        return validate_boolean(value);
+    }
+    if (schema_type == "number") {
+        return validate_number(value);
+    }
+    if (schema_type == "null") {
+        return validate_null(value);
+    }
+    return tl::make_unexpected("Invalid schema type: " + schema_type);
 }
 
 ValidationResult Validator::validate_string(const nlohmann::json& string, const nlohmann::json& schema) {

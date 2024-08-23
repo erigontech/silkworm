@@ -911,10 +911,14 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 
         auto src_table_crs{src_txn.open_cursor(src_table_map)};
         auto tgt_table_crs{tgt_txn.open_cursor(tgt_table_map)};
-        MDBX_put_flags_t put_flags{populated_on_target
-                                       ? MDBX_put_flags_t::MDBX_UPSERT
-                                       : ((src_table_info.flags & MDBX_DUPSORT) ? MDBX_put_flags_t::MDBX_APPENDDUP
-                                                                                : MDBX_put_flags_t::MDBX_APPEND)};
+        MDBX_put_flags_t put_flags{};
+        if (populated_on_target) {
+            put_flags = MDBX_put_flags_t::MDBX_UPSERT;
+        } else if (src_table_info.flags & MDBX_DUPSORT) {
+            put_flags = MDBX_put_flags_t::MDBX_APPENDDUP;
+        } else {
+            put_flags = MDBX_put_flags_t::MDBX_APPEND;
+        }
 
         auto data{src_table_crs.to_first(/*throw_notfound =*/false)};
         while (data) {
@@ -1670,7 +1674,8 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
             if (data1_v.length() < 6) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid value length " +
                                          std::to_string(data1_v.length()) + ". Expected >= 6");
-            } else if ((data1_v.length() - 6) % kHashLength != 0) {
+            }
+            if ((data1_v.length() - 6) % kHashLength != 0) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid hashes count " +
                                          std::to_string(data1_v.length() - 6) + ". Expected multiple of " +
                                          std::to_string(kHashLength));
@@ -1762,15 +1767,13 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                                                  std::bitset<16>(node_tree_mask).to_string() +
                                                  " but there is no child " + std::to_string(i) +
                                                  " in db. LTE found is : null");
-                    } else {
-                        auto data2_k{db::from_slice(data2.key)};
-
-                        if (!data2_k.starts_with(buffer)) {
-                            throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
-                                                     std::bitset<16>(node_tree_mask).to_string() +
-                                                     " but there is no child " + std::to_string(i) +
-                                                     " in db. LTE found is : " + to_hex(data2_k, true));
-                        }
+                    }
+                    auto data2_k{db::from_slice(data2.key)};
+                    if (!data2_k.starts_with(buffer)) {
+                        throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
+                                                 std::bitset<16>(node_tree_mask).to_string() +
+                                                 " but there is no child " + std::to_string(i) +
+                                                 " in db. LTE found is : " + to_hex(data2_k, true));
                     }
                 }
             }

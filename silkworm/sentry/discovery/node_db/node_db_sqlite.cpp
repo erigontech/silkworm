@@ -593,11 +593,10 @@ class NodeDbSqliteImpl : public NodeDb {
 
     std::optional<Time> get_node_property_time(const NodeId& id, const char* sql) {
         auto value = get_node_property_int(id, sql);
-        if (value) {
-            return time_point_from_unix_timestamp(static_cast<uint64_t>(*value));
-        } else {
+        if (!value) {
             return std::nullopt;
         }
+        return time_point_from_unix_timestamp(static_cast<uint64_t>(*value));
     }
 
     void set_node_property_time(const NodeId& id, const char* sql, Time value) {

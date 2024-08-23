@@ -281,7 +281,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         if (previous_progress == target_block_num) {
             // Nothing to process
             return ret;
-        } else if (previous_progress > target_block_num) {
+        }
+        if (previous_progress > target_block_num) {
             // Something bad had happened. Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress, "Previous progress " + std::to_string(previous_progress) +
                                                                   " > target progress " + std::to_string(target_block_num));
@@ -401,7 +402,8 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, const Hash& block_hash, 
                 log::Error(log_prefix_) << "EIP-155 signature for transaction #" << tx_id << " in block #" << block_num
                                         << " before Spurious Dragon";
                 return Stage::Result::kInvalidTransaction;
-            } else if (transaction.chain_id.value() != chain_config_.chain_id) {
+            }
+            if (transaction.chain_id.value() != chain_config_.chain_id) {
                 log::Error(log_prefix_) << "EIP-155 invalid signature for transaction #" << tx_id << " in block #" << block_num;
                 return Stage::Result::kInvalidTransaction;
             }

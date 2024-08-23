@@ -54,4 +54,14 @@ std::vector<std::filesystem::path> SnapshotBundle::files() {
     return files;
 }
 
+std::vector<SnapshotPath> SnapshotBundle::snapshot_paths() {
+    std::vector<SnapshotPath> paths;
+    paths.reserve(kSnapshotsCount);
+
+    for (auto& snapshot_ref : snapshots()) {
+        paths.push_back(snapshot_ref.get().path());
+    }
+    return paths;
+}
+
 }  // namespace silkworm::snapshots

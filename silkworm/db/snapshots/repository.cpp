@@ -107,18 +107,12 @@ std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> Snap
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_segment_files();
-    std::vector<std::shared_ptr<IndexBuilder>> missing_index_list;
+    auto index_builders = bundle_factory_->index_builders(segment_files);
 
-    for (const auto& seg_file : segment_files) {
-        auto builders = bundle_factory_->index_builders(seg_file);
-        for (auto& builder : builders) {
-            if (!builder->path().exists()) {
-                missing_index_list.push_back(builder);
-            }
-        }
-    }
-
-    return missing_index_list;
+    std::erase_if(index_builders, [&](const auto& builder) {
+        return builder->path().exists();
+    });
+    return index_builders;
 }
 
 void SnapshotRepository::reopen_folder() {
@@ -241,6 +235,12 @@ void SnapshotRepository::remove_stale_indexes() const {
     for (auto& path : stale_index_paths()) {
         const bool removed = fs::remove(path.path());
         ensure(removed, [&]() { return "SnapshotRepository::remove_stale_indexes: cannot remove index file " + path.path().string(); });
+    }
+}
+
+void SnapshotRepository::build_indexes(SnapshotBundle& bundle) const {
+    for (auto& builder : bundle_factory_->index_builders(bundle.snapshot_paths())) {
+        builder->build();
     }
 }
 

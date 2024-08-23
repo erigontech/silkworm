@@ -126,14 +126,7 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
 void Freezer::index(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
     auto& bundle = freezer_result.bundle;
-
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        SnapshotPath snapshot_path = snapshot_ref.get().path();
-        auto index_builders = snapshots_.bundle_factory().index_builders(snapshot_path);
-        for (auto& index_builder : index_builders) {
-            index_builder->build();
-        }
-    }
+    snapshots_.build_indexes(bundle);
 }
 
 void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {

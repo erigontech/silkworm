@@ -25,6 +25,7 @@
 #include <silkworm/core/common/base.hpp>
 
 #include "index.hpp"
+#include "path.hpp"
 #include "snapshot_and_index.hpp"
 #include "snapshot_reader.hpp"
 
@@ -122,6 +123,7 @@ struct SnapshotBundle {
     size_t block_count() const { return block_to() - block_from(); }
 
     std::vector<std::filesystem::path> files();
+    std::vector<SnapshotPath> snapshot_paths();
 
     void reopen();
     void close();

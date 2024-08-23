@@ -76,6 +76,7 @@ class SnapshotRepository {
 
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
+    void build_indexes(SnapshotBundle& bundle) const;
 
     using Bundles = std::map<BlockNum, std::shared_ptr<SnapshotBundle>>;
 

@@ -72,4 +72,13 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
     }
 }
 
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPathList& snapshot_paths) const {
+    std::vector<std::shared_ptr<IndexBuilder>> all_builders;
+    for (const auto& path : snapshot_paths) {
+        auto builders = index_builders(path);
+        all_builders.insert(all_builders.end(), builders.begin(), builders.end());
+    }
+    return all_builders;
+}
+
 }  // namespace silkworm::db

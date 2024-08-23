@@ -112,14 +112,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
 void SnapshotMerger::index(std::shared_ptr<DataMigrationResult> result) {
     auto& merger_result = dynamic_cast<SnapshotMergerResult&>(*result);
     auto& bundle = merger_result.bundle;
-
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        SnapshotPath snapshot_path = snapshot_ref.get().path();
-        auto index_builders = snapshots_.bundle_factory().index_builders(snapshot_path);
-        for (auto& index_builder : index_builders) {
-            index_builder->build();
-        }
-    }
+    snapshots_.build_indexes(bundle);
 }
 
 void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {

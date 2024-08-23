@@ -62,6 +62,9 @@ class SnapshotRepository {
 
     void add_snapshot_bundle(SnapshotBundle bundle);
 
+    //! Replace bundles whose ranges are contained within the given bundle
+    void replace_snapshot_bundles(SnapshotBundle bundle);
+
     [[nodiscard]] std::size_t bundles_count() const;
     [[nodiscard]] std::size_t total_snapshots_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
     [[nodiscard]] std::size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }

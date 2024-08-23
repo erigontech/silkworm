@@ -30,6 +30,9 @@ class SnapshotMerger : public DataMigration {
           tmp_dir_path_(std::move(tmp_dir_path)) {}
 
   private:
+    static constexpr size_t kBatchSize = 10;
+    static constexpr size_t kMaxSnapshotSize = 100'000;
+
     const char* name() const override { return "SnapshotMerger"; }
     std::unique_ptr<DataMigrationCommand> next_command() override;
     std::shared_ptr<DataMigrationResult> migrate(std::unique_ptr<DataMigrationCommand> command) override;

@@ -39,12 +39,24 @@ SnapshotRepository::~SnapshotRepository() {
 }
 
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
+    replace_snapshot_bundles(std::move(bundle));
+}
+
+void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
     bundle.reopen();
+
     std::scoped_lock lock(bundles_mutex_);
     // copy bundles prior to modification
     auto bundles = std::make_shared<Bundles>(*bundles_);
+
+    std::erase_if(*bundles, [&](const auto& entry) {
+        const SnapshotBundle& it = *entry.second;
+        return (bundle.block_from() <= it.block_from()) && (it.block_to() <= bundle.block_to());
+    });
+
     BlockNum block_from = bundle.block_from();
     bundles->insert_or_assign(block_from, std::make_shared<SnapshotBundle>(std::move(bundle)));
+
     bundles_ = bundles;
 }
 

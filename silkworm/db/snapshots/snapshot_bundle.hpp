@@ -117,6 +117,7 @@ struct SnapshotBundle {
     BlockNum block_from() const { return header_snapshot.block_from(); }
     BlockNum block_to() const { return header_snapshot.block_to(); }
     BlockNumRange block_range() const { return {block_from(), block_to()}; }
+    size_t block_count() const { return block_to() - block_from(); }
 
     void reopen();
     void close();

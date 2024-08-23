@@ -50,7 +50,26 @@ struct SnapshotMergerResult : public DataMigrationResult {
 };
 
 std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
-    // TODO
+    BlockNum first_block_num = 0;
+    size_t block_count = 0;
+    size_t batch_size = 0;
+
+    for (auto& bundle_ptr : snapshots_.view_bundles()) {
+        auto& bundle = *bundle_ptr;
+        if (bundle.block_count() >= kMaxSnapshotSize) {
+            continue;
+        }
+        if (bundle.block_count() != block_count) {
+            first_block_num = bundle.block_from();
+            block_count = bundle.block_count();
+            batch_size = 0;
+        }
+        batch_size++;
+        if (batch_size == kBatchSize) {
+            return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle.block_to()});
+        }
+    }
+
     return {};
 }
 
@@ -117,7 +136,7 @@ void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     }
 
     auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.block_range());
-    snapshots_.add_snapshot_bundle(std::move(final_bundle));
+    snapshots_.replace_snapshot_bundles(std::move(final_bundle));
 }
 
 Task<void> SnapshotMerger::cleanup() {

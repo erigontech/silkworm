@@ -36,6 +36,7 @@
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
@@ -47,6 +48,7 @@
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 
 #include "../common/common.hpp"
 #include "../common/shutdown_signal.hpp"
@@ -88,6 +90,7 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
     lookup_header,
     lookup_body,
     lookup_txn,
+    merge,
     recompress,
     seg_zip,
     seg_unzip,
@@ -725,6 +728,14 @@ void lookup_transaction(const SnapSettings& settings) {
     }
 }
 
+void merge(const SnapSettings& settings) {
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+    TemporaryDirectory tmp_dir;
+    db::SnapshotMerger merger{snapshot_repository, tmp_dir.path()};
+    test_util::TaskRunner runner;
+    runner.run(merger.exec());
+}
+
 void sync(const SnapSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
@@ -785,6 +796,9 @@ int main(int argc, char* argv[]) {
                 break;
             case SnapshotTool::lookup_txn:
                 lookup_transaction(settings.snapshot_settings);
+                break;
+            case SnapshotTool::merge:
+                merge(settings.snapshot_settings);
                 break;
             case SnapshotTool::recompress:
                 snapshot_file_recompress(settings.snapshot_settings.input_file_path);

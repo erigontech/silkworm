@@ -41,4 +41,17 @@ void SnapshotBundle::close() {
     }
 }
 
+std::vector<std::filesystem::path> SnapshotBundle::files() {
+    std::vector<std::filesystem::path> files;
+    files.reserve(kSnapshotsCount + kIndexesCount);
+
+    for (auto& snapshot_ref : snapshots()) {
+        files.push_back(snapshot_ref.get().path().path());
+    }
+    for (auto& index_ref : indexes()) {
+        files.push_back(index_ref.get().path().path());
+    }
+    return files;
+}
+
 }  // namespace silkworm::snapshots

@@ -18,6 +18,8 @@
 
 #include <algorithm>
 
+#include <silkworm/infra/common/filesystem.hpp>
+
 #include "snapshots/path.hpp"
 #include "snapshots/seg/compressor.hpp"
 #include "snapshots/snapshot_bundle.hpp"
@@ -120,20 +122,10 @@ void SnapshotMerger::index(std::shared_ptr<DataMigrationResult> result) {
     }
 }
 
-static void move_file(const std::filesystem::path& path, const std::filesystem::path& target_dir_path) {
-    std::filesystem::rename(path, target_dir_path / path.filename());
-}
-
 void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<SnapshotMergerResult&>(*result);
     auto& bundle = freezer_result.bundle;
-
-    for (auto& index_ref : bundle.indexes()) {
-        move_file(index_ref.get().path().path(), snapshots_.path());
-    }
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        move_file(snapshot_ref.get().path().path(), snapshots_.path());
-    }
+    move_files(bundle.files(), snapshots_.path());
 
     auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.block_range());
     snapshots_.replace_snapshot_bundles(std::move(final_bundle));

@@ -45,7 +45,7 @@ class Freezer : public DataMigration {
     void commit(std::shared_ptr<DataMigrationResult> result) override;
     Task<void> cleanup() override;
     BlockNumRange cleanup_range();
-    void cleanup(RWTxn& db_tx, BlockNumRange range);
+    void cleanup(RWTxn& db_tx, BlockNumRange range) const;
 
     db::ROAccess db_access_;
     snapshots::SnapshotRepository& snapshots_;

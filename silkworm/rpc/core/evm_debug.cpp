@@ -103,6 +103,7 @@ void insert_error(DebugLog& log, evmc_status_code status_code) {
 }
 
 void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    last_opcode_ = std::nullopt;
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
@@ -129,6 +130,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     const auto opcode = execution_state.original_code[pc];
     const auto opcode_name = get_opcode_name(opcode_names_, opcode);
+    last_opcode_ = opcode;
 
     SILK_DEBUG << "on_instruction_start:"
                << " pc: " << std::dec << pc
@@ -266,6 +268,17 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
                     }
                 }
                 break;
+        }
+
+        /* EVM WA: EVMONE add OP_STOP at the end of tx if not present but doesn't notify to the tracer. Add sw to add STOP to the op list */
+        if (result.status_code == EVMC_SUCCESS && last_opcode_ && last_opcode_ != OP_SELFDESTRUCT && last_opcode_ != OP_RETURN && last_opcode_ != OP_STOP) {
+            DebugLog newlog;
+            newlog.pc = log.pc + 1;
+            newlog.op = get_opcode_name(opcode_names_, OP_STOP);
+            newlog.gas = log.gas;
+            newlog.gas_cost = 0;
+            newlog.depth = log.depth;
+            logs_.push_back(newlog);
         }
     }
 

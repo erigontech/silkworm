@@ -168,6 +168,7 @@ class VmTraceTracer : public silkworm::EvmTracer {
     std::stack<int64_t> start_gas_;
     std::stack<TraceMemory> trace_memory_stack_;
     std::optional<FixCallGasInfo> fix_call_gas_info_;
+    std::optional<uint8_t> last_opcode_;
 };
 
 struct TraceAction {

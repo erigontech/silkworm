@@ -730,6 +730,7 @@ void lookup_transaction(const SnapSettings& settings) {
 
 void merge(const SnapSettings& settings) {
     SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+    snapshot_repository.reopen_folder();
     TemporaryDirectory tmp_dir;
     db::SnapshotMerger merger{snapshot_repository, tmp_dir.path()};
     test_util::TaskRunner runner;

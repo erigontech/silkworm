@@ -22,6 +22,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/test_util/hex.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
 
 #include "../../api/endpoint/temporal_point.hpp"
@@ -30,14 +31,7 @@
 namespace silkworm::db::kv::test_util {
 
 namespace proto = ::remote;
-
-inline std::string ascii_from_hex(const std::string& hex) {
-    const std::optional<Bytes> bytes{from_hex(hex)};
-    if (!bytes) {
-        throw std::runtime_error{"ascii_from_hex"};
-    }
-    return std::string{byte_view_to_string_view(*bytes)};
-}
+using silkworm::test_util::ascii_from_hex;
 
 inline api::HistoryPointQuery sample_history_point_query() {
     return {

@@ -30,6 +30,8 @@ class ShutdownSignal {
     explicit ShutdownSignal(const boost::asio::any_io_executor& executor)
         : signals_(executor, SIGINT, SIGTERM) {}
 
+    void cancel();
+
     using SignalNumber = int;
 
     void on_signal(std::function<void(SignalNumber)> callback);

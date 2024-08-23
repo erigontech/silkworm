@@ -72,6 +72,9 @@ class BitTorrentClient {
     //! Add the specified info hash to the download list
     void add_info_hash(std::string_view name, std::string_view info_hash);
 
+    //! Add the specified torrent info to the download list
+    void add_torrent_info(std::shared_ptr<lt::torrent_info> info);
+
     //! Run the client execution loop until it is stopped or has finished downloading and seeding is not required
     void execute_loop();
 

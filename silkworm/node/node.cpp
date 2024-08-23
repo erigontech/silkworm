@@ -22,6 +22,7 @@
 
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -83,6 +84,7 @@ class NodeImpl final {
     execution::api::DirectClient execution_direct_client_;
 
     db::Freezer snapshot_freezer_;
+    db::SnapshotMerger snapshot_merger_;
 
     SentryClientPtr sentry_client_;
 
@@ -110,6 +112,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env 
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
       snapshot_freezer_{db::ROAccess{chaindata_db_}, snapshot_repository_, execution_engine_.stage_scheduler(), settings_.data_directory->temp().path()},
+      snapshot_merger_{snapshot_repository_, settings_.data_directory->temp().path()},
       sentry_client_{std::move(sentry_client)},
       resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
@@ -154,6 +157,7 @@ Task<void> NodeImpl::run() {
         start_resource_usage_log() &&
         start_execution_log_timer() &&
         snapshot_freezer_.run_loop() &&
+        snapshot_merger_.run_loop() &&
         start_backend_kv_grpc_server() &&
         start_bittorrent_client());
 }

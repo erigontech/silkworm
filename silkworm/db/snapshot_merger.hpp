@@ -17,39 +17,31 @@
 #pragma once
 
 #include "data_migration.hpp"
-#include "mdbx/mdbx.hpp"
 #include "snapshots/repository.hpp"
-#include "stage_scheduler.hpp"
 
 namespace silkworm::db {
 
-class Freezer : public DataMigration {
+class SnapshotMerger : public DataMigration {
   public:
-    Freezer(
-        db::ROAccess db_access,
+    SnapshotMerger(
         snapshots::SnapshotRepository& snapshots,
-        stagedsync::StageScheduler& stage_scheduler,
         std::filesystem::path tmp_dir_path)
-        : db_access_(std::move(db_access)),
-          snapshots_(snapshots),
-          stage_scheduler_(stage_scheduler),
+        : snapshots_(snapshots),
           tmp_dir_path_(std::move(tmp_dir_path)) {}
 
   private:
-    static constexpr size_t kChunkSize = 1000;
+    static constexpr size_t kBatchSize = 10;
+    static constexpr size_t kMaxSnapshotSize = 100'000;
 
-    const char* name() const override { return "Freezer"; }
+    const char* name() const override { return "SnapshotMerger"; }
     std::unique_ptr<DataMigrationCommand> next_command() override;
     std::shared_ptr<DataMigrationResult> migrate(std::unique_ptr<DataMigrationCommand> command) override;
     void index(std::shared_ptr<DataMigrationResult> result) override;
     void commit(std::shared_ptr<DataMigrationResult> result) override;
     Task<void> cleanup() override;
     BlockNumRange cleanup_range();
-    void cleanup(RWTxn& db_tx, BlockNumRange range) const;
 
-    db::ROAccess db_access_;
     snapshots::SnapshotRepository& snapshots_;
-    stagedsync::StageScheduler& stage_scheduler_;
     std::filesystem::path tmp_dir_path_;
 };
 

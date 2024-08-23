@@ -18,11 +18,14 @@
 
 #include <array>
 #include <cassert>
+#include <filesystem>
 #include <functional>
+#include <vector>
 
 #include <silkworm/core/common/base.hpp>
 
 #include "index.hpp"
+#include "path.hpp"
 #include "snapshot_and_index.hpp"
 #include "snapshot_reader.hpp"
 
@@ -117,6 +120,10 @@ struct SnapshotBundle {
     BlockNum block_from() const { return header_snapshot.block_from(); }
     BlockNum block_to() const { return header_snapshot.block_to(); }
     BlockNumRange block_range() const { return {block_from(), block_to()}; }
+    size_t block_count() const { return block_to() - block_from(); }
+
+    std::vector<std::filesystem::path> files();
+    std::vector<SnapshotPath> snapshot_paths();
 
     void reopen();
     void close();

@@ -27,6 +27,7 @@
 
 // See also: https://github.com/boostorg/beast/blob/develop/example/common/root_certificates.hpp
 
+#include <optional>
 #include <string>
 
 #include <boost/asio/ssl.hpp>

@@ -1737,20 +1737,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
 Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream) {
     SILK_TRACE << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
-    const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
-    if (!from_block_with_hash) {
-        const Error error{-32000, "invalid parameters: fromBlock not found"};
-        stream.write_json_field("error", error);
-        co_return;
-    }
-    const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.to_block);
-    if (!to_block_with_hash) {
-        const Error error{-32000, "invalid parameters: toBlock not found"};
-        stream.write_json_field("error", error);
-        co_return;
-    }
-
-    if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
+    if (trace_filter.from_block.number() > trace_filter.to_block.number()) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};
         stream.write_json_field("error", error);
         stream.write_json_field("result", nlohmann::json::value_t::null);
@@ -1766,25 +1753,31 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     filter.after = trace_filter.after;
     filter.count = trace_filter.count;
 
-    auto block_number = from_block_with_hash->block.header.number;
-    auto block_with_hash = from_block_with_hash;
-    while (block_number++ <= to_block_with_hash->block.header.number) {
-        const Block block{block_with_hash, {}, false};
-        SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
-                   << " block_number: " << block_number - 1
-                   << " block: " << block;
+    auto block_number = trace_filter.from_block.number();
+    auto block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
 
-        co_await trace_block(*block_with_hash, filter, &stream);
-
-        if (filter.count == 0) {
-            break;
-        }
-
-        if (block_number == to_block_with_hash->block.header.number) {
-            block_with_hash = to_block_with_hash;
+    while (block_number <= trace_filter.to_block.number()) {
+        if (!block_with_hash) {
+            stream.open_object();
+            const std::string error_msg = "could not find block " + std::to_string(block_number);
+            const Error error{-32000, error_msg};
+            stream.write_json_field("error", error);
+            stream.close_object();
         } else {
-            block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_number);
+            const Block block{block_with_hash, {}, false};
+            SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
+                       << " block_number: " << block_number - 1
+                       << " block: " << block;
+
+            co_await trace_block(*block_with_hash, filter, &stream);
+
+            if (filter.count == 0) {
+                break;
+            }
         }
+
+        block_number++;
+        block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_number);
     }
 
     stream.close_array();

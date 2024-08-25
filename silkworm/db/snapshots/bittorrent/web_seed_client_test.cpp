@@ -18,12 +18,18 @@
 
 #include <boost/system/system_error.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+#include <gmock/gmock.h>
+#include <libtorrent/hex.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/infra/test_util/hex.hpp>
 
 namespace silkworm::snapshots::bittorrent {
+
+using testing::_;
+using testing::InvokeWithoutArgs;
 
 //! WebSeedClient with protected methods exposed for test
 class WebSeedClient_ForTest : public WebSeedClient {
@@ -44,6 +50,10 @@ TEST_CASE("WebSeedClient_ForTest::is_caplin_segment", "[db][snapshot][bittorrent
 
     CHECK(WebSeedClient_ForTest::is_caplin_segment("v1-000000-000100-beaconblocks.seg"));
 }
+
+//! Content for manifest file containing one torrent file
+static constexpr auto kValidManifestContent{
+    "v1-018700-018800-bodies.seg.torrent\n"sv};
 
 //! Hexadecimal content for torrent file 'v1-018700-018800-bodies.seg'
 static constexpr auto kValidTorrentContent{
@@ -73,16 +83,60 @@ static constexpr auto kValidTorrentContent{
     "D45B74826E9E6D24B6F82CE88DDD8BC2C3BF9028FF56CE668551DB6EDC6565"sv};
 static const std::string kValidTorrentContentAscii{test_util::ascii_from_hex(kValidTorrentContent)};
 
+struct WebSessionMock : public WebSession {
+    MOCK_METHOD((Task<WebSession::StringResponse>), https_get, (const urls::url&, std::string_view), (const, override));
+};
+
 struct WebSeedClientTest : public test_util::ContextTestBase {
     inline static const auto kErigon2Snapshots{"https://erigon2-v1-snapshots-mainnet.erigon.network"};
     inline static const boost::urls::url kErigon2SnapshotsUrl{kErigon2Snapshots};
     snapshots::Config known_config{snapshots::Config::lookup_known_config(/*chain_id=*/1, /*whitelist=*/{})};
+    std::unique_ptr<WebSessionMock> session{std::make_unique<WebSessionMock>()};
     WebSeedClient_ForTest client{{kErigon2Snapshots}, known_config.preverified_snapshots()};
 };
 
 TEST_CASE("WebSeedClient_ForTest::WebSeedClient_ForTest", "[db][snapshot][bittorrent]") {
     PreverifiedList preverified_torrent_list;
     WebSeedClient_ForTest client{{}, preverified_torrent_list};
+}
+
+TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", "[db][snapshot][bittorrent]") {
+    SECTION("empty") {
+        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> { co_return WebSession::StringResponse{}; }));
+        WebSeedClient_ForTest client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        CHECK(spawn_and_wait(client.discover_torrents()).empty());
+    }
+    SECTION("invalid manifest") {
+        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> {
+                WebSession::StringResponse rsp;
+                rsp.body().assign("\000\001");
+                co_return rsp;
+            }));
+        WebSeedClient_ForTest client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        CHECK(spawn_and_wait(client.discover_torrents()).empty());
+    }
+    SECTION("valid manifest") {
+        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> {
+                WebSession::StringResponse rsp;
+                rsp.body().assign(kValidManifestContent);
+                co_return rsp;
+            }))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> {
+                WebSession::StringResponse rsp;
+                rsp.body().assign(kValidTorrentContentAscii);
+                co_return rsp;
+            }));
+        WebSeedClient_ForTest client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        TorrentInfoPtrList torrent_info_set;
+        CHECK_NOTHROW((torrent_info_set = spawn_and_wait(client.discover_torrents())));
+        REQUIRE_FALSE(torrent_info_set.empty());
+        const TorrentInfoPtr torrent_info = *torrent_info_set.begin();
+        CHECK(torrent_info->name() == "v1-018700-018800-bodies.seg");
+        CHECK(lt::aux::to_hex(torrent_info->info_hashes().get_best()) == "2501ab81654fd0b234c819fead66ab197f4c0438");
+    }
 }
 
 TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::validate_torrent_file", "[db][snapshot][bittorrent]") {

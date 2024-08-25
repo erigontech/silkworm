@@ -43,11 +43,11 @@ class WebSession {
     //! \brief Asynch send a HTTPS GET request for \p target file to \p web_url and receive the response
     //! \param web_url the URL address of the web server
     //! \param target the relative path of the requested file
-    [[nodiscard]] virtual Task<StringResponse> https_get(const urls::url& web_url, std::string_view target_file);
+    [[nodiscard]] virtual Task<StringResponse> https_get(const urls::url& web_url, std::string_view target_file) const;
 
   protected:
     using EmptyRequest = http::request<http::empty_body>;
-    void include_cloudflare_headers(EmptyRequest& request);
+    static void include_cloudflare_headers(EmptyRequest& request);
 
     //! The HTTP protocol version to use
     static constexpr int kHttpVersion{11};

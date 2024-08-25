@@ -20,6 +20,7 @@ add_subdirectory(seg)
 
 find_package(absl REQUIRED strings)
 find_package(Boost REQUIRED headers url) # headers for signals2
+find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 
@@ -34,4 +35,4 @@ silkworm_library(
           silkworm_snapshots_seg
 )
 
-target_link_libraries(silkworm_snapshots_test PRIVATE silkworm_infra_test_util)
+target_link_libraries(silkworm_snapshots_test PRIVATE GTest::gmock silkworm_infra_test_util)

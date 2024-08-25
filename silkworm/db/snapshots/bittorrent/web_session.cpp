@@ -48,7 +48,7 @@ constexpr std::chrono::seconds kHttpTimeoutSecs{30};
 WebSession::WebSession(std::optional<std::string> server_certificate)
     : server_certificate_(std::move(server_certificate)) {}
 
-Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url, std::string_view target_file) {
+Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url, std::string_view target_file) const {
     // The SSL context which holds root certificate used for verification ()
     ssl::context ssl_ctx{ssl::context::tlsv13_client};
     load_root_certificates(ssl_ctx, server_certificate_);

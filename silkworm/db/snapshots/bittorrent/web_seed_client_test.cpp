@@ -104,8 +104,8 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", 
     SECTION("empty") {
         EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> { co_return WebSession::StringResponse{}; }));
-        WebSeedClient_ForTest client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
-        CHECK(spawn_and_wait(client.discover_torrents()).empty());
+        WebSeedClient_ForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("invalid manifest") {
         EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
@@ -114,8 +114,8 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", 
                 rsp.body().assign("\000\001");
                 co_return rsp;
             }));
-        WebSeedClient_ForTest client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
-        CHECK(spawn_and_wait(client.discover_torrents()).empty());
+        WebSeedClient_ForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("valid manifest") {
         EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
@@ -129,9 +129,9 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", 
                 rsp.body().assign(kValidTorrentContentAscii);
                 co_return rsp;
             }));
-        WebSeedClient_ForTest client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        WebSeedClient_ForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
         TorrentInfoPtrList torrent_info_set;
-        CHECK_NOTHROW((torrent_info_set = spawn_and_wait(client.discover_torrents())));
+        CHECK_NOTHROW((torrent_info_set = spawn_and_wait(ws_client.discover_torrents())));
         REQUIRE_FALSE(torrent_info_set.empty());
         const TorrentInfoPtr torrent_info = *torrent_info_set.begin();
         CHECK(torrent_info->name() == "v1-018700-018800-bodies.seg");

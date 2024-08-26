@@ -156,6 +156,11 @@ Task<void> Freezer::cleanup() {
     if (range.first >= range.second) co_return;
     log::Debug(name()) << "cleanup [" << range.first << ", " << range.second << ")";
 
+    if (keep_blocks_) {
+        log::Debug(name()) << " skipping cleanup [" << range.first << ", " << range.second << ")";
+        co_return;
+    }
+
     co_await stage_scheduler_.schedule([this, range](RWTxn& db_tx) {
         this->cleanup(db_tx, range);
     });

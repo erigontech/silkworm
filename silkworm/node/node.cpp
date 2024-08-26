@@ -111,7 +111,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env 
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
-      snapshot_freezer_{db::ROAccess{chaindata_db_}, snapshot_repository_, execution_engine_.stage_scheduler(), settings_.data_directory->temp().path()},
+      snapshot_freezer_{db::ROAccess{chaindata_db_}, snapshot_repository_, execution_engine_.stage_scheduler(), settings_.data_directory->temp().path(), settings.snapshot_settings.keepblocks},
       snapshot_merger_{snapshot_repository_, settings_.data_directory->temp().path()},
       sentry_client_{std::move(sentry_client)},
       resource_usage_log_{*settings_.data_directory} {

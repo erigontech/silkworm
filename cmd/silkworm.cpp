@@ -46,7 +46,7 @@
 #include "common/sentry_options.hpp"
 #include "common/settings.hpp"
 #include "common/shutdown_signal.hpp"
-#include "common/snapshot_options.hpp"
+
 
 namespace sw_db = silkworm::db;
 namespace sw_log = silkworm::log;

@@ -29,11 +29,13 @@ class Freezer : public DataMigration {
         db::ROAccess db_access,
         snapshots::SnapshotRepository& snapshots,
         stagedsync::StageScheduler& stage_scheduler,
-        std::filesystem::path tmp_dir_path)
+        std::filesystem::path tmp_dir_path,
+        bool keep_blocks)
         : db_access_(std::move(db_access)),
           snapshots_(snapshots),
           stage_scheduler_(stage_scheduler),
-          tmp_dir_path_(std::move(tmp_dir_path)) {}
+          tmp_dir_path_(std::move(tmp_dir_path)),
+    keep_blocks_(keep_blocks) {}
 
   private:
     static constexpr size_t kChunkSize = 1000;
@@ -51,6 +53,7 @@ class Freezer : public DataMigration {
     snapshots::SnapshotRepository& snapshots_;
     stagedsync::StageScheduler& stage_scheduler_;
     std::filesystem::path tmp_dir_path_;
+    bool keep_blocks_;
 };
 
 }  // namespace silkworm::db

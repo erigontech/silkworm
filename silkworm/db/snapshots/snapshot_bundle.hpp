@@ -120,7 +120,7 @@ struct SnapshotBundle {
     BlockNum block_from() const { return header_snapshot.block_from(); }
     BlockNum block_to() const { return header_snapshot.block_to(); }
     BlockNumRange block_range() const { return {block_from(), block_to()}; }
-    size_t block_count() const { return block_to() - block_from(); }
+    size_t block_count() const { return block_range().size(); }
 
     std::vector<std::filesystem::path> files();
     std::vector<SnapshotPath> snapshot_paths();

@@ -50,6 +50,9 @@ struct BlockNumRange {
     BlockNum second;
     BlockNumRange(BlockNum first1, BlockNum second1) : first(first1), second(second1) {}
     friend bool operator==(const BlockNumRange&, const BlockNumRange&) = default;
+    bool contains(BlockNum num) const { return (first <= num) && (num < second); }
+    BlockNum size() const { return second - first; }
+    std::string to_string() const { return std::string("[") + std::to_string(first) + ", " + std::to_string(second) + ")"; }
 };
 
 inline constexpr BlockNum kEarliestBlockNumber{0ul};

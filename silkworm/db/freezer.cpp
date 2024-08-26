@@ -154,7 +154,7 @@ BlockNumRange Freezer::cleanup_range() {
 Task<void> Freezer::cleanup() {
     BlockNumRange range = cleanup_range();
     if (range.first >= range.second) co_return;
-    log::Debug(name()) << "cleanup [" << range.first << ", " << range.second << ")";
+    log::Debug(name()) << "cleanup " << range.to_string();
 
     co_await stage_scheduler_.schedule([this, range](RWTxn& db_tx) {
         this->cleanup(db_tx, range);

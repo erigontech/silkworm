@@ -134,7 +134,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     auto& snapshot_settings = settings.snapshot_settings;
     auto& bittorrent_settings = settings.download_settings;
 
-    bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
     bittorrent_settings.magnets_file_path = ".magnet_links";
 
     add_logging_options(app, log_settings);
@@ -193,27 +192,28 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     for (auto& cmd : {commands[SnapshotTool::create_index],
                       commands[SnapshotTool::open_index],
                       commands[SnapshotTool::decode_segment]}) {
-        cmd->add_option("snapshot_file", snapshot_settings.snapshot_file_name, "Path to snapshot file")
+        cmd->add_option("--snapshot_file", snapshot_settings.snapshot_file_name, "Path to snapshot file")
             ->required()
             ->capture_default_str();
     }
 
     commands[SnapshotTool::recompress]
-        ->add_option("file", snapshot_settings.input_file_path, ".seg file to decompress and compress again")
+        ->add_option("--file", snapshot_settings.input_file_path, ".seg file to decompress and compress again")
         ->required()
         ->check(CLI::ExistingFile);
     commands[SnapshotTool::seg_zip]
-        ->add_option("file", snapshot_settings.input_file_path, "Raw words file to compress")
+        ->add_option("--file", snapshot_settings.input_file_path, "Raw words file to compress")
         ->required()
         ->check(CLI::ExistingFile);
     commands[SnapshotTool::seg_unzip]
-        ->add_option("file", snapshot_settings.input_file_path, ".seg file to decompress")
+        ->add_option("--file", snapshot_settings.input_file_path, ".seg file to decompress")
         ->required()
         ->check(CLI::ExistingFile);
 
     app.parse(argc, argv);
 
     bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
+    snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
 }
 
 //! Convert one duration into another one returning the number of ticks for the latter one

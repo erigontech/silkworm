@@ -43,6 +43,7 @@ class Config {
 
   private:
     BlockNum compute_max_block();
+    void remove_unsupported_snapshots();
 
     PreverifiedList preverified_snapshots_;
     BlockNum max_block_number_;

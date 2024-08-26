@@ -96,6 +96,10 @@ SnapshotPath SnapshotPath::from(const fs::path& dir, uint8_t version, BlockNum b
     return SnapshotPath{dir / filename, version, block_from, block_to, type};
 }
 
+std::string SnapshotPath::type_string() const {
+    return std::string{magic_enum::enum_name(type_)};
+}
+
 fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type, const char* ext) {
     std::string snapshot_type_name{magic_enum::enum_name(type)};
     std::string filename{absl::StrFormat("v%d-%06d-%06d-%s%s",

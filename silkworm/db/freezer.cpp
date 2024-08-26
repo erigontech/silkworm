@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/filesystem.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 #include "access_layer.hpp"
@@ -125,30 +126,13 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
 void Freezer::index(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
     auto& bundle = freezer_result.bundle;
-
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        SnapshotPath snapshot_path = snapshot_ref.get().path();
-        auto index_builders = snapshots_.bundle_factory().index_builders(snapshot_path);
-        for (auto& index_builder : index_builders) {
-            index_builder->build();
-        }
-    }
-}
-
-static void move_file(const std::filesystem::path& path, const std::filesystem::path& target_dir_path) {
-    std::filesystem::rename(path, target_dir_path / path.filename());
+    snapshots_.build_indexes(bundle);
 }
 
 void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
     auto& bundle = freezer_result.bundle;
-
-    for (auto& index_ref : bundle.indexes()) {
-        move_file(index_ref.get().path().path(), snapshots_.path());
-    }
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        move_file(snapshot_ref.get().path().path(), snapshots_.path());
-    }
+    move_files(bundle.files(), snapshots_.path());
 
     auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.block_range());
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
@@ -177,7 +161,7 @@ Task<void> Freezer::cleanup() {
     });
 }
 
-void Freezer::cleanup(RWTxn& db_tx, BlockNumRange range) {
+void Freezer::cleanup(RWTxn& db_tx, BlockNumRange range) const {
     get_snapshot_freezer(SnapshotType::transactions).cleanup(db_tx, range);
     get_snapshot_freezer(SnapshotType::bodies).cleanup(db_tx, range);
     get_snapshot_freezer(SnapshotType::headers).cleanup(db_tx, range);

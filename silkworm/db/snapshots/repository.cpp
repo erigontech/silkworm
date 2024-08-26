@@ -39,12 +39,24 @@ SnapshotRepository::~SnapshotRepository() {
 }
 
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
+    replace_snapshot_bundles(std::move(bundle));
+}
+
+void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
     bundle.reopen();
+
     std::scoped_lock lock(bundles_mutex_);
     // copy bundles prior to modification
     auto bundles = std::make_shared<Bundles>(*bundles_);
+
+    std::erase_if(*bundles, [&](const auto& entry) {
+        const SnapshotBundle& it = *entry.second;
+        return (bundle.block_from() <= it.block_from()) && (it.block_to() <= bundle.block_to());
+    });
+
     BlockNum block_from = bundle.block_from();
     bundles->insert_or_assign(block_from, std::make_shared<SnapshotBundle>(std::move(bundle)));
+
     bundles_ = bundles;
 }
 
@@ -95,18 +107,12 @@ std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> Snap
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_segment_files();
-    std::vector<std::shared_ptr<IndexBuilder>> missing_index_list;
+    auto index_builders = bundle_factory_->index_builders(segment_files);
 
-    for (const auto& seg_file : segment_files) {
-        auto builders = bundle_factory_->index_builders(seg_file);
-        for (auto& builder : builders) {
-            if (!builder->path().exists()) {
-                missing_index_list.push_back(builder);
-            }
-        }
-    }
-
-    return missing_index_list;
+    std::erase_if(index_builders, [&](const auto& builder) {
+        return builder->path().exists();
+    });
+    return index_builders;
 }
 
 void SnapshotRepository::reopen_folder() {
@@ -229,6 +235,12 @@ void SnapshotRepository::remove_stale_indexes() const {
     for (auto& path : stale_index_paths()) {
         const bool removed = fs::remove(path.path());
         ensure(removed, [&]() { return "SnapshotRepository::remove_stale_indexes: cannot remove index file " + path.path().string(); });
+    }
+}
+
+void SnapshotRepository::build_indexes(SnapshotBundle& bundle) const {
+    for (auto& builder : bundle_factory_->index_builders(bundle.snapshot_paths())) {
+        builder->build();
     }
 }
 

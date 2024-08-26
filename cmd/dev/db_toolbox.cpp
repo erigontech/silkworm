@@ -265,11 +265,7 @@ bool user_confirmation(const std::string& message = {"Confirm ?"}) {
         std::cout << "Unexpected user input: " << user_input << "\n";
     } while (true);
 
-    if (matches[2].length()) {
-        return false;
-    }
-
-    return true;
+    return matches[2].length() == 0;
 }
 
 void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,

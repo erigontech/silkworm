@@ -62,7 +62,7 @@ class AccessListTracer : public silkworm::EvmTracer {
 };
 
 inline bool operator!=(const AccessList& acl1, const AccessList& acl2) {
-    return AccessListTracer::compare(acl1, acl2) == false;
+    return !AccessListTracer::compare(acl1, acl2);
 }
 
 inline bool operator==(const AccessList& acl1, const AccessList& acl2) {

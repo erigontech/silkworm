@@ -576,6 +576,7 @@ std::string to_string(intx::uint256 value) {
 }
 
 void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    last_opcode_ = std::nullopt;
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
@@ -626,6 +627,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
                                          const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
     const auto op_code = execution_state.original_code[pc];
     auto op_name = get_opcode_name(opcode_names_, op_code);
+    last_opcode_ = op_code;
 
     if (fix_call_gas_info_) {  // previous opcode was a CALL
         auto& trace_op = fix_call_gas_info_->trace_op_;
@@ -711,14 +713,13 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
     int64_t start_gas = start_gas_.top();
     start_gas_.pop();
 
-    index_prefix_.pop();
-
     SILK_DEBUG << "VmTraceTracer::on_execution_end:"
                << " result.status_code: " << result.status_code
                << ", start_gas: " << std::dec << start_gas
                << ", gas_left: " << std::dec << result.gas_left;
 
     if (vm_trace.ops.empty()) {
+        index_prefix_.pop();
         return;
     }
     auto& op = vm_trace.ops[vm_trace.ops.size() - 1];
@@ -743,6 +744,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
                 op.trace_ex->used = op.gas_cost;
                 op.gas_cost = 0;
             } else {
+                /* EVM WA: EVMONE in case of this error returns always zero on gas-left */
                 op.trace_ex->used = op.gas_cost - metrics_[op.op_code].gas_cost;
                 op.gas_cost = metrics_[op.op_code].gas_cost;
             }
@@ -778,6 +780,23 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
             }
             break;
     }
+
+    /* EVM WA: EVMONE add OP_STOP at the end of tx if not present but doesn't notify to the tracer. Add sw to add STOP to the op list */
+    if (result.status_code == EVMC_SUCCESS && last_opcode_ && last_opcode_ != OP_SELFDESTRUCT && last_opcode_ != OP_RETURN && last_opcode_ != OP_STOP) {
+        auto index_prefix = index_prefix_.top() + std::to_string(vm_trace.ops.size());
+        TraceOp trace_op;
+        trace_op.gas_cost = 0;
+        trace_op.idx = index_prefix;
+        trace_op.depth = op.depth;
+        trace_op.op_code = OP_STOP;
+        trace_op.op_name = get_opcode_name(opcode_names_, OP_STOP);
+        trace_op.pc = op.pc + 1;
+        trace_op.trace_ex = std::make_optional<struct TraceEx>();
+        trace_op.trace_ex->used = result.gas_left;
+
+        vm_trace.ops.push_back(trace_op);
+    }
+    index_prefix_.pop();
 }
 
 void VmTraceTracer::on_pre_check_failed(const evmc_result& /*result*/, const evmc_message& msg) noexcept {
@@ -857,6 +876,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
                 if (last_opcode_) {
+                    /* EVM WA: EVMONE doesn't set flags STATICCALL CALL bases, but if one CALL is static all the next calls are signalled STATIC in the same tx */
                     trace_action.call_type = last_opcode_ == OP_STATICCALL ? "staticcall" : "call";
                 } else {
                     trace_action.call_type = "call";

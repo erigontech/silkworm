@@ -115,6 +115,7 @@ class DebugTracer : public EvmTracer {
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<std::int64_t> start_gas_;
     std::optional<FixCallGasInfo> fix_call_gas_info_;
+    std::optional<uint8_t> last_opcode_;
 };
 
 class AccountTracer : public EvmTracer {

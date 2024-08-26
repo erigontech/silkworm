@@ -65,8 +65,7 @@ BlockNum Config::compute_max_block() {
 
 void Config::remove_unsupported_snapshots() {
     constexpr std::array UNSUPPORTED_SNAPSHOT_NAME_TOKENS = {
-        "accessor/"sv, "domain/"sv, "history/"sv, "idx/"sv, "manifest.txt"sv, "salt-blocks.txt"sv, "salt-state.txt"sv, "blobsidecars.seg"sv
-    };
+        "accessor/"sv, "domain/"sv, "history/"sv, "idx/"sv, "manifest.txt"sv, "salt-blocks.txt"sv, "salt-state.txt"sv, "blobsidecars.seg"sv};
 
     // Check if a snapshot contains any of unsupported tokens
     std::erase_if(preverified_snapshots_, [&](const auto& snapshot) {

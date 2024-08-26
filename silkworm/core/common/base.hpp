@@ -43,8 +43,14 @@ concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::ui
                            std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
 using BlockNum = uint64_t;
-using BlockNumRange = std::pair<BlockNum, BlockNum>;
 using BlockTime = uint64_t;
+
+struct BlockNumRange {
+    BlockNum first;
+    BlockNum second;
+    BlockNumRange(BlockNum first1, BlockNum second1) : first(first1), second(second1) {}
+    friend bool operator==(const BlockNumRange&, const BlockNumRange&) = default;
+};
 
 inline constexpr BlockNum kEarliestBlockNumber{0ul};
 

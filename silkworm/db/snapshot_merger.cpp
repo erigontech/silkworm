@@ -133,7 +133,7 @@ Task<void> SnapshotMerger::cleanup() {
 
 BlockNumRange SnapshotMerger::cleanup_range() {
     // TODO
-    return {};
+    return BlockNumRange{0, 0};
 }
 
 }  // namespace silkworm::db

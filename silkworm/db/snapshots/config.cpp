@@ -19,7 +19,7 @@
 #include <map>
 #include <utility>
 
-#include <absl/strings/match.h>
+#include <boost/algorithm/string.hpp>
 
 #include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -70,7 +70,7 @@ void Config::remove_unsupported_snapshots() {
     // Check if a snapshot contains any of unsupported tokens
     std::erase_if(preverified_snapshots_, [&](const auto& snapshot) {
         return std::any_of(UNSUPPORTED_SNAPSHOT_NAME_TOKENS.begin(), UNSUPPORTED_SNAPSHOT_NAME_TOKENS.end(), [&snapshot](const auto& token) {
-            return absl::StrContains(snapshot.file_name, token);
+            return boost::algorithm::contains(snapshot.file_name, token);
         });
     });
 }

@@ -46,13 +46,13 @@ using BlockNum = uint64_t;
 using BlockTime = uint64_t;
 
 struct BlockNumRange {
-    BlockNum first;
-    BlockNum second;
-    BlockNumRange(BlockNum first1, BlockNum second1) : first(first1), second(second1) {}
+    BlockNum start;
+    BlockNum end;
+    BlockNumRange(BlockNum start1, BlockNum end1) : start(start1), end(end1) {}
     friend bool operator==(const BlockNumRange&, const BlockNumRange&) = default;
-    bool contains(BlockNum num) const { return (first <= num) && (num < second); }
-    BlockNum size() const { return second - first; }
-    std::string to_string() const { return std::string("[") + std::to_string(first) + ", " + std::to_string(second) + ")"; }
+    bool contains(BlockNum num) const { return (start <= num) && (num < end); }
+    BlockNum size() const { return end - start; }
+    std::string to_string() const { return std::string("[") + std::to_string(start) + ", " + std::to_string(end) + ")"; }
 };
 
 inline constexpr BlockNum kEarliestBlockNumber{0ul};

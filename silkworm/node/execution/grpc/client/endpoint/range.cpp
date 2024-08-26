@@ -25,10 +25,10 @@ namespace silkworm::execution::grpc::client {
 namespace proto = ::execution;
 
 proto::GetBodiesByRangeRequest bodies_request_from_block_range(BlockNumRange number_range) {
-    SILKWORM_ASSERT(number_range.first <= number_range.second);
+    SILKWORM_ASSERT(number_range.start <= number_range.end);
     proto::GetBodiesByRangeRequest request;
-    request.set_start(number_range.first);
-    request.set_count(number_range.second - number_range.first);
+    request.set_start(number_range.start);
+    request.set_count(number_range.size());
     return request;
 }
 

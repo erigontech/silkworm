@@ -31,7 +31,7 @@ void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapsh
 
     snapshots::BodySnapshotWriter writer{file_writer};
     auto out = writer.out();
-    for (BlockNum i = range.first; i < range.second; i++) {
+    for (BlockNum i = range.start; i < range.end; i++) {
         auto value_opt = read_canonical_body_for_storage(txn, i);
         if (!value_opt) throw std::runtime_error{"BodySnapshotFreezer::copy missing body for block " + std::to_string(i)};
         BlockBodyForStorage& value = *value_opt;
@@ -43,7 +43,7 @@ void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapsh
 }
 
 void BodySnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
-    for (BlockNum i = range.first, count = 1; i < range.second; i++, count++) {
+    for (BlockNum i = range.start, count = 1; i < range.end; i++, count++) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
         auto hash = *hash_opt;

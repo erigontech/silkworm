@@ -111,7 +111,7 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
         return false;
     }
     for (const auto& preverified_snapshot : snapshot_config.preverified_snapshots()) {
-        SILK_INFO << "SnapshotSync: adding info hash for preverified: " << preverified_snapshot.file_name;
+        SILK_TRACE << "SnapshotSync: adding info hash for preverified: " << preverified_snapshot.file_name;
         client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
     }
 

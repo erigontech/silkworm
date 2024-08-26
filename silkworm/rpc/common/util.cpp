@@ -81,12 +81,8 @@ bool check_tx_fee_less_cap(float cap, const intx::uint256& max_fee_per_gas, uint
     if (cap == 0) {
         return true;
     }
-
     float fee_eth = (to_float(max_fee_per_gas) * static_cast<float>(gas_limit)) / static_cast<float>(silkworm::kEther);
-    if (fee_eth > cap) {
-        return false;
-    }
-    return true;
+    return fee_eth <= cap;
 }
 
 bool is_replay_protected(const silkworm::Transaction& txn) {
@@ -94,10 +90,7 @@ bool is_replay_protected(const silkworm::Transaction& txn) {
         return true;
     }
     intx::uint256 v = txn.v();
-    if (v != 27 && v != 28 && v != 0 && v != 1) {
-        return true;
-    }
-    return false;
+    return v != 27 && v != 28 && v != 0 && v != 1;
 }
 
 std::string decoding_result_to_string(silkworm::DecodingError decode_result) {

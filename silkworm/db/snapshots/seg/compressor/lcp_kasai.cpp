@@ -21,7 +21,7 @@ namespace silkworm::snapshots::seg {
 void lcp_kasai(const uint8_t* data, const int* sa, const int* inv, int* lcp, int n) {
     struct DataPosComparator {
         const uint8_t* data;
-        inline bool has_same_chars(int i, int j) const {
+        bool has_same_chars(int i, int j) const {
             return data[i] == data[j];
         }
     } comparator{data};

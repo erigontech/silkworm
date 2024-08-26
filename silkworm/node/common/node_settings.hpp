@@ -55,7 +55,7 @@ struct NodeSettings {
     bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
     bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
 
-    inline db::etl::CollectorSettings etl() const {
+    db::etl::CollectorSettings etl() const {
         return {data_directory->temp().path(), etl_buffer_size};
     }
 };

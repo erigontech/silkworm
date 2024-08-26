@@ -74,9 +74,9 @@ Checks: >
   -readability-magic-numbers,
   -readability-named-parameter,
   -readability-qualified-auto,
-  -readability-redundant-inline-specifier,
   -readability-redundant-member-init,
-  -readability-redundant-smartptr-get,
-  -readability-simplify-boolean-expr,
   -readability-suspicious-call-argument,
   -readability-uppercase-literal-suffix
+CheckOptions:
+- key: readability-simplify-boolean-expr.SimplifyDeMorgan
+  value: false

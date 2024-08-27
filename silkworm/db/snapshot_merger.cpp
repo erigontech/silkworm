@@ -34,7 +34,7 @@ struct SnapshotMergerCommand : public DataMigrationCommand {
     BlockNumRange range;
 
     explicit SnapshotMergerCommand(BlockNumRange range1)
-        : range(std::move(range1)) {}
+        : range(range1) {}
     ~SnapshotMergerCommand() override = default;
 
     std::string description() const override {

@@ -40,9 +40,9 @@ void ShutdownSignal::on_signal(std::function<void(SignalNumber)> callback) {
             if (error != boost::system::errc::operation_canceled) {
                 log::Error() << "ShutdownSignal.on_signal async_wait error: " << error;
                 throw boost::system::system_error(error);
-            } else {
-                log::Debug() << "ShutdownSignal.on_signal async_wait cancelled";
             }
+            log::Debug() << "ShutdownSignal.on_signal async_wait cancelled";
+            return;
         }
         log_signal(signal_number);
         callback(signal_number);

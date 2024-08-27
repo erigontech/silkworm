@@ -58,6 +58,8 @@ class BitTorrentClient {
     explicit BitTorrentClient(BitTorrentSettings settings = {});
     ~BitTorrentClient();
 
+    const BitTorrentSettings& settings() const { return settings_; }
+
     //! Subscription for torrent added announcements
     boost::signals2::signal<FileCallback> added_subscription;
 

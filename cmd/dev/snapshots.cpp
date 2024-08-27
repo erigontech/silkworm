@@ -411,14 +411,8 @@ static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
     return torrent_info_list;
 }
 
-static void download_bittorrent(const DownloadSettings& settings, TorrentInfoPtrList& web_seed_torrents) {
-    bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
-    SILK_INFO << "Bittorrent download started in repo: " << settings.repository_path.string();
-
-    for (auto it = web_seed_torrents.begin(); it != web_seed_torrents.end();) {
-        client.add_torrent_info(*it);
-        it = web_seed_torrents.erase(it);
-    }
+static void download_bittorrent(bittorrent::BitTorrentClient& client) {
+    SILK_INFO << "Bittorrent download started in repo: " << client.settings().repository_path.string();
 
     boost::asio::io_context scheduler;
     ShutdownSignal shutdown_signal{scheduler.get_executor()};
@@ -430,9 +424,7 @@ static void download_bittorrent(const DownloadSettings& settings, TorrentInfoPtr
     });
     std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
 
-    SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
     client.execute_loop();
-    SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnets_file_path;
 
     scheduler_thread.join();
 }
@@ -440,15 +432,25 @@ static void download_bittorrent(const DownloadSettings& settings, TorrentInfoPtr
 void download(const DownloadSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    bittorrent::TorrentInfoPtrList web_seed_torrents;
     if (!settings.url_seed.empty()) {
+        // Download the torrent files via web seeding from settings.url_seed
+        bittorrent::TorrentInfoPtrList web_seed_torrents;
         web_seed_torrents = download_web_seed(settings);
 
+        // Optionally download also the target files by using the torrents just downloaded
         if (settings.download_web_seed_torrents) {
-            download_bittorrent(settings, web_seed_torrents);
+            bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
+            for (auto it = web_seed_torrents.begin(); it != web_seed_torrents.end(); it = web_seed_torrents.erase(it)) {
+                client.add_torrent_info(*it);
+            }
+            download_bittorrent(client);
         }
     } else {
-        download_bittorrent(settings, web_seed_torrents);
+        // Download the target files by using the magnet links contained in input file (i.e. settings.magnets_file_path)
+        bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
+        SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
+        download_bittorrent(client);
+        SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnets_file_path;
     }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};

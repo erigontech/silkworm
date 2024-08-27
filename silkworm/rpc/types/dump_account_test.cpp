@@ -21,6 +21,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/test_util/null_stream.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {

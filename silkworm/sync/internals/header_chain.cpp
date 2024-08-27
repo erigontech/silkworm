@@ -33,11 +33,11 @@
 
 namespace silkworm {
 
-class segment_cut_and_paste_error : public std::logic_error {
+class SegmentCutAndPasteError : public std::logic_error {
   public:
-    segment_cut_and_paste_error() : std::logic_error("segment cut&paste error, unknown reason") {}
+    SegmentCutAndPasteError() : std::logic_error("segment cut&paste error, unknown reason") {}
 
-    explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
+    explicit SegmentCutAndPasteError(const std::string& reason) : std::logic_error(reason) {}
 };
 
 HeaderChain::HeaderChain(const ChainConfig& chain_config)
@@ -650,7 +650,7 @@ std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
 
         dedupMap.insert(header_hash);
         auto children = childrenMap[header_hash];
-        auto [valid, penalty] = HeaderList::childrenParentValidity(children, header);
+        auto [valid, penalty] = HeaderList::children_parent_validity(children, header);
         if (!valid) {
             return {std::vector<Segment>{}, penalty};
         }
@@ -732,7 +732,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
         }
         // SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
         //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
-    } catch (segment_cut_and_paste_error& e) {
+    } catch (SegmentCutAndPasteError& e) {
         log::Trace() << "[WARNING] HeaderChain, segment cut&paste error, " << op << " up=" << startNum << " ("
                      << Hash{segment[start]->hash()} << ") down=" << endNum << " (" << Hash{segment[end - 1]->hash()}
                      << ") failed, reason: " << e.what();
@@ -828,7 +828,7 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
         invalidate(anchor);
         // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID:
         // anchor.peerID})
-        throw segment_cut_and_paste_error(
+        throw SegmentCutAndPasteError(
             "anchor connected to bad headers, "
             "height=" +
             std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
@@ -917,7 +917,7 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
     // Search for bad headers
     if (bad_headers_.contains(attachment_link->hash)) {
         // todo: return penalties
-        throw segment_cut_and_paste_error(
+        throw SegmentCutAndPasteError(
             "connection to bad headers,"
             " height=" +
             std::to_string(attachment_link->blockHeight) +
@@ -996,14 +996,14 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
 
     if (check_limits) {
         if (anchor_header.number < highest_in_db_)
-            throw segment_cut_and_paste_error(
+            throw SegmentCutAndPasteError(
                 "precondition not meet,"
                 " new anchor too far in the past: " +
                 to_string(anchor_header.number) +
                 ", latest header in db: " + to_string(highest_in_db_));
         if (anchors_.size() >= anchor_limit)
-            throw segment_cut_and_paste_error("too many anchors: " + to_string(anchors_.size()) +
-                                              ", limit: " + to_string(anchor_limit));
+            throw SegmentCutAndPasteError("too many anchors: " + to_string(anchors_.size()) +
+                                          ", limit: " + to_string(anchor_limit));
     }
 
     std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, std::move(peerId));
@@ -1058,7 +1058,7 @@ uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) const {
     return request_id_prefix == prefix;
 }
 
-const Download_Statistics& HeaderChain::statistics() const { return statistics_; }
+const DownloadStatistics& HeaderChain::statistics() const { return statistics_; }
 
 /*
 std::string HeaderChain::dump_chain_bundles() const {

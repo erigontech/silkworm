@@ -70,7 +70,7 @@ class EvmTracer {
 
 using EvmTracers = std::vector<std::reference_wrapper<EvmTracer>>;
 
-using AnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
+using AnalysisCache = LruCache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
 
 class EVM {
   public:

@@ -31,7 +31,7 @@ namespace silkworm {
 // Useful definitions
 // ----------------------------------------------------------------------------
 
-class BodySequence_ForTest : public BodySequence {
+class BodySequenceForTest : public BodySequence {
   public:
     // inheriting constructor
     using BodySequence::BodySequence;
@@ -85,7 +85,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
     BlockNum highest_header = 1;
 
-    BodySequence_ForTest bs;
+    BodySequenceForTest bs;
 
     bs.current_state(0);
     bs.download_bodies({make_shared<BlockHeader>(header1)});
@@ -129,7 +129,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         REQUIRE(request_status.block_height == 1);
         REQUIRE(request_status.block_hash == header1_hash);
@@ -172,7 +172,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status1 = rs->second;
+        BodySequenceForTest::BodyRequest& request_status1 = rs->second;
 
         REQUIRE(request_status1.block_height == 1);
         REQUIRE(request_status1.request_time == tp);
@@ -185,7 +185,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         rs = bs.body_requests_.find(1);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status2 = rs->second;
+        BodySequenceForTest::BodyRequest& request_status2 = rs->second;
 
         // should renew the previous request
         REQUIRE(request_status2.block_height == 1);
@@ -215,7 +215,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         // accepting
         Block block1tampered = block1;
@@ -260,7 +260,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         // accepting
         PeerId peer_id{byte_ptr_cast("1")};
@@ -302,7 +302,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         // in real life the request can become stale and can be renewed
         // but if the peer is slow we will get a response to the old request
@@ -353,7 +353,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         REQUIRE(request_status.block_height == 1);
         REQUIRE(request_status.request_time == tp);
@@ -382,7 +382,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         auto& statistic = bs.statistics();
 
@@ -418,7 +418,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         request_status.ready = true;               // mark as ready
         tp += 2 * SentryClient::kRequestDeadline;  // make it stale
@@ -443,7 +443,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status1 = rs->second;
+        BodySequenceForTest::BodyRequest& request_status1 = rs->second;
 
         // make another request in the same time
         BlockHeader header2;
@@ -468,7 +468,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(bs.body_requests_.size() == 2);
         rs = bs.body_requests_.find(header2.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status2 = rs->second;
+        BodySequenceForTest::BodyRequest& request_status2 = rs->second;
 
         // should not renew the previous request
         REQUIRE(request_status2.block_height != request_status1.block_height);
@@ -500,7 +500,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(!bs.body_requests_.empty());
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
-        BodySequence_ForTest::BodyRequest& request_status = rs->second;
+        BodySequenceForTest::BodyRequest& request_status = rs->second;
 
         REQUIRE(request_status.ready == true);        // found on announcements
         REQUIRE(request_status.to_announce == true);  // to announce

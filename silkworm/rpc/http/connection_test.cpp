@@ -32,7 +32,7 @@ namespace silkworm::rpc::http {
 // - previous write of size 1 by main thread
 #ifndef SILKWORM_SANITIZE
 
-class Connection_ForTest : public Connection {
+class ConnectionForTest : public Connection {
   public:
     using Connection::Connection;
     using Connection::is_request_authorized;
@@ -49,14 +49,14 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
         std::vector<std::string> allowed_origins;
         std::optional<std::string> jwt_secret;
         WorkerPool workers;
-        CHECK_NOTHROW(Connection_ForTest{std::move(socket),
-                                         handler_factory,
-                                         allowed_origins,
-                                         std::move(jwt_secret),
-                                         false,
-                                         false,
-                                         false,
-                                         workers});
+        CHECK_NOTHROW(ConnectionForTest{std::move(socket),
+                                        handler_factory,
+                                        allowed_origins,
+                                        std::move(jwt_secret),
+                                        false,
+                                        false,
+                                        false,
+                                        workers});
     }
 }
 
@@ -91,14 +91,14 @@ TEST_CASE("is_request_authorized", "[rpc][http][connection]") {
     RequestHandlerFactory handler_factory = [](auto*) -> RequestHandlerPtr { return nullptr; };
     std::vector<std::string> allowed_origins;
     WorkerPool workers;
-    auto make_connection = [&](auto&& j) -> Connection_ForTest {
+    auto make_connection = [&](auto&& j) -> ConnectionForTest {
         boost::asio::ip::tcp::socket socket{ioc};
         socket.open(boost::asio::ip::tcp::v4());
         return {std::move(socket), handler_factory, allowed_origins, std::forward<decltype(j)>(j), false, false, false, workers};
     };
     std::optional<std::string> jwt_secret{kSampleJWTKey};
     // Pass the expected JWT secret to the HTTP connection
-    Connection_ForTest connection{make_connection(*jwt_secret)};
+    ConnectionForTest connection{make_connection(*jwt_secret)};
 
     SECTION("no HTTP Authorization header") {
         const auto auth_result{connection.is_request_authorized(RequestWithStringBody{})};

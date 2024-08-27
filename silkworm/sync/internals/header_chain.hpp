@@ -76,7 +76,7 @@ class HeaderChain {
     size_t pending_links() const;
     size_t anchors() const;
     size_t outstanding_requests(time_point_t tp) const;
-    const Download_Statistics& statistics() const;
+    const DownloadStatistics& statistics() const;
 
     // core functionalities: requesting new headers
     std::shared_ptr<OutboundMessage> request_headers(time_point_t);
@@ -172,7 +172,7 @@ class HeaderChain {
     PreverifiedHashes& preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
     BlockNum last_preverified_hash_{0};
     using Ignore = int;
-    lru_cache<Hash, Ignore> seen_announces_;
+    LruCache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;
     protocol::RuleSetPtr rule_set_;
     CustomHeaderOnlyChainState chain_state_;
@@ -186,7 +186,7 @@ class HeaderChain {
     uint64_t request_id_prefix;
     uint64_t request_count = 0;
 
-    Download_Statistics statistics_;
+    DownloadStatistics statistics_;
     std::string skeleton_condition_;
     std::string extension_condition_;
 };

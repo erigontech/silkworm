@@ -81,7 +81,7 @@ TrieCursor::TrieCursor(db::ROCursor& db_cursor, PrefixSet* changed, db::etl::Col
     buffer_.reserve(128);
 }
 
-TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
+TrieCursor::MoveOperationResult TrieCursor::to_prefix(ByteView prefix) {
     // 0 bytes for TrieAccounts
     // 40 bytes (hashed address + incarnation) for TrieStorage
     if (size_t len{prefix.length()}; len != 0 && len != db::kHashedStoragePrefixLength) {
@@ -136,7 +136,7 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     return to_next();
 }
 
-TrieCursor::move_operation_result TrieCursor::to_next() {
+TrieCursor::MoveOperationResult TrieCursor::to_next() {
     /*
      * We process node's nibbled keys in ascending lexicographical order
      * 0x

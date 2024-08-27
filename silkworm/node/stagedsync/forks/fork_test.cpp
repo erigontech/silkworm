@@ -39,7 +39,7 @@ using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
 
-class Fork_ForTest : public Fork {
+class ForkForTest : public Fork {
   public:
     using Fork::canonical_chain_;
     using Fork::current_head_;
@@ -115,9 +115,9 @@ TEST_CASE("Fork") {
 
                 BlockId forking_point = main_chain.last_chosen_head();
 
-                Fork_ForTest fork{forking_point,
-                                  db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
-                                  node_settings};
+                ForkForTest fork{forking_point,
+                                 db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                                 node_settings};
 
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);

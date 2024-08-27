@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace silkworm {
 
 TEST_CASE("SimplePut") {
-    lru_cache<int, int> cache_lru(1);
+    LruCache<int, int> cache_lru(1);
     cache_lru.put(7, 777);
     REQUIRE(cache_lru.get(7));
     CHECK(777 == *cache_lru.get(7));
@@ -43,7 +43,7 @@ TEST_CASE("SimplePut") {
 }
 
 TEST_CASE("MissingValue") {
-    lru_cache<int, int> cache_lru(1);
+    LruCache<int, int> cache_lru(1);
     CHECK(cache_lru.get(7) == nullptr);
 }
 
@@ -51,7 +51,7 @@ TEST_CASE("KeepsAllValuesWithinCapacity") {
     static constexpr int NUM_OF_RECORDS = 100;
     static constexpr int CACHE_CAPACITY = 50;
 
-    lru_cache<int, int> cache_lru(CACHE_CAPACITY);
+    LruCache<int, int> cache_lru(CACHE_CAPACITY);
 
     for (int i = 0; i < NUM_OF_RECORDS; ++i) {
         cache_lru.put(i, i);
@@ -71,7 +71,7 @@ TEST_CASE("KeepsAllValuesWithinCapacity") {
 }
 
 TEST_CASE("DiscardStaleElement") {
-    lru_cache<int, int> cache_lru(3);
+    LruCache<int, int> cache_lru(3);
     cache_lru.put(1, 111);
     cache_lru.put(2, 222);
     cache_lru.put(3, 333);
@@ -82,7 +82,7 @@ TEST_CASE("DiscardStaleElement") {
 }
 
 TEST_CASE("GetWithCopy") {
-    lru_cache<int, int> cache_lru(1);
+    LruCache<int, int> cache_lru(1);
     cache_lru.put(1, 111);
     REQUIRE(cache_lru.get(1));
     REQUIRE(cache_lru.get_as_copy(1));
@@ -93,7 +93,7 @@ TEST_CASE("GetWithCopy") {
 }
 
 TEST_CASE("RemoveElement") {
-    lru_cache<int, int> cache_lru(3);
+    LruCache<int, int> cache_lru(3);
     cache_lru.put(1, 111);
     cache_lru.put(2, 222);
     cache_lru.put(3, 333);

@@ -106,7 +106,7 @@ class ExecutionEngine : public Stoppable {
     ForkContainer forks_;
 
     static constexpr size_t kDefaultCacheSize = 1000;
-    mutable lru_cache<Hash, std::shared_ptr<Block>> block_cache_;
+    mutable LruCache<Hash, std::shared_ptr<Block>> block_cache_;
 
     BlockNum block_progress_{0};
     bool fork_tracking_active_{false};

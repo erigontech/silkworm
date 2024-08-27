@@ -25,7 +25,7 @@
 
 namespace silkworm {
 
-struct Download_Statistics {
+struct DownloadStatistics {
     time_point_t start_tp{std::chrono::system_clock::now()};
     duration_t elapsed() const;
 
@@ -34,7 +34,7 @@ struct Download_Statistics {
     uint64_t accepted_items{0};
     uint64_t rejected_items() const { return received_items - accepted_items; }
 
-    struct Reject_Causes {
+    struct RejectCauses {
         uint64_t not_requested{0};
         uint64_t duplicated{0};
         uint64_t invalid{0};
@@ -42,9 +42,9 @@ struct Download_Statistics {
     } reject_causes;
 };
 
-std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats);
+std::ostream& operator<<(std::ostream& os, const DownloadStatistics& stats);
 
-struct Network_Statistics {
+struct NetworkStatistics {
     std::atomic<uint64_t> received_msgs{0};
     std::atomic<uint64_t> received_bytes{0};
     std::atomic<uint64_t> nonsolic_msgs{0};
@@ -56,11 +56,11 @@ struct Network_Statistics {
     std::atomic<uint64_t> malformed_msgs{0};
 
     void inaccurate_reset();
-    void inaccurate_copy(const Network_Statistics&);
+    void inaccurate_copy(const NetworkStatistics&);
 };
 
-using Interval_Network_Statistics = std::tuple<Network_Statistics&, Network_Statistics&, seconds_t>;
+using IntervalNetworkStatistics = std::tuple<NetworkStatistics&, NetworkStatistics&, seconds_t>;
 
-std::ostream& operator<<(std::ostream& os, Interval_Network_Statistics prev_and_curr_stats);
+std::ostream& operator<<(std::ostream& os, IntervalNetworkStatistics prev_and_curr_stats);
 
 }  // namespace silkworm

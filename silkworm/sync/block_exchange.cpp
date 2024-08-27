@@ -217,14 +217,14 @@ void BlockExchange::collect_bodies() {
 
 void BlockExchange::log_status() {
     static constexpr seconds_t interval_for_stats_{60};
-    static Network_Statistics prev_statistic{};
+    static NetworkStatistics prev_statistic{};
     auto now = std::chrono::system_clock::now();
 
     log::Debug() << "BlockExchange         peers: " << sentry_.active_peers();
     log::Debug() << "BlockExchange      messages: " << std::setfill('_') << std::right
                  << "in-queue:" << std::setw(5) << messages_.size()
                  //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
-                 << Interval_Network_Statistics{prev_statistic, statistics_, interval_for_stats_};
+                 << IntervalNetworkStatistics{prev_statistic, statistics_, interval_for_stats_};
 
     auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
     log::Debug() << "BlockExchange header queues: " << std::setfill('_') << std::right

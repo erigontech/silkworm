@@ -63,7 +63,7 @@ class Timer {
     //! resubmitted for another interval
     void start() {
         bool expected_running{false};
-        if (is_running.compare_exchange_strong(expected_running, true)) {
+        if (is_running_.compare_exchange_strong(expected_running, true)) {
             launch();
         }
     }
@@ -71,7 +71,7 @@ class Timer {
     //! \brief Stops timer and cancels pending execution. No callback is executed and no resubmission
     void stop() {
         bool expected_running{true};
-        if (is_running.compare_exchange_strong(expected_running, false)) {
+        if (is_running_.compare_exchange_strong(expected_running, false)) {
             (void)timer_.cancel();
         }
     }
@@ -87,13 +87,13 @@ class Timer {
             if (!ec && call_back_) {
                 call_back_();
             }
-            if (is_running.load()) {
+            if (is_running_.load()) {
                 launch();
             }
         });
     }
 
-    std::atomic_bool is_running{false};
+    std::atomic_bool is_running_{false};
     const uint32_t interval_;
     boost::asio::steady_timer timer_;
     std::function<bool()> call_back_;

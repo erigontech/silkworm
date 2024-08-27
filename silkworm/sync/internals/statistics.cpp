@@ -21,7 +21,7 @@
 
 namespace silkworm {
 
-std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats) {
+std::ostream& operator<<(std::ostream& os, const DownloadStatistics& stats) {
     using namespace std::chrono;
     uint64_t perc_received = stats.requested_items > 0 ? stats.received_items * 100 / stats.requested_items : 0;
     uint64_t perc_accepted = stats.received_items > 0 ? stats.accepted_items * 100 / stats.received_items : 0;
@@ -47,11 +47,11 @@ std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats) {
     return os;
 }
 
-duration_t Download_Statistics::elapsed() const {
+duration_t DownloadStatistics::elapsed() const {
     return std::chrono::system_clock::now() - start_tp;
 }
 
-void Network_Statistics::inaccurate_reset() {
+void NetworkStatistics::inaccurate_reset() {
     // during this execution members can be updated making results inaccurate, but we do not need precision here
     received_msgs = 0;
     received_bytes = 0;
@@ -64,7 +64,7 @@ void Network_Statistics::inaccurate_reset() {
     malformed_msgs = 0;
 }
 
-void Network_Statistics::inaccurate_copy(const Network_Statistics& other) {
+void NetworkStatistics::inaccurate_copy(const NetworkStatistics& other) {
     // during this execution members can be updated making results inaccurate, but we do not need precision here
     received_msgs = other.received_msgs.load();
     received_bytes = other.received_bytes.load();
@@ -83,9 +83,9 @@ void Network_Statistics::inaccurate_copy(const Network_Statistics& other) {
         << "(+" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / (FACTOR) \
         << ", +" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / (FACTOR) / elapsed_s << "/s)")
 
-std::ostream& operator<<(std::ostream& os, std::tuple<Network_Statistics&, Network_Statistics&, seconds_t> stats) {
-    Network_Statistics& prev = get<0>(stats);
-    Network_Statistics& curr = get<1>(stats);
+std::ostream& operator<<(std::ostream& os, std::tuple<NetworkStatistics&, NetworkStatistics&, seconds_t> stats) {
+    NetworkStatistics& prev = get<0>(stats);
+    NetworkStatistics& curr = get<1>(stats);
     seconds_t elapsed = get<2>(stats);
     auto elapsed_s = static_cast<uint64_t>(elapsed.count());
 

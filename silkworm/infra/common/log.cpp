@@ -103,16 +103,16 @@ static inline std::pair<const char*, const char*> get_level_settings(Level level
     }
 }
 
-struct separate_thousands : std::numpunct<char> {
+struct SeparateThousands : std::numpunct<char> {
     char separator;
-    explicit separate_thousands(char sep) : separator(sep) {}
+    explicit SeparateThousands(char sep) : separator(sep) {}
     [[nodiscard]] char do_thousands_sep() const override { return separator; }
     [[nodiscard]] string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
 };
 
 void prepare_for_logging(std::ostream& ss) {
     if (settings_.log_thousands_sep != 0) {
-        ss.imbue(std::locale(ss.getloc(), new separate_thousands(settings_.log_thousands_sep)));
+        ss.imbue(std::locale(ss.getloc(), new SeparateThousands(settings_.log_thousands_sep)));
     }
 }
 
@@ -120,7 +120,7 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
     if (!should_print_) return;
 
     if (settings_.log_thousands_sep != 0) {
-        ss_.imbue(std::locale(ss_.getloc(), new separate_thousands(settings_.log_thousands_sep)));
+        ss_.imbue(std::locale(ss_.getloc(), new SeparateThousands(settings_.log_thousands_sep)));
     }
 
     auto [log_level, color] = get_level_settings(level);

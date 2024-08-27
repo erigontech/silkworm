@@ -38,6 +38,10 @@ ClientContext::ClientContext(std::size_t context_id, WaitMode wait_mode)
       grpc_context_{std::make_unique<agrpc::GrpcContext>()},
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())} {}
 
+void ClientContext::destroy_grpc_context() {
+    grpc_context_.reset();
+}
+
 void ClientContext::execute_loop() {
     switch (wait_mode_) {
         case WaitMode::backoff:
@@ -108,6 +112,17 @@ ClientContextPool::ClientContextPool(std::size_t pool_size, concurrency::WaitMod
 
 ClientContextPool::ClientContextPool(concurrency::ContextPoolSettings settings)
     : ClientContextPool(settings.num_contexts, settings.wait_mode) {}
+
+ClientContextPool::~ClientContextPool() {
+    stop();  // must be called to simplify exposed API, no problem because idempotent
+    join();  // must be called to simplify exposed API, no problem because idempotent
+
+    // Ensure *all* agrpc::GrpcContext get destroyed BEFORE any boost::asio::io_context is destroyed to avoid triggering
+    // undefined behavior when dispatching calls from i-th agrpc::GrpcContext to j-th boost::asio::io_context w/ i != j
+    for (auto& context : contexts_) {
+        context.destroy_grpc_context();
+    }
+}
 
 void ClientContextPool::start() {
     // Cannot restart because ::grpc::CompletionQueue inside agrpc::GrpcContext cannot be reused

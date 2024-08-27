@@ -45,6 +45,8 @@ class ClientContext : public concurrency::Context {
     void execute_loop() override;
 
   private:
+    void destroy_grpc_context();
+
     //! Execute back-off loop until stopped.
     void execute_loop_backoff();
 
@@ -60,6 +62,8 @@ class ClientContext : public concurrency::Context {
 
     //! The work-tracking executor that keep the asio-grpc scheduler running.
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> grpc_context_work_;
+
+    friend class ClientContextPool;
 };
 
 std::ostream& operator<<(std::ostream& out, const ClientContext& c);
@@ -70,6 +74,7 @@ class ClientContextPool : public concurrency::ContextPool<ClientContext>, public
   public:
     explicit ClientContextPool(std::size_t pool_size, concurrency::WaitMode wait_mode = concurrency::WaitMode::blocking);
     explicit ClientContextPool(concurrency::ContextPoolSettings settings);
+    ~ClientContextPool() override;
 
     ClientContextPool(const ClientContextPool&) = delete;
     ClientContextPool& operator=(const ClientContextPool&) = delete;

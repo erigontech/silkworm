@@ -20,10 +20,14 @@
 #include <stdexcept>
 #include <thread>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/executor_work_guard.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::concurrency {
@@ -145,6 +149,28 @@ TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
         context_pool.start();
         context_pool.stop();
         CHECK_NOTHROW(context_pool.join());
+    }
+
+    SECTION("start/stop/join w/ task enqueued") {
+        ContextPool context_pool{2};
+        context_pool.add_context(Context{0, WaitMode::blocking});
+        context_pool.add_context(Context{1, WaitMode::blocking});
+        concurrency::spawn_future(context_pool.any_executor(), [&]() -> Task<void> {
+            co_await sleep(std::chrono::milliseconds(1'000));
+        });
+        context_pool.start();
+        context_pool.stop();
+        CHECK_NOTHROW(context_pool.join());
+    }
+
+    SECTION("start/destroy w/ task enqueued") {
+        ContextPool context_pool{2};
+        context_pool.add_context(Context{0, WaitMode::blocking});
+        context_pool.add_context(Context{1, WaitMode::blocking});
+        concurrency::spawn_future(context_pool.any_executor(), [&]() -> Task<void> {
+            co_await sleep(std::chrono::milliseconds(1'000));
+        });
+        context_pool.start();
     }
 
     SECTION("stop/start w/o contexts") {

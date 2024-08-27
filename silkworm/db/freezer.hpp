@@ -35,7 +35,7 @@ class Freezer : public DataMigration {
           snapshots_(snapshots),
           stage_scheduler_(stage_scheduler),
           tmp_dir_path_(std::move(tmp_dir_path)),
-    keep_blocks_(keep_blocks) {}
+          keep_blocks_(keep_blocks) {}
 
   private:
     static constexpr size_t kChunkSize = 1000;

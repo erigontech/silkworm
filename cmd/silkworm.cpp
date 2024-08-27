@@ -47,7 +47,6 @@
 #include "common/settings.hpp"
 #include "common/shutdown_signal.hpp"
 
-
 namespace sw_db = silkworm::db;
 namespace sw_log = silkworm::log;
 

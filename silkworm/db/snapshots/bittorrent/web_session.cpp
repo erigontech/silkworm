@@ -102,11 +102,13 @@ Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
     http::response<http::string_body> rsp;
 
     // Receive the HTTP response
+    tcp_stream.expires_after(kHttpTimeoutSecs);
     const auto read_bytes = co_await http::async_read(ssl_stream, data, rsp, net::use_awaitable);
     SILK_TRACE << "WebSeedClient::http_session HTTP read_bytes: " << read_bytes << " response: " << rsp;
 
     // Gracefully close the stream
     try {
+        tcp_stream.expires_after(kHttpTimeoutSecs);
         co_await ssl_stream.async_shutdown(net::use_awaitable);
     } catch (const beast::system_error& se) {
         // Swallow shutdown errors due to misbehaviour of some web servers:

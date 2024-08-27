@@ -362,7 +362,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     snapshots::Index idx_txn_hash{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions), make_region(ts.tx_hash_index)};
     snapshots::Index idx_txn_hash_2_block{transactions_segment_path->index_file_for_type(snapshots::SnapshotType::transactions_to_block), make_region(ts.tx_hash_2_block_index)};
 
-    snapshots::SnapshotBundle bundle{
+    snapshots::SnapshotBundle bundle{{
         .header_snapshot = std::move(header_snapshot),
         .idx_header_hash = std::move(idx_header_hash),
 
@@ -372,7 +372,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         .txn_snapshot = std::move(txn_snapshot),
         .idx_txn_hash = std::move(idx_txn_hash),
         .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-    };
+    }};
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }

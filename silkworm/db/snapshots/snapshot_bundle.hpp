@@ -31,7 +31,7 @@
 
 namespace silkworm::snapshots {
 
-struct SnapshotBundle {
+struct SnapshotBundleStruct {
     Snapshot header_snapshot;
     //! Index header_hash -> block_num -> headers_segment_offset
     Index idx_header_hash;
@@ -48,6 +48,14 @@ struct SnapshotBundle {
 
     static constexpr size_t kSnapshotsCount = 3;
     static constexpr size_t kIndexesCount = 4;
+};
+
+struct SnapshotBundle : public SnapshotBundleStruct {
+    explicit SnapshotBundle(SnapshotBundleStruct bundle) : SnapshotBundleStruct(std::move(bundle)) {}
+    virtual ~SnapshotBundle();
+
+    SnapshotBundle(SnapshotBundle&&) = default;
+    SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
     std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
         return {
@@ -127,6 +135,13 @@ struct SnapshotBundle {
 
     void reopen();
     void close();
+
+    void on_close(std::function<void(SnapshotBundle&)> callback) {
+        on_close_callback_ = std::move(callback);
+    }
+
+  private:
+    std::function<void(SnapshotBundle&)> on_close_callback_;
 };
 
 }  // namespace silkworm::snapshots

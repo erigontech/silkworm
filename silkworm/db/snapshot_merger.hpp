@@ -39,7 +39,6 @@ class SnapshotMerger : public DataMigration {
     void index(std::shared_ptr<DataMigrationResult> result) override;
     void commit(std::shared_ptr<DataMigrationResult> result) override;
     Task<void> cleanup() override;
-    BlockNumRange cleanup_range();
 
     snapshots::SnapshotRepository& snapshots_;
     std::filesystem::path tmp_dir_path_;

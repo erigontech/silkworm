@@ -29,7 +29,7 @@ void HeaderSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snap
     BlockNumRange range = command.range;
     snapshots::HeaderSnapshotWriter writer{file_writer};
     auto out = writer.out();
-    for (BlockNum i = range.first; i < range.second; i++) {
+    for (BlockNum i = range.start; i < range.end; i++) {
         auto value_opt = read_canonical_header(txn, i);
         if (!value_opt) throw std::runtime_error{"HeaderSnapshotFreezer::copy missing header for block " + std::to_string(i)};
         *out++ = *value_opt;
@@ -37,7 +37,7 @@ void HeaderSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snap
 }
 
 void HeaderSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
-    for (BlockNum i = range.first, count = 1; i < range.second; i++, count++) {
+    for (BlockNum i = range.start, count = 1; i < range.end; i++, count++) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
         auto& hash = *hash_opt;

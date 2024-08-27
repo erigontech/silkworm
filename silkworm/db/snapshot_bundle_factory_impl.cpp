@@ -44,10 +44,10 @@ SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path,
 
 SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, BlockNumRange range) const {
     PathByTypeProvider snapshot_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::from(dir_path, kSnapshotV1, range.first, range.second, type);
+        return SnapshotPath::from(dir_path, kSnapshotV1, range.start, range.end, type);
     };
     PathByTypeProvider index_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::from(dir_path, kSnapshotV1, range.first, range.second, type, kIdxExtension);
+        return SnapshotPath::from(dir_path, kSnapshotV1, range.start, range.end, type, kIdxExtension);
     };
     return make(std::move(snapshot_path), std::move(index_path));
 }

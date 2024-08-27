@@ -39,7 +39,7 @@ struct SnapshotMergerCommand : public DataMigrationCommand {
 
     std::string description() const override {
         std::stringstream stream;
-        stream << "SnapshotMergerCommand [" << range.first << ", " << range.second << ")";
+        stream << "SnapshotMergerCommand " << range.to_string();
         return stream.str();
     }
 };
@@ -87,19 +87,16 @@ struct RawSnapshotWordDeserializer : public SnapshotWordDeserializer {
 std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& merger_command = dynamic_cast<SnapshotMergerCommand&>(*command);
     auto range = merger_command.range;
-    auto range_contains = [range](BlockNum num) -> bool {
-        return (range.first <= num) && (num < range.second);
-    };
 
     auto new_bundle = snapshots_.bundle_factory().make(tmp_dir_path_, range);
     for (auto& snapshot_ref : new_bundle.snapshots()) {
         auto path = snapshot_ref.get().path();
-        log::Debug("SnapshotMerger") << "merging " << path.type_string() << " range [" << range.first << ", " << range.second << ")";
+        log::Debug("SnapshotMerger") << "merging " << path.type_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
         for (auto& bundle_ptr : snapshots_.view_bundles()) {
             auto& bundle = *bundle_ptr;
-            if (!range_contains(bundle.block_from())) continue;
+            if (!range.contains(bundle.block_from())) continue;
 
             SnapshotReader<RawSnapshotWordDeserializer> reader{bundle.snapshot(path.type())};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
@@ -133,7 +130,7 @@ Task<void> SnapshotMerger::cleanup() {
 
 BlockNumRange SnapshotMerger::cleanup_range() {
     // TODO
-    return {};
+    return BlockNumRange{0, 0};
 }
 
 }  // namespace silkworm::db

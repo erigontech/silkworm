@@ -26,9 +26,9 @@
 
 namespace silkworm::rpc {
 
-static const auto zero_address = evmc::address{};
-static const auto empty_hash = evmc::bytes32{};
-static const auto zero_balance = intx::uint256{0};
+static const auto kZeroAddress = evmc::address{};
+static const auto kEmptyHash = evmc::bytes32{};
+static const auto kZeroBalance = intx::uint256{0};
 
 using evmc::literals::operator""_address;
 using evmc::literals::operator""_bytes32;
@@ -37,9 +37,9 @@ TEST_CASE("Empty DumpAccounts", "[rpc][types][dump_account]") {
     DumpAccounts da;
 
     SECTION("check fields") {
-        CHECK(da.root == empty_hash);
+        CHECK(da.root == kEmptyHash);
         CHECK(da.accounts.empty());
-        CHECK(da.next == zero_address);
+        CHECK(da.next == kZeroAddress);
     }
 
     SECTION("print") {
@@ -128,11 +128,11 @@ TEST_CASE("Empty DumpAccount", "[rpc][types][dump_account]") {
     DumpAccount da;
 
     SECTION("check fields") {
-        CHECK(da.balance == zero_balance);
+        CHECK(da.balance == kZeroBalance);
         CHECK(da.nonce == 0);
         CHECK(da.incarnation == 0);
-        CHECK(da.root == empty_hash);
-        CHECK(da.code_hash == empty_hash);
+        CHECK(da.root == kEmptyHash);
+        CHECK(da.code_hash == kEmptyHash);
         CHECK(da.code == std::nullopt);
         CHECK(da.storage == std::nullopt);
     }

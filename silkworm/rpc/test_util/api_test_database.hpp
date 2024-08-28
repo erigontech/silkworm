@@ -76,9 +76,6 @@ class RequestHandlerForTest : public json_rpc::RequestHandler {
             response = *answer;
         }
     }
-
-  private:
-    inline static const std::vector<std::string> allowed_origins;
 };
 
 class LocalContextTestBase : public ServiceContextTestBase {

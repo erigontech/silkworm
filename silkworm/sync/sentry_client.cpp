@@ -37,9 +37,9 @@
 
 // In debug mode we dump malformed messages received from Sentry
 #ifdef NDEBUG
-constexpr bool dump_malformed_msg{false};
+constexpr bool kDumpMalformedMsg{false};
 #else
-constexpr bool dump_malformed_msg{true};
+constexpr bool kDumpMalformedMsg{true};
 #endif
 
 namespace silkworm {
@@ -93,7 +93,7 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
                                 << " msg_id=" << static_cast<int>(message_from_peer.message.id)
                                 << " eth_message_id=" << static_cast<int>(eth_message_id)
                                 << " error=" << error.what();
-        if (dump_malformed_msg) {
+        if (kDumpMalformedMsg) {
             static int i{0};
             std::ofstream malformed_msg{"sentry_malformed_msg_" + std::to_string(++i) + ".txt", std::ios::binary};
             malformed_msg << std::hex << "peer=" << peer_id << "\n";

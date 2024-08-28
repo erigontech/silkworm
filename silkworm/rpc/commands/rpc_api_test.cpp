@@ -68,13 +68,13 @@ bool are_equivalent(const nlohmann::json& obj1, const nlohmann::json& obj2) {
     return str1 == str2;
 }
 
-static const std::vector<std::string> tests_to_ignore = {
+const std::vector<std::string> kTestsToIgnore = {
     "eth_getProof",            // not implemented
     "debug_getRawReceipts",    // not implemented
     "eth_sendRawTransaction",  // call to txpool fails, needs mocking
 };
 
-static const std::vector<std::string> subtests_to_ignore = {
+const std::vector<std::string> kSubtestsToIgnore = {
     "create-al-multiple-reads.io",  // eth_createAccessList: expected value doesn't contain gas optimization
     "estimate-simple-transfer.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas
     "estimate-simple-contract.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas
@@ -92,11 +92,11 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
             auto test_name = test_file.path().filename().string();
             auto group_name = test_file.path().parent_path().filename().string();
 
-            if (std::find(tests_to_ignore.begin(), tests_to_ignore.end(), group_name) != tests_to_ignore.end()) {
+            if (std::find(kTestsToIgnore.begin(), kTestsToIgnore.end(), group_name) != kTestsToIgnore.end()) {
                 continue;
             }
 
-            if (std::find(subtests_to_ignore.begin(), subtests_to_ignore.end(), test_name) != subtests_to_ignore.end()) {
+            if (std::find(kSubtestsToIgnore.begin(), kSubtestsToIgnore.end(), test_name) != kSubtestsToIgnore.end()) {
                 continue;
             }
 

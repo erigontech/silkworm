@@ -85,7 +85,7 @@ static constexpr auto kValidTorrentContent{
 static const std::string kValidTorrentContentAscii{test_util::ascii_from_hex(kValidTorrentContent)};
 
 struct WebSessionMock : public WebSession {
-    MOCK_METHOD((Task<WebSession::StringResponse>), https_get, (const urls::url&, std::string_view), (const, override));
+    MOCK_METHOD((Task<WebSession::StringResponse>), https_get, (const urls::url&, std::string_view, const WebSession::HeaderFields&), (const, override));
 };
 
 struct WebSeedClientTest : public test_util::ContextTestBase {
@@ -103,13 +103,13 @@ TEST_CASE("WebSeedClient_ForTest::WebSeedClient_ForTest", "[db][snapshot][bittor
 
 TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", "[db][snapshot][bittorrent]") {
     SECTION("empty") {
-        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
+        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> { co_return WebSession::StringResponse{}; }));
         WebSeedClient_ForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
         CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("invalid manifest") {
-        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
+        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> {
                 WebSession::StringResponse rsp;
                 rsp.body().assign("\000\001");
@@ -119,7 +119,7 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", 
         CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("valid manifest") {
-        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _))
+        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> {
                 WebSession::StringResponse rsp;
                 rsp.body().assign(kValidManifestContent);

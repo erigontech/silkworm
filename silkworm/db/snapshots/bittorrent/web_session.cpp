@@ -16,8 +16,6 @@
 
 #include "web_session.hpp"
 
-#include <map>
-
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -39,18 +37,15 @@ namespace net = boost::asio;
 namespace ssl = net::ssl;
 namespace urls = boost::urls;
 
-//! Custom HTTP headers to include in any request to web servers hosted by Cloudflare
-const std::map<std::string_view, std::string_view> kCloudflareHeaders{
-    {"lsjdjwcush6jbnjj3jnjscoscisoc5s", "I%OSJDNFKE783DDHHJD873EFSIVNI7384R78SSJBJBCCJBC32JABBJCBJK45"},
-};
-
 //! The timeout for HTTP asynchronous operations
 constexpr std::chrono::seconds kHttpTimeoutSecs{30};
 
 WebSession::WebSession(std::optional<std::string> server_certificate)
     : server_certificate_(std::move(server_certificate)) {}
 
-Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url, std::string_view target_file) const {
+Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
+                                                       std::string_view target_file,
+                                                       const HeaderFields& custom_fields) const {
     // The SSL context which holds root certificate used for verification ()
     ssl::context ssl_ctx{ssl::context::tlsv13_client};
     load_root_certificates(ssl_ctx, server_certificate_);
@@ -86,7 +81,7 @@ Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
     http::request<http::empty_body> req{http::verb::get, target_file, kHttpVersion};
     req.set(http::field::host, host);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-    include_cloudflare_headers(req);
+    include_custom_headers(req, custom_fields);
     SILK_TRACE << "WebSeedClient::http_session HTTP request: " << req;
 
     // Send the HTTP request to the remote host
@@ -120,9 +115,9 @@ Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
     co_return response;
 }
 
-void WebSession::include_cloudflare_headers(EmptyRequest& request) {
-    for (const auto [header_name, header_value] : kCloudflareHeaders) {
-        request.set(header_name, header_value);
+void WebSession::include_custom_headers(EmptyRequest& request, const HeaderFields& custom_fields) {
+    for (const auto [field_name, field_value] : custom_fields) {
+        request.set(field_name, field_value);
     }
 }
 

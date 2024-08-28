@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -34,16 +35,20 @@ class WebSession {
     explicit WebSession(std::optional<std::string> server_certificate = {});
     virtual ~WebSession() = default;
 
+    using HeaderFields = std::map<std::string_view, std::string_view>;
     using StringResponse = boost::beast::http::response<boost::beast::http::string_body>;
 
     //! \brief Asynch send a HTTPS GET request for \p target file to \p web_url and receive the response
     //! \param web_url the URL address of the web server
     //! \param target_file the relative path of the requested file
-    [[nodiscard]] virtual Task<StringResponse> https_get(const boost::urls::url& web_url, std::string_view target_file) const;
+    //! \param custom_fields the custom fields to add to the header of HTTPS requests, if any
+    [[nodiscard]] virtual Task<StringResponse> https_get(const boost::urls::url& web_url,
+                                                         std::string_view target_file,
+                                                         const HeaderFields& custom_fields) const;
 
   protected:
     using EmptyRequest = boost::beast::http::request<boost::beast::http::empty_body>;
-    static void include_cloudflare_headers(EmptyRequest& request);
+    static void include_custom_headers(EmptyRequest& request, const HeaderFields& custom_fields);
 
     //! The HTTP protocol version to use
     static constexpr int kHttpVersion{11};

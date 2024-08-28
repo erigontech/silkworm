@@ -524,7 +524,7 @@ TEST_CASE_METHOD(WebSessionTest, "WebSession::https_get", "[db][snapshot][bittor
                              tcp::endpoint{asio::ip::make_address("127.0.0.1"), 12345},
                              doc_root)
         ->run();
-    CHECK(spawn_and_wait(session.https_get(urls::url{"https://127.0.0.1:12345"}, "/manifest.txt")).body().empty());
+    CHECK(spawn_and_wait(session.https_get(urls::url{"https://127.0.0.1:12345"}, "/manifest.txt", {})).body().empty());
 }
 
 }  // namespace silkworm::snapshots::bittorrent

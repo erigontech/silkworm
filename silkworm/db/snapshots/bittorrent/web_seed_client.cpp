@@ -22,7 +22,6 @@
 
 #include <absl/strings/ascii.h>
 #include <absl/strings/str_split.h>
-#include <boost/beast/version.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/url/parse.hpp>
 // Disable warnings raised during compilation of libtorrent
@@ -142,9 +141,9 @@ Task<void> WebSeedClient::download_from_provider(const urls::url& provider_url,
         const auto& torrent_file = torrent_files[index];
         urls::url torrent_url{provider_url};
         const auto torrent_file_path = torrent_url.set_path(torrent_file).path();
-        const auto rsp = co_await web_session_->https_get(provider_url, torrent_file_path, kCloudflareHeaders);
+        const auto response = co_await web_session_->https_get(provider_url, torrent_file_path, kCloudflareHeaders);
         SILK_TRACE << "WebSeedClient::download_from_provider received torrent: " << torrent_file;
-        TorrentInfoPtr torrent_info = validate_torrent_file(provider_url, torrent_file, rsp.body());
+        TorrentInfoPtr torrent_info = validate_torrent_file(provider_url, torrent_file, response.body());
         SILK_TRACE << "WebSeedClient::download_from_provider validated torrent: " << torrent_file;
         if (torrent_info) {
             torrent_infos.emplace(std::move(torrent_info));

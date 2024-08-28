@@ -34,7 +34,6 @@
 #include <boost/system/system_error.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
@@ -498,10 +497,10 @@ class Server : public std::enable_shared_from_this<Server> {
         if (ec) {
             fail(ec, "accept");
             return;  // To avoid infinite loop
-        } else {
-            // Create the session and run it
-            std::make_shared<Session>(std::move(socket), ssl_ctx_, doc_root_)->run();
         }
+
+        // Create the session and run it
+        std::make_shared<Session>(std::move(socket), ssl_ctx_, doc_root_)->run();
 
         // Accept another connection
         do_accept();

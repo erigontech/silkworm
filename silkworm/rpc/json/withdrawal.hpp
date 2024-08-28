@@ -32,6 +32,7 @@ struct GlazeJsonWithdrawals {
 
     struct glaze {
         using T = GlazeJsonWithdrawals;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "index", &T::index,
             "validatorIndex", &T::validator_index,

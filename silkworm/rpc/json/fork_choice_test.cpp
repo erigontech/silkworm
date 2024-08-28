@@ -52,7 +52,7 @@ TEST_CASE("deserialize ForkChoiceStateV1", "[silkworm::json][from_json]") {
 
 TEST_CASE("serialize ForkChoiceUpdatedReply", "[silkworm::json][to_json]") {
     ForkChoiceUpdatedReply fcu_reply{
-        .payload_status = PayloadStatus::Accepted,
+        .payload_status = PayloadStatus::kAccepted,
         .payload_id = 0};
 
     nlohmann::json j = fcu_reply;

@@ -224,7 +224,7 @@ void to_json(nlohmann::json& json, const TraceResult& trace_result);
 void to_json(nlohmann::json& json, const Trace& trace);
 
 template <typename T, typename Container = std::deque<T>>
-class iterable_stack : public std::stack<T, Container> {
+class IterableStack : public std::stack<T, Container> {
     using std::stack<T, Container>::c;
 
   public:
@@ -261,7 +261,7 @@ class TraceTracer : public silkworm::EvmTracer {
     int64_t initial_gas_{0};
     int32_t current_depth_{-1};
     std::set<evmc::address> created_address_;
-    iterable_stack<size_t> index_stack_;
+    IterableStack<size_t> index_stack_;
     std::stack<int64_t> start_gas_;
 };
 

@@ -78,5 +78,11 @@ Checks: >
   -readability-suspicious-call-argument,
   -readability-uppercase-literal-suffix
 CheckOptions:
-- key: readability-simplify-boolean-expr.SimplifyDeMorgan
-  value: false
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.ClassIgnoredRegexp: buildinfo|glaze
+  readability-identifier-naming.ClassMethodCase: lower_case
+  readability-identifier-naming.GlobalConstantCase: CamelCase
+  readability-identifier-naming.GlobalConstantPrefix: k
+  readability-identifier-naming.StaticConstantCase: CamelCase
+  readability-identifier-naming.StaticConstantPrefix: k
+  readability-simplify-boolean-expr.SimplifyDeMorgan: false

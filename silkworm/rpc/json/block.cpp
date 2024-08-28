@@ -110,6 +110,7 @@ struct GlazeJsonBlock {
 
     struct glaze {
         using T = GlazeJsonBlock;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "number", &T::block_number,
             "hash", &T::hash,
@@ -148,6 +149,7 @@ struct GlazeJsonBlockReply {
 
     struct glaze {
         using T = GlazeJsonBlockReply;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,
@@ -162,6 +164,7 @@ struct GlazeJsonNullBlockReply {
 
     struct glaze {
         using T = GlazeJsonNullBlockReply;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,

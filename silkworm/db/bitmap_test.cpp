@@ -70,13 +70,13 @@ TEST_CASE("Roaring Bitmaps") {
 
     SECTION("cut_left1") {
         for (size_t mdbx_page_size{1_Kibi}; mdbx_page_size < 32_Kibi; mdbx_page_size *= 2) {
-            static const size_t bitmap_chunk_limit{db::max_value_size_for_leaf_page(mdbx_page_size, 0)};
+            static const size_t kBitmapChunkLimit{db::max_value_size_for_leaf_page(mdbx_page_size, 0)};
             roaring::Roaring64Map bitmap(roaring::api::roaring_bitmap_from_range(0, 100000, 1));
             roaring::Roaring64Map expected(roaring::api::roaring_bitmap_from_range(0, 100000, 1));
             roaring::Roaring64Map actual;
             std::vector<roaring::Roaring64Map> bitmap_chunks;
             while (bitmap.cardinality() != 0) {
-                bitmap_chunks.push_back(cut_left(bitmap, bitmap_chunk_limit));
+                bitmap_chunks.push_back(cut_left(bitmap, kBitmapChunkLimit));
             }
             for (const auto& chunk : bitmap_chunks) {
                 actual |= chunk;

@@ -55,7 +55,7 @@ class AuthMessage {
     EccPublicKey ephemeral_public_key_;
     Bytes nonce_;
     Bytes signature_;
-    static const uint8_t version;
+    static constexpr uint8_t kVersion{4};
 };
 
 }  // namespace silkworm::sentry::rlpx::auth

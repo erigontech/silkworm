@@ -33,11 +33,11 @@
 
 namespace silkworm {
 
-class segment_cut_and_paste_error : public std::logic_error {
+class SegmentCutAndPasteError : public std::logic_error {
   public:
-    segment_cut_and_paste_error() : std::logic_error("segment cut&paste error, unknown reason") {}
+    SegmentCutAndPasteError() : std::logic_error("segment cut&paste error, unknown reason") {}
 
-    explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
+    explicit SegmentCutAndPasteError(const std::string& reason) : std::logic_error(reason) {}
 };
 
 HeaderChain::HeaderChain(const ChainConfig& chain_config)
@@ -133,7 +133,7 @@ void HeaderChain::initial_state(const std::vector<BlockHeader>& last_headers) {
         highest_in_db_ = std::max(highest_in_db_, header.number);
     }
 
-    reduce_persisted_links_to(persistent_link_limit);  // resize persisted_link_queue removing old links
+    reduce_persisted_links_to(kPersistentLinkLimit);  // resize persisted_link_queue removing old links
 }
 
 void HeaderChain::current_state(BlockNum highest_in_db) {
@@ -222,7 +222,7 @@ Headers HeaderChain::withdraw_stable_headers() {
     }
 
     // Save memory
-    reduce_persisted_links_to(persistent_link_limit);
+    reduce_persisted_links_to(kPersistentLinkLimit);
 
     return stable_headers;  // RVO
 }
@@ -292,7 +292,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::add_header(const BlockHeader& anch
 
     if (target_block_) segment.remove_headers_higher_than(*target_block_);
 
-    auto want_to_extend = process_segment(segment, true, no_peer);
+    auto want_to_extend = process_segment(segment, true, kNoPeer);
     if (!want_to_extend) return nullptr;
 
     return anchor_extension_request(tp);
@@ -311,7 +311,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::request_headers(time_point_t tp) {
 /*
  * Skeleton query.
  * Request "seed" headers that can became anchors.
- * It requests N headers starting at highestInDb + stride up to topSeenHeight.
+ * It requests N headers starting at highestInDb + kStride up to topSeenHeight.
  * If there is an anchor at height < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
@@ -319,7 +319,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     using namespace std::chrono_literals;
 
     // if last skeleton request was too recent, do not request another one
-    if (time_point - last_skeleton_request_ < skeleton_req_interval) {
+    if (time_point - last_skeleton_request_ < kSkeletonReqInterval) {
         skeleton_condition_ = "too recent";
         return nullptr;
     }
@@ -352,18 +352,18 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
 
     BlockNum next_target = top;
     if (lowest_anchor) {
-        if (*lowest_anchor - highest_in_db_ <= stride) {  // the lowest_anchor is too close to highest_in_db
+        if (*lowest_anchor - highest_in_db_ <= kStride) {  // the lowest_anchor is too close to highest_in_db
             skeleton_condition_ = "working";
             return nullptr;
         }
         next_target = *lowest_anchor;
-    } else {                                   // there are no anchors
-        if (top - highest_in_db_ <= stride) {  // the top is too close to highest_in_db
-            if (target_block_) {               // we are syncing to a specific block
+    } else {                                    // there are no anchors
+        if (top - highest_in_db_ <= kStride) {  // the top is too close to highest_in_db
+            if (target_block_) {                // we are syncing to a specific block
                 skeleton_condition_ = "near the top";
                 auto request_message = std::make_shared<OutboundGetBlockHeaders>();
                 request_message->packet().requestId = generate_request_id();
-                request_message->packet().request = {{top}, max_len, 0, true};  // request top header only
+                request_message->packet().request = {{top}, kMaxLen, 0, true};  // request top header only
                 return request_message;
             }
             skeleton_condition_ = "wait tip announce";
@@ -371,9 +371,9 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
         }
     }
 
-    BlockNum length = (next_target - highest_in_db_) / stride;
+    BlockNum length = (next_target - highest_in_db_) / kStride;
 
-    if (length > max_len) length = max_len;
+    if (length > kMaxLen) length = kMaxLen;
 
     if (length == 0) {
         skeleton_condition_ = "low";
@@ -383,9 +383,9 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     auto request_message = std::make_shared<OutboundGetBlockHeaders>();
     auto& packet = request_message->packet();
     packet.requestId = generate_request_id();
-    packet.request.origin = {highest_in_db_ + stride};
+    packet.request.origin = {highest_in_db_ + kStride};
     packet.request.amount = length;
-    packet.request.skip = length > 1 ? stride - 1 : 0;
+    packet.request.skip = length > 1 ? kStride - 1 : 0;
     packet.request.reverse = false;
 
     statistics_.requested_items += length;
@@ -465,17 +465,17 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
         }
 
         if (anchor->timeouts < 10) {
-            anchor_queue_.update(anchor, [&](const auto& a) { return a->update_timestamp(time_point + extension_req_timeout); });
+            anchor_queue_.update(anchor, [&](const auto& a) { return a->update_timestamp(time_point + kExtensionReqTimeout); });
 
             auto request_message = send_penalties;
             auto& packet = request_message->packet();
             packet.requestId = generate_request_id();
             packet.request = {{anchor->blockHeight},  // requesting from origin=blockHeight-1 make debugging difficult
-                              max_len,
+                              kMaxLen,
                               0,
                               true};  // we use blockHeight in place of parentHash to get also ommers if presents
 
-            statistics_.requested_items += max_len;
+            statistics_.requested_items += kMaxLen;
 
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
                        << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
@@ -650,7 +650,7 @@ std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
 
         dedupMap.insert(header_hash);
         auto children = childrenMap[header_hash];
-        auto [valid, penalty] = HeaderList::childrenParentValidity(children, header);
+        auto [valid, penalty] = HeaderList::children_parent_validity(children, header);
         if (!valid) {
             return {std::vector<Segment>{}, penalty};
         }
@@ -732,14 +732,14 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
         }
         // SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
         //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
-    } catch (segment_cut_and_paste_error& e) {
+    } catch (SegmentCutAndPasteError& e) {
         log::Trace() << "[WARNING] HeaderChain, segment cut&paste error, " << op << " up=" << startNum << " ("
                      << Hash{segment[start]->hash()} << ") down=" << endNum << " (" << Hash{segment[end - 1]->hash()}
                      << ") failed, reason: " << e.what();
         return false;
     }
 
-    reduce_links_to(link_limit);
+    reduce_links_to(kLinkLimit);
 
     return requestMore;
 }
@@ -828,7 +828,7 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
         invalidate(anchor);
         // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID:
         // anchor.peerID})
-        throw segment_cut_and_paste_error(
+        throw SegmentCutAndPasteError(
             "anchor connected to bad headers, "
             "height=" +
             std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
@@ -917,7 +917,7 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
     // Search for bad headers
     if (bad_headers_.contains(attachment_link->hash)) {
         // todo: return penalties
-        throw segment_cut_and_paste_error(
+        throw SegmentCutAndPasteError(
             "connection to bad headers,"
             " height=" +
             std::to_string(attachment_link->blockHeight) +
@@ -996,14 +996,14 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
 
     if (check_limits) {
         if (anchor_header.number < highest_in_db_)
-            throw segment_cut_and_paste_error(
+            throw SegmentCutAndPasteError(
                 "precondition not meet,"
                 " new anchor too far in the past: " +
                 to_string(anchor_header.number) +
                 ", latest header in db: " + to_string(highest_in_db_));
-        if (anchors_.size() >= anchor_limit)
-            throw segment_cut_and_paste_error("too many anchors: " + to_string(anchors_.size()) +
-                                              ", limit: " + to_string(anchor_limit));
+        if (anchors_.size() >= kAnchorLimit)
+            throw SegmentCutAndPasteError("too many anchors: " + to_string(anchors_.size()) +
+                                          ", limit: " + to_string(kAnchorLimit));
     }
 
     std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, std::move(peerId));
@@ -1058,7 +1058,7 @@ uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) const {
     return request_id_prefix == prefix;
 }
 
-const Download_Statistics& HeaderChain::statistics() const { return statistics_; }
+const DownloadStatistics& HeaderChain::statistics() const { return statistics_; }
 
 /*
 std::string HeaderChain::dump_chain_bundles() const {

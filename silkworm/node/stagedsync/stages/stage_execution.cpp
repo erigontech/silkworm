@@ -314,12 +314,12 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
 }
 
 Stage::Result Execution::unwind(db::RWTxn& txn) {
-    static const db::MapConfig unwind_tables[5] = {
-        db::table::kAccountChangeSet,  //
-        db::table::kStorageChangeSet,  //
-        db::table::kBlockReceipts,     //
-        db::table::kLogs,              //
-        db::table::kCallTraceSet       //
+    static const db::MapConfig kUnwindTables[5] = {
+        db::table::kAccountChangeSet,
+        db::table::kStorageChangeSet,
+        db::table::kBlockReceipts,
+        db::table::kLogs,
+        db::table::kCallTraceSet,
     };
 
     Stage::Result ret{Stage::Result::kSuccess};
@@ -358,7 +358,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         // Delete records which has keys greater than unwind point
         // Note erasing forward the start key is included that's why we increase unwind_point by 1
         Bytes start_key{db::block_key(to + 1)};
-        for (const auto& map_config : unwind_tables) {
+        for (const auto& map_config : kUnwindTables) {
             auto unwind_cursor = txn.rw_cursor(map_config);
             auto erased{db::cursor_erase(*unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
             log::Info() << "Erased " << erased << " records from " << map_config.name;

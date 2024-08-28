@@ -32,7 +32,7 @@ static const std::string kRequestRequiredFields{
     kRequestFieldJsonRpc + "," + kRequestFieldId + "," + kRequestFieldMethod + "," + kRequestFieldParameters};
 
 void Validator::load_specification() {
-    const auto spec = nlohmann::json::parse(specification_json, nullptr, /*allow_exceptions=*/false);
+    const auto spec = nlohmann::json::parse(kSpecificationJson, nullptr, /*allow_exceptions=*/false);
     if (spec.contains("methods")) {
         for (const auto& method : spec["methods"]) {
             method_specs_[method["name"].get<std::string>()] = method["params"];

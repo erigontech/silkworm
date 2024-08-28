@@ -24,8 +24,8 @@
 
 namespace silkworm {
 
-TEST_CASE("set_based_priority_queue") {
-    set_based_priority_queue<int, std::greater<>> queue;
+TEST_CASE("SetBasedPriorityQueue") {
+    SetBasedPriorityQueue<int, std::greater<>> queue;
     queue.push(3);
     queue.push(2);
     queue.push(4);
@@ -111,14 +111,14 @@ TEST_CASE("set_based_priority_queue") {
     }
 }
 
-TEST_CASE("set_based_priority_queue - shared_ptr") {
+TEST_CASE("SetBasedPriorityQueue - shared_ptr") {
     struct GreaterThan : public std::function<bool(std::shared_ptr<int>, std::shared_ptr<int>)> {
         bool operator()(const std::shared_ptr<int>& x, const std::shared_ptr<int>& y) const {
             return *x != *y ? *x > *y : x > y;  // operator <, when values are the same preserve identity
         }
     };
 
-    set_based_priority_queue<std::shared_ptr<int>, GreaterThan> queue;
+    SetBasedPriorityQueue<std::shared_ptr<int>, GreaterThan> queue;
     queue.push(std::make_shared<int>(3));
     queue.push(std::make_shared<int>(2));
     queue.push(std::make_shared<int>(4));

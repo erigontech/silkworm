@@ -103,16 +103,16 @@ static inline std::pair<const char*, const char*> get_level_settings(Level level
     }
 }
 
-struct separate_thousands : std::numpunct<char> {
+struct SeparateThousands : std::numpunct<char> {
     char separator;
-    explicit separate_thousands(char sep) : separator(sep) {}
+    explicit SeparateThousands(char sep) : separator(sep) {}
     [[nodiscard]] char do_thousands_sep() const override { return separator; }
     [[nodiscard]] string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
 };
 
 void prepare_for_logging(std::ostream& ss) {
     if (settings_.log_thousands_sep != 0) {
-        ss.imbue(std::locale(ss.getloc(), new separate_thousands(settings_.log_thousands_sep)));
+        ss.imbue(std::locale(ss.getloc(), new SeparateThousands(settings_.log_thousands_sep)));
     }
 }
 
@@ -120,7 +120,7 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
     if (!should_print_) return;
 
     if (settings_.log_thousands_sep != 0) {
-        ss_.imbue(std::locale(ss_.getloc(), new separate_thousands(settings_.log_thousands_sep)));
+        ss_.imbue(std::locale(ss_.getloc(), new SeparateThousands(settings_.log_thousands_sep)));
     }
 
     auto [log_level, color] = get_level_settings(level);
@@ -134,11 +134,11 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
         << (settings_.log_trim && !is_terminal ? "] " : padding);
 
     // TimeStamp
-    static const absl::TimeZone tz{settings_.log_utc ? absl::UTCTimeZone() : absl::LocalTimeZone()};
+    static const absl::TimeZone kTz{settings_.log_utc ? absl::UTCTimeZone() : absl::LocalTimeZone()};
     absl::Time now{absl::Now()};
 
-    auto log_timezone{settings_.log_timezone ? std::string{" "} + tz.name() : ""};
-    ss_ << kColorWhite << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", now, tz) << log_timezone << "] " << kColorReset;
+    auto log_timezone{settings_.log_timezone ? std::string{" "} + kTz.name() : ""};
+    ss_ << kColorWhite << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", now, kTz) << log_timezone << "] " << kColorReset;
 
     // ThreadId
     if (settings_.log_threads) {
@@ -154,12 +154,12 @@ void BufferBase::flush() {
     if (!should_print_) return;
 
     // Pattern to identify colorization
-    static const std::regex color_pattern("(\\\x1b\\[[0-9;]{1,}m)");
+    static const std::regex kColorPattern("(\\\x1b\\[[0-9;]{1,}m)");
 
     bool colorized{true};
     std::string line{ss_.str()};
     if (settings_.log_nocolor) {
-        line = std::regex_replace(line, color_pattern, "");
+        line = std::regex_replace(line, kColorPattern, "");
         colorized = false;
     }
     std::unique_lock out_lck{out_mtx};
@@ -167,7 +167,7 @@ void BufferBase::flush() {
     out << line << '\n';
     if (file_ && file_->is_open()) {
         if (colorized) {
-            line = std::regex_replace(line, color_pattern, "");
+            line = std::regex_replace(line, kColorPattern, "");
         }
         *file_ << line << '\n';
     }

@@ -94,7 +94,7 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
     }
 }
 
-struct SnapshotSync_ForTest : public SnapshotSync {
+struct SnapshotSyncForTest : public SnapshotSync {
     using SnapshotSync::build_missing_indexes;
     using SnapshotSync::SnapshotSync;
     using SnapshotSync::update_block_bodies;
@@ -154,7 +154,7 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     repository.add_snapshot_bundle(std::move(bundle));
 
     // Update the block headers in the database according to the repository content
-    SnapshotSync_ForTest snapshot_sync{&repository, kMainnetConfig};
+    SnapshotSyncForTest snapshot_sync{&repository, kMainnetConfig};
     CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), repository.max_block_available()));
 
     // Expect that the database is correctly populated (N.B. cannot check Difficulty table because of sample snapshots)

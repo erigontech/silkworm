@@ -64,7 +64,7 @@ class CanonicalChain {
     BlockId current_head_{};
 
     static constexpr size_t kDefaultCacheSize = 1000;
-    std::unique_ptr<lru_cache<BlockNum, Hash>> canonical_hash_cache_;  // uses unique_ptr because lru_cache is not movable
+    std::unique_ptr<LruCache<BlockNum, Hash>> canonical_hash_cache_;  // uses unique_ptr because LruCache is not movable
     bool cache_enabled() const;
 };
 

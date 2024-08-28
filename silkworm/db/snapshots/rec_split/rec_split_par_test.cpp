@@ -126,6 +126,7 @@ const std::size_t RecSplit4::kLowerAggregationBound;
 template <>
 const std::size_t RecSplit4::kUpperAggregationBound;
 template <>
+// NOLINTNEXTLINE(readability-identifier-naming)
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo;
 
 auto par_build_strategy_4(ThreadPool& tp) { return std::make_unique<RecSplit4::ParallelBuildingStrategy>(tp); }

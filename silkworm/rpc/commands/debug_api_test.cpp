@@ -47,8 +47,8 @@ using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 
-static const nlohmann::json empty;
-static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT
+const nlohmann::json kEmpty;
+const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
 class DummyCursor : public CursorDupSort {
   public:
@@ -60,7 +60,7 @@ class DummyCursor : public CursorDupSort {
 
     Task<void> open_cursor(const std::string& table_name, bool /*is_dup_sorted*/) override {
         table_name_ = table_name;
-        table_ = json_.value(table_name_, empty);
+        table_ = json_.value(table_name_, kEmpty);
         itr_ = table_.end();
 
         co_return;
@@ -79,7 +79,7 @@ class DummyCursor : public CursorDupSort {
             auto actual = key_;
             auto delta = itr_.key().size() - actual.size();
             if (delta > 0) {
-                actual += zeros.substr(0, delta);
+                actual += kZeros.substr(0, delta);
             }
             if (itr_.key() >= actual) {
                 auto kk{*silkworm::from_hex(itr_.key())};
@@ -93,7 +93,7 @@ class DummyCursor : public CursorDupSort {
     }
 
     Task<KeyValue> seek_exact(silkworm::ByteView key) override {
-        const nlohmann::json table = json_.value(table_name_, empty);
+        const nlohmann::json table = json_.value(table_name_, kEmpty);
         const auto& entry = table.value(silkworm::to_hex(key), "");
         auto value{*silkworm::from_hex(entry)};
 
@@ -150,7 +150,7 @@ class DummyCursor : public CursorDupSort {
         silkworm::Bytes key_{key};
         key_ += value;
 
-        const nlohmann::json table = json_.value(table_name_, empty);
+        const nlohmann::json table = json_.value(table_name_, kEmpty);
         const auto& entry = table.value(silkworm::to_hex(key_), "");
         auto out{*silkworm::from_hex(entry)};
 
@@ -161,7 +161,7 @@ class DummyCursor : public CursorDupSort {
         silkworm::Bytes key_{key};
         key_ += value;
 
-        const nlohmann::json table = json_.value(table_name_, empty);
+        const nlohmann::json table = json_.value(table_name_, kEmpty);
         const auto& entry = table.value(silkworm::to_hex(key_), "");
         auto out{*silkworm::from_hex(entry)};
         auto kv = KeyValue{silkworm::Bytes{}, out};

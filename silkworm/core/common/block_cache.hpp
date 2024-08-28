@@ -41,7 +41,7 @@ class BlockCache {
     }
 
   private:
-    lru_cache<evmc::bytes32, std::shared_ptr<BlockWithHash>> block_cache_;
+    LruCache<evmc::bytes32, std::shared_ptr<BlockWithHash>> block_cache_;
 };
 
 }  // namespace silkworm

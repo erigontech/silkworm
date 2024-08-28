@@ -38,7 +38,7 @@ using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
 
-class MainChain_ForTest : public stagedsync::MainChain {
+class MainChainForTest : public stagedsync::MainChain {
   public:
     using stagedsync::MainChain::current_head;
     using stagedsync::MainChain::insert_block;
@@ -69,7 +69,7 @@ TEST_CASE("MainChain transaction handling") {
             NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             node_settings.keep_db_txn_open = keep_db_txn_open;
             db::RWAccess db_access{context.env()};
-            MainChain_ForTest main_chain{io, node_settings, db_access};
+            MainChainForTest main_chain{io, node_settings, db_access};
             main_chain.open();
 
             auto& tx = main_chain.tx();
@@ -160,7 +160,7 @@ TEST_CASE("MainChain") {
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    MainChain_ForTest main_chain{io, node_settings, db_access};
+    MainChainForTest main_chain{io, node_settings, db_access};
     main_chain.open();
 
     auto& tx = main_chain.tx();
@@ -445,7 +445,7 @@ TEST_CASE("MainChain") {
         main_chain.close();
 
         // opening another main chain (-> application start up)
-        MainChain_ForTest main_chain2{io, node_settings, db_access};
+        MainChainForTest main_chain2{io, node_settings, db_access};
         main_chain2.open();
 
         // checking that the initial state sees the prev fcu

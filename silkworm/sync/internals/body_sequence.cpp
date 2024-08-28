@@ -377,7 +377,7 @@ BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::highest_block() 
     return rbegin()->first;
 }
 
-const Download_Statistics& BodySequence::statistics() const {
+const DownloadStatistics& BodySequence::statistics() const {
     return statistics_;
 }
 

@@ -81,7 +81,7 @@ class BlockExchange : public ActiveComponent {
     const ChainConfig& chain_config_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;
-    Network_Statistics statistics_;
+    NetworkStatistics statistics_;
 
     ResultQueue results_{};
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry

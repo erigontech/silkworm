@@ -43,37 +43,37 @@ Task<PayloadStatus> RemoteExecutionEngine::new_payload(const NewPayloadRequest& 
 
     // Validations
     if (const auto result = validate_blob_hashes(*block, request.expected_blob_versioned_hashes); !result) {
-        co_return PayloadStatus{rpc::PayloadStatus::kInvalid, {}, result.error()};
+        co_return PayloadStatus{rpc::PayloadStatus::kInvalidStr, {}, result.error()};
     }
 
     const Hash block_hash = block->header.hash();
     if (payload.block_hash != block_hash) {
-        co_return PayloadStatus::InvalidBlockHash;
+        co_return PayloadStatus::kInvalidBlockHash;
     }
 
     // Insert the new block
     std::vector<std::shared_ptr<Block>> blocks{std::move(block)};
     const auto insert_result = co_await execution_service_->insert_blocks(blocks);
     if (!insert_result) {
-        co_return PayloadStatus::Syncing;
+        co_return PayloadStatus::kSyncing;
     }
 
     // Retrieve back the block number
     const auto block_number = co_await execution_service_->get_header_hash_number(block_hash);
     if (!block_number) {
-        co_return PayloadStatus::Accepted;
+        co_return PayloadStatus::kAccepted;
     }
 
     const auto verification = co_await (execution_service_->validate_chain({*block_number, block_hash}) || concurrency::timeout(timeout));
 
     if (std::holds_alternative<ValidChain>(verification)) {  // VALID
-        co_return PayloadStatus{.status = PayloadStatus::kValid, .latest_valid_hash = block_hash};
+        co_return PayloadStatus{.status = PayloadStatus::kValidStr, .latest_valid_hash = block_hash};
     } else if (std::holds_alternative<InvalidChain>(verification)) {  // INVALID
         const auto invalid_chain = std::get<InvalidChain>(verification);
-        co_return PayloadStatus{.status = PayloadStatus::kInvalid, .latest_valid_hash = invalid_chain.unwind_point.hash};
+        co_return PayloadStatus{.status = PayloadStatus::kInvalidStr, .latest_valid_hash = invalid_chain.unwind_point.hash};
     } else {  // ERROR
         const auto validation_error = std::get<ValidationError>(verification);
-        co_return PayloadStatus{PayloadStatus::kInvalid, {}, validation_error.error};
+        co_return PayloadStatus{PayloadStatus::kInvalidStr, {}, validation_error.error};
     }
 }
 

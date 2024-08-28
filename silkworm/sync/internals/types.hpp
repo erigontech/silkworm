@@ -39,7 +39,7 @@ using milliseconds_t = std::chrono::milliseconds;
 // Peers
 using PeerId = Bytes;
 
-static inline const PeerId no_peer{byte_ptr_cast("")};
+inline const PeerId kNoPeer{byte_ptr_cast("")};
 
 // Bytes already has operator<<, so PeerId but PeerId is too long
 inline Bytes human_readable_id(const PeerId& peer_id) {

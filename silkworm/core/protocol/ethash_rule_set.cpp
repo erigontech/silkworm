@@ -169,8 +169,8 @@ intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t bl
 
     const uint64_t n{block_number / 100'000};
     if (n >= 2) {
-        static constexpr intx::uint256 one{1};
-        difficulty += one << (n - 2);
+        static constexpr intx::uint256 kOne{1};
+        difficulty += kOne << (n - 2);
     }
 
     static constexpr uint64_t kMinDifficulty{0x20000};

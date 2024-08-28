@@ -42,7 +42,7 @@ namespace silkworm::snapshots::bittorrent {
 using namespace std::chrono_literals;
 
 //! BitTorrentClient with protected methods exposed for test
-class BitTorrentClient_ForTest : public BitTorrentClient {
+class BitTorrentClientForTest : public BitTorrentClient {
   public:
     using BitTorrentClient::BitTorrentClient;
     using BitTorrentClient::handle_alert;
@@ -129,15 +129,15 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
         const auto resume_dir_path = repo.path() / BitTorrentClient::kResumeDirName;
         std::filesystem::create_directories(resume_dir_path);
         const auto ignored_file{resume_dir_path / "a.txt"};
-        BitTorrentClient_ForTest::save_file(ignored_file, std::vector<char>{});
+        BitTorrentClientForTest::save_file(ignored_file, std::vector<char>{});
         const auto empty_resume_file{resume_dir_path / "a.resume"};
-        BitTorrentClient_ForTest::save_file(empty_resume_file, std::vector<char>{});
+        BitTorrentClientForTest::save_file(empty_resume_file, std::vector<char>{});
         const auto invalid_resume_file{resume_dir_path / "83112dec4bec180cff67e01d6345c88c3134fd26.resume"};
         std::vector<char> invalid_resume_data{};
-        BitTorrentClient_ForTest::save_file(invalid_resume_file, invalid_resume_data);
+        BitTorrentClientForTest::save_file(invalid_resume_file, invalid_resume_data);
         const auto valid_resume_file{resume_dir_path / "83112dec4bec180cff67e01d6345c88c3134fd26.resume"};
         std::vector<char> resume_data{test_resume_data()};
-        BitTorrentClient_ForTest::save_file(valid_resume_file, resume_data);
+        BitTorrentClientForTest::save_file(valid_resume_file, resume_data);
         CHECK_NOTHROW(BitTorrentClient{settings});
     }
 }
@@ -246,7 +246,7 @@ TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bit
         settings.repository_path = repo.path().string();
         settings.magnets_file_path = repo.magnets_file_path().string();
         settings.resume_data_save_interval = kResumeDataSaveInterval;
-        BitTorrentClient_ForTest client{settings};
+        BitTorrentClientForTest client{settings};
         CHECK_NOTHROW(client.request_torrent_updates(false));
         std::this_thread::sleep_for(kResumeDataSaveInterval);
         CHECK_NOTHROW(client.request_torrent_updates(false));
@@ -262,7 +262,7 @@ TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]"
         BitTorrentSettings settings{};
         settings.repository_path = repo.path().string();
         settings.magnets_file_path = repo.magnets_file_path().string();
-        BitTorrentClient_ForTest client{settings};
+        BitTorrentClientForTest client{settings};
         CHECK_NOTHROW(client.process_alerts());
     }
 }
@@ -274,7 +274,7 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
     BitTorrentSettings settings{};
     settings.repository_path = repo.path().string();
     settings.magnets_file_path = repo.magnets_file_path().string();
-    BitTorrentClient_ForTest client{settings};
+    BitTorrentClientForTest client{settings};
     lt::aux::stack_allocator allocator;
     lt::session session(lt::settings_pack{});
     lt::add_torrent_params params = lt::parse_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");

@@ -27,6 +27,7 @@ struct GlazeJsonAccessList {
     std::vector<std::string> storage_keys;
     struct glaze {
         using T = GlazeJsonAccessList;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "address", &T::address,
             "storageKeys", &T::storage_keys);

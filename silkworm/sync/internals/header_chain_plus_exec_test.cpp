@@ -42,7 +42,7 @@ class HeaderChainForTest : public HeaderChain {
     using HeaderChain::HeaderChain;
 };
 
-class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
+class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::ExecutionEngine;
     using stagedsync::ExecutionEngine::insert_block;
@@ -86,7 +86,7 @@ TEST_CASE("Headers receiving and saving") {
     db::RWAccess db_access{context.env()};
 
     // creating the ExecutionEngine
-    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread

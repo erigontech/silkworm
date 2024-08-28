@@ -51,7 +51,7 @@ static Bytes random_code() {
 
 // Check that insertion of new codes doesn't invalidate previously returned views of other codes.
 TEST_CASE("Code view stability") {
-    static constexpr size_t n{1000};
+    const size_t n{1000};
 
     // Generate preexisting codes
     InMemoryState db;

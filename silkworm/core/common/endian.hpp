@@ -32,6 +32,8 @@ See https://en.wikipedia.org/wiki/Endianness
 
 namespace silkworm::endian {
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 // Similar to boost::endian::load_big_u16
 const auto load_big_u16 = intx::be::unsafe::load<uint16_t>;
 
@@ -67,6 +69,8 @@ const auto store_little_u32 = intx::le::unsafe::store<uint32_t>;
 
 // Similar to boost::endian::store_little_u64
 const auto store_little_u64 = intx::le::unsafe::store<uint64_t>;
+
+// NOLINTEND(readability-identifier-naming)
 
 //! \brief Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed

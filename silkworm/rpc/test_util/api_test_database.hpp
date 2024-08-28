@@ -59,11 +59,11 @@ class ChannelForTest : public StreamWriter {
     Task<std::size_t> write(std::string_view /* content */, bool /* last */) override { co_return 0; }
 };
 
-class RequestHandler_ForTest : public json_rpc::RequestHandler {
+class RequestHandlerForTest : public json_rpc::RequestHandler {
   public:
-    RequestHandler_ForTest(ChannelForTest* channel,
-                           commands::RpcApi& rpc_api,
-                           const commands::RpcApiTable& rpc_api_table)
+    RequestHandlerForTest(ChannelForTest* channel,
+                          commands::RpcApi& rpc_api,
+                          const commands::RpcApiTable& rpc_api_table)
         : json_rpc::RequestHandler(channel, rpc_api, rpc_api_table) {}
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
@@ -76,9 +76,6 @@ class RequestHandler_ForTest : public json_rpc::RequestHandler {
             response = *answer;
         }
     }
-
-  private:
-    inline static const std::vector<std::string> allowed_origins;
 };
 
 class LocalContextTestBase : public ServiceContextTestBase {
@@ -113,16 +110,16 @@ class RpcApiTestBase : public LocalContextTestBase {
     db::kv::api::CoherentStateCache state_cache_;
 };
 
-class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<RequestHandler_ForTest> {
+class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<RequestHandlerForTest> {
   public:
-    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandler_ForTest>(get_mdbx_env()) {
+    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandlerForTest>(get_mdbx_env()) {
         // Ensure JSON RPC spec has been loaded into the validator
         if (!jsonrpc_spec_loaded) {
             json_rpc::Validator::load_specification();
             jsonrpc_spec_loaded = true;
         }
     }
-    using RpcApiTestBase<RequestHandler_ForTest>::run;
+    using RpcApiTestBase<RequestHandlerForTest>::run;
 
   private:
     static inline silkworm::test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};

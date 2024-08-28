@@ -33,10 +33,10 @@ class HeaderChainForTest : public HeaderChain {
     using HeaderChain::anchor_queue_;
     using HeaderChain::anchor_skeleton_request;
     using HeaderChain::anchors_;
-    using HeaderChain::extension_req_timeout;
     using HeaderChain::find_anchor;
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
+    using HeaderChain::kExtensionReqTimeout;
     using HeaderChain::last_nack_;
     using HeaderChain::links_;
     using HeaderChain::pending_links;
@@ -1289,7 +1289,7 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = HeaderChainForTest::extension_req_timeout;
+        seconds_t timeout = HeaderChainForTest::kExtensionReqTimeout;
 
         auto anchor = chain.anchor_queue_.top();
         anchor->timeouts = 10;
@@ -1480,7 +1480,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         std::shared_ptr<Anchor> anchor = chain.anchor_queue_.top();
         auto prev_timeouts = anchor->timeouts;
         auto prev_timestamp = anchor->timestamp;
-        auto timeout = HeaderChainForTest::extension_req_timeout;
+        auto timeout = HeaderChainForTest::kExtensionReqTimeout;
         auto now = prev_timestamp + timeout;
 
         // request an anchor extension
@@ -1516,7 +1516,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = HeaderChainForTest::extension_req_timeout;
+        seconds_t timeout = HeaderChainForTest::kExtensionReqTimeout;
 
         chain.last_nack_ = now - timeout;  // otherwise the request is ignored
 

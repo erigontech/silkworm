@@ -41,7 +41,7 @@ using Fr = blst_fr;
 
 // KZG_SETUP_G2[1] printed by cmd/dev/kzg_g2_uncompress
 // See https://github.com/ethereum/consensus-specs/blob/dev/presets/mainnet/trusted_setups/trusted_setup_4096.json
-static const G2 kKzgSetupG2_1{
+const G2 kKzgSetupG2{
     {{{0x6120a2099b0379f9, 0xa2df815cb8210e4e, 0xcb57be5577bd3d4f,
        0x62da0ea89a0c93f8, 0x02e0ee16968e150d, 0x171f09aea833acd5},
       {0x11a3670749dfd455, 0x04991d7b3abffadc, 0x85446a8e14437f41,
@@ -239,7 +239,7 @@ static bool verify_kzg_proof_impl(
 
     /* Calculate: X_minus_z */
     g2_mul(&x_g2, blst_p2_generator(), z);
-    g2_sub(&X_minus_z, &kKzgSetupG2_1, &x_g2);
+    g2_sub(&X_minus_z, &kKzgSetupG2, &x_g2);
 
     /* Calculate: P_minus_y */
     g1_mul(&y_g1, blst_p1_generator(), y);

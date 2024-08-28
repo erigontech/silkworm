@@ -19,6 +19,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/test_util/null_stream.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/types/log.hpp>

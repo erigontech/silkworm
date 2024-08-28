@@ -23,6 +23,8 @@ namespace silkworm::rpc::json_rpc::method {
 // Constants defined here have a different naming from our standard: k_<JSON_RPC_API>
 // where <JSON_RPC_API> is *exactly* the JSON RPC API method
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 inline constexpr const char* k_web3_clientVersion{"web3_clientVersion"};
 inline constexpr const char* k_web3_sha3{"web3_sha3"};
 
@@ -156,5 +158,7 @@ inline constexpr const char* k_ots_getTransactionError{"ots_getTransactionError"
 inline constexpr const char* k_ots_getInternalOperations{"ots_getInternalOperations"};
 inline constexpr const char* k_ots_search_transactions_after{"ots_searchTransactionsAfter"};
 inline constexpr const char* k_ots_search_transactions_before{"ots_searchTransactionsBefore"};
+
+// NOLINTEND(readability-identifier-naming)
 
 }  // namespace silkworm::rpc::json_rpc::method

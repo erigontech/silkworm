@@ -38,7 +38,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
     if (!header) return headers;
     BlockNum block_num = header->number;
     headers.push_back(*header);
-    bytes += est_header_rlp_size;
+    bytes += kEstHeaderRlpSize;
 
     // followings
     do {
@@ -79,9 +79,9 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
         header = data_model_.read_header(block_num, hash);
         if (!header) break;
         headers.push_back(*header);
-        bytes += est_header_rlp_size;
+        bytes += kEstHeaderRlpSize;
 
-    } while (headers.size() < amount && bytes < soft_response_limit && headers.size() < max_headers_serve);
+    } while (headers.size() < amount && bytes < kSoftResponseLimit && headers.size() < kMaxHeadersServe);
 
     return headers;
 }
@@ -99,15 +99,15 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_number(BlockNum origin, uin
         if (!header) break;
 
         headers.push_back(*header);
-        bytes += est_header_rlp_size;
+        bytes += kEstHeaderRlpSize;
 
         if (!reverse)
             block_num += skip + 1;  // Number based traversal towards the leaf block
         else
             block_num -= skip + 1;  // Number based traversal towards the genesis block
 
-    } while (block_num > 0 && headers.size() < amount && bytes < soft_response_limit &&
-             headers.size() < max_headers_serve);
+    } while (block_num > 0 && headers.size() < amount && bytes < kSoftResponseLimit &&
+             headers.size() < kMaxHeadersServe);
 
     return headers;
 }

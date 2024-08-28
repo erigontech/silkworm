@@ -27,7 +27,7 @@ namespace silkworm::stagedsync {
 CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
     : tx_{tx},
       data_model_{tx_},  // todo: put an header cache into the data_model_ and share the data_model_ with the owner
-      canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(cache_size)} {
+      canonical_hash_cache_{std::make_unique<LruCache<BlockNum, Hash>>(cache_size)} {
     open();
 }
 
@@ -36,7 +36,7 @@ CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
       data_model_{tx_},
       initial_head_{copy.initial_head_},
       current_head_{copy.current_head_},
-      canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
+      canonical_hash_cache_{std::make_unique<LruCache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
     open();
 }
 

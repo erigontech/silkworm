@@ -219,7 +219,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     BlockNum max_blocknum{std::max(from, to)};
 
     absl::btree_set<Bytes> deleted_ts_prefixes{};
-    silkworm::lru_cache<evmc::address, std::optional<Account>> plainstate_accounts(100'000);
+    silkworm::LruCache<evmc::address, std::optional<Account>> plainstate_accounts(100'000);
 
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};

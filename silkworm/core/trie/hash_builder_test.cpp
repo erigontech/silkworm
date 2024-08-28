@@ -193,7 +193,7 @@ TEST_CASE("HashBuilder3") {
 */
 
 TEST_CASE("Known root hash") {
-    static constexpr auto root_hash{0x9fa752911d55c3a1246133fe280785afbdba41f357e9cae1131d5f5b0a078b9c_bytes32};
+    const auto root_hash{0x9fa752911d55c3a1246133fe280785afbdba41f357e9cae1131d5f5b0a078b9c_bytes32};
     HashBuilder hb;
     hb.add_branch_node({}, root_hash);
     CHECK(to_hex(hb.root_hash()) == to_hex(root_hash.bytes));

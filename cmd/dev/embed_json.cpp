@@ -23,6 +23,8 @@
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <silkworm/core/common/util.hpp>
+
 namespace fs = std::filesystem;
 
 void to_byte_array(fs::path& in, fs::path& out, const std::string& ns) {
@@ -59,10 +61,11 @@ void to_byte_array(fs::path& in, fs::path& out, const std::string& ns) {
 
     // Write bytes to output file
     std::string var_name{in.filename().replace_extension("").string()};
+    std::string const_name{"k" + silkworm::snake_to_camel(var_name)};
     std::ofstream out_stream{out.string()};
     out_stream << "/* Generated from " << in.filename().string() << " using silkworm embed_json tool */\n";
     out_stream << "#include \"" + var_name + ".hpp\"\n";
-    out_stream << "constexpr char " << var_name << "_data_internal[] = {\n";
+    out_stream << "constexpr char " << const_name << "DataInternal[] = {\n";
 
     auto max{bytes.size()};
     auto count{1u};
@@ -73,8 +76,8 @@ void to_byte_array(fs::path& in, fs::path& out, const std::string& ns) {
     }
     out_stream << "};\n";
     out_stream << "namespace " + ns + " {\n";
-    out_stream << "constinit const std::string_view " << var_name << "_json{&" << var_name
-               << "_data_internal[0], sizeof(" << var_name << "_data_internal)};\n";
+    out_stream << "constinit const std::string_view " << const_name << "Json{&" << const_name
+               << "DataInternal[0], sizeof(" << const_name << "DataInternal)};\n";
     out_stream << "}\n";
     out_stream.close();
 }

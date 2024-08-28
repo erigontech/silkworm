@@ -140,11 +140,11 @@ const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id) {
 }
 
 std::string get_opcode_hex(uint8_t opcode) {
-    static constexpr auto hex_digits = "0123456789abcdef";
+    static constexpr auto kHexDigits = "0123456789abcdef";
     if (opcode < 16) {
-        return {'0', 'x', hex_digits[opcode]};
+        return {'0', 'x', kHexDigits[opcode]};
     }
-    return {'0', 'x', hex_digits[opcode >> 4], hex_digits[opcode & 0xf]};
+    return {'0', 'x', kHexDigits[opcode >> 4], kHexDigits[opcode & 0xf]};
 }
 
 std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {

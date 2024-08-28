@@ -41,7 +41,7 @@ namespace silkworm {
 using namespace silkworm::test_util;
 using namespace stagedsync;
 
-class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
+class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::ExecutionEngine;
     using stagedsync::ExecutionEngine::forks_;
@@ -64,7 +64,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     db::RWAccess db_access{db_context.get_mdbx_env()};
 
-    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
@@ -807,7 +807,7 @@ TEST_CASE("ExecutionEngine") {
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread

@@ -40,7 +40,7 @@ using silkworm::node::test_util::make_node_settings_from_temp_chain_data;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
 
-class ActiveDirectService_ForTest : public ActiveDirectService {
+class ActiveDirectServiceForTest : public ActiveDirectService {
   public:
     using ActiveDirectService::ActiveDirectService, ActiveComponent::execution_loop, ActiveComponent::stop;
 };
@@ -53,7 +53,7 @@ struct ActiveDirectServiceTest : public TaskRunner {
         tmp_chaindata.add_genesis_data();
         tmp_chaindata.commit_txn();
         mock_execution_engine = std::make_unique<MockExecutionEngine>(context(), settings, dba);
-        direct_service = std::make_unique<ActiveDirectService_ForTest>(*mock_execution_engine, execution_context);
+        direct_service = std::make_unique<ActiveDirectServiceForTest>(*mock_execution_engine, execution_context);
         execution_context_thread = std::thread{[this]() {
             direct_service->execution_loop();
         }};
@@ -71,7 +71,7 @@ struct ActiveDirectServiceTest : public TaskRunner {
     db::RWAccess dba;
     std::unique_ptr<MockExecutionEngine> mock_execution_engine;
     boost::asio::io_context execution_context;
-    std::unique_ptr<ActiveDirectService_ForTest> direct_service;
+    std::unique_ptr<ActiveDirectServiceForTest> direct_service;
     std::thread execution_context_thread;
 };
 

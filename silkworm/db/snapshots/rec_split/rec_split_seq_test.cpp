@@ -124,6 +124,7 @@ const std::size_t RecSplit4::kLowerAggregationBound = RecSplit4::SplitStrategy::
 template <>
 const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
 template <>
+// NOLINTNEXTLINE(readability-identifier-naming)
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
 
 using RecSplit4 = RecSplit<kTestLeaf>;

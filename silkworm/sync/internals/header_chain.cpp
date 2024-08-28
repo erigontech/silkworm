@@ -133,7 +133,7 @@ void HeaderChain::initial_state(const std::vector<BlockHeader>& last_headers) {
         highest_in_db_ = std::max(highest_in_db_, header.number);
     }
 
-    reduce_persisted_links_to(persistent_link_limit);  // resize persisted_link_queue removing old links
+    reduce_persisted_links_to(kPersistentLinkLimit);  // resize persisted_link_queue removing old links
 }
 
 void HeaderChain::current_state(BlockNum highest_in_db) {
@@ -222,7 +222,7 @@ Headers HeaderChain::withdraw_stable_headers() {
     }
 
     // Save memory
-    reduce_persisted_links_to(persistent_link_limit);
+    reduce_persisted_links_to(kPersistentLinkLimit);
 
     return stable_headers;  // RVO
 }
@@ -292,7 +292,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::add_header(const BlockHeader& anch
 
     if (target_block_) segment.remove_headers_higher_than(*target_block_);
 
-    auto want_to_extend = process_segment(segment, true, no_peer);
+    auto want_to_extend = process_segment(segment, true, kNoPeer);
     if (!want_to_extend) return nullptr;
 
     return anchor_extension_request(tp);
@@ -311,7 +311,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::request_headers(time_point_t tp) {
 /*
  * Skeleton query.
  * Request "seed" headers that can became anchors.
- * It requests N headers starting at highestInDb + stride up to topSeenHeight.
+ * It requests N headers starting at highestInDb + kStride up to topSeenHeight.
  * If there is an anchor at height < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
@@ -319,7 +319,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     using namespace std::chrono_literals;
 
     // if last skeleton request was too recent, do not request another one
-    if (time_point - last_skeleton_request_ < skeleton_req_interval) {
+    if (time_point - last_skeleton_request_ < kSkeletonReqInterval) {
         skeleton_condition_ = "too recent";
         return nullptr;
     }
@@ -352,18 +352,18 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
 
     BlockNum next_target = top;
     if (lowest_anchor) {
-        if (*lowest_anchor - highest_in_db_ <= stride) {  // the lowest_anchor is too close to highest_in_db
+        if (*lowest_anchor - highest_in_db_ <= kStride) {  // the lowest_anchor is too close to highest_in_db
             skeleton_condition_ = "working";
             return nullptr;
         }
         next_target = *lowest_anchor;
-    } else {                                   // there are no anchors
-        if (top - highest_in_db_ <= stride) {  // the top is too close to highest_in_db
-            if (target_block_) {               // we are syncing to a specific block
+    } else {                                    // there are no anchors
+        if (top - highest_in_db_ <= kStride) {  // the top is too close to highest_in_db
+            if (target_block_) {                // we are syncing to a specific block
                 skeleton_condition_ = "near the top";
                 auto request_message = std::make_shared<OutboundGetBlockHeaders>();
                 request_message->packet().requestId = generate_request_id();
-                request_message->packet().request = {{top}, max_len, 0, true};  // request top header only
+                request_message->packet().request = {{top}, kMaxLen, 0, true};  // request top header only
                 return request_message;
             }
             skeleton_condition_ = "wait tip announce";
@@ -371,9 +371,9 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
         }
     }
 
-    BlockNum length = (next_target - highest_in_db_) / stride;
+    BlockNum length = (next_target - highest_in_db_) / kStride;
 
-    if (length > max_len) length = max_len;
+    if (length > kMaxLen) length = kMaxLen;
 
     if (length == 0) {
         skeleton_condition_ = "low";
@@ -383,9 +383,9 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     auto request_message = std::make_shared<OutboundGetBlockHeaders>();
     auto& packet = request_message->packet();
     packet.requestId = generate_request_id();
-    packet.request.origin = {highest_in_db_ + stride};
+    packet.request.origin = {highest_in_db_ + kStride};
     packet.request.amount = length;
-    packet.request.skip = length > 1 ? stride - 1 : 0;
+    packet.request.skip = length > 1 ? kStride - 1 : 0;
     packet.request.reverse = false;
 
     statistics_.requested_items += length;
@@ -465,17 +465,17 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
         }
 
         if (anchor->timeouts < 10) {
-            anchor_queue_.update(anchor, [&](const auto& a) { return a->update_timestamp(time_point + extension_req_timeout); });
+            anchor_queue_.update(anchor, [&](const auto& a) { return a->update_timestamp(time_point + kExtensionReqTimeout); });
 
             auto request_message = send_penalties;
             auto& packet = request_message->packet();
             packet.requestId = generate_request_id();
             packet.request = {{anchor->blockHeight},  // requesting from origin=blockHeight-1 make debugging difficult
-                              max_len,
+                              kMaxLen,
                               0,
                               true};  // we use blockHeight in place of parentHash to get also ommers if presents
 
-            statistics_.requested_items += max_len;
+            statistics_.requested_items += kMaxLen;
 
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
                        << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
@@ -739,7 +739,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
         return false;
     }
 
-    reduce_links_to(link_limit);
+    reduce_links_to(kLinkLimit);
 
     return requestMore;
 }
@@ -1001,9 +1001,9 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
                 " new anchor too far in the past: " +
                 to_string(anchor_header.number) +
                 ", latest header in db: " + to_string(highest_in_db_));
-        if (anchors_.size() >= anchor_limit)
+        if (anchors_.size() >= kAnchorLimit)
             throw SegmentCutAndPasteError("too many anchors: " + to_string(anchors_.size()) +
-                                          ", limit: " + to_string(anchor_limit));
+                                          ", limit: " + to_string(kAnchorLimit));
     }
 
     std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, std::move(peerId));

@@ -105,14 +105,14 @@ class HeaderChain {
     void set_preverified_hashes(PreverifiedHashes&);
 
   protected:
-    static constexpr BlockNum max_len = 192;
-    static constexpr BlockNum stride = 8 * max_len;
-    static constexpr size_t anchor_limit = 512;
-    static constexpr size_t link_total = 1024 * 1024;
-    static constexpr size_t persistent_link_limit = link_total / 16;
-    static constexpr size_t link_limit = link_total - persistent_link_limit;
-    static constexpr seconds_t skeleton_req_interval{30};
-    static constexpr seconds_t extension_req_timeout{30};
+    static constexpr BlockNum kMaxLen = 192;
+    static constexpr BlockNum kStride = 8 * kMaxLen;
+    static constexpr size_t kAnchorLimit = 512;
+    static constexpr size_t kLinkTotal = 1024 * 1024;
+    static constexpr size_t kPersistentLinkLimit = kLinkTotal / 16;
+    static constexpr size_t kLinkLimit = kLinkTotal - kPersistentLinkLimit;
+    static constexpr seconds_t kSkeletonReqInterval{30};
+    static constexpr seconds_t kExtensionReqTimeout{30};
 
     // anchor collection: to collect headers more quickly we request headers in a wide range, as seed to grow later
     std::shared_ptr<OutboundMessage> anchor_skeleton_request(time_point_t);

@@ -123,7 +123,7 @@ void BlockExchange::execution_loop() {
             request_bodies(now, room_for_new_requests);  // if headers do not used all the room we use it for body requests
 
             // todo: check if it is better to apply a policy based on the current sync status
-            // for example: if (header_chain_.current_height() - body_sequence_.current_height() > stride) { ... }
+            // for example: if (header_chain_.current_height() - body_sequence_.current_height() > kStride) { ... }
 
             // collect downloaded headers & bodies
             collect_headers();
@@ -216,7 +216,7 @@ void BlockExchange::collect_bodies() {
 }
 
 void BlockExchange::log_status() {
-    static constexpr seconds_t interval_for_stats_{60};
+    static constexpr seconds_t kIntervalForStats{60};
     static NetworkStatistics prev_statistic{};
     auto now = std::chrono::system_clock::now();
 
@@ -224,7 +224,7 @@ void BlockExchange::log_status() {
     log::Debug() << "BlockExchange      messages: " << std::setfill('_') << std::right
                  << "in-queue:" << std::setw(5) << messages_.size()
                  //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
-                 << IntervalNetworkStatistics{prev_statistic, statistics_, interval_for_stats_};
+                 << IntervalNetworkStatistics{prev_statistic, statistics_, kIntervalForStats};
 
     auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
     log::Debug() << "BlockExchange header queues: " << std::setfill('_') << std::right
@@ -285,7 +285,7 @@ void BlockExchange::new_target_block(std::shared_ptr<Block> block) {
     auto message = std::make_shared<InternalMessage<void>>(
         [block = std::move(block)](HeaderChain& hc, BodySequence& bc) {
             hc.add_header(block->header, std::chrono::system_clock::now());
-            bc.accept_new_block(*block, no_peer);
+            bc.accept_new_block(*block, kNoPeer);
         });
 
     accept(message);

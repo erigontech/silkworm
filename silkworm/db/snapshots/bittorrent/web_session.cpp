@@ -59,10 +59,13 @@ Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
     // Set SNI Hostname (many hosts need this to handshake successfully)
     const std::string host{web_url.host()};
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"  // SSL_set_tlsext_host_name casts to (void*)
     if (!SSL_set_tlsext_host_name(ssl_stream.native_handle(), host.c_str())) {
         beast::error_code ec{static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()};
         throw beast::system_error{ec, "error setting SNI hostname"};
     }
+#pragma GCC diagnostic pop
 
     const std::string port{web_url.has_port() ? web_url.port() : "443"};
 

@@ -30,11 +30,19 @@ static void log_signal(int signal_number) {
     log::Info() << "Signal caught, number: " << signal_number;
 }
 
+void ShutdownSignal::cancel() {
+    signals_.cancel();
+}
+
 void ShutdownSignal::on_signal(std::function<void(SignalNumber)> callback) {
     signals_.async_wait([callback = std::move(callback)](const boost::system::error_code& error, int signal_number) {
         if (error) {
-            log::Error() << "ShutdownSignal.on_signal async_wait error: " << error;
-            throw boost::system::system_error(error);
+            if (error != boost::system::errc::operation_canceled) {
+                log::Error() << "ShutdownSignal.on_signal async_wait error: " << error;
+                throw boost::system::system_error(error);
+            }
+            log::Debug() << "ShutdownSignal.on_signal async_wait cancelled";
+            return;
         }
         log_signal(signal_number);
         callback(signal_number);

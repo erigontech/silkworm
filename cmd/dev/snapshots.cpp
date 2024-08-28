@@ -21,7 +21,9 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/process/environment.hpp>
 #include <intx/intx.hpp>
 #include <magic_enum.hpp>
@@ -40,6 +42,7 @@
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/snapshots/bittorrent/web_seed_client.hpp>
 #include <silkworm/db/snapshots/repository.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
@@ -56,6 +59,7 @@
 using namespace silkworm;
 using namespace silkworm::cmd::common;
 using namespace silkworm::snapshots;
+using namespace silkworm::snapshots::bittorrent;
 
 constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 constexpr int kDefaultRepetitions{1};
@@ -73,7 +77,9 @@ struct SnapSettings : public SnapshotSettings {
 
 //! The settings for handling BitTorrent protocol customized for this tool
 struct DownloadSettings : public bittorrent::BitTorrentSettings {
-    std::string magnet_uri;
+    ChainId chain_id{kMainnetConfig.chain_id};
+    std::string url_seed;
+    bool download_web_seed_torrents{false};
 };
 
 static const auto kTorrentRepoPath{bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath};
@@ -171,22 +177,37 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
             ->check(HashValidator{});
     }
     for (auto& cmd : {commands[SnapshotTool::download]}) {
+        add_option_chain(*cmd, bittorrent_settings.chain_id);
         cmd->add_option("--torrent_dir", bittorrent_settings.repository_path, "Path to torrent file repository")
             ->capture_default_str();
-        cmd->add_option("--magnet", bittorrent_settings.magnet_uri, "Magnet link to download")
+        cmd->add_option("--magnet_file",
+                        bittorrent_settings.magnets_file_path,
+                        "File containing magnet links to download")
             ->capture_default_str();
-        cmd->add_option("--magnet_file", bittorrent_settings.magnets_file_path, "File containing magnet links to download")
+        cmd->add_option("--url_seed", bittorrent_settings.url_seed, "URL seed to download from")
             ->capture_default_str();
-        cmd->add_option("--download_rate_limit", bittorrent_settings.download_rate_limit, "Download rate limit in bytes per second")
+        cmd->add_flag("--download_web_seed_torrents",
+                      bittorrent_settings.download_web_seed_torrents,
+                      "Flag indicating if torrents got via URL seed should be downloaded")
+            ->capture_default_str();
+        cmd->add_option("--download_rate_limit",
+                        bittorrent_settings.download_rate_limit,
+                        "Download rate limit in bytes per second")
             ->capture_default_str()
             ->check(CLI::Range(4 * 1024 * 1024, 128 * 1024 * 1024));
-        cmd->add_option("--upload_rate_limit", bittorrent_settings.upload_rate_limit, "Upload rate limit in bytes per second")
+        cmd->add_option("--upload_rate_limit",
+                        bittorrent_settings.upload_rate_limit,
+                        "Upload rate limit in bytes per second")
             ->capture_default_str()
             ->check(CLI::Range(1 * 1024 * 1024, 32 * 1024 * 1024));
-        cmd->add_option("--active_downloads", bittorrent_settings.active_downloads, "Max number of downloads active simultaneously")
+        cmd->add_option("--active_downloads",
+                        bittorrent_settings.active_downloads,
+                        "Max number of downloads active simultaneously")
             ->capture_default_str()
             ->check(CLI::Range(3, 20));
-        cmd->add_flag("--seeding", bittorrent_settings.seeding, "Flag indicating if torrents should be seeded when download is finished")
+        cmd->add_flag("--seeding",
+                      bittorrent_settings.seeding,
+                      "Flag indicating if torrents should be seeded when download is finished")
             ->capture_default_str();
     }
     for (auto& cmd : {commands[SnapshotTool::create_index],
@@ -361,11 +382,42 @@ void open_index(const SnapSettings& settings) {
     SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
-void download(const bittorrent::BitTorrentSettings& settings) {
-    std::chrono::time_point start{std::chrono::steady_clock::now()};
+static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
+    const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id, /*whitelist=*/{})};
+    WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots()};
 
-    bittorrent::BitTorrentClient client{settings};
-    SILK_INFO << "Bittorrent download started in repo: " << settings.repository_path.string();
+    boost::asio::io_context scheduler;
+    ShutdownSignal shutdown_signal{scheduler.get_executor()};
+    shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
+        scheduler.stop();
+        SILK_DEBUG << "Scheduler stopped";
+    });
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+    auto discover_torrent_and_stop = [&settings, &web_client, &shutdown_signal]() -> Task<TorrentInfoPtrList> {
+        TorrentInfoPtrList torrent_info_list;
+        try {
+            torrent_info_list = co_await web_client.discover_torrents(/*fail_fast=*/true);
+        } catch (const boost::system::system_error& se) {
+            SILK_ERROR << "Cannot discover torrents at " + settings.url_seed + ": " + se.what();
+        }
+        shutdown_signal.cancel();
+        co_return torrent_info_list;
+    };
+    auto result{boost::asio::co_spawn(scheduler, discover_torrent_and_stop, boost::asio::use_future)};
+
+    std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
+    scheduler_thread.join();
+
+    const auto torrent_info_list = result.get();
+    size_t i{0};
+    for (const auto& torrent_info : torrent_info_list) {
+        SILK_INFO << i++ << ") name: " << torrent_info->name() << " hash: " << torrent_info->info_hash();
+    }
+    return torrent_info_list;
+}
+
+static void download_bittorrent(bittorrent::BitTorrentClient& client) {
+    SILK_INFO << "Bittorrent download started in repo: " << client.settings().repository_path.string();
 
     boost::asio::io_context scheduler;
     ShutdownSignal shutdown_signal{scheduler.get_executor()};
@@ -377,11 +429,34 @@ void download(const bittorrent::BitTorrentSettings& settings) {
     });
     std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
 
-    SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
     client.execute_loop();
-    SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnets_file_path;
 
     scheduler_thread.join();
+}
+
+void download(const DownloadSettings& settings) {
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+
+    if (!settings.url_seed.empty()) {
+        // Download the torrent files via web seeding from settings.url_seed
+        bittorrent::TorrentInfoPtrList web_seed_torrents;
+        web_seed_torrents = download_web_seed(settings);
+
+        // Optionally download also the target files by using the torrents just downloaded
+        if (settings.download_web_seed_torrents) {
+            bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
+            for (auto it = web_seed_torrents.begin(); it != web_seed_torrents.end(); it = web_seed_torrents.erase(it)) {
+                client.add_torrent_info(*it);
+            }
+            download_bittorrent(client);
+        }
+    } else {
+        // Download the target files by using the magnet links contained in input file (i.e. settings.magnets_file_path)
+        bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
+        SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
+        download_bittorrent(client);
+        SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnets_file_path;
+    }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Download elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";

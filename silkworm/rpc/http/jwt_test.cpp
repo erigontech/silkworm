@@ -20,20 +20,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/test_util/hex.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
 namespace silkworm {
-
-static std::string ascii_from_hex(const std::string& hex) {
-    const std::optional<Bytes> bytes{from_hex(hex)};
-    if (!bytes) {
-        throw std::runtime_error{"ascii_from_hex"};
-    }
-    return std::string{byte_view_to_string_view(*bytes)};
-}
 
 TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
@@ -51,7 +42,7 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
         std::ifstream tmp_jwt_ifs{tmp_jwt_file.path()};
         tmp_jwt_ifs >> jwt_token_hex;
         jwt_token_hex = jwt_token_hex.substr(2);
-        CHECK(jwt_token == ascii_from_hex(jwt_token_hex));
+        CHECK(jwt_token == test_util::ascii_from_hex(jwt_token_hex));
     }
 }
 

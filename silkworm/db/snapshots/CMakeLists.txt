@@ -19,12 +19,20 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 add_subdirectory(seg)
 
 find_package(absl REQUIRED strings)
-find_package(Boost REQUIRED headers) # for signals2
+find_package(Boost REQUIRED headers url) # headers for signals2
+find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 
 silkworm_library(
   silkworm_snapshots
   PUBLIC Microsoft.GSL::GSL silkworm_core silkworm_infra
-  PRIVATE absl::strings Boost::headers magic_enum::magic_enum torrent-rasterbar silkworm_snapshots_seg
+  PRIVATE absl::strings
+          Boost::headers
+          Boost::url
+          magic_enum::magic_enum
+          torrent-rasterbar
+          silkworm_snapshots_seg
 )
+
+target_link_libraries(silkworm_snapshots_test PRIVATE GTest::gmock silkworm_infra_test_util)

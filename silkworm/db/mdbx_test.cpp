@@ -661,8 +661,8 @@ static uint64_t get_free_pages(const ::mdbx::env& env) {
 
     // Use threaded execution because MDBX does not allow overlapping txns in same thread
     std::async([&]() {
-        constexpr MDBX_dbi FREE_DBI{0};
-        ::mdbx::map_handle free_map{FREE_DBI};
+        constexpr MDBX_dbi kFreeDbi{0};
+        ::mdbx::map_handle free_map{kFreeDbi};
 
         auto ro_txn{env.start_read()};
         auto free_cursor{ro_txn.open_cursor(free_map)};

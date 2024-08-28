@@ -1208,14 +1208,14 @@ bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& bl
 }
 
 void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
-    constexpr bool throw_notfound{false};
+    static constexpr bool kThrowNotFound{false};
 
     // Try to read N headers from the database
     size_t read_count{0};
     std::optional<BlockNum> last_read_number_from_db;
 
     const auto headers_cursor{txn_.ro_cursor(db::table::kHeaders)};
-    auto data = headers_cursor->to_last(throw_notfound);
+    auto data = headers_cursor->to_last(kThrowNotFound);
     while (data && read_count < n) {
         // Read header
         BlockHeader header;
@@ -1226,7 +1226,7 @@ void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&
         // Consume header
         callback(std::move(header));
         // Move backward
-        data = headers_cursor->to_previous(throw_notfound);
+        data = headers_cursor->to_previous(kThrowNotFound);
     }
     if (read_count == n) {
         return;

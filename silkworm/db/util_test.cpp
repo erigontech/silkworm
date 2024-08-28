@@ -48,7 +48,7 @@ TEST_CASE("all-zero composite key", "[rpc][core][rawdb][util]") {
 }
 
 TEST_CASE("non-zero address composite key", "[rpc][core][rawdb][util]") {
-    constexpr auto address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
+    const auto address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
     const auto key{composite_storage_key(address, 0, kZeroHash.bytes)};
     CHECK(key == from_hex("79a4d418f7887dd4d5123a41b6c8c186686ae8cb"
                           "0000000000000000"
@@ -63,7 +63,7 @@ TEST_CASE("non-zero incarnation composite key", "[rpc][core][rawdb][util]") {
 }
 
 TEST_CASE("non-zero hash composite key", "[rpc][core][rawdb][util]") {
-    constexpr auto hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
+    const auto hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
     const auto key{composite_storage_key(kZeroAddress, 0, hash.bytes)};
     CHECK(key == from_hex("0000000000000000000000000000000000000000"
                           "0000000000000000"
@@ -71,8 +71,8 @@ TEST_CASE("non-zero hash composite key", "[rpc][core][rawdb][util]") {
 }
 
 TEST_CASE("non-zero composite key", "[rpc][core][rawdb][util]") {
-    constexpr auto address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
-    constexpr auto hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
+    const auto address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
+    const auto hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
     const auto key{composite_storage_key(address, 37, hash.bytes)};
     CHECK(key == from_hex("79a4d418f7887dd4d5123a41b6c8c186686ae8cb"
                           "0000000000000025"

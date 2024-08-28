@@ -37,10 +37,10 @@ namespace silkworm {
 stagedsync::HistoryIndex make_stage_history_index(
     stagedsync::SyncContext* sync_context,
     const db::test_util::TempChainData& chain_data) {
-    constexpr auto batch_size{512_Mebi};
+    static constexpr auto kBatchSize{512_Mebi};
     return stagedsync::HistoryIndex{
         sync_context,
-        batch_size,
+        kBatchSize,
         db::etl::CollectorSettings{
             .work_path = chain_data.dir().temp().path(),
             .buffer_size = 256_Mebi},

@@ -28,6 +28,7 @@
 
 namespace silkworm::snapshots::bittorrent {
 
+namespace urls = boost::urls;
 using testing::_;
 using testing::InvokeWithoutArgs;
 

@@ -33,6 +33,8 @@
 
 namespace silkworm::snapshots::bittorrent {
 
+namespace beast = boost::beast;
+namespace http = beast::http;
 namespace net = boost::asio;
 namespace ssl = net::ssl;
 namespace urls = boost::urls;
@@ -62,13 +64,10 @@ Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
     // Set SNI Hostname (many hosts need this to handshake successfully)
     const std::string host{web_url.host()};
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
     if (!SSL_set_tlsext_host_name(ssl_stream.native_handle(), host.c_str())) {
         beast::error_code ec{static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()};
         throw beast::system_error{ec, "error setting SNI hostname"};
     }
-#pragma GCC diagnostic pop
 
     const std::string port{web_url.has_port() ? web_url.port() : "443"};
 
@@ -99,12 +98,12 @@ Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
     beast::flat_buffer data;
 
     // Declare a container to hold the response
-    http::response<http::string_body> rsp;
+    http::response<http::string_body> response;
 
     // Receive the HTTP response
     tcp_stream.expires_after(kHttpTimeoutSecs);
-    const auto read_bytes = co_await http::async_read(ssl_stream, data, rsp, net::use_awaitable);
-    SILK_TRACE << "WebSeedClient::http_session HTTP read_bytes: " << read_bytes << " response: " << rsp;
+    const auto read_bytes = co_await http::async_read(ssl_stream, data, response, net::use_awaitable);
+    SILK_TRACE << "WebSeedClient::http_session HTTP read_bytes: " << read_bytes << " response: " << response;
 
     // Gracefully close the stream
     try {
@@ -118,7 +117,7 @@ Task<WebSession::StringResponse> WebSession::https_get(const urls::url& web_url,
         }
     }
 
-    co_return rsp;
+    co_return response;
 }
 
 void WebSession::include_cloudflare_headers(EmptyRequest& request) {

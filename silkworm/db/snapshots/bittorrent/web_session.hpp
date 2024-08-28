@@ -27,10 +27,6 @@
 
 namespace silkworm::snapshots::bittorrent {
 
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace urls = boost::urls;
-
 class WebSession {
   public:
     //! \brief Constructor optionally accepting a server certificate to append to root certificates
@@ -38,15 +34,15 @@ class WebSession {
     explicit WebSession(std::optional<std::string> server_certificate = {});
     virtual ~WebSession() = default;
 
-    using StringResponse = http::response<http::string_body>;
+    using StringResponse = boost::beast::http::response<boost::beast::http::string_body>;
 
     //! \brief Asynch send a HTTPS GET request for \p target file to \p web_url and receive the response
     //! \param web_url the URL address of the web server
-    //! \param target the relative path of the requested file
-    [[nodiscard]] virtual Task<StringResponse> https_get(const urls::url& web_url, std::string_view target_file) const;
+    //! \param target_file the relative path of the requested file
+    [[nodiscard]] virtual Task<StringResponse> https_get(const boost::urls::url& web_url, std::string_view target_file) const;
 
   protected:
-    using EmptyRequest = http::request<http::empty_body>;
+    using EmptyRequest = boost::beast::http::request<boost::beast::http::empty_body>;
     static void include_cloudflare_headers(EmptyRequest& request);
 
     //! The HTTP protocol version to use

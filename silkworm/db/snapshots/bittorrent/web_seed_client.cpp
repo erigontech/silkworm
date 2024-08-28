@@ -58,11 +58,11 @@ static const std::chrono::milliseconds kParallelManifestDownloadTimeout{60'000};
 //! Timeout for parallel async download of torrent files in msec
 static const std::chrono::milliseconds kParallelTorrentDownloadTimeout{120'000};
 
-WebSeedClient::WebSeedClient(std::vector<std::string>&& url_seeds, const PreverifiedList& preverified)
+WebSeedClient::WebSeedClient(std::vector<std::string> url_seeds, const PreverifiedList& preverified)
     : WebSeedClient(std::make_unique<WebSession>(), std::move(url_seeds), preverified) {}
 
-WebSeedClient::WebSeedClient(std::unique_ptr<WebSession>&& web_session,
-                             std::vector<std::string>&& url_seeds,
+WebSeedClient::WebSeedClient(std::unique_ptr<WebSession> web_session,
+                             std::vector<std::string> url_seeds,
                              const PreverifiedList& preverified)
     : url_seeds_{std::move(url_seeds)},
       preverified_{preverified},
@@ -79,21 +79,18 @@ Task<void> WebSeedClient::build_list_of_torrents(bool fail_fast) {
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     auto build_list_of_torrents_factory = [this, fail_fast](size_t index) -> Task<void> {
+        const auto& provider_url = url_seeds_[index];
         try {
-            const auto& provider_url = url_seeds_[index];
             co_await build_list_of_torrents(provider_url);
-        } catch (const std::exception&) {
+        } catch (const std::exception& e) {
             if (fail_fast) throw;
+            SILK_WARN << "Cannot retrieve the torrent list from: " << provider_url << " what: " << e.what();
         }
     };
 
     // Parallelize async build of the list of torrent files for each provider
     auto group_task = concurrency::generate_parallel_group_task(url_seeds_.size(), build_list_of_torrents_factory);
-    try {
-        co_await (std::move(group_task) || concurrency::timeout(kParallelManifestDownloadTimeout));
-    } catch (const concurrency::TimeoutExpiredError&) {
-        throw;
-    }
+    co_await (std::move(group_task) || concurrency::timeout(kParallelManifestDownloadTimeout));
 }
 
 Task<void> WebSeedClient::build_list_of_torrents(std::string_view provider_url) {
@@ -102,11 +99,12 @@ Task<void> WebSeedClient::build_list_of_torrents(std::string_view provider_url) 
         throw system::system_error{web_url_result.error(), "invalid provider URL"};
     }
 
-    const auto rsp = co_await web_session_->https_get(*web_url_result, kManifestTarget);
+    const auto response = co_await web_session_->https_get(*web_url_result, kManifestTarget);
+    SILK_TRACE << "Web seed manifest downloaded from: " << provider_url;
 
     // Parse HTTP response body content as snapshot Manifest containing list of snapshot files
     TorrentFileList torrent_files;
-    const auto manifest_file_lines = absl::StrSplit(rsp.body(), '\n');
+    const auto manifest_file_lines = absl::StrSplit(response.body(), '\n');
     for (const auto manifest_line : manifest_file_lines) {
         const auto snapshot_file_name = absl::StripAsciiWhitespace(manifest_line);
         SILK_TRACE << "WebSeedClient::build_list_of_torrents snapshot_file_name: " << snapshot_file_name;
@@ -147,11 +145,7 @@ Task<void> WebSeedClient::download_from_provider(const urls::url& provider_url,
 
     // Parallelize async download and validate of torrent files for each provider
     auto group_task = concurrency::generate_parallel_group_task(torrent_files.size(), download_and_validate_factory);
-    try {
-        co_await (std::move(group_task) || concurrency::timeout(kParallelTorrentDownloadTimeout));
-    } catch (const concurrency::TimeoutExpiredError&) {
-        throw;
-    }
+    co_await (std::move(group_task) || concurrency::timeout(kParallelTorrentDownloadTimeout));
 }
 
 TorrentInfoPtr WebSeedClient::validate_torrent_file(const urls::url& provider_url,

@@ -50,12 +50,12 @@ using TorrentInfoPtrList = std::set<TorrentInfoPtr, decltype(torrent_info_compar
 
 class WebSeedClient {
   public:
-    WebSeedClient(std::vector<std::string>&& url_seeds, const PreverifiedList& preverified);
-    WebSeedClient(std::unique_ptr<WebSession>&& web_session,
-                  std::vector<std::string>&& url_seeds,
+    WebSeedClient(std::vector<std::string> url_seeds, const PreverifiedList& preverified);
+    WebSeedClient(std::unique_ptr<WebSession> web_session,
+                  std::vector<std::string> url_seeds,
                   const PreverifiedList& preverified);
 
-    [[nodiscard]] Task<TorrentInfoPtrList> discover_torrents(bool fail_fast = false);
+    Task<TorrentInfoPtrList> discover_torrents(bool fail_fast = false);
 
   protected:
     static bool is_caplin_segment(std::string_view file_name);

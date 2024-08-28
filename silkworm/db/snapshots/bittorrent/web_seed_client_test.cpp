@@ -33,7 +33,7 @@ using testing::_;
 using testing::InvokeWithoutArgs;
 
 //! WebSeedClient with protected methods exposed for test
-class WebSeedClient_ForTest : public WebSeedClient {
+class WebSeedClientForTest : public WebSeedClient {
   public:
     using WebSeedClient::build_list_of_torrents;
     using WebSeedClient::download_and_filter_all_torrents;
@@ -44,12 +44,12 @@ class WebSeedClient_ForTest : public WebSeedClient {
     using WebSeedClient::WebSeedClient;  // NOLINT(*-rvalue-reference-param-not-moved)
 };
 
-TEST_CASE("WebSeedClient_ForTest::is_caplin_segment", "[db][snapshot][bittorrent]") {
-    CHECK(!WebSeedClient_ForTest::is_caplin_segment("v1-000000-000500-bodies.seg"));
-    CHECK(!WebSeedClient_ForTest::is_caplin_segment("v1-000000-000500-headers.seg"));
-    CHECK(!WebSeedClient_ForTest::is_caplin_segment("v1-000000-000500-transactions.seg"));
+TEST_CASE("WebSeedClientForTest::is_caplin_segment", "[db][snapshot][bittorrent]") {
+    CHECK(!WebSeedClientForTest::is_caplin_segment("v1-000000-000500-bodies.seg"));
+    CHECK(!WebSeedClientForTest::is_caplin_segment("v1-000000-000500-headers.seg"));
+    CHECK(!WebSeedClientForTest::is_caplin_segment("v1-000000-000500-transactions.seg"));
 
-    CHECK(WebSeedClient_ForTest::is_caplin_segment("v1-000000-000100-beaconblocks.seg"));
+    CHECK(WebSeedClientForTest::is_caplin_segment("v1-000000-000100-beaconblocks.seg"));
 }
 
 //! Content for manifest file containing one torrent file
@@ -88,19 +88,19 @@ struct WebSeedClientTest : public test_util::ContextTestBase {
     inline static const boost::urls::url kErigon2SnapshotsUrl{kErigon2Snapshots};
     snapshots::Config known_config{snapshots::Config::lookup_known_config(/*chain_id=*/1, /*whitelist=*/{})};
     std::unique_ptr<WebSessionMock> session{std::make_unique<WebSessionMock>()};
-    WebSeedClient_ForTest client{{kErigon2Snapshots}, known_config.preverified_snapshots()};
+    WebSeedClientForTest client{{kErigon2Snapshots}, known_config.preverified_snapshots()};
 };
 
-TEST_CASE("WebSeedClient_ForTest::WebSeedClient_ForTest", "[db][snapshot][bittorrent]") {
+TEST_CASE("WebSeedClientForTest::WebSeedClientForTest", "[db][snapshot][bittorrent]") {
     PreverifiedList preverified_torrent_list;
-    WebSeedClient_ForTest client{{}, preverified_torrent_list};
+    WebSeedClientForTest client{{}, preverified_torrent_list};
 }
 
-TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", "[db][snapshot][bittorrent]") {
+TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::discover_torrents", "[db][snapshot][bittorrent]") {
     SECTION("empty") {
         EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> { co_return WebSession::StringResponse{}; }));
-        WebSeedClient_ForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        WebSeedClientForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
         CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("invalid manifest") {
@@ -110,7 +110,7 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", 
                 rsp.body().assign("\000\001");
                 co_return rsp;
             }));
-        WebSeedClient_ForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        WebSeedClientForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
         CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("valid manifest") {
@@ -125,7 +125,7 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", 
                 rsp.body().assign(kValidTorrentContentAscii);
                 co_return rsp;
             }));
-        WebSeedClient_ForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
+        WebSeedClientForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
         TorrentInfoPtrList torrent_info_set;
         CHECK_NOTHROW((torrent_info_set = spawn_and_wait(ws_client.discover_torrents())));
         REQUIRE_FALSE(torrent_info_set.empty());
@@ -135,14 +135,14 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::discover_torrents", 
     }
 }
 
-TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::validate_torrent_file", "[db][snapshot][bittorrent]") {
+TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::validate_torrent_file", "[db][snapshot][bittorrent]") {
     CHECK(client.validate_torrent_file(kErigon2SnapshotsUrl, "v1-010000-010500-bodies.seg.torrent", kValidTorrentContentAscii));
 
     CHECK_THROWS_AS(client.validate_torrent_file(kErigon2SnapshotsUrl, "v1-010000-010500-bodies.seg.torrent", ""), boost::system::system_error);
     CHECK_THROWS_AS(client.validate_torrent_file(kErigon2SnapshotsUrl, "v1-010000-010500-bodies.seg.torrent", "AA"), boost::system::system_error);
 }
 
-TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClient_ForTest::is_whitelisted", "[db][snapshot][bittorrent]") {
+TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::is_whitelisted", "[db][snapshot][bittorrent]") {
     CHECK(client.is_whitelisted("v1-010000-010500-bodies.seg", "542b3f77a2f3c4b9d8a4085d838bdd1b14043f3b"));
     CHECK(client.is_whitelisted("v1-010000-010500-headers.seg", "080d0cd1613831820c8f5e48715d68643f48054a"));
     CHECK(client.is_whitelisted("v1-010000-010500-transactions.seg", "3e1a85df07d9d6de89a95476214fcf58dbe9234d"));

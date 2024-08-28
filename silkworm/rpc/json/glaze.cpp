@@ -41,6 +41,7 @@ struct GlazeJsonError {
     char message[kMaxErrorMessageSize]{};
     struct glaze {
         using T = GlazeJsonError;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "code", &T::code,
             "message", &T::message);
@@ -53,6 +54,7 @@ struct GlazeJsonErrorRsp {
     GlazeJsonError json_error;
     struct glaze {
         using T = GlazeJsonErrorRsp;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,
@@ -76,6 +78,7 @@ struct GlazeJsonRevert {
     std::string data;
     struct glaze {
         using T = GlazeJsonRevert;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "code", &T::code,
             "message", &T::message,
@@ -89,6 +92,7 @@ struct GlazeJsonRevertError {
     GlazeJsonRevert revert_data;
     struct glaze {
         using T = GlazeJsonRevertError;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,

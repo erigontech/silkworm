@@ -433,8 +433,8 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     init_libff();
     using namespace libff;
 
-    static const auto one{alt_bn128_Fq12::one()};
-    auto accumulator{one};
+    static const auto kOne{alt_bn128_Fq12::one()};
+    auto accumulator{kOne};
 
     for (size_t i{0}; i < k; ++i) {
         std::optional<alt_bn128_G1> a{decode_g1_element(&input[i * kSnarkvStride])};
@@ -454,7 +454,7 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     }
 
     Bytes out(32, 0);
-    if (alt_bn128_final_exponentiation(accumulator) == one) {
+    if (alt_bn128_final_exponentiation(accumulator) == kOne) {
         out[31] = 1;
     }
     return out;

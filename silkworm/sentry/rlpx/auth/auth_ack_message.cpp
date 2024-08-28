@@ -28,8 +28,6 @@
 
 namespace silkworm::sentry::rlpx::auth {
 
-const uint8_t AuthAckMessage::version = 4;
-
 AuthAckMessage::AuthAckMessage(
     EccPublicKey initiator_public_key,
     EccPublicKey ephemeral_public_key)
@@ -48,7 +46,7 @@ AuthAckMessage::AuthAckMessage(
 
 Bytes AuthAckMessage::body_as_rlp() const {
     Bytes data;
-    rlp::encode(data, ephemeral_public_key_.serialized(), nonce_, version);
+    rlp::encode(data, ephemeral_public_key_.serialized(), nonce_, kVersion);
     return data;
 }
 

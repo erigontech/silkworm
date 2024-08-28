@@ -48,26 +48,26 @@ TEST_CASE("MissingValue") {
 }
 
 TEST_CASE("KeepsAllValuesWithinCapacity") {
-    static constexpr int NUM_OF_RECORDS = 100;
-    static constexpr int CACHE_CAPACITY = 50;
+    static constexpr int kNumOfRecords = 100;
+    static constexpr int kCacheCapacity = 50;
 
-    LruCache<int, int> cache_lru(CACHE_CAPACITY);
+    LruCache<int, int> cache_lru(kCacheCapacity);
 
-    for (int i = 0; i < NUM_OF_RECORDS; ++i) {
+    for (int i = 0; i < kNumOfRecords; ++i) {
         cache_lru.put(i, i);
     }
 
-    for (int i = 0; i < NUM_OF_RECORDS - CACHE_CAPACITY; ++i) {
+    for (int i = 0; i < kNumOfRecords - kCacheCapacity; ++i) {
         CHECK(cache_lru.get(i) == nullptr);
     }
 
-    for (int i = NUM_OF_RECORDS - CACHE_CAPACITY; i < NUM_OF_RECORDS; ++i) {
+    for (int i = kNumOfRecords - kCacheCapacity; i < kNumOfRecords; ++i) {
         REQUIRE(cache_lru.get(i));
         CHECK(i == *cache_lru.get(i));
     }
 
     size_t size = cache_lru.size();
-    CHECK(CACHE_CAPACITY == size);
+    CHECK(kCacheCapacity == size);
 }
 
 TEST_CASE("DiscardStaleElement") {

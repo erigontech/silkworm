@@ -626,7 +626,7 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v2(const
                                                                            const ForkChoiceUpdatedReply& reply,
                                                                            const std::optional<silkworm::ChainConfig>& config) {
     // Payload attributes must be validated only if non-null and FCU is valid
-    if (!attributes || reply.payload_status.status != PayloadStatus::kValid) {
+    if (!attributes || reply.payload_status.status != PayloadStatus::kValidStr) {
         return {};
     }
 
@@ -652,7 +652,7 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v3(const
                                                                            const ForkChoiceUpdatedReply& reply,
                                                                            const std::optional<silkworm::ChainConfig>& config) {
     // Payload attributes must be validated only if non-null and FCU is valid
-    if (!attributes || reply.payload_status.status != PayloadStatus::kValid) {
+    if (!attributes || reply.payload_status.status != PayloadStatus::kValidStr) {
         return {};
     }
 

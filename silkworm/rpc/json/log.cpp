@@ -108,6 +108,7 @@ struct GlazeJsonLogItem {
 
     struct glaze {
         using T = GlazeJsonLogItem;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "address", &T::address,
             "transactionHash", &T::tx_hash,
@@ -128,6 +129,7 @@ struct GlazeJsonLog {
     std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {
         using T = GlazeJsonLog;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,

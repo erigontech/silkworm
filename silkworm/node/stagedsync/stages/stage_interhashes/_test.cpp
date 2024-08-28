@@ -304,7 +304,7 @@ TEST_CASE("Trie Cursor KeyIsBefore") {
 }
 
 static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
-    static const std::vector<std::pair<evmc::bytes32, Bytes>> locations{
+    const std::vector<std::pair<evmc::bytes32, Bytes>> locations{
         {0x1200000000000000000000000000000000000000000000000000000000000000_bytes32, *from_hex("0x42")},
         {0x1400000000000000000000000000000000000000000000000000000000000000_bytes32, *from_hex("0x01")},
         {0x3000000000000000000000000000000000000000000000000000000000E00000_bytes32, *from_hex("0x127a89")},
@@ -661,7 +661,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     PrefixSet account_changes;
     PrefixSet storage_changes;
 
-    static constexpr size_t n{10'000};
+    const size_t n{10'000};
 
     db::PooledCursor hashed_accounts{txn, db::table::kHashedAccounts};
     db::PooledCursor account_trie{txn, db::table::kTrieOfAccounts};
@@ -671,7 +671,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     // ------------------------------------------------------------------------------
 
     // Start with 3n accounts at genesis, each holding 1 ETH
-    static constexpr Account one_eth{0, 1 * kEther};
+    const Account one_eth{0, 1 * kEther};
     for (size_t i{0}, e{3 * n}; i < e; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
@@ -682,7 +682,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     (void)regenerate_intermediate_hashes(txn, context.dir().temp().path());
 
     // Double the balance of the first third of the accounts
-    static constexpr Account two_eth{0, 2 * kEther};
+    const Account two_eth{0, 2 * kEther};
     for (size_t i{0}; i < n; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
@@ -755,40 +755,40 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     PrefixSet account_changes;
     PrefixSet storage_changes;
 
-    static constexpr size_t n{2'000};
+    const size_t n{2'000};
 
     db::PooledCursor hashed_accounts{txn, db::table::kHashedAccounts};
     db::PooledCursor hashed_storage{txn, db::table::kHashedStorage};
     db::PooledCursor storage_trie{txn, db::table::kTrieOfStorage};
 
-    static constexpr uint64_t incarnation1{3};
-    static constexpr uint64_t incarnation2{1};
+    const uint64_t incarnation1{3};
+    const uint64_t incarnation2{1};
 
-    static constexpr Account account1{
+    const Account account1{
         5,                                                                           // nonce
         7 * kEther,                                                                  // balance
         0x5e3c5ae99a1c6785210d0d233641562557ad763e18907cca3a8d42bd0a0b4ecb_bytes32,  // code_hash
         incarnation1,                                                                // incarnation
     };
 
-    static constexpr Account account2{
+    const Account account2{
         1,                                                                           // nonce
         13 * kEther,                                                                 // balance
         0x3a9c1d84e48734ae951e023197bda6d03933a4ca44124a2a544e227aa93efe75_bytes32,  // code_hash
         incarnation2,                                                                // incarnation
     };
 
-    static constexpr auto address1{0x1000000000000000000000000000000000000000_address};
-    static constexpr auto address2{0x2000000000000000000000000000000000000000_address};
+    const auto address1{0x1000000000000000000000000000000000000000_address};
+    const auto address2{0x2000000000000000000000000000000000000000_address};
 
-    static const auto hashed_address1{keccak256(address1)};
-    static const auto hashed_address2{keccak256(address2)};
+    const auto hashed_address1{keccak256(address1)};
+    const auto hashed_address2{keccak256(address2)};
 
     hashed_accounts.upsert(db::to_slice(hashed_address1.bytes), db::to_slice(account1.encode_for_storage()));
     hashed_accounts.upsert(db::to_slice(hashed_address2.bytes), db::to_slice(account2.encode_for_storage()));
 
-    static const Bytes storage_prefix1{db::storage_prefix(hashed_address1.bytes, incarnation1)};
-    static const Bytes storage_prefix2{db::storage_prefix(hashed_address2.bytes, incarnation2)};
+    const Bytes storage_prefix1{db::storage_prefix(hashed_address1.bytes, incarnation1)};
+    const Bytes storage_prefix2{db::storage_prefix(hashed_address2.bytes, incarnation2)};
 
     const auto upsert_storage_for_two_test_accounts = [&](size_t i, ByteView value, bool register_change,
                                                           bool new_records = false) {
@@ -814,7 +814,7 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     // ------------------------------------------------------------------------------
 
     // Start with 3n storage slots per account at genesis, each with the same value
-    static const Bytes value_x{*from_hex("42")};
+    const Bytes value_x{*from_hex("42")};
     for (size_t i{0}, e{3 * n}; i < e; ++i) {
         upsert_storage_for_two_test_accounts(i, value_x, false);
     }
@@ -822,7 +822,7 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     (void)regenerate_intermediate_hashes(txn, context.dir().temp().path());
 
     // Change the value of the first third of the storage
-    static const Bytes value_y{*from_hex("71f602b294119bf452f1923814f5c6de768221254d3056b1bd63e72dc3142a29")};
+    const Bytes value_y{*from_hex("71f602b294119bf452f1923814f5c6de768221254d3056b1bd63e72dc3142a29")};
     for (size_t i{0}; i < n; ++i) {
         upsert_storage_for_two_test_accounts(i, value_y, true);
     }

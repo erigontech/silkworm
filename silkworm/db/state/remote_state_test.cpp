@@ -58,16 +58,16 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_code for non-empty hash") {
-        static const Bytes code{*from_hex("0x0608")};
+        static const Bytes kCode{*from_hex("0x0608")};
         EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return code;
+                co_return kCode;
             }));
         const BlockNum block_number = 1'000'000;
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         const auto code_read{spawn_and_wait(state.read_code(code_hash))};
-        CHECK(code_read == ByteView{code});
+        CHECK(code_read == ByteView{kCode});
     }
 
     SECTION("read_code with empty response from db") {

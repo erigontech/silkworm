@@ -57,7 +57,7 @@ struct GlazeJsonTransaction {
 
     struct glaze {
         using T = GlazeJsonTransaction;
-
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "from", &T::from,
             "gas", &T::gas,

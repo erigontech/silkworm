@@ -121,6 +121,7 @@ struct GlazeJsonTransactionReply {
 
     struct glaze {
         using T = GlazeJsonTransactionReply;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,

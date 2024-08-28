@@ -36,6 +36,7 @@ struct ClientVersionV1 {
 
     struct glaze {
         using T = ClientVersionV1;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "code", &T::code,
             "name", &T::name,
@@ -51,6 +52,7 @@ struct ClientVersionV1Reply {
 
     struct glaze {
         using T = ClientVersionV1Reply;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,

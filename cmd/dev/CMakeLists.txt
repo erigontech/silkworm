@@ -55,10 +55,10 @@ add_executable(check_tx_lookup check_tx_lookup.cpp)
 target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
 add_executable(embed_toml embed_toml.cpp)
-target_link_libraries(embed_toml PRIVATE absl::strings CLI11::CLI11 tomlplusplus::tomlplusplus)
+target_link_libraries(embed_toml PRIVATE absl::strings CLI11::CLI11 tomlplusplus::tomlplusplus silkworm_core)
 
 add_executable(embed_json embed_json.cpp)
-target_link_libraries(embed_json PRIVATE CLI11::CLI11 Boost::headers)
+target_link_libraries(embed_json PRIVATE CLI11::CLI11 Boost::headers silkworm_core)
 
 add_executable(grpc_toolbox grpc_toolbox.cpp)
 target_include_directories(grpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})

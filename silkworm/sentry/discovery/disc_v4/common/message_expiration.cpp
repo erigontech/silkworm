@@ -20,8 +20,8 @@ namespace silkworm::sentry::discovery::disc_v4 {
 
 std::chrono::time_point<std::chrono::system_clock> make_message_expiration() {
     using namespace std::chrono_literals;
-    static const auto ttl = 20s;
-    return std::chrono::system_clock::now() + ttl;
+    static const auto kTtl = 20s;
+    return std::chrono::system_clock::now() + kTtl;
 }
 
 bool is_expired_message_expiration(std::chrono::time_point<std::chrono::system_clock> expiration) {

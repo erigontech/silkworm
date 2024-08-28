@@ -36,15 +36,15 @@ namespace silkworm {
 std::string_view read_genesis_data(ChainId chain_id) {
     switch (chain_id) {
         case *kKnownChainNameToId.find("mainnet"sv):
-            return genesis_mainnet_json;
+            return kGenesisMainnetJson;
         case *kKnownChainNameToId.find("holesky"sv):
-            return genesis_holesky_json;
+            return kGenesisHoleskyJson;
         case *kKnownChainNameToId.find("sepolia"sv):
-            return genesis_sepolia_json;
+            return kGenesisSepoliaJson;
         case *kKnownChainNameToId.find("bor-mainnet"sv):
-            return genesis_bor_mainnet_json;
+            return kGenesisBorMainnetJson;
         case *kKnownChainNameToId.find("mumbai"sv):
-            return genesis_mumbai_json;
+            return kGenesisMumbaiJson;
         default:
             return "{";  // <- Won't be lately parsed as valid json value
     }

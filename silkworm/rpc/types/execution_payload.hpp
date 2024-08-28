@@ -101,23 +101,23 @@ struct NewPayloadRequest {
 
 //! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
 struct PayloadStatus {
-    static inline const char* kValid{"VALID"};
-    static inline const char* kInvalid{"INVALID"};
-    static inline const char* kSyncing{"SYNCING"};
-    static inline const char* kAccepted{"ACCEPTED"};
-    static inline const char* kInvalidBlockHash{"INVALID_BLOCK_HASH"};
-    static const PayloadStatus Syncing;
-    static const PayloadStatus Accepted;
-    static const PayloadStatus InvalidBlockHash;
+    static inline const char* kValidStr{"VALID"};
+    static inline const char* kInvalidStr{"INVALID"};
+    static inline const char* kSyncingStr{"SYNCING"};
+    static inline const char* kAcceptedStr{"ACCEPTED"};
+    static inline const char* kInvalidBlockHashStr{"INVALID_BLOCK_HASH"};
+    static const PayloadStatus kSyncing;
+    static const PayloadStatus kAccepted;
+    static const PayloadStatus kInvalidBlockHash;
 
     std::string status;
     std::optional<Hash> latest_valid_hash;
     std::optional<std::string> validation_error;
 };
 
-inline const PayloadStatus PayloadStatus::Syncing{.status = PayloadStatus::kSyncing};
-inline const PayloadStatus PayloadStatus::Accepted{.status = PayloadStatus::kAccepted};
-inline const PayloadStatus PayloadStatus::InvalidBlockHash{.status = PayloadStatus::kInvalidBlockHash};
+inline const PayloadStatus PayloadStatus::kSyncing{.status = PayloadStatus::kSyncingStr};
+inline const PayloadStatus PayloadStatus::kAccepted{.status = PayloadStatus::kAcceptedStr};
+inline const PayloadStatus PayloadStatus::kInvalidBlockHash{.status = PayloadStatus::kInvalidBlockHashStr};
 
 inline bool operator==(const PayloadStatus& lhs, const PayloadStatus& rhs) {
     return lhs.status == rhs.status;

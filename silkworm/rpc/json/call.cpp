@@ -88,6 +88,7 @@ struct GlazeJsonCall {
     char result[2048];
     struct glaze {
         using T = GlazeJsonCall;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,
@@ -101,6 +102,7 @@ struct GlazeJsonCallResultAsString {
     std::string result;
     struct glaze {
         using T = GlazeJsonCallResultAsString;
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,

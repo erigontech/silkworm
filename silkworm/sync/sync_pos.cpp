@@ -353,7 +353,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         if (attributes) {
             // payload build process
             if (attributes->timestamp <= head_header->timestamp) {
-                throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kInvalidStrPayloadAttributes)};
+                throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kInvalidPayloadAttributes)};
                 // in this case spec states that forkchoiceState update MUST NOT be rolled back
             }
 

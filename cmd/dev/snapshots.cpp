@@ -393,8 +393,13 @@ static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
         SILK_DEBUG << "Scheduler stopped";
     });
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-    auto discover_torrent_and_stop = [&web_client, &shutdown_signal]() -> Task<TorrentInfoPtrList> {
-        const auto torrent_info_list = co_await web_client.discover_torrents(/*fail_fast=*/true);
+    auto discover_torrent_and_stop = [&settings, &web_client, &shutdown_signal]() -> Task<TorrentInfoPtrList> {
+        TorrentInfoPtrList torrent_info_list;
+        try {
+            torrent_info_list = co_await web_client.discover_torrents(/*fail_fast=*/true);
+        } catch (const boost::system::system_error& se) {
+            SILK_ERROR << "Cannot discover torrents at " + settings.url_seed + ": " + se.what();
+        }
         shutdown_signal.cancel();
         co_return torrent_info_list;
     };

@@ -1349,7 +1349,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-// https://docs.flashbots.net/flashbots-auction/miners/mev-geth-spec/v06-rpc/eth_callBundle
+// https://docs.flashbots.net/flashbots-auction/advanced/rpc-endpoint#eth_callbundle
 Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 3) {
@@ -1359,7 +1359,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
         co_return;
     }
 
-    auto tx_hash_list = params[0].get<std::vector<evmc::bytes32>>();
+    const auto tx_hash_list = params[0].get<std::vector<evmc::bytes32>>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
     const auto timeout = params[2].get<uint64_t>();
 

@@ -34,13 +34,37 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
         CHECK_THROWS_AS(generate_jwt_token(std::filesystem::path{""}), std::runtime_error);
     }
 
+    static constexpr size_t kExpectedJwtTokenChars{32};
+    static constexpr size_t kExpectedJwtTokenHexSize{32 * 2 + 2};  // +2 for 0x
+
     SECTION("check generated JWT chars") {
+        REQUIRE(std::filesystem::exists(tmp_jwt_file.path()));
         std::string jwt_token;
         CHECK_NOTHROW((jwt_token = generate_jwt_token(tmp_jwt_file.path())));
-        CHECK(jwt_token.size() == 32);
+        REQUIRE(std::filesystem::file_size(tmp_jwt_file.path()) == kExpectedJwtTokenHexSize);
+        CHECK(jwt_token.size() == kExpectedJwtTokenChars);
         std::string jwt_token_hex;
         std::ifstream tmp_jwt_ifs{tmp_jwt_file.path()};
         tmp_jwt_ifs >> jwt_token_hex;
+        REQUIRE(jwt_token_hex.size() == kExpectedJwtTokenHexSize);
+        jwt_token_hex = jwt_token_hex.substr(2);
+        CHECK(jwt_token == test_util::ascii_from_hex(jwt_token_hex));
+    }
+
+    SECTION("file path does not exist") {
+        const auto jwt_parent_path = TemporaryDirectory::get_unique_temporary_path();
+        REQUIRE(!std::filesystem::exists(jwt_parent_path));
+        const auto jwt_file_path = jwt_parent_path / "jwt.hex";
+        REQUIRE(!std::filesystem::exists(jwt_file_path));
+        std::string jwt_token;
+        CHECK_NOTHROW((jwt_token = generate_jwt_token(jwt_file_path)));
+        REQUIRE(std::filesystem::exists(jwt_file_path));
+        REQUIRE(std::filesystem::file_size(jwt_file_path) == kExpectedJwtTokenHexSize);
+        CHECK(jwt_token.size() == kExpectedJwtTokenChars);
+        std::string jwt_token_hex;
+        std::ifstream tmp_jwt_ifs{jwt_file_path};
+        tmp_jwt_ifs >> jwt_token_hex;
+        REQUIRE(jwt_token_hex.size() == kExpectedJwtTokenHexSize);
         jwt_token_hex = jwt_token_hex.substr(2);
         CHECK(jwt_token == test_util::ascii_from_hex(jwt_token_hex));
     }

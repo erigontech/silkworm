@@ -17,6 +17,7 @@
 #include "jwt.hpp"
 
 #include <fstream>
+#include <string>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -67,6 +68,17 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
         REQUIRE(jwt_token_hex.size() == kExpectedJwtTokenHexSize);
         jwt_token_hex = jwt_token_hex.substr(2);
         CHECK(jwt_token == test_util::ascii_from_hex(jwt_token_hex));
+    }
+
+    SECTION("file path contains . or ..") {
+        const std::vector<std::filesystem::path> kJwtFilePaths{
+            TemporaryDirectory::get_unique_temporary_path() / "../jwt.hex",
+            TemporaryDirectory::get_unique_temporary_path() / "./jwt.hex"};
+        for (const auto& jwt_file_path : kJwtFilePaths) {
+            std::string jwt_token;
+            CHECK_NOTHROW((jwt_token = generate_jwt_token(jwt_file_path)));
+            REQUIRE(std::filesystem::exists(jwt_file_path));
+        }
     }
 }
 

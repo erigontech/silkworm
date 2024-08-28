@@ -50,12 +50,7 @@ std::string generate_jwt_token(const std::filesystem::path& file_path) {
         throw std::runtime_error{error_msg};
     }
     if (!std::filesystem::exists(file_path)) {
-        const bool dirs_created = std::filesystem::create_directories(file_path.parent_path());
-        if (!dirs_created) {
-            const auto error_msg{"Cannot create directories " + file_path.parent_path().string()};
-            SILK_ERROR << error_msg;
-            throw std::runtime_error{error_msg};
-        }
+        std::filesystem::create_directories(file_path.parent_path());
     }
 
     std::string jwt_token;

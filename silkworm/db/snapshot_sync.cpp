@@ -156,9 +156,9 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     client_thread_ = std::thread([&]() {
         log::set_thread_name("bit-torrent");
         try {
-            client_.execute_loop();
+            client_.execution_loop();
         } catch (const std::exception& ex) {
-            SILK_CRIT << "SnapshotSync: BitTorrentClient execute_loop exception: " << ex.what();
+            SILK_CRIT << "SnapshotSync: BitTorrentClient execution_loop exception: " << ex.what();
             std::terminate();
         }
     });

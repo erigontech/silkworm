@@ -429,7 +429,7 @@ static void download_bittorrent(bittorrent::BitTorrentClient& client) {
     });
     std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
 
-    client.execute_loop();
+    client.execution_loop();
 
     scheduler_thread.join();
 }

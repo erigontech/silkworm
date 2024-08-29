@@ -80,7 +80,7 @@ BitTorrentClient::BitTorrentClient(BitTorrentSettings settings)
 }
 
 BitTorrentClient::~BitTorrentClient() {
-    stop();
+    BitTorrentClient::stop();
 }
 
 void BitTorrentClient::add_info_hash(std::string_view name, std::string_view info_hash) {
@@ -108,15 +108,14 @@ void BitTorrentClient::add_torrent_info(std::shared_ptr<lt::torrent_info> info) 
     SILK_TRACE << "BitTorrentClient::add_torrent_info added";
 }
 
-void BitTorrentClient::stop() {
+bool BitTorrentClient::stop() {
     SILK_TRACE << "BitTorrentClient::stop start";
-    std::unique_lock stop_lock{stop_mutex_};
-    if (!stop_requested_) {
-        stop_requested_ = true;
-        stop_lock.unlock();
+    bool changed = ActiveComponent::stop();
+    if (changed) {
         stop_condition_.notify_one();
     }
     SILK_TRACE << "BitTorrentClient::stop end";
+    return changed;
 }
 
 lt::session_params BitTorrentClient::load_or_create_session_parameters() const {
@@ -198,8 +197,8 @@ bool BitTorrentClient::exists_resume_file(const lt::info_hash_t& info_hashes) co
     return std::filesystem::exists(resume_file_path(info_hashes));
 }
 
-void BitTorrentClient::execute_loop() {
-    SILK_TRACE << "BitTorrentClient::execute_loop start";
+void BitTorrentClient::execution_loop() {
+    SILK_TRACE << "BitTorrentClient::execution_loop start";
 
     if (settings_.verify_on_startup) {
         recheck_all_finished_torrents();
@@ -216,9 +215,9 @@ void BitTorrentClient::execute_loop() {
         process_alerts();
 
         std::unique_lock stop_lock{stop_mutex_};
-        stopped = stop_condition_.wait_for(stop_lock, settings_.wait_between_alert_polls, [&] { return stop_requested_; });
+        stopped = stop_condition_.wait_for(stop_lock, settings_.wait_between_alert_polls, [this] { return is_stopping(); });
     }
-    SILK_TRACE << "Execution loop completed [stop_condition=" << stop_requested_ << "]";
+    SILK_TRACE << "Execution loop completed [stop_condition=" << is_stopping() << "]";
 
     request_save_resume_data(lt::torrent_handle::save_info_dict);
     while (outstanding_resume_requests_ > 0) {
@@ -232,7 +231,7 @@ void BitTorrentClient::execute_loop() {
     BitTorrentClient::save_file(session_file_, session_params_data);
     SILK_TRACE << "Session saved after execution loop completion";
 
-    SILK_TRACE << "BitTorrentClient::execute_loop end";
+    SILK_TRACE << "BitTorrentClient::execution_loop end";
 }
 
 void BitTorrentClient::recheck_all_finished_torrents() {

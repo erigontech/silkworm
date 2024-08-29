@@ -71,6 +71,18 @@ class TestRepository {
     std::ofstream magnet_file_stream_{magnets_file_path_};
 };
 
+class ClientThread {
+  public:
+    explicit ClientThread(BitTorrentClient& client)
+        : thread_([&client]() { client.execution_loop(); }) {}
+    ~ClientThread() {
+        thread_.join();
+    }
+
+  private:
+    std::thread thread_;
+};
+
 //! Generate test data for resume file content
 //! \details https://github.com/arvidn/libtorrent/blob/RC_2_0/test/test_read_resume.cpp
 static inline std::vector<char> test_resume_data() {
@@ -151,25 +163,22 @@ TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]")
 
     SECTION("no info hash") {
         BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 
     SECTION("invalid info hash") {
         BitTorrentClient client{settings};
         client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca8");
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 
     SECTION("valid info hash") {
         BitTorrentClient client{settings};
         client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca878");
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 }
 
@@ -183,18 +192,16 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
 
     SECTION("empty magnet file") {
         BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 
     SECTION("nonempty magnet file") {
         repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
         repo.flush();
         BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 
     SECTION("nonempty magnet file w/ startup verification") {
@@ -202,9 +209,8 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
         repo.flush();
         settings.verify_on_startup = true;
         BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 }
 
@@ -221,9 +227,8 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
 
     SECTION("after empty execution loop") {
         BitTorrentClient client{settings};
-        std::thread execution_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        execution_thread.join();
     }
 
 // Exclude from sanitizer builds due to false positive: https://gcc.gnu.org/bugzilla//show_bug.cgi?id=101978
@@ -231,9 +236,8 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
     SECTION("interrupt seeding execution loop on separate thread") {
         settings.seeding = true;
         BitTorrentClient client{settings};
-        std::thread execution_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        execution_thread.join();
     }
 #endif  // SILKWORM_SANITIZE
 }

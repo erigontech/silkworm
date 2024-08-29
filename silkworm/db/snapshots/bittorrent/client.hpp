@@ -41,12 +41,13 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/db/snapshots/bittorrent/settings.hpp>
+#include <silkworm/infra/concurrency/active_component.hpp>
 
 namespace silkworm::snapshots::bittorrent {
 
 //! The BitTorrent protocol client handling multiple torrents *asynchronously* using one thread.
 //! \details The user code should probably run the `execute_loop` method in a dedicated thread.
-class BitTorrentClient {
+class BitTorrentClient : public ActiveComponent {
   public:
     constexpr static const char* kSessionFileName{".session"};
     constexpr static const char* kResumeDirName{".resume"};
@@ -56,7 +57,7 @@ class BitTorrentClient {
     using StatsCallback = void(lt::span<const int64_t> counters);
 
     explicit BitTorrentClient(BitTorrentSettings settings = {});
-    ~BitTorrentClient();
+    ~BitTorrentClient() override;
 
     const BitTorrentSettings& settings() const { return settings_; }
 
@@ -78,10 +79,10 @@ class BitTorrentClient {
     void add_torrent_info(std::shared_ptr<lt::torrent_info> info);
 
     //! Run the client execution loop until it is stopped or has finished downloading and seeding is not required
-    void execute_loop();
+    void execution_loop() override;
 
     //! Ask the client to stop execution
-    void stop();
+    bool stop() override;
 
   protected:
     static std::vector<char> load_file(const std::filesystem::path& filename);
@@ -125,9 +126,6 @@ class BitTorrentClient {
 
     //! Condition indicating that the client should stop
     std::condition_variable stop_condition_;
-
-    //! Flag indicating stop protected by mutex and signalled by condition variable
-    bool stop_requested_{false};
 };
 
 }  // namespace silkworm::snapshots::bittorrent

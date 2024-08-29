@@ -2162,7 +2162,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     SILK_INFO << "All done" << log::Args{"in", StopWatch::format(duration)};
 }
 
-void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
+void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir, bool keep_blocks) {
     using namespace concurrency::awaitable_wait_for_one;
 
     class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
@@ -2206,7 +2206,7 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir) {
     repository.reopen_folder();
     db::DataModel::set_snapshot_repository(&repository);
 
-    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.temp().path()};
+    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
 
     test_util::TaskRunner runner;
     runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));
@@ -2393,6 +2393,8 @@ int main(int argc, char* argv[]) {
     // Freeze command
     auto cmd_freeze = app_main.add_subcommand("freeze", "Migrate data to snapshots");
 
+    auto cmd_freeze_keep_blocks_opt = cmd_freeze->add_flag("--snap.keepblocks", "If set, the blocks exported from mdbx to snapshots are kept in mdbx");
+
     /*
      * Parse arguments and validate
      */
@@ -2501,7 +2503,7 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_reset_to_download) {
             do_reset_to_download(src_config, static_cast<bool>(*cmd_reset_to_download_keep_senders_opt));
         } else if (*cmd_freeze) {
-            do_freeze(src_config, data_dir);
+            do_freeze(src_config, data_dir, static_cast<bool>(*cmd_freeze_keep_blocks_opt));
         }
 
         return 0;

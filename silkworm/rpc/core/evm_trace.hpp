@@ -299,8 +299,9 @@ class StateAddresses {
     [[nodiscard]] silkworm::ByteView get_code(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, silkworm::ByteView code) noexcept { codes_[address] = silkworm::Bytes{code}; }
 
-  private:
     void remove(const evmc::address& address) noexcept;
+
+  private:
 
     std::map<evmc::address, intx::uint256> balances_;
     std::map<evmc::address, uint64_t> nonces_;

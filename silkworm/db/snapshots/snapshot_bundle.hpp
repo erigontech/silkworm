@@ -31,7 +31,7 @@
 
 namespace silkworm::snapshots {
 
-struct SnapshotBundleStruct {
+struct SnapshotBundleData {
     Snapshot header_snapshot;
     //! Index header_hash -> block_num -> headers_segment_offset
     Index idx_header_hash;
@@ -50,8 +50,8 @@ struct SnapshotBundleStruct {
     static constexpr size_t kIndexesCount = 4;
 };
 
-struct SnapshotBundle : public SnapshotBundleStruct {
-    explicit SnapshotBundle(SnapshotBundleStruct bundle) : SnapshotBundleStruct(std::move(bundle)) {}
+struct SnapshotBundle : public SnapshotBundleData {
+    explicit SnapshotBundle(SnapshotBundleData bundle) : SnapshotBundleData(std::move(bundle)) {}
     virtual ~SnapshotBundle();
 
     SnapshotBundle(SnapshotBundle&&) = default;

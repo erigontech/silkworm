@@ -26,7 +26,7 @@ void add_snapshot_options(CLI::App& cli, snapshots::SnapshotSettings& snapshot_s
         ->description("If set, the snapshot downloader is disabled and just already present local snapshots are used")
         ->capture_default_str();
     cli.add_flag("--snapshots.keepblocks", snapshot_settings.keepblocks)
-        ->description("Flag indicating if exported blocks into snapshots should be still kept in mbdbx")
+        ->description("Flag indicating if exported blocks into snapshots should be still kept in mdbx")
         ->capture_default_str();
     cli.add_option("--snapshots.repository.path", snapshot_settings.repository_dir)
         ->description("Filesystem path where snapshots will be stored")

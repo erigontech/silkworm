@@ -2507,7 +2507,7 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_reset_to_download) {
             do_reset_to_download(src_config, static_cast<bool>(*cmd_reset_to_download_keep_senders_opt));
         } else if (*cmd_freeze) {
-            do_freeze(src_config, data_dir, cmd_freeze_keep_blocks_opt);
+            do_freeze(src_config, data_dir, static_cast<bool>(*cmd_freeze_keep_blocks_opt));
         }
 
         return 0;

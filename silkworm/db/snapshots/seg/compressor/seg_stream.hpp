@@ -29,8 +29,8 @@ namespace silkworm::snapshots::seg {
 
 class SegStream {
   public:
-    SegStream(const std::filesystem::path& path);
-    SegStream(std::ostream& stream);
+    explicit SegStream(const std::filesystem::path& path);
+    explicit SegStream(std::ostream& stream);
 
     template <typename TData>
     struct HuffmanCodeTableSymbol {

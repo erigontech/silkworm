@@ -123,7 +123,7 @@ class SnapshotWriter {
 
     using WordDeserializer = TWordSerializer;
 
-    SnapshotWriter(SnapshotFileWriter& snapshot) : snapshot_(snapshot) {}
+    explicit SnapshotWriter(SnapshotFileWriter& snapshot) : snapshot_(snapshot) {}
 
     Iterator out() {
         return Iterator{snapshot_.out(std::make_shared<TWordSerializer>())};

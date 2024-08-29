@@ -35,7 +35,7 @@ class RawWordsStream {
     };
 
     RawWordsStream(const std::filesystem::path& path, OpenMode open_mode, size_t buffer_size);
-    RawWordsStream(std::iostream& stream);
+    explicit RawWordsStream(std::iostream& stream);
 
     void write_word(ByteView word, bool is_compressed = true);
     std::optional<std::pair<Bytes, bool>> read_word();

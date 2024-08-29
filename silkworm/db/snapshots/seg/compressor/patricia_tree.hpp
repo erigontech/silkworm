@@ -49,7 +49,7 @@ class PatriciaTreeMatchFinder {
         size_t end{};
     };
 
-    PatriciaTreeMatchFinder(const PatriciaTree& tree);
+    explicit PatriciaTreeMatchFinder(const PatriciaTree& tree);
     ~PatriciaTreeMatchFinder();
 
     //! Takes a word and returns a list of patterns that have a common prefix with the word.

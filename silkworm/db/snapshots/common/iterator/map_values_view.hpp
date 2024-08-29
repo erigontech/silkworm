@@ -36,7 +36,7 @@ class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapVal
         using pointer = const value_type*;
         using reference = const value_type&;
 
-        Iterator(typename Map::const_iterator it) : it_(it) {}
+        explicit Iterator(typename Map::const_iterator it) : it_(it) {}
         Iterator() = default;
 
         reference operator*() const { return it_->second; }
@@ -62,7 +62,7 @@ class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapVal
 
     static_assert(std::bidirectional_iterator<Iterator>);
 
-    MapValuesView(const Map& map)
+    explicit MapValuesView(const Map& map)
         : begin_(Iterator{map.cbegin()}),
           end_(Iterator{map.cend()}) {}
     MapValuesView() = default;

@@ -157,7 +157,7 @@ Task<void> Freezer::cleanup() {
     log::Debug(name()) << "cleanup [" << range.first << ", " << range.second << ")";
 
     if (keep_blocks_) {
-        log::Debug(name()) << " skipping cleanup [" << range.first << ", " << range.second << ")";
+        log::Debug(name()) << "skipping cleanup";
         co_return;
     }
 

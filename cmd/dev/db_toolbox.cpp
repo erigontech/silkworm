@@ -2397,7 +2397,7 @@ int main(int argc, char* argv[]) {
     // Freeze command
     auto cmd_freeze = app_main.add_subcommand("freeze", "Migrate data to snapshots");
 
-    auto cmd_freeze_keep_blocks_opt = cmd_freeze->add_flag("--snap.keepblocks", "Keeps exported blocks in mdbx");
+    auto cmd_freeze_keep_blocks_opt = cmd_freeze->add_flag("--snap.keepblocks", "If set, the blocks exported from mdbx to snapshots are kept in mdbx");
 
     /*
      * Parse arguments and validate

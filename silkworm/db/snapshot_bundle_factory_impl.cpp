@@ -20,7 +20,7 @@
 
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
-#include <silkworm/db/snapshots/path.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
 

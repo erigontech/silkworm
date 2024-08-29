@@ -18,7 +18,7 @@
 
 #include "data_migration.hpp"
 #include "mdbx/mdbx.hpp"
-#include "snapshots/repository.hpp"
+#include "snapshots/snapshot_repository.hpp"
 #include "stage_scheduler.hpp"
 
 namespace silkworm::db {

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "repository.hpp"
+#include "snapshot_repository.hpp"
 
 #include <algorithm>
 #include <iterator>

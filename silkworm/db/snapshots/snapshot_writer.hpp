@@ -21,8 +21,8 @@
 #include <iterator>
 #include <memory>
 
-#include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/seg/compressor.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 
 #include "snapshot_word_serializer.hpp"
 

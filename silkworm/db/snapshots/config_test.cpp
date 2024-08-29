@@ -21,7 +21,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/db/snapshots/path.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 
 namespace silkworm::snapshots {
 

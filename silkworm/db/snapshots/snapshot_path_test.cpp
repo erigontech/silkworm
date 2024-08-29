@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "path.hpp"
+#include "snapshot_path.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

@@ -21,7 +21,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <silkworm/db/snapshots/path.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshots {

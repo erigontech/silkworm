@@ -23,8 +23,8 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/snapshots/repository.hpp>
-#include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
 namespace silkworm::db {

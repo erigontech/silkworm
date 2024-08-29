@@ -140,7 +140,7 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     snapshots::Index idx_txn_hash_2_block{txn_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions_to_block)};
 
     // Add a sample Snapshot bundle to the repository
-    snapshots::SnapshotBundle bundle{
+    snapshots::SnapshotBundle bundle{{
         .header_snapshot = std::move(header_snapshot),
         .idx_header_hash = std::move(idx_header_hash),
 
@@ -150,7 +150,7 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
         .txn_snapshot = std::move(txn_snapshot),
         .idx_txn_hash = std::move(idx_txn_hash),
         .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-    };
+    }};
     repository.add_snapshot_bundle(std::move(bundle));
 
     // Update the block headers in the database according to the repository content

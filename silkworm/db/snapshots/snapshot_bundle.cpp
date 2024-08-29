@@ -20,6 +20,10 @@
 
 namespace silkworm::snapshots {
 
+SnapshotBundle::~SnapshotBundle() {
+    close();
+}
+
 void SnapshotBundle::reopen() {
     for (auto& snapshot_ref : snapshots()) {
         snapshot_ref.get().reopen_segment();
@@ -38,6 +42,9 @@ void SnapshotBundle::close() {
     }
     for (auto& snapshot_ref : snapshots()) {
         snapshot_ref.get().close();
+    }
+    if (on_close_callback_) {
+        on_close_callback_(*this);
     }
 }
 

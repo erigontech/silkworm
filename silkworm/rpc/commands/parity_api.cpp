@@ -38,7 +38,7 @@ using db::state::StateReader;
 
 // https://eth.wiki/json-rpc/API#parity_getblockreceipts
 Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid parity_getBlockReceipts params: " + params.dump();
         SILK_ERROR << error_msg;

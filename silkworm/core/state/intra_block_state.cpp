@@ -219,7 +219,7 @@ ByteView IntraBlockState::get_code(const evmc::address& address) const noexcept 
         return it->second;
     }
 
-    ByteView code{db_.read_code(code_hash)};
+    ByteView code{db_.read_code(address, code_hash)};
     existing_code_[code_hash] = code;
     return code;
 }

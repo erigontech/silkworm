@@ -37,7 +37,7 @@ std::optional<Account> InMemoryState::read_account(const evmc::address& address)
     return it->second;
 }
 
-ByteView InMemoryState::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView InMemoryState::read_code(const evmc::address& /*address*/, const evmc::bytes32& code_hash) const noexcept {
     auto it{code_.find(code_hash)};
     if (it == code_.end()) {
         return {};

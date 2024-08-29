@@ -29,7 +29,7 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
     return db::read_account(txn_, address, block_number_ + 1);
 }
 
-ByteView LocalState::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView LocalState::read_code(const evmc::address& /*address*/, const evmc::bytes32& code_hash) const noexcept {
     auto code_optional = db::read_code(txn_, code_hash);
     if (!code_optional) {
         return ByteView{};

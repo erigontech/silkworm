@@ -48,12 +48,12 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     SILK_TRACE << "read_balance_changes: block_number: " << block_number;
 
-    StateReader state_reader{transaction_};
+    StateReader state_reader{transaction_, block_number + 1};
 
     co_await load_addresses(block_number, balance_changes);
     BalanceChanges::iterator it;
     for (it = balance_changes.begin(); it != balance_changes.end();) {
-        auto account = co_await state_reader.read_account(it->first, block_number + 1);
+        auto account = co_await state_reader.read_account(it->first);
         if (account.has_value()) {
             auto balance = account.value().balance;
             if (it->second == balance) {

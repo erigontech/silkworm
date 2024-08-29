@@ -524,7 +524,7 @@ std::optional<Account> Buffer::read_account(const evmc::address& address) const 
     return db_account;
 }
 
-ByteView Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView Buffer::read_code(const evmc::address& /*address*/, const evmc::bytes32& code_hash) const noexcept {
     if (auto it{hash_to_code_.find(code_hash)}; it != hash_to_code_.end()) {
         return it->second;
     }

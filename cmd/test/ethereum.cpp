@@ -145,7 +145,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
         }
 
         auto expected_code{j["code"].get<std::string>()};
-        Bytes actual_code{state.read_code(account->code_hash)};
+        Bytes actual_code{state.read_code(address, account->code_hash)};
         if (actual_code != from_hex(expected_code)) {
             std::cout << "Code mismatch for " << entry.key() << ":\n"
                       << to_hex(actual_code) << " != " << expected_code << std::endl;

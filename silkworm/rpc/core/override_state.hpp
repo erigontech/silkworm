@@ -31,7 +31,7 @@ class OverrideState : public silkworm::State {
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 
-    silkworm::ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
+    silkworm::ByteView read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept override;
 
     evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept override;
 

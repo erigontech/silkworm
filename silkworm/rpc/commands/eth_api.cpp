@@ -897,13 +897,13 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         }
         const auto latest_block = latest_block_with_hash->block;
 
-        StateReader state_reader{*tx};
         rpc::BlockHeaderProvider block_header_provider = [&chain_storage](BlockNum block_number) {
             return chain_storage->read_canonical_header(block_number);
         };
 
-        rpc::AccountReader account_reader = [&state_reader](const evmc::address& address, BlockNum block_number) {
-            return state_reader.read_account(address, block_number + 1);
+        rpc::AccountReader account_reader = [&tx](const evmc::address& address, BlockNum block_number) -> Task<std::optional<Account>> {
+            StateReader state_reader{*tx, block_number + 1};
+            co_return co_await state_reader.read_account(address);
         };
 
         rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};
@@ -948,8 +948,8 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
         const auto [block_number, is_latest_block] = co_await core::get_block_number(bnoh, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx};
-        std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
+        StateReader state_reader{*tx, block_number + 1};
+        std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         reply = make_json_content(request, "0x" + (account ? intx::hex(account->balance) : "0"));
     } catch (const std::exception& e) {
@@ -982,12 +982,11 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, *tx, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx};
-
-        std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
+        StateReader state_reader{*tx, block_number + 1};
+        std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
-            auto code{co_await state_reader.read_code(account->code_hash)};
+            auto code{co_await state_reader.read_code(address, account->code_hash)};
             reply = make_json_content(request, code ? ("0x" + silkworm::to_hex(*code)) : "0x");
         } else {
             reply = make_json_content(request, "0x");
@@ -1022,9 +1021,8 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, *tx, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx};
-
-        std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
+        StateReader state_reader{*tx, block_number + 1};
+        std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
             reply = make_json_content(request, to_quantity(account->nonce));
@@ -1069,12 +1067,11 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, *tx, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx};
-
-        std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
+        StateReader state_reader{*tx, block_number + 1};
+        std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
-            auto storage{co_await state_reader.read_storage(address, account->incarnation, location, block_number + 1)};
+            auto storage{co_await state_reader.read_storage(address, account->incarnation, location)};
             reply = make_json_content(request, "0x" + silkworm::to_hex(storage));
         } else {
             reply = make_json_content(request, "0x0000000000000000000000000000000000000000000000000000000000000000");
@@ -1279,7 +1276,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         const bool is_latest_block = co_await core::get_latest_executed_block_number(*tx) == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
-        StateReader state_reader{*tx};
+        StateReader state_reader{*tx, block_with_hash->block.header.number + 1};
 
         std::optional<uint64_t> nonce = std::nullopt;
         evmc::address to{};
@@ -1290,7 +1287,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 // Retrieve nonce by txpool
                 auto nonce_option = co_await tx_pool_->nonce(*call.from);
                 if (!nonce_option) {
-                    std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from, block_with_hash->block.header.number + 1)};
+                    std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from)};
                     if (account) {
                         nonce = (*account).nonce + 1;  // NOLINT
                     }

@@ -50,9 +50,9 @@ struct StatusInfo {
 };
 
 enum TransactionType {
-    QUEUED,
-    PENDING,
-    BASE_FEE
+    kQueued,
+    kPending,
+    kBaseFee
 };
 
 struct TransactionInfo {

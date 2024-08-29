@@ -24,11 +24,11 @@
 namespace silkworm::rpc {
 
 TEST_CASE("print empty ExecutionPayloadV1", "[silkworm][rpc][types]") {
-    CHECK_NOTHROW(silkworm::test_util::null_stream() << ExecutionPayload{.version = ExecutionPayload::V1});
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << ExecutionPayload{.version = ExecutionPayload::kV1});
 }
 
 TEST_CASE("print empty ExecutionPayloadV2", "[silkworm][rpc][types]") {
-    CHECK_NOTHROW(silkworm::test_util::null_stream() << ExecutionPayload{.version = ExecutionPayload::V2});
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << ExecutionPayload{.version = ExecutionPayload::kV2});
 }
 
 TEST_CASE("print empty PayloadStatus", "[silkworm][rpc][types]") {
@@ -40,11 +40,11 @@ TEST_CASE("print empty ForkChoiceState", "[silkworm][rpc][types]") {
 }
 
 TEST_CASE("print empty PayloadAttributesV1", "[silkworm][rpc][types]") {
-    CHECK_NOTHROW(silkworm::test_util::null_stream() << PayloadAttributes{.version = PayloadAttributes::V1});
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << PayloadAttributes{.version = PayloadAttributes::kV1});
 }
 
 TEST_CASE("print empty PayloadAttributesV2", "[silkworm][rpc][types]") {
-    CHECK_NOTHROW(silkworm::test_util::null_stream() << PayloadAttributes{.version = PayloadAttributes::V2});
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << PayloadAttributes{.version = PayloadAttributes::kV2});
 }
 
 TEST_CASE("print empty ForkChoiceUpdatedRequest", "[silkworm][rpc][types]") {
@@ -60,7 +60,7 @@ TEST_CASE("print empty TransitionConfiguration", "[silkworm][rpc][types]") {
 }
 
 TEST_CASE("print empty ExecutionPayloadAndValue", "[silkworm][rpc][types]") {
-    ExecutionPayloadAndValue pv{.payload = {.version = ExecutionPayload::V2}, .block_value = 0};
+    ExecutionPayloadAndValue pv{.payload = {.version = ExecutionPayload::kV2}, .block_value = 0};
     CHECK_NOTHROW(silkworm::test_util::null_stream() << pv);
 }
 

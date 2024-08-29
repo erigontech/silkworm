@@ -36,7 +36,7 @@ using ServerCompletionQueueFactory = std::function<ServerCompletionQueuePtr()>;
 class ServerContext : public concurrency::Context {
   public:
     ServerContext(std::size_t context_id, ServerCompletionQueuePtr&& server_queue,
-                  concurrency::WaitMode wait_mode = concurrency::WaitMode::blocking);
+                  concurrency::WaitMode wait_mode = concurrency::WaitMode::kBlocking);
 
     [[nodiscard]] agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
     [[nodiscard]] agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }

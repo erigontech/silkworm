@@ -78,11 +78,11 @@ class BusySpinIdleStrategy {
 };
 
 enum class WaitMode {
-    backoff,
-    blocking,
-    sleeping,
-    yielding,
-    busy_spin
+    kBackoff,
+    kBlocking,
+    kSleeping,
+    kYielding,
+    kBusySpin
 };
 
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error);

@@ -110,17 +110,17 @@ void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {
 //! \brief Set up parsing of the wait mode (e.g. block, sleep, spin...) in RPC execution contexts
 void add_option_wait_mode(CLI::App& cli, concurrency::WaitMode& wait_mode) {
     std::map<std::string, concurrency::WaitMode> wait_mode_mapping{
-        {"backoff", concurrency::WaitMode::backoff},
-        {"blocking", concurrency::WaitMode::blocking},
-        {"busy_spin", concurrency::WaitMode::busy_spin},
-        {"sleeping", concurrency::WaitMode::sleeping},
-        {"yielding", concurrency::WaitMode::yielding},
+        {"backoff", concurrency::WaitMode::kBackoff},
+        {"blocking", concurrency::WaitMode::kBlocking},
+        {"busy_spin", concurrency::WaitMode::kBusySpin},
+        {"sleeping", concurrency::WaitMode::kSleeping},
+        {"yielding", concurrency::WaitMode::kYielding},
     };
     cli.add_option("--wait.mode", wait_mode, "The waiting mode for execution loops during idle cycles")
         ->capture_default_str()
-        ->check(CLI::Range(concurrency::WaitMode::backoff, concurrency::WaitMode::busy_spin))
+        ->check(CLI::Range(concurrency::WaitMode::kBackoff, concurrency::WaitMode::kBusySpin))
         ->transform(CLI::Transformer(wait_mode_mapping, CLI::ignore_case))
-        ->default_val(concurrency::WaitMode::blocking);
+        ->default_val(concurrency::WaitMode::kBlocking);
 }
 
 void add_context_pool_options(CLI::App& cli, concurrency::ContextPoolSettings& settings) {

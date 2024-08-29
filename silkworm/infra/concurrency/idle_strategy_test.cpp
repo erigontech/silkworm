@@ -30,11 +30,11 @@ TEST_CASE("parse wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
     std::vector<absl::string_view> input_texts{
         "backoff", "blocking", "sleeping", "yielding", "busy_spin"};
     std::vector<WaitMode> expected_wait_modes{
-        WaitMode::backoff,
-        WaitMode::blocking,
-        WaitMode::sleeping,
-        WaitMode::yielding,
-        WaitMode::busy_spin,
+        WaitMode::kBackoff,
+        WaitMode::kBlocking,
+        WaitMode::kSleeping,
+        WaitMode::kYielding,
+        WaitMode::kBusySpin,
     };
     for (std::size_t i{0}; i < input_texts.size(); i++) {
         WaitMode wait_mode{};
@@ -56,11 +56,11 @@ TEST_CASE("parse invalid wait mode", "[silkworm][infra][concurrency][idle_strate
 
 TEST_CASE("unparse wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
     std::vector<WaitMode> input_wait_modes{
-        WaitMode::backoff,
-        WaitMode::blocking,
-        WaitMode::sleeping,
-        WaitMode::yielding,
-        WaitMode::busy_spin,
+        WaitMode::kBackoff,
+        WaitMode::kBlocking,
+        WaitMode::kSleeping,
+        WaitMode::kYielding,
+        WaitMode::kBusySpin,
     };
     std::vector<std::string> expected_texts{
         "backoff", "blocking", "sleeping", "yielding", "busy_spin"};

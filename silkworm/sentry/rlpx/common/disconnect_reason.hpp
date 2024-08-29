@@ -21,13 +21,13 @@
 namespace silkworm::sentry::rlpx {
 
 enum class DisconnectReason : uint8_t {
-    DisconnectRequested = 0,
-    NetworkError = 1,
-    ProtocolError = 2,
-    UselessPeer = 3,
-    TooManyPeers = 4,
-    ClientQuitting = 8,
-    PingTimeout = 11,
+    kDisconnectRequested = 0,
+    kNetworkError = 1,
+    kProtocolError = 2,
+    kUselessPeer = 3,
+    kTooManyPeers = 4,
+    kClientQuitting = 8,
+    kPingTimeout = 11,
 };
 
 }  // namespace silkworm::sentry::rlpx

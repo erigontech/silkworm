@@ -151,7 +151,7 @@ TEST_CASE("segments") {
 
     auto [segments, penality] = header_list->split_into_segments();
     REQUIRE(segments.size() == 1);
-    REQUIRE(penality == NoPenalty);
+    REQUIRE(penality == kNoPenalty);
 
     Segment segment = segments[0];
     REQUIRE(segment.lowest_header()->number == headers[0].number);

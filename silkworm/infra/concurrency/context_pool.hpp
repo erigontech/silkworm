@@ -38,7 +38,7 @@ namespace silkworm::concurrency {
 //! Asynchronous scheduler running an execution loop.
 class Context {
   public:
-    explicit Context(std::size_t context_id, WaitMode wait_mode = WaitMode::blocking);
+    explicit Context(std::size_t context_id, WaitMode wait_mode = WaitMode::kBlocking);
     virtual ~Context() = default;
 
     [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }

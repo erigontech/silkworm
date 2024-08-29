@@ -53,12 +53,12 @@ void from_json(const nlohmann::json& json, PayloadAttributes& payload_attributes
     };
 
     // Set the PayloadAttributes version (default is V1)
-    SILKWORM_ASSERT(payload_attributes.version == PayloadAttributes::V1);
+    SILKWORM_ASSERT(payload_attributes.version == PayloadAttributes::kV1);
     if (payload_attributes.withdrawals) {
         if (payload_attributes.parent_beacon_block_root) {
-            payload_attributes.version = PayloadAttributes::V3;
+            payload_attributes.version = PayloadAttributes::kV3;
         } else {
-            payload_attributes.version = PayloadAttributes::V2;
+            payload_attributes.version = PayloadAttributes::kV2;
         }
     }
 }

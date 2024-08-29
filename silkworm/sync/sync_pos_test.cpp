@@ -98,7 +98,7 @@ static rpc::NewPayloadRequest make_payload_request_v3() {
     Bytes encoded_txn{};
     rlp::encode(encoded_txn, txn);
 
-    rpc::NewPayloadRequest request{make_fixed_payload_request(rpc::ExecutionPayload::V3)};
+    rpc::NewPayloadRequest request{make_fixed_payload_request(rpc::ExecutionPayload::kV3)};
     request.execution_payload.block_hash = 0x56702ce3c31f2f4b57edcfaea96bb8dd4a6332ca79e5fd1012821585b005d5d7_bytes32;
     request.execution_payload.blob_gas_used = 0x100;
     request.execution_payload.excess_blob_gas = 0x10;
@@ -116,9 +116,9 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
     using testing::InvokeWithoutArgs;
 
     const std::array requests{
-        make_fixed_payload_request(rpc::ExecutionPayload::V1),
-        make_fixed_payload_request(rpc::ExecutionPayload::V2),
-        make_fixed_payload_request(rpc::ExecutionPayload::V3),
+        make_fixed_payload_request(rpc::ExecutionPayload::kV1),
+        make_fixed_payload_request(rpc::ExecutionPayload::kV2),
+        make_fixed_payload_request(rpc::ExecutionPayload::kV3),
         make_payload_request_v3(),
     };
     for (size_t i{0}; i < requests.size(); ++i) {

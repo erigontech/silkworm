@@ -44,19 +44,19 @@ void ClientContext::destroy_grpc_context() {
 
 void ClientContext::execute_loop() {
     switch (wait_mode_) {
-        case WaitMode::backoff:
+        case WaitMode::kBackoff:
             execute_loop_backoff();
             break;
-        case WaitMode::blocking:
+        case WaitMode::kBlocking:
             execute_loop_multi_threaded();
             break;
-        case WaitMode::yielding:
+        case WaitMode::kYielding:
             execute_loop_single_threaded(YieldingIdleStrategy{});
             break;
-        case WaitMode::sleeping:
+        case WaitMode::kSleeping:
             execute_loop_single_threaded(SleepingIdleStrategy{});
             break;
-        case WaitMode::busy_spin:
+        case WaitMode::kBusySpin:
             execute_loop_single_threaded(BusySpinIdleStrategy{});
             break;
     }

@@ -37,7 +37,7 @@ using ChannelFactory = std::function<std::shared_ptr<::grpc::Channel>()>;
 //! Asynchronous client scheduler running an execution loop w/ integrated gRPC client.
 class ClientContext : public concurrency::Context {
   public:
-    explicit ClientContext(std::size_t context_id, concurrency::WaitMode wait_mode = concurrency::WaitMode::blocking);
+    explicit ClientContext(std::size_t context_id, concurrency::WaitMode wait_mode = concurrency::WaitMode::kBlocking);
 
     [[nodiscard]] agrpc::GrpcContext* grpc_context() const noexcept { return grpc_context_.get(); }
 
@@ -72,7 +72,7 @@ std::ostream& operator<<(std::ostream& out, const ClientContext& c);
 //! \warning currently cannot start/stop more than once because ::grpc::CompletionQueue cannot be used after shutdown
 class ClientContextPool : public concurrency::ContextPool<ClientContext>, public GrpcContextPool {
   public:
-    explicit ClientContextPool(std::size_t pool_size, concurrency::WaitMode wait_mode = concurrency::WaitMode::blocking);
+    explicit ClientContextPool(std::size_t pool_size, concurrency::WaitMode wait_mode = concurrency::WaitMode::kBlocking);
     explicit ClientContextPool(concurrency::ContextPoolSettings settings);
     ~ClientContextPool() override;
 

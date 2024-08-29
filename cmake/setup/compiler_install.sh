@@ -17,15 +17,31 @@ function install_gcc {
 function install_clang {
 	CLANG_VERSION="$1"
     echo "Installing clang $CLANG_VERSION..."
-
 	sudo apt-get update
-	sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
-	sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
-	sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
-	sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
-	sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
-	sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-$CLANG_VERSION 100
-	sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-$CLANG_VERSION 100
+	
+	if [[ "$CLANG_VERSION" -ge 16 ]]
+	then
+		# Clang 16 and later versions have a different package repository
+		# Get the latest installation script and execute
+ 		sudo rm -f llvm.sh
+ 		sudo wget https://apt.llvm.org/llvm.sh
+		sudo chmod u+x llvm.sh
+		sudo ./llvm.sh $CLANG_VERSION
+		sudo apt-get install -y libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
+		sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
+		sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
+		sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+		sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+	else
+		# Install Clang 15 and earlier versions using the default package repository
+		sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
+		sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
+		sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
+		sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+		sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+		sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-$CLANG_VERSION 100
+		sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-$CLANG_VERSION 100
+	fi
 }
 
 if [[ -n "$1" ]]	

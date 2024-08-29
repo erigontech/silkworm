@@ -513,4 +513,4 @@ inline constexpr std::array kMainnetSnapshots{
     Entry{"v1-020460-020461-transactions.seg"sv, "f1d339ca2c3feadac771950187803b5ff8e1670e"sv},
 };
 
-}
+}  // namespace silkworm::snapshots

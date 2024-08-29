@@ -67,7 +67,7 @@ class Context {
   private:
     //! Execute single-threaded loop until stopped.
     template <typename IdleStrategy>
-    void execute_loop_single_threaded(IdleStrategy&& idle_strategy);
+    void execute_loop_single_threaded(IdleStrategy idle_strategy);
 
     //! Execute multi-threaded loop until stopped.
     void execute_loop_multi_threaded();

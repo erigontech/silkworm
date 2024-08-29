@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
                 output << "    Entry{\"" << key_str << "\"sv, \"" << val_str << "\"sv},\n";
             }
             output << "};\n\n";
-            output << "}\n";
+            output << "}  // namespace silkworm::snapshots\n";
         }
     }
 

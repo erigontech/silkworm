@@ -104,11 +104,11 @@ inline static void set_bits(std::span<T, Extent> bits, const uint64_t start, con
 class EliasFanoList32 {
   public:
     //! Create an empty new 32-bit EF list prepared for specified sequence length and max offset
-    EliasFanoList32(uint64_t sequence_length, uint64_t max_offset) {
+    EliasFanoList32(uint64_t sequence_length, uint64_t max_offset)
+        : count_(sequence_length - 1),
+          u_(max_offset + 1),
+          max_offset_(max_offset) {
         ensure(sequence_length > 0, "sequence length is zero");
-        count_ = sequence_length - 1;
-        max_offset_ = max_offset;
-        u_ = max_offset + 1;
         derive_fields();
     }
 
@@ -116,8 +116,9 @@ class EliasFanoList32 {
     //! \param count the number of EF data points
     //! \param data the existing data sequence (portion exceeding the total words will be ignored)
     EliasFanoList32(uint64_t count, uint64_t u, std::span<uint8_t> data)
-        : count_(count), u_(u) {
-        max_offset_ = u_ - 1;
+        : count_(count),
+          u_(u),
+          max_offset_(u - 1) {
         const auto total_words = derive_fields();
         SILKWORM_ASSERT(total_words * sizeof(uint64_t) <= data.size());
         data = data.subspan(0, total_words * sizeof(uint64_t));

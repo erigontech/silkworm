@@ -61,11 +61,11 @@ void Context::stop() {
 }
 
 template <typename IdleStrategy>
-void Context::execute_loop_single_threaded(IdleStrategy&& idle_strategy) {
+void Context::execute_loop_single_threaded(IdleStrategy idle_strategy) {
     SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
     while (!io_context_->stopped()) {
         std::size_t work_count = io_context_->poll();
-        std::forward<IdleStrategy>(idle_strategy).idle(work_count);
+        idle_strategy.idle(work_count);
     }
     SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
 }

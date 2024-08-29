@@ -526,4 +526,4 @@ inline constexpr std::array kSepoliaSnapshots{
     Entry{"v1-006496-006497-transactions.seg"sv, "8543122c92aab030bb76eb498aafed7c7922e567"sv},
 };
 
-}
+}  // namespace silkworm::snapshots

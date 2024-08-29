@@ -165,17 +165,19 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t 
 CodeWord* PatternTable::insert_word(CodeWord* codeword) {
     CodeWord* inserted{nullptr};
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
-        const auto code_step = 1 << codeword->code_length();
-        const auto code_from = codeword->code();
-        const auto code_to =
-            bit_length_ != codeword->code_length() && codeword->code_length() > 0 ? code_from | 1 << bit_length_ : code_from + code_step;
-        for (auto c{code_from}; c < code_to; c += code_step) {
+        const size_t code_step = 1 << codeword->code_length();
+        const size_t code_from = codeword->code();
+        const size_t code_to =
+            ((bit_length_ != codeword->code_length()) && (codeword->code_length() > 0))
+                ? code_from | (1 << bit_length_)
+                : code_from + code_step;
+        for (size_t c = code_from; c < code_to; c += code_step) {
             auto cw = codewords_[c];
             if (cw == nullptr) {
                 codewords_[c] = codeword;
                 inserted = codewords_[c];
             } else {
-                cw->reset_content(c, codeword->code_length(), codeword->pattern());
+                cw->reset_content(static_cast<uint16_t>(c), codeword->code_length(), codeword->pattern());
                 inserted = cw;
             }
         }
@@ -256,10 +258,10 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
             lengths_[code] = static_cast<uint8_t>(bits);
             children_[code] = nullptr;
         } else {
-            const auto code_step = 1 << bits;
-            const auto code_from = code;
-            const auto code_to = code_from | 1 << bit_length_;
-            for (auto c{code_from}; c < code_to; c += code_step) {
+            const size_t code_step = 1 << bits;
+            const size_t code_from = code;
+            const size_t code_to = code_from | (1 << bit_length_);
+            for (size_t c = code_from; c < code_to; c += code_step) {
                 positions_[c] = first_position.value;
                 lengths_[c] = static_cast<uint8_t>(bits);
                 children_[c] = nullptr;

@@ -31,7 +31,7 @@ struct FreezerCommand : public DataMigrationCommand {
     uint64_t base_txn_id;
 
     FreezerCommand(BlockNumRange range1, uint64_t base_txn_id1)
-        : range(std::move(range1)),
+        : range(range1),
           base_txn_id(base_txn_id1) {}
     ~FreezerCommand() override = default;
 

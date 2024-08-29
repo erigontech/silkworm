@@ -89,9 +89,11 @@ struct RawSnapshotWordDeserializer : public SnapshotWordDeserializer {
 
 static std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(BlockNumRange range, SnapshotRepository& repository) {
     std::vector<std::shared_ptr<SnapshotBundle>> bundles;
-    for (auto& bundle : repository.view_bundles())
-        if (range.contains(bundle->block_from()) && range.contains(bundle->block_to() - 1))
+    for (auto& bundle : repository.view_bundles()) {
+        if (range.contains(bundle->block_from()) && range.contains(bundle->block_to() - 1)) {
             bundles.push_back(bundle);
+        }
+    }
     return bundles;
 }
 

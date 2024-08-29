@@ -235,7 +235,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         } else {
             const std::optional<Bytes> output{contract.run(input)};
             if (output) {
-                res = evmc::Result{EVMC_SUCCESS, message.gas - static_cast<int64_t>(gas), 0,
+                res = evmc::Result{EVMC_SUCCESS, message.gas - static_cast<int64_t>(gas), 0, message.gas_cost,
                                    output->data(), output->size()};
             } else {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;

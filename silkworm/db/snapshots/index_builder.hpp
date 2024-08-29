@@ -88,7 +88,7 @@ struct IndexInputDataQuery {
 
 class DecompressorIndexInputDataQuery : public IndexInputDataQuery {
   public:
-    DecompressorIndexInputDataQuery(
+    explicit DecompressorIndexInputDataQuery(
         SnapshotPath segment_path,
         std::optional<MemoryMappedRegion> segment_region = std::nullopt)
         : segment_path_(std::move(segment_path)),

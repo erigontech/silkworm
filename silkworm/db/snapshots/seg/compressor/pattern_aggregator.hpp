@@ -36,7 +36,7 @@ class PatternAggregatorImpl;
  */
 class PatternAggregator {
   public:
-    PatternAggregator(const std::filesystem::path& etl_work_path);
+    explicit PatternAggregator(const std::filesystem::path& etl_work_path);
     ~PatternAggregator();
 
     PatternAggregator(PatternAggregator&& other) noexcept;

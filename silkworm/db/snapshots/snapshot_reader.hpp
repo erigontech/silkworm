@@ -161,7 +161,7 @@ class SnapshotReader {
 
     using WordDeserializer = TWordDeserializer;
 
-    SnapshotReader(const Snapshot& snapshot) : snapshot_(snapshot) {}
+    explicit SnapshotReader(const Snapshot& snapshot) : snapshot_(snapshot) {}
 
     Iterator begin() const {
         return Iterator{snapshot_.begin(std::make_shared<TWordDeserializer>())};

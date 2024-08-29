@@ -178,7 +178,7 @@ Task<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, n
 
 // https://eth.wiki/json-rpc/API#eth_getblockbyhash
 Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& request, std::string& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBlockByHash params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -259,7 +259,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
 
 // https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbyhash
 Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getBlockTransactionCountByHash params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -295,7 +295,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const 
 
 // https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbynumber
 Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getBlockTransactionCountByNumber params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -332,7 +332,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(cons
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblockhashandindex
 Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nlohmann::json& request, std::string& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockHashAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -387,7 +387,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
 
 // https://eth.wiki/json-rpc/API#eth_getunclebyblocknumberandindex
 Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const nlohmann::json& request, std::string& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getUncleByBlockNumberAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -442,7 +442,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
 
 // https://eth.wiki/json-rpc/API#eth_getunclecountbyblockhash
 Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getUncleCountByBlockHash params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -476,7 +476,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
 
 // https://eth.wiki/json-rpc/API#eth_getunclecountbyblocknumber
 Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getUncleCountByBlockNumber params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -512,7 +512,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nloh
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyhash
 Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::json& request, std::string& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionByHash params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -566,7 +566,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyhash
 Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getRawTransactionByHash params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -612,7 +612,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyblockhashandindex
 Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionByBlockHashAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -659,7 +659,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(co
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyblockhashandindex
 Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getRawTransactionByBlockHashAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -708,7 +708,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_inde
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionbyblocknumberandindex
 Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionByBlockNumberAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -758,7 +758,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_index(
 
 // https://eth.wiki/json-rpc/API#eth_getrawtransactionbyblocknumberandindex
 Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getRawTransactionByBlockNumberAndIndex params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -808,7 +808,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_and_in
 
 // https://eth.wiki/json-rpc/API#eth_gettransactionreceipt
 Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getTransactionReceipt params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -867,7 +867,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
 
 // https://eth.wiki/json-rpc/API#eth_estimategas
 Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_estimateGas params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -930,7 +930,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
 
 // https://eth.wiki/json-rpc/API#eth_getbalance
 Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getBalance params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -965,7 +965,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
 
 // https://eth.wiki/json-rpc/API#eth_getcode
 Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getCode params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -1005,7 +1005,7 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
 
 // https://eth.wiki/json-rpc/API#eth_gettransactioncount
 Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_getTransactionCount params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -1248,7 +1248,7 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
 
 // https://geth.ethereum.org/docs/rpc/ns-eth#eth_createaccesslist
 Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2 && params.size() != 3) {
         auto error_msg = "invalid eth_createAccessList params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -1351,7 +1351,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
 
 // https://docs.flashbots.net/flashbots-auction/advanced/rpc-endpoint#eth_callbundle
 Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 3) {
         auto error_msg = "invalid eth_callBundle params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -1533,7 +1533,7 @@ Task<void> EthereumRpcApi::handle_eth_new_pending_transaction_filter(const nlohm
 
 // https://eth.wiki/json-rpc/API#eth_getfilterlogs
 Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getFilterLogs params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -1582,7 +1582,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
 
 // https://eth.wiki/json-rpc/API#eth_getfilterchanges
 Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_getFilterChanges params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -1632,7 +1632,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
 
 // https://eth.wiki/json-rpc/API#eth_uninstallfilter
 Task<void> EthereumRpcApi::handle_eth_uninstall_filter(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid eth_uninstallFilter params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -1657,7 +1657,7 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
         make_glaze_json_error(request, kInvalidParams, error_msg, reply);
         co_return;
     }
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() > 1) {
         auto error_msg = "too many arguments, want at most 1";
         SILK_ERROR << error_msg << request.dump();

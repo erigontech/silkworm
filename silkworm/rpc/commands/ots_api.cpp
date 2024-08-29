@@ -92,7 +92,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 }
 
 Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid handle_ots_getBlockDetails params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -141,7 +141,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
 }
 
 Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid ots_getBlockDetailsByHash params: " + params.dump();
         SILK_ERROR << error_msg;

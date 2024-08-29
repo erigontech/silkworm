@@ -234,7 +234,7 @@ void BitTorrentClient::execution_loop() {
     SILK_TRACE << "BitTorrentClient::execution_loop end";
 }
 
-void BitTorrentClient::recheck_all_finished_torrents() {
+void BitTorrentClient::recheck_all_finished_torrents() const {
     int rechecked_count{0};
     for (const auto& torrent_handle : session_.get_torrents()) {  // NOLINT(readability-use-anyofallof)
         if (torrent_handle.status().is_finished) {

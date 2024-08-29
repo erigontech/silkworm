@@ -93,7 +93,7 @@ class BitTorrentClient : public ActiveComponent {
     [[nodiscard]] std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
     [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
 
-    void recheck_all_finished_torrents();
+    void recheck_all_finished_torrents() const;
     void request_torrent_updates(bool stats_included);
     void request_save_resume_data(lt::resume_data_flags_t flags);
     void process_alerts();

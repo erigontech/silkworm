@@ -72,9 +72,6 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
                 CHECK(snapshot_file->block_to() == filename_expectation.block_to);
                 CHECK(snapshot_file->segment_size() == filename_expectation.block_to - filename_expectation.block_from);
                 CHECK(snapshot_file->type() == filename_expectation.type);
-                CHECK(snapshot_file->seedable());
-                CHECK(!snapshot_file->exists_torrent_file());
-                CHECK(snapshot_file->torrent_file_needed());
                 const SnapshotPath index_file = snapshot_file->index_file();
                 CHECK(index_file.path().stem() == snapshot_file->path().stem());
                 CHECK(index_file.path().extension() == kIdxExtension);

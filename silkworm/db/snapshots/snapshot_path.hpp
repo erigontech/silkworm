@@ -35,13 +35,9 @@ namespace silkworm::snapshots {
 //! The scale factor to convert the block numbers to/from the values in snapshot file names
 inline constexpr int kFileNameBlockScaleFactor{1'000};
 
-//! The segment size measured as number of blocks included in each segment
-inline constexpr std::array kDefaultSegmentSizes{500'000u, 100'000u};
-
 //! The minimum segment size measured as number of blocks included in each segment
 inline constexpr uint64_t kMinimumSegmentSize{kFileNameBlockScaleFactor};
 
-inline constexpr const char* kTorrentExtension{".torrent"};
 inline constexpr const char* kSegmentExtension{".seg"};
 inline constexpr const char* kIdxExtension{".idx"};
 inline constexpr const char* kTmpExtension{".tmp"};
@@ -80,18 +76,6 @@ class SnapshotPath {
 
     [[nodiscard]] bool exists() const {
         return std::filesystem::exists(std::filesystem::path{path_});
-    }
-
-    [[nodiscard]] bool exists_torrent_file() const {
-        return std::filesystem::exists(std::filesystem::path{path_ / kTorrentExtension});
-    }
-
-    [[nodiscard]] bool seedable() const {
-        return std::ranges::find(kDefaultSegmentSizes, segment_size()) != kDefaultSegmentSizes.cend();
-    }
-
-    [[nodiscard]] bool torrent_file_needed() const {
-        return seedable() && !exists_torrent_file();
     }
 
     [[nodiscard]] SnapshotPath index_file() const {

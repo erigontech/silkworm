@@ -366,10 +366,10 @@ struct TraceEntry {
 };
 
 enum OperationType : int {
-    OP_TRANSFER = 0,
-    OP_SELF_DESTRUCT = 1,
-    OP_CREATE = 2,
-    OP_CREATE2 = 3
+    kOpTransfer = 0,
+    kOpSelfDestruct = 1,
+    kOpCreate = 2,
+    kOpCreate2 = 3
 };
 
 struct InternalOperation {

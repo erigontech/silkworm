@@ -40,7 +40,7 @@ class MockBlockExchange : public BlockExchange {
 
     MOCK_METHOD((void), initial_state, (std::vector<BlockHeader>));
 
-    MOCK_METHOD((void), download_blocks, (BlockNum, Target_Tracking));
+    MOCK_METHOD((void), download_blocks, (BlockNum, TargetTracking));
     MOCK_METHOD((void), new_target_block, (std::shared_ptr<Block>));
     MOCK_METHOD((void), stop_downloading, ());
 

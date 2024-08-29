@@ -168,7 +168,7 @@ Headers HeaderChain::withdraw_stable_headers() {
         // Verify
         VerificationResult assessment = verify(*link);
 
-        if (assessment == Postpone) {
+        if (assessment == kPostpone) {
             insert_list_.push(link);
             log::Warning() << "HeaderChain: added future link,"
                            << " hash=" << link->hash << " height=" << link->blockHeight
@@ -176,7 +176,7 @@ Headers HeaderChain::withdraw_stable_headers() {
             continue;
         }
 
-        if (assessment == Skip) {
+        if (assessment == kSkip) {
             links_.erase(link->hash);
             log::Warning() << "HeaderChain: skipping link at " << link->blockHeight;
             continue;  // todo: do we need to invalidate all the descendants?
@@ -228,12 +228,12 @@ Headers HeaderChain::withdraw_stable_headers() {
 }
 
 HeaderChain::VerificationResult HeaderChain::verify(const Link& link) {
-    if (link.preverified) return Preverified;
+    if (link.preverified) return kPreverified;
 
     // todo: Erigon here searches in the db to see if the link is already present and in this case Skips it
 
     if (bad_headers_.contains(link.hash)) {
-        return Skip;
+        return kSkip;
     }
 
     bool with_future_timestamp_check = true;
@@ -244,12 +244,12 @@ HeaderChain::VerificationResult HeaderChain::verify(const Link& link) {
             SILKWORM_ASSERT(false);
         }
         if (result == ValidationResult::kFutureBlock) {
-            return Postpone;
+            return kPostpone;
         }
-        return Skip;
+        return kSkip;
     }
 
-    return Accept;
+    return kAccept;
 }
 
 // reduce persistedLinksQueue and remove links

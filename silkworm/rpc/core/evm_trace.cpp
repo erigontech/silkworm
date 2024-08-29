@@ -1960,7 +1960,7 @@ void EntryTracer::on_instruction_start(uint32_t pc, const intx::uint256* /* stac
 
 void OperationTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
     auto balance = initial_ibs_.get_balance(address);
-    result_.push_back(InternalOperation{OperationType::OP_SELF_DESTRUCT, address, beneficiary, "0x" + intx::to_string(balance, 16)});
+    result_.push_back(InternalOperation{OperationType::kOpSelfDestruct, address, beneficiary, "0x" + intx::to_string(balance, 16)});
 }
 
 void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
@@ -1974,11 +1974,11 @@ void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg,
 
     if (msg.depth > 0) {
         if (msg.kind == evmc_call_kind::EVMC_CREATE) {
-            result_.push_back(InternalOperation{OperationType::OP_CREATE, sender, recipient, str_value});
+            result_.push_back(InternalOperation{OperationType::kOpCreate, sender, recipient, str_value});
         } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
-            result_.push_back(InternalOperation{OperationType::OP_CREATE2, sender, recipient, str_value});
+            result_.push_back(InternalOperation{OperationType::kOpCreate2, sender, recipient, str_value});
         } else if (msg.kind == evmc_call_kind::EVMC_CALL && intx::be::load<intx::uint256>(msg.value) > 0) {
-            result_.push_back(InternalOperation{OperationType::OP_TRANSFER, sender, recipient, str_value});
+            result_.push_back(InternalOperation{OperationType::kOpTransfer, sender, recipient, str_value});
         }
     }
 

@@ -31,7 +31,7 @@ template <typename T>
 using Task = boost::asio::awaitable<T>;
 
 //! Namespace for the current coroutine types
-namespace ThisTask = boost::asio::this_coro;
+namespace ThisTask = boost::asio::this_coro;  // NOLINT(misc-unused-alias-decls)
 
 //! Executor for asynchronous tasks returned by any coroutine
 using TaskExecutor = boost::asio::io_context::executor_type;

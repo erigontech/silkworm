@@ -21,11 +21,6 @@
 #include <cstdint>
 #include <utility>
 
-#ifdef __APPLE__
-// otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
-#define _DARWIN_C_SOURCE
-#endif
-
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/steady_timer.hpp>
 

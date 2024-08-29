@@ -29,7 +29,7 @@ namespace silkworm::db {
 using namespace snapshots;
 
 SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const {
-    return SnapshotBundle{
+    return SnapshotBundle{{
         .header_snapshot = Snapshot(snapshot_path(SnapshotType::headers)),
         .idx_header_hash = Index(index_path(SnapshotType::headers)),
 
@@ -39,7 +39,7 @@ SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path,
         .txn_snapshot = Snapshot(snapshot_path(SnapshotType::transactions)),
         .idx_txn_hash = Index(index_path(SnapshotType::transactions)),
         .idx_txn_hash_2_block = Index(index_path(SnapshotType::transactions_to_block)),
-    };
+    }};
 }
 
 SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, BlockNumRange range) const {

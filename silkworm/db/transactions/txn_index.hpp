@@ -29,7 +29,7 @@
 namespace silkworm::snapshots {
 
 struct TransactionKeyFactory : IndexKeyFactory {
-    TransactionKeyFactory(uint64_t first_tx_id) : first_tx_id_(first_tx_id) {}
+    explicit TransactionKeyFactory(uint64_t first_tx_id) : first_tx_id_(first_tx_id) {}
     ~TransactionKeyFactory() override = default;
 
     Bytes make(ByteView key_data, uint64_t i) override;

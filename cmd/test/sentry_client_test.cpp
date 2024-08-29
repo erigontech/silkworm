@@ -36,7 +36,7 @@ Task<void> run(sentry::api::SentryClient& client) {
         log::Info() << "protocol: eth/" << int{eth_version};
 
         auto node_infos = co_await service->node_infos();
-        auto node_info = node_infos[0];
+        const auto& node_info = node_infos[0];
         log::Info() << "client_id: " << node_info.client_id;
 
         auto peer_count = co_await service->peer_count();

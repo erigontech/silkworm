@@ -127,6 +127,7 @@ Task<void> generate_parallel_group_task(size_t count, absl::FunctionRef<Task<voi
 
     using OperationType = decltype(co_spawn(executor, ([]() -> Task<void> { co_return; })(), deferred));
     std::vector<OperationType> operations;
+    operations.reserve(count);
 
     for (size_t i = 0; i < count; i++) {
         operations.push_back(co_spawn(executor, task_factory(i), deferred));

@@ -100,6 +100,14 @@ void BitTorrentClient::add_info_hash(std::string_view name, std::string_view inf
     SILK_TRACE << "BitTorrentClient::add info_hash: " << info_hash << " added";
 }
 
+void BitTorrentClient::add_torrent_info(std::shared_ptr<lt::torrent_info> info) {
+    lt::add_torrent_params torrent;
+    torrent.ti = std::move(info);
+    torrent.save_path = settings_.repository_path.string();
+    session_.async_add_torrent(std::move(torrent));
+    SILK_TRACE << "BitTorrentClient::add_torrent_info added";
+}
+
 void BitTorrentClient::stop() {
     SILK_TRACE << "BitTorrentClient::stop start";
     std::unique_lock stop_lock{stop_mutex_};

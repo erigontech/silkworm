@@ -32,7 +32,7 @@ namespace silkworm::snapshots {
 
 class TransactionToBlockIndexInputDataQuery : public IndexInputDataQuery {
   public:
-    TransactionToBlockIndexInputDataQuery(TxsAndBodiesQuery query)
+    explicit TransactionToBlockIndexInputDataQuery(TxsAndBodiesQuery query)
         : query_(std::move(query)) {}
 
     Iterator begin() override;

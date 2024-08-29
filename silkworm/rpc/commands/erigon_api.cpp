@@ -313,7 +313,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() > 2) {
         auto error_msg = "too many arguments, want at most 2";
         SILK_ERROR << error_msg << request.dump();

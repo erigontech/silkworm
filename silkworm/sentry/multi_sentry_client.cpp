@@ -51,7 +51,7 @@ class MultiSentryClientImpl : public api::Service {
         using namespace concurrency::awaitable_wait_for_one;
 
         auto call_factory = [&clients, &callback](size_t index) -> Task<void> {
-            auto client = clients[index];
+            const auto& client = clients[index];
             auto service = co_await client->service();
             co_await callback(service);
         };

@@ -106,7 +106,6 @@ class SilkwormRecipe(ConanFile):
             'thread',
             'timer',
             'type_erasure',
-            'url',
             'wave',
         ]
 
@@ -118,6 +117,7 @@ class SilkwormRecipe(ConanFile):
             'iostreams',
             'system',
             'thread',
+            'url',
 
             # Boost::iostreams requires
             'random',

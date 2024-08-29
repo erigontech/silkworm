@@ -17,6 +17,9 @@
 #include "snapshot_merger.hpp"
 
 #include <algorithm>
+#include <filesystem>
+#include <memory>
+#include <vector>
 
 #include <silkworm/infra/common/filesystem.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -84,6 +87,16 @@ struct RawSnapshotWordDeserializer : public SnapshotWordDeserializer {
     }
 };
 
+static std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(BlockNumRange range, SnapshotRepository& repository) {
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles;
+    for (auto& bundle : repository.view_bundles()) {
+        if (range.contains(bundle->block_from()) && range.contains(bundle->block_to() - 1)) {
+            bundles.push_back(bundle);
+        }
+    }
+    return bundles;
+}
+
 std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& merger_command = dynamic_cast<SnapshotMergerCommand&>(*command);
     auto range = merger_command.range;
@@ -94,10 +107,8 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
         log::Debug("SnapshotMerger") << "merging " << path.type_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
-        for (auto& bundle_ptr : snapshots_.view_bundles()) {
+        for (auto& bundle_ptr : bundles_in_range(range, snapshots_)) {
             auto& bundle = *bundle_ptr;
-            if (!range.contains(bundle.block_from())) continue;
-
             SnapshotReader<RawSnapshotWordDeserializer> reader{bundle.snapshot(path.type())};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
@@ -114,23 +125,32 @@ void SnapshotMerger::index(std::shared_ptr<DataMigrationResult> result) {
     snapshots_.build_indexes(bundle);
 }
 
+static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
+    bundle.on_close([](SnapshotBundle& bundle1) {
+        for (auto& path : bundle1.files()) {
+            [[maybe_unused]] bool removed = std::filesystem::remove(path);
+        }
+    });
+}
+
 void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<SnapshotMergerResult&>(*result);
     auto& bundle = freezer_result.bundle;
+    auto merged_bundles = bundles_in_range(bundle.block_range(), snapshots_);
+
     move_files(bundle.files(), snapshots_.path());
 
     auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.block_range());
     snapshots_.replace_snapshot_bundles(std::move(final_bundle));
+
+    for (auto& merged_bundle : merged_bundles) {
+        schedule_bundle_cleanup(*merged_bundle);
+    }
 }
 
 Task<void> SnapshotMerger::cleanup() {
-    // TODO
+    // the cleanup happens when bundle readers stop using them
     co_return;
-}
-
-BlockNumRange SnapshotMerger::cleanup_range() {
-    // TODO
-    return BlockNumRange{0, 0};
 }
 
 }  // namespace silkworm::db

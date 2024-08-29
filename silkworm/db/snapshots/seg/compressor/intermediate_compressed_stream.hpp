@@ -30,7 +30,7 @@ namespace silkworm::snapshots::seg {
 class IntermediateCompressedStream {
   public:
     IntermediateCompressedStream(const std::filesystem::path& path, size_t buffer_size);
-    IntermediateCompressedStream(std::iostream& stream);
+    explicit IntermediateCompressedStream(std::iostream& stream);
 
     struct CompressedWord {
         size_t raw_length{};

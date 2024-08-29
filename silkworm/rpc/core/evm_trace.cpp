@@ -1140,6 +1140,41 @@ silkworm::ByteView StateAddresses::get_code(const evmc::address& address) const 
     return initial_ibs_.get_code(address);
 }
 
+void StateAddresses::remove(const evmc::address& address) noexcept {
+    auto it_balance = balances_.find(address);
+    if (it_balance != balances_.end()) {
+        balances_.erase(it_balance);
+    }
+
+    auto it_nonce = nonces_.find(address);
+    if (it_nonce != nonces_.end()) {
+        nonces_.erase(it_nonce);
+    }
+    auto it_codes = codes_.find(address);
+    if (it_codes != codes_.end()) {
+        codes_.erase(it_codes);
+    }
+}
+
+bool StateAddresses::exists(const evmc::address& address) const noexcept {
+    auto it_balance = balances_.find(address);
+    if (it_balance != balances_.end()) {
+        return true;
+    }
+
+    auto it_nonce = nonces_.find(address);
+    if (it_nonce != nonces_.end()) {
+        return true;
+    }
+
+    auto it_code = codes_.find(address);
+    if (it_code != codes_.end()) {
+        return true;
+    }
+
+    return initial_ibs_.exists(address);
+}
+
 void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
@@ -1204,7 +1239,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
 
     for (const auto& address : intra_block_state.touched()) {
         auto initial_exists = state_addresses_.exists(address);
-        auto exists = intra_block_state.exists(address);
+        auto exists = intra_block_state.exists(address) && !intra_block_state.is_self_destruct_invoked(address);
         auto& diff_storage = diff_storage_[address];
 
         auto address_key = address_to_hex(address);
@@ -1305,14 +1340,18 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
         << ", #touched: " << intra_block_state.touched().size();
 
     for (auto& address : intra_block_state.touched()) {
-        auto balance = intra_block_state.get_balance(address);
-        state_addresses_.set_balance(address, balance);
+        if (intra_block_state.exists(address) && !intra_block_state.is_self_destruct_invoked(address)) {
+            auto balance = intra_block_state.get_balance(address);
+            state_addresses_.set_balance(address, balance);
 
-        auto nonce = intra_block_state.get_nonce(address);
-        state_addresses_.set_nonce(address, nonce);
+            auto nonce = intra_block_state.get_nonce(address);
+            state_addresses_.set_nonce(address, nonce);
 
-        auto code = intra_block_state.get_code(address);
-        state_addresses_.set_code(address, code);
+            auto code = intra_block_state.get_code(address);
+            state_addresses_.set_code(address, code);
+        } else {
+            state_addresses_.remove(address);
+        }
     }
 }
 

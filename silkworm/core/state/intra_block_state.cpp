@@ -152,6 +152,14 @@ void IntraBlockState::destruct_touched_dead() {
     }
 }
 
+bool IntraBlockState::is_self_destruct_invoked(const evmc::address& address) const noexcept {
+    for (const auto& self_destruct : self_destructs_) {
+        if (self_destruct == address)
+            return true;
+    }
+    return false;
+}
+
 // Doesn't create a delta since it's called at the end of a transaction,
 // when we don't need snapshots anymore.
 void IntraBlockState::destruct(const evmc::address& address) {

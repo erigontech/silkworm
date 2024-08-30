@@ -319,13 +319,12 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
     if (settings_.standalone) {
         return std::make_unique<db::kv::grpc::client::RemoteClient>(
             create_channel_, grpc_context, state_cache, block_provider(backend), block_number_from_txn_hash_provider(backend));
-    } else {
-        // TODO(canepat) finish implementation and clean-up composition of objects here
-        db::kv::api::StateChangeRunner runner{io_context.get_executor()};
-        db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
-        return std::make_unique<db::kv::api::DirectClient>(
-            std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
     }
+    // TODO(canepat) finish implementation and clean-up composition of objects here
+    db::kv::api::StateChangeRunner runner{io_context.get_executor()};
+    db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
+    return std::make_unique<db::kv::api::DirectClient>(
+        std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
 }
 
 void Daemon::schedule_data_format_retrieval() {

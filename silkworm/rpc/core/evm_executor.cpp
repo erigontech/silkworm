@@ -340,7 +340,7 @@ ExecutionResult EVMExecutor::call(
     ibs_state_.add_to_balance(evm.beneficiary, priority_fee_per_gas * gas_used);
 
     for (auto& tracer : evm.tracers()) {
-        tracer.get().on_reward_granted(result, evm.state());
+        tracer.get().on_reward_granted(result, ibs_state_);
     }
     ibs_state_.finalize_transaction(rev);
 

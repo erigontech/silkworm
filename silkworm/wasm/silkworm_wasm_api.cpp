@@ -157,9 +157,9 @@ Account* state_read_account_new(const State* state, const uint8_t* address) {
     return out;
 }
 
-Bytes* state_read_code_new(const State* state, const uint8_t* code_hash) {
+Bytes* state_read_code_new(const State* state, const uint8_t* address, const uint8_t* code_hash) {
     auto out{new Bytes};
-    *out = state->read_code(bytes32_from_ptr(code_hash));
+    *out = state->read_code(address_from_ptr(address), bytes32_from_ptr(code_hash));
     return out;
 }
 

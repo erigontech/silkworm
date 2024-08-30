@@ -19,9 +19,9 @@
 #include <absl/strings/str_format.h>
 #include <magic_enum.hpp>
 
-#include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/common/timer.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>

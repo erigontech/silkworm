@@ -302,7 +302,6 @@ class StateAddresses {
     void remove(const evmc::address& address) noexcept;
 
   private:
-
     std::map<evmc::address, intx::uint256> balances_;
     std::map<evmc::address, uint64_t> nonces_;
     std::map<evmc::address, silkworm::Bytes> codes_;

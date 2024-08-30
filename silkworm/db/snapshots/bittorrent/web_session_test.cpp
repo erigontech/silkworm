@@ -187,19 +187,19 @@ std::string path_cat(beast::string_view base, beast::string_view path) {
     }
     std::string result(base);
 #ifdef BOOST_MSVC
-    char constexpr path_separator = '\\';
-    if (result.back() == path_separator) {
+    char constexpr kPathSeparator = '\\';
+    if (result.back() == kPathSeparator) {
         result.resize(result.size() - 1);
     }
     result.append(path.data(), path.size());
     for (auto& c : result) {
         if (c == '/') {
-            c = path_separator;
+            c = kPathSeparator;
         }
     }
 #else
-    char constexpr path_separator = '/';
-    if (result.back() == path_separator) {
+    char constexpr kPathSeparator = '/';
+    if (result.back() == kPathSeparator) {
         result.resize(result.size() - 1);
     }
     result.append(path.data(), path.size());

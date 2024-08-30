@@ -185,16 +185,16 @@ static uint64_t reverse_bytes64(uint64_t x) {
 
 static uint64_t reverse_bits64(uint64_t x) {
     // every even bit (01010101...)
-    constexpr uint64_t mask1 = 0x5555555555555555;
+    constexpr uint64_t kMask1 = 0x5555555555555555;
     // every even bit pair (00110011...)
-    constexpr uint64_t mask2 = 0x3333333333333333;
+    constexpr uint64_t kMask2 = 0x3333333333333333;
     // every even nibble (00001111...)
-    constexpr uint64_t mask4 = 0x0F0F0F0F0F0F0F0F;
+    constexpr uint64_t kMask4 = 0x0F0F0F0F0F0F0F0F;
 
     // reverse bits in each byte
-    x = ((x >> 1) & mask1) | ((x & mask1) << 1);
-    x = ((x >> 2) & mask2) | ((x & mask2) << 2);
-    x = ((x >> 4) & mask4) | ((x & mask4) << 4);
+    x = ((x >> 1) & kMask1) | ((x & kMask1) << 1);
+    x = ((x >> 2) & kMask2) | ((x & kMask2) << 2);
+    x = ((x >> 4) & kMask4) | ((x & kMask4) << 4);
 
     return reverse_bytes64(x);
 }

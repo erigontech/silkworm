@@ -109,7 +109,7 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
     };
 
     // Set the ExecutionPayload version (default is V1)
-    SILKWORM_ASSERT(execution_payload.version == ExecutionPayload::V1);
+    SILKWORM_ASSERT(execution_payload.version == ExecutionPayload::kV1);
     if (execution_payload.withdrawals) {
         if (execution_payload.blob_gas_used.has_value() != execution_payload.excess_blob_gas.has_value()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument),
@@ -118,9 +118,9 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
         }
 
         if (execution_payload.blob_gas_used && execution_payload.excess_blob_gas) {
-            execution_payload.version = ExecutionPayload::V3;
+            execution_payload.version = ExecutionPayload::kV3;
         } else {
-            execution_payload.version = ExecutionPayload::V2;
+            execution_payload.version = ExecutionPayload::kV2;
         }
     } else {
         if (execution_payload.blob_gas_used || execution_payload.excess_blob_gas) {

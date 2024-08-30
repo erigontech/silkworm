@@ -43,11 +43,11 @@ using Catch::Matchers::Message;
 
 TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
     concurrency::WaitMode all_wait_modes[] = {
-        concurrency::WaitMode::backoff,
-        concurrency::WaitMode::blocking,
-        concurrency::WaitMode::sleeping,
-        concurrency::WaitMode::yielding,
-        concurrency::WaitMode::busy_spin};
+        concurrency::WaitMode::kBackoff,
+        concurrency::WaitMode::kBlocking,
+        concurrency::WaitMode::kSleeping,
+        concurrency::WaitMode::kYielding,
+        concurrency::WaitMode::kBusySpin};
     for (auto wait_mode : all_wait_modes) {
         ClientContext context{0, wait_mode};
 

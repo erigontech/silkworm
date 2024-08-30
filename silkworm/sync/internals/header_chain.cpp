@@ -168,7 +168,7 @@ Headers HeaderChain::withdraw_stable_headers() {
         // Verify
         VerificationResult assessment = verify(*link);
 
-        if (assessment == Postpone) {
+        if (assessment == kPostpone) {
             insert_list_.push(link);
             log::Warning() << "HeaderChain: added future link,"
                            << " hash=" << link->hash << " height=" << link->blockHeight
@@ -176,7 +176,7 @@ Headers HeaderChain::withdraw_stable_headers() {
             continue;
         }
 
-        if (assessment == Skip) {
+        if (assessment == kSkip) {
             links_.erase(link->hash);
             log::Warning() << "HeaderChain: skipping link at " << link->blockHeight;
             continue;  // todo: do we need to invalidate all the descendants?
@@ -228,12 +228,12 @@ Headers HeaderChain::withdraw_stable_headers() {
 }
 
 HeaderChain::VerificationResult HeaderChain::verify(const Link& link) {
-    if (link.preverified) return Preverified;
+    if (link.preverified) return kPreverified;
 
     // todo: Erigon here searches in the db to see if the link is already present and in this case Skips it
 
     if (bad_headers_.contains(link.hash)) {
-        return Skip;
+        return kSkip;
     }
 
     bool with_future_timestamp_check = true;
@@ -244,12 +244,12 @@ HeaderChain::VerificationResult HeaderChain::verify(const Link& link) {
             SILKWORM_ASSERT(false);
         }
         if (result == ValidationResult::kFutureBlock) {
-            return Postpone;
+            return kPostpone;
         }
-        return Skip;
+        return kSkip;
     }
 
-    return Accept;
+    return kAccept;
 }
 
 // reduce persistedLinksQueue and remove links
@@ -281,7 +281,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::add_header(const BlockHeader& anch
 
     auto [segments, penalty] = header_list->split_into_segments();
 
-    if (penalty != Penalty::NoPenalty) {
+    if (penalty != Penalty::kNoPenalty) {
         statistics_.reject_causes.invalid += 1;
         return nullptr;
     }
@@ -489,7 +489,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
                                     << "height=" << anchor->blockHeight;
         // no need to do anchor_queue_.pop(), implicitly done in the following
         invalidate(anchor);
-        send_penalties->penalties().emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
+        send_penalties->penalties().emplace_back(Penalty::kAbandonedAnchorPenalty, anchor->peerId);
     }
 
     extension_condition_ = "void anchor queue";
@@ -583,7 +583,7 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
     if (headers.empty()) {
         statistics_.received_items += 1;
         statistics_.reject_causes.invalid++;
-        return {Penalty::DuplicateHeaderPenalty, request_more_headers};  // todo: use UselessPeer message
+        return {Penalty::kDuplicateHeaderPenalty, request_more_headers};  // todo: use kUselessPeer message
     }
 
     statistics_.received_items += headers.size();
@@ -592,19 +592,19 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
         !is_valid_request_id(requestId)) {             // anyway is not requested by us...
         statistics_.reject_causes.not_requested += headers.size();
         SILK_TRACE << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
-        return {Penalty::NoPenalty, request_more_headers};
+        return {Penalty::kNoPenalty, request_more_headers};
     }
 
     if (find_bad_header(headers)) {
         statistics_.reject_causes.bad += headers.size();
-        return {Penalty::BadBlockPenalty, request_more_headers};
+        return {Penalty::kBadBlockPenalty, request_more_headers};
     }
 
     auto header_list = HeaderList::make(headers);
 
     auto [segments, penalty] = header_list->split_into_segments();
 
-    if (penalty != Penalty::NoPenalty) {
+    if (penalty != Penalty::kNoPenalty) {
         statistics_.reject_causes.invalid += headers.size();
         return {penalty, request_more_headers};
     }
@@ -614,7 +614,7 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
         request_more_headers |= process_segment(segment, false, peer_id);
     }
 
-    return {Penalty::NoPenalty, request_more_headers};
+    return {Penalty::kNoPenalty, request_more_headers};
 }
 
 /*
@@ -645,7 +645,7 @@ std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
         Hash header_hash = header->hash();
 
         if (dedupMap.contains(header_hash)) {
-            return {std::vector<Segment>{}, Penalty::DuplicateHeaderPenalty};
+            return {std::vector<Segment>{}, Penalty::kDuplicateHeaderPenalty};
         }
 
         dedupMap.insert(header_hash);
@@ -672,7 +672,7 @@ std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
         siblings.push_back(header);
     }
 
-    return {segments, Penalty::NoPenalty};
+    return {segments, Penalty::kNoPenalty};
 }
 
 HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peerId) {
@@ -826,7 +826,7 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
     // Check for bad headers
     if (bad_headers_.contains(attachment_link->hash)) {
         invalidate(anchor);
-        // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID:
+        // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: kAbandonedAnchorPenalty, PeerID:
         // anchor.peerID})
         throw SegmentCutAndPasteError(
             "anchor connected to bad headers, "

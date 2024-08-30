@@ -1208,7 +1208,7 @@ bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& bl
 }
 
 void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
-    constexpr bool throw_notfound{false};
+    const bool throw_notfound{false};
 
     // Try to read N headers from the database
     size_t read_count{0};

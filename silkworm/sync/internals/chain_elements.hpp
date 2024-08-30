@@ -232,8 +232,8 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
     }
 
     static std::tuple<bool, Penalty> child_parent_validity(Header_Ref child, Header_Ref parent) {
-        if (parent->number + 1 != child->number) return {false, Penalty::WrongChildBlockHeightPenalty};
-        return {true, NoPenalty};
+        if (parent->number + 1 != child->number) return {false, Penalty::kWrongChildBlockHeightPenalty};
+        return {true, kNoPenalty};
     }
 
     static std::tuple<bool, Penalty> children_parent_validity(const std::vector<Header_Ref>& children, Header_Ref parent) {
@@ -241,7 +241,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
             auto [valid, penalty] = child_parent_validity(child, parent);
             if (!valid) return {false, penalty};
         }
-        return {true, Penalty::NoPenalty};
+        return {true, Penalty::kNoPenalty};
     }
 };
 

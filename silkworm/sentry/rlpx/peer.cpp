@@ -131,8 +131,8 @@ Task<void> Peer::handle() {
 
         if (is_incompatible) {
             log::Debug("sentry") << "Peer::handle IncompatiblePeerError";
-            disconnect_reason_.set({DisconnectReason::UselessPeer});
-            co_await (message_stream.send(DisconnectMessage{DisconnectReason::UselessPeer}.to_message()) ||
+            disconnect_reason_.set({DisconnectReason::kUselessPeer});
+            co_await (message_stream.send(DisconnectMessage{DisconnectReason::kUselessPeer}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
             co_return;
         }
@@ -162,7 +162,7 @@ Task<void> Peer::handle() {
 
         if (is_disconnecting) {
             log::Debug("sentry") << "Peer::handle disconnecting";
-            auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);
+            auto reason = disconnect_reason_.get().value_or(DisconnectReason::kDisconnectRequested);
             disconnect_reason_.set({reason});
             co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
@@ -171,16 +171,16 @@ Task<void> Peer::handle() {
         if (is_cancelled) {
             log::Debug("sentry") << "Peer::handle cancelled - quitting gracefully";
             co_await boost::asio::this_coro::reset_cancellation_state();
-            disconnect_reason_.set({DisconnectReason::ClientQuitting});
-            co_await (message_stream.send(DisconnectMessage{DisconnectReason::ClientQuitting}.to_message()) ||
+            disconnect_reason_.set({DisconnectReason::kClientQuitting});
+            co_await (message_stream.send(DisconnectMessage{DisconnectReason::kClientQuitting}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
             throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
         }
 
         if (is_ping_timed_out) {
             log::Debug("sentry") << "Peer::handle ping timed out";
-            disconnect_reason_.set({DisconnectReason::PingTimeout});
-            co_await (message_stream.send(DisconnectMessage{DisconnectReason::PingTimeout}.to_message()) ||
+            disconnect_reason_.set({DisconnectReason::kPingTimeout});
+            co_await (message_stream.send(DisconnectMessage{DisconnectReason::kPingTimeout}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
         }
 
@@ -195,19 +195,19 @@ Task<void> Peer::handle() {
                              << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
                              << " auth_message: " << to_hex(ex.message_data()) << ";"
                              << " description: " << ex.what() << ";";
-        disconnect_reason_.set({DisconnectReason::ProtocolError});
+        disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const framing::MessageStream::DecompressionError& ex) {
         log::Debug("sentry") << "Peer::handle DecompressionError: " << ex.what();
-        disconnect_reason_.set({DisconnectReason::ProtocolError});
+        disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const auth::Handshake::CapabilityMismatchError& ex) {
         log::Debug("sentry") << "Peer::handle CapabilityMismatchError: " << ex.what();
-        disconnect_reason_.set({DisconnectReason::UselessPeer});
+        disconnect_reason_.set({DisconnectReason::kUselessPeer});
     } catch (const concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::handle timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
             log::Debug("sentry") << "Peer::handle network error: " << ex.what();
-            auto reason = disconnect_reason_.get().value_or(DisconnectReason::NetworkError);
+            auto reason = disconnect_reason_.get().value_or(DisconnectReason::kNetworkError);
             disconnect_reason_.set({reason});
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
@@ -221,13 +221,13 @@ Task<void> Peer::handle() {
             ne.rethrow_nested();
         } catch (const DisconnectedError&) {
             log::Debug("sentry") << "Peer::handle nested disconnection error";
-            auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);
+            auto reason = disconnect_reason_.get().value_or(DisconnectReason::kDisconnectRequested);
             disconnect_reason_.set({reason});
             co_return;
         } catch (const boost::system::system_error& ex) {
             if (is_fatal_network_error(ex)) {
                 log::Debug("sentry") << "Peer::handle nested network error: " << ex.what();
-                auto reason = disconnect_reason_.get().value_or(DisconnectReason::NetworkError);
+                auto reason = disconnect_reason_.get().value_or(DisconnectReason::kNetworkError);
                 disconnect_reason_.set({reason});
                 co_return;
             } else if (ex.code() == boost::system::errc::operation_canceled) {
@@ -273,13 +273,13 @@ Task<void> Peer::drop(DisconnectReason reason) {
                              << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
                              << " auth_message: " << to_hex(ex.message_data()) << ";"
                              << " description: " << ex.what() << ";";
-        disconnect_reason_.set({DisconnectReason::ProtocolError});
+        disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const framing::MessageStream::DecompressionError& ex) {
         log::Debug("sentry") << "Peer::drop DecompressionError: " << ex.what();
-        disconnect_reason_.set({DisconnectReason::ProtocolError});
+        disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const auth::Handshake::CapabilityMismatchError& ex) {
         log::Debug("sentry") << "Peer::drop CapabilityMismatchError: " << ex.what();
-        disconnect_reason_.set({DisconnectReason::UselessPeer});
+        disconnect_reason_.set({DisconnectReason::kUselessPeer});
     } catch (const concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::drop timeout expired";
     } catch (const boost::system::system_error& ex) {

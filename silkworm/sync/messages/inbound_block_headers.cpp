@@ -43,7 +43,7 @@ void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, 
     auto [penalty, requestMoreHeaders] = hc.accept_headers(packet_.request, packet_.requestId, peerId_);
 
     // Reply
-    if (penalty != Penalty::NoPenalty) {
+    if (penalty != Penalty::kNoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
         SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
         try {

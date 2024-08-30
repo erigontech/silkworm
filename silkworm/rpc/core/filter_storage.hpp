@@ -34,12 +34,12 @@ static const std::size_t kDefaultFilterStorageSize = 1024;  // default filter st
 static const std::size_t kDefaultMaxFilterAge = 900;        // lasting time for unused filters in seconds (15 min)
 
 enum FilterType {
-    logs,
-    block
+    kLogs,
+    kBlock
 };
 
 struct StoredFilter : public Filter {
-    FilterType type = FilterType::logs;
+    FilterType type = FilterType::kLogs;
     uint64_t start = std::numeric_limits<std::uint64_t>::max();
     uint64_t end = std::numeric_limits<std::uint64_t>::max();
     std::vector<Log> logs;

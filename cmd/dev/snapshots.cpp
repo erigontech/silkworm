@@ -86,6 +86,7 @@ static const auto kTorrentRepoPath{bittorrent::BitTorrentSettings::kDefaultTorre
 
 //! The available subcommands in snapshots utility
 //! \warning reducing the enum base type size as suggested by clang-tidy breaks CLI11
+// NOLINTBEGIN(readability-identifier-naming)
 enum class SnapshotTool {  // NOLINT(performance-enum-size)
     count_bodies,
     count_headers,
@@ -102,6 +103,7 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
     seg_unzip,
     sync
 };
+// NOLINTEND(readability-identifier-naming)
 
 //! The overall settings for the snapshot toolbox
 struct SnapshotToolboxSettings {

@@ -47,15 +47,15 @@ inline Bytes human_readable_id(const PeerId& peer_id) {
 }
 
 enum Penalty : int {
-    NoPenalty = 0,
-    BadBlockPenalty,
-    DuplicateHeaderPenalty,
-    WrongChildBlockHeightPenalty,
-    WrongChildDifficultyPenalty,
-    InvalidSealPenalty,
-    TooFarFuturePenalty,
-    TooFarPastPenalty,
-    AbandonedAnchorPenalty
+    kNoPenalty = 0,
+    kBadBlockPenalty,
+    kDuplicateHeaderPenalty,
+    kWrongChildBlockHeightPenalty,
+    kWrongChildDifficultyPenalty,
+    kInvalidSealPenalty,
+    kTooFarFuturePenalty,
+    kTooFarPastPenalty,
+    kAbandonedAnchorPenalty
 };
 
 struct PeerPenalization {

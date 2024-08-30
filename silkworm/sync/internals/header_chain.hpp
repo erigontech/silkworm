@@ -148,10 +148,10 @@ class HeaderChain {
     void set_target_block(BlockNum);
 
     enum VerificationResult {
-        Preverified,
-        Skip,
-        Postpone,
-        Accept
+        kPreverified,
+        kSkip,
+        kPostpone,
+        kAccept
     };
     VerificationResult verify(const Link& link);
 

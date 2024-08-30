@@ -127,7 +127,7 @@ Task<void> PeerManagerApi::handle_peer_penalize_calls() {
         co_await peer_manager_.enumerate_peers([&peer_public_key_opt](const std::shared_ptr<rlpx::Peer>& peer) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && peer_public_key_opt && (key_opt.value() == peer_public_key_opt.value())) {
-                peer->disconnect(rlpx::DisconnectReason::DisconnectRequested);
+                peer->disconnect(rlpx::DisconnectReason::kDisconnectRequested);
             }
         });
     }

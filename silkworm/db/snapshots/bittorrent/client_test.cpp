@@ -51,6 +51,10 @@ class BitTorrentClientForTest : public BitTorrentClient {
     using BitTorrentClient::request_save_resume_data;
     using BitTorrentClient::request_torrent_updates;
     using BitTorrentClient::save_file;
+
+    lt::torrent_handle add_torrent(lt::add_torrent_params params) {
+        return session_.add_torrent(std::move(params));
+    }
 };
 
 class ClientThread {
@@ -239,10 +243,9 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
     settings.repository_path = tmp_dir.path();
     BitTorrentClientForTest client{settings};
     lt::aux::stack_allocator allocator;
-    lt::session session(lt::settings_pack{});
     lt::add_torrent_params params = lt::parse_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-    params.save_path = "save_path";
-    lt::torrent_handle handle = session.add_torrent(params);
+    params.save_path = settings.repository_path;
+    lt::torrent_handle handle = client.add_torrent(params);
 
     SECTION("lt::add_torrent_alert is handled") {
         lt::error_code ec;

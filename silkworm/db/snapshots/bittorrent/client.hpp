@@ -112,9 +112,6 @@ class BitTorrentClient : public ActiveComponent {
     //! The directory containing the resume state files
     std::filesystem::path resume_dir_;
 
-    //! The BitTorrent client session
-    lt::session session_;
-
     //! The session statistics
     std::vector<lt::stats_metric> stats_metrics_;
 
@@ -129,6 +126,10 @@ class BitTorrentClient : public ActiveComponent {
 
     //! Condition indicating that the client should stop
     std::condition_variable stop_condition_;
+
+  protected:
+    //! The BitTorrent client session
+    lt::session session_;
 };
 
 }  // namespace silkworm::snapshots::bittorrent

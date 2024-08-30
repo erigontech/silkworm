@@ -69,22 +69,25 @@ jobs:
           # ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0
 
           # Multi-thread execution
-          ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0 -jobs=4 -rss_limit_mb=8192
+          ./rpcdaemon_fuzzer_test $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts -max_total_time=86300 -detect_leaks=0 -jobs=3 -rss_limit_mb=10922
 
-      - name: Tear Down
+      - name: Save Fuzzer Test Results
         if: always()
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
+        run: |
+          # Save failed results to the crash directory (ignore errors)
+          cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+          cp leak-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+
+      - name: Tear Down Build Environment
+        if: always()
         run: |
           # Reset compiler paths
           sudo update-alternatives --remove cc /usr/bin/clang
           sudo update-alternatives --remove c++ /usr/bin/clang++
           sudo rm -f /usr/bin/clang
           sudo rm -f /usr/bin/clang++
-
-          # Save failed results to the crash directory (ignore errors)
-          cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
-          cp leak-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
-
+          
           # Resume the Erigon instance dedicated to db maintenance
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 

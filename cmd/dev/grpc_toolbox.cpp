@@ -1233,6 +1233,7 @@ int main(int argc, char* argv[]) {
         "\tkv_seek_async\t\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_async_callback\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_both\t\t\tquery using SEEK_BOTH the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
+        "\tkv_domain_get\t\tquery the Erigon/Silkworm Key-Value (KV) remote interface to data storage using DOMAIN_GET\n"
         "\tkv_history_seek\t\tquery using HISTORY_SEEK the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
         "\tkv_index_range\t\tquery using INDEX_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
         "\tkv_history_range\t\tquery using HISTORY_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"

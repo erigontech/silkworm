@@ -67,8 +67,9 @@ class ExecutionPipeline::LogTimer : public Timer {
     }
 };
 
-std::unique_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
-    return std::make_unique<LogTimer>(
+std::shared_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
+    // Create as shared pointer because at least one must exist as required by std::enable_shared_from_this
+    return std::make_shared<LogTimer>(
         this->node_settings_->asio_context.get_executor(),
         this,
         this->node_settings_->sync_loop_log_interval_seconds);

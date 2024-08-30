@@ -19,6 +19,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <utility>
 
 #include <boost/asio/any_io_executor.hpp>
@@ -32,9 +33,10 @@ namespace silkworm {
 using namespace std::chrono_literals;
 
 //! \brief Implementation of an asynchronous timer relying on boost:asio
-class Timer {
+//! \warning At least one Timer shared pointer must exist when using it (precondition of shared_from_this())
+class Timer : public std::enable_shared_from_this<Timer> {
   public:
-    //! \param executor [in] : executor
+    //! \param executor [in] : executor running the timer
     //! \param interval [in] : length of wait interval (in milliseconds)
     //! \param call_back [in] : the call back function to be called
     //! \param auto_start [in] : whether to start the timer immediately
@@ -78,12 +80,18 @@ class Timer {
     //! \brief Launches async timer
     void launch() {
         timer_.expires_after(std::chrono::milliseconds(interval_));
-        (void)timer_.async_wait([&, this](const boost::system::error_code& ec) {
-            if (!ec && call_back_) {
-                call_back_();
+
+        // Start the timer and capture it as shared pointer to extend its lifetime to the completion handler invocation
+        (void)timer_.async_wait([self = shared_from_this()](const boost::system::error_code& ec) {
+            if (ec == boost::asio::error::operation_aborted) {  // If timer gets cancelled before expiration
+                return;
             }
-            if (is_running_.load()) {
-                launch();
+            // If timer gets cancelled after expiration but before completion handler dispatching, we may arrive here
+            if (!ec && self->call_back_) {
+                self->call_back_();
+            }
+            if (self->is_running_.load()) {
+                self->launch();
             }
         });
     }

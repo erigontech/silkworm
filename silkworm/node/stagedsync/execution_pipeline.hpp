@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <map>
+#include <memory>
 #include <vector>
 
 #include <silkworm/core/types/hash.hpp>
@@ -66,7 +67,7 @@ class ExecutionPipeline : public Stoppable {
 
     std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
     class LogTimer;                      // Timer for async log scheduling
-    std::unique_ptr<LogTimer> make_log_timer();
+    std::shared_ptr<LogTimer> make_log_timer();
 };
 
 }  // namespace silkworm::stagedsync

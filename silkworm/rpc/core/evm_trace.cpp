@@ -1141,37 +1141,15 @@ silkworm::ByteView StateAddresses::get_code(const evmc::address& address) const 
 }
 
 void StateAddresses::remove(const evmc::address& address) noexcept {
-    auto it_balance = balances_.find(address);
-    if (it_balance != balances_.end()) {
-        balances_.erase(it_balance);
-    }
-
-    auto it_nonce = nonces_.find(address);
-    if (it_nonce != nonces_.end()) {
-        nonces_.erase(it_nonce);
-    }
-    auto it_codes = codes_.find(address);
-    if (it_codes != codes_.end()) {
-        codes_.erase(it_codes);
-    }
+    balances_.erase(address);
+    nonces_.erase(address);
+    codes_.erase(address);
 }
 
 bool StateAddresses::exists(const evmc::address& address) const noexcept {
-    auto it_balance = balances_.find(address);
-    if (it_balance != balances_.end()) {
+    if (balances_.contains(address) || nonces_.contains(address) || codes_.contains(address)) {
         return true;
     }
-
-    auto it_nonce = nonces_.find(address);
-    if (it_nonce != nonces_.end()) {
-        return true;
-    }
-
-    auto it_code = codes_.find(address);
-    if (it_code != codes_.end()) {
-        return true;
-    }
-
     return initial_ibs_.exists(address);
 }
 
@@ -1239,7 +1217,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
 
     for (const auto& address : intra_block_state.touched()) {
         auto initial_exists = state_addresses_.exists(address);
-        auto exists = intra_block_state.exists(address) && !intra_block_state.is_self_destruct_invoked(address);
+        auto exists = intra_block_state.exists(address) && !intra_block_state.is_self_destructed(address);
         auto& diff_storage = diff_storage_[address];
 
         auto address_key = address_to_hex(address);
@@ -1340,7 +1318,7 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
         << ", #touched: " << intra_block_state.touched().size();
 
     for (auto& address : intra_block_state.touched()) {
-        if (intra_block_state.exists(address) && !intra_block_state.is_self_destruct_invoked(address)) {
+        if (intra_block_state.exists(address) && !intra_block_state.is_self_destructed(address)) {
             auto balance = intra_block_state.get_balance(address);
             state_addresses_.set_balance(address, balance);
 

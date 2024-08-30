@@ -70,7 +70,7 @@ class IntraBlockState {
     void destruct_touched_dead();
 
     size_t number_of_self_destructs() const noexcept { return self_destructs_.size(); }
-    bool is_self_destruct_invoked(const evmc::address& address) const noexcept;
+    bool is_self_destructed(const evmc::address& address) const noexcept;
 
     intx::uint256 get_balance(const evmc::address& address) const noexcept;
     void set_balance(const evmc::address& address, const intx::uint256& value) noexcept;

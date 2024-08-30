@@ -23,6 +23,7 @@
 #include <evmone/baseline.hpp>
 #include <evmone/execution_state.hpp>
 #include <evmone/vm.hpp>
+#include <gsl/pointers>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/config.hpp>
@@ -72,6 +73,18 @@ using EvmTracers = std::vector<std::reference_wrapper<EvmTracer>>;
 
 using AnalysisCache = LruCache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
 
+using TransferFunc = void(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
+                          const intx::uint256& amount, bool bailout);
+
+// See consensus.Transfer in Erigon
+inline void standard_transfer(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
+                              const intx::uint256& amount, bool bailout) {
+    if (!bailout) {
+        state.subtract_from_balance(sender, amount);
+    }
+    state.add_to_balance(recipient, amount);
+}
+
 class EVM {
   public:
     // Not copyable nor movable
@@ -103,6 +116,8 @@ class EVM {
     evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
 
     evmc::address beneficiary;  // see IRuleSet::get_beneficiary
+
+    gsl::not_null<TransferFunc*> transfer{standard_transfer};
 
   private:
     friend class EvmHost;

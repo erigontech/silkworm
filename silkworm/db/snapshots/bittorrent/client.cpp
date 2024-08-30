@@ -84,6 +84,10 @@ BitTorrentClient::~BitTorrentClient() {
 }
 
 void BitTorrentClient::add_info_hash(std::string_view name, std::string_view info_hash) {
+    add_info_hash(std::move(name), std::move(info_hash), kBestTrackers);
+}
+
+void BitTorrentClient::add_info_hash(std::string_view name, std::string_view info_hash, std::vector<std::string> trackers) {
     lt::sha1_hash sha1_info_hash;
     lt::aux::from_hex(info_hash, sha1_info_hash.data());
     lt::info_hash_t info_hashes{sha1_info_hash};
@@ -95,7 +99,7 @@ void BitTorrentClient::add_info_hash(std::string_view name, std::string_view inf
     torrent.name = name;
     torrent.info_hashes = info_hashes;
     torrent.save_path = settings_.repository_path.string();
-    torrent.trackers = kBestTrackers;
+    torrent.trackers = std::move(trackers);
     session_.async_add_torrent(std::move(torrent));
     SILK_TRACE << "BitTorrentClient::add_info_hash: " << info_hash << " added";
 }

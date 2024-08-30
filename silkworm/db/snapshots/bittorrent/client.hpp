@@ -75,6 +75,9 @@ class BitTorrentClient : public ActiveComponent {
     //! Add the specified info hash to the download list
     void add_info_hash(std::string_view name, std::string_view info_hash);
 
+    //! Add the specified info hash to the download list
+    void add_info_hash(std::string_view name, std::string_view info_hash, std::vector<std::string> trackers);
+
     //! Add the specified torrent info to the download list
     void add_torrent_info(std::shared_ptr<lt::torrent_info> info);
 

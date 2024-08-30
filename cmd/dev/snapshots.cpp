@@ -80,6 +80,7 @@ struct DownloadSettings : public bittorrent::BitTorrentSettings {
     ChainId chain_id{kMainnetConfig.chain_id};
     std::string url_seed;
     bool download_web_seed_torrents{false};
+    std::optional<std::string> magnet_uri;
 };
 
 static const auto kTorrentRepoPath{bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath};
@@ -140,8 +141,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     auto& snapshot_settings = settings.snapshot_settings;
     auto& bittorrent_settings = settings.download_settings;
 
-    bittorrent_settings.magnets_file_path = ".magnet_links";
-
     add_logging_options(app, log_settings);
 
     std::map<SnapshotTool, CLI::App*> commands;
@@ -180,9 +179,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
         add_option_chain(*cmd, bittorrent_settings.chain_id);
         cmd->add_option("--torrent_dir", bittorrent_settings.repository_path, "Path to torrent file repository")
             ->capture_default_str();
-        cmd->add_option("--magnet_file",
-                        bittorrent_settings.magnets_file_path,
-                        "File containing magnet links to download")
+        cmd->add_option("--magnet", bittorrent_settings.magnet_uri, "Magnet link to download")
             ->capture_default_str();
         cmd->add_option("--url_seed", bittorrent_settings.url_seed, "URL seed to download from")
             ->capture_default_str();
@@ -450,12 +447,16 @@ void download(const DownloadSettings& settings) {
             }
             download_bittorrent(client);
         }
-    } else {
-        // Download the target files by using the magnet links contained in input file (i.e. settings.magnets_file_path)
+    } else if (settings.magnet_uri) {
+        // Download the magnet link
         bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
-        SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
+        SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnet_uri;
+        client.add_magnet_uri(*settings.magnet_uri);
         download_bittorrent(client);
-        SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnets_file_path;
+        SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnet_uri;
+    } else {
+        SILK_WARN << "No download source. Pass either --url_seed or --magnet";
+        return;
     }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};

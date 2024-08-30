@@ -56,7 +56,7 @@ class BitTorrentClient : public ActiveComponent {
     using FileCallback = void(const std::filesystem::path&);
     using StatsCallback = void(lt::span<const int64_t> counters);
 
-    explicit BitTorrentClient(BitTorrentSettings settings = {});
+    explicit BitTorrentClient(BitTorrentSettings settings);
     ~BitTorrentClient() override;
 
     const BitTorrentSettings& settings() const { return settings_; }
@@ -78,6 +78,9 @@ class BitTorrentClient : public ActiveComponent {
     //! Add the specified torrent info to the download list
     void add_torrent_info(std::shared_ptr<lt::torrent_info> info);
 
+    //! Add the specified magnet link to the download list
+    void add_magnet_uri(const std::string& magnet_uri);
+
     //! Run the client execution loop until it is stopped or has finished downloading and seeding is not required
     void execution_loop() override;
 
@@ -89,7 +92,7 @@ class BitTorrentClient : public ActiveComponent {
     static void save_file(const std::filesystem::path& filename, const std::vector<char>& data);
 
     [[nodiscard]] lt::session_params load_or_create_session_parameters() const;
-    [[nodiscard]] std::vector<lt::add_torrent_params> resume_or_create_magnets() const;
+    [[nodiscard]] std::vector<lt::add_torrent_params> load_resume_data() const;
     [[nodiscard]] std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
     [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
 

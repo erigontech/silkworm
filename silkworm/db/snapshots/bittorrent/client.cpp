@@ -71,12 +71,12 @@ BitTorrentClient::BitTorrentClient(BitTorrentSettings settings)
       resume_dir_{settings_.repository_path / fs::path{kResumeDirName}},
       session_{load_or_create_session_parameters()} {
     SILK_TRACE << "BitTorrentClient::BitTorrentClient start";
-    auto add_magnet_params_sequence = resume_or_create_magnets();
-    for (auto& add_magnet_params : add_magnet_params_sequence) {
-        session_.async_add_torrent(std::move(add_magnet_params));
+    auto torrents_params = load_resume_data();
+    for (auto& params : torrents_params) {
+        session_.async_add_torrent(std::move(params));
     }
     last_save_resume_ = std::chrono::steady_clock::now();
-    SILK_TRACE << "Torrents #total: " << add_magnet_params_sequence.size();
+    SILK_TRACE << "Torrents #total: " << torrents_params.size();
 }
 
 BitTorrentClient::~BitTorrentClient() {
@@ -97,7 +97,7 @@ void BitTorrentClient::add_info_hash(std::string_view name, std::string_view inf
     torrent.save_path = settings_.repository_path.string();
     torrent.trackers = kBestTrackers;
     session_.async_add_torrent(std::move(torrent));
-    SILK_TRACE << "BitTorrentClient::add info_hash: " << info_hash << " added";
+    SILK_TRACE << "BitTorrentClient::add_info_hash: " << info_hash << " added";
 }
 
 void BitTorrentClient::add_torrent_info(std::shared_ptr<lt::torrent_info> info) {
@@ -140,7 +140,7 @@ lt::session_params BitTorrentClient::load_or_create_session_parameters() const {
     return session_params;
 }
 
-std::vector<lt::add_torrent_params> BitTorrentClient::resume_or_create_magnets() const {
+std::vector<lt::add_torrent_params> BitTorrentClient::load_resume_data() const {
     fs::create_directories(settings_.repository_path);
     ensure(fs::exists(settings_.repository_path), "BitTorrentClient: repository path does not exist");
     ensure(fs::is_directory(settings_.repository_path), "BitTorrentClient: repository path is not a directory");
@@ -151,8 +151,7 @@ std::vector<lt::add_torrent_params> BitTorrentClient::resume_or_create_magnets()
     ensure(fs::is_directory(resume_dir_), "BitTorrentClient: resume path is not a directory");
     SILK_TRACE << "Resume folder: " << resume_dir_;
 
-    // Load the resulting resume files and re-create magnet parameters
-    std::vector<lt::add_torrent_params> add_magnet_params;
+    std::vector<lt::add_torrent_params> torrents_params;
     for (const auto& file : fs::directory_iterator{resume_dir_}) {
         if (!fs::is_regular_file(file.path()) || file.path().extension() != kResumeFileExt) {
             continue;
@@ -160,30 +159,25 @@ std::vector<lt::add_torrent_params> BitTorrentClient::resume_or_create_magnets()
         SILK_TRACE << "File path: " << file.path() << " name: " << file.path().filename();
         const auto resume_data = load_file(file.path().string());
         if (!resume_data.empty()) {
-            auto add_magnet = lt::read_resume_data(resume_data);
-            add_magnet.save_path = settings_.repository_path.string();
-            add_magnet_params.push_back(add_magnet);
+            auto params = lt::read_resume_data(resume_data);
+            params.save_path = settings_.repository_path.string();
+            torrents_params.push_back(std::move(params));
         }
     }
-    SILK_TRACE << "Torrents #resumed: " << add_magnet_params.size();
+    SILK_TRACE << "Torrents #resumed: " << torrents_params.size();
 
-    // Add magnet parameters for other magnet links (if any)
-    if (!settings_.magnets_file_path) return add_magnet_params;
-    std::ifstream magnet_input_file_stream{*settings_.magnets_file_path};
-    std::string magnet_uri;
-    while (std::getline(magnet_input_file_stream, magnet_uri)) {
-        if (magnet_uri.empty()) continue;
-        SILK_TRACE << "Magnet URI from file: " << magnet_uri;
-        lt::add_torrent_params add_magnet = lt::parse_magnet_uri(magnet_uri);
-        if (exists_resume_file(add_magnet.info_hashes)) {
-            SILK_TRACE << "Resume file found: " << resume_file_path(add_magnet.info_hashes);
-            continue;
-        }
-        add_magnet.save_path = settings_.repository_path.string();
-        add_magnet_params.push_back(add_magnet);
+    return torrents_params;
+}
+
+void BitTorrentClient::add_magnet_uri(const std::string& magnet_uri) {
+    SILK_TRACE << "Magnet URI from file: " << magnet_uri;
+    auto add_magnet = lt::parse_magnet_uri(magnet_uri);
+    if (exists_resume_file(add_magnet.info_hashes)) {
+        SILK_TRACE << "Resume file found: " << resume_file_path(add_magnet.info_hashes);
+        return;
     }
-
-    return add_magnet_params;
+    add_magnet.save_path = settings_.repository_path.string();
+    session_.async_add_torrent(std::move(add_magnet));
 }
 
 fs::path BitTorrentClient::resume_file_path(const lt::info_hash_t& info_hashes) const {

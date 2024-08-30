@@ -288,7 +288,7 @@ class StateAddresses {
     StateAddresses(const StateAddresses&) = delete;
     StateAddresses& operator=(const StateAddresses&) = delete;
 
-    [[nodiscard]] bool exists(const evmc::address& address) const noexcept { return initial_ibs_.exists(address); }
+    [[nodiscard]] bool exists(const evmc::address& address) const noexcept;
 
     [[nodiscard]] intx::uint256 get_balance(const evmc::address& address) const noexcept;
     void set_balance(const evmc::address& address, const intx::uint256& value) noexcept { balances_[address] = value; }
@@ -298,6 +298,8 @@ class StateAddresses {
 
     [[nodiscard]] silkworm::ByteView get_code(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, silkworm::ByteView code) noexcept { codes_[address] = silkworm::Bytes{code}; }
+
+    void remove(const evmc::address& address) noexcept;
 
   private:
     std::map<evmc::address, intx::uint256> balances_;

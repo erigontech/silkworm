@@ -1140,6 +1140,19 @@ silkworm::ByteView StateAddresses::get_code(const evmc::address& address) const 
     return initial_ibs_.get_code(address);
 }
 
+void StateAddresses::remove(const evmc::address& address) noexcept {
+    balances_.erase(address);
+    nonces_.erase(address);
+    codes_.erase(address);
+}
+
+bool StateAddresses::exists(const evmc::address& address) const noexcept {
+    if (balances_.contains(address) || nonces_.contains(address) || codes_.contains(address)) {
+        return true;
+    }
+    return initial_ibs_.exists(address);
+}
+
 void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
@@ -1204,7 +1217,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
 
     for (const auto& address : intra_block_state.touched()) {
         auto initial_exists = state_addresses_.exists(address);
-        auto exists = intra_block_state.exists(address);
+        auto exists = intra_block_state.exists(address) && !intra_block_state.is_self_destructed(address);
         auto& diff_storage = diff_storage_[address];
 
         auto address_key = address_to_hex(address);
@@ -1305,14 +1318,18 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
         << ", #touched: " << intra_block_state.touched().size();
 
     for (auto& address : intra_block_state.touched()) {
-        auto balance = intra_block_state.get_balance(address);
-        state_addresses_.set_balance(address, balance);
+        if (intra_block_state.exists(address) && !intra_block_state.is_self_destructed(address)) {
+            auto balance = intra_block_state.get_balance(address);
+            state_addresses_.set_balance(address, balance);
 
-        auto nonce = intra_block_state.get_nonce(address);
-        state_addresses_.set_nonce(address, nonce);
+            auto nonce = intra_block_state.get_nonce(address);
+            state_addresses_.set_nonce(address, nonce);
 
-        auto code = intra_block_state.get_code(address);
-        state_addresses_.set_code(address, code);
+            auto code = intra_block_state.get_code(address);
+            state_addresses_.set_code(address, code);
+        } else {
+            state_addresses_.remove(address);
+        }
     }
 }
 

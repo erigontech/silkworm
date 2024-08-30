@@ -79,7 +79,8 @@ using TransferFunc = void(IntraBlockState& state, const evmc::address& sender, c
 // See consensus.Transfer in Erigon
 inline void standard_transfer(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
                               const intx::uint256& amount, bool bailout) {
-    if (!bailout) {
+    // TODO(yperbasis) why is the bailout condition different from Erigon?
+    if (!bailout || state.get_balance(sender) >= amount) {
         state.subtract_from_balance(sender, amount);
     }
     state.add_to_balance(recipient, amount);

@@ -178,15 +178,17 @@ namespace {
                       const intx::uint256& amount, bool bailout) {
         static constexpr auto kTransferLogSig{
             0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4_bytes32};
-        intx::uint256 intput1{state.get_balance(sender)};
-        intx::uint256 intput2{state.get_balance(recipient)};
-        if (!bailout) {
+        intx::uint256 sender_initial_balance{state.get_balance(sender)};
+        intx::uint256 recipient_initial_balance{state.get_balance(recipient)};
+        // TODO(yperbasis) why is the bailout condition different from that of Erigon?
+        if (!bailout || sender_initial_balance >= amount) {
             state.subtract_from_balance(sender, amount);
         }
         state.add_to_balance(recipient, amount);
         intx::uint256 output1{state.get_balance(sender)};
         intx::uint256 output2{state.get_balance(recipient)};
-        add_transfer_log(state, kTransferLogSig, sender, recipient, amount, intput1, intput2, output1, output2);
+        add_transfer_log(state, kTransferLogSig, sender, recipient, amount, sender_initial_balance,
+                         recipient_initial_balance, output1, output2);
     }
 }  // namespace
 

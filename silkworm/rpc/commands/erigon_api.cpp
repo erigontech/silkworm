@@ -401,8 +401,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
-            std::vector<Logs> logs{};
-            reply = make_json_content(request, logs);
+            reply = make_json_content(request, nullptr);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }

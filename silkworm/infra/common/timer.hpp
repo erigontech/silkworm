@@ -32,27 +32,20 @@ namespace silkworm {
 
 using namespace std::chrono_literals;
 
-//! \brief Implementation of an asynchronous timer relying on boost:asio
+//! \brief Implementation of an asynchronous periodic timer relying on boost:asio timer facility
 //! \warning At least one Timer shared pointer must exist when using it (precondition of shared_from_this())
+//! \warning This is achieved by static Timer::create and non-public constructor, subclasses must obey the same rule
 class Timer : public std::enable_shared_from_this<Timer> {
   public:
+    //! Factory method enforcing instances are managed *only* through shared pointers
     //! \param executor [in] : executor running the timer
     //! \param interval [in] : length of wait interval (in milliseconds)
     //! \param call_back [in] : the call back function to be called
     //! \param auto_start [in] : whether to start the timer immediately
-    explicit Timer(
-        const boost::asio::any_io_executor& executor,
-        uint32_t interval,
-        std::function<bool()> call_back,
-        bool auto_start = false)
-        : interval_(interval),
-          timer_(executor),
-          call_back_(std::move(call_back)) {
-        SILKWORM_ASSERT(interval > 0);
-        if (auto_start) {
-            start();
-        }
-    };
+    static std::shared_ptr<Timer> create(const boost::asio::any_io_executor& executor,
+                                         uint32_t interval,
+                                         std::function<bool()> call_back,
+                                         bool auto_start = false);
 
     ~Timer() { stop(); }
 
@@ -75,6 +68,16 @@ class Timer : public std::enable_shared_from_this<Timer> {
 
     //! \brief Cancels execution of awaiting callback and, if still in running state, submits timer for a new interval
     void reset() { (void)timer_.cancel(); }
+
+  protected:
+    //! \brief Not public to force creation only through Timer::create
+    //! \param executor [in] : executor running the timer
+    //! \param interval [in] : length of wait interval (in milliseconds)
+    //! \param call_back [in] : the call back function to be called
+    Timer(const boost::asio::any_io_executor& executor, uint32_t interval, std::function<bool()> call_back)
+        : interval_(interval), timer_(executor), call_back_(std::move(call_back)) {
+        SILKWORM_ASSERT(interval > 0);
+    };
 
   private:
     //! \brief Launches async timer

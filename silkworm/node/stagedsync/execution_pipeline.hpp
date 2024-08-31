@@ -68,6 +68,7 @@ class ExecutionPipeline : public Stoppable {
     std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
     class LogTimer;                      // Timer for async log scheduling
     std::shared_ptr<LogTimer> make_log_timer();
+    class LogTimerImpl;
 };
 
 }  // namespace silkworm::stagedsync

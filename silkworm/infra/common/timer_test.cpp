@@ -39,7 +39,7 @@ TEST_CASE("Timer lifecycle race condition") {
         bool timer_expired{false};
         SECTION(description) {
             {
-                auto async_timer = std::make_shared<Timer>(io_context.get_executor(), interval, [&timer_expired]() -> bool {
+                auto async_timer = Timer::create(io_context.get_executor(), interval, [&timer_expired]() -> bool {
                     timer_expired = true;
                     return timer_expired;
                 });

@@ -16,6 +16,8 @@
 
 #include "execution_pipeline.hpp"
 
+#include <memory>
+
 #include <absl/strings/str_format.h>
 #include <magic_enum.hpp>
 
@@ -48,14 +50,15 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 class ExecutionPipeline::LogTimer : public Timer {
     ExecutionPipeline* pipeline_;
 
-  public:
+  protected:
     LogTimer(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
-        : Timer{
-              executor,
-              interval_seconds * 1'000,
-              [this] { return expired(); },
-              /*.auto_start=*/true},
-          pipeline_{pipeline} {}
+        : Timer{executor, interval_seconds * 1'000, [this] { return expired(); }}, pipeline_{pipeline} {}
+
+  public:
+    static std::shared_ptr<LogTimer> create(const boost::asio::any_io_executor& executor,
+                                            ExecutionPipeline* pipeline,
+                                            uint32_t interval_seconds,
+                                            bool auto_start = true);
 
     bool expired() {
         if (pipeline_->is_stopping()) {
@@ -67,12 +70,28 @@ class ExecutionPipeline::LogTimer : public Timer {
     }
 };
 
+class ExecutionPipeline::LogTimerImpl : public ExecutionPipeline::LogTimer {
+  public:
+    LogTimerImpl(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
+        : ExecutionPipeline::LogTimer(executor, pipeline, interval_seconds) {}
+};
+
+std::shared_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::LogTimer::create(const boost::asio::any_io_executor& executor,
+                                                                                 ExecutionPipeline* pipeline,
+                                                                                 uint32_t interval_seconds,
+                                                                                 bool auto_start) {
+    auto log_timer = std::make_shared<LogTimerImpl>(executor, pipeline, interval_seconds);
+    if (auto_start) log_timer->start();
+    return log_timer;
+}
+
 std::shared_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
     // Create as shared pointer because at least one must exist as required by std::enable_shared_from_this
-    return std::make_shared<LogTimer>(
+    auto log_timer = LogTimer::create(
         this->node_settings_->asio_context.get_executor(),
         this,
         this->node_settings_->sync_loop_log_interval_seconds);
+    return log_timer;
 }
 
 ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)

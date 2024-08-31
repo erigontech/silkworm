@@ -30,11 +30,6 @@ set(PRIVATE_LIBS
     silkworm_rpcdaemon
 )
 
-# Temporarily skip unit test runner for silkworm_capi target in ASAN build (failures after PR #1879)
-if(SILKWORM_SANITIZE)
-  set(NO_TEST "NO_TEST")
-endif()
-
 # cmake-format: off
 silkworm_library(
   ${TARGET}

@@ -245,7 +245,7 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
     BitTorrentClientForTest client{settings};
     lt::aux::stack_allocator allocator;
     lt::add_torrent_params params = lt::parse_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-    params.save_path = settings.repository_path;
+    params.save_path = settings.repository_path.string();
     lt::torrent_handle handle = client.add_torrent(params);
 
     SECTION("lt::add_torrent_alert is handled") {

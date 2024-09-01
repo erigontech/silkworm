@@ -23,7 +23,6 @@
 
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/infra/common/timer.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
@@ -46,53 +45,6 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 #else
 static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
-
-class ExecutionPipeline::LogTimer : public Timer {
-    ExecutionPipeline* pipeline_;
-
-  protected:
-    LogTimer(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
-        : Timer{executor, interval_seconds * 1'000, [this] { return expired(); }}, pipeline_{pipeline} {}
-
-  public:
-    static std::shared_ptr<LogTimer> create(const boost::asio::any_io_executor& executor,
-                                            ExecutionPipeline* pipeline,
-                                            uint32_t interval_seconds,
-                                            bool auto_start = true);
-
-    bool expired() {
-        if (pipeline_->is_stopping()) {
-            log::Info(pipeline_->get_log_prefix()) << "stopping ...";
-            return false;
-        }
-        log::Info(pipeline_->get_log_prefix(), pipeline_->current_stage_->second->get_log_progress());
-        return true;
-    }
-};
-
-class ExecutionPipeline::LogTimerImpl : public ExecutionPipeline::LogTimer {
-  public:
-    LogTimerImpl(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
-        : ExecutionPipeline::LogTimer(executor, pipeline, interval_seconds) {}
-};
-
-std::shared_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::LogTimer::create(const boost::asio::any_io_executor& executor,
-                                                                                 ExecutionPipeline* pipeline,
-                                                                                 uint32_t interval_seconds,
-                                                                                 bool auto_start) {
-    auto log_timer = std::make_shared<LogTimerImpl>(executor, pipeline, interval_seconds);
-    if (auto_start) log_timer->start();
-    return log_timer;
-}
-
-std::shared_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
-    // Create as shared pointer because at least one must exist as required by std::enable_shared_from_this
-    auto log_timer = LogTimer::create(
-        this->node_settings_->asio_context.get_executor(),
-        this,
-        this->node_settings_->sync_loop_log_interval_seconds);
-    return log_timer;
-}
 
 ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
@@ -411,6 +363,24 @@ std::string ExecutionPipeline::get_log_prefix() const {
                            current_stage_number_,
                            current_stages_count_,
                            current_stage_->first);
+}
+
+std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
+    auto log_timer = Timer::create(
+        this->node_settings_->asio_context.get_executor(),
+        this->node_settings_->sync_loop_log_interval_seconds * 1'000,
+        [this]() { return log_timer_expired(); },
+        /*auto_start=*/true);
+    return log_timer;
+}
+
+bool ExecutionPipeline::log_timer_expired() {
+    if (is_stopping()) {
+        log::Info(get_log_prefix()) << "stopping ...";
+        return false;
+    }
+    log::Info(get_log_prefix(), current_stage_->second->get_log_progress());
+    return true;
 }
 
 }  // namespace silkworm::stagedsync

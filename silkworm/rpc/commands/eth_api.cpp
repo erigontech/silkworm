@@ -461,8 +461,8 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
         if (!block_with_hash) {
             reply = make_json_content(request, nullptr);
         } else {
-           auto ommers = block_with_hash->block.ommers.size();
-           reply = make_json_content(request, to_quantity(ommers));
+            auto ommers = block_with_hash->block.ommers.size();
+            reply = make_json_content(request, to_quantity(ommers));
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -1434,7 +1434,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
         if (!error) {
             bundle_info.bundle_hash = hash_of(hash_data);
             reply = make_json_content(request, bundle_info);
-        } 
+        }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {

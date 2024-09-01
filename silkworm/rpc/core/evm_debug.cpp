@@ -275,9 +275,10 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             DebugLog newlog;
             newlog.pc = log.pc + 1;
             newlog.op = get_opcode_name(opcode_names_, OP_STOP);
-            newlog.gas = log.gas;
+            newlog.gas = log.gas - log.gas_cost;
             newlog.gas_cost = 0;
             newlog.depth = log.depth;
+            newlog.memory = log.memory;
             logs_.push_back(newlog);
         }
     }

@@ -84,7 +84,7 @@ BitTorrentClient::~BitTorrentClient() {
 }
 
 void BitTorrentClient::add_info_hash(std::string_view name, std::string_view info_hash) {
-    add_info_hash(std::move(name), std::move(info_hash), kBestTrackers);
+    add_info_hash(name, info_hash, kBestTrackers);
 }
 
 void BitTorrentClient::add_info_hash(std::string_view name, std::string_view info_hash, std::vector<std::string> trackers) {

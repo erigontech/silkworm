@@ -21,7 +21,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/execution/api/direct_client.hpp>
 #include <silkworm/node/settings.hpp>

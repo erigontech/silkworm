@@ -184,13 +184,7 @@ Task<void> NodeImpl::start_backend_kv_grpc_server() {
 
 Task<void> NodeImpl::start_bittorrent_client() {
     if (settings_.snapshot_settings.bittorrent_settings.seeding) {
-        auto run = [this]() {
-            bittorrent_client_->execute_loop();
-        };
-        auto stop = [this]() {
-            bittorrent_client_->stop();
-        };
-        co_await concurrency::async_thread(std::move(run), std::move(stop), "bit-torrent");
+        co_await bittorrent_client_->async_run("bit-torrent");
     }
 }
 

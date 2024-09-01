@@ -83,9 +83,12 @@ struct WebSessionMock : public WebSession {
     MOCK_METHOD((Task<WebSession::StringResponse>), https_get, (const urls::url&, std::string_view, const WebSession::HeaderFields&), (const, override));
 };
 
+static const std::string kErigon2Snapshots{"https://erigon2-v1-snapshots-mainnet.erigon.network"};
+static boost::urls::url make_e2_snapshots_provider_url() {
+    return boost::urls::url{kErigon2Snapshots};
+}
+
 struct WebSeedClientTest : public test_util::ContextTestBase {
-    inline static const auto kErigon2Snapshots{"https://erigon2-v1-snapshots-mainnet.erigon.network"};
-    inline static const boost::urls::url kErigon2SnapshotsUrl{kErigon2Snapshots};
     snapshots::Config known_config{snapshots::Config::lookup_known_config(/*chain_id=*/1, /*whitelist=*/{})};
     std::unique_ptr<WebSessionMock> session{std::make_unique<WebSessionMock>()};
     WebSeedClientForTest client{{kErigon2Snapshots}, known_config.preverified_snapshots()};
@@ -98,13 +101,13 @@ TEST_CASE("WebSeedClientForTest::WebSeedClientForTest", "[db][snapshot][bittorre
 
 TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::discover_torrents", "[db][snapshot][bittorrent]") {
     SECTION("empty") {
-        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _, _))
+        EXPECT_CALL(*session, https_get(make_e2_snapshots_provider_url(), _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> { co_return WebSession::StringResponse{}; }));
         WebSeedClientForTest ws_client{std::move(session), {kErigon2Snapshots}, known_config.preverified_snapshots()};
         CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("invalid manifest") {
-        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _, _))
+        EXPECT_CALL(*session, https_get(make_e2_snapshots_provider_url(), _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> {
                 WebSession::StringResponse rsp;
                 rsp.body().assign("\000\001");
@@ -114,7 +117,7 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::discover_torrents", "
         CHECK(spawn_and_wait(ws_client.discover_torrents()).empty());
     }
     SECTION("valid manifest") {
-        EXPECT_CALL(*session, https_get(kErigon2SnapshotsUrl, _, _))
+        EXPECT_CALL(*session, https_get(make_e2_snapshots_provider_url(), _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<WebSession::StringResponse> {
                 WebSession::StringResponse rsp;
                 rsp.body().assign(kValidManifestContent);
@@ -136,10 +139,10 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::discover_torrents", "
 }
 
 TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::validate_torrent_file", "[db][snapshot][bittorrent]") {
-    CHECK(client.validate_torrent_file(kErigon2SnapshotsUrl, "v1-010000-010500-bodies.seg.torrent", kValidTorrentContentAscii));
+    CHECK(client.validate_torrent_file(make_e2_snapshots_provider_url(), "v1-010000-010500-bodies.seg.torrent", kValidTorrentContentAscii));
 
-    CHECK_THROWS_AS(client.validate_torrent_file(kErigon2SnapshotsUrl, "v1-010000-010500-bodies.seg.torrent", ""), boost::system::system_error);
-    CHECK_THROWS_AS(client.validate_torrent_file(kErigon2SnapshotsUrl, "v1-010000-010500-bodies.seg.torrent", "AA"), boost::system::system_error);
+    CHECK_THROWS_AS(client.validate_torrent_file(make_e2_snapshots_provider_url(), "v1-010000-010500-bodies.seg.torrent", ""), boost::system::system_error);
+    CHECK_THROWS_AS(client.validate_torrent_file(make_e2_snapshots_provider_url(), "v1-010000-010500-bodies.seg.torrent", "AA"), boost::system::system_error);
 }
 
 TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::is_whitelisted", "[db][snapshot][bittorrent]") {

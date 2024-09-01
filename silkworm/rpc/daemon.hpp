@@ -24,7 +24,7 @@
 #include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/kv/state_changes_stream.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/common/version.hpp>

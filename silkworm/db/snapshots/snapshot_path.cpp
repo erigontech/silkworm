@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "path.hpp"
+#include "snapshot_path.hpp"
 
 #include <algorithm>
 #include <charconv>

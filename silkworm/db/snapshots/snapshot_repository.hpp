@@ -30,11 +30,11 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/db/snapshots/common/iterator/map_values_view.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/path.hpp>
-#include <silkworm/db/snapshots/settings.hpp>
 #include <silkworm/db/snapshots/snapshot_and_index.hpp>
 #include <silkworm/db/snapshots/snapshot_bundle.hpp>
 #include <silkworm/db/snapshots/snapshot_bundle_factory.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
 
 namespace silkworm::snapshots {
 

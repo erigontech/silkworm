@@ -50,9 +50,6 @@ static constexpr std::string_view kManifestTarget{"/manifest.txt"sv};
 //! The BitTorrent file extension for torrent files
 static constexpr std::string_view kTorrentExtension{".torrent"sv};
 
-//! The size of BitTorrent file extension
-static const std::size_t kTorrentExtensionSize{std::strlen(kTorrentExtension.data())};
-
 //! Timeout for parallel async download of manifest files in msec
 static const std::chrono::milliseconds kParallelManifestDownloadTimeout{60'000};
 
@@ -168,7 +165,7 @@ TorrentInfoPtr WebSeedClient::validate_torrent_file(const urls::url& provider_ur
     const lt::sha1_hash torrent_hash{info->info_hashes().get_best()};
 
     std::string_view file_name{torrent_file_name};
-    file_name.remove_suffix(kTorrentExtensionSize);
+    file_name.remove_suffix(kTorrentExtension.size());
 
     if (!is_whitelisted(file_name, lt::aux::to_hex(torrent_hash))) {
         if (WebSeedClient::is_caplin_segment(file_name)) {

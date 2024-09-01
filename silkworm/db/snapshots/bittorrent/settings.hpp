@@ -30,9 +30,6 @@ struct BitTorrentSettings {
     //! Directory path where torrent files will be stored
     std::filesystem::path repository_path{kDefaultTorrentRepoPath};
 
-    //! Path for magnet links
-    std::optional<std::string> magnets_file_path;
-
     //! Time interval between two alert polling loops
     std::chrono::seconds wait_between_alert_polls{1};
 

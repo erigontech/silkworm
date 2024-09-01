@@ -30,8 +30,8 @@
 #include "blocks/headers/header_snapshot_freezer.hpp"
 #include "prune_mode.hpp"
 #include "snapshot_freezer.hpp"
-#include "snapshots/path.hpp"
 #include "snapshots/snapshot_bundle.hpp"
+#include "snapshots/snapshot_path.hpp"
 #include "snapshots/snapshot_writer.hpp"
 #include "transactions/txn_snapshot_freezer.hpp"
 

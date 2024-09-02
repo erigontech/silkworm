@@ -31,7 +31,7 @@ struct EngineRpcSettings {
     rpc::InterfaceLogSettings engine_ifc_log_settings{.ifc_name = "engine_rpc_api"};
     std::string private_api_addr{kDefaultPrivateApiAddr};
     log::Level log_verbosity{log::Level::kInfo};
-    concurrency::WaitMode wait_mode{concurrency::WaitMode::blocking};
+    concurrency::WaitMode wait_mode{concurrency::WaitMode::kBlocking};
     std::optional<std::string> jwt_secret_file;
 };
 

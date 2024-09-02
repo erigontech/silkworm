@@ -27,7 +27,7 @@
 #include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
-#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/transactions/txn_queries.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -1208,7 +1208,7 @@ bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& bl
 }
 
 void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
-    constexpr bool throw_notfound{false};
+    const bool throw_notfound{false};
 
     // Try to read N headers from the database
     size_t read_count{0};

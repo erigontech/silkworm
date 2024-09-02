@@ -24,8 +24,8 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/etl/collector.hpp>
-#include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {

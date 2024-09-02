@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/server/server_settings.hpp>
 #include <silkworm/node/common/node_settings.hpp>

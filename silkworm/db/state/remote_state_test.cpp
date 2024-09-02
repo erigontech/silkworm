@@ -46,7 +46,7 @@ struct RemoteStateTest : public silkworm::test_util::ContextTestBase {
 };
 
 TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buffer]") {
-    constexpr evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
+    const evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
 
     SECTION("read_code for empty hash") {
         EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))

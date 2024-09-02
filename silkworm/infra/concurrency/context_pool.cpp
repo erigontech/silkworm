@@ -38,19 +38,19 @@ Context::Context(std::size_t context_id, WaitMode wait_mode)
 
 void Context::execute_loop() {
     switch (wait_mode_) {
-        case WaitMode::backoff:
+        case WaitMode::kBackoff:
             execute_loop_single_threaded(YieldingIdleStrategy{});  // TODO(canepat) replace with BackOffIdleStrategy
             break;
-        case WaitMode::blocking:
+        case WaitMode::kBlocking:
             execute_loop_multi_threaded();
             break;
-        case WaitMode::yielding:
+        case WaitMode::kYielding:
             execute_loop_single_threaded(YieldingIdleStrategy{});
             break;
-        case WaitMode::sleeping:
+        case WaitMode::kSleeping:
             execute_loop_single_threaded(SleepingIdleStrategy{});
             break;
-        case WaitMode::busy_spin:
+        case WaitMode::kBusySpin:
             execute_loop_single_threaded(BusySpinIdleStrategy{});
             break;
     }

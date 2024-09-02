@@ -67,9 +67,9 @@ Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nl
                 break;
             }
             txn.queued_in_pool = true;
-            if (txpool_transactions[i].transaction_type == txpool::TransactionType::QUEUED) {
+            if (txpool_transactions[i].transaction_type == txpool::TransactionType::kQueued) {
                 transactions_content["queued"][sender].insert(std::make_pair(std::to_string(txn.nonce), txn));
-            } else if (txpool_transactions[i].transaction_type == txpool::TransactionType::PENDING) {
+            } else if (txpool_transactions[i].transaction_type == txpool::TransactionType::kPending) {
                 transactions_content["pending"][sender].insert(std::make_pair(std::to_string(txn.nonce), txn));
             } else {
                 transactions_content["baseFee"][sender].insert(std::make_pair(std::to_string(txn.nonce), txn));

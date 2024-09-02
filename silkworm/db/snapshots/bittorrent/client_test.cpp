@@ -51,24 +51,22 @@ class BitTorrentClientForTest : public BitTorrentClient {
     using BitTorrentClient::request_save_resume_data;
     using BitTorrentClient::request_torrent_updates;
     using BitTorrentClient::save_file;
+
+    lt::torrent_handle add_torrent(lt::add_torrent_params params) {
+        return session_.add_torrent(std::move(params));
+    }
 };
 
-//! Temporary repository for torrent files
-class TestRepository {
+class ClientThread {
   public:
-    explicit TestRepository() = default;
-    ~TestRepository() { magnet_file_stream_.close(); }
-
-    std::filesystem::path path() const { return dir_.path(); }
-    std::filesystem::path magnets_file_path() const { return magnets_file_path_; }
-
-    void add_magnet(const std::string& magnet_link) { magnet_file_stream_ << magnet_link; }
-    void flush() { magnet_file_stream_.flush(); }
+    explicit ClientThread(BitTorrentClient& client)
+        : thread_([&client]() { client.execution_loop(); }) {}
+    ~ClientThread() {
+        thread_.join();
+    }
 
   private:
-    TemporaryDirectory dir_;
-    std::filesystem::path magnets_file_path_{dir_.path() / "magnet_links"};
-    std::ofstream magnet_file_stream_{magnets_file_path_};
+    std::thread thread_;
 };
 
 //! Generate test data for resume file content
@@ -108,25 +106,22 @@ static inline std::vector<char> test_resume_data() {
 }
 
 TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent]") {
+    TemporaryDirectory tmp_dir;
+    BitTorrentSettings settings;
+    settings.repository_path = tmp_dir.path();
+
     SECTION("default settings") {
-        TemporaryDirectory tmp_dir;
-        CHECK_NOTHROW(BitTorrentClient{BitTorrentSettings{.repository_path = tmp_dir.path()}});
+        CHECK_NOTHROW(BitTorrentClient{settings});
     }
 
-    TestRepository repo;
-    BitTorrentSettings settings{};
-    settings.repository_path = repo.path().string();
-    settings.magnets_file_path = repo.magnets_file_path().string();
-
     SECTION("one invalid magnet link") {
+        BitTorrentClient client{settings};
         // The following magnet link has malformed URL format ("unsupported URL protocol")
-        repo.add_magnet("magnet::?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-        repo.flush();
-        CHECK_THROWS_AS(BitTorrentClient{settings}, std::runtime_error);
+        CHECK_THROWS_AS(client.add_magnet_uri("magnet::?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878"), std::runtime_error);
     }
 
     SECTION("nonempty resume dir") {
-        const auto resume_dir_path = repo.path() / BitTorrentClient::kResumeDirName;
+        const auto resume_dir_path = settings.repository_path / BitTorrentClient::kResumeDirName;
         std::filesystem::create_directories(resume_dir_path);
         const auto ignored_file{resume_dir_path / "a.txt"};
         BitTorrentClientForTest::save_file(ignored_file, std::vector<char>{});
@@ -145,74 +140,53 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
 TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
-    TestRepository repo;
-    BitTorrentSettings settings{};
-    settings.repository_path = repo.path().string();
-
-    SECTION("no info hash") {
-        BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
-        CHECK_NOTHROW(client.stop());
-        client_thread.join();
-    }
+    TemporaryDirectory tmp_dir;
+    BitTorrentSettings settings;
+    settings.repository_path = tmp_dir.path();
+    static const std::string kTrackerUrl{"udp://127.0.0.1:1337/announce"};
 
     SECTION("invalid info hash") {
         BitTorrentClient client{settings};
-        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca8");
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca8", {kTrackerUrl});
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 
     SECTION("valid info hash") {
         BitTorrentClient client{settings};
-        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca878");
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca878", {kTrackerUrl});
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 }
 
 TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
-    TestRepository repo;
-    BitTorrentSettings settings{};
-    settings.repository_path = repo.path().string();
-    settings.magnets_file_path = repo.magnets_file_path().string();
-
-    SECTION("empty magnet file") {
-        BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
-        CHECK_NOTHROW(client.stop());
-        client_thread.join();
-    }
+    TemporaryDirectory tmp_dir;
+    BitTorrentSettings settings;
+    settings.repository_path = tmp_dir.path();
 
     SECTION("nonempty magnet file") {
-        repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-        repo.flush();
         BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        client.add_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 
     SECTION("nonempty magnet file w/ startup verification") {
-        repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-        repo.flush();
         settings.verify_on_startup = true;
         BitTorrentClient client{settings};
-        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        client.add_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        client_thread.join();
     }
 }
 
 TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
-    TestRepository repo;
-    BitTorrentSettings settings{};
-    settings.repository_path = repo.path().string();
-    settings.magnets_file_path = repo.magnets_file_path().string();
+    TemporaryDirectory tmp_dir;
+    BitTorrentSettings settings;
+    settings.repository_path = tmp_dir.path();
 
     SECTION("before starting") {
         BitTorrentClient client{settings};
@@ -221,9 +195,8 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
 
     SECTION("after empty execution loop") {
         BitTorrentClient client{settings};
-        std::thread execution_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        execution_thread.join();
     }
 
 // Exclude from sanitizer builds due to false positive: https://gcc.gnu.org/bugzilla//show_bug.cgi?id=101978
@@ -231,9 +204,8 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
     SECTION("interrupt seeding execution loop on separate thread") {
         settings.seeding = true;
         BitTorrentClient client{settings};
-        std::thread execution_thread{[&client]() { client.execute_loop(); }};
+        ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
-        execution_thread.join();
     }
 #endif  // SILKWORM_SANITIZE
 }
@@ -241,10 +213,9 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
 TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bittorrent]") {
     SECTION("trigger save resume data twice") {
         constexpr std::chrono::seconds kResumeDataSaveInterval{1};
-        TestRepository repo;
-        BitTorrentSettings settings{};
-        settings.repository_path = repo.path().string();
-        settings.magnets_file_path = repo.magnets_file_path().string();
+        TemporaryDirectory tmp_dir;
+        BitTorrentSettings settings;
+        settings.repository_path = tmp_dir.path();
         settings.resume_data_save_interval = kResumeDataSaveInterval;
         BitTorrentClientForTest client{settings};
         CHECK_NOTHROW(client.request_torrent_updates(false));
@@ -255,14 +226,12 @@ TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bit
 
 TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]") {
     SECTION("one empty magnet link") {
-        TestRepository repo;
-        // The following magnet link is empty
-        repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-        repo.flush();
-        BitTorrentSettings settings{};
-        settings.repository_path = repo.path().string();
-        settings.magnets_file_path = repo.magnets_file_path().string();
+        TemporaryDirectory tmp_dir;
+        BitTorrentSettings settings;
+        settings.repository_path = tmp_dir.path();
         BitTorrentClientForTest client{settings};
+        // The following magnet link is empty
+        client.add_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
         CHECK_NOTHROW(client.process_alerts());
     }
 }
@@ -270,16 +239,14 @@ TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]"
 TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
-    TestRepository repo;
-    BitTorrentSettings settings{};
-    settings.repository_path = repo.path().string();
-    settings.magnets_file_path = repo.magnets_file_path().string();
+    TemporaryDirectory tmp_dir;
+    BitTorrentSettings settings;
+    settings.repository_path = tmp_dir.path();
     BitTorrentClientForTest client{settings};
     lt::aux::stack_allocator allocator;
-    lt::session session(lt::settings_pack{});
     lt::add_torrent_params params = lt::parse_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-    params.save_path = "save_path";
-    lt::torrent_handle handle = session.add_torrent(params);
+    params.save_path = settings.repository_path.string();
+    lt::torrent_handle handle = client.add_torrent(params);
 
     SECTION("lt::add_torrent_alert is handled") {
         lt::error_code ec;

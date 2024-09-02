@@ -60,7 +60,7 @@ Task<void> PeerManager::run_in_strand(concurrency::Channel<std::shared_ptr<rlpx:
         if (peers_.size() + handshaking_peers_.size() >= max_peers_) {
             if (drop_peer_tasks_count_ < kMaxSimultaneousDropPeerTasks) {
                 drop_peer_tasks_count_++;
-                drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::DisconnectReason::TooManyPeers));
+                drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::DisconnectReason::kTooManyPeers));
             } else {
                 log::Warning("sentry") << "PeerManager::run_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
             }

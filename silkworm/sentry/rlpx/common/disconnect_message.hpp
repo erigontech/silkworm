@@ -32,7 +32,7 @@ struct DisconnectMessage {
     [[nodiscard]] static DisconnectMessage from_message(const sentry::Message& message);
 
     static const uint8_t kId;
-    DisconnectReason reason{DisconnectReason::DisconnectRequested};
+    DisconnectReason reason{DisconnectReason::kDisconnectRequested};
 };
 
 }  // namespace silkworm::sentry::rlpx

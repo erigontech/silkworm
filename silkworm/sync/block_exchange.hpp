@@ -42,13 +42,13 @@ class BlockExchange : public ActiveComponent {
 
     void initial_state(std::vector<BlockHeader> last_headers);  // set the initial state of the sync
 
-    enum class Target_Tracking : uint8_t {
+    enum class TargetTracking : uint8_t {
         kByAnnouncements,
         kByNewPayloads
     };
-    void download_blocks(BlockNum current_height, Target_Tracking);  // start downloading blocks from current_height
+    void download_blocks(BlockNum current_height, TargetTracking);  // start downloading blocks from current_height
 
-    void new_target_block(std::shared_ptr<Block> block);  // set a new target block to download, to use with Target_Tracking::kByNewPayloads
+    void new_target_block(std::shared_ptr<Block> block);  // set a new target block to download, to use with TargetTracking::kByNewPayloads
 
     void stop_downloading();  // stop downloading blocks
 

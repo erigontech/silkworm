@@ -27,7 +27,7 @@
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/snapshots/config.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/path.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
@@ -93,18 +93,6 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
         SILK_WARN << "SnapshotSync: downloading missing snapshots";
     }
 
-    for (auto [block_from, block_to] : missing_block_ranges) {
-        for (const auto type : magic_enum::enum_values<SnapshotType>()) {
-            auto snapshot_path = SnapshotPath::from(repository_->path(), kSnapshotV1, block_from, block_to, type);
-            if (!snapshot_path.torrent_file_needed()) {
-                continue;
-            }
-            SILK_INFO << "SnapshotSync: seeding a new snapshot [DOING NOTHING NOW]";
-            // TODO(canepat) create torrent file
-            // client.add_torrent(snapshot_path.create_torrent_file());
-        }
-    }
-
     const auto snapshot_config = Config::lookup_known_config(config_.chain_id, snapshot_file_names);
     if (snapshot_config.preverified_snapshots().empty()) {
         SILK_ERROR << "SnapshotSync: no preverified snapshots found";
@@ -156,9 +144,9 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     client_thread_ = std::thread([&]() {
         log::set_thread_name("bit-torrent");
         try {
-            client_.execute_loop();
+            client_.execution_loop();
         } catch (const std::exception& ex) {
-            SILK_CRIT << "SnapshotSync: BitTorrentClient execute_loop exception: " << ex.what();
+            SILK_CRIT << "SnapshotSync: BitTorrentClient execution_loop exception: " << ex.what();
             std::terminate();
         }
     });

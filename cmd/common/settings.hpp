@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/settings.hpp>
 #include <silkworm/rpc/settings.hpp>

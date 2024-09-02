@@ -57,7 +57,7 @@ size_t BodySequence::outstanding_requests(time_point_t tp) const {
 }
 
 Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId& peer) {
-    Penalty penalty = NoPenalty;
+    Penalty penalty = kNoPenalty;
     BlockNum start_block = std::numeric_limits<BlockNum>::max();
     size_t count = 0;
 
@@ -87,7 +87,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             exact_request = body_requests_.find_by_hash(oh, tr);
 
             if (exact_request == body_requests_.end()) {
-                // penalty = BadBlockPenalty; // Erigon doesn't penalize the peer maybe because can be a late response but
+                // penalty = kBadBlockPenalty; // Erigon doesn't penalize the peer maybe because can be a late response but
                 //  todo: here we are sure it is not a late response, should we penalize the peer?
                 SILK_TRACE << "BodySequence: body rejected, no matching requests";
                 statistics_.reject_causes.not_requested += 1;
@@ -127,11 +127,11 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
 }
 
 Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
-    if (block.header.number <= highest_body_in_output_) return Penalty::NoPenalty;  // already in db, ignore
+    if (block.header.number <= highest_body_in_output_) return Penalty::kNoPenalty;  // already in db, ignore
 
     announced_blocks_.add(block);  // save for later usage
 
-    return Penalty::NoPenalty;
+    return Penalty::kNoPenalty;
 }
 
 std::shared_ptr<OutboundMessage> BodySequence::request_bodies(time_point_t tp) {
@@ -194,7 +194,7 @@ std::vector<PeerPenalization> BodySequence::renew_stale_requests(
             min_block = std::max(min_block, past_request.block_height);
 
             // Erigon increment a penalization counter for the peer, but it doesn't use it
-            // penalizations.emplace_back({Penalty::BadBlockPenalty, });
+            // penalizations.emplace_back({Penalty::kBadBlockPenalty, });
 
             start_block = std::min(start_block, past_request.block_height);
             count++;

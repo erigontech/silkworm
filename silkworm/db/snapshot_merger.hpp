@@ -17,7 +17,7 @@
 #pragma once
 
 #include "data_migration.hpp"
-#include "snapshots/repository.hpp"
+#include "snapshots/snapshot_repository.hpp"
 
 namespace silkworm::db {
 

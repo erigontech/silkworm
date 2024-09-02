@@ -148,7 +148,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
 
-        REQUIRE(penalty == NoPenalty);
+        REQUIRE(penalty == kNoPenalty);
         REQUIRE(request_status.ready);
         REQUIRE(request_status.body == block1);
         REQUIRE(request_status.block_height == 1);           // same as before
@@ -231,7 +231,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         [[maybe_unused]] auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
 
-        // REQUIRE(penalty == BadBlockPenalty); // for now we choose to not penalize the peer
+        // REQUIRE(penalty == kBadBlockPenalty); // for now we choose to not penalize the peer
         REQUIRE(!request_status.ready);
         REQUIRE(request_status.block_height == 1);           // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
@@ -273,7 +273,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         // another one
         auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
 
-        REQUIRE(penalty == NoPenalty);                       // correct?
+        REQUIRE(penalty == kNoPenalty);                      // correct?
         REQUIRE(request_status.ready);                       // same as before
         REQUIRE(request_status.block_height == 1);           // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
@@ -314,7 +314,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
 
-        REQUIRE(penalty == NoPenalty);
+        REQUIRE(penalty == kNoPenalty);
         REQUIRE(request_status.ready);  // accepted
         REQUIRE(request_status.block_height == 1);
         REQUIRE(request_status.block_hash == header1_hash);

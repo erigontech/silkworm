@@ -109,7 +109,7 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
 
     if (penalize_peer_id) {
         malformed_message_subscription();
-        co_await penalize_peer_async(penalize_peer_id.value(), BadBlockPenalty);
+        co_await penalize_peer_async(penalize_peer_id.value(), kBadBlockPenalty);
         co_return;
     }
 
@@ -332,7 +332,7 @@ std::string SentryClient::request_peer_info(PeerId peer_id) {
 }
 
 Task<void> SentryClient::penalize_peer_async(PeerId peer_id, Penalty penalty) {
-    if (penalty == Penalty::NoPenalty) {
+    if (penalty == Penalty::kNoPenalty) {
         co_return;
     }
     auto peer_public_key = sentry::EccPublicKey::deserialize(peer_id);

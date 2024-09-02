@@ -29,10 +29,10 @@ static Bytes rlp_encode(const auto value) {
 }
 
 TEST_CASE("DisconnectMessage.rlp_decode") {
-    CHECK(DisconnectMessage::rlp_decode(rlp_encode(std::vector<uint8_t>{4})).reason == DisconnectReason::TooManyPeers);
-    CHECK(DisconnectMessage::rlp_decode(rlp_encode(uint8_t(4))).reason == DisconnectReason::TooManyPeers);
-    CHECK(DisconnectMessage::rlp_decode(rlp_encode(std::vector<uint8_t>{})).reason == DisconnectReason::DisconnectRequested);
-    CHECK(DisconnectMessage::rlp_decode(Bytes{}).reason == DisconnectReason::DisconnectRequested);
+    CHECK(DisconnectMessage::rlp_decode(rlp_encode(std::vector<uint8_t>{4})).reason == DisconnectReason::kTooManyPeers);
+    CHECK(DisconnectMessage::rlp_decode(rlp_encode(uint8_t(4))).reason == DisconnectReason::kTooManyPeers);
+    CHECK(DisconnectMessage::rlp_decode(rlp_encode(std::vector<uint8_t>{})).reason == DisconnectReason::kDisconnectRequested);
+    CHECK(DisconnectMessage::rlp_decode(Bytes{}).reason == DisconnectReason::kDisconnectRequested);
 }
 
 }  // namespace silkworm::sentry::rlpx

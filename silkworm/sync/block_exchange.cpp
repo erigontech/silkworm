@@ -264,8 +264,8 @@ void BlockExchange::initial_state(std::vector<BlockHeader> last_headers) {
     accept(message);
 }
 
-void BlockExchange::download_blocks(BlockNum current_height, Target_Tracking) {
-    // todo: handle the Target_Tracking mode
+void BlockExchange::download_blocks(BlockNum current_height, TargetTracking) {
+    // todo: handle the TargetTracking mode
 
     auto message = std::make_shared<InternalMessage<void>>(
         [this, current_height](HeaderChain& hc, BodySequence& bc) {

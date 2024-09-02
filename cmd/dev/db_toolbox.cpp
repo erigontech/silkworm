@@ -46,8 +46,8 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/repository.hpp>
-#include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

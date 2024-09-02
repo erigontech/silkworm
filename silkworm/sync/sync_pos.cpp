@@ -74,7 +74,7 @@ Task<void> PoSSync::download_blocks() {
     const auto initial_block_progress = co_await exec_engine_->block_progress();
     auto block_progress = initial_block_progress;
 
-    block_exchange_.download_blocks(block_progress, BlockExchange::Target_Tracking::kByNewPayloads);
+    block_exchange_.download_blocks(block_progress, BlockExchange::TargetTracking::kByNewPayloads);
 
     StopWatch timing(StopWatch::kStart);
     RepeatedMeasure<BlockNum> downloaded_headers(initial_block_progress);

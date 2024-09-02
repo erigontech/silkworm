@@ -42,10 +42,10 @@ using Capabilities = std::vector<std::string>;
 //! ExecutionPayloadV3 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#executionpayloadv3
 struct ExecutionPayload {
     enum Version : uint8_t {
-        V1 = 1,
-        V2 = 2,
-        V3 = 3
-    } version{V1};
+        kV1 = 1,
+        kV2 = 2,
+        kV3 = 3
+    } version{kV1};
 
     BlockNum number{0};
     uint64_t timestamp{0};
@@ -81,10 +81,10 @@ struct ForkChoiceState {
 //! PayloadAttributesV3 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#payloadattributesv3
 struct PayloadAttributes {
     enum Version : uint8_t {
-        V1 = 1,
-        V2 = 2,
-        V3 = 3
-    } version{V1};
+        kV1 = 1,
+        kV2 = 2,
+        kV3 = 3
+    } version{kV1};
 
     uint64_t timestamp{0};
     evmc::bytes32 prev_randao;

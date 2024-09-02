@@ -144,11 +144,11 @@ Task<TransactionsInPool> TransactionPool::get_transactions() {
         const auto& rlp = tx.rlp_tx();
         element.rlp = silkworm::Bytes{rlp.begin(), rlp.end()};
         if (tx.txn_type() == ::txpool::AllReply_TxnType_PENDING) {
-            element.transaction_type = PENDING;
+            element.transaction_type = kPending;
         } else if (tx.txn_type() == ::txpool::AllReply_TxnType_QUEUED) {
-            element.transaction_type = QUEUED;
+            element.transaction_type = kQueued;
         } else {
-            element.transaction_type = BASE_FEE;
+            element.transaction_type = kBaseFee;
         }
         transactions_in_pool.push_back(element);
     }

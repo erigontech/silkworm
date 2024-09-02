@@ -83,7 +83,7 @@ PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
     auto initial_block_progress = spawn_future_and_wait(io_context_, exec_engine_->block_progress());
     auto block_progress = initial_block_progress;
 
-    block_exchange_.download_blocks(initial_block_progress, BlockExchange::Target_Tracking::kByAnnouncements);
+    block_exchange_.download_blocks(initial_block_progress, BlockExchange::TargetTracking::kByAnnouncements);
 
     StopWatch timing(StopWatch::kStart);
     RepeatedMeasure<BlockNum> downloaded_headers(initial_block_progress);

@@ -26,16 +26,16 @@
 using namespace silkworm;
 
 enum Operation {
-    HashAccount,
-    HashStorage,
-    Code,
+    kHashAccount,
+    kHashStorage,
+    kCode,
 };
 
 std::pair<db::MapConfig, db::MapConfig> get_tables_for_checking(Operation operation) {
     switch (operation) {
-        case HashAccount:
+        case kHashAccount:
             return {db::table::kPlainState, db::table::kHashedAccounts};
-        case HashStorage:
+        case kHashStorage:
             return {db::table::kPlainState, db::table::kHashedStorage};
         default:
             return {db::table::kPlainCodeHash, db::table::kHashedCodeHash};
@@ -51,7 +51,7 @@ void check(mdbx::txn& txn, Operation operation) {
     while (data) { /* Loop as long as we have no errors*/
         Bytes mdb_key_as_bytes{db::from_slice(data.key)};
 
-        if (operation == HashAccount) {
+        if (operation == kHashAccount) {
             // Account
             if (data.key.length() != kAddressLength) {
                 data = source_table.to_next(false);
@@ -72,7 +72,7 @@ void check(mdbx::txn& txn, Operation operation) {
             }
             data = source_table.to_next(false);
 
-        } else if (operation == HashStorage) {
+        } else if (operation == kHashStorage) {
             // Storage
             if (data.key.length() != kAddressLength) {
                 data = source_table.to_next(false);
@@ -135,11 +135,11 @@ int main(int argc, char* argv[]) {
         auto txn{env.start_write()};
 
         log::Info() << "Checking Accounts";
-        check(txn, HashAccount);
+        check(txn, kHashAccount);
         log::Info() << "Checking Storage";
-        check(txn, HashStorage);
+        check(txn, kHashStorage);
         log::Info() << "Checking Code Keys";
-        check(txn, Code);
+        check(txn, kCode);
         log::Info() << "All Done!";
     } catch (const std::exception& ex) {
         log::Error() << ex.what();

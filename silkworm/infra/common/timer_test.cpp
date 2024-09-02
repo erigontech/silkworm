@@ -31,8 +31,8 @@ struct TimerTest {
 
 TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
     constexpr static size_t kExpectedExpirations{2};
+    size_t expired_count{0};  // The lambda capture-list content *must* outlive the scheduler execution loop
     for (const auto interval : kIntervals) {
-        size_t expired_count{0};
         auto periodic_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
             ++expired_count;
             if (expired_count == kExpectedExpirations) {  // stop timer scheduler after multiple expirations
@@ -53,12 +53,13 @@ TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
             io_context.run();
             // may be expired multiple times or not depending on interval
         }
+        expired_count = 0;
     }
 }
 
 TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
+    bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
     for (const auto interval : kIntervals) {
-        bool timer_expired{false};
         auto one_shot_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
             io_context.stop();
             timer_expired = true;
@@ -78,18 +79,25 @@ TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
             io_context.run();
             // may be expired or not depending on interval
         }
+        timer_expired = false;
     }
-    SECTION("surely cancelled") {
-        constexpr static uint32_t kLongDurationTimeoutMsec{100'000};
-        bool timer_expired{false};
-        auto one_shot_timer = Timer::create(io_context.get_executor(), kLongDurationTimeoutMsec, [&]() -> bool {
-            io_context.stop();
-            timer_expired = true;
-            return true;
-        });
-        one_shot_timer->stop();
-        io_context.run();
-        CHECK(!timer_expired);
+}
+
+TEST_CASE_METHOD(TimerTest, "Cancellation before expiration", "[infra][common][timer]") {
+    bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
+    for (const auto interval : kIntervals) {
+        SECTION("Duration " + std::to_string(interval) + "ms") {
+            auto async_timer = Timer::create(
+                io_context.get_executor(), interval, [&]() -> bool {
+                    timer_expired = true;
+                    return true;
+                },
+                /*auto_start=*/true);
+            async_timer->stop();
+            CHECK_NOTHROW(io_context.run());
+            CHECK(!timer_expired);
+        }
+        timer_expired = false;
     }
 }
 

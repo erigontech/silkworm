@@ -18,7 +18,11 @@
 
 #include <filesystem>
 
+// Disable warnings raised during compilation of libtorrent
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <libtorrent/add_torrent_params.hpp>
+#pragma GCC diagnostic pop
 
 #include <silkworm/core/common/bytes.hpp>
 

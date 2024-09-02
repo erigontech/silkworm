@@ -36,21 +36,12 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "trackers.hpp"
+
 namespace silkworm::snapshots::bittorrent {
 
 namespace fs = std::filesystem;
 using namespace std::chrono_literals;
-
-//! The 7 best trackers for bittorrent
-const std::vector<std::string> kBestTrackers{
-    "udp://tracker.opentrackr.org:1337/announce",
-    "udp://9.rarbg.com:2810/announce",
-    "udp://tracker.torrent.eu.org:451/announce",
-    "udp://opentracker.i2p.rocks:6969/announce",
-    "udp://open.stealth.si:80/announce",
-    "https://opentracker.i2p.rocks:443/announce",
-    "udp://vibe.sleepyinternetfun.xyz:1738/announce",
-};
 
 std::vector<char> BitTorrentClient::load_file(const fs::path& filename) {
     std::ifstream input_file_stream{filename, std::ios_base::binary};

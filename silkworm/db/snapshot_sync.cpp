@@ -135,6 +135,14 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     std::latch download_done{num_snapshots};
     auto log_completed = [&](const std::filesystem::path& snapshot_file) {
+        // The same snapshot segment may be downloaded multiple times in case of content change over time and
+        // hence notified for completion multiple times. We need to count each snapshot segment just once here
+        static std::unordered_set<std::filesystem::path> snapshot_set;
+        if (snapshot_set.contains(snapshot_file)) {
+            return;
+        }
+        const auto [_, inserted] = snapshot_set.insert(snapshot_file);
+        SILKWORM_ASSERT(inserted);
         SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
                   << " [" << ++completed << "/" << num_snapshots << "]";
         download_done.count_down();
@@ -184,7 +192,7 @@ void SnapshotSync::build_missing_indexes() {
     }
 
     SILK_INFO << "SnapshotSync: " << missing_indexes.size() << " missing indexes to build";
-    size_t total_tasks = missing_indexes.size();
+    const size_t total_tasks = missing_indexes.size();
     std::atomic_size_t done_tasks;
 
     for (const auto& index : missing_indexes) {
@@ -270,7 +278,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
 
     // Update head block header in kHeadHeader table
     const auto canonical_hash{db::read_canonical_header_hash(txn, max_block_available)};
-    ensure(canonical_hash.has_value(), "SnapshotSync::save no canonical head hash found");
+    ensure(canonical_hash.has_value(), "SnapshotSync: no canonical head hash found");
     db::write_head_header_hash(txn, *canonical_hash);
     SILK_INFO << "SnapshotSync: database table HeadHeader updated";
 

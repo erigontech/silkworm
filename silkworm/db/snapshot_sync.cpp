@@ -19,12 +19,15 @@
 #include <atomic>
 #include <exception>
 #include <latch>
+#include <stdexcept>
 
+#include <gsl/util>
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/blocks/headers/header_snapshot.hpp>
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/config.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/snapshot_path.hpp>
@@ -32,6 +35,8 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
 namespace silkworm::db {
@@ -51,71 +56,120 @@ struct PathHasher {
     }
 };
 
-SnapshotSync::SnapshotSync(SnapshotRepository* repository, const ChainConfig& config)
-    : repository_{repository},
-      settings_{repository_->settings()},
-      config_(config),
-      client_{settings_.bittorrent_settings} {
-    ensure(repository_, "SnapshotSync: SnapshotRepository is null");
+SnapshotSync::SnapshotSync(
+    boost::asio::any_io_executor executor,
+    snapshots::SnapshotSettings settings,
+    ChainId chain_id,
+    mdbx::env& chaindata_env,
+    std::filesystem::path tmp_dir_path,
+    stagedsync::StageScheduler& stage_scheduler)
+    : settings_{std::move(settings)},
+      chain_id_{chain_id},
+      chaindata_env_{chaindata_env},
+      repository_{settings_, std::make_unique<db::SnapshotBundleFactoryImpl>()},
+      client_{settings_.bittorrent_settings},
+      snapshot_freezer_{db::ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings.keep_blocks},
+      snapshot_merger_{repository_, tmp_dir_path},
+      is_stopping_latch_{1},
+      setup_done_promise_{executor} {
 }
 
-SnapshotSync::~SnapshotSync() {
-    SnapshotSync::stop();
+Task<void> SnapshotSync::run() {
+    using namespace concurrency::awaitable_wait_for_all;
+
+    [[maybe_unused]] auto _ = gsl::finally([this]() { this->is_stopping_latch_.count_down(); });
+
+    if (!settings_.enabled) {
+        log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
+        co_return;
+    }
+
+    co_await (setup_and_run() && client_.async_run("bit-torrent"));
 }
 
-bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
+Task<void> SnapshotSync::setup_and_run() {
+    using namespace concurrency::awaitable_wait_for_all;
+
+    co_await setup();
+
+    co_await (
+        snapshot_freezer_.run_loop() &&
+        snapshot_merger_.run_loop());
+}
+
+// Raise file descriptor limit per process
+void raise_fd_limit() {
+    constexpr uint64_t kMaxFileDescriptors{10'240};
+    const bool set_fd_result = os::set_max_file_descriptors(kMaxFileDescriptors);
+    if (!set_fd_result) {
+        throw std::runtime_error{"Cannot increase max file descriptor up to " + std::to_string(kMaxFileDescriptors)};
+    }
+}
+
+Task<void> SnapshotSync::setup() {
+    raise_fd_limit();
+
+    // Snapshot sync - download chain from peers using snapshot files
+    co_await download_and_index_snapshots();
+
+    // Update chain and stage progresses in database according to available snapshots
+    db::RWTxnManaged rw_txn{chaindata_env_};
+    update_database(rw_txn, repository_.max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
+    rw_txn.commit_and_stop();
+
+    // Set snapshot repository into snapshot-aware database access
+    db::DataModel::set_snapshot_repository(&repository_);
+
+    setup_done_promise_.set_value(true);
+}
+
+Task<void> SnapshotSync::wait_for_setup() {
+    auto future = setup_done_promise_.get_future();
+    co_await future.get_async();
+}
+
+Task<void> SnapshotSync::download_and_index_snapshots() {
     if (!settings_.enabled) {
         SILK_INFO << "SnapshotSync: snapshot sync disabled, no snapshot must be downloaded";
-        return true;
+        co_return;
     }
     SILK_INFO << "SnapshotSync: snapshot repository: " << settings_.repository_dir.string();
 
     if (!settings_.no_downloader) {
-        const bool download_completed = download_snapshots();
-        if (!download_completed) return false;
+        co_await download_snapshots();
     }
 
-    repository_->remove_stale_indexes();
-    build_missing_indexes();
+    repository_.remove_stale_indexes();
+    co_await build_missing_indexes();
 
-    repository_->reopen_folder();
+    repository_.reopen_folder();
 
-    const auto max_block_available = repository_->max_block_available();
+    const auto max_block_available = repository_.max_block_available();
     SILK_INFO << "SnapshotSync: max block available: " << max_block_available;
 
-    const auto snapshot_config = Config::lookup_known_config(config_.chain_id);
+    const auto snapshot_config = Config::lookup_known_config(chain_id_);
     const auto configured_max_block_number = snapshot_config.max_block_number();
     SILK_INFO << "SnapshotSync: configured max block: " << configured_max_block_number;
-
-    // Update chain and stage progresses in database according to available snapshots
-    update_database(txn, max_block_available);
-
-    return true;
 }
 
-bool SnapshotSync::download_snapshots() {
-    const auto missing_block_ranges = repository_->missing_block_ranges();
+Task<void> SnapshotSync::download_snapshots() {
+    const auto missing_block_ranges = repository_.missing_block_ranges();
     if (!missing_block_ranges.empty()) {
-        SILK_WARN << "SnapshotSync: downloading missing snapshots";
+        SILK_INFO << "SnapshotSync: downloading missing snapshots";
     }
 
-    const auto snapshot_config = Config::lookup_known_config(config_.chain_id);
+    const auto snapshot_config = Config::lookup_known_config(chain_id_);
     if (snapshot_config.preverified_snapshots().empty()) {
         SILK_ERROR << "SnapshotSync: no preverified snapshots found";
-        return false;
+        throw std::runtime_error("SnapshotSync: no preverified snapshots found");
     }
-    for (const auto& preverified_snapshot : snapshot_config.preverified_snapshots()) {
-        SILK_TRACE << "SnapshotSync: adding info hash for preverified: " << preverified_snapshot.file_name;
-        client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
-    }
+    const auto num_snapshots{static_cast<std::ptrdiff_t>(snapshot_config.preverified_snapshots().size())};
+    SILK_INFO << "SnapshotSync: sync started: [0/" << num_snapshots << "]";
 
     auto log_added = [](const std::filesystem::path& snapshot_file) {
         SILK_TRACE << "SnapshotSync: download started for: " << snapshot_file.filename().string();
     };
     const auto added_connection = client_.added_subscription.connect(log_added);
-
-    const auto num_snapshots{static_cast<std::ptrdiff_t>(snapshot_config.preverified_snapshots().size())};
-    SILK_INFO << "SnapshotSync: sync started: [0/" << num_snapshots << "]";
 
     static int completed{0};
     auto log_stats = [&](lt::span<const int64_t> counters) {
@@ -155,19 +209,14 @@ bool SnapshotSync::download_snapshots() {
     };
     const auto completed_connection = client_.completed_subscription.connect(log_completed);
 
-    client_thread_ = std::thread([&]() {
-        log::set_thread_name("bit-torrent");
-        try {
-            client_.execution_loop();
-        } catch (const std::exception& ex) {
-            SILK_CRIT << "SnapshotSync: BitTorrentClient execution_loop exception: " << ex.what();
-            std::terminate();
-        }
-    });
+    for (const auto& preverified_snapshot : snapshot_config.preverified_snapshots()) {
+        SILK_TRACE << "SnapshotSync: adding info hash for preverified: " << preverified_snapshot.file_name;
+        client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
+    }
 
     // Wait for download completion of all snapshots or stop request
-    while (!download_done.try_wait() && !is_stopping()) {
-        std::this_thread::sleep_for(kCheckCompletionInterval);
+    while (!download_done.try_wait()) {
+        co_await sleep(kCheckCompletionInterval);
     }
 
     SILK_INFO << "SnapshotSync: sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
@@ -175,26 +224,17 @@ bool SnapshotSync::download_snapshots() {
     added_connection.disconnect();
     completed_connection.disconnect();
     stats_connection.disconnect();
-
-    return true;
 }
 
-bool SnapshotSync::stop() {
-    const bool result = Stoppable::stop();
-    client_.stop();
-    if (client_thread_.joinable()) {
-        client_thread_.join();
-    }
-    return result;
-}
-
-void SnapshotSync::build_missing_indexes() {
+Task<void> SnapshotSync::build_missing_indexes() {
     ThreadPool workers;
+    // on errors do not wait for any remaining indexing tasks that were not started (because of not enough threads)
+    [[maybe_unused]] auto _ = gsl::finally([&workers]() { workers.pause(); });
 
     // Determine the missing indexes and build them in parallel
-    const auto missing_indexes = repository_->missing_indexes();
+    const auto missing_indexes = repository_.missing_indexes();
     if (missing_indexes.empty()) {
-        return;
+        co_return;
     }
 
     SILK_INFO << "SnapshotSync: " << missing_indexes.size() << " missing indexes to build";
@@ -218,24 +258,21 @@ void SnapshotSync::build_missing_indexes() {
     }
 
     // Wait for all missing indexes to be built or stop request
-    while (workers.get_tasks_total() && !is_stopping()) {
-        std::this_thread::sleep_for(kCheckCompletionInterval);
+    while (workers.get_tasks_total()) {
+        co_await sleep(kCheckCompletionInterval);
     }
-    // Wait for any already-started-but-unfinished work in case of stop request
-    workers.pause();
-    workers.wait_for_tasks();
 
     SILK_INFO << "SnapshotSync: built missing indexes";
 }
 
-void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available) {
-    update_block_headers(txn, max_block_available);
+void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping) {
+    update_block_headers(txn, max_block_available, is_stopping);
     update_block_bodies(txn, max_block_available);
     update_block_hashes(txn, max_block_available);
     update_block_senders(txn, max_block_available);
 }
 
-void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_available) {
+void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping) {
     // Check if Headers stage progress has already reached the max block in snapshots
     const auto last_progress{db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
     if (last_progress >= max_block_available) {
@@ -249,7 +286,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
 
-    for (const auto& bundle_ptr : repository_->view_bundles()) {
+    for (const auto& bundle_ptr : repository_.view_bundles()) {
         const auto& bundle = *bundle_ptr;
         for (const BlockHeader& header : HeaderSnapshotReader{bundle.header_snapshot}) {
             SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
@@ -304,7 +341,7 @@ void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_availa
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto [tx_snapshot, _] = repository_->find_segment(SnapshotType::transactions, max_block_available);
+    const auto [tx_snapshot, _] = repository_.find_segment(SnapshotType::transactions, max_block_available);
     ensure(tx_snapshot.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
     const auto last_tx_id = tx_snapshot->index.base_data_id() + tx_snapshot->snapshot.item_count();
     db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);

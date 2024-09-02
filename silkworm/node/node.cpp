@@ -20,11 +20,7 @@
 
 #include <boost/asio/io_context.hpp>
 
-#include <silkworm/db/freezer.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
-#include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
@@ -39,8 +35,6 @@
 
 namespace silkworm::node {
 
-constexpr uint64_t kMaxFileDescriptors{10'240};
-
 //! Custom stack size for thread running block execution on EVM
 constexpr uint64_t kExecutionThreadStackSize{16'777'216};  // 16MiB
 
@@ -48,7 +42,11 @@ using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 
 class NodeImpl final {
   public:
-    NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db);
+    NodeImpl(
+        boost::asio::any_io_executor executor,
+        Settings& settings,
+        SentryClientPtr sentry_client,
+        mdbx::env chaindata_env);
 
     NodeImpl(const NodeImpl&) = delete;
     NodeImpl& operator=(const NodeImpl&) = delete;
@@ -56,25 +54,18 @@ class NodeImpl final {
     execution::api::DirectClient& execution_direct_client() { return execution_direct_client_; }
     std::shared_ptr<sentry::api::SentryClient> sentry_client() { return sentry_client_; }
 
-    void setup();
-
     Task<void> run();
+    Task<void> wait_for_setup();
 
   private:
-    void setup_snapshots();
-
     Task<void> start_execution_server();
     Task<void> start_backend_kv_grpc_server();
-    Task<void> start_bittorrent_client();
     Task<void> start_resource_usage_log();
     Task<void> start_execution_log_timer();
 
     Settings& settings_;
 
-    mdbx::env chaindata_db_;
-
-    //! The repository for snapshots
-    snapshots::SnapshotRepository snapshot_repository_;
+    mdbx::env chaindata_env_;
 
     //! The execution layer server engine
     boost::asio::io_context execution_context_;
@@ -83,8 +74,7 @@ class NodeImpl final {
     execution::grpc::server::Server execution_server_;
     execution::api::DirectClient execution_direct_client_;
 
-    db::Freezer snapshot_freezer_;
-    db::SnapshotMerger snapshot_merger_;
+    db::SnapshotSync snapshot_sync_;
 
     SentryClientPtr sentry_client_;
 
@@ -103,63 +93,42 @@ static auto make_execution_server_settings() {
     };
 }
 
-NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
+NodeImpl::NodeImpl(
+    boost::asio::any_io_executor executor,
+    Settings& settings,
+    SentryClientPtr sentry_client,
+    mdbx::env chaindata_env)
     : settings_{settings},
-      chaindata_db_{std::move(chaindata_db)},
-      snapshot_repository_{settings_.snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>()},
-      execution_engine_{execution_context_, settings_, db::RWAccess{chaindata_db_}},
+      chaindata_env_{std::move(chaindata_env)},
+      execution_engine_{execution_context_, settings_, db::RWAccess{chaindata_env_}},
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
-      snapshot_freezer_{db::ROAccess{chaindata_db_}, snapshot_repository_, execution_engine_.stage_scheduler(), settings_.data_directory->temp().path(), settings.snapshot_settings.keep_blocks},
-      snapshot_merger_{snapshot_repository_, settings_.data_directory->temp().path()},
+      snapshot_sync_{executor, settings.snapshot_settings, settings.chain_config->chain_id, chaindata_env_, settings_.data_directory->temp().path(), execution_engine_.stage_scheduler()},
       sentry_client_{std::move(sentry_client)},
       resource_usage_log_{*settings_.data_directory} {
-    backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
+    backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_env_, sentry_client_);
     backend_->set_node_name(settings_.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
-}
-
-void NodeImpl::setup() {
     PreverifiedHashes::load(settings_.chain_config->chain_id);
-
-    setup_snapshots();
 }
 
-void NodeImpl::setup_snapshots() {
-    if (settings_.snapshot_settings.enabled) {
-        // Raise file descriptor limit per process
-        const bool set_fd_result = os::set_max_file_descriptors(kMaxFileDescriptors);
-        if (!set_fd_result) {
-            throw std::runtime_error{"Cannot increase max file descriptor up to " + std::to_string(kMaxFileDescriptors)};
-        }
-
-        db::RWTxnManaged rw_txn{chaindata_db_};
-
-        // Snapshot sync - download chain from peers using snapshot files
-        db::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
-        snapshot_sync.download_and_index_snapshots(rw_txn);
-
-        rw_txn.commit_and_stop();
-
-        // Set snapshot repository into snapshot-aware database access
-        db::DataModel::set_snapshot_repository(&snapshot_repository_);
-    } else {
-        log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
-    }
+Task<void> NodeImpl::wait_for_setup() {
+    co_await snapshot_sync_.wait_for_setup();
 }
 
 Task<void> NodeImpl::run() {
     using namespace concurrency::awaitable_wait_for_all;
+
+    co_await wait_for_setup();
+
     co_await (
         start_execution_server() &&
         start_resource_usage_log() &&
         start_execution_log_timer() &&
-        snapshot_freezer_.run_loop() &&
-        snapshot_merger_.run_loop() &&
-        start_backend_kv_grpc_server() &&
-        start_bittorrent_client());
+        snapshot_sync_.run() &&
+        start_backend_kv_grpc_server());
 }
 
 Task<void> NodeImpl::start_execution_server() {
@@ -182,12 +151,6 @@ Task<void> NodeImpl::start_backend_kv_grpc_server() {
     co_await concurrency::async_thread(std::move(run), std::move(stop), "bekv-server");
 }
 
-Task<void> NodeImpl::start_bittorrent_client() {
-    if (settings_.snapshot_settings.bittorrent_settings.seeding) {
-        co_await bittorrent_client_->async_run("bit-torrent");
-    }
-}
-
 Task<void> NodeImpl::start_resource_usage_log() {
     return resource_usage_log_.run();
 }
@@ -207,8 +170,12 @@ Task<void> NodeImpl::start_execution_log_timer() {
     co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop), "ctx-log-tmr");
 }
 
-Node::Node(Settings& settings, SentryClientPtr sentry_client, mdbx::env chaindata_db)
-    : p_impl_(std::make_unique<NodeImpl>(settings, std::move(sentry_client), std::move(chaindata_db))) {}
+Node::Node(
+    boost::asio::any_io_executor executor,
+    Settings& settings,
+    SentryClientPtr sentry_client,
+    mdbx::env chaindata_env)
+    : p_impl_(std::make_unique<NodeImpl>(std::move(executor), settings, std::move(sentry_client), std::move(chaindata_env))) {}
 
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom
 Node::~Node() = default;
@@ -217,12 +184,12 @@ execution::api::DirectClient& Node::execution_direct_client() {
     return p_impl_->execution_direct_client();
 }
 
-void Node::setup() {
-    p_impl_->setup();
-}
-
 Task<void> Node::run() {
     return p_impl_->run();
+}
+
+Task<void> Node::wait_for_setup() {
+    return p_impl_->wait_for_setup();
 }
 
 }  // namespace silkworm::node

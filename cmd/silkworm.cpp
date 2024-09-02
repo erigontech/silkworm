@@ -266,11 +266,8 @@ int main(int argc, char* argv[]) {
 
         // Execution: the execution layer engine
         // NOLINTNEXTLINE(cppcoreguidelines-slicing)
-        silkworm::node::Node execution_node{settings.node_settings, sentry_client, chaindata_db};
+        silkworm::node::Node execution_node{context_pool.any_executor(), settings.node_settings, sentry_client, chaindata_db};
         execution::api::DirectClient& execution_client{execution_node.execution_direct_client()};
-
-        // Set up the execution node (e.g. load pre-verified hashes, download+index snapshots...)
-        execution_node.setup();
 
         // ChainSync: the chain synchronization process based on the consensus protocol
         chainsync::EngineRpcSettings rpc_settings{
@@ -288,11 +285,16 @@ int main(int argc, char* argv[]) {
             sentry_client,
             *node_settings.chain_config,
             rpc_settings};
+        // Note: temp code until chainsync::Sync becomes a part of Node
+        auto chain_sync_process_run = [&execution_node](chainsync::Sync& sync) -> Task<void> {
+            co_await execution_node.wait_for_setup();
+            co_await sync.async_run();
+        };
 
         auto tasks =
             execution_node.run() &&
             embedded_sentry_run_if_needed(sentry_server) &&
-            chain_sync_process.async_run();
+            chain_sync_process_run(chain_sync_process);
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.any_executor()};

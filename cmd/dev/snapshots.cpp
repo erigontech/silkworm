@@ -812,10 +812,24 @@ void merge(const SnapSettings& settings) {
 }
 
 void sync(const SnapSettings& settings) {
+    class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
+      public:
+        explicit NoopStageSchedulerAdapter() {}
+        ~NoopStageSchedulerAdapter() override = default;
+        Task<void> schedule(std::function<void(db::RWTxn&)> /*callback*/) override {
+            co_return;
+        }
+    };
+
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
-    db::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
-    snapshot_sync.download_snapshots();
+
+    TemporaryDirectory tmp_dir;
+    db::EnvConfig chaindata_env_config{tmp_dir.path()};
+    auto chaindata_env = db::open_env(chaindata_env_config);
+    test_util::TaskRunner runner;
+    NoopStageSchedulerAdapter stage_scheduler;
+    db::SnapshotSync snapshot_sync{runner.executor(), settings, kMainnetConfig.chain_id, chaindata_env, tmp_dir.path(), stage_scheduler};
+    runner.run(snapshot_sync.download_snapshots());
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
 
     SILK_INFO << "Sync elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";

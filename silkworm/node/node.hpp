@@ -20,13 +20,12 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/any_io_executor.hpp>
+
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
-#include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/execution/api/direct_client.hpp>
 #include <silkworm/node/settings.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
-#include <silkworm/sentry/settings.hpp>
 
 namespace silkworm::node {
 
@@ -34,9 +33,11 @@ class NodeImpl;
 
 class Node {
   public:
-    Node(Settings& settings,
-         std::shared_ptr<sentry::api::SentryClient> sentry_client,
-         mdbx::env chaindata_db);
+    Node(
+        boost::asio::any_io_executor executor,
+        Settings& settings,
+        std::shared_ptr<sentry::api::SentryClient> sentry_client,
+        mdbx::env chaindata_env);
     ~Node();
 
     Node(const Node&) = delete;
@@ -44,9 +45,8 @@ class Node {
 
     execution::api::DirectClient& execution_direct_client();
 
-    void setup();
-
     Task<void> run();
+    Task<void> wait_for_setup();
 
   private:
     std::unique_ptr<NodeImpl> p_impl_;

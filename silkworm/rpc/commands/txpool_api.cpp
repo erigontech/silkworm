@@ -45,6 +45,10 @@ Task<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::json& request, nlo
 Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply) {
     try {
         const auto txpool_transactions = co_await tx_pool_->get_transactions();
+        if (!txpool_transactions.size()) {
+            reply = make_json_content(request, nullptr);
+            co_return;
+        }
 
         TransactionContent transactions_content;
         transactions_content["queued"];

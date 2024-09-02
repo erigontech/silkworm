@@ -278,7 +278,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const 
             const auto tx_count = block_with_hash->block.transactions.size();
             reply = make_json_content(request, to_quantity(tx_count));
         } else {
-            reply = make_json_content(request, 0x0);
+            reply = make_json_content(request, nullptr);
         }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request, 0x0);
@@ -315,7 +315,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(cons
             const auto tx_count = block_with_hash->block.transactions.size();
             reply = make_json_content(request, to_quantity(tx_count));
         } else {
-            reply = make_json_content(request, 0x0);
+            reply = make_json_content(request, nullptr);
         }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request, 0x0);
@@ -458,11 +458,12 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
         const auto chain_storage = tx->create_storage();
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
-        uint64_t ommers = 0;
-        if (block_with_hash) {
-            ommers = block_with_hash->block.ommers.size();
+        if (!block_with_hash) {
+            reply = make_json_content(request, nullptr);
+        } else {
+            const auto ommers = block_with_hash->block.ommers.size();
+            reply = make_json_content(request, to_quantity(ommers));
         }
-        reply = make_json_content(request, to_quantity(ommers));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -493,12 +494,12 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const nloh
 
         const auto block_number = co_await core::get_block_number(block_id, *tx);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        uint64_t ommers = 0;
-        if (block_with_hash) {
-            ommers = block_with_hash->block.ommers.size();
+        if (!block_with_hash) {
+            reply = make_json_content(request, nullptr);
+        } else {
+            const auto ommers = block_with_hash->block.ommers.size();
+            reply = make_json_content(request, to_quantity(ommers));
         }
-
-        reply = make_json_content(request, to_quantity(ommers));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -1395,9 +1396,8 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             struct CallBundleTxInfo tx_info {};
             const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, tx_hash_list[i]);
             if (!tx_with_block) {
-                const auto error_msg = "invalid transaction hash";
-                SILK_ERROR << error_msg;
-                reply = make_json_error(request, kInvalidParams, error_msg);
+                reply = make_json_content(request, {});
+                error = true;
                 break;
             }
 

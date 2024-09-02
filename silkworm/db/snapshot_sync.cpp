@@ -70,13 +70,9 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     }
     SILK_INFO << "SnapshotSync: snapshot repository: " << settings_.repository_dir.string();
 
-    const auto snapshot_file_names = db::read_snapshots(txn);
     if (!settings_.no_downloader) {
-        const bool download_completed = download_snapshots(snapshot_file_names);
+        const bool download_completed = download_snapshots();
         if (!download_completed) return false;
-
-        db::write_snapshots(txn, snapshot_file_names);
-        SILK_INFO << "SnapshotSync: file names saved into db count=" << std::to_string(snapshot_file_names.size());
     }
 
     repository_->remove_stale_indexes();
@@ -87,7 +83,7 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     const auto max_block_available = repository_->max_block_available();
     SILK_INFO << "SnapshotSync: max block available: " << max_block_available;
 
-    const auto snapshot_config = Config::lookup_known_config(config_.chain_id, snapshot_file_names);
+    const auto snapshot_config = Config::lookup_known_config(config_.chain_id);
     const auto configured_max_block_number = snapshot_config.max_block_number();
     SILK_INFO << "SnapshotSync: configured max block: " << configured_max_block_number;
 
@@ -97,13 +93,13 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     return true;
 }
 
-bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_file_names) {
+bool SnapshotSync::download_snapshots() {
     const auto missing_block_ranges = repository_->missing_block_ranges();
     if (!missing_block_ranges.empty()) {
         SILK_WARN << "SnapshotSync: downloading missing snapshots";
     }
 
-    const auto snapshot_config = Config::lookup_known_config(config_.chain_id, snapshot_file_names);
+    const auto snapshot_config = Config::lookup_known_config(config_.chain_id);
     if (snapshot_config.preverified_snapshots().empty()) {
         SILK_ERROR << "SnapshotSync: no preverified snapshots found";
         return false;

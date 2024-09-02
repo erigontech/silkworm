@@ -26,22 +26,12 @@
 
 namespace silkworm::snapshots {
 
-Config Config::lookup_known_config(ChainId chain_id, const std::vector<std::string>& whitelist) {
+Config Config::lookup_known_config(ChainId chain_id) {
     const auto config = kKnownSnapshotConfigs.find(chain_id);
     if (!config) {
         return Config{PreverifiedList{}};
     }
-    if (whitelist.empty()) {
-        return Config{PreverifiedList(config->begin(), config->end())};
-    }
-
-    PreverifiedList filtered_preverified;
-    for (const auto& preverified_entry : *config) {
-        if (std::find(whitelist.cbegin(), whitelist.cend(), preverified_entry.file_name) != whitelist.cend()) {
-            filtered_preverified.push_back(preverified_entry);
-        }
-    }
-    return Config{filtered_preverified};
+    return Config{PreverifiedList(config->begin(), config->end())};
 }
 
 Config::Config(PreverifiedList preverified_snapshots)

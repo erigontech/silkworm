@@ -37,7 +37,7 @@ class SnapshotSync : public Stoppable {
     bool stop() override;
 
     bool download_and_index_snapshots(db::RWTxn& txn);
-    bool download_snapshots(const std::vector<std::string>& snapshot_file_names);
+    bool download_snapshots();
 
   protected:
     void build_missing_indexes();

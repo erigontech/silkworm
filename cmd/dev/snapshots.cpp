@@ -382,7 +382,7 @@ void open_index(const SnapSettings& settings) {
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
-    const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id, /*whitelist=*/{})};
+    const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id)};
     WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots()};
 
     boost::asio::io_context scheduler;
@@ -819,11 +819,7 @@ void sync(const SnapSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
     db::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
-    std::vector<std::string> snapshot_file_names;
-    if (settings.snapshot_file_name) {
-        snapshot_file_names.push_back(*settings.snapshot_file_name);
-    }
-    snapshot_sync.download_snapshots(snapshot_file_names);
+    snapshot_sync.download_snapshots();
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
 
     SILK_INFO << "Sync elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";

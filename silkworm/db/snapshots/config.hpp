@@ -34,7 +34,7 @@ using PreverifiedList = std::vector<Entry>;
 
 class Config {
   public:
-    static Config lookup_known_config(ChainId chain_id, const std::vector<std::string>& whitelist);
+    static Config lookup_known_config(ChainId chain_id);
 
     explicit Config(PreverifiedList preverified_snapshots);
 

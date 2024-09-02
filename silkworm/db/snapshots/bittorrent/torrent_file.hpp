@@ -32,7 +32,7 @@ class TorrentFile {
   public:
     TorrentFile(ByteView data);
 
-    static TorrentFile from_source_file(std::filesystem::path source_file_path, std::time_t creation_date = 0);
+    static TorrentFile from_source_file(const std::filesystem::path& source_file_path, std::time_t creation_date = 0);
 
     const lt::add_torrent_params& params() const { return params_; }
     Bytes to_bytes() const;

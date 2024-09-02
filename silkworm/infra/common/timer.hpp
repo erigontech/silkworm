@@ -45,12 +45,12 @@ class Timer : public std::enable_shared_from_this<Timer> {
     static std::shared_ptr<Timer> create(const boost::asio::any_io_executor& executor,
                                          uint32_t interval,
                                          std::function<bool()> call_back,
-                                         bool auto_start = false);
+                                         bool auto_start = true);
 
     ~Timer() { stop(); }
 
-    //! \brief Starts timer and waits for interval to expire. Eventually call back action is executed and timer
-    //! resubmitted for another interval
+    //! \brief Start timer asynchronously. Eventually callback action is executed and timer automatically rescheduled
+    //! for another interval
     void start() {
         bool expected_running{false};
         if (is_running_.compare_exchange_strong(expected_running, true)) {
@@ -58,7 +58,8 @@ class Timer : public std::enable_shared_from_this<Timer> {
         }
     }
 
-    //! \brief Stops timer and cancels pending execution. No callback is executed and no resubmission
+    //! \brief Stop timer and cancel any pending execution. Callback may still be executed *once* if timer gets cancelled
+    //! after expiration but before completion handler dispatching.
     void stop() {
         bool expected_running{true};
         if (is_running_.compare_exchange_strong(expected_running, false)) {
@@ -66,8 +67,13 @@ class Timer : public std::enable_shared_from_this<Timer> {
         }
     }
 
-    //! \brief Cancels execution of awaiting callback and, if still in running state, submits timer for a new interval
-    void reset() { (void)timer_.cancel(); }
+    //! \brief Cancel next execution of awaiting callback and reschedule for a new interval if still in running state
+    void reset() {
+        (void)timer_.cancel();
+        if (is_running_) {
+            launch();
+        }
+    }
 
   protected:
     //! \brief Not public to force creation only through Timer::create
@@ -93,7 +99,7 @@ class Timer : public std::enable_shared_from_this<Timer> {
             if (!ec && self->call_back_) {
                 self->call_back_();
             }
-            if (self->is_running_.load()) {
+            if (self->is_running_) {
                 self->launch();
             }
         });

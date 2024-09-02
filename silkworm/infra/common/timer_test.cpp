@@ -24,29 +24,84 @@
 
 namespace silkworm {
 
-TEST_CASE("Timer lifecycle race condition") {
-    struct TimerInfo {
-        std::string description;
-        uint32_t interval;
-    };
-    const std::vector<TimerInfo> timer_infos{
-        {"long_running_timer", 10'000},
-        {"short_running_timer", 100},
-        {"very_short_running_timer", 10},
-    };
+struct TimerTest {
+    const std::vector<uint32_t> kIntervals{100, 10, 1};  // milliseconds
     boost::asio::io_context io_context;
-    for (const auto& [description, interval] : timer_infos) {
+};
+
+TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
+    constexpr static size_t kExpectedExpirations{2};
+    for (const auto interval : kIntervals) {
+        size_t expired_count{0};
+        auto periodic_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
+            ++expired_count;
+            if (expired_count == kExpectedExpirations) {  // stop timer scheduler after multiple expirations
+                io_context.stop();
+            }
+            return true;
+        });
+        SECTION("Duration " + std::to_string(interval) + "ms : expired") {
+            io_context.run();  // run until timer expires, then the callback will stop us
+        }
+        SECTION("Duration " + std::to_string(interval) + "ms : cancelled") {
+            periodic_timer->stop();
+            io_context.run();
+            // may be expired multiple times or not depending on interval
+        }
+        SECTION("Duration " + std::to_string(interval) + "ms : rescheduled") {
+            periodic_timer->reset();
+            io_context.run();
+            // may be expired multiple times or not depending on interval
+        }
+    }
+}
+
+TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
+    for (const auto interval : kIntervals) {
         bool timer_expired{false};
-        SECTION(description) {
+        auto one_shot_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
+            io_context.stop();
+            timer_expired = true;
+            return true;
+        });
+        SECTION("Duration " + std::to_string(interval) + "ms : expired") {
+            io_context.run();  // run until timer expires, then the callback will stop us
+            CHECK(timer_expired);
+        }
+        SECTION("Duration " + std::to_string(interval) + "ms : cancelled") {
+            one_shot_timer->stop();
+            io_context.run();
+            // may be expired or not depending on interval
+        }
+        SECTION("Duration " + std::to_string(interval) + "ms : rescheduled") {
+            one_shot_timer->reset();
+            io_context.run();
+            // may be expired or not depending on interval
+        }
+    }
+    SECTION("surely cancelled") {
+        constexpr static uint32_t kLongDurationTimeoutMsec{100'000};
+        bool timer_expired{false};
+        auto one_shot_timer = Timer::create(io_context.get_executor(), kLongDurationTimeoutMsec, [&]() -> bool {
+            io_context.stop();
+            timer_expired = true;
+            return true;
+        });
+        one_shot_timer->stop();
+        io_context.run();
+        CHECK(!timer_expired);
+    }
+}
+
+TEST_CASE_METHOD(TimerTest, "Lifecycle race condition", "[infra][common][timer]") {
+    for (const auto interval : kIntervals) {
+        SECTION("Duration " + std::to_string(interval) + "ms") {
             {
-                auto async_timer = Timer::create(io_context.get_executor(), interval, [&timer_expired]() -> bool {
-                    timer_expired = true;
-                    return timer_expired;
-                });
+                auto async_timer = Timer::create(io_context.get_executor(), interval, []() -> bool { return true; });
                 async_timer->start();
                 io_context.poll();  // serve just one task
                 async_timer->stop();
-            }
+            }  // timer gets deleted here or after callback dispatch
             CHECK_NOTHROW(io_context.run());
         }
     }

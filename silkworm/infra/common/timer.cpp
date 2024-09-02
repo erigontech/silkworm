@@ -18,17 +18,11 @@
 
 namespace silkworm {
 
-class TimerImpl : public Timer {
-  public:
-    TimerImpl(const boost::asio::any_io_executor& executor, uint32_t interval, std::function<bool()> call_back)
-        : Timer(executor, interval, std::move(call_back)) {}
-};
-
 std::shared_ptr<Timer> Timer::create(const boost::asio::any_io_executor& executor,
                                      uint32_t interval,
                                      std::function<bool()> call_back,
                                      bool auto_start) {
-    auto timer = std::make_shared<TimerImpl>(executor, interval, std::move(call_back));
+    auto timer = std::shared_ptr<Timer>(new Timer{executor, interval, std::move(call_back)});
     if (auto_start) timer->start();
     return timer;
 }

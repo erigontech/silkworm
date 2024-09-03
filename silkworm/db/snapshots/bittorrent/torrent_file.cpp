@@ -37,7 +37,7 @@ TorrentFile::TorrentFile(ByteView data)
     : params_(lt::load_torrent_buffer(byte_view_to_str_span(data))) {
 }
 
-TorrentFile TorrentFile::from_source_file(std::filesystem::path source_file_path, std::time_t creation_date) {
+TorrentFile TorrentFile::from_source_file(const std::filesystem::path& source_file_path, std::time_t creation_date) {
     lt::file_storage storage;
     lt::create_flags_t flags = lt::create_torrent::v1_only;
     lt::add_files(storage, source_file_path.string(), flags);

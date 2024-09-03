@@ -42,9 +42,6 @@ struct BitTorrentSettings {
     //! Flag indicating if snapshots will be verified on startup
     bool verify_on_startup{false};
 
-    //! Flag indicating if the client should seed torrents when done or not
-    bool seeding{false};
-
     //! Flag indicating if BitTorrent failure/error alerts should be treated as warnings
     bool warn_on_error_alerts{false};
 

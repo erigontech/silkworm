@@ -204,10 +204,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
                         "Max number of downloads active simultaneously")
             ->capture_default_str()
             ->check(CLI::Range(3, 20));
-        cmd->add_flag("--seeding",
-                      bittorrent_settings.seeding,
-                      "Flag indicating if torrents should be seeded when download is finished")
-            ->capture_default_str();
     }
     for (auto& cmd : {commands[SnapshotTool::create_index],
                       commands[SnapshotTool::open_index],

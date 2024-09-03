@@ -51,7 +51,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["yParity"] = rpc::to_quantity(transaction.odd_y_parity);
     } else if (transaction.chain_id) {
         json["chainId"] = rpc::to_quantity(*transaction.chain_id);
-       json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));
+        json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));
     } else {
         json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));
     }
@@ -165,6 +165,5 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["transactionIndex"] = to_quantity(transaction.transaction_index);
     }
 }
-
 
 }  // namespace silkworm::rpc

@@ -16,10 +16,11 @@
 
 #include "execution_pipeline.hpp"
 
+#include <memory>
+
 #include <absl/strings/str_format.h>
 #include <magic_enum.hpp>
 
-#include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
@@ -44,35 +45,6 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 #else
 static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
-
-class ExecutionPipeline::LogTimer : public Timer {
-    ExecutionPipeline* pipeline_;
-
-  public:
-    LogTimer(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
-        : Timer{
-              executor,
-              interval_seconds * 1'000,
-              [this] { return expired(); },
-              /*.auto_start=*/true},
-          pipeline_{pipeline} {}
-
-    bool expired() {
-        if (pipeline_->is_stopping()) {
-            log::Info(pipeline_->get_log_prefix()) << "stopping ...";
-            return false;
-        }
-        log::Info(pipeline_->get_log_prefix(), pipeline_->current_stage_->second->get_log_progress());
-        return true;
-    }
-};
-
-std::unique_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
-    return std::make_unique<LogTimer>(
-        this->node_settings_->asio_context.get_executor(),
-        this,
-        this->node_settings_->sync_loop_log_interval_seconds);
-}
 
 ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
@@ -391,6 +363,24 @@ std::string ExecutionPipeline::get_log_prefix() const {
                            current_stage_number_,
                            current_stages_count_,
                            current_stage_->first);
+}
+
+std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
+    auto log_timer = Timer::create(
+        this->node_settings_->asio_context.get_executor(),
+        this->node_settings_->sync_loop_log_interval_seconds * 1'000,
+        [this]() { return log_timer_expired(); },
+        /*auto_start=*/true);
+    return log_timer;
+}
+
+bool ExecutionPipeline::log_timer_expired() {
+    if (is_stopping()) {
+        log::Info(get_log_prefix()) << "stopping ...";
+        return false;
+    }
+    log::Info(get_log_prefix(), current_stage_->second->get_log_progress());
+    return true;
 }
 
 }  // namespace silkworm::stagedsync

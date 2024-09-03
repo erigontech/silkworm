@@ -39,6 +39,7 @@ ClientContext::ClientContext(std::size_t context_id, WaitMode wait_mode)
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())} {}
 
 void ClientContext::destroy_grpc_context() {
+    grpc_context_work_.reset();
     grpc_context_.reset();
 }
 

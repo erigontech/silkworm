@@ -18,11 +18,13 @@
 
 #include <atomic>
 #include <map>
+#include <memory>
 #include <vector>
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
+#include <silkworm/infra/common/timer.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 
 namespace silkworm::stagedsync {
@@ -65,8 +67,9 @@ class ExecutionPipeline : public Stoppable {
     void load_stages();  // Fills the vector with stages
 
     std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
-    class LogTimer;                      // Timer for async log scheduling
-    std::unique_ptr<LogTimer> make_log_timer();
+
+    std::shared_ptr<Timer> make_log_timer();
+    bool log_timer_expired();
 };
 
 }  // namespace silkworm::stagedsync

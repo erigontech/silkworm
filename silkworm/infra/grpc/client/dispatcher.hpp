@@ -26,9 +26,8 @@
 namespace silkworm::detail {
 
 template <typename Executor>
-struct ExecutorDispatcher {
-    Executor executor_;
-
+class ExecutorDispatcher {
+  public:
     template <typename CompletionToken, typename... Args>
     void dispatch(CompletionToken&& token, Args&&... args) {
         boost::asio::dispatch(
@@ -36,6 +35,9 @@ struct ExecutorDispatcher {
                                        boost::asio::append(std::forward<CompletionToken>(token),
                                                            std::forward<Args>(args)...)));
     }
+
+  private:
+    Executor executor_;
 };
 
 struct InlineDispatcher {

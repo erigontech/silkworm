@@ -1194,14 +1194,14 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
     if (!initialized_) {
         initialized_ = true;
 
-        auto from_prov_res = co_await callFromProvider_->get();
+        auto from_prov_res = co_await call_from_provider_->get();
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
         next_from_ = from_prov_res.block_number;
         has_more_from_ = from_prov_res.has_more || next_from_ != 0;
 
-        auto to_prov_res = co_await callToProvider_->get();
+        auto to_prov_res = co_await call_to_provider_->get();
         if (to_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1234,7 +1234,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
 
     // Pull next; it may be that from AND to contains the same blockNum
     if (has_more_from_ && block_num == next_from_) {
-        auto from_prov_res = co_await callFromProvider_->get();
+        auto from_prov_res = co_await call_from_provider_->get();
 
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
@@ -1244,7 +1244,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
     }
 
     if (has_more_to_ && block_num == next_to_) {
-        auto to_prov_res = co_await callToProvider_->get();
+        auto to_prov_res = co_await call_to_provider_->get();
 
         if (to_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
@@ -1259,8 +1259,8 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
 
 FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider)
     : is_backwards_{is_backwards},
-      callFromProvider_{callFromProvider},
-      callToProvider_{callToProvider} {
+      call_from_provider_{callFromProvider},
+      call_to_provider_{callToProvider} {
 }
 
 }  // namespace silkworm::rpc::commands

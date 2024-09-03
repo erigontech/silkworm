@@ -37,15 +37,15 @@
 namespace silkworm::rpc::debug {
 
 void from_json(const nlohmann::json& json, DebugConfig& tc) {
-    json.at("disableStorage").get_to(tc.disableStorage);
-    json.at("disableMemory").get_to(tc.disableMemory);
-    json.at("disableStack").get_to(tc.disableStack);
+    json.at("disableStorage").get_to(tc.disable_storage);
+    json.at("disableMemory").get_to(tc.disable_memory);
+    json.at("disableStack").get_to(tc.disable_stack);
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
-    out << "disableStorage: " << std::boolalpha << tc.disableStorage;
-    out << " disableMemory: " << std::boolalpha << tc.disableMemory;
-    out << " disableStack: " << std::boolalpha << tc.disableStack;
+    out << "disableStorage: " << std::boolalpha << tc.disable_storage;
+    out << " disableMemory: " << std::boolalpha << tc.disable_memory;
+    out << " disableStack: " << std::boolalpha << tc.disable_stack;
 
     return out;
 }
@@ -146,7 +146,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
                << "}";
 
     bool output_storage = false;
-    if (!config_.disableStorage) {
+    if (!config_.disable_storage) {
         if (opcode == OP_SLOAD && stack_height >= 1) {
             const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
             const auto value = intra_block_state.get_current_storage(recipient, address);
@@ -199,10 +199,10 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     log.gas_cost = metrics_[opcode].gas_cost;
     log.depth = execution_state.msg->depth + 1;
 
-    if (!config_.disableStack) {
+    if (!config_.disable_stack) {
         output_stack(log.stack, stack_top, stack_height);
     }
-    if (!config_.disableMemory) {
+    if (!config_.disable_memory) {
         output_memory(log.memory, execution_state.memory);
     }
     if (output_storage) {
@@ -367,10 +367,10 @@ void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::Executi
 }
 
 void AccountTracer::on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    nonce = intra_block_state.get_nonce(address_);
-    balance = intra_block_state.get_balance(address_);
-    code_hash = intra_block_state.get_code_hash(address_);
-    code = intra_block_state.get_code(address_);
+    nonce_ = intra_block_state.get_nonce(address_);
+    balance_ = intra_block_state.get_balance(address_);
+    code_hash_ = intra_block_state.get_code_hash(address_);
+    code_ = intra_block_state.get_code(address_);
 }
 
 void DebugTracer::write_log(const DebugLog& log) {
@@ -381,7 +381,7 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.write_field("op", log.op);
     stream_.write_field("pc", log.pc);
 
-    if (!config_.disableStack) {
+    if (!config_.disable_stack) {
         stream_.write_field("stack");
         stream_.open_array();
         for (const auto& item : log.stack) {
@@ -389,7 +389,7 @@ void DebugTracer::write_log(const DebugLog& log) {
         }
         stream_.close_array();
     }
-    if (!config_.disableMemory) {
+    if (!config_.disable_memory) {
         stream_.write_field("memory");
         stream_.open_array();
         for (const auto& item : log.memory) {
@@ -401,7 +401,7 @@ void DebugTracer::write_log(const DebugLog& log) {
         }
         stream_.close_array();
     }
-    if (!config_.disableStorage && !log.storage.empty()) {
+    if (!config_.disable_storage && !log.storage.empty()) {
         stream_.write_field("storage");
         stream_.open_object();
         for (const auto& entry : log.storage) {

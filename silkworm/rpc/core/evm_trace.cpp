@@ -630,7 +630,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     last_opcode_ = op_code;
 
     if (fix_call_gas_info_) {  // previous opcode was a CALL
-        auto& trace_op = fix_call_gas_info_->trace_op_;
+        auto& trace_op = fix_call_gas_info_->trace_op;
         if (execution_state.msg->depth == fix_call_gas_info_->depth) {
             if (fix_call_gas_info_->gas_cost) {
                 trace_op.gas_cost = fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
@@ -765,7 +765,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
             op.gas_cost = op.gas_cost - result.gas_left;
             op.trace_ex->used = result.gas_left;
             if (fix_call_gas_info_) {
-                auto& trace_op = fix_call_gas_info_->trace_op_;
+                auto& trace_op = fix_call_gas_info_->trace_op;
                 if (result.gas_left == 0 && !fix_call_gas_info_->precompiled) {
                     trace_op.gas_cost = fix_call_gas_info_->stipend + fix_call_gas_info_->gas_cost;
                 } else if (!fix_call_gas_info_->precompiled) {

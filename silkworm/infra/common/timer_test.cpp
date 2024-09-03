@@ -25,14 +25,14 @@
 namespace silkworm {
 
 struct TimerTest {
-    const std::vector<uint32_t> kIntervals{100, 10, 1};  // milliseconds
+    const std::vector<uint32_t> intervals{100, 10, 1};  // milliseconds
     boost::asio::io_context io_context;
 };
 
 TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
     constexpr static size_t kExpectedExpirations{2};
     size_t expired_count{0};  // The lambda capture-list content *must* outlive the scheduler execution loop
-    for (const auto interval : kIntervals) {
+    for (const auto interval : intervals) {
         auto periodic_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
             ++expired_count;
             if (expired_count == kExpectedExpirations) {  // stop timer scheduler after multiple expirations
@@ -59,7 +59,7 @@ TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
 
 TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
     bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
-    for (const auto interval : kIntervals) {
+    for (const auto interval : intervals) {
         auto one_shot_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
             io_context.stop();
             timer_expired = true;
@@ -85,7 +85,7 @@ TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
 
 TEST_CASE_METHOD(TimerTest, "Cancellation before expiration", "[infra][common][timer]") {
     bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
-    for (const auto interval : kIntervals) {
+    for (const auto interval : intervals) {
         SECTION("Duration " + std::to_string(interval) + "ms") {
             auto async_timer = Timer::create(
                 io_context.get_executor(), interval, [&]() -> bool {
@@ -102,7 +102,7 @@ TEST_CASE_METHOD(TimerTest, "Cancellation before expiration", "[infra][common][t
 }
 
 TEST_CASE_METHOD(TimerTest, "Lifecycle race condition", "[infra][common][timer]") {
-    for (const auto interval : kIntervals) {
+    for (const auto interval : intervals) {
         SECTION("Duration " + std::to_string(interval) + "ms") {
             {
                 auto async_timer = Timer::create(io_context.get_executor(), interval, []() -> bool { return true; });

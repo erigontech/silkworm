@@ -51,11 +51,8 @@ template <
 class UnaryRpc<Async> {
   private:
     template <typename Dispatcher>
-    struct Call {
-        UnaryRpc& self_;
-        const Request& request_;
-        [[no_unique_address]] Dispatcher dispatcher_;
-
+    class Call {
+      public:
         template <typename Op>
         void operator()(Op& op) {
             SILK_TRACE << "UnaryRpc::initiate " << this;
@@ -77,6 +74,11 @@ class UnaryRpc<Async> {
                 op.complete(make_error_code(self_.status_.error_code(), self_.status_.error_message()), {});
             }
         }
+
+      private:
+        UnaryRpc& self_;
+        const Request& request_;
+        [[no_unique_address]] Dispatcher dispatcher_;
     };
 
   public:

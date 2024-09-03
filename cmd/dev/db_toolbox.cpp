@@ -2449,7 +2449,7 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_freelist) {
             do_freelist(src_config, static_cast<bool>(*freelist_detail_opt));
         } else if (*cmd_schema) {
-            do_schema(src_config, cmd_schema_force_version_update_opt->as<bool>());
+            do_schema(src_config, static_cast<bool>(*cmd_schema_force_version_update_opt));
         } else if (*cmd_stages) {
             do_stages(src_config);
         } else if (*cmd_migrations) {

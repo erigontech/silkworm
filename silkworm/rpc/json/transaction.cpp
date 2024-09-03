@@ -51,7 +51,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["yParity"] = rpc::to_quantity(transaction.odd_y_parity);
     } else if (transaction.chain_id) {
         json["chainId"] = rpc::to_quantity(*transaction.chain_id);
-        json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));
+       json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));
     } else {
         json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));
     }
@@ -105,9 +105,19 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
     } else {
         rpc::to_quantity(std::span(json_tx.v), silkworm::endian::to_big_compact(tx.v()));
     }
-    if (tx.type == silkworm::TransactionType::kDynamicFee) {
+    if (tx.type == silkworm::TransactionType::kDynamicFee ||
+        tx.type == silkworm::TransactionType::kBlob) {
         json_tx.max_pri_fee_per_gas = std::make_optional(rpc::to_quantity(tx.max_priority_fee_per_gas));
         json_tx.max_fee_per_gas = std::make_optional(rpc::to_quantity(tx.max_fee_per_gas));
+    }
+    if (tx.type == silkworm::TransactionType::kBlob) {
+        json_tx.max_fee_per_blob_gas = std::make_optional(rpc::to_quantity(tx.max_fee_per_blob_gas));
+        std::vector<std::string> hashes;
+        for (const auto& curr_hash : tx.blob_versioned_hashes) {
+            auto hash = "0x" + silkworm::to_hex(curr_hash.bytes);
+            hashes.push_back(hash);
+        }
+        json_tx.blob_versioned_hashes = std::make_optional(hashes);
     }
     to_quantity(std::span(json_tx.value), tx.value);
     to_quantity(std::span(json_tx.r), silkworm::endian::to_big_compact(tx.r));
@@ -155,5 +165,6 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["transactionIndex"] = to_quantity(transaction.transaction_index);
     }
 }
+
 
 }  // namespace silkworm::rpc

@@ -51,7 +51,11 @@ template <
 class UnaryRpc<Async> {
   private:
     template <typename Dispatcher>
-    class Call {
+    struct Call {
+        UnaryRpc& self_;
+        const Request& request_;
+        [[no_unique_address]] Dispatcher dispatcher_;
+
       public:
         template <typename Op>
         void operator()(Op& op) {
@@ -74,11 +78,6 @@ class UnaryRpc<Async> {
                 op.complete(make_error_code(self_.status_.error_code(), self_.status_.error_message()), {});
             }
         }
-
-      private:
-        UnaryRpc& self_;
-        const Request& request_;
-        [[no_unique_address]] Dispatcher dispatcher_;
     };
 
   public:

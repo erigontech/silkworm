@@ -50,7 +50,6 @@ class ContextTestBase {
 
     ~ContextTestBase();
 
-  protected:
     silkworm::test_util::SetLogVerbosityGuard log_guard_;
     rpc::ClientContext context_;
     boost::asio::io_context& io_context_;

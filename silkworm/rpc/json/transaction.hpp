@@ -22,13 +22,11 @@
 #include <silkworm/rpc/json/glaze.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
- 
 namespace silkworm {
 
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
 }  // namespace silkworm
-
 
 namespace silkworm::rpc {
 

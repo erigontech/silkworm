@@ -41,6 +41,16 @@ static constexpr std::chrono::seconds kCheckCompletionInterval{1};
 
 using namespace silkworm::snapshots;
 
+//! \warning Hash provider for std::filesystem::path necessary to avoid the following error in Clang + LLVM 16
+//! \verbatim
+//! error: call to implicitly-deleted default constructor of 'std::hash<std::filesystem::path>'
+//! \endverbatim
+struct PathHasher {
+    auto operator()(const std::filesystem::path& p) const noexcept {
+        return std::filesystem::hash_value(p);
+    }
+};
+
 SnapshotSync::SnapshotSync(SnapshotRepository* repository, const ChainConfig& config)
     : repository_{repository},
       settings_{repository_->settings()},
@@ -137,7 +147,7 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     auto log_completed = [&](const std::filesystem::path& snapshot_file) {
         // The same snapshot segment may be downloaded multiple times in case of content change over time and
         // hence notified for completion multiple times. We need to count each snapshot segment just once here
-        static std::unordered_set<std::filesystem::path> snapshot_set;
+        static std::unordered_set<std::filesystem::path, PathHasher> snapshot_set;
         if (snapshot_set.contains(snapshot_file)) {
             return;
         }

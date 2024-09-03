@@ -150,10 +150,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         state_.set_nonce(contract_addr, 1);
     }
 
-    if (!gas_bailout_ || have >= value) {
-        state_.subtract_from_balance(message.sender, value);
-    }
-    state_.add_to_balance(contract_addr, value);
+    transfer(state_, message.sender, contract_addr, value, gas_bailout_);
 
     const evmc_message deploy_message{
         .kind = message.depth > 0 ? message.kind : EVMC_CALL,
@@ -221,10 +218,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             state_.touch(message.recipient);
         } else {
-            if (!gas_bailout_ || have >= value) {
-                state_.subtract_from_balance(message.sender, value);
-            }
-            state_.add_to_balance(message.recipient, value);
+            transfer(state_, message.sender, message.recipient, value, gas_bailout_);
         }
     }
 

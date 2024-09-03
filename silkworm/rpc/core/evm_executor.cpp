@@ -244,6 +244,7 @@ ExecutionResult EVMExecutor::call(
     evm.analysis_cache = svc.get_analysis_cache();
     evm.state_pool = svc.get_object_pool();
     evm.beneficiary = rule_set_->get_beneficiary(block.header);
+    evm.transfer = rule_set_->transfer_func();
 
     for (auto& tracer : tracers) {
         evm.add_tracer(*tracer);

@@ -89,6 +89,8 @@ class RuleSet {
                                       const intx::uint256& sender_initial_balance, const evmc::address& recipient,
                                       const intx::uint256& recipient_initial_balance);
 
+    virtual TransferFunc* transfer_func() const { return standard_transfer; }
+
   protected:
     explicit RuleSet(const ChainConfig& chain_config, bool prohibit_ommers)
         : chain_config_{&chain_config}, prohibit_ommers_{prohibit_ommers} {}

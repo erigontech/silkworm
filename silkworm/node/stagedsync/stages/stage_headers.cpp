@@ -16,7 +16,6 @@
 
 #include "stage_headers.hpp"
 
-#include <set>
 #include <thread>
 
 #include <magic_enum.hpp>
@@ -110,13 +109,12 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit_and_renew();
-            log::Info(log_prefix_) << "End, forward skipped due to 'stop-at-block', current block= "
-                                   << current_height_.load() << ")";
+            log::Trace(log_prefix_) << "End, forward skipped due to STOP_AT_BLOCK, block=" << current_height_.load();
             return Stage::Result::kSuccess;
         }
         if (current_height_ >= target_height) {
             tx.commit_and_renew();
-            log::Info(log_prefix_) << "End, forward skipped, we are already at the target block (" << target_height << ")";
+            log::Trace(log_prefix_) << "End, forward skipped, we are already at target block=" << target_height;
             return Stage::Result::kSuccess;
         }
         const BlockNum segment_width{target_height - current_height_};

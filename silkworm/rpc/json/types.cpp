@@ -410,7 +410,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
         json["fullblock"]["excessBlobGas"] = rpc::to_quantity(*b.header.excess_blob_gas);
     }
     if (b.header.parent_beacon_block_root) {
-        json["fullblock"]["parentBeaconBlockRoot"] = "0x" + silkworm::to_hex(*b.header.parent_beacon_block_root);
+        json["fullblock"]["parentBeaconBlockRoot"] = silkworm::to_hex(*b.header.parent_beacon_block_root, /* with_prefix = */ true);
     }
 
     json["fullblock"]["transactions"] = b.transactions;

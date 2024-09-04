@@ -114,7 +114,7 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
         json_tx.max_fee_per_blob_gas = std::make_optional(rpc::to_quantity(tx.max_fee_per_blob_gas));
         std::vector<std::string> hashes;
         for (const auto& curr_hash : tx.blob_versioned_hashes) {
-            auto hash = "0x" + silkworm::to_hex(curr_hash.bytes);
+            auto hash = silkworm::to_hex(curr_hash.bytes, /* with_prefix = */ true);
             hashes.push_back(hash);
         }
         json_tx.blob_versioned_hashes = std::make_optional(hashes);

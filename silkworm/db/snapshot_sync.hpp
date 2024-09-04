@@ -34,6 +34,8 @@
 #include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/config.hpp>
+#include <silkworm/db/snapshots/snapshot_bundle.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
@@ -61,6 +63,12 @@ class SnapshotSync {
     Task<void> setup_and_run();
     Task<void> setup();
     Task<void> build_missing_indexes();
+
+    void seed_frozen_local_snapshots();
+    void seed_frozen_bundle(BlockNumRange range);
+    void seed_bundle(snapshots::SnapshotBundle& bundle);
+    void seed_snapshot(const snapshots::SnapshotPath& path);
+
     void update_database(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping);
     void update_block_headers(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping);
     void update_block_bodies(db::RWTxn& txn, BlockNum max_block_available);

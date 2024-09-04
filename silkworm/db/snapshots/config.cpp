@@ -16,33 +16,49 @@
 
 #include "config.hpp"
 
-#include <map>
-#include <utility>
+#include <span>
 
 #include <boost/algorithm/string.hpp>
 
-#include <silkworm/db/snapshots/snapshot_path.hpp>
-#include <silkworm/infra/common/log.hpp>
+#include <silkworm/core/common/small_map.hpp>
+
+#include "config/bor_mainnet.hpp"
+#include "config/mainnet.hpp"
+#include "config/mumbai.hpp"
+#include "config/sepolia.hpp"
+#include "snapshot_path.hpp"
+#include "snapshot_size.hpp"
 
 namespace silkworm::snapshots {
 
+inline constexpr SmallMap<ChainId, std::span<const Entry>> kKnownConfigGeneratedEntries{
+    {*kKnownChainNameToId.find("mainnet"sv), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
+    {*kKnownChainNameToId.find("sepolia"sv), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
+    {*kKnownChainNameToId.find("bor-mainnet"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
+    {*kKnownChainNameToId.find("mumbai"sv), {kMumbaiSnapshots.data(), kMumbaiSnapshots.size()}},
+};
+
 Config Config::lookup_known_config(ChainId chain_id) {
-    const auto config = kKnownSnapshotConfigs.find(chain_id);
-    if (!config) {
+    const auto entries_ptr = kKnownConfigGeneratedEntries.find(chain_id);
+    if (!entries_ptr) {
         return Config{PreverifiedList{}};
     }
-    return Config{PreverifiedList(config->begin(), config->end())};
+
+    PreverifiedList entries(entries_ptr->begin(), entries_ptr->end());
+    entries = remove_unsupported_snapshots(entries);
+
+    return Config{std::move(entries)};
 }
 
-Config::Config(PreverifiedList preverified_snapshots)
-    : preverified_snapshots_(std::move(preverified_snapshots)), max_block_number_(compute_max_block()) {
-    remove_unsupported_snapshots();
+Config::Config(PreverifiedList entries)
+    : entries_(std::move(entries)),
+      max_block_number_(compute_max_block(entries_)) {
 }
 
-BlockNum Config::compute_max_block() {
+BlockNum Config::compute_max_block(const PreverifiedList& entries) {
     BlockNum max_block{0};
-    for (const auto& preverified_entry : preverified_snapshots_) {
-        const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{preverified_entry.file_name});
+    for (const auto& entry : entries) {
+        const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{entry.file_name});
         if (!snapshot_path) continue;
         if (!snapshot_path->is_segment()) continue;
         if (snapshot_path->type() != SnapshotType::headers) continue;
@@ -53,16 +69,26 @@ BlockNum Config::compute_max_block() {
     return max_block > 0 ? max_block - 1 : 0;
 }
 
-void Config::remove_unsupported_snapshots() {
+PreverifiedList Config::remove_unsupported_snapshots(const PreverifiedList& entries) {
     static constexpr std::array kUnsupportedSnapshotNameTokens = {
         "accessor/"sv, "domain/"sv, "history/"sv, "idx/"sv, "manifest.txt"sv, "salt-blocks.txt"sv, "salt-state.txt"sv, "blobsidecars.seg"sv};
 
+    PreverifiedList results = entries;
+
     // Check if a snapshot contains any of unsupported tokens
-    std::erase_if(preverified_snapshots_, [&](const auto& snapshot) {
-        return std::any_of(kUnsupportedSnapshotNameTokens.begin(), kUnsupportedSnapshotNameTokens.end(), [&snapshot](const auto& token) {
-            return boost::algorithm::contains(snapshot.file_name, token);
+    std::erase_if(results, [&](const auto& entry) {
+        return std::any_of(kUnsupportedSnapshotNameTokens.begin(), kUnsupportedSnapshotNameTokens.end(), [&entry](const auto& token) {
+            return boost::algorithm::contains(entry.file_name, token);
         });
     });
+
+    // Exclude small snapshots
+    std::erase_if(results, [&](const auto& entry) {
+        const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{entry.file_name});
+        return !snapshot_path.has_value() || (snapshot_path->block_range().size() < kMaxMergerSnapshotSize);
+    });
+
+    return results;
 }
 
 }  // namespace silkworm::snapshots

@@ -16,8 +16,15 @@
 
 #pragma once
 
+#include <functional>
+
+#include <boost/signals2.hpp>
+
+#include <silkworm/core/common/base.hpp>
+
 #include "data_migration.hpp"
 #include "snapshots/snapshot_repository.hpp"
+#include "snapshots/snapshot_size.hpp"
 
 namespace silkworm::db {
 
@@ -29,9 +36,11 @@ class SnapshotMerger : public DataMigration {
         : snapshots_(snapshots),
           tmp_dir_path_(std::move(tmp_dir_path)) {}
 
+    boost::signals2::scoped_connection on_snapshot_merged(std::function<void(BlockNumRange)> callback);
+
   private:
     static constexpr size_t kBatchSize = 10;
-    static constexpr size_t kMaxSnapshotSize = 100'000;
+    static constexpr size_t kMaxSnapshotSize = snapshots::kMaxMergerSnapshotSize;
 
     const char* name() const override { return "SnapshotMerger"; }
     std::unique_ptr<DataMigrationCommand> next_command() override;
@@ -42,6 +51,7 @@ class SnapshotMerger : public DataMigration {
 
     snapshots::SnapshotRepository& snapshots_;
     std::filesystem::path tmp_dir_path_;
+    boost::signals2::signal<void(BlockNumRange)> on_snapshot_merged_signal_;
 };
 
 }  // namespace silkworm::db

@@ -33,7 +33,7 @@ TEST_CASE("Config::lookup_known_config", "[silkworm][snapshot][config]") {
     }
 
     SECTION("mainnet") {
-        constexpr std::size_t kMaxBlockNumber{20'461'000};
+        constexpr std::size_t kMaxBlockNumber{20'400'000};
         const auto mainnet_snapshot_config = Config::lookup_known_config(1);
         CHECK(mainnet_snapshot_config.max_block_number() == kMaxBlockNumber - 1);
     }

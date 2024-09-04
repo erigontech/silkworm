@@ -33,23 +33,24 @@ TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
     constexpr static size_t kExpectedExpirations{2};
     size_t expired_count{0};  // The lambda capture-list content *must* outlive the scheduler execution loop
     for (const auto interval : kIntervals) {
-        auto periodic_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
-            ++expired_count;
-            if (expired_count == kExpectedExpirations) {  // stop timer scheduler after multiple expirations
-                io_context.stop();
-            }
-            return true;
-        });
+        Timer periodic_timer{io_context.get_executor(), interval, [&]() -> bool {
+                                 ++expired_count;
+                                 // Stop the timer scheduler after multiple expirations
+                                 if (expired_count == kExpectedExpirations) {
+                                     io_context.stop();
+                                 }
+                                 return true;
+                             }};
         SECTION("Duration " + std::to_string(interval) + "ms : expired") {
             io_context.run();  // run until timer expires, then the callback will stop us
         }
         SECTION("Duration " + std::to_string(interval) + "ms : cancelled") {
-            periodic_timer->stop();
+            periodic_timer.stop();
             io_context.run();
             // may be expired multiple times or not depending on interval
         }
         SECTION("Duration " + std::to_string(interval) + "ms : rescheduled") {
-            periodic_timer->reset();
+            periodic_timer.reset();
             io_context.run();
             // may be expired multiple times or not depending on interval
         }
@@ -60,22 +61,22 @@ TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
 TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
     bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
     for (const auto interval : kIntervals) {
-        auto one_shot_timer = Timer::create(io_context.get_executor(), interval, [&]() -> bool {
-            io_context.stop();
-            timer_expired = true;
-            return true;
-        });
-        SECTION("Duration " + std::to_string(interval) + "ms : expired") {
+        Timer one_shot_timer{io_context.get_executor(), interval, [&]() -> bool {
+                                 io_context.stop();
+                                 timer_expired = true;
+                                 return true;
+                             }};
+        SECTION("Duration " + std::to_string(interval) + "ms: expired") {
             io_context.run();  // run until timer expires, then the callback will stop us
             CHECK(timer_expired);
         }
-        SECTION("Duration " + std::to_string(interval) + "ms : cancelled") {
-            one_shot_timer->stop();
+        SECTION("Duration " + std::to_string(interval) + "ms: cancelled") {
+            one_shot_timer.stop();
             io_context.run();
             // may be expired or not depending on interval
         }
-        SECTION("Duration " + std::to_string(interval) + "ms : rescheduled") {
-            one_shot_timer->reset();
+        SECTION("Duration " + std::to_string(interval) + "ms: rescheduled") {
+            one_shot_timer.reset();
             io_context.run();
             // may be expired or not depending on interval
         }
@@ -87,13 +88,13 @@ TEST_CASE_METHOD(TimerTest, "Cancellation before expiration", "[infra][common][t
     bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
     for (const auto interval : kIntervals) {
         SECTION("Duration " + std::to_string(interval) + "ms") {
-            auto async_timer = Timer::create(
+            Timer async_timer{
                 io_context.get_executor(), interval, [&]() -> bool {
                     timer_expired = true;
                     return true;
                 },
-                /*auto_start=*/true);
-            async_timer->stop();
+                /*auto_start=*/true};
+            async_timer.stop();
             CHECK_NOTHROW(io_context.run());
             CHECK(!timer_expired);
         }
@@ -105,12 +106,34 @@ TEST_CASE_METHOD(TimerTest, "Lifecycle race condition", "[infra][common][timer]"
     for (const auto interval : kIntervals) {
         SECTION("Duration " + std::to_string(interval) + "ms") {
             {
-                auto async_timer = Timer::create(io_context.get_executor(), interval, []() -> bool { return true; });
-                async_timer->start();
+                Timer async_timer{io_context.get_executor(), interval, []() -> bool { return true; }};
+                async_timer.start();
                 io_context.poll();  // serve just one task
-                async_timer->stop();
+                async_timer.stop();
             }  // timer gets deleted here or after callback dispatch
             CHECK_NOTHROW(io_context.run());
+        }
+    }
+}
+
+TEST_CASE_METHOD(TimerTest, "Explicit stop not necessary", "[infra][common][timer]") {
+    for (const auto interval : kIntervals) {
+        SECTION("Duration " + std::to_string(interval) + "ms: stopped") {
+            {
+                Timer async_timer{io_context.get_executor(), interval, []() -> bool { return true; }};
+                async_timer.stop();
+            }
+            // The timer has been stopped explicitly: the scheduler eventually runs out of work
+            const auto executed_handlers = io_context.run();  // serve all remaining tasks
+            CHECK(executed_handlers > 0);
+        }
+        SECTION("Duration " + std::to_string(interval) + "ms: not stopped") {
+            {
+                Timer async_timer{io_context.get_executor(), interval, []() -> bool { return true; }};
+            }
+            // The timer has *not* been stopped explicitly, but automatically: the scheduler eventually runs out of work anyway
+            const auto executed_handlers = io_context.run();  // serve all remaining tasks
+            CHECK(executed_handlers > 0);
         }
     }
 }

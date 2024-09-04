@@ -33,6 +33,7 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/snapshots/config.hpp>
 #include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
@@ -69,7 +70,7 @@ class SnapshotSync {
     snapshots::SnapshotRepository& repository() { return repository_; };
 
     snapshots::SnapshotSettings settings_;
-    ChainId chain_id_;
+    const snapshots::Config snapshots_config_;
     mdbx::env& chaindata_env_;
 
     snapshots::SnapshotRepository repository_;

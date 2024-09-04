@@ -29,7 +29,6 @@
 #include <silkworm/db/blocks/headers/header_snapshot.hpp>
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/config.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/stages.hpp>
@@ -62,7 +61,7 @@ SnapshotSync::SnapshotSync(
     std::filesystem::path tmp_dir_path,
     stagedsync::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
-      chain_id_{chain_id},
+      snapshots_config_{Config::lookup_known_config(chain_id)},
       chaindata_env_{chaindata_env},
       repository_{settings_, std::make_unique<db::SnapshotBundleFactoryImpl>()},
       client_{settings_.bittorrent_settings},
@@ -142,12 +141,8 @@ Task<void> SnapshotSync::download_and_index_snapshots() {
 
     repository_.reopen_folder();
 
-    const auto max_block_available = repository_.max_block_available();
-    SILK_INFO << "SnapshotSync: max block available: " << max_block_available;
-
-    const auto snapshot_config = Config::lookup_known_config(chain_id_);
-    const auto configured_max_block_number = snapshot_config.max_block_number();
-    SILK_INFO << "SnapshotSync: configured max block: " << configured_max_block_number;
+    SILK_INFO << "SnapshotSync: max block available: " << repository_.max_block_available();
+    SILK_INFO << "SnapshotSync: configured max block: " << snapshots_config_.max_block_number();
 }
 
 Task<void> SnapshotSync::download_snapshots() {
@@ -156,7 +151,7 @@ Task<void> SnapshotSync::download_snapshots() {
         SILK_INFO << "SnapshotSync: downloading missing snapshots";
     }
 
-    const auto snapshot_config = Config::lookup_known_config(chain_id_);
+    const auto& snapshot_config = snapshots_config_;
     if (snapshot_config.preverified_snapshots().empty()) {
         SILK_ERROR << "SnapshotSync: no preverified snapshots found";
         throw std::runtime_error("SnapshotSync: no preverified snapshots found");

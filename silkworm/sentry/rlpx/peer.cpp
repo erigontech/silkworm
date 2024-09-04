@@ -53,6 +53,8 @@ Peer::Peer(
     bool is_inbound,
     bool is_static)
     : stream_(std::move(stream)),
+      local_endpoint_(stream_.socket().local_endpoint()),
+      remote_endpoint_(stream_.socket().remote_endpoint()),
       node_key_(std::move(node_key)),
       client_id_(std::move(client_id)),
       node_listen_port_(node_listen_port),

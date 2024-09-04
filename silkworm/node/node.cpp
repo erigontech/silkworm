@@ -55,6 +55,7 @@ class NodeImpl final {
     std::shared_ptr<sentry::api::SentryClient> sentry_client() { return sentry_client_; }
 
     Task<void> run();
+    Task<void> run_tasks();
     Task<void> wait_for_setup();
 
   private:
@@ -121,13 +122,18 @@ Task<void> NodeImpl::wait_for_setup() {
 Task<void> NodeImpl::run() {
     using namespace concurrency::awaitable_wait_for_all;
 
+    co_await (run_tasks() && snapshot_sync_.run());
+}
+
+Task<void> NodeImpl::run_tasks() {
+    using namespace concurrency::awaitable_wait_for_all;
+
     co_await wait_for_setup();
 
     co_await (
         start_execution_server() &&
         start_resource_usage_log() &&
         start_execution_log_timer() &&
-        snapshot_sync_.run() &&
         start_backend_kv_grpc_server());
 }
 

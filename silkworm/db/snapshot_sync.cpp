@@ -21,6 +21,7 @@
 #include <latch>
 #include <stdexcept>
 
+#include <boost/asio/this_coro.hpp>
 #include <gsl/util>
 #include <magic_enum.hpp>
 
@@ -36,13 +37,10 @@
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
-#include <silkworm/infra/concurrency/sleep.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
 namespace silkworm::db {
-
-//! Interval between successive checks for either completion or stop requested
-static constexpr std::chrono::seconds kCheckCompletionInterval{1};
 
 using namespace silkworm::snapshots;
 
@@ -163,7 +161,7 @@ Task<void> SnapshotSync::download_snapshots() {
         SILK_ERROR << "SnapshotSync: no preverified snapshots found";
         throw std::runtime_error("SnapshotSync: no preverified snapshots found");
     }
-    const auto num_snapshots{static_cast<std::ptrdiff_t>(snapshot_config.preverified_snapshots().size())};
+    const size_t num_snapshots = snapshot_config.preverified_snapshots().size();
     SILK_INFO << "SnapshotSync: sync started: [0/" << num_snapshots << "]";
 
     auto log_added = [](const std::filesystem::path& snapshot_file) {
@@ -171,7 +169,7 @@ Task<void> SnapshotSync::download_snapshots() {
     };
     const auto added_connection = client_.added_subscription.connect(log_added);
 
-    static int completed{0};
+    size_t completed = 0;
     auto log_stats = [&](lt::span<const int64_t> counters) {
         // Log progress just once in a while because our BitTorrent notifications rely on alert polling so quite chatty
         static int notification_count{0};
@@ -193,19 +191,11 @@ Task<void> SnapshotSync::download_snapshots() {
     };
     const auto stats_connection = client_.stats_subscription.connect(log_stats);
 
-    // The same snapshot segment may be downloaded multiple times in case of content change over time and
-    // hence notified for completion multiple times. We need to count each snapshot segment just once here
-    std::unordered_set<std::filesystem::path, PathHasher> snapshot_set;
-    std::latch download_done{num_snapshots};
+    auto executor = co_await boost::asio::this_coro::executor;
+    // make the buffer bigger so that try_send always succeeds in case of duplicate files (see snapshot_set below)
+    concurrency::Channel<std::filesystem::path> completed_channel{executor, num_snapshots * 2};
     auto log_completed = [&](const std::filesystem::path& snapshot_file) {
-        if (snapshot_set.contains(snapshot_file)) {
-            return;
-        }
-        const auto [_, inserted] = snapshot_set.insert(snapshot_file);
-        SILKWORM_ASSERT(inserted);
-        SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
-                  << " [" << ++completed << "/" << num_snapshots << "]";
-        download_done.count_down();
+        completed_channel.try_send(snapshot_file);
     };
     const auto completed_connection = client_.completed_subscription.connect(log_completed);
 
@@ -214,9 +204,20 @@ Task<void> SnapshotSync::download_snapshots() {
         client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
     }
 
-    // Wait for download completion of all snapshots or stop request
-    while (!download_done.try_wait()) {
-        co_await sleep(kCheckCompletionInterval);
+    // The same snapshot segment may be downloaded multiple times in case of content change over time and
+    // hence notified for completion multiple times. We need to count each snapshot segment just once here
+    std::unordered_set<std::filesystem::path, PathHasher> snapshot_set;
+
+    // Wait for download completion of all snapshots
+    for (completed = 0; completed < num_snapshots; completed++) {
+        std::filesystem::path snapshot_file;
+        do {
+            snapshot_file = co_await completed_channel.receive();
+        } while (snapshot_set.contains(snapshot_file));
+        const auto [_, inserted] = snapshot_set.insert(snapshot_file);
+        SILKWORM_ASSERT(inserted);
+        SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
+                  << " [" << (completed + 1) << "/" << num_snapshots << "]";
     }
 
     SILK_INFO << "SnapshotSync: sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
@@ -240,9 +241,11 @@ Task<void> SnapshotSync::build_missing_indexes() {
     SILK_INFO << "SnapshotSync: " << missing_indexes.size() << " missing indexes to build";
     const size_t total_tasks = missing_indexes.size();
     std::atomic_size_t done_tasks;
+    auto executor = co_await boost::asio::this_coro::executor;
+    concurrency::Channel<size_t> done_channel{executor, total_tasks};
 
     for (const auto& index : missing_indexes) {
-        workers.push_task([index, total_tasks, &done_tasks]() {
+        workers.push_task([&]() {
             try {
                 SILK_INFO << "SnapshotSync: building index " << index->path().filename() << " ...";
                 index->build();
@@ -250,6 +253,7 @@ Task<void> SnapshotSync::build_missing_indexes() {
                 SILK_INFO << "SnapshotSync: built index " << index->path().filename() << ";"
                           << " progress: " << (done_tasks * 100 / total_tasks) << "% "
                           << done_tasks << " of " << total_tasks << " indexes ready";
+                done_channel.try_send(done_tasks);
             } catch (const std::exception& ex) {
                 SILK_CRIT << "SnapshotSync: build index: " << index->path().filename() << " failed [" << ex.what() << "]";
                 throw;
@@ -257,9 +261,9 @@ Task<void> SnapshotSync::build_missing_indexes() {
         });
     }
 
-    // Wait for all missing indexes to be built or stop request
-    while (workers.get_tasks_total()) {
-        co_await sleep(kCheckCompletionInterval);
+    // Wait for all missing indexes to be built
+    while (done_tasks < total_tasks) {
+        co_await done_channel.receive();
     }
 
     SILK_INFO << "SnapshotSync: built missing indexes";

@@ -84,7 +84,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         auto state = transaction_.create_state(this_executor, storage_, block_number);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
-        silkworm::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
+        silkworm::Transaction transaction{call.to_transaction()};
         while (lo + 1 < hi) {
             EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;

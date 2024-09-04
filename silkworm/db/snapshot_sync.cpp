@@ -143,11 +143,11 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     };
     const auto stats_connection = client_.stats_subscription.connect(log_stats);
 
+    // The same snapshot segment may be downloaded multiple times in case of content change over time and
+    // hence notified for completion multiple times. We need to count each snapshot segment just once here
+    std::unordered_set<std::filesystem::path, PathHasher> snapshot_set;
     std::latch download_done{num_snapshots};
     auto log_completed = [&](const std::filesystem::path& snapshot_file) {
-        // The same snapshot segment may be downloaded multiple times in case of content change over time and
-        // hence notified for completion multiple times. We need to count each snapshot segment just once here
-        static std::unordered_set<std::filesystem::path, PathHasher> snapshot_set;
         if (snapshot_set.contains(snapshot_file)) {
             return;
         }

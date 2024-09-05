@@ -29,6 +29,7 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/node/execution/block/block_executor.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -196,7 +197,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
                                        ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
                                        BlockNum prune_receipts_threshold, BlockNum prune_call_traces_threshold) {
-    Stage::Result ret{Stage::Result::kSuccess};
+    Result ret{Result::kSuccess};
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
@@ -227,49 +228,36 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 log_time = now + 5s;
             }
 
-            ExecutionProcessor processor(block, *rule_set_, buffer, chain_config_);
-            processor.evm().analysis_cache = &analysis_cache;
-            processor.evm().state_pool = &state_pool;
+            const auto write_receipts = block_num_ >= prune_receipts_threshold;
+            const auto write_traces = block_num_ >= prune_call_traces_threshold;
+            constexpr auto kWriteChangeSets = true;
 
-            CallTraces traces;
-            CallTracer tracer{traces};
-            processor.evm().add_tracer(tracer);
-
-            if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
-                // Persist work done so far
-                if (block_num_ >= prune_receipts_threshold) {
-                    buffer.insert_receipts(block_num_, receipts);
-                }
-                buffer.write_to_db();
-                prefetched_blocks_.clear();
-
-                // Notify sync_loop we need to unwind
-                sync_context_->unwind_point.emplace(block_num_ - 1u);
-                sync_context_->bad_block_hash.emplace(block.header.hash());
-
-                // Display warning and return
-                log::Warning(log_prefix_,
-                             {"block", std::to_string(block_num_),
-                              "hash", to_hex(block.header.hash().bytes, true),
-                              "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
-                return Stage::Result::kInvalidBlock;
-            }
-
+            execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets, batch_size_};
             try {
-                processor.flush_state();
+                if (const ValidationResult res = block_executor.execute_single(block, buffer, analysis_cache, state_pool); res != ValidationResult::kOk) {
+                    // Persist work done so far
+                    if (write_receipts) {
+                        buffer.insert_receipts(block_num_, receipts);
+                    }
+                    buffer.write_to_db();
+                    prefetched_blocks_.clear();
+
+                    // Notify sync_loop we need to unwind
+                    sync_context_->unwind_point.emplace(block_num_ - 1u);
+                    sync_context_->bad_block_hash.emplace(block.header.hash());
+
+                    // Display warning and return
+                    log::Warning(log_prefix_,
+                                 {"block", std::to_string(block_num_),
+                                  "hash", to_hex(block.header.hash().bytes, true),
+                                  "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
+                    return Result::kInvalidBlock;
+                }
+
             } catch (const db::Buffer::MemoryLimitError&) {
                 // batch done
                 break;
             }
-
-            if (block_num_ >= prune_receipts_threshold) {
-                buffer.insert_receipts(block_num_, receipts);
-            }
-            if (block_num_ >= prune_call_traces_threshold) {
-                buffer.insert_call_traces(block_num_, traces);
-            }
-
-            buffer.write_history_to_db();
 
             // Stats
             std::unique_lock progress_lock(progress_mtx_);

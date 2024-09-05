@@ -79,23 +79,6 @@ void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height) {
     cursor->upsert(db::to_slice(key), db::to_slice(value));
 }
 
-std::vector<std::string> read_snapshots(ROTxn& txn) {
-    auto db_info_cursor = txn.ro_cursor(table::kDatabaseInfo);
-    if (!db_info_cursor->seek(mdbx::slice{kDbSnapshotsKey})) {
-        return {};
-    }
-    const auto data{db_info_cursor->current()};
-    // https://github.com/nlohmann/json/issues/2204
-    const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, /*.allow_exceptions=*/false);
-    return json.get<std::vector<std::string>>();
-}
-
-void write_snapshots(RWTxn& txn, const std::vector<std::string>& snapshot_file_names) {
-    auto db_info_cursor = txn.rw_cursor(table::kDatabaseInfo);
-    nlohmann::json json_value = snapshot_file_names;
-    db_info_cursor->upsert(mdbx::slice{kDbSnapshotsKey}, mdbx::slice(json_value.dump().data()));
-}
-
 std::optional<BlockHeader> read_header(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash) {
     return read_header(txn, block_number, hash.bytes);
 }

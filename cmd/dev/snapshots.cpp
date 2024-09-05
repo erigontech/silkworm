@@ -204,10 +204,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
                         "Max number of downloads active simultaneously")
             ->capture_default_str()
             ->check(CLI::Range(3, 20));
-        cmd->add_flag("--seeding",
-                      bittorrent_settings.seeding,
-                      "Flag indicating if torrents should be seeded when download is finished")
-            ->capture_default_str();
     }
     for (auto& cmd : {commands[SnapshotTool::create_index],
                       commands[SnapshotTool::open_index],
@@ -382,7 +378,7 @@ void open_index(const SnapSettings& settings) {
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
-    const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id, /*whitelist=*/{})};
+    const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id)};
     WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots()};
 
     boost::asio::io_context scheduler;
@@ -816,14 +812,24 @@ void merge(const SnapSettings& settings) {
 }
 
 void sync(const SnapSettings& settings) {
+    class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
+      public:
+        explicit NoopStageSchedulerAdapter() {}
+        ~NoopStageSchedulerAdapter() override = default;
+        Task<void> schedule(std::function<void(db::RWTxn&)> /*callback*/) override {
+            co_return;
+        }
+    };
+
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
-    db::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
-    std::vector<std::string> snapshot_file_names;
-    if (settings.snapshot_file_name) {
-        snapshot_file_names.push_back(*settings.snapshot_file_name);
-    }
-    snapshot_sync.download_snapshots(snapshot_file_names);
+
+    TemporaryDirectory tmp_dir;
+    db::EnvConfig chaindata_env_config{tmp_dir.path()};
+    auto chaindata_env = db::open_env(chaindata_env_config);
+    test_util::TaskRunner runner;
+    NoopStageSchedulerAdapter stage_scheduler;
+    db::SnapshotSync snapshot_sync{settings, kMainnetConfig.chain_id, chaindata_env, tmp_dir.path(), stage_scheduler};
+    runner.run(snapshot_sync.download_snapshots());
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
 
     SILK_INFO << "Sync elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";

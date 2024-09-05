@@ -32,18 +32,18 @@ https://docs.rs/tokio/1.25.0/tokio/sync/struct.Notify.html
 It supports multiple waiters unlike EventNotifier.
 
 Synchronize waiter()/notify_all() calls with your producer state to avoid a deadlock.
-It happens if the producer readiness is able to be updated right before calling waiter().
+It happens if the producer readiness updates right before calling waiter().
 
 Example:
     // consumers
-    std::scoped_lock lock(mutex_);
+    std::unique_lock lock{mutex_};
     if (ready_) co_return;
     auto waiter = cond_var.waiter();
     lock.unlock();
     co_await waiter();
 
     // producer
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock lock{mutex_};
     ready_ = true;
     cond_var.notify_all();
 

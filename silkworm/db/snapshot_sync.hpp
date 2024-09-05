@@ -16,16 +16,16 @@
 
 #pragma once
 
+#include <atomic>
 #include <filesystem>
 #include <functional>
 #include <latch>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
-
-#include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -37,7 +37,7 @@
 #include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
-#include <silkworm/infra/concurrency/awaitable_future.hpp>
+#include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
 namespace silkworm::db {
@@ -45,7 +45,6 @@ namespace silkworm::db {
 class SnapshotSync {
   public:
     SnapshotSync(
-        boost::asio::any_io_executor executor,
         snapshots::SnapshotSettings settings,
         ChainId chain_id,
         mdbx::env& chaindata_env,
@@ -81,7 +80,9 @@ class SnapshotSync {
     db::SnapshotMerger snapshot_merger_;
 
     std::latch is_stopping_latch_;
-    concurrency::AwaitablePromise<bool> setup_done_promise_;
+    std::atomic_bool setup_done_;
+    concurrency::AwaitableConditionVariable setup_done_cond_var_;
+    std::mutex setup_done_mutex_;
 };
 
 }  // namespace silkworm::db

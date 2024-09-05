@@ -83,7 +83,6 @@ struct SnapshotSyncForTest : public SnapshotSync {
 
     SnapshotSyncForTest(SnapshotSyncTest& test, SettingsOverrides overrides = {})
         : SnapshotSync{
-              test.runner.executor(),
               make_settings(test.tmp_dir.path(), overrides),
               kMainnetConfig.chain_id,
               test.context.env(),

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -83,7 +84,8 @@ class AwaitablePromise {
 
   public:
     explicit AwaitablePromise(const boost::asio::any_io_executor& executor)
-        : channel_(std::make_shared<AsyncChannel>(executor, 1)) {}
+        : channel_(std::make_shared<AsyncChannel>(executor, 1)),
+          subscribed_(std::make_unique<std::atomic_bool>()) {}
 
     AwaitablePromise(const AwaitablePromise&) = delete;
     AwaitablePromise& operator=(const AwaitablePromise&) = delete;
@@ -99,7 +101,13 @@ class AwaitablePromise {
         set(ptr, std::nullopt);
     }
 
-    AwaitableFuture<T> get_future() { return AwaitableFuture<T>(channel_); }
+    AwaitableFuture<T> get_future() {
+        bool expected{false};
+        bool was_unsubscribed = subscribed_->compare_exchange_strong(expected, true);
+        if (!was_unsubscribed)
+            throw std::runtime_error("AwaitablePromise::get_future can't be called multiple times");
+        return AwaitableFuture<T>(channel_);
+    }
 
     class AlreadySatisfiedError : public std::runtime_error {
       public:
@@ -117,6 +125,7 @@ class AwaitablePromise {
     }
 
     std::shared_ptr<AsyncChannel> channel_;
+    std::unique_ptr<std::atomic_bool> subscribed_;
 };
 
 }  // namespace silkworm::concurrency

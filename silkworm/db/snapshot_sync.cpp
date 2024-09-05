@@ -54,7 +54,6 @@ struct PathHasher {
 };
 
 SnapshotSync::SnapshotSync(
-    boost::asio::any_io_executor executor,
     snapshots::SnapshotSettings settings,
     ChainId chain_id,
     mdbx::env& chaindata_env,
@@ -67,8 +66,7 @@ SnapshotSync::SnapshotSync(
       client_{settings_.bittorrent_settings},
       snapshot_freezer_{db::ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings.keep_blocks},
       snapshot_merger_{repository_, tmp_dir_path},
-      is_stopping_latch_{1},
-      setup_done_promise_{executor} {
+      is_stopping_latch_{1} {
 }
 
 Task<void> SnapshotSync::run() {
@@ -117,12 +115,17 @@ Task<void> SnapshotSync::setup() {
     // Set snapshot repository into snapshot-aware database access
     db::DataModel::set_snapshot_repository(&repository_);
 
-    setup_done_promise_.set_value(true);
+    std::scoped_lock lock{setup_done_mutex_};
+    setup_done_ = true;
+    setup_done_cond_var_.notify_all();
 }
 
 Task<void> SnapshotSync::wait_for_setup() {
-    auto future = setup_done_promise_.get_future();
-    co_await future.get_async();
+    std::unique_lock lock{setup_done_mutex_};
+    if (setup_done_) co_return;
+    auto waiter = setup_done_cond_var_.waiter();
+    lock.unlock();
+    co_await waiter();
 }
 
 Task<void> SnapshotSync::download_and_index_snapshots() {

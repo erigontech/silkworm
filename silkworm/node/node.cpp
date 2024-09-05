@@ -95,7 +95,7 @@ static auto make_execution_server_settings() {
 }
 
 NodeImpl::NodeImpl(
-    boost::asio::any_io_executor executor,
+    [[maybe_unused]] boost::asio::any_io_executor executor,
     Settings& settings,
     SentryClientPtr sentry_client,
     mdbx::env chaindata_env)
@@ -105,7 +105,7 @@ NodeImpl::NodeImpl(
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
-      snapshot_sync_{executor, settings.snapshot_settings, settings.chain_config->chain_id, chaindata_env_, settings_.data_directory->temp().path(), execution_engine_.stage_scheduler()},
+      snapshot_sync_{settings.snapshot_settings, settings.chain_config->chain_id, chaindata_env_, settings_.data_directory->temp().path(), execution_engine_.stage_scheduler()},
       sentry_client_{std::move(sentry_client)},
       resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_env_, sentry_client_);

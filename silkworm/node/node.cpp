@@ -95,7 +95,7 @@ static auto make_execution_server_settings() {
 }
 
 NodeImpl::NodeImpl(
-    [[maybe_unused]] boost::asio::any_io_executor executor,
+    [[maybe_unused]] boost::asio::any_io_executor executor,  // NOLINT(*-unnecessary-value-param)
     Settings& settings,
     SentryClientPtr sentry_client,
     mdbx::env chaindata_env)

@@ -61,8 +61,8 @@ class SnapshotSync {
     Task<void> setup_and_run();
     Task<void> setup();
     Task<void> build_missing_indexes();
-    void update_database(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping);
-    void update_block_headers(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping);
+    void update_database(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping);
+    void update_block_headers(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping);
     void update_block_bodies(db::RWTxn& txn, BlockNum max_block_available);
     static void update_block_hashes(db::RWTxn& txn, BlockNum max_block_available);
     static void update_block_senders(db::RWTxn& txn, BlockNum max_block_available);

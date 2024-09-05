@@ -698,18 +698,21 @@ void do_freelist(db::EnvConfig& config, bool detail) {
     env.close(config.shared);
 }
 
-void do_schema(db::EnvConfig& config) {
+void do_schema(db::EnvConfig& config, bool force_update) {
     auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
+    db::RWTxnManaged txn{env};
 
     auto schema_version{db::read_schema_version(txn)};
     if (!schema_version.has_value()) {
         throw std::runtime_error("Not a Silkworm db or no schema version found");
     }
-    std::cout << "\n"
-              << "Database schema version : " << schema_version->to_string() << "\n\n";
+    std::cout << "Database schema version: " << schema_version->to_string() << "\n";
 
-    env.close(config.shared);
+    if (force_update) {
+        db::write_schema_version(txn, db::table::kRequiredSchemaVersion);
+        txn.commit_and_stop();
+        std::cout << "New database schema version: " << db::table::kRequiredSchemaVersion.to_string() << "\n";
+    }
 }
 
 void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
@@ -2256,6 +2259,10 @@ int main(int argc, char* argv[]) {
 
     // Read db schema
     auto cmd_schema = app_main.add_subcommand("schema", "Reports schema version of Silkworm database");
+    auto cmd_schema_force_version_update_opt = cmd_schema->add_flag("--force_version_update",
+                                                                    "Force schema version update as required by current Silkworm code. "
+                                                                    "Please be aware that this may corrupt or make your database unreadable. "
+                                                                    "Do at your own risk.");
 
     // List stages keys and their heights
     auto cmd_stages = app_main.add_subcommand("stages", "List stages and their actual heights");
@@ -2442,7 +2449,7 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_freelist) {
             do_freelist(src_config, static_cast<bool>(*freelist_detail_opt));
         } else if (*cmd_schema) {
-            do_schema(src_config);
+            do_schema(src_config, static_cast<bool>(*cmd_schema_force_version_update_opt));
         } else if (*cmd_stages) {
             do_stages(src_config);
         } else if (*cmd_migrations) {

@@ -28,6 +28,7 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
                                        const ChainConfig& config)
     : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
+    evm_.transfer = rule_set.transfer_func();
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {

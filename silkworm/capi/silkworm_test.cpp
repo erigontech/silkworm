@@ -582,7 +582,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     SilkwormLibrary silkworm_lib{db.get_path()};
 
     const int chain_id{1};
-    const uint64_t batch_size{170};  // Small batch size to force multiple iterations, two blocks at a time
+    const uint64_t batch_size{170};       // Small batch size to force multiple iterations, two blocks at a time
     const bool write_change_sets{false};  // We CANNOT write changesets here, TestDatabaseContext db already has them
     const bool write_receipts{false};     // We CANNOT write receipts here, TestDatabaseContext db already has them
     const bool write_call_traces{false};  // For coherence but don't care
@@ -634,7 +634,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
-        block.transactions[0].to->bytes[19]++; // change recipient address to force batch size growth  
+        block.transactions[0].to->bytes[19]++;  // change recipient address to force batch size growth
     }
 
     // Execute N blocks using an *internal* txn
@@ -657,7 +657,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
-        block.transactions[0].to->bytes[19]++; // change recipient address to force batch size growth
+        block.transactions[0].to->bytes[19]++;  // change recipient address to force batch size growth
     }
 
     // Execute N blocks using an *internal* txn, then commit

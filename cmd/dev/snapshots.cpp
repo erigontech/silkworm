@@ -814,7 +814,7 @@ void merge(const SnapSettings& settings) {
 void sync(const SnapSettings& settings) {
     class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
       public:
-        explicit NoopStageSchedulerAdapter() {}
+        explicit NoopStageSchedulerAdapter() = default;
         ~NoopStageSchedulerAdapter() override = default;
         Task<void> schedule(std::function<void(db::RWTxn&)> /*callback*/) override {
             co_return;
@@ -828,7 +828,7 @@ void sync(const SnapSettings& settings) {
     auto chaindata_env = db::open_env(chaindata_env_config);
     test_util::TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;
-    db::SnapshotSync snapshot_sync{settings, kMainnetConfig.chain_id, chaindata_env, tmp_dir.path(), stage_scheduler};
+    db::SnapshotSync snapshot_sync{settings, kMainnetConfig.chain_id, chaindata_env, tmp_dir.path(), stage_scheduler};  // NOLINT(cppcoreguidelines-slicing)
     runner.run(snapshot_sync.download_snapshots());
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
 

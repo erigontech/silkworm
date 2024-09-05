@@ -43,7 +43,7 @@ struct SettingsOverrides {
 
 class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
   public:
-    explicit NoopStageSchedulerAdapter() {}
+    explicit NoopStageSchedulerAdapter() = default;
     ~NoopStageSchedulerAdapter() override = default;
     Task<void> schedule(std::function<void(db::RWTxn&)> /*callback*/) override {
         co_return;
@@ -81,7 +81,7 @@ struct SnapshotSyncForTest : public SnapshotSync {
         };
     }
 
-    SnapshotSyncForTest(SnapshotSyncTest& test, SettingsOverrides overrides = {})
+    explicit SnapshotSyncForTest(SnapshotSyncTest& test, SettingsOverrides overrides = {})
         : SnapshotSync{
               make_settings(test.tmp_dir.path(), overrides),
               kMainnetConfig.chain_id,

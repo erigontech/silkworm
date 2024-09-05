@@ -582,7 +582,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     SilkwormLibrary silkworm_lib{db.get_path()};
 
     const int chain_id{1};
-    const uint64_t batch_size{256 * kMebi};
+    const uint64_t batch_size{170};  // Small batch size to force multiple iterations, two blocks at a time
     const bool write_change_sets{false};  // We CANNOT write changesets here, TestDatabaseContext db already has them
     const bool write_receipts{false};     // We CANNOT write receipts here, TestDatabaseContext db already has them
     const bool write_call_traces{false};  // For coherence but don't care
@@ -602,7 +602,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 
     // Prepare block template (just 1 tx w/ value transfer)
     evmc::address from{0x658bdf435d810c91414ec09147daa6db62406379_address};  // funded in genesis
-    evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};    // untouched address
+    evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb500_address};    // untouched address(es)
     intx::uint256 value{1};
 
     Block block{};
@@ -634,6 +634,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
+        block.transactions[0].to->bytes[19]++; // change recipient address to force batch size growth  
     }
 
     // Execute N blocks using an *internal* txn
@@ -645,16 +646,18 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 
     db::ROTxnManaged ro_txn{db};
     REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == kBlocks * value);
+    CHECK(db::read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
 
     // Insert N blocks again
+    block.transactions[0].to = to;
     for (size_t i{10 + kBlocks}; i < (10 + 2 * kBlocks); ++i) {
         block.header.number = i;
         insert_block(db, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
+        block.transactions[0].to->bytes[19]++; // change recipient address to force batch size growth
     }
 
     // Execute N blocks using an *internal* txn, then commit
@@ -666,7 +669,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 
     ro_txn = db::ROTxnManaged{db};
     REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
+    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {

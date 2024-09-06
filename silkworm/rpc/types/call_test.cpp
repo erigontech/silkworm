@@ -80,8 +80,8 @@ TEST_CASE("call w/o gas price and max_fee_per_gas & max_priority_fee_per_gas not
     };
     silkworm::Transaction txn = call.to_transaction();
     CHECK(txn.gas_limit == 235);
-    CHECK(txn.max_fee_per_gas == 0);
-    CHECK(txn.max_priority_fee_per_gas == 0);
+    CHECK(txn.max_fee_per_gas == 18000);
+    CHECK(txn.max_priority_fee_per_gas == 18000);
     CHECK(txn.nonce == 1);
 }
 

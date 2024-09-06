@@ -275,7 +275,6 @@ ExecutionResult EVMExecutor::call(
         want = txn.gas_limit * effective_gas_price;
     } else {
         want = 0;
-        std::cout << "want zero\n";
     }
 
     // EIP-4844 blob gas cost (calc_data_fee)

@@ -105,14 +105,14 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if req
     })"_json);
 }
 
-TEST_CASE_METHOD(test_util::RpcApiE2ETest, "fuzzy: eth_call invalid params", "[rpc][api]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "eth_call without params on gas", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{}, "latest"]})"_json;
     std::string reply;
     run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "error":{"code":-32000,"message":"insufficient funds for gas * price + value: address 0x0000000000000000000000000000000000000000 have 0 want 15240199550000000"}
+        "result":"0x"
    })"_json);
 }
 

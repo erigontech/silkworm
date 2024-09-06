@@ -1121,7 +1121,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        silkworm::Transaction txn{call.to_transaction(block_with_hash->block.header.base_fee_per_gas)};
+        silkworm::Transaction txn{call.to_transaction()};
 
         const auto execution_result = co_await EVMExecutor::call(
             chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
@@ -1304,7 +1304,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         auto tracer = std::make_shared<AccessListTracer>();
 
         Tracers tracers{tracer};
-        auto txn = call.to_transaction(block_with_hash->block.header.base_fee_per_gas, std::nullopt, nonce);
+        auto txn = call.to_transaction(std::nullopt, nonce);
         AccessList saved_access_list = call.access_list;
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
@@ -1331,7 +1331,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 reply = make_json_content(request, access_list_result);
                 break;
             }
-            txn = call.to_transaction(block_with_hash->block.header.base_fee_per_gas, current_access_list, nonce);
+            txn = call.to_transaction(current_access_list, nonce);
             saved_access_list = current_access_list;
         }
     } catch (const std::invalid_argument& iv) {

@@ -94,7 +94,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
         // Don't call reserve here to preallocate result.results - since json value is dynamic it doesn't know yet how much it should allocate!
         // -> Don't uncomment this line result.results.reserve(bundle.transactions.size());
         for (const auto& call : bundle.transactions) {
-            silkworm::Transaction txn{call.to_transaction(block.header.base_fee_per_gas)};
+            silkworm::Transaction txn{call.to_transaction()};
 
             auto call_execution_result = executor.call(blockContext.block_with_hash->block, txn);
 

@@ -18,8 +18,8 @@
 
 #include <atomic>
 #include <exception>
-#include <latch>
 #include <stdexcept>
+#include <utility>
 
 #include <boost/asio/this_coro.hpp>
 #include <gsl/util>
@@ -30,7 +30,6 @@
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshots/bittorrent/torrent_file.hpp>
-#include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -65,8 +64,8 @@ SnapshotSync::SnapshotSync(
       chaindata_env_{chaindata_env},
       repository_{settings_, std::make_unique<db::SnapshotBundleFactoryImpl>()},
       client_{settings_.bittorrent_settings},
-      snapshot_freezer_{db::ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings.keep_blocks},
-      snapshot_merger_{repository_, tmp_dir_path},
+      snapshot_freezer_{db::ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings_.keep_blocks},
+      snapshot_merger_{repository_, std::move(tmp_dir_path)},
       is_stopping_latch_{1} {
 }
 
@@ -307,14 +306,14 @@ void SnapshotSync::seed_snapshot(const SnapshotPath& path) {
     client_.add_info_hash(path.path().filename().string(), torrent_file.info_hash());
 }
 
-void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping) {
+void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping) {
     update_block_headers(txn, max_block_available, is_stopping);
     update_block_bodies(txn, max_block_available);
     update_block_hashes(txn, max_block_available);
     update_block_senders(txn, max_block_available);
 }
 
-void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_available, std::function<bool()> is_stopping) {
+void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping) {
     // Check if Headers stage progress has already reached the max block in snapshots
     const auto last_progress{db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
     if (last_progress >= max_block_available) {

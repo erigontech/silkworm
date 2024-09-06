@@ -45,7 +45,7 @@ delivering the first release of [Erigon++] starting from Erigon 2.59.0.
 Erigon++ is supported on platforms:
 
 * Linux x86_64 with glibc 34+, glibcpp 30+ (such as Debian 12+, Ubuntu 22+, etc.)
-* macOS 13.3+ arm64
+* macOS 14+ arm64
 
 It is not supported on any arm64 Linux, Alpine Linux.
 Test compatibility by running [silkworm_compat_check.sh](https://github.com/erigontech/erigon/blob/main/turbo/silkworm/silkworm_compat_check.sh)

@@ -146,6 +146,12 @@ void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     for (auto& merged_bundle : merged_bundles) {
         schedule_bundle_cleanup(*merged_bundle);
     }
+
+    on_snapshot_merged_signal_(bundle.block_range());
+}
+
+boost::signals2::scoped_connection SnapshotMerger::on_snapshot_merged(std::function<void(BlockNumRange)> callback) {
+    return on_snapshot_merged_signal_.connect(std::move(callback));
 }
 
 Task<void> SnapshotMerger::cleanup() {

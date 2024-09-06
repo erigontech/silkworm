@@ -16,7 +16,9 @@
 
 #include "torrent_file.hpp"
 
+#include <fstream>
 #include <iterator>
+#include <sstream>
 #include <string>
 
 #include <libtorrent/create_torrent.hpp>
@@ -35,6 +37,10 @@ static constexpr int kDefaultPieceSize = 2_Mebi;
 
 TorrentFile::TorrentFile(ByteView data)
     : params_(lt::load_torrent_buffer(byte_view_to_str_span(data))) {
+}
+
+TorrentFile::TorrentFile(const std::filesystem::path& path)
+    : params_(lt::load_torrent_file(path.string())) {
 }
 
 TorrentFile TorrentFile::from_source_file(const std::filesystem::path& source_file_path, std::time_t creation_date) {
@@ -57,10 +63,23 @@ TorrentFile TorrentFile::from_source_file(const std::filesystem::path& source_fi
     return TorrentFile{string_view_to_byte_view(data)};
 }
 
+std::string TorrentFile::info_hash() const {
+    std::stringstream stream;
+    stream << params_.ti->info_hashes().get_best();
+    return stream.str();
+}
+
 Bytes TorrentFile::to_bytes() const {
     std::string data;
     lt::bencode(std::back_inserter(data), lt::write_torrent_file(params_));
     return string_to_bytes(data);
+}
+
+void TorrentFile::save(const std::filesystem::path& path) {
+    Bytes data = to_bytes();
+    std::ofstream file{path, std::ios::binary | std::ios::trunc};
+    file.exceptions(std::ios::failbit | std::ios::badbit);
+    file << byte_view_to_string_view(data);
 }
 
 }  // namespace silkworm::snapshots::bittorrent

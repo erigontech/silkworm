@@ -29,6 +29,7 @@
 #include <silkworm/db/blocks/headers/header_snapshot.hpp>
 #include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshots/bittorrent/torrent_file.hpp>
 #include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -86,6 +87,10 @@ Task<void> SnapshotSync::setup_and_run() {
 
     co_await setup();
 
+    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](BlockNumRange range) {
+        this->seed_frozen_bundle(range);
+    });
+
     co_await (
         snapshot_freezer_.run_loop() &&
         snapshot_merger_.run_loop());
@@ -113,6 +118,8 @@ Task<void> SnapshotSync::setup() {
 
     // Set snapshot repository into snapshot-aware database access
     db::DataModel::set_snapshot_repository(&repository_);
+
+    seed_frozen_local_snapshots();
 
     std::scoped_lock lock{setup_done_mutex_};
     setup_done_ = true;
@@ -164,7 +171,7 @@ Task<void> SnapshotSync::download_snapshots() {
     auto log_added = [](const std::filesystem::path& snapshot_file) {
         SILK_TRACE << "SnapshotSync: download started for: " << snapshot_file.filename().string();
     };
-    const auto added_connection = client_.added_subscription.connect(log_added);
+    boost::signals2::scoped_connection added_subscription{client_.added_subscription.connect(log_added)};
 
     size_t completed = 0;
     auto log_stats = [&](lt::span<const int64_t> counters) {
@@ -186,7 +193,7 @@ Task<void> SnapshotSync::download_snapshots() {
             SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";
         }
     };
-    const auto stats_connection = client_.stats_subscription.connect(log_stats);
+    boost::signals2::scoped_connection stats_subscription{client_.stats_subscription.connect(log_stats)};
 
     auto executor = co_await boost::asio::this_coro::executor;
     // make the buffer bigger so that try_send always succeeds in case of duplicate files (see snapshot_set below)
@@ -194,7 +201,7 @@ Task<void> SnapshotSync::download_snapshots() {
     auto log_completed = [&](const std::filesystem::path& snapshot_file) {
         completed_channel.try_send(snapshot_file);
     };
-    const auto completed_connection = client_.completed_subscription.connect(log_completed);
+    boost::signals2::scoped_connection completed_subscription{client_.completed_subscription.connect(log_completed)};
 
     for (const auto& preverified_snapshot : snapshot_config.preverified_snapshots()) {
         SILK_TRACE << "SnapshotSync: adding info hash for preverified: " << preverified_snapshot.file_name;
@@ -218,10 +225,6 @@ Task<void> SnapshotSync::download_snapshots() {
     }
 
     SILK_INFO << "SnapshotSync: sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
-
-    added_connection.disconnect();
-    completed_connection.disconnect();
-    stats_connection.disconnect();
 }
 
 Task<void> SnapshotSync::build_missing_indexes() {
@@ -264,6 +267,43 @@ Task<void> SnapshotSync::build_missing_indexes() {
     }
 
     SILK_INFO << "SnapshotSync: built missing indexes";
+}
+
+void SnapshotSync::seed_frozen_local_snapshots() {
+    for (auto& bundle_ptr : repository_.view_bundles()) {
+        auto& bundle = *bundle_ptr;
+        bool is_frozen = bundle.block_range().size() >= kMaxMergerSnapshotSize;
+        bool is_preverified = bundle.block_to() <= snapshots_config_.max_block_number() + 1;
+        if (is_frozen && !is_preverified) {
+            seed_bundle(bundle);
+        }
+    }
+}
+
+void SnapshotSync::seed_frozen_bundle(BlockNumRange range) {
+    bool is_frozen = range.size() >= kMaxMergerSnapshotSize;
+    auto bundle = repository_.find_bundle(range.start);
+    if (bundle && (bundle->block_range() == range) && is_frozen) {
+        seed_bundle(*bundle);
+    }
+}
+
+void SnapshotSync::seed_bundle(SnapshotBundle& bundle) {
+    for (auto& path : bundle.snapshot_paths()) {
+        seed_snapshot(path);
+    }
+}
+
+void SnapshotSync::seed_snapshot(const SnapshotPath& path) {
+    std::filesystem::path torrent_path = path.path().concat(".torrent");
+    auto torrent_file =
+        std::filesystem::exists(torrent_path)
+            ? bittorrent::TorrentFile{torrent_path}
+            : bittorrent::TorrentFile::from_source_file(path.path());
+    if (!std::filesystem::exists(torrent_path)) {
+        torrent_file.save(torrent_path);
+    }
+    client_.add_info_hash(path.path().filename().string(), torrent_file.info_hash());
 }
 
 void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping) {

@@ -16,7 +16,6 @@
 
 #include "snapshot_merger.hpp"
 
-#include <algorithm>
 #include <filesystem>
 #include <memory>
 #include <vector>
@@ -150,8 +149,8 @@ void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     on_snapshot_merged_signal_(bundle.block_range());
 }
 
-boost::signals2::scoped_connection SnapshotMerger::on_snapshot_merged(std::function<void(BlockNumRange)> callback) {
-    return on_snapshot_merged_signal_.connect(std::move(callback));
+boost::signals2::scoped_connection SnapshotMerger::on_snapshot_merged(const std::function<void(BlockNumRange)>& callback) {
+    return on_snapshot_merged_signal_.connect(callback);
 }
 
 Task<void> SnapshotMerger::cleanup() {

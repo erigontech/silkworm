@@ -36,7 +36,7 @@ class SnapshotMerger : public DataMigration {
         : snapshots_(snapshots),
           tmp_dir_path_(std::move(tmp_dir_path)) {}
 
-    boost::signals2::scoped_connection on_snapshot_merged(std::function<void(BlockNumRange)> callback);
+    boost::signals2::scoped_connection on_snapshot_merged(const std::function<void(BlockNumRange)>& callback);
 
   private:
     static constexpr size_t kBatchSize = 10;

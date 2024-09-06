@@ -75,7 +75,7 @@ Bytes TorrentFile::to_bytes() const {
     return string_to_bytes(data);
 }
 
-void TorrentFile::save(const std::filesystem::path& path) {
+void TorrentFile::save(const std::filesystem::path& path) const {
     Bytes data = to_bytes();
     std::ofstream file{path, std::ios::binary | std::ios::trunc};
     file.exceptions(std::ios::failbit | std::ios::badbit);

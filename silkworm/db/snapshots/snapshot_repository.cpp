@@ -173,7 +173,8 @@ void SnapshotRepository::reopen_folder() {
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
               << " snapshots: " << total_snapshots_count()
-              << " indexes: " << total_indexes_count();
+              << " indexes: " << total_indexes_count()
+              << " max block available: " << max_block_available();
 }
 
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number) const {

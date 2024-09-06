@@ -55,13 +55,13 @@ class SnapshotSync {
 
     Task<void> run();
 
-    Task<void> download_and_index_snapshots();
     Task<void> download_snapshots();
     Task<void> wait_for_setup();
 
   protected:
     Task<void> setup_and_run();
     Task<void> setup();
+    Task<void> download_snapshots_if_needed();
     Task<void> build_missing_indexes();
 
     void seed_frozen_local_snapshots();

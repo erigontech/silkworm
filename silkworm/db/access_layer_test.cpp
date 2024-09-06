@@ -271,8 +271,8 @@ TEST_CASE("Schema Version", "[db][access_layer]") {
 
     SECTION("Incompatible schema") {
         // Reduce compat schema version
-        auto incompatible_version = VersionBase{db::table::kRequiredSchemaVersion.Major - 1, 0, 0};
-        REQUIRE_NOTHROW(db::write_schema_version(context.rw_txn(), incompatible_version));
+        constexpr VersionBase kIncompatibleVersion{db::table::kRequiredSchemaVersion.major - 1, 0, 0};
+        REQUIRE_NOTHROW(db::write_schema_version(context.rw_txn(), kIncompatibleVersion));
         REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.rw_txn()));
     }
 

@@ -25,7 +25,7 @@
 
 namespace silkworm::rpc {
 
-Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block) {
+Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<BlockNum> block_number_for_gas_limit) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
     auto block_number = block.header.number;
@@ -37,9 +37,18 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         SILK_DEBUG << "Set HI with gas in args: " << call.gas.value_or(0);
         hi = call.gas.value();
     } else {
-        const auto header = co_await block_header_provider_(block_number);
+        std::optional<silkworm::BlockHeader> header = std::nullopt;
+
+        if (block_number_for_gas_limit) {
+            header = co_await block_header_provider_(*block_number_for_gas_limit);
+            if (!header) {
+                co_return 0x00;
+            }
+        }
+
+        header = co_await block_header_provider_(block_number);
         if (!header) {
-            throw EstimateGasException{-1, "header " + std::to_string(block_number) + " not found"};
+            co_return 0x00;
         }
 
         hi = header->gas_limit;

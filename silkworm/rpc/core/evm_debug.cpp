@@ -114,7 +114,7 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     const evmc::address sender(msg.sender);
 
     if (!logs_.empty()) {
-        auto &log = logs_[logs_.size() - 1]; // it should be a CALL* opcode
+        auto& log = logs_[logs_.size() - 1];  // it should be a CALL* opcode
         log.gas_cost_check = msg.gas_cost;
     }
 
@@ -190,12 +190,12 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     }
 
     if (!logs_.empty()) {
-        auto &log = logs_[logs_.size() - 1];
+        auto& log = logs_[logs_.size() - 1];
 
         if (log.opcode == OP_RETURN || log.opcode == OP_STOP || log.opcode == OP_REVERT) {
             log.gas_cost_check = 0;
-        } else if (log.depth == execution_state.msg->depth + 1) { //if (log.opcode != OP_CALL && log.opcode != OP_CALLCODE && log.opcode != OP_STATICCALL && log.opcode != OP_DELEGATECALL && log.opcode != OP_CREATE && log.opcode != OP_CREATE2) {
-             log.gas_cost_check = execution_state.last_opcode_gas_cost;
+        } else if (log.depth == execution_state.msg->depth + 1) {  // if (log.opcode != OP_CALL && log.opcode != OP_CALLCODE && log.opcode != OP_STATICCALL && log.opcode != OP_DELEGATECALL && log.opcode != OP_CREATE && log.opcode != OP_CREATE2) {
+            log.gas_cost_check = execution_state.last_opcode_gas_cost;
         }
     }
 
@@ -406,7 +406,7 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.open_object();
     stream_.write_field("depth", log.depth);
     stream_.write_field("gas", log.gas);
-//    stream_.write_field("gasCost", log.gas_cost);
+    //    stream_.write_field("gasCost", log.gas_cost);
     stream_.write_field("gasCost", log.gas_cost_check);
     stream_.write_field("op", log.op);
     stream_.write_field("pc", log.pc);

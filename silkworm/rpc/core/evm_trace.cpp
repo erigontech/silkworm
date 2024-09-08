@@ -135,7 +135,7 @@ void to_json(nlohmann::json& json, const TraceOp& trace_op) {
 }
 
 void to_json(nlohmann::json& json, const TraceEx& trace_ex) {
-    if (trace_ex.memory) {
+    if (trace_ex.memory && trace_ex.memory->len) {
         const auto& memory = trace_ex.memory.value();
         json["mem"] = memory;
     } else {
@@ -651,7 +651,6 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
             op.gas_cost = op.gas_cost - gas;
         }
         op.trace_ex->used = gas;
-
         copy_memory(execution_state.memory, op.trace_ex->memory);
         copy_stack(op.op_code, stack_top, op.trace_ex->stack);
     }
@@ -666,6 +665,11 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     trace_op.op_name = op_name;
     trace_op.pc = pc;
     trace_op.trace_ex = std::make_optional<struct TraceEx>();
+
+    if (op_code == OP_SELFDESTRUCT) {
+        trace_op.sub = std::make_shared<VmTrace>();
+        trace_op.sub->code = "0x";
+    }
 
     copy_memory_offset_len(op_code, stack_top, trace_op.trace_ex->memory);
     copy_store(op_code, stack_top, trace_op.trace_ex->storage);

@@ -869,7 +869,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
 // https://eth.wiki/json-rpc/API#eth_estimategas
 Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-    if (params.size() > 2 || params.size() == 0) {
+    if (params.size() > 2 || params.empty()) {
         auto error_msg = "invalid eth_estimateGas params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, kInvalidParams, error_msg);

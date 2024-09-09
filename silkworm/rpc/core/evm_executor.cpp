@@ -236,8 +236,8 @@ ExecutionResult EVMExecutor::call(
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
-    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
-    SILK_DEBUG << "EVMExecutor::call: transaction: " << rpc::Transaction{txn};
+    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
+               << " gas_bailout: " << gas_bailout << " transaction: " << rpc::Transaction{txn};
 
     auto& svc = use_service<AnalysisCacheService>(workers_);
     EVM evm{block, ibs_state_, config_, gas_bailout};
@@ -327,14 +327,12 @@ ExecutionResult EVMExecutor::call(
         return {std::nullopt, txn.gas_limit, /* data */ {}, "evm.execute: unknown exception"};
     }
 
-    uint64_t gas_left = result.gas_left;
+    uint64_t gas_left{result.gas_left};
     uint64_t gas_used{txn.gas_limit - result.gas_left};
 
     if (refund && !gas_bailout) {
         gas_used = txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund);
-        if (refund) {
-            gas_left = txn.gas_limit - gas_used;
-        }
+        gas_left = txn.gas_limit - gas_used;
     }
 
     // Reward the fee recipient

@@ -89,6 +89,7 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
       abseil
       boost
       grpc
+      libtorrent
       protobuf
   )
   # cmake-format: on

@@ -38,6 +38,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('grpc/1.54.3')
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
+        self.requires('libtorrent/2.0.10')
         self.requires('mimalloc/2.1.2')
         self.requires('openssl/3.2.1')
         self.requires('protobuf/3.21.12')

@@ -71,7 +71,7 @@ add_executable(scan_txs scan_txs.cpp)
 target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
 add_executable(snapshots snapshots.cpp)
-target_link_libraries(snapshots PRIVATE silkworm_node cmd_common torrent-rasterbar magic_enum::magic_enum)
+target_link_libraries(snapshots PRIVATE silkworm_node cmd_common magic_enum::magic_enum)
 
 add_executable(db_toolbox db_toolbox.cpp)
 target_link_libraries(db_toolbox PRIVATE silkworm_node cmd_common CLI11::CLI11 magic_enum::magic_enum)

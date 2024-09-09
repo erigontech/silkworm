@@ -156,6 +156,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         .kind = message.depth > 0 ? message.kind : EVMC_CALL,
         .depth = message.depth,
         .gas = message.gas,
+        .gas_cost = message.gas_cost,
         .recipient = contract_addr,
         .sender = message.sender,
         .value = message.value,

@@ -881,8 +881,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
 
     auto tx = co_await database_->begin();
 
-    std::optional<BlockNum> block_number_for_gas_limit = std::nullopt;
-
+    std::optional<BlockNum> block_number_for_gas_limit;
     if (params.size() == 2) {
         const auto block_id = params[1].get<std::string>();
         SILK_DEBUG << "block_id: " << block_id;

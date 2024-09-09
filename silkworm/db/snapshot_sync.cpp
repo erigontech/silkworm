@@ -109,7 +109,12 @@ Task<void> SnapshotSync::setup() {
     raise_fd_limit();
 
     // Snapshot sync - download chain from peers using snapshot files
-    co_await download_and_index_snapshots();
+    co_await download_snapshots_if_needed();
+
+    repository_.remove_stale_indexes();
+    co_await build_missing_indexes();
+
+    repository_.reopen_folder();
 
     // Update chain and stage progresses in database according to available snapshots
     db::RWTxnManaged rw_txn{chaindata_env_};
@@ -134,24 +139,10 @@ Task<void> SnapshotSync::wait_for_setup() {
     co_await waiter();
 }
 
-Task<void> SnapshotSync::download_and_index_snapshots() {
-    if (!settings_.enabled) {
-        SILK_INFO << "SnapshotSync: snapshot sync disabled, no snapshot must be downloaded";
-        co_return;
-    }
-    SILK_INFO << "SnapshotSync: snapshot repository: " << settings_.repository_dir.string();
-
-    if (!settings_.no_downloader) {
+Task<void> SnapshotSync::download_snapshots_if_needed() {
+    if (settings_.enabled && !settings_.no_downloader) {
         co_await download_snapshots();
     }
-
-    repository_.remove_stale_indexes();
-    co_await build_missing_indexes();
-
-    repository_.reopen_folder();
-
-    SILK_INFO << "SnapshotSync: max block available: " << repository_.max_block_available();
-    SILK_INFO << "SnapshotSync: configured max block: " << snapshots_config_.max_block_number();
 }
 
 Task<void> SnapshotSync::download_snapshots() {
@@ -166,7 +157,7 @@ Task<void> SnapshotSync::download_snapshots() {
         throw std::runtime_error("SnapshotSync: no preverified snapshots found");
     }
     const size_t num_snapshots = snapshot_config.preverified_snapshots().size();
-    SILK_INFO << "SnapshotSync: sync started: [0/" << num_snapshots << "]";
+    SILK_INFO << "SnapshotSync: download started: [0/" << num_snapshots << "]";
 
     auto log_added = [](const std::filesystem::path& snapshot_file) {
         SILK_TRACE << "SnapshotSync: download started for: " << snapshot_file.filename().string();
@@ -180,7 +171,7 @@ Task<void> SnapshotSync::download_snapshots() {
         if (notification_count++ != 30) return;
         notification_count = 0;
 
-        SILK_INFO << "SnapshotSync: sync in progress: [" << completed << "/" << num_snapshots << "]";
+        SILK_INFO << "SnapshotSync: download progress: [" << completed << "/" << num_snapshots << "]";
         if (log::test_verbosity(log::Level::kTrace)) {
             std::string counters_dump;
             for (int i{0}; i < counters.size(); ++i) {
@@ -204,7 +195,7 @@ Task<void> SnapshotSync::download_snapshots() {
     boost::signals2::scoped_connection completed_subscription{client_.completed_subscription.connect(log_completed)};
 
     for (const auto& preverified_snapshot : snapshot_config.preverified_snapshots()) {
-        SILK_TRACE << "SnapshotSync: adding info hash for preverified: " << preverified_snapshot.file_name;
+        SILK_TRACE << "SnapshotSync: download adding info hash for preverified: " << preverified_snapshot.file_name;
         client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
     }
 
@@ -221,10 +212,9 @@ Task<void> SnapshotSync::download_snapshots() {
         const auto [_, inserted] = snapshot_set.insert(snapshot_file);
         SILKWORM_ASSERT(inserted);
         SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
+                  << " blocks " << SnapshotPath::parse(snapshot_file)->block_range().to_string()
                   << " [" << (completed + 1) << "/" << num_snapshots << "]";
     }
-
-    SILK_INFO << "SnapshotSync: sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
 }
 
 Task<void> SnapshotSync::build_missing_indexes() {

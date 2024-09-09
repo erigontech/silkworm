@@ -39,7 +39,7 @@ class DecodingTable {
     [[nodiscard]] std::size_t bit_length() const { return bit_length_; }
 
   protected:
-    explicit DecodingTable(std::size_t max_depth);
+    DecodingTable(std::size_t max_depth);
 
     std::size_t bit_length_{0};
     std::size_t max_depth_;

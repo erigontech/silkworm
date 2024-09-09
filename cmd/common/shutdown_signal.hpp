@@ -27,7 +27,7 @@ namespace silkworm::cmd::common {
 
 class ShutdownSignal {
   public:
-    explicit ShutdownSignal(const boost::asio::any_io_executor& executor)
+    ShutdownSignal(const boost::asio::any_io_executor& executor)
         : signals_(executor, SIGINT, SIGTERM) {}
 
     void cancel();

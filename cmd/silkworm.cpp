@@ -265,7 +265,7 @@ int main(int argc, char* argv[]) {
         };
 
         // Execution: the execution layer engine
-        silkworm::node::Node execution_node{context_pool.any_executor(), settings.node_settings, sentry_client, mdbx::env{chaindata_env}};
+        silkworm::node::Node execution_node{context_pool.any_executor(), settings.node_settings, sentry_client, chaindata_env};  // NOLINT(cppcoreguidelines-slicing)
         execution::api::DirectClient& execution_client{execution_node.execution_direct_client()};
 
         // ChainSync: the chain synchronization process based on the consensus protocol
@@ -279,7 +279,7 @@ int main(int argc, char* argv[]) {
         };
         chainsync::Sync chain_sync_process{
             context_pool.any_executor(),
-            mdbx::env{chaindata_env},
+            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
             execution_client,
             sentry_client,
             *node_settings.chain_config,

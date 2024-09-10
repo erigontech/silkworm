@@ -644,6 +644,9 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         auto txn = db::RWTxnManaged{unmanaged_env};
         const auto db_path{unmanaged_env.get_path()};
 
+        db::Buffer state_buffer{txn};
+        state_buffer.set_memory_limit(batch_size);
+
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
         BlockProvider block_provider{&block_buffer, unmanaged_env, start_block, max_block};
@@ -659,15 +662,19 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         ValidationResult last_exec_result = ValidationResult::kOk;
 
         while (block_number <= max_block) {
-            db::Buffer state_buffer{txn};
-            while (state_buffer.current_batch_state_size() <= max_batch_size && block_number <= max_block) {
-                block_buffer.pop_back(&block);
+            while (block_number <= max_block) {
+                block_buffer.peek_back(&block);
                 if (!block) {
                     return SILKWORM_BLOCK_NOT_FOUND;
                 }
                 SILKWORM_ASSERT(block->header.number == block_number);
 
+                try{
                 last_exec_result = block_executor.execute_single(*block, state_buffer);
+                } catch (const db::Buffer::MemoryLimitError&) {
+                    // batch done
+                    break;
+                }
 
                 if (last_exec_result != ValidationResult::kOk) {
                     // firstly, persist the work done so far, then return SILKWORM_INVALID_BLOCK
@@ -680,6 +687,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
                 last_block_number = block_number;
                 ++block_number;
+                block_buffer.pop_back(&block);
             }
 
             StopWatch sw{/*auto_start=*/true};

@@ -61,6 +61,20 @@ class BoundedBuffer {
         not_empty_.notify_one();
     }
 
+    void peek_back(value_type* item) {
+        boost::unique_lock<boost::mutex> lock(mutex_);
+
+        not_empty_.wait(lock, [&] { return is_stopped() || is_not_empty(); });
+
+        if (is_stopped()) {  // If the buffer is stopped, do not peek the item
+            item = nullptr;
+            return;
+        }
+
+        *item = container_[unread_ - 1];
+        lock.unlock();
+    }
+
     void pop_back(value_type* item) {
         boost::unique_lock<boost::mutex> lock(mutex_);
 

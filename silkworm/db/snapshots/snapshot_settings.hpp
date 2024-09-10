@@ -29,6 +29,7 @@ struct SnapshotSettings {
     bool no_downloader{false};                                                 // Flag indicating if snapshots download is disabled
     bittorrent::BitTorrentSettings bittorrent_settings;                        // The Bittorrent protocol settings
     bool keep_blocks{false};                                                   // Flag indicating if exported blocks should be kept in mdbx
+    bool stop_freezer{false};                                                  // Stop producing new snapshots
 };
 
 }  // namespace silkworm::snapshots

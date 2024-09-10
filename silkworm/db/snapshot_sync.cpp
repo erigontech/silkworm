@@ -87,6 +87,10 @@ Task<void> SnapshotSync::setup_and_run() {
 
     co_await setup();
 
+    if (settings_.stop_freezer) {
+        co_return;
+    }
+
     [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](BlockNumRange range) {
         this->seed_frozen_bundle(range);
     });

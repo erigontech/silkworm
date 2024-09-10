@@ -669,8 +669,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                 }
                 SILKWORM_ASSERT(block->header.number == block_number);
 
-                try{
-                last_exec_result = block_executor.execute_single(*block, state_buffer);
+                try {
+                    last_exec_result = block_executor.execute_single(*block, state_buffer);
                 } catch (const db::Buffer::MemoryLimitError&) {
                     // batch done
                     break;

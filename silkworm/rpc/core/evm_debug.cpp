@@ -194,7 +194,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
         if (log.opcode == OP_RETURN || log.opcode == OP_STOP || log.opcode == OP_REVERT) {
             log.gas_cost_check = 0;
-        } else if (log.depth == execution_state.msg->depth + 1) {  // if (log.opcode != OP_CALL && log.opcode != OP_CALLCODE && log.opcode != OP_STATICCALL && log.opcode != OP_DELEGATECALL && log.opcode != OP_CREATE && log.opcode != OP_CREATE2) {
+        } else if (log.depth == execution_state.msg->depth + 1) {
             log.gas_cost_check = execution_state.last_opcode_gas_cost;
         }
     }
@@ -262,6 +262,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             case evmc_status_code::EVMC_STACK_OVERFLOW:
             case evmc_status_code::EVMC_STACK_UNDERFLOW:
                 log.gas_cost = 0;
+                log.gas_cost_check = result.gas_cost;
                 break;
 
             case evmc_status_code::EVMC_OUT_OF_GAS:

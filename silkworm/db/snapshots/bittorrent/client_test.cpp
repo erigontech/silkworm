@@ -182,14 +182,6 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
         ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
     }
-
-    SECTION("nonempty magnet file w/ startup verification") {
-        settings.verify_on_startup = true;
-        BitTorrentClient client{settings};
-        client.add_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-        ClientThread client_thread{client};
-        CHECK_NOTHROW(client.stop());
-    }
 }
 
 TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {

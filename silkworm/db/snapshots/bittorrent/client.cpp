@@ -195,10 +195,6 @@ bool BitTorrentClient::exists_resume_file(const lt::info_hash_t& info_hashes) co
 void BitTorrentClient::execution_loop() {
     SILK_TRACE << "BitTorrentClient::execution_loop start";
 
-    if (settings_.verify_on_startup) {
-        recheck_all_finished_torrents();
-    }
-
     stats_metrics_ = lt::session_stats_metrics();
 
     int poll_count{0};

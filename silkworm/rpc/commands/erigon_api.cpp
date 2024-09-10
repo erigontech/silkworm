@@ -207,7 +207,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
 
         const auto block{block_with_hash->block};
         if (block.transactions.size() != receipts.size()) {
-            SILK_ERROR << "erigon_get_block_receipts_by_block_hash: receipts size mismatch transaction size: "  << request.dump();
+            SILK_ERROR << "erigon_get_block_receipts_by_block_hash: receipts size mismatch transaction size: " << request.dump();
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;

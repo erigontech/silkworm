@@ -78,7 +78,7 @@ Task<void> PoSSync::download_blocks() {
 
     StopWatch timing(StopWatch::kStart);
     RepeatedMeasure<BlockNum> downloaded_headers(initial_block_progress);
-    log::Info("sync") << "PoSSync: Waiting for blocks... from=" << initial_block_progress;
+    log::Info() << "PoSSync: Waiting for blocks... from=" << initial_block_progress;
 
     asio::steady_timer timer(executor);
 
@@ -110,12 +110,12 @@ Task<void> PoSSync::download_blocks() {
             }
 
             downloaded_headers.set(block_progress);
-            log::Info("sync") << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
-                              << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
-                              << ", last=" << downloaded_headers.get()
-                              << ", lap.duration=" << StopWatch::format(timing.since_start());
+            log::Info() << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
+                        << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
+                        << ", last=" << downloaded_headers.get()
+                        << ", lap.duration=" << StopWatch::format(timing.since_start());
         } catch (const std::exception& ex) {
-            log::Error("sync") << "PoSSync: insertion failed, unexpected exception=" << ex.what();
+            log::Error() << "PoSSync: insertion failed, unexpected exception=" << ex.what();
         }
     }
 }

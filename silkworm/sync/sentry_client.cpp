@@ -248,7 +248,16 @@ void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum min_block) {
 Task<void> SentryClient::async_run() {
     using namespace concurrency::awaitable_wait_for_all;
 
-    co_await (receive_messages() && receive_peer_events() && tasks_.wait());
+    try {
+        co_await (receive_messages() && receive_peer_events() && tasks_.wait());
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Warning() << "SentryClient async_run unexpected end [operation_canceled]";
+        } else {
+            log::Critical() << "SentryClient async_run unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> SentryClient::receive_messages() {

@@ -113,6 +113,11 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     const evmc::address recipient(msg.recipient);
     const evmc::address sender(msg.sender);
 
+    if (!logs_.empty()) {
+        auto& log = logs_[logs_.size() - 1];  // it should be a CALL* opcode
+        log.gas_cost_check = msg.gas_cost;
+    }
+
     SILK_DEBUG << "on_execution_start:"
                << " rev: " << rev
                << " gas: " << std::dec << msg.gas
@@ -162,7 +167,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
-        if (fix_call_gas_info_) {  // previuos opcodw was a CALL*
+        if (fix_call_gas_info_) {  // previuos opcode was a CALL*
             if (execution_state.msg->depth == fix_call_gas_info_->depth) {
                 if (fix_call_gas_info_->gas_cost) {
                     log.gas_cost = fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
@@ -184,6 +189,16 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         }
     }
 
+    if (!logs_.empty()) {
+        auto& log = logs_[logs_.size() - 1];
+
+        if (log.opcode == OP_RETURN || log.opcode == OP_STOP || log.opcode == OP_REVERT) {
+            log.gas_cost_check = 0;
+        } else if (log.depth == execution_state.msg->depth + 1) {
+            log.gas_cost_check = execution_state.last_opcode_gas_cost;
+        }
+    }
+
     if (logs_.size() > 1) {
         auto& log = logs_.front();
         write_log(log);
@@ -194,6 +209,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     DebugLog log;
     log.pc = pc;
+    log.opcode = opcode;
     log.op = opcode_name;
     log.gas = gas;
     log.gas_cost = metrics_[opcode].gas_cost;
@@ -226,6 +242,9 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
         fix_call_gas_info_->code_cost = 0;
         fix_call_gas_info_->precompiled = true;
     }
+    if (logs_.size() > 1) {
+        flush_logs();
+    }
 }
 
 void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
@@ -243,6 +262,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             case evmc_status_code::EVMC_STACK_OVERFLOW:
             case evmc_status_code::EVMC_STACK_UNDERFLOW:
                 log.gas_cost = 0;
+                log.gas_cost_check = result.gas_cost;
                 break;
 
             case evmc_status_code::EVMC_OUT_OF_GAS:
@@ -252,6 +272,11 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
                     } else {
                         log.gas_cost += fix_call_gas_info_->gas_cost;
                     }
+                }
+                if (log.opcode == OP_CALL || log.opcode == OP_CALLCODE || log.opcode == OP_STATICCALL || log.opcode == OP_DELEGATECALL || log.opcode == OP_CREATE || log.opcode == OP_CREATE2) {
+                    log.gas_cost_check = log.gas_cost;
+                } else {
+                    log.gas_cost_check = result.gas_cost;
                 }
                 break;
 
@@ -267,6 +292,11 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
                         fix_call_gas_info_->gas_cost = 0;
                     }
                 }
+                if (log.opcode == OP_CALL || log.opcode == OP_CALLCODE || log.opcode == OP_STATICCALL || log.opcode == OP_DELEGATECALL || log.opcode == OP_CREATE || log.opcode == OP_CREATE2) {
+                    log.gas_cost_check += result.gas_cost;
+                } else {
+                    log.gas_cost_check = log.gas_cost;
+                }
                 break;
         }
 
@@ -275,6 +305,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             DebugLog newlog;
             newlog.pc = log.pc + 1;
             newlog.op = get_opcode_name(opcode_names_, OP_STOP);
+            newlog.opcode = OP_STOP;
             newlog.gas = log.gas - log.gas_cost;
             newlog.gas_cost = 0;
             newlog.depth = log.depth;
@@ -284,9 +315,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
     }
 
     if (logs_.size() > 1) {
-        auto& log = logs_.front();
-        write_log(log);
-        logs_.erase(logs_.begin());
+        flush_logs();
     }
 
     SILK_DEBUG << "on_execution_end:"
@@ -299,6 +328,7 @@ void DebugTracer::flush_logs() {
     for (const auto& log : logs_) {
         write_log(log);
     }
+    logs_.clear();
 }
 
 int64_t memory_cost(const evmone::Memory& memory, std::uint64_t offset, std::uint64_t size) noexcept {
@@ -377,7 +407,8 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.open_object();
     stream_.write_field("depth", log.depth);
     stream_.write_field("gas", log.gas);
-    stream_.write_field("gasCost", log.gas_cost);
+    //    stream_.write_field("gasCost", log.gas_cost);
+    stream_.write_field("gasCost", log.gas_cost_check);
     stream_.write_field("op", log.op);
     stream_.write_field("pc", log.pc);
 

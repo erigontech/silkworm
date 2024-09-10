@@ -93,17 +93,17 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     }
 
     // Check datafile exists if create is not set
-    fs::path db_path{config.path};
-    if (db_path.has_filename()) {
-        db_path += std::filesystem::path::preferred_separator;  // Remove ambiguity. It has to be a directory
+    fs::path env_path{config.path};
+    if (env_path.has_filename()) {
+        env_path += std::filesystem::path::preferred_separator;  // Remove ambiguity. It has to be a directory
     }
-    if (!fs::exists(db_path)) {
-        fs::create_directories(db_path);
-    } else if (!fs::is_directory(db_path)) {
-        throw std::runtime_error("Path " + db_path.string() + " is not valid");
+    if (!fs::exists(env_path)) {
+        fs::create_directories(env_path);
+    } else if (!fs::is_directory(env_path)) {
+        throw std::runtime_error("Path " + env_path.string() + " is not valid");
     }
 
-    fs::path db_file{db::get_datafile_path(db_path)};
+    fs::path db_file{db::get_datafile_path(env_path)};
     const size_t db_file_size{fs::exists(db_file) ? fs::file_size(db_file) : 0};
 
     if (!config.create && !db_file_size) {
@@ -169,7 +169,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     op.max_maps = config.max_tables;
     op.max_readers = config.max_readers;
 
-    ::mdbx::env_managed env{db_path.native(), cp, op, config.shared};
+    ::mdbx::env_managed env{env_path.native(), cp, op, config.shared};
 
     // MDBX will not change the page size if db already exists, so we need to read value
     config.page_size = env.get_pagesize();

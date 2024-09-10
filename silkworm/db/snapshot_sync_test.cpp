@@ -60,6 +60,7 @@ struct SnapshotSyncTest {
 
 struct SnapshotSyncForTest : public SnapshotSync {
     using SnapshotSync::build_missing_indexes;
+    using SnapshotSync::download_snapshots_if_needed;
     using SnapshotSync::repository;
     using SnapshotSync::update_block_bodies;
     using SnapshotSync::update_block_hashes;
@@ -100,17 +101,17 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
 
     SECTION("snapshots disabled") {
         SnapshotSyncForTest sync{test, SettingsOverrides{.enabled = false}};
-        test.runner.run(sync.download_and_index_snapshots());
+        test.runner.run(sync.download_snapshots_if_needed());
     }
 
     SECTION("no download, just reopen") {
         SnapshotSyncForTest sync{test, SettingsOverrides{.no_downloader = true}};
-        test.runner.run(sync.download_and_index_snapshots());
+        test.runner.run(sync.download_snapshots_if_needed());
     }
 
     SECTION("no download, just reopen and verify") {
         SnapshotSyncForTest sync{test, SettingsOverrides{.no_downloader = true, .verify_on_startup = true}};
-        test.runner.run(sync.download_and_index_snapshots());
+        test.runner.run(sync.download_snapshots_if_needed());
     }
 }
 

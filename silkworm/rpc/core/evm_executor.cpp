@@ -236,8 +236,8 @@ ExecutionResult EVMExecutor::call(
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
-    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
-    SILK_DEBUG << "EVMExecutor::call: transaction: " << rpc::Transaction{txn};
+    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
+               << " gas_bailout: " << gas_bailout << " transaction: " << rpc::Transaction{txn};
 
     auto& svc = use_service<AnalysisCacheService>(workers_);
     EVM evm{block, ibs_state_, config_, gas_bailout};
@@ -266,38 +266,37 @@ ExecutionResult EVMExecutor::call(
         return {std::nullopt, txn.gas_limit, data, pre_check_result->pre_check_error, pre_check_result->pre_check_error_code};
     }
 
-    // EIP-1559 normal gas cost
-    intx::uint256 want;
-    if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
-        // This method should be called after check (max_fee and base_fee) present in pre_check() method
-        const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
-                                                                                        : txn.max_priority_fee_per_gas};
-        want = txn.gas_limit * effective_gas_price;
-    } else {
-        want = 0;
-    }
+    if (!gas_bailout) {
+        // EIP-1559 normal gas cost
+        intx::uint256 want;
+        if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
+            // This method should be called after check (max_fee and base_fee) present in pre_check() method
+            const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                            : txn.max_priority_fee_per_gas};
+            want = txn.gas_limit * effective_gas_price;
+        } else {
+            want = 0;
+        }
 
-    // EIP-4844 blob gas cost (calc_data_fee)
-    if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
-        // compute blob fee for eip-4844 data blobs if any
-        const intx::uint256 blob_gas_price{evm.block().header.blob_gas_price().value_or(0)};
-        want += txn.total_blob_gas() * blob_gas_price;
-    }
+        // EIP-4844 blob gas cost (calc_data_fee)
+        if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
+            // compute blob fee for eip-4844 data blobs if any
+            const intx::uint256 blob_gas_price{evm.block().header.blob_gas_price().value_or(0)};
+            want += txn.total_blob_gas() * blob_gas_price;
+        }
 
-    intx::uint512 max_want = want;
-    if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
-        max_want = txn.maximum_gas_cost();
-    }
+        intx::uint512 max_want = want;
+        if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
+            max_want = txn.maximum_gas_cost();
+        }
 
-    const auto have = ibs_state_.get_balance(*txn.sender());
-    if (have < max_want + txn.value) {
-        if (!gas_bailout) {
+        const auto have = ibs_state_.get_balance(*txn.sender());
+        if (have < max_want + txn.value) {
             Bytes data{};
             std::string from = address_to_hex(*txn.sender());
             std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(max_want + txn.value);
             return {std::nullopt, txn.gas_limit, data, msg, PreCheckErrorCode::kInsufficientFunds};
         }
-    } else {
         ibs_state_.subtract_from_balance(*txn.sender(), want);
     }
 
@@ -328,9 +327,11 @@ ExecutionResult EVMExecutor::call(
         return {std::nullopt, txn.gas_limit, /* data */ {}, "evm.execute: unknown exception"};
     }
 
-    uint64_t gas_left = result.gas_left;
-    const uint64_t gas_used{txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund)};
-    if (refund) {
+    uint64_t gas_left{result.gas_left};
+    uint64_t gas_used{txn.gas_limit - result.gas_left};
+
+    if (refund && !gas_bailout) {
+        gas_used = txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund);
         gas_left = txn.gas_limit - gas_used;
     }
 

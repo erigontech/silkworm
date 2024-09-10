@@ -30,8 +30,8 @@ TEST_CASE("db access layer addendum") {
 
     db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
 
-    auto db = db::open_env(db_config);
-    db::RWAccess rw_access(db);
+    auto env = db::open_env(db_config);
+    db::RWAccess rw_access{env};
     db::RWTxnManaged tx = rw_access.start_rw_tx();
 
     db::table::check_or_create_chaindata_tables(tx);

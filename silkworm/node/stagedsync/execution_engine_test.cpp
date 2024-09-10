@@ -55,14 +55,14 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     auto db_context = db::test_util::TestDatabaseContext();
     auto node_settings = NodeSettings{
-        .data_directory = std::make_unique<DataDirectory>(db_context.get_mdbx_env().get_path(), false),
+        .data_directory = std::make_unique<DataDirectory>(db_context.mdbx_env().get_path(), false),
         .chaindata_env_config = db_context.get_env_config(),
         .chain_config = db_context.get_chain_config(),
         .parallel_fork_tracking_enabled = false,
         .keep_db_txn_open = true,
     };
 
-    db::RWAccess db_access{db_context.get_mdbx_env()};
+    db::RWAccess db_access{db_context.mdbx_env()};
 
     ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();

@@ -1497,7 +1497,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
             tracers.push_back(ibs_tracer);
 
-            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/false);
             if (execution_result.pre_check_error) {
                 result.pre_check_error = execution_result.pre_check_error.value();
             } else {
@@ -1513,7 +1513,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
     rpc::Transaction transaction{call.to_transaction()};
-    auto result = co_await execute(block.header.number, block, transaction, -1, config);
+    auto result = co_await execute(block.header.number, block, transaction, -1, config, true);
     co_return result;
 }
 
@@ -1614,14 +1614,14 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config);
+    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, false);
 }
 
-Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
+Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction, bool gas_bailout) {
     std::vector<Trace> traces;
 
     const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
-                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false});
+                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false}, gas_bailout);
     const auto& trace_result = result.traces.trace;
 
     const auto tnx_hash = transaction.hash();
@@ -1813,7 +1813,8 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     const silkworm::Block& block,
     const rpc::Transaction& transaction,
     std::int32_t index,
-    const TraceConfig& config) {
+    const TraceConfig& config,
+    bool gas_bailout) {
     SILK_DEBUG << "execute: "
                << " block_number: " << std::dec << block_number
                << " transaction: {" << transaction << "}"
@@ -1835,7 +1836,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         EVMExecutor executor{chain_config, workers_, curr_state};
         for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
             silkworm::Transaction txn{block.transactions[idx]};
-            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);
             if (execution_result.pre_check_error) {
                 SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
             }
@@ -1861,7 +1862,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         if (index != -1) {
             traces.transaction_hash = transaction.hash();  // to have same behaviour as erigon, should be done PR on erigon
         }
-        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, gas_bailout);
 
         if (execution_result.pre_check_error) {
             result.pre_check_error = execution_result.pre_check_error.value();

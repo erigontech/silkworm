@@ -49,19 +49,19 @@ class SnapshotSync {
     SnapshotSync(
         snapshots::SnapshotSettings settings,
         ChainId chain_id,
-        mdbx::env& chaindata_env,
+        mdbx::env chaindata_env,
         std::filesystem::path tmp_dir_path,
         stagedsync::StageScheduler& stage_scheduler);
 
     Task<void> run();
 
-    Task<void> download_and_index_snapshots();
     Task<void> download_snapshots();
     Task<void> wait_for_setup();
 
   protected:
     Task<void> setup_and_run();
     Task<void> setup();
+    Task<void> download_snapshots_if_needed();
     Task<void> build_missing_indexes();
 
     void seed_frozen_local_snapshots();
@@ -78,7 +78,7 @@ class SnapshotSync {
 
     snapshots::SnapshotSettings settings_;
     const snapshots::Config snapshots_config_;
-    mdbx::env& chaindata_env_;
+    mdbx::env chaindata_env_;
 
     snapshots::SnapshotRepository repository_;
 

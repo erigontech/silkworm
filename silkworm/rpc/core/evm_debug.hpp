@@ -61,7 +61,7 @@ using Storage = std::map<std::string, std::string>;
 
 struct DebugLog {
     std::uint32_t pc{0};
-    unsigned char opcode;
+    unsigned char opcode{0};
     std::string op;
     std::int64_t gas{0};
     std::int64_t gas_cost{0};

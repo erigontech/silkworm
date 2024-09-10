@@ -70,7 +70,17 @@ Task<void> Sync::async_run() {
 
 Task<void> Sync::run_tasks() {
     using namespace concurrency::awaitable_wait_for_all;
-    co_await (start_sync_sentry_client() && start_block_exchange() && start_chain_sync());
+
+    try {
+        co_await (start_sync_sentry_client() && start_block_exchange() && start_chain_sync());
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Debug("sync") << "Sync run_tasks unexpected end [operation_canceled]";
+        } else {
+            log::Critical("sync") << "Sync run_tasks unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> Sync::start_sync_sentry_client() {

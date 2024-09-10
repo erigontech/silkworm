@@ -78,7 +78,7 @@ Task<void> PoSSync::download_blocks() {
 
     StopWatch timing(StopWatch::kStart);
     RepeatedMeasure<BlockNum> downloaded_headers(initial_block_progress);
-    log::Info() << "PoSSync: Waiting for blocks... from=" << initial_block_progress;
+    log::Info("sync") << "PoSSync: Waiting for blocks... from=" << initial_block_progress;
 
     asio::steady_timer timer(executor);
 
@@ -87,7 +87,7 @@ Task<void> PoSSync::download_blocks() {
         Blocks blocks;
 
         // wait for a batch of blocks
-        bool present = downloading_queue.try_pop(blocks);
+        const bool present = downloading_queue.try_pop(blocks);
         if (!present) {
             // a trick to avoid busy waiting
             timer.expires_after(100ms);
@@ -101,18 +101,22 @@ Task<void> PoSSync::download_blocks() {
             block_progress = std::max(block_progress, block->header.number);
         });
 
-        // insert blocks into database
-        const auto insert_result{co_await exec_engine_->insert_blocks(to_plain_blocks(blocks))};
-        if (!insert_result) {
-            log::Error() << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
-            continue;
-        }
+        try {
+            // insert blocks into database
+            const auto insert_result = co_await exec_engine_->insert_blocks(to_plain_blocks(blocks));
+            if (!insert_result) {
+                log::Error() << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
+                continue;
+            }
 
-        downloaded_headers.set(block_progress);
-        log::Info() << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
-                    << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
-                    << ", last=" << downloaded_headers.get()
-                    << ", lap.duration=" << StopWatch::format(timing.since_start());
+            downloaded_headers.set(block_progress);
+            log::Info("sync") << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
+                              << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
+                              << ", last=" << downloaded_headers.get()
+                              << ", lap.duration=" << StopWatch::format(timing.since_start());
+        } catch (const std::exception& ex) {
+            log::Error("sync") << "PoSSync: insertion failed, unexpected exception=" << ex.what();
+        }
     }
 }
 

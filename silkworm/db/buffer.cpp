@@ -479,7 +479,7 @@ void Buffer::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
     Bytes key{block_key(block_number, hash.bytes)};
     headers_[key] = block.header;
-    bodies_[key] = block;  // NOLINT(cppcoreguidelines-slicing)
+    bodies_[key] = block.copy_body();
 
     if (block_number == 0) {
         difficulty_[key] = 0;

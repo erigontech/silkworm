@@ -90,6 +90,10 @@ struct BlockBody {
 
 struct Block : public BlockBody {
     BlockHeader header;
+
+    BlockBody copy_body() const {
+        return *this;  // NOLINT(cppcoreguidelines-slicing)
+    }
 };
 
 struct BlockWithHash {

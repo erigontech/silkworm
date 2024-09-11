@@ -1,5 +1,5 @@
 #[[
-   Copyright 2022 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,21 +14,28 @@
    limitations under the License.
 ]]
 
-# Silkworm itself
-add_subdirectory(core)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(interfaces)
-  add_subdirectory(infra)
-  add_subdirectory(db)
-  add_subdirectory(execution)
-  add_subdirectory(rpc)
-  add_subdirectory(sentry)
-  add_subdirectory(sync)
-  add_subdirectory(node)
-  add_subdirectory(capi)
-endif()
+find_package(asio-grpc REQUIRED)
+find_package(gRPC REQUIRED)
 
-if(SILKWORM_WASM_API)
-  add_subdirectory(wasm)
-endif()
+# cmake-format: off
+set(LIBS_PRIVATE
+    gRPC::grpc++
+    silkworm_interfaces
+)
+# cmake-format: on
+
+# cmake-format: off
+set(LIBS_PUBLIC
+    asio-grpc::asio-grpc
+    silkworm_core
+    silkworm_infra
+)
+# cmake-format: on
+
+silkworm_library(
+  silkworm_execution
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
+)

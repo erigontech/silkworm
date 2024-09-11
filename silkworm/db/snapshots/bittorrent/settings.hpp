@@ -39,9 +39,6 @@ struct BitTorrentSettings {
     //! Time interval between two resume data savings
     std::chrono::seconds resume_data_save_interval{60};
 
-    //! Flag indicating if snapshots will be verified on startup
-    bool verify_on_startup{false};
-
     //! Flag indicating if BitTorrent failure/error alerts should be treated as warnings
     bool warn_on_error_alerts{false};
 

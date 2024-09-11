@@ -126,6 +126,10 @@ Task<void> SnapshotSync::setup() {
 
     seed_frozen_local_snapshots();
 
+    if (settings_.verify_on_startup) {
+        client_.recheck_all_finished_torrents();
+    }
+
     std::scoped_lock lock{setup_done_mutex_};
     setup_done_ = true;
     setup_done_cond_var_.notify_all();

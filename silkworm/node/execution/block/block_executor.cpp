@@ -14,12 +14,12 @@
    limitations under the License.
 */
 
+#include <tuple>
+
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/processor.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
-
-#include <tuple>
 
 namespace silkworm::execution::block {
 

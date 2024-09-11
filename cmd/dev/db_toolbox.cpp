@@ -2204,8 +2204,8 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir, bool keep_b
     snapshots::SnapshotSettings settings;
     settings.repository_dir = data_dir.snapshots().path();
     settings.no_downloader = true;
-    auto bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
-    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};  // NOLINT(cppcoreguidelines-slicing)
+    std::unique_ptr<snapshots::SnapshotBundleFactory> bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
+    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};
     repository.reopen_folder();
     db::DataModel::set_snapshot_repository(&repository);
 

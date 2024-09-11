@@ -133,9 +133,9 @@ static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std
 static log::Args log_args_for_exec_progress(execution::block::BlockExecutor::ExecutionProgress& progress, uint64_t current_block) {
     static auto float_to_string = [](float f) -> std::string {
         const auto size = std::snprintf(nullptr, 0, "%.1f", static_cast<double>(f));
-        std::string s(static_cast<size_t>(size + 1), '\0');                                  // +1 for null terminator
+        std::string s(static_cast<size_t>(size + 1), '\0');                               // +1 for null terminator
         std::ignore = std::snprintf(s.data(), s.size(), "%.1f", static_cast<double>(f));  // certain to fit
-        return s.substr(0, s.size() - 1);                                                    // remove null terminator
+        return s.substr(0, s.size() - 1);                                                 // remove null terminator
     };
 
     const auto elapsed{progress.end_time - progress.start_time};

@@ -255,6 +255,7 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
 
     // Schedule the retrieval of Erigon data storage model as first task on the execution contexts
+    SILK_INFO << "rpc::Daemon::Daemon standalone=" << std::boolalpha << settings_.standalone;
     if (settings_.standalone) {
         schedule_data_format_retrieval();
     }
@@ -335,8 +336,12 @@ void Daemon::schedule_data_format_retrieval() {
     for (size_t i{0}; i < context_pool_.num_contexts(); ++i) {
         auto& context = context_pool_.next_context();
         concurrency::spawn_future(*context.io_context(), [this, &context]() -> Task<void> {
-            const auto kv_client = make_kv_client(context);
-            co_await db::state::set_data_format(*kv_client);
+            try {
+                const auto kv_client = make_kv_client(context);
+                co_await db::state::set_data_format(*kv_client);
+            } catch (const std::exception& e) {
+                SILK_ERROR << "schedule_data_format_retrieval unexpected exception: " << e.what();
+            }
         });
     }
 }

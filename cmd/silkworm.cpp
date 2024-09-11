@@ -286,8 +286,12 @@ int main(int argc, char* argv[]) {
             rpc_settings};
         // Note: temp code until chainsync::Sync becomes a part of Node
         auto chain_sync_process_run = [&execution_node](chainsync::Sync& sync) -> Task<void> {
-            co_await execution_node.wait_for_setup();
-            co_await sync.async_run();
+            try {
+                co_await execution_node.wait_for_setup();
+                co_await sync.async_run();
+            } catch (const std::exception& e) {
+                SILK_ERROR << "chain_sync_process_run: unexpected exception: " << e.what();
+            }
         };
 
         auto tasks =

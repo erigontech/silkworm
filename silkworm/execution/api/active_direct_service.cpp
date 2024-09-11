@@ -49,7 +49,7 @@ Task<InsertionResult> ActiveDirectService::insert_blocks(const Blocks& blocks) {
 /** Chain Validation and ForkChoice **/
 
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-Task<ValidationResult> ActiveDirectService::validate_chain(BlockNumAndHash number_and_hash) {
+Task<ValidationResult> ActiveDirectService::validate_chain(BlockId number_and_hash) {
     return concurrency::spawn_task(executor_, [](auto* self, auto num_and_hash) {
         return self->DirectService::validate_chain(num_and_hash);
     }(this, number_and_hash));

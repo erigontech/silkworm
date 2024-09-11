@@ -42,7 +42,7 @@ class DirectService : public Service {
     /** Chain Validation and ForkChoice **/
 
     // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-    Task<ValidationResult> validate_chain(BlockNumAndHash number_and_hash) override;
+    Task<ValidationResult> validate_chain(BlockId number_and_hash) override;
 
     // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);
     Task<ForkChoiceResult> update_fork_choice(const ForkChoice& fork_choice) override;

@@ -26,20 +26,18 @@
 
 namespace silkworm::execution::api {
 
-using BlockNumAndHash = BlockId;
-
 struct ValidChain {
-    BlockNumAndHash current_head;
+    BlockId current_head;
 };
 
 struct InvalidChain {
-    BlockNumAndHash unwind_point;
+    BlockId unwind_point;
     std::optional<Hash> bad_block;
     std::set<Hash> bad_headers;
 };
 
 struct ValidationError {
-    BlockNumAndHash latest_valid_head;
+    BlockId latest_valid_head;
     std::string error;
 };
 

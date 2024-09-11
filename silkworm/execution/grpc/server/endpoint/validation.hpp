@@ -26,7 +26,7 @@ namespace silkworm::execution::grpc::server {
 
 api::ExecutionStatus execution_status_from_proto(const ::execution::ExecutionStatus&);
 
-api::BlockNumAndHash block_num_and_hash_from_request(const ::execution::ValidationRequest&);
+BlockId block_num_and_hash_from_request(const ::execution::ValidationRequest&);
 ::execution::ValidationReceipt response_from_validation_result(const api::ValidationResult&);
 
 api::ForkChoice fork_choice_from_request(const ::execution::ForkChoice&);

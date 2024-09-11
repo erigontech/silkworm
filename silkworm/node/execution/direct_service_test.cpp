@@ -77,11 +77,11 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::insert_blocks", "[node][exec
 TEST_CASE_METHOD(DirectServiceTest, "DirectService::verify_chain", "[node][execution][api]") {
     const Hash latest_valid_hash{0x000000000000000000000000000000000000000000000000000000000000000A_bytes32};
     const Hash new_hash{0x000000000000000000000000000000000000000000000000000000000000000B_bytes32};
-    const BlockNumAndHash latest_valid_head{
+    const BlockId latest_valid_head{
         .number = 1,
         .hash = latest_valid_hash,
     };
-    const BlockNumAndHash new_head{
+    const BlockId new_head{
         .number = 2,
         .hash = new_hash,
     };

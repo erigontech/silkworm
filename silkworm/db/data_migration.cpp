@@ -47,8 +47,20 @@ Task<bool> DataMigration::exec() {
 Task<void> DataMigration::run_loop() {
     using namespace std::chrono_literals;
     while (true) {
-        bool has_migrated = co_await exec();
-        if (!has_migrated) co_await sleep(1min);
+        try {
+            const bool has_migrated = co_await exec();
+            if (!has_migrated) co_await sleep(1min);
+        } catch (const boost::system::system_error& se) {
+            if (se.code() == boost::system::errc::operation_canceled) {
+                log::Warning(name()) << "DataMigration run_loop end [operation_canceled]";
+                break;
+            }
+            log::Critical(name()) << "DataMigration run_loop unexpected end [" + std::string{se.what()} + "]";
+            throw se;
+        } catch (const std::exception& e) {
+            log::Critical(name()) << "DataMigration run_loop unexpected exception=" << e.what();
+            throw e;
+        }
     }
 }
 

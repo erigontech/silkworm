@@ -20,7 +20,7 @@
 
 namespace silkworm::execution::api {
 
-ActiveDirectService::ActiveDirectService(stagedsync::ExecutionEngine& exec_engine, boost::asio::io_context& context)
+ActiveDirectService::ActiveDirectService(ExecutionEngine& exec_engine, boost::asio::io_context& context)
     : DirectService{exec_engine}, context_{context}, executor_{context_.get_executor()} {}
 
 void ActiveDirectService::execution_loop() {

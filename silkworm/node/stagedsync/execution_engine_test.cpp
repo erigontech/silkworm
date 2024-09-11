@@ -130,7 +130,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     }
 
     SECTION("get_header_td returns correct total difficulty for genesis block") {
-        auto td = exec_engine.get_header_td(header0_hash);
+        auto td = exec_engine.get_header_td(header0_hash, std::nullopt);
         REQUIRE(td.has_value());
         CHECK(*td == 1);
     }

@@ -18,7 +18,7 @@
 
 namespace silkworm::execution::api {
 
-DirectService::DirectService(stagedsync::ExecutionEngine& exec_engine)
+DirectService::DirectService(ExecutionEngine& exec_engine)
     : exec_engine_{exec_engine} {}
 
 /** Chain Putters **/
@@ -85,7 +85,7 @@ Task<std::optional<BlockHeader>> DirectService::current_header() {
 // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
 Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash number_or_hash) {
     if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_header_td(std::get<Hash>(number_or_hash));
+        co_return exec_engine_.get_header_td(std::get<Hash>(number_or_hash), std::nullopt);
     } else {
         SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
         const auto block_number{std::get<BlockNum>(number_or_hash)};

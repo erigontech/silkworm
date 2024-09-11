@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <silkworm/node/stagedsync/execution_engine.hpp>
-
+#include "execution_engine.hpp"
 #include "service.hpp"
 
 namespace silkworm::execution::api {
@@ -26,7 +25,7 @@ namespace silkworm::execution::api {
 //! This is used both client-side by 'direct' (i.e. no-gRPC) implementation and server-side by gRPC server.
 class DirectService : public Service {
   public:
-    explicit DirectService(stagedsync::ExecutionEngine& exec_engine);
+    explicit DirectService(ExecutionEngine& exec_engine);
     ~DirectService() override = default;
 
     DirectService(const DirectService&) = delete;
@@ -107,7 +106,7 @@ class DirectService : public Service {
     Task<BlockNum> block_progress() override;
 
   protected:
-    stagedsync::ExecutionEngine& exec_engine_;
+    ExecutionEngine& exec_engine_;
 };
 
 }  // namespace silkworm::execution::api

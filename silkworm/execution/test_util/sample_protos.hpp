@@ -19,10 +19,10 @@
 #include <string>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/interfaces/execution/execution.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/node/test_util/sample_blocks.hpp>
 
 namespace silkworm::execution::test_util {
 

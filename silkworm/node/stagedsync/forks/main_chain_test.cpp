@@ -21,6 +21,7 @@
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
@@ -28,7 +29,6 @@
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
-#include <silkworm/node/test_util/sample_blocks.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {

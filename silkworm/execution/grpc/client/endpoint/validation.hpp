@@ -18,6 +18,7 @@
 
 #include <silkworm/interfaces/execution/execution.pb.h>
 
+#include "../../../api/endpoint/checkers.hpp"
 #include "../../../api/endpoint/validation.hpp"
 
 namespace silkworm::execution::grpc::client {

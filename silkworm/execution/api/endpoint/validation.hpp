@@ -16,18 +16,13 @@
 
 #pragma once
 
-#include <cstdint>
 #include <optional>
 #include <set>
 #include <string>
 #include <variant>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block_id.hpp>
 #include <silkworm/core/types/hash.hpp>
-
-#include "checkers.hpp"
-#include "status.hpp"
 
 namespace silkworm::execution::api {
 
@@ -49,5 +44,6 @@ struct ValidationError {
 };
 
 using ValidationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+using VerificationResult = ValidationResult;
 
 }  // namespace silkworm::execution::api

@@ -38,6 +38,10 @@ using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
 
+using execution::api::InvalidChain;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+
 class MainChainForTest : public stagedsync::MainChain {
   public:
     using stagedsync::MainChain::current_head;

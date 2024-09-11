@@ -39,6 +39,8 @@ using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
 
+using execution::api::ValidChain;
+
 class ForkForTest : public Fork {
   public:
     using Fork::canonical_chain_;

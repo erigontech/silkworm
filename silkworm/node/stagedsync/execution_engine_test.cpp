@@ -41,6 +41,10 @@ namespace silkworm {
 using namespace silkworm::test_util;
 using namespace stagedsync;
 
+using execution::api::InvalidChain;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+
 class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::ExecutionEngine;

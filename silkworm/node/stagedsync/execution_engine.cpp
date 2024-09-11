@@ -25,6 +25,9 @@
 namespace silkworm::stagedsync {
 
 using namespace boost::asio;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+using execution::api::VerificationResult;
 
 ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
     : io_context_{ctx},

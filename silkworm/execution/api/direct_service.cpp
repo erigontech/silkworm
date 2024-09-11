@@ -39,21 +39,7 @@ Task<InsertionResult> DirectService::insert_blocks(const Blocks& blocks) {
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
 Task<ValidationResult> DirectService::validate_chain(BlockNumAndHash number_and_hash) {
     const auto verification = co_await exec_engine_.verify_chain(number_and_hash.hash);
-
-    ValidationResult validation;
-    if (std::holds_alternative<stagedsync::ValidChain>(verification)) {
-        const auto valid = std::get<stagedsync::ValidChain>(verification);
-        validation = ValidChain{valid.current_head};
-    } else if (std::holds_alternative<stagedsync::InvalidChain>(verification)) {
-        const auto invalid = std::get<stagedsync::InvalidChain>(verification);
-        validation = InvalidChain{invalid.unwind_point, invalid.bad_block, invalid.bad_headers};
-    } else if (std::holds_alternative<stagedsync::ValidationError>(verification)) {
-        const auto error = std::get<stagedsync::ValidationError>(verification);
-        validation = ValidationError{error.latest_valid_head};
-    } else {
-        throw std::logic_error("DirectService::validate_chain unknown error: " + std::to_string(verification.index()));
-    }
-    co_return validation;
+    co_return verification;
 }
 
 // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);

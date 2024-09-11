@@ -28,6 +28,9 @@ void add_snapshot_options(CLI::App& cli, snapshots::SnapshotSettings& snapshot_s
     cli.add_flag("--snapshots.keepblocks", snapshot_settings.keep_blocks)
         ->description("If set, the blocks exported from mdbx to snapshots are kept in mdbx")
         ->capture_default_str();
+    cli.add_flag("--snapshots.stop", snapshot_settings.stop_freezer)
+        ->description("Stop producing new snapshots. Useful to workaround any snapshots-related critical bugs. It will stop moving historical data from DB to new immutable snapshots. DB will grow and may slightly slow-down.")
+        ->capture_default_str();
     cli.add_option("--snapshots.repository.path", snapshot_settings.repository_dir)
         ->description("Filesystem path where snapshots will be stored")
         ->capture_default_str();

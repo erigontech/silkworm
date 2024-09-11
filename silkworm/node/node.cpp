@@ -130,11 +130,20 @@ Task<void> NodeImpl::run_tasks() {
 
     co_await wait_for_setup();
 
-    co_await (
-        start_execution_server() &&
-        start_resource_usage_log() &&
-        start_execution_log_timer() &&
-        start_backend_kv_grpc_server());
+    try {
+        co_await (
+            start_execution_server() &&
+            start_resource_usage_log() &&
+            start_execution_log_timer() &&
+            start_backend_kv_grpc_server());
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Warning() << "NodeImpl run_tasks unexpected end [operation_canceled]";
+        } else {
+            log::Critical() << "NodeImpl run_tasks unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> NodeImpl::start_execution_server() {

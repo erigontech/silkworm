@@ -26,8 +26,17 @@ ActiveDirectService::ActiveDirectService(stagedsync::ExecutionEngine& exec_engin
 void ActiveDirectService::execution_loop() {
     exec_engine_.open();
 
-    boost::asio::executor_work_guard<decltype(executor_)> work{executor_};
-    context_.run();
+    try {
+        boost::asio::executor_work_guard<decltype(executor_)> work{executor_};
+        context_.run();
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Warning() << "ActiveDirectService execution_loop unexpected end [operation_canceled]";
+        } else {
+            log::Critical() << "ActiveDirectService execution_loop unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 
     exec_engine_.close();
 }

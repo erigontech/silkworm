@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <silkworm/node/execution/api/endpoint/checkers.hpp>
-#include <silkworm/node/execution/api/endpoint/range.hpp>
+#include <silkworm/execution/api/endpoint/checkers.hpp>
+#include <silkworm/execution/api/endpoint/range.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
 
 namespace silkworm::rpc::engine {

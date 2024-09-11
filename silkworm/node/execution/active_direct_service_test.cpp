@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "active_direct_service.hpp"
-
 #include <stdexcept>
 #include <thread>
 #include <utility>
@@ -25,6 +23,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/execution/api/active_direct_service.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>

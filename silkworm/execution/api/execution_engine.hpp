@@ -50,6 +50,7 @@ struct ExecutionEngine {
     virtual BlockId last_fork_choice() const = 0;
     virtual BlockId last_finalized_block() const = 0;
     virtual BlockId last_safe_block() const = 0;
+    virtual BlockNum highest_frozen_block_number() const = 0;
 
     // header/body retrieval
     virtual std::optional<BlockHeader> get_header(Hash) const = 0;

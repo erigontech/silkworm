@@ -62,6 +62,10 @@ BlockId ExecutionEngine::last_safe_block() const {
     return last_safe_block_;
 }
 
+BlockNum ExecutionEngine::highest_frozen_block_number() const {
+    return db::DataModel::highest_frozen_block_number();
+}
+
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {
     SILK_DEBUG << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;

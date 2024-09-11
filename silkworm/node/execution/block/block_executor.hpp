@@ -36,7 +36,9 @@ class BlockExecutor {
         float batch_progress_perc{0.0};
     };
 
-    BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets, size_t max_batch_size);
+    using CustomerLogger = std::function<log::Args(ExecutionProgress&, uint64_t)>;
+
+    BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets, size_t max_batch_size, std::optional<CustomerLogger> custom_logger);
 
     ValidationResult execute_single(const Block& block, db::Buffer& state_buffer, AnalysisCache& analysis_cache, ObjectPool<evmone::ExecutionState>& state_pool);
 
@@ -49,6 +51,7 @@ class BlockExecutor {
     ExecutionProgress progress_;
     SteadyTimePoint log_time_;
     const size_t max_batch_size_;
+    std::optional<CustomerLogger> custom_logger_;
 };
 
 }  // namespace silkworm::execution::block

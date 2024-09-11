@@ -129,6 +129,43 @@ static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std
         std::to_string(Directory{db_path}.size())};
 }
 
+//! Generate log arguments for execution progress at specified block
+static log::Args log_args_for_exec_progress(execution::block::BlockExecutor::ExecutionProgress& progress, uint64_t current_block) {
+    static auto float_to_string = [](float f) -> std::string {
+        const auto size = std::snprintf(nullptr, 0, "%.1f", static_cast<double>(f));
+        std::string s(static_cast<size_t>(size + 1), '\0');                                  // +1 for null terminator
+        std::ignore = std::snprintf(s.data(), s.size(), "%.1f", static_cast<double>(f));  // certain to fit
+        return s.substr(0, s.size() - 1);                                                    // remove null terminator
+    };
+
+    const auto elapsed{progress.end_time - progress.start_time};
+    progress.start_time = progress.end_time;
+    const auto duration_seconds{std::chrono::duration_cast<std::chrono::seconds>(elapsed)};
+    const auto elapsed_seconds = duration_seconds.count() != 0 ? static_cast<float>(duration_seconds.count()) : 1.0f;
+    if (progress.processed_blocks == 0) {
+        return {"number", std::to_string(current_block), "db", "waiting..."};
+    }
+    const auto speed_blocks = static_cast<float>(progress.processed_blocks) / elapsed_seconds;
+    const auto speed_transactions = static_cast<float>(progress.processed_transactions) / elapsed_seconds;
+    const auto speed_mgas = static_cast<float>(progress.processed_gas) / elapsed_seconds / 1'000'000;
+    progress.processed_blocks = 0;
+    progress.processed_transactions = 0;
+    progress.processed_gas = 0;
+    std::stringstream batch_progress_perc;
+    batch_progress_perc << std::fixed << std::setprecision(2) << progress.batch_progress_perc * 100 << "%";
+    return {
+        "number",
+        std::to_string(current_block),
+        "blk/s",
+        float_to_string(speed_blocks),
+        "tx/s",
+        float_to_string(speed_transactions),
+        "Mgas/s",
+        float_to_string(speed_mgas),
+        "batchProgress",
+        batch_progress_perc.str()};
+}
+
 //! A signal handler guard using RAII pattern to acquire/release signal handling
 class SignalHandlerGuard {
   public:
@@ -433,7 +470,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
-        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size, log_args_for_exec_progress};
         ValidationResult last_exec_result = ValidationResult::kOk;
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
@@ -546,7 +583,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         BlockNum last_block_number = 0;
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
-        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size};
+        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size, log_args_for_exec_progress};
         ValidationResult last_exec_result = ValidationResult::kOk;
 
         while (block_number <= max_block) {

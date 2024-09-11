@@ -232,7 +232,8 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             const auto write_traces = block_num_ >= prune_call_traces_threshold;
             constexpr auto kWriteChangeSets = true;
 
-            execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets, batch_size_};
+            constexpr auto kCustomLogger = std::nullopt;
+            execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets, batch_size_, kCustomLogger};
             try {
                 if (const ValidationResult res = block_executor.execute_single(block, buffer, analysis_cache, state_pool); res != ValidationResult::kOk) {
                     // Persist work done so far

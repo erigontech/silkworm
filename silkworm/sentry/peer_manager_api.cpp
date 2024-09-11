@@ -39,15 +39,24 @@ Task<void> PeerManagerApi::run(std::shared_ptr<PeerManagerApi> self) {
 
     self->peer_manager_.add_observer(std::weak_ptr(self));
 
-    auto run =
-        self->handle_peer_count_calls() &&
-        self->handle_peers_calls() &&
-        self->handle_peer_calls() &&
-        self->handle_peer_penalize_calls() &&
-        self->handle_peer_events_calls() &&
-        self->events_unsubscription_tasks_.wait() &&
-        self->forward_peer_events();
-    co_await concurrency::spawn_task(self->strand_, std::move(run));
+    try {
+        auto run =
+            self->handle_peer_count_calls() &&
+            self->handle_peers_calls() &&
+            self->handle_peer_calls() &&
+            self->handle_peer_penalize_calls() &&
+            self->handle_peer_events_calls() &&
+            self->events_unsubscription_tasks_.wait() &&
+            self->forward_peer_events();
+        co_await concurrency::spawn_task(self->strand_, std::move(run));
+    } catch (const boost::system::system_error& se) {
+        if (se.code() == boost::system::errc::operation_canceled) {
+            log::Warning() << "PeerManagerApi run unexpected end [operation_canceled]";
+        } else {
+            log::Critical() << "PeerManagerApi run unexpected end [" + std::string{se.what()} + "]";
+        }
+        throw se;
+    }
 }
 
 Task<void> PeerManagerApi::handle_peer_count_calls() {

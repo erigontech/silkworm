@@ -1209,14 +1209,15 @@ static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2
                                                 bool check_layout, bool deep, bool verbose) {
     // Check both databases have the same stats (e.g. number of records) for the specified table
     if (const auto result{compare(db1_table, db2_table, check_layout)}; !result || deep) {
-        print_table_diff(txn1, txn2, db1_table, db2_table);
         if (!result) {
             const std::string error_message{"mismatch in table " + db1_table.name + ": " + result.error()};
             if (verbose) {
                 std::cerr << error_message << "\n";
             }
+            print_table_diff(txn1, txn2, db1_table, db2_table);
             return tl::make_unexpected(error_message);
         }
+        print_table_diff(txn1, txn2, db1_table, db2_table);
     }
 
     return {};

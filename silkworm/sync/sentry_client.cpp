@@ -109,7 +109,17 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
 
     if (penalize_peer_id) {
         malformed_message_subscription();
-        co_await penalize_peer_async(penalize_peer_id.value(), kBadBlockPenalty);
+        try {
+            co_await penalize_peer_async(penalize_peer_id.value(), kBadBlockPenalty);
+        } catch (const boost::system::system_error& se) {
+            if (se.code() == boost::system::errc::operation_canceled) {
+                log::Warning() << "SentryClient penalize_peer_async unexpected end [operation_canceled]";
+            } else {
+                log::Critical() << "SentryClient penalize_peer_async unexpected end [" + std::string{se.what()} + "]";
+            }
+            throw se;
+        }
+
         co_return;
     }
 

@@ -36,7 +36,7 @@ void add_snapshot_options(CLI::App& cli, snapshots::SnapshotSettings& snapshot_s
         ->capture_default_str();
 
     // TODO(canepat) add options for the other snapshot settings and for all bittorrent settings
-    cli.add_option("--torrent.verify_on_startup", snapshot_settings.bittorrent_settings.verify_on_startup)
+    cli.add_option("--torrent.verify_on_startup", snapshot_settings.verify_on_startup)
         ->description(
             "If set, the snapshot downloader will verify snapshots on startup."
             " It will not report founded problems but just re-download broken pieces")

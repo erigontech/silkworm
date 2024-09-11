@@ -56,12 +56,12 @@ struct PathHasher {
 SnapshotSync::SnapshotSync(
     snapshots::SnapshotSettings settings,
     ChainId chain_id,
-    mdbx::env& chaindata_env,
+    mdbx::env chaindata_env,
     std::filesystem::path tmp_dir_path,
     stagedsync::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
       snapshots_config_{Config::lookup_known_config(chain_id)},
-      chaindata_env_{chaindata_env},
+      chaindata_env_{std::move(chaindata_env)},
       repository_{settings_, std::make_unique<db::SnapshotBundleFactoryImpl>()},
       client_{settings_.bittorrent_settings},
       snapshot_freezer_{db::ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings_.keep_blocks},
@@ -129,6 +129,10 @@ Task<void> SnapshotSync::setup() {
     db::DataModel::set_snapshot_repository(&repository_);
 
     seed_frozen_local_snapshots();
+
+    if (settings_.verify_on_startup) {
+        client_.recheck_all_finished_torrents();
+    }
 
     std::scoped_lock lock{setup_done_mutex_};
     setup_done_ = true;

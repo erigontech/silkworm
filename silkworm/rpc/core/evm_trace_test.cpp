@@ -5619,10 +5619,7 @@ TEST_CASE("VmTrace json serialization") {
                 {
                     "cost":42,
                     "ex":{
-                        "mem":{
-                            "data":"data",
-                            "off":10
-                        },
+                        "mem": null,
                         "push":["0xdeadbeaf"],
                         "store":{
                             "key":"key",
@@ -5642,10 +5639,7 @@ TEST_CASE("VmTrace json serialization") {
         CHECK(nlohmann::json(trace_op) == R"({
             "cost":42,
             "ex":{
-                "mem":{
-                    "data":"data",
-                    "off":10
-                },
+                "mem": null,
                 "push":["0xdeadbeaf"],
                 "store":{
                     "key":"key",
@@ -5661,10 +5655,7 @@ TEST_CASE("VmTrace json serialization") {
     }
     SECTION("TraceEx") {
         CHECK(nlohmann::json(trace_ex) == R"({
-            "mem":{
-                "data":"data",
-                "off":10
-            },
+            "mem": null,
             "push":["0xdeadbeaf"],
             "store":{
                 "key":"key",

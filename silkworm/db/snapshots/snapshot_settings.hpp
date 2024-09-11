@@ -30,6 +30,7 @@ struct SnapshotSettings {
     bittorrent::BitTorrentSettings bittorrent_settings;                        // The Bittorrent protocol settings
     bool keep_blocks{false};                                                   // Flag indicating if exported blocks should be kept in mdbx
     bool stop_freezer{false};                                                  // Stop producing new snapshots
+    bool verify_on_startup{false};                                             // Flag indicating if snapshots will be verified on startup
 };
 
 }  // namespace silkworm::snapshots

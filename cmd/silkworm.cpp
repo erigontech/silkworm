@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
         // Prepare database for takeoff
         cmd::common::run_db_checklist(node_settings);
 
-        auto chaindata_db{db::open_env(node_settings.chaindata_env_config)};
+        mdbx::env_managed chaindata_env = db::open_env(node_settings.chaindata_env_config);
 
         silkworm::rpc::ClientContextPool context_pool{
             settings.node_settings.server_settings.context_pool_settings,
@@ -247,7 +247,7 @@ int main(int argc, char* argv[]) {
         settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
         settings.sentry_settings.network_id = node_settings.network_id;
 
-        auto chain_head_provider = [db_access = db::ROAccess{chaindata_db}] {
+        auto chain_head_provider = [db_access = db::ROAccess{chaindata_env}] {
             return db::read_chain_head(db_access);
         };
         sentry::eth::StatusDataProvider eth_status_data_provider{std::move(chain_head_provider), node_settings.chain_config.value()};
@@ -265,8 +265,7 @@ int main(int argc, char* argv[]) {
         };
 
         // Execution: the execution layer engine
-        // NOLINTNEXTLINE(cppcoreguidelines-slicing)
-        silkworm::node::Node execution_node{context_pool.any_executor(), settings.node_settings, sentry_client, chaindata_db};
+        silkworm::node::Node execution_node{context_pool.any_executor(), settings.node_settings, sentry_client, chaindata_env};  // NOLINT(cppcoreguidelines-slicing)
         execution::api::DirectClient& execution_client{execution_node.execution_direct_client()};
 
         // ChainSync: the chain synchronization process based on the consensus protocol
@@ -280,7 +279,7 @@ int main(int argc, char* argv[]) {
         };
         chainsync::Sync chain_sync_process{
             context_pool.any_executor(),
-            chaindata_db,  // NOLINT(cppcoreguidelines-slicing)
+            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
             execution_client,
             sentry_client,
             *node_settings.chain_config,

@@ -49,7 +49,7 @@ class SnapshotSync {
     SnapshotSync(
         snapshots::SnapshotSettings settings,
         ChainId chain_id,
-        mdbx::env& chaindata_env,
+        mdbx::env chaindata_env,
         std::filesystem::path tmp_dir_path,
         stagedsync::StageScheduler& stage_scheduler);
 
@@ -78,7 +78,7 @@ class SnapshotSync {
 
     snapshots::SnapshotSettings settings_;
     const snapshots::Config snapshots_config_;
-    mdbx::env& chaindata_env_;
+    mdbx::env chaindata_env_;
 
     snapshots::SnapshotRepository repository_;
 

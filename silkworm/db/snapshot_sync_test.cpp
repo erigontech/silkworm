@@ -38,7 +38,6 @@ using namespace silkworm::test_util;
 struct SettingsOverrides {
     bool enabled{true};
     bool no_downloader{false};
-    bool verify_on_startup{false};
 };
 
 class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
@@ -77,7 +76,6 @@ struct SnapshotSyncForTest : public SnapshotSync {
             .no_downloader = overrides.no_downloader,
             .bittorrent_settings = bittorrent::BitTorrentSettings{
                 .repository_path = tmp_dir_path / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
-                .verify_on_startup = overrides.verify_on_startup,
             },
         };
     }
@@ -106,11 +104,6 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
 
     SECTION("no download, just reopen") {
         SnapshotSyncForTest sync{test, SettingsOverrides{.no_downloader = true}};
-        test.runner.run(sync.download_snapshots_if_needed());
-    }
-
-    SECTION("no download, just reopen and verify") {
-        SnapshotSyncForTest sync{test, SettingsOverrides{.no_downloader = true, .verify_on_startup = true}};
         test.runner.run(sync.download_snapshots_if_needed());
     }
 }

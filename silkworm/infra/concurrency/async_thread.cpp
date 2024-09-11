@@ -66,6 +66,7 @@ Task<void> async_thread(
         thread.join();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Warning() << "Async thread [" << name << "] run cancelled";
             try {
                 stop();
             } catch (const std::exception& stop_ex) {

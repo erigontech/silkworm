@@ -27,9 +27,10 @@
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
 
 #include "backend_kv_server.hpp"
 
@@ -46,6 +47,7 @@ class NodeImpl final {
         boost::asio::any_io_executor executor,
         Settings& settings,
         SentryClientPtr sentry_client,
+        std::function<BlockNum()> last_pre_validated_block,
         mdbx::env chaindata_env);
 
     NodeImpl(const NodeImpl&) = delete;
@@ -94,14 +96,28 @@ static auto make_execution_server_settings() {
     };
 }
 
+static stagedsync::BodiesStageFactory make_bodies_stage_factory(
+    const ChainConfig& chain_config,
+    std::function<BlockNum()> last_pre_validated_block) {
+    return [chain_config, last_pre_validated_block = std::move(last_pre_validated_block)](stagedsync::SyncContext* sync_context) {
+        return std::make_unique<stagedsync::BodiesStage>(sync_context, chain_config, last_pre_validated_block);
+    };
+};
+
 NodeImpl::NodeImpl(
     [[maybe_unused]] boost::asio::any_io_executor executor,  // NOLINT(*-unnecessary-value-param)
     Settings& settings,
     SentryClientPtr sentry_client,
+    std::function<BlockNum()> last_pre_validated_block,
     mdbx::env chaindata_env)
     : settings_{settings},
       chaindata_env_{std::move(chaindata_env)},
-      execution_engine_{execution_context_, settings_, db::RWAccess{chaindata_env_}},
+      execution_engine_{
+          execution_context_,
+          settings_,
+          make_bodies_stage_factory(*settings_.chain_config, std::move(last_pre_validated_block)),
+          db::RWAccess{chaindata_env_},
+      },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
@@ -112,7 +128,6 @@ NodeImpl::NodeImpl(
     backend_->set_node_name(settings_.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
-    PreverifiedHashes::load(settings_.chain_config->chain_id);
 }
 
 Task<void> NodeImpl::wait_for_setup() {
@@ -180,8 +195,14 @@ Node::Node(
     boost::asio::any_io_executor executor,
     Settings& settings,
     SentryClientPtr sentry_client,
+    std::function<BlockNum()> last_pre_validated_block,
     mdbx::env chaindata_env)
-    : p_impl_(std::make_unique<NodeImpl>(std::move(executor), settings, std::move(sentry_client), std::move(chaindata_env))) {}
+    : p_impl_(std::make_unique<NodeImpl>(
+          std::move(executor),
+          settings,
+          std::move(sentry_client),
+          std::move(last_pre_validated_block),
+          std::move(chaindata_env))) {}
 
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom
 Node::~Node() = default;

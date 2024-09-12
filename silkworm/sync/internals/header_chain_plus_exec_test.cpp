@@ -27,6 +27,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 #include "chain_fork_view.hpp"
@@ -82,13 +83,20 @@ TEST_CASE("Headers receiving and saving") {
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.clear();  // we need to skip header/block verification because we use fake blocks
-
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
 
+    BodiesStageFactory bodies_stage_factory = [&](SyncContext* sync_context) {
+        return std::make_unique<BodiesStage>(sync_context, *node_settings.chain_config, [] { return 0; });
+    };
+
     // creating the ExecutionEngine
-    ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{
+        runner.context(),
+        node_settings,
+        std::move(bodies_stage_factory),
+        db_access,
+    };
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
@@ -103,7 +111,7 @@ TEST_CASE("Headers receiving and saving") {
 
     // creating the working chain to simulate a bit of the sync
     BlockNum highest_in_db = 0;
-    HeaderChainForTest header_chain(std::make_unique<DummyRuleSet>());
+    HeaderChainForTest header_chain(kMainnetConfig.chain_id, std::make_unique<DummyRuleSet>());
     header_chain.initial_state(last_headers);
     header_chain.current_state(highest_in_db);
     auto request_id = header_chain.generate_request_id();

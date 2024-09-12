@@ -29,10 +29,14 @@ using execution::api::ValidationError;
 using execution::api::ValidChain;
 using execution::api::VerificationResult;
 
-ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
+ExecutionEngine::ExecutionEngine(
+    asio::io_context& ctx,
+    NodeSettings& ns,
+    BodiesStageFactory bodies_stage_factory,
+    db::RWAccess dba)
     : io_context_{ctx},
       node_settings_{ns},
-      main_chain_{ctx, ns, std::move(dba)},
+      main_chain_{ctx, ns, std::move(bodies_stage_factory), std::move(dba)},
       block_cache_{kDefaultCacheSize} {}
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations

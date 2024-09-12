@@ -35,6 +35,7 @@
 
 #include "forks/extending_fork.hpp"
 #include "forks/main_chain.hpp"
+#include "stages/stage_bodies_factory.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -54,7 +55,11 @@ namespace asio = boost::asio;
  */
 class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable {
   public:
-    ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
+    ExecutionEngine(
+        asio::io_context&,
+        NodeSettings&,
+        BodiesStageFactory bodies_stage_factory,
+        db::RWAccess);
     ~ExecutionEngine() override = default;
 
     // needed to circumvent mdbx threading model limitations

@@ -32,6 +32,7 @@
 #include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
+#include "../stages/stage_bodies_factory.hpp"
 #include "canonical_chain.hpp"
 
 namespace silkworm::stagedsync {
@@ -41,7 +42,11 @@ class ExtendingFork;
 
 class MainChain {
   public:
-    explicit MainChain(boost::asio::io_context&, NodeSettings&, db::RWAccess);
+    explicit MainChain(
+        boost::asio::io_context&,
+        NodeSettings&,
+        BodiesStageFactory bodies_stage_factory,
+        db::RWAccess);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -87,7 +92,7 @@ class MainChain {
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
-
+    const BodiesStageFactory& bodies_stage_factory() const;
     StageScheduler& stage_scheduler() const;
 
   protected:
@@ -103,6 +108,7 @@ class MainChain {
 
     boost::asio::io_context& io_context_;
     NodeSettings& node_settings_;
+    BodiesStageFactory bodies_stage_factory_;
     mutable db::RWAccess db_access_;
     mutable db::RWTxnManaged tx_;
     db::DataModel data_model_;

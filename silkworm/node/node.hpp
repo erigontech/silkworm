@@ -16,12 +16,14 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/execution/api/direct_client.hpp>
 #include <silkworm/node/settings.hpp>
@@ -37,6 +39,7 @@ class Node {
         boost::asio::any_io_executor executor,
         Settings& settings,
         std::shared_ptr<sentry::api::SentryClient> sentry_client,
+        std::function<BlockNum()> last_pre_validated_block,
         mdbx::env chaindata_env);
     ~Node();
 

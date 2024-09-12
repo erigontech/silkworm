@@ -21,6 +21,7 @@
 
 #include <intx/intx.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
@@ -59,8 +60,12 @@ namespace silkworm {
  */
 class HeaderChain {
   public:
-    explicit HeaderChain(const ChainConfig& chain_config);
-    explicit HeaderChain(protocol::RuleSetPtr rule_set, std::optional<intx::uint256> terminal_total_difficulty = {});
+    explicit HeaderChain(const ChainConfig& chain_config, bool use_preverified_hashes);
+    explicit HeaderChain(
+        ChainId chain_id,
+        protocol::RuleSetPtr rule_set,
+        std::optional<intx::uint256> terminal_total_difficulty = {},
+        bool use_preverified_hashes = false);
 
     // sync current state - this must be done at header forward
     void initial_state(const std::vector<BlockHeader>& last_headers);
@@ -103,6 +108,7 @@ class HeaderChain {
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(const std::set<Hash>& bads);
     void set_preverified_hashes(PreverifiedHashes&);
+    BlockNum last_pre_validated_block() const;
 
   protected:
     static constexpr BlockNum kMaxLen = 192;

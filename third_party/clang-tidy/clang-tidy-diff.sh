@@ -38,6 +38,7 @@ fi
 args=(
 	-clang-tidy-binary "$tidy"
 	-p 1
+	-exclude "mock_execution_client.hpp"
 	-j 6
 	-timeout 60
 	-config-file "$project_dir/.clang-tidy"

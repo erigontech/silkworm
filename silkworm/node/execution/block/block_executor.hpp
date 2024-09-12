@@ -24,7 +24,6 @@ namespace silkworm::execution::block {
 
 class BlockExecutor {
   public:
-    using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
     static constexpr size_t kDefaultAnalysisCacheSize{5'000};
 
     BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets);
@@ -37,7 +36,6 @@ class BlockExecutor {
     bool write_receipts_;
     bool write_call_traces_;
     bool write_change_sets_;
-    SteadyTimePoint log_time_;
 };
 
 }  // namespace silkworm::execution::block

@@ -31,7 +31,7 @@ FileProvider::FileProvider(std::string file_name, size_t id) : id_{id}, file_nam
 FileProvider::~FileProvider() { reset(); }
 
 void FileProvider::flush(Buffer& buffer) {
-    head_t head{};
+    EntryHeader head{};
 
     // Check we have enough space to store all data
     auto entries{buffer.entries()};
@@ -39,14 +39,14 @@ void FileProvider::flush(Buffer& buffer) {
     fs::path workdir(fs::path(file_name_).parent_path());
     if (fs::space(workdir).available < file_size_) {
         file_size_ = 0;
-        throw etl_error("Insufficient disk space");
+        throw EtlError("Insufficient disk space");
     }
 
     // Open file for output and flush data
     file_.open(file_name_, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
     if (!file_.is_open()) {
         reset();
-        throw etl_error(safe_strerror(errno));
+        throw EtlError(safe_strerror(errno));
     }
 
     for (const auto& entry : entries) {
@@ -57,7 +57,7 @@ void FileProvider::flush(Buffer& buffer) {
             !file_.write(byte_ptr_cast(entry.value.data()), static_cast<std::streamsize>(entry.value.size()))) {
             auto err{errno};
             reset();
-            throw etl_error(safe_strerror(err));
+            throw EtlError(safe_strerror(err));
         }
     }
 
@@ -70,15 +70,15 @@ void FileProvider::flush(Buffer& buffer) {
     if (!file_.is_open()) {
         auto err{errno};
         reset();
-        throw etl_error(safe_strerror(err));
+        throw EtlError(safe_strerror(err));
     }
 }
 
 std::optional<std::pair<Entry, size_t>> FileProvider::read_entry() {
-    head_t head{};
+    EntryHeader head{};
 
     if (!file_.is_open() || !file_size_) {
-        throw etl_error("Invalid file handle");
+        throw EtlError("Invalid file handle");
     }
 
     if (!file_.read(byte_ptr_cast(head.bytes), 8)) {
@@ -91,7 +91,7 @@ std::optional<std::pair<Entry, size_t>> FileProvider::read_entry() {
         !file_.read(byte_ptr_cast(entry.value.data()), head.lengths[1])) {
         auto err{errno};
         reset();
-        throw etl_error(safe_strerror(err));
+        throw EtlError(safe_strerror(err));
     }
 
     return std::make_pair(entry, id_);

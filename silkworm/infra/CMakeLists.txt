@@ -21,6 +21,7 @@ set(TARGET silkworm_infra)
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED headers container thread)
+find_package(CPPTRACE REQUIRED)
 find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)
@@ -43,6 +44,7 @@ set(LIBS_PUBLIC
     asio-grpc::asio-grpc
     Boost::headers
     Boost::thread
+    CPPTRACE::CPPTRACE
     gRPC::grpc++
 )
 

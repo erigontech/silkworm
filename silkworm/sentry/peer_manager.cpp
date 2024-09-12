@@ -79,7 +79,7 @@ Task<void> PeerManager::run_peer(std::shared_ptr<rlpx::Peer> peer) {
         co_await (rlpx::Peer::run(peer) && wait_for_peer_handshake(peer));
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "PeerManager::run_peer Peer::run cancelled";
+            log::Warning("sentry") << "PeerManager::run_peer Peer::run cancelled";
         } else {
             log::Error("sentry") << "PeerManager::run_peer Peer::run system_error: " << ex.what();
         }
@@ -112,7 +112,7 @@ Task<void> PeerManager::drop_peer(
         co_await rlpx::Peer::drop(peer, reason);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "PeerManager::drop_peer Peer::drop cancelled";
+            log::Warning("sentry") << "PeerManager::drop_peer Peer::drop cancelled";
         } else {
             log::Error("sentry") << "PeerManager::drop_peer Peer::drop system_error: " << ex.what();
         }

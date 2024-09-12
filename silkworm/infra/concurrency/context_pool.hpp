@@ -26,6 +26,7 @@
 #include <vector>
 
 #include <boost/asio/io_context.hpp>
+#include <cpptrace/from_current.hpp>
 
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -120,12 +121,15 @@ class ContextPool : public ExecutorPool {
             context_threads_.create_thread([&, i = i]() {
                 log::set_thread_name(("asio_ctx_s" + std::to_string(i)).c_str());
                 SILK_TRACE << "Thread start context[" << i << "] thread_id: " << std::this_thread::get_id();
-                try {
+                CPPTRACE_TRY {
                     context.execute_loop();
-                } catch (const std::exception& ex) {
+                }
+                CPPTRACE_CATCH(const std::exception& ex) {
                     SILK_CRIT << "ContextPool context.execute_loop exception: " << ex.what();
+                    cpptrace::from_current_exception().print();
                     exception_handler_(std::make_exception_ptr(ex));
-                } catch (...) {
+                }
+                catch (...) {
                     SILK_CRIT << "ContextPool context.execute_loop unexpected exception";
                     exception_handler_(std::current_exception());
                 }

@@ -63,8 +63,8 @@ static inline CursorResult adjust_cursor_position_if_unpositioned(
     // that are not positioned, but also for those pointing to the end of data.
     // Unfortunately, there's no MDBX API to differentiate the two.
     if (c.eof()) {
-        return (d == CursorMoveDirection::Forward) ? c.to_first(/*throw_notfound=*/false)
-                                                   : c.to_last(/*throw_notfound=*/false);
+        return (d == CursorMoveDirection::kForward) ? c.to_first(/*throw_notfound=*/false)
+                                                    : c.to_last(/*throw_notfound=*/false);
     }
     return c.current(/*throw_notfound=*/false);
 }
@@ -80,7 +80,7 @@ static inline CursorResult strict_lower_bound(ROCursor& cursor, const ByteView k
 }
 
 static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection direction) {
-    return direction == CursorMoveDirection::Forward
+    return direction == CursorMoveDirection::kForward
                ? mdbx::cursor::move_operation::next
                : mdbx::cursor::move_operation::previous;
 }
@@ -272,7 +272,7 @@ void RWTxnManaged::commit_and_stop() {
     }
 }
 
-thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> PooledCursor::handles_pool_{};
+thread_local ObjectPool<MDBX_cursor, detail::CursorHandleDeleter> PooledCursor::handles_pool_{};
 
 PooledCursor::PooledCursor() {
     handle_ = handles_pool_.acquire();
@@ -633,7 +633,7 @@ size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t count,
 
 size_t cursor_erase(RWCursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
     CursorResult data{
-        direction == CursorMoveDirection::Forward
+        direction == CursorMoveDirection::kForward
             ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
             : strict_lower_bound(cursor, set_key)};
 

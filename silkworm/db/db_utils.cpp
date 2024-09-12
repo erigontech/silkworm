@@ -53,7 +53,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(db::ROTxn& txn, const std::set
         // TODO: check if we really need to parse all the table
     };
 
-    db::cursor_for_each(*td_cursor, find_max, db::CursorMoveDirection::Reverse);
+    db::cursor_for_each(*td_cursor, find_max, db::CursorMoveDirection::kReverse);
 
     return {max_block_num, max_hash};
 }

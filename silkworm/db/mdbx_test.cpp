@@ -424,13 +424,13 @@ TEST_CASE("Cursor walk") {
 
         // read entire table backwards
         table_cursor.bind(txn, {table_name});
-        cursor_for_each(table_cursor, save_all_data_map, CursorMoveDirection::Reverse);
+        cursor_for_each(table_cursor, save_all_data_map, CursorMoveDirection::kReverse);
         CHECK(data_map == kGeneticCode);
         data_map.clear();
 
         // Ensure the order is reversed
         table_cursor.bind(txn, {table_name});
-        cursor_for_each(table_cursor, save_all_data_vec, CursorMoveDirection::Reverse);
+        cursor_for_each(table_cursor, save_all_data_vec, CursorMoveDirection::kReverse);
         CHECK(data_vec.back().second == kGeneticCode.at("AAA"));
 
         // late start
@@ -512,7 +512,7 @@ TEST_CASE("Cursor walk") {
 
         // reverse read
         table_cursor.to_last();
-        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/4, CursorMoveDirection::Reverse);
+        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/4, CursorMoveDirection::kReverse);
         REQUIRE(data_map.size() == 4);
         CHECK(data_map.at("UUA") == "Leucine");
         CHECK(data_map.at("UUC") == "Phenylalanine");
@@ -566,7 +566,7 @@ TEST_CASE("Cursor walk") {
         set_key[1] = 'X';
         set_key[2] = 'X';
         table_cursor.bind(txn, {table_name});
-        cursor_erase(table_cursor, set_key, CursorMoveDirection::Reverse);
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::kReverse);
         REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
@@ -578,7 +578,7 @@ TEST_CASE("Cursor walk") {
         set_key[0] = 'C';
         set_key[1] = 'A';
         set_key[2] = 'A';
-        cursor_erase(table_cursor, set_key, CursorMoveDirection::Reverse);
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::kReverse);
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.begin()->second == "Glutamine");
 
@@ -586,7 +586,7 @@ TEST_CASE("Cursor walk") {
         set_key[0] = 'U';
         set_key[1] = 'A';
         set_key[2] = 'A';
-        cursor_erase(table_cursor, set_key, CursorMoveDirection::Forward);
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::kForward);
         data_map.clear();
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.rbegin()->second == "Valine");

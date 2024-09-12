@@ -348,7 +348,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         Bytes start_key{db::block_key(to + 1)};
         for (const auto& map_config : kUnwindTables) {
             auto unwind_cursor = txn.rw_cursor(map_config);
-            auto erased{db::cursor_erase(*unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+            auto erased{db::cursor_erase(*unwind_cursor, start_key, db::CursorMoveDirection::kForward)};
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, to);
@@ -461,7 +461,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
             auto key{db::block_key(prune_threshold)};
             auto source = txn.rw_cursor(db::table::kBlockReceipts);
-            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -471,7 +471,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
 
             source->bind(txn, db::table::kLogs);
-            erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -493,7 +493,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
             auto key{db::block_key(prune_threshold)};
             auto source = txn.rw_cursor_dup_sort(db::table::kCallTraceSet);
-            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,

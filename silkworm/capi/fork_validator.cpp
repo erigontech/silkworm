@@ -123,6 +123,8 @@ SILKWORM_EXPORT int silkworm_stop_fork_validator(SilkwormHandle handle) SILKWORM
 }
 
 SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, struct SilkwormBytes32 head_hash_bytes, struct SilkwormForkValidatorValidationResult* result) SILKWORM_NOEXCEPT {
+    using namespace silkworm::execution::api;
+
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -137,14 +139,14 @@ SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, 
     try {
         auto execution_result = handle->execution_engine->verify_chain_no_fork_tracking(head_hash);
 
-        if (std::holds_alternative<silkworm::stagedsync::ValidChain>(execution_result)) {
+        if (std::holds_alternative<ValidChain>(execution_result)) {
             result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_SUCCESS;
-            memcpy(result->last_valid_hash.bytes, std::get<silkworm::stagedsync::ValidChain>(execution_result).current_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
+            memcpy(result->last_valid_hash.bytes, std::get<ValidChain>(execution_result).current_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
         }
 
-        if (std::holds_alternative<silkworm::stagedsync::InvalidChain>(execution_result)) {
+        if (std::holds_alternative<InvalidChain>(execution_result)) {
             result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_INVALID;
-            auto invalid_chain = std::get<silkworm::stagedsync::InvalidChain>(execution_result);
+            auto invalid_chain = std::get<InvalidChain>(execution_result);
             memcpy(result->last_valid_hash.bytes, invalid_chain.unwind_point.hash.bytes, sizeof(result->last_valid_hash.bytes));
 
             if (invalid_chain.bad_block) {
@@ -152,9 +154,9 @@ SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, 
             }
         }
 
-        if (std::holds_alternative<silkworm::stagedsync::ValidationError>(execution_result)) {
+        if (std::holds_alternative<ValidationError>(execution_result)) {
             result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_INVALID;
-            auto validation_error = std::get<silkworm::stagedsync::ValidationError>(execution_result);
+            auto validation_error = std::get<ValidationError>(execution_result);
             memcpy(result->last_valid_hash.bytes, validation_error.latest_valid_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
             strcpy(result->error_message, "Validation error");
         }

@@ -37,11 +37,11 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
         : ExecutionEngine(ioc, ns, std::move(dba)) {}
     ~MockExecutionEngine() override = default;
 
-    MOCK_METHOD((void), open, ());
-    MOCK_METHOD((void), close, ());
+    MOCK_METHOD((void), open, (), (override));
+    MOCK_METHOD((void), close, (), (override));
 
     MOCK_METHOD((void), insert_blocks, (const std::vector<std::shared_ptr<Block>>&), (override));
-    MOCK_METHOD((Task<stagedsync::VerificationResult>), verify_chain, (Hash), (override));
+    MOCK_METHOD((Task<execution::api::VerificationResult>), verify_chain, (Hash), (override));
     MOCK_METHOD((bool), notify_fork_choice_update1, (Hash));
     MOCK_METHOD((bool), notify_fork_choice_update2, (Hash, Hash));
     MOCK_METHOD((bool), notify_fork_choice_update3, (Hash, Hash, Hash));
@@ -63,7 +63,7 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
 
     MOCK_METHOD((std::optional<BlockNum>), get_block_number, (Hash), (const, override));
 
-    MOCK_METHOD((BlockHeaders), get_last_headers, (uint64_t), (const, override));
+    MOCK_METHOD((std::vector<BlockHeader>), get_last_headers, (uint64_t), (const, override));
     MOCK_METHOD((BlockNum), block_progress, (), (const, override));
 };
 

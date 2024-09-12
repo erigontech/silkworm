@@ -158,6 +158,12 @@ def main():
         "(case insensitive, overridden by -regex)",
     )
     parser.add_argument(
+        "-exclude",
+        metavar="PATTERN",
+        default=None,
+        help="regex to filter out file paths to check",
+    )
+    parser.add_argument(
         "-j",
         type=int,
         default=1,
@@ -254,6 +260,9 @@ def main():
         if filename is None:
             continue
 
+        if args.exclude is not None:
+            if re.search(args.exclude, filename):
+                continue
         if args.regex is not None:
             if not re.match("^%s$" % args.regex, filename):
                 continue

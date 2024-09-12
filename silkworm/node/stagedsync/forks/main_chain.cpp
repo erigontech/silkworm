@@ -67,6 +67,11 @@ namespace silkworm::stagedsync {
 //! The number of inserted blocks between two successive commits on db
 constexpr uint64_t kInsertedBlockBatch{1'000};
 
+using execution::api::InvalidChain;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+using execution::api::VerificationResult;
+
 MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
     : io_context_{ctx},
       node_settings_{ns},
@@ -290,7 +295,10 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
             verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
             break;
         default:
-            verify_result = ValidationError{pipeline_.head_header_number(), pipeline_.head_header_hash()};
+            verify_result = ValidationError{
+                .latest_valid_head = BlockId{pipeline_.head_header_number(), pipeline_.head_header_hash()},
+            };
+            break;
     }
     interim_head_status_ = verify_result;
 
@@ -556,7 +564,10 @@ void MainChain::forward(BlockNum head_height, const Hash& head_hash) {
             verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
             break;
         default:
-            verify_result = ValidationError{pipeline_.head_header_number(), pipeline_.head_header_hash()};
+            verify_result = ValidationError{
+                .latest_valid_head = BlockId{pipeline_.head_header_number(), pipeline_.head_header_hash()},
+            };
+            break;
     }
     interim_head_status_ = verify_result;
 }

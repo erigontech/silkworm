@@ -19,16 +19,16 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/infra/concurrency/active_component.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 #include "direct_service.hpp"
+#include "execution_engine.hpp"
 
 namespace silkworm::execution::api {
 
 //! Active \code DirectService implementation running on one \code TaskExecutor.
 class ActiveDirectService : public DirectService, public ActiveComponent {
   public:
-    ActiveDirectService(stagedsync::ExecutionEngine& exec_engine, boost::asio::io_context& context);
+    ActiveDirectService(ExecutionEngine& exec_engine, boost::asio::io_context& context);
     ~ActiveDirectService() override = default;
 
     ActiveDirectService(const ActiveDirectService&) = delete;

@@ -24,10 +24,10 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/mdbx/memory_mutation.hpp>
+#include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "canonical_chain.hpp"
-#include "verification_result.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -47,6 +47,7 @@ class Fork {
     void reduce_down_to(BlockId unwind_point);  // remove blocks & state down to the specified head
 
     // verification
+    using VerificationResult = execution::api::VerificationResult;
     // verify chain up to current head
     VerificationResult verify_chain();
     // accept the current chain up to head_block_hash
@@ -71,7 +72,7 @@ class Fork {
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
 
-    std::set<Hash> collect_bad_headers(InvalidChain& invalid_chain);
+    std::set<Hash> collect_bad_headers(execution::api::InvalidChain& invalid_chain);
 
     db::ROTxnManaged main_tx_;
     db::MemoryOverlay memory_db_;

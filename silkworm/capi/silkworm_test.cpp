@@ -21,6 +21,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
@@ -35,7 +36,6 @@
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
 
-#include "../node/test_util/sample_blocks.hpp"
 #include "instance.hpp"
 
 namespace silkworm {

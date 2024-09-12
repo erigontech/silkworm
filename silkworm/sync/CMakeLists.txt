@@ -21,6 +21,7 @@ find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 
 set(SILKWORM_SYNC_PUBLIC_LIBS
+    silkworm_execution
     silkworm_rpcdaemon
     silkworm_node
     silkworm_core

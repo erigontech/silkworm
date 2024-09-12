@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +12,30 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#pragma once
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-#include <silkworm/interfaces/execution/execution.pb.h>
+find_package(asio-grpc REQUIRED)
+find_package(gRPC REQUIRED)
 
-#include "../../../api/endpoint/validation.hpp"
+# cmake-format: off
+set(LIBS_PRIVATE
+    gRPC::grpc++
+    silkworm_interfaces
+)
+# cmake-format: on
 
-namespace silkworm::execution::grpc::client {
+# cmake-format: off
+set(LIBS_PUBLIC
+    asio-grpc::asio-grpc
+    silkworm_core
+    silkworm_infra
+)
+# cmake-format: on
 
-::execution::ValidationRequest request_from_block_num_and_hash(const api::BlockNumAndHash&);
-api::ValidationResult validation_result_from_response(const ::execution::ValidationReceipt&);
-
-::execution::ForkChoice request_from_fork_choice(const api::ForkChoice&);
-api::ForkChoiceResult fork_choice_result_from_response(const ::execution::ForkChoiceReceipt&);
-
-}  // namespace silkworm::execution::grpc::client
+silkworm_library(
+  silkworm_execution
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
+)

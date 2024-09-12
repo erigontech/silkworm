@@ -23,7 +23,7 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/node/execution/api/direct_client.hpp>
+#include <silkworm/execution/api/direct_client.hpp>
 #include <silkworm/node/settings.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 

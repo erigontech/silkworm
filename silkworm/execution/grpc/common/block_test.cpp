@@ -20,8 +20,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/infra/test_util/fixture.hpp>
-#include <silkworm/node/test_util/sample_blocks.hpp>
 
 #include "../test_util/sample_protos.hpp"
 

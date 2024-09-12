@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,28 +18,32 @@
 
 #include <optional>
 #include <set>
+#include <string>
 #include <variant>
 
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/infra/concurrency/awaitable_future.hpp>
+#include <silkworm/core/types/block_id.hpp>
+#include <silkworm/core/types/hash.hpp>
 
-namespace silkworm::stagedsync {
+namespace silkworm::execution::api {
+
+using BlockNumAndHash = BlockId;
 
 struct ValidChain {
-    BlockId current_head;
+    BlockNumAndHash current_head;
 };
+
 struct InvalidChain {
-    BlockId unwind_point;
+    BlockNumAndHash unwind_point;
     std::optional<Hash> bad_block;
     std::set<Hash> bad_headers;
 };
+
 struct ValidationError {
-    BlockId latest_valid_head;
+    BlockNumAndHash latest_valid_head;
+    std::string error;
 };
 
-using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+using ValidationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+using VerificationResult = ValidationResult;
 
-using VerificationResultFuture = concurrency::AwaitableFuture<VerificationResult>;
-using VerificationResultPromise = concurrency::AwaitablePromise<VerificationResult>;
-
-}  // namespace silkworm::stagedsync
+}  // namespace silkworm::execution::api

@@ -42,17 +42,16 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     protobuf::libprotobuf
 )
 
-# cmake-format: off
 set(SILKWORM_NODE_PRIVATE_LIBS
     absl::strings
     evmone
     magic_enum::magic_enum
     Microsoft.GSL::GSL
     silkworm_db_etl
+    silkworm_execution
     silkworm_interfaces
     silkworm_stages
 )
-# cmake-format: on
 
 silkworm_library(
   silkworm_node

@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "direct_service.hpp"
-
 #include <stdexcept>
 #include <utility>
 
@@ -23,6 +21,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/execution/api/direct_service.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
@@ -86,35 +85,35 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::verify_chain", "[node][execu
         .number = 2,
         .hash = new_hash,
     };
-    const std::vector<std::pair<stagedsync::VerificationResult, execution::api::ValidationResult>> test_vectors{
-        {stagedsync::ValidChain{.current_head = new_head}, api::ValidChain{.current_head = new_head}},
-        {stagedsync::InvalidChain{.unwind_point = latest_valid_head}, api::InvalidChain{.unwind_point = latest_valid_head}},
-        {stagedsync::ValidationError{.latest_valid_head = latest_valid_head}, api::ValidationError{.latest_valid_head = latest_valid_head}},
+    const std::vector<std::pair<VerificationResult, execution::api::ValidationResult>> test_vectors{
+        {ValidChain{.current_head = new_head}, api::ValidChain{.current_head = new_head}},
+        {InvalidChain{.unwind_point = latest_valid_head}, api::InvalidChain{.unwind_point = latest_valid_head}},
+        {ValidationError{.latest_valid_head = latest_valid_head}, api::ValidationError{.latest_valid_head = latest_valid_head}},
     };
     for (const auto& [stagedsync_result, api_result] : test_vectors) {
         SECTION("result: " + std::to_string(stagedsync_result.index())) {
             EXPECT_CALL(*mock_execution_engine, verify_chain(new_head.hash))
-                .WillOnce(InvokeWithoutArgs([result = stagedsync_result]() -> Task<stagedsync::VerificationResult> {
+                .WillOnce(InvokeWithoutArgs([result = stagedsync_result]() -> Task<VerificationResult> {
                     co_return result;
                 }));
             auto future = spawn_future(direct_service->validate_chain(new_head));
             context().run();
             const auto result{future.get()};
-            if (std::holds_alternative<stagedsync::ValidChain>(stagedsync_result)) {
+            if (std::holds_alternative<ValidChain>(stagedsync_result)) {
                 CHECK(std::holds_alternative<api::ValidChain>(result));
-                const auto stagedsync_valid_chain{std::get<stagedsync::ValidChain>(stagedsync_result)};
+                const auto stagedsync_valid_chain{std::get<ValidChain>(stagedsync_result)};
                 const auto api_valid_chain{std::get<api::ValidChain>(result)};
                 CHECK(stagedsync_valid_chain.current_head == api_valid_chain.current_head);
-            } else if (std::holds_alternative<stagedsync::InvalidChain>(stagedsync_result)) {
+            } else if (std::holds_alternative<InvalidChain>(stagedsync_result)) {
                 CHECK(std::holds_alternative<api::InvalidChain>(result));
-                const auto stagedsync_invalid_chain{std::get<stagedsync::InvalidChain>(stagedsync_result)};
+                const auto stagedsync_invalid_chain{std::get<InvalidChain>(stagedsync_result)};
                 const auto api_invalid_chain{std::get<api::InvalidChain>(result)};
                 CHECK(stagedsync_invalid_chain.unwind_point == api_invalid_chain.unwind_point);
                 CHECK(stagedsync_invalid_chain.bad_headers == api_invalid_chain.bad_headers);
                 CHECK(stagedsync_invalid_chain.bad_block == api_invalid_chain.bad_block);
-            } else if (std::holds_alternative<stagedsync::ValidationError>(stagedsync_result)) {
+            } else if (std::holds_alternative<ValidationError>(stagedsync_result)) {
                 CHECK(std::holds_alternative<api::ValidationError>(result));
-                const auto stagedsync_error{std::get<stagedsync::ValidationError>(stagedsync_result)};
+                const auto stagedsync_error{std::get<ValidationError>(stagedsync_result)};
                 const auto api_error{std::get<api::ValidationError>(result)};
                 CHECK(stagedsync_error.latest_valid_head == api_error.latest_valid_head);
             } else {

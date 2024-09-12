@@ -28,7 +28,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/execution/api/client.hpp>
+#include <silkworm/execution/api/client.hpp>
 
 namespace silkworm::chainsync::test_util {
 

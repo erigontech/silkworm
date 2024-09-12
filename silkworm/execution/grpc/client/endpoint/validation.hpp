@@ -18,16 +18,15 @@
 
 #include <silkworm/interfaces/execution/execution.pb.h>
 
+#include "../../../api/endpoint/checkers.hpp"
 #include "../../../api/endpoint/validation.hpp"
 
-namespace silkworm::execution::grpc::server {
+namespace silkworm::execution::grpc::client {
 
-api::ExecutionStatus execution_status_from_proto(const ::execution::ExecutionStatus&);
+::execution::ValidationRequest request_from_block_num_and_hash(const api::BlockNumAndHash&);
+api::ValidationResult validation_result_from_response(const ::execution::ValidationReceipt&);
 
-api::BlockNumAndHash block_num_and_hash_from_request(const ::execution::ValidationRequest&);
-::execution::ValidationReceipt response_from_validation_result(const api::ValidationResult&);
+::execution::ForkChoice request_from_fork_choice(const api::ForkChoice&);
+api::ForkChoiceResult fork_choice_result_from_response(const ::execution::ForkChoiceReceipt&);
 
-api::ForkChoice fork_choice_from_request(const ::execution::ForkChoice&);
-::execution::ForkChoiceReceipt response_from_fork_choice_result(const api::ForkChoiceResult&);
-
-}  // namespace silkworm::execution::grpc::server
+}  // namespace silkworm::execution::grpc::client

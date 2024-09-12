@@ -337,7 +337,8 @@ jobs:
           name: "Install clang-tidy"
           command: |
             sudo apt-get update
-            sudo apt-get install -y clang-tidy
+            sudo apt-get install -y clang-tidy-<<pipeline.parameters.clang_version_latest>>
+            sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-<<pipeline.parameters.clang_version_latest>> 100
       - checkout_with_submodules:
           ethereum_tests: false
       - build_using_conan:
@@ -356,7 +357,8 @@ jobs:
           name: "Install clang-tidy"
           command: |
             sudo apt-get update
-            sudo apt-get install -y clang-tidy
+            sudo apt-get install -y clang-tidy-<<pipeline.parameters.clang_version_latest>>
+            sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-<<pipeline.parameters.clang_version_latest>> 100
       - checkout_with_submodules:
           ethereum_tests: false
       - build_using_conan:

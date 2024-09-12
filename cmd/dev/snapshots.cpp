@@ -832,6 +832,7 @@ void sync(const SnapshotSettings& settings) {
     auto chaindata_env = db::open_env(chaindata_env_config);
     test_util::TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;
+    // NOLINTNEXTLINE(cppcoreguidelines-slicing)
     db::SnapshotSync snapshot_sync{settings, kMainnetConfig.chain_id, chaindata_env, tmp_dir.path(), stage_scheduler};
     runner.run(snapshot_sync.download_snapshots());
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};

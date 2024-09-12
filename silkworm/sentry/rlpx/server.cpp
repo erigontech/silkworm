@@ -86,8 +86,13 @@ Task<void> Server::run(
             throw;
         }
 
-        auto remote_endpoint = stream.socket().remote_endpoint();
-        log::Debug("sentry") << "rlpx::Server client connected from " << remote_endpoint;
+        try {
+            const auto remote_endpoint = stream.socket().remote_endpoint();
+            log::Debug("sentry") << "rlpx::Server client connected from " << remote_endpoint;
+        } catch (const boost::system::system_error& ex) {
+            log::Debug("sentry") << "rlpx::Server client immediately disconnected [" + std::string{ex.what()} + "]";
+            continue;
+        }
 
         auto peer = std::make_shared<Peer>(
             client_executor,

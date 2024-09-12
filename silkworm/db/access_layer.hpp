@@ -53,12 +53,6 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version);
 //! upgrades or downgrades of Silkworm's build
 void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height);
 
-//! \brief Read the list of snapshot file names
-std::vector<std::string> read_snapshots(ROTxn& txn);
-
-//! \brief Write the list of snapshot file names
-void write_snapshots(RWTxn& txn, const std::vector<std::string>& snapshot_file_names);
-
 //! \brief Reads a header with the specified key (block number, hash)
 std::optional<BlockHeader> read_header(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 std::optional<BlockHeader> read_header(ROTxn& txn, BlockNum block_number, const evmc::bytes32&);

@@ -43,14 +43,14 @@ std::optional<VersionBase> read_schema_version(ROTxn& txn) {
         return std::nullopt;
     }
 
-    auto data{cursor->current()};
+    auto data = cursor->current();
     SILKWORM_ASSERT(data.value.length() == 12);
-    auto Major{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
+    const auto major = endian::load_big_u32(static_cast<uint8_t*>(data.value.data()));
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Minor{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
+    const auto minor = endian::load_big_u32(static_cast<uint8_t*>(data.value.data()));
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Patch{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
-    return VersionBase{Major, Minor, Patch};
+    const auto patch = endian::load_big_u32(static_cast<uint8_t*>(data.value.data()));
+    return VersionBase{major, minor, patch};
 }
 
 void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
@@ -65,9 +65,9 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
         }
     }
     Bytes value(12, '\0');
-    endian::store_big_u32(&value[0], schema_version.Major);
-    endian::store_big_u32(&value[4], schema_version.Minor);
-    endian::store_big_u32(&value[8], schema_version.Patch);
+    endian::store_big_u32(&value[0], schema_version.major);
+    endian::store_big_u32(&value[4], schema_version.minor);
+    endian::store_big_u32(&value[8], schema_version.patch);
 
     PooledCursor src(txn, db::table::kDatabaseInfo);
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
@@ -77,23 +77,6 @@ void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height) {
     auto cursor = txn.rw_cursor(db::table::kDatabaseInfo);
     Bytes value{db::block_key(height)};
     cursor->upsert(db::to_slice(key), db::to_slice(value));
-}
-
-std::vector<std::string> read_snapshots(ROTxn& txn) {
-    auto db_info_cursor = txn.ro_cursor(table::kDatabaseInfo);
-    if (!db_info_cursor->seek(mdbx::slice{kDbSnapshotsKey})) {
-        return {};
-    }
-    const auto data{db_info_cursor->current()};
-    // https://github.com/nlohmann/json/issues/2204
-    const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, /*.allow_exceptions=*/false);
-    return json.get<std::vector<std::string>>();
-}
-
-void write_snapshots(RWTxn& txn, const std::vector<std::string>& snapshot_file_names) {
-    auto db_info_cursor = txn.rw_cursor(table::kDatabaseInfo);
-    nlohmann::json json_value = snapshot_file_names;
-    db_info_cursor->upsert(mdbx::slice{kDbSnapshotsKey}, mdbx::slice(json_value.dump().data()));
 }
 
 std::optional<BlockHeader> read_header(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash) {

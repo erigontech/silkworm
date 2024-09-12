@@ -45,10 +45,11 @@ Task<void> set_data_format(kv::api::Client& kv_client) {
             const auto version_bytes = co_await tx->get_one(table::kDatabaseInfoName, string_to_bytes(kErigonVersionFinished));
             std::call_once(erigon_data_format_flag, [&]() {
                 erigon_data_format_version = bytes_to_string(version_bytes);
-                SILK_INFO << "Erigon data format version: " << erigon_data_format_version;
+                SILK_INFO << "Erigon data format version: " << (is_data_format_v3() ? "v3" : "v2")
+                          << (erigon_data_format_version.empty() ? "" : " [" + erigon_data_format_version + "]");
             });
             co_await tx->close();
-            SILK_TRACE << "Erigon data format: " << (db::state::is_data_format_v3() ? "v3" : "v2");
+            SILK_TRACE << "Erigon data format: " << (is_data_format_v3() ? "v3" : "v2");
             break;
         } catch (const boost::system::system_error& se) {
             if (!warning_emitted) {

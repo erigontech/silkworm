@@ -105,6 +105,14 @@ static inline std::vector<char> test_resume_data() {
     return resume_data;
 }
 
+TEST_CASE("BitTorrentClient::load_file", "[silkworm][snapshot][bittorrent]") {
+    TemporaryDirectory tmp_dir;
+    const auto path = tmp_dir.path() / "test.resume";
+    const auto resume_data = test_resume_data();
+    BitTorrentClientForTest::save_file(path, resume_data);
+    CHECK(BitTorrentClientForTest::load_file(path) == resume_data);
+}
+
 TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent]") {
     TemporaryDirectory tmp_dir;
     BitTorrentSettings settings;
@@ -123,16 +131,17 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
     SECTION("nonempty resume dir") {
         const auto resume_dir_path = settings.repository_path / BitTorrentClient::kResumeDirName;
         std::filesystem::create_directories(resume_dir_path);
+
         const auto ignored_file{resume_dir_path / "a.txt"};
         BitTorrentClientForTest::save_file(ignored_file, std::vector<char>{});
+
         const auto empty_resume_file{resume_dir_path / "a.resume"};
         BitTorrentClientForTest::save_file(empty_resume_file, std::vector<char>{});
-        const auto invalid_resume_file{resume_dir_path / "83112dec4bec180cff67e01d6345c88c3134fd26.resume"};
-        std::vector<char> invalid_resume_data{};
-        BitTorrentClientForTest::save_file(invalid_resume_file, invalid_resume_data);
+
         const auto valid_resume_file{resume_dir_path / "83112dec4bec180cff67e01d6345c88c3134fd26.resume"};
         std::vector<char> resume_data{test_resume_data()};
         BitTorrentClientForTest::save_file(valid_resume_file, resume_data);
+
         CHECK_NOTHROW(BitTorrentClient{settings});
     }
 }
@@ -173,14 +182,6 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
         ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
     }
-
-    SECTION("nonempty magnet file w/ startup verification") {
-        settings.verify_on_startup = true;
-        BitTorrentClient client{settings};
-        client.add_magnet_uri("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
-        ClientThread client_thread{client};
-        CHECK_NOTHROW(client.stop());
-    }
 }
 
 TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
@@ -198,16 +199,6 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
         ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
     }
-
-// Exclude from sanitizer builds due to false positive: https://gcc.gnu.org/bugzilla//show_bug.cgi?id=101978
-#ifndef SILKWORM_SANITIZE
-    SECTION("interrupt seeding execution loop on separate thread") {
-        settings.seeding = true;
-        BitTorrentClient client{settings};
-        ClientThread client_thread{client};
-        CHECK_NOTHROW(client.stop());
-    }
-#endif  // SILKWORM_SANITIZE
 }
 
 TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bittorrent]") {

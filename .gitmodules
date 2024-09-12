@@ -1,6 +1,7 @@
 [submodule "evmone"]
 	path = third_party/evmone/evmone
-	url = https://github.com/ethereum/evmone.git
+	url = https://github.com/erigontech/evmone.git
+        branch = gas_cost_in_tracers
 [submodule "ethereum-tests"]
 	path = third_party/ethereum-tests
 	url = https://github.com/ethereum/tests.git
@@ -41,9 +42,6 @@
 [submodule "ethash"]
 	path = third_party/ethash/ethash
 	url = https://github.com/chfast/ethash.git
-[submodule "libtorrent"]
-	path = third_party/libtorrent/libtorrent
-	url = https://github.com/arvidn/libtorrent
 [submodule "stun-msg"]
 	path = third_party/stun-msg/stun-msg
 	url = https://github.com/battlmonstr/stun-msg.git

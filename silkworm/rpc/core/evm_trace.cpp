@@ -135,7 +135,7 @@ void to_json(nlohmann::json& json, const TraceOp& trace_op) {
 }
 
 void to_json(nlohmann::json& json, const TraceEx& trace_ex) {
-    if (trace_ex.memory) {
+    if (trace_ex.memory && trace_ex.memory->len) {
         const auto& memory = trace_ex.memory.value();
         json["mem"] = memory;
     } else {
@@ -651,7 +651,6 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
             op.gas_cost = op.gas_cost - gas;
         }
         op.trace_ex->used = gas;
-
         copy_memory(execution_state.memory, op.trace_ex->memory);
         copy_stack(op.op_code, stack_top, op.trace_ex->stack);
     }
@@ -666,6 +665,11 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     trace_op.op_name = op_name;
     trace_op.pc = pc;
     trace_op.trace_ex = std::make_optional<struct TraceEx>();
+
+    if (op_code == OP_SELFDESTRUCT) {
+        trace_op.sub = std::make_shared<VmTrace>();
+        trace_op.sub->code = "0x";
+    }
 
     copy_memory_offset_len(op_code, stack_top, trace_op.trace_ex->memory);
     copy_store(op_code, stack_top, trace_op.trace_ex->storage);
@@ -1493,7 +1497,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
             tracers.push_back(ibs_tracer);
 
-            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/false);
             if (execution_result.pre_check_error) {
                 result.pre_check_error = execution_result.pre_check_error.value();
             } else {
@@ -1508,8 +1512,8 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
-    rpc::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
-    auto result = co_await execute(block.header.number, block, transaction, -1, config);
+    rpc::Transaction transaction{call.to_transaction()};
+    auto result = co_await execute(block.header.number, block, transaction, -1, config, true);
     co_return result;
 }
 
@@ -1535,7 +1539,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         for (size_t index{0}; index < calls.size(); index++) {
             const auto& config = calls[index].trace_config;
 
-            silkworm::Transaction transaction{calls[index].call.to_transaction(block.header.base_fee_per_gas)};
+            silkworm::Transaction transaction{calls[index].call.to_transaction()};
 
             Tracers tracers;
             TraceCallTraces traces;
@@ -1610,14 +1614,14 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config);
+    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, false);
 }
 
-Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
+Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction, bool gas_bailout) {
     std::vector<Trace> traces;
 
     const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
-                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false});
+                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false}, gas_bailout);
     const auto& trace_result = result.traces.trace;
 
     const auto tnx_hash = transaction.hash();
@@ -1809,7 +1813,8 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     const silkworm::Block& block,
     const rpc::Transaction& transaction,
     std::int32_t index,
-    const TraceConfig& config) {
+    const TraceConfig& config,
+    bool gas_bailout) {
     SILK_DEBUG << "execute: "
                << " block_number: " << std::dec << block_number
                << " transaction: {" << transaction << "}"
@@ -1831,7 +1836,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         EVMExecutor executor{chain_config, workers_, curr_state};
         for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
             silkworm::Transaction txn{block.transactions[idx]};
-            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);
             if (execution_result.pre_check_error) {
                 SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
             }
@@ -1857,7 +1862,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         if (index != -1) {
             traces.transaction_hash = transaction.hash();  // to have same behaviour as erigon, should be done PR on erigon
         }
-        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, gas_bailout);
 
         if (execution_result.pre_check_error) {
             result.pre_check_error = execution_result.pre_check_error.value();

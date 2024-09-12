@@ -121,12 +121,12 @@ static log::Args log_args_for_exec_flush(const db::Buffer& state_buffer, uint64_
 }
 
 //! Generate log arguments for execution commit at specified block
-static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std::filesystem::path& db_path) {
+static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std::filesystem::path& env_path) {
     return {
         "in",
         StopWatch::format(elapsed),
         "chaindata",
-        std::to_string(Directory{db_path}.size())};
+        std::to_string(Directory{env_path}.size())};
 }
 
 //! Generate log arguments for execution progress at specified block
@@ -565,7 +565,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
         db::EnvUnmanaged unmanaged_env{mdbx_env};
         auto txn = db::RWTxnManaged{unmanaged_env};
-        const auto db_path{unmanaged_env.get_path()};
+        const auto env_path = unmanaged_env.get_path();
 
         db::Buffer state_buffer{txn};
         state_buffer.set_memory_limit(batch_size);
@@ -623,7 +623,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
             txn.commit_and_renew();
             const auto elapsed_time_and_duration = sw.stop();
             log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_commit(elapsed_time_and_duration.second, db_path));
+                      log_args_for_exec_commit(elapsed_time_and_duration.second, env_path));
 
             if (last_executed_block) {
                 *last_executed_block = last_block_number;

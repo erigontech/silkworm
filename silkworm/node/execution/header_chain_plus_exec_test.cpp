@@ -29,9 +29,8 @@
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
-
-#include "chain_fork_view.hpp"
-#include "header_chain.hpp"
+#include <silkworm/sync/internals/chain_fork_view.hpp>
+#include <silkworm/sync/internals/header_chain.hpp>
 
 namespace silkworm {
 

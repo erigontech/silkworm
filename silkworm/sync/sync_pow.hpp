@@ -21,7 +21,6 @@
 #include <silkworm/execution/api/client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
-#include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 

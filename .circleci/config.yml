@@ -453,22 +453,7 @@ workflows:
       not:
         equal: [ master, <<pipeline.git.branch>> ]
     jobs:
-      - lint
-      - linux-clang-tidy-diff
-      - linux-release:
-          name: linux-gcc-12-release
-          compiler_id: gcc
-          compiler_version: 12
-          ethereum_tests: false
-          requires:
-            - lint
-      - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_min>>
-          ethereum_tests: false
-          requires:
-            - lint
+      - linux-clang-tidy
 
   integration:
     when:

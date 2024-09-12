@@ -58,10 +58,6 @@
 
 #include <silkworm/core/common/assert.hpp>
 
-// Explicit branch predictions
-#define likely(x) __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
-
 namespace silkworm::snapshots::rec_split {
 
 using std::memcpy;

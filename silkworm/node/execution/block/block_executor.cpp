@@ -18,23 +18,18 @@
 
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/processor.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
 
 namespace silkworm::execution::block {
 
 using namespace std::chrono_literals;
 
-BlockExecutor::BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets, size_t max_batch_size, std::optional<CustomerLogger> custom_logger)
+BlockExecutor::BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets)
     : chain_config_{chain_config},
       protocol_rule_set_{protocol::rule_set_factory(*chain_config_)},
       write_receipts_{write_receipts},
       write_call_traces_{write_call_traces},
-      write_change_sets_{write_change_sets},
-      progress_{.start_time = std::chrono::steady_clock::now()},
-      log_time_{progress_.start_time + 20s},
-      max_batch_size_{max_batch_size},
-      custom_logger_{custom_logger} {}
+      write_change_sets_{write_change_sets} {}
 
 ValidationResult BlockExecutor::execute_single(const Block& block, db::Buffer& state_buffer, AnalysisCache& analysis_cache, ObjectPool<evmone::ExecutionState>& state_pool) {
     ExecutionProcessor processor{block, *protocol_rule_set_, state_buffer, *chain_config_};
@@ -62,20 +57,6 @@ ValidationResult BlockExecutor::execute_single(const Block& block, db::Buffer& s
     }
 
     state_buffer.write_history_to_db(write_change_sets_);
-
-    progress_.processed_blocks++;
-    progress_.processed_transactions += block.transactions.size();
-    progress_.processed_gas += block.header.gas_used;
-
-    const auto now{std::chrono::steady_clock::now()};
-    if (log_time_ <= now && custom_logger_) {
-        progress_.batch_progress_perc = static_cast<float>(state_buffer.current_batch_state_size()) / static_cast<float>(max_batch_size_);
-        progress_.end_time = now;
-        auto& custom_logger = *custom_logger_;
-        log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
-                  custom_logger(progress_, block.header.number)};
-        log_time_ = now + 20s;
-    }
 
     return ValidationResult::kOk;
 }

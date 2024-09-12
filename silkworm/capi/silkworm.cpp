@@ -67,6 +67,17 @@ static constexpr size_t kMaxPrefetchedBlocks{10'240};
 
 using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
+//! The progress reached by the block execution process
+struct ExecutionProgress {
+    SteadyTimePoint start_time;
+    SteadyTimePoint next_log_time;
+    SteadyTimePoint end_time;
+    size_t processed_blocks{0};
+    size_t processed_transactions{0};
+    size_t processed_gas{0};
+    float batch_progress_perc{0.0};
+};
+
 //! Kind of match to perform between Erigon and Silkworm libmdbx versions
 enum class MdbxVersionCheck : uint8_t {
     kNone,      /// no check at all
@@ -130,7 +141,7 @@ static log::Args log_args_for_exec_commit(StopWatch::Duration elapsed, const std
 }
 
 //! Generate log arguments for execution progress at specified block
-static log::Args log_args_for_exec_progress(execution::block::BlockExecutor::ExecutionProgress& progress, uint64_t current_block) {
+static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_t current_block) {
     static auto float_to_string = [](float f) -> std::string {
         const auto size = std::snprintf(nullptr, 0, "%.1f", static_cast<double>(f));
         std::string s(static_cast<size_t>(size + 1), '\0');                               // +1 for null terminator
@@ -164,6 +175,21 @@ static log::Args log_args_for_exec_progress(execution::block::BlockExecutor::Exe
         float_to_string(speed_mgas),
         "batchProgress",
         batch_progress_perc.str()};
+}
+
+static void update_execution_progress(ExecutionProgress& progress, const Block& block, const db::Buffer& state_buffer, size_t max_batch_size) {
+    progress.processed_blocks++;
+    progress.processed_transactions += block.transactions.size();
+    progress.processed_gas += block.header.gas_used;
+
+    const auto now{std::chrono::steady_clock::now()};
+    if (progress.next_log_time <= now) {
+        progress.batch_progress_perc = static_cast<float>(state_buffer.current_batch_state_size()) / static_cast<float>(max_batch_size);
+        progress.end_time = now;
+        log::Info{"[4/12 Execution] Executed blocks",  // NOLINT(*-unused-raii)
+                  log_args_for_exec_progress(progress, block.header.number)};
+        progress.next_log_time = now + 20s;
+    }
 }
 
 //! A signal handler guard using RAII pattern to acquire/release signal handling
@@ -470,7 +496,9 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
-        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size, log_args_for_exec_progress};
+        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
+        const auto now = std::chrono::steady_clock::now();
+        ExecutionProgress execution_progress{.start_time = now, .next_log_time = now + 20s};
         ValidationResult last_exec_result = ValidationResult::kOk;
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
@@ -492,6 +520,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
                 try {
                     last_exec_result = block_executor.execute_single(block, state_buffer, analysis_cache, state_pool);
+                    update_execution_progress(execution_progress, block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
                     // batch done
                     break;
@@ -583,7 +612,9 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         BlockNum last_block_number = 0;
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
-        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets, max_batch_size, log_args_for_exec_progress};
+        execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
+        const auto now = std::chrono::steady_clock::now();
+        ExecutionProgress execution_progress{.start_time = now, .next_log_time = now + 20s};
         ValidationResult last_exec_result = ValidationResult::kOk;
 
         while (block_number <= max_block) {
@@ -596,6 +627,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
                 try {
                     last_exec_result = block_executor.execute_single(*block, state_buffer, analysis_cache, state_pool);
+                    update_execution_progress(execution_progress, *block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
                     // batch done
                     break;

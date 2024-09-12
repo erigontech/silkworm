@@ -26,19 +26,8 @@ class BlockExecutor {
   public:
     using SteadyTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
     static constexpr size_t kDefaultAnalysisCacheSize{5'000};
-    //! The progress reached by the block execution process
-    struct ExecutionProgress {
-        SteadyTimePoint start_time;
-        SteadyTimePoint end_time;
-        size_t processed_blocks{0};
-        size_t processed_transactions{0};
-        size_t processed_gas{0};
-        float batch_progress_perc{0.0};
-    };
 
-    using CustomerLogger = std::function<log::Args(ExecutionProgress&, uint64_t)>;
-
-    BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets, size_t max_batch_size, std::optional<CustomerLogger> custom_logger);
+    BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets);
 
     ValidationResult execute_single(const Block& block, db::Buffer& state_buffer, AnalysisCache& analysis_cache, ObjectPool<evmone::ExecutionState>& state_pool);
 
@@ -48,10 +37,7 @@ class BlockExecutor {
     bool write_receipts_;
     bool write_call_traces_;
     bool write_change_sets_;
-    ExecutionProgress progress_;
     SteadyTimePoint log_time_;
-    const size_t max_batch_size_;
-    std::optional<CustomerLogger> custom_logger_;
 };
 
 }  // namespace silkworm::execution::block

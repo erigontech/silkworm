@@ -122,7 +122,7 @@ struct hash128_t {
 };
 
 // Optimal Golomb-Rice parameters for leaves
-static constexpr uint8_t bij_memo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
+static constexpr uint8_t kBijMemo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
 
 //! The splitting strategy of Recsplit algorithm is embedded into the generation code, which uses only the public fields
 //! SplittingStrategy::lower_aggr and SplittingStrategy::upper_aggr.
@@ -781,7 +781,7 @@ class RecSplit {
         std::array<uint32_t, kMaxBucketSize> memo{0};
         std::size_t s{0};
         for (; s <= LEAF_SIZE; ++s) {
-            memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
+            memo[s] = kBijMemo[s] << 27 | (s > 1) << 16 | kBijMemo[s];
         }
         for (; s < kMaxBucketSize; ++s) {
             precompute_golomb_rice(static_cast<int>(s), &memo);

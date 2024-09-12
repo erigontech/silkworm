@@ -141,9 +141,9 @@ inline int lambda(uint64_t word) { return 63 ^ std::countl_zero(word); }
 //! distributed over the range [0..n), under assumption that n is less than 2^16
 inline uint64_t remap16(uint64_t x, uint64_t n) {
     SILKWORM_ASSERT(n < (1 << 16));
-    static const int masklen = 48;
-    static const uint64_t mask = (uint64_t{1} << masklen) - 1;
-    return ((x & mask) * n) >> masklen;
+    static const int kMaskLen = 48;
+    static const uint64_t kMask = (uint64_t{1} << kMaskLen) - 1;
+    return ((x & kMask) * n) >> kMaskLen;
 }
 
 inline uint64_t remap128(uint64_t x, uint64_t n) {

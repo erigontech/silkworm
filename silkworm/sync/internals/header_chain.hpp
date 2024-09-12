@@ -24,11 +24,11 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/sync/messages/outbound_get_block_headers.hpp>
 
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
+#include "preverified_hashes/preverified_hashes.hpp"
 #include "statistics.hpp"
 
 namespace silkworm {

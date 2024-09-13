@@ -84,10 +84,10 @@ class TemporaryDirectory final : public Directory {
 };
 
 //! \brief DataDirectory wraps the directory tree used by Silkworm as base storage path.
-//! A typical DataDirectory has at least 3 subdirs
+//! A typical DataDirectory has at least the following subdirs
 //! <base_path>
 //! ├───chaindata   <-- Where main database is stored
-//! ├───temp        <-- Where temporary files from etl collector are stored
+//! ├───temp        <-- Where temporary files are stored (e.g. from etl collector)
 //! ├───nodes       <-- Where database(s) for discovered nodes are stored
 //! └───snapshots   <-- Where snapshot files for blocks/transactions/... are stored
 class DataDirectory final : public Directory {
@@ -98,10 +98,11 @@ class DataDirectory final : public Directory {
     explicit DataDirectory(const std::filesystem::path& base_path, bool create = false)
         : Directory(base_path, create),
           chaindata_(base_path / "chaindata", create),
-          temp_(base_path / "temp", create),
+          forks_(base_path / "forks", create),
+          logs_(base_path / "logs", create),
           nodes_(base_path / "nodes", create),
           snapshots_(base_path / "snapshots", create),
-          forks_(base_path / "forks", create) {}
+          temp_(base_path / "temp", create) {}
 
     //! \brief Creates an instance of Silkworm's data directory starting from default storage path. (each host OS has
     //! its own)
@@ -139,21 +140,24 @@ class DataDirectory final : public Directory {
 
     //! \brief Returns the "chaindata" directory (where chain database is stored)
     [[nodiscard]] const Directory& chaindata() const { return chaindata_; }
-    //! \brief Returns the "etl" directory (where temporary etl files are stored)
-    [[nodiscard]] const Directory& temp() const { return temp_; }
+    //! \brief Returns the "forks" directory (where forks files are stored)
+    [[nodiscard]] const Directory& forks() const { return forks_; }
+    //! \brief Returns the "logs" directory (where log files are stored)
+    [[nodiscard]] const Directory& logs() const { return logs_; }
     //! \brief Returns the "nodes" directory (where discovery nodes info are stored)
     [[nodiscard]] const Directory& nodes() const { return nodes_; }
     //! \brief Returns the "snapshots" directory (where snapshot files are stored)
     [[nodiscard]] const Directory& snapshots() const { return snapshots_; }
-    //! \brief Returns the "forks" directory (where forks files are stored)
-    [[nodiscard]] const Directory& forks() const { return forks_; }
+    //! \brief Returns the "temp" directory (where temporary files are stored)
+    [[nodiscard]] const Directory& temp() const { return temp_; }
 
   private:
     Directory chaindata_;  // Database storage
-    Directory temp_;       // Temporary etl files
+    Directory forks_;      // Fork files
+    Directory logs_;       // Log files
     Directory nodes_;      // Nodes discovery databases
     Directory snapshots_;  // Snapshot files
-    Directory forks_;      // Fork files
+    Directory temp_;       // Temporary etl files
 };
 
 }  // namespace silkworm

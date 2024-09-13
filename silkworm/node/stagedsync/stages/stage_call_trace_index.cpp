@@ -32,7 +32,7 @@ CallTraceIndex::CallTraceIndex(SyncContext* sync_context,
 Stage::Result CallTraceIndex::forward(db::RWTxn& txn) {
     Stage::Result result{Stage::Result::kSuccess};
 
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
 
@@ -41,7 +41,7 @@ Stage::Result CallTraceIndex::forward(db::RWTxn& txn) {
         const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return result;
         }
         if (previous_progress > target_progress) {
@@ -93,7 +93,7 @@ Stage::Result CallTraceIndex::forward(db::RWTxn& txn) {
 
     call_from_collector_.reset();
     call_to_collector_.reset();
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
 
     return result;
 }
@@ -106,7 +106,7 @@ Stage::Result CallTraceIndex::unwind(db::RWTxn& txn) {
     }
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         throw_if_stopping();
 
@@ -115,7 +115,7 @@ Stage::Result CallTraceIndex::unwind(db::RWTxn& txn) {
         const auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_stage_progress <= to) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return result;
         }
 
@@ -156,7 +156,7 @@ Stage::Result CallTraceIndex::unwind(db::RWTxn& txn) {
 
     call_from_collector_.reset();
     call_to_collector_.reset();
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
 
     return result;
 }
@@ -164,26 +164,26 @@ Stage::Result CallTraceIndex::unwind(db::RWTxn& txn) {
 Stage::Result CallTraceIndex::prune(db::RWTxn& txn) {
     Stage::Result result{Stage::Result::kSuccess};
 
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
     try {
         throw_if_stopping();
 
         if (!prune_mode_.enabled()) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return result;
         }
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
         if (prune_progress >= forward_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return result;
         }
 
         // Need to erase all info below this threshold. If threshold is zero we don't have anything to prune
         const auto prune_threshold{prune_mode_.value_from_head(forward_progress)};
         if (!prune_threshold) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return result;
         }
 
@@ -225,7 +225,7 @@ Stage::Result CallTraceIndex::prune(db::RWTxn& txn) {
 
     call_from_collector_.reset();
     call_to_collector_.reset();
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
 
     return result;
 }
@@ -236,7 +236,7 @@ void CallTraceIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const Blo
     const db::MapConfig source_config{db::table::kCallTraceSet};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     loading_ = false;
     call_from_collector_ = std::make_unique<Collector>(etl_settings_);
     call_to_collector_ = std::make_unique<Collector>(etl_settings_);
@@ -276,7 +276,7 @@ void CallTraceIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     const db::MapConfig source_config{db::table::kCallTraceSet};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     loading_ = false;
     current_source_ = std::string(source_config.name);
     current_key_.clear();
@@ -430,7 +430,7 @@ void CallTraceIndex::collect_unique_keys_from_call_traces(db::RWTxn& txn, const 
 
 void CallTraceIndex::prune_impl(db::RWTxn& txn, BlockNum threshold, const db::MapConfig& target) {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
     loading_ = false;
     current_source_ = target.name;
     current_target_ = current_source_;
@@ -455,7 +455,7 @@ std::vector<std::string> CallTraceIndex::get_log_progress() {
         ret.insert(ret.end(), {"db", "waiting ..."});
     } else {
         switch (operation_) {
-            case OperationType::Forward:
+            case OperationType::kForward:
                 if (loading_) {
                     if (current_target_ == db::table::kCallFromIndex.name) {
                         current_key_ = abridge(call_from_collector_->get_load_key(), kAddressLength);
@@ -469,7 +469,7 @@ std::vector<std::string> CallTraceIndex::get_log_progress() {
                     ret.insert(ret.end(), {"from", current_source_, "to", "ETL", "key", current_key_});
                 }
                 break;
-            case OperationType::Unwind:
+            case OperationType::kUnwind:
                 if (index_loader_) {
                     current_key_ = index_loader_->get_current_key();
                     ret.insert(ret.end(), {"from", "ETL", "to", current_target_, "key", current_key_});
@@ -477,7 +477,7 @@ std::vector<std::string> CallTraceIndex::get_log_progress() {
                     ret.insert(ret.end(), {"from", current_source_, "to", "ETL", "key", current_key_});
                 }
                 break;
-            case OperationType::Prune:
+            case OperationType::kPrune:
                 if (index_loader_) {
                     current_key_ = index_loader_->get_current_key();
                     ret.insert(ret.end(), {"to", current_target_, "key", current_key_});

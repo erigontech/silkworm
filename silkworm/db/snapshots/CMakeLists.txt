@@ -21,6 +21,7 @@ add_subdirectory(seg)
 find_package(absl REQUIRED strings)
 find_package(Boost REQUIRED headers url) # headers for signals2
 find_package(GTest REQUIRED)
+find_package(LibtorrentRasterbar REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 
@@ -30,8 +31,8 @@ silkworm_library(
   PRIVATE absl::strings
           Boost::headers
           Boost::url
+          LibtorrentRasterbar::torrent-rasterbar
           magic_enum::magic_enum
-          torrent-rasterbar
           silkworm_snapshots_seg
 )
 

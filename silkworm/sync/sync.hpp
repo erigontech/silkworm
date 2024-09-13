@@ -25,9 +25,9 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/execution/api/client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/execution/api/client.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>

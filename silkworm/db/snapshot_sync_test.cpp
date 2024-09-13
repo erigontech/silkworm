@@ -21,13 +21,13 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
 namespace silkworm::db {
@@ -35,103 +35,100 @@ namespace silkworm::db {
 using namespace snapshots;
 using namespace silkworm::test_util;
 
-static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
-    return std::make_unique<db::SnapshotBundleFactoryImpl>();
-}
+struct SettingsOverrides {
+    bool enabled{true};
+    bool no_downloader{false};
+};
 
-TEST_CASE("SnapshotSync::SnapshotSync", "[db][snapshot][sync]") {
+class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
+  public:
+    explicit NoopStageSchedulerAdapter() = default;
+    ~NoopStageSchedulerAdapter() override = default;
+    Task<void> schedule(std::function<void(db::RWTxn&)> /*callback*/) override {
+        co_return;
+    }
+};
+
+struct SnapshotSyncTest {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{
-        .bittorrent_settings = bittorrent::BitTorrentSettings{
-            .repository_path = tmp_dir.path() / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
-        },
-    };
-    SnapshotRepository repository{settings, bundle_factory()};
-    CHECK_NOTHROW(SnapshotSync{&repository, kMainnetConfig});
-}
-
-TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     db::test_util::TempChainData context;
-    TemporaryDirectory tmp_dir;
-    bittorrent::BitTorrentSettings bittorrent_settings{
-        .repository_path = tmp_dir.path() / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
-    };
-
-    SECTION("snapshots disabled") {
-        SnapshotSettings settings{
-            .repository_dir = tmp_dir.path(),
-            .enabled = false,
-            .bittorrent_settings = bittorrent_settings,
-        };
-        SnapshotRepository repository{settings, bundle_factory()};
-        SnapshotSync sync{&repository, kMainnetConfig};
-        CHECK(sync.download_and_index_snapshots(context.rw_txn()));
-    }
-
-    SECTION("no download, just reopen") {
-        SnapshotSettings settings{
-            .repository_dir = tmp_dir.path(),
-            .no_downloader = true,
-            .bittorrent_settings = bittorrent_settings,
-        };
-        SnapshotRepository repository{settings, bundle_factory()};
-        SnapshotSync sync{&repository, kMainnetConfig};
-        CHECK(sync.download_and_index_snapshots(context.rw_txn()));
-    }
-
-    SECTION("no download, just reopen and verify") {
-        SnapshotSettings settings{
-            .repository_dir = tmp_dir.path(),
-            .no_downloader = true,
-            .bittorrent_settings = bittorrent_settings,
-        };
-        settings.bittorrent_settings.verify_on_startup = true;
-        SnapshotRepository repository{settings, bundle_factory()};
-        SnapshotSync sync{&repository, kMainnetConfig};
-        CHECK(sync.download_and_index_snapshots(context.rw_txn()));
-    }
-}
+    TaskRunner runner;
+    NoopStageSchedulerAdapter stage_scheduler;
+};
 
 struct SnapshotSyncForTest : public SnapshotSync {
     using SnapshotSync::build_missing_indexes;
-    using SnapshotSync::SnapshotSync;
+    using SnapshotSync::download_snapshots_if_needed;
+    using SnapshotSync::repository;
     using SnapshotSync::update_block_bodies;
     using SnapshotSync::update_block_hashes;
     using SnapshotSync::update_block_headers;
     using SnapshotSync::update_block_senders;
     using SnapshotSync::update_database;
+
+    static SnapshotSettings make_settings(
+        const std::filesystem::path& tmp_dir_path,
+        const SettingsOverrides& overrides) {
+        return SnapshotSettings{
+            .repository_dir = tmp_dir_path,
+            .enabled = overrides.enabled,
+            .no_downloader = overrides.no_downloader,
+            .bittorrent_settings = bittorrent::BitTorrentSettings{
+                .repository_path = tmp_dir_path / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
+            },
+        };
+    }
+
+    explicit SnapshotSyncForTest(SnapshotSyncTest& test, SettingsOverrides overrides = {})
+        : SnapshotSync{
+              make_settings(test.tmp_dir.path(), overrides),
+              kMainnetConfig.chain_id,
+              test.context.env(),
+              test.tmp_dir.path(),
+              test.stage_scheduler} {}
 };
 
+TEST_CASE("SnapshotSync::SnapshotSync", "[db][snapshot][sync]") {
+    SnapshotSyncTest test;
+    CHECK_NOTHROW(SnapshotSyncForTest{test});
+}
+
+TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") {
+    SnapshotSyncTest test;
+
+    SECTION("snapshots disabled") {
+        SnapshotSyncForTest sync{test, SettingsOverrides{.enabled = false}};
+        test.runner.run(sync.download_snapshots_if_needed());
+    }
+
+    SECTION("no download, just reopen") {
+        SnapshotSyncForTest sync{test, SettingsOverrides{.no_downloader = true}};
+        test.runner.run(sync.download_snapshots_if_needed());
+    }
+}
+
 TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
-    TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{
-        .repository_dir = tmp_dir.path(),
-        .bittorrent_settings = bittorrent::BitTorrentSettings{
-            .repository_path = tmp_dir.path() / bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath,
-        },
-    };
-    SnapshotRepository repository{settings, bundle_factory()};
-    db::test_util::TempChainData tmp_db;
+    SnapshotSyncTest test;
+    SnapshotSyncForTest snapshot_sync{test};
+    auto tmp_dir_path = test.tmp_dir.path();
 
     // Create a sample Header snapshot+index
-    snapshots::test_util::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};
+    snapshots::test_util::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir_path};
     snapshots::test_util::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot_file.path()};
     snapshots::Snapshot header_snapshot{header_snapshot_path};
     REQUIRE_NOTHROW(snapshots::HeaderIndex::make(header_snapshot_path).build());
     snapshots::Index idx_header_hash{header_snapshot_path.index_file()};
 
     // Create a sample Body snapshot+index
-    snapshots::test_util::SampleBodySnapshotFile body_snapshot_file{tmp_dir.path()};
+    snapshots::test_util::SampleBodySnapshotFile body_snapshot_file{tmp_dir_path};
     snapshots::test_util::SampleBodySnapshotPath body_snapshot_path{body_snapshot_file.path()};
     snapshots::Snapshot body_snapshot{body_snapshot_path};
     REQUIRE_NOTHROW(snapshots::BodyIndex::make(body_snapshot_path).build());
     snapshots::Index idx_body_number{body_snapshot_path.index_file()};
 
     // Create a sample Transaction snapshot+indexes
-    snapshots::test_util::SampleTransactionSnapshotFile txn_snapshot_file{tmp_dir.path()};
+    snapshots::test_util::SampleTransactionSnapshotFile txn_snapshot_file{tmp_dir_path};
     snapshots::test_util::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot_file.path()};
     snapshots::Snapshot txn_snapshot{txn_snapshot_path};
     REQUIRE_NOTHROW(snapshots::TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
@@ -151,11 +148,13 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
         .idx_txn_hash = std::move(idx_txn_hash),
         .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
     }};
+    auto& repository = snapshot_sync.repository();
     repository.add_snapshot_bundle(std::move(bundle));
 
     // Update the block headers in the database according to the repository content
-    SnapshotSyncForTest snapshot_sync{&repository, kMainnetConfig};
-    CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), repository.max_block_available()));
+    auto& tmp_db = test.context;
+    auto is_stopping = [] { return false; };
+    CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), repository.max_block_available(), is_stopping));
 
     // Expect that the database is correctly populated (N.B. cannot check Difficulty table because of sample snapshots)
     auto block_is_in_header_numbers = [&](Hash block_hash, BlockNum expected_block_number) {

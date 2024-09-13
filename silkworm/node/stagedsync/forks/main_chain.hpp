@@ -29,10 +29,10 @@
 #include <silkworm/db/mdbx/memory_mutation.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
+#include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "canonical_chain.hpp"
-#include "verification_result.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -58,6 +58,7 @@ class MainChain {
     bool is_finalized_canonical(BlockId block) const;
 
     // verification
+    using VerificationResult = execution::api::VerificationResult;
     // verify chain up to head_block_hash
     VerificationResult verify_chain(Hash head_block_hash);
     // accept the current chain up to head_block_hash
@@ -98,7 +99,7 @@ class MainChain {
     bool is_canonical(BlockNum block_height, const Hash& block_hash) const;
     bool is_canonical_head_ancestor(const Hash& block_hash) const;
 
-    std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
+    std::set<Hash> collect_bad_headers(db::RWTxn& tx, execution::api::InvalidChain& invalid_chain);
 
     boost::asio::io_context& io_context_;
     NodeSettings& node_settings_;

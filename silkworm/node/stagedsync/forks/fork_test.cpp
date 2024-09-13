@@ -21,13 +21,13 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
-#include <silkworm/node/test_util/sample_blocks.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 #include "main_chain.hpp"
@@ -38,6 +38,8 @@ namespace asio = boost::asio;
 using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
+
+using execution::api::ValidChain;
 
 class ForkForTest : public Fork {
   public:

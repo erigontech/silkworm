@@ -16,7 +16,6 @@
 
 #include "stage_headers.hpp"
 
-#include <set>
 #include <thread>
 
 #include <magic_enum.hpp>
@@ -102,7 +101,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
 
     Stage::Result result = Stage::Result::kUnspecified;
     std::thread message_receiving;
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
 
     try {
         auto initial_height = current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
@@ -110,13 +109,12 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit_and_renew();
-            log::Info(log_prefix_) << "End, forward skipped due to 'stop-at-block', current block= "
-                                   << current_height_.load() << ")";
+            log::Trace(log_prefix_) << "End, forward skipped due to STOP_AT_BLOCK, block=" << current_height_.load();
             return Stage::Result::kSuccess;
         }
         if (current_height_ >= target_height) {
             tx.commit_and_renew();
-            log::Info(log_prefix_) << "End, forward skipped, we are already at the target block (" << target_height << ")";
+            log::Trace(log_prefix_) << "End, forward skipped, we are already at target block=" << target_height;
             return Stage::Result::kSuccess;
         }
         const BlockNum segment_width{target_height - current_height_};
@@ -161,7 +159,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return result;
 }
 
@@ -174,7 +172,7 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
     auto new_height = sync_context_->unwind_point.value();
     if (current_height_ <= new_height) return Stage::Result::kSuccess;
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
 
     const BlockNum segment_width{current_height_ - new_height};
     if (segment_width > db::stages::kSmallBlockSegmentWidth) {
@@ -207,7 +205,7 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return result;
 }
 

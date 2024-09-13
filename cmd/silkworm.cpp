@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
         // Prepare database for takeoff
         cmd::common::run_db_checklist(node_settings);
 
-        auto chaindata_db{db::open_env(node_settings.chaindata_env_config)};
+        mdbx::env_managed chaindata_env = db::open_env(node_settings.chaindata_env_config);
 
         silkworm::rpc::ClientContextPool context_pool{
             settings.node_settings.server_settings.context_pool_settings,
@@ -247,7 +247,7 @@ int main(int argc, char* argv[]) {
         settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
         settings.sentry_settings.network_id = node_settings.network_id;
 
-        auto chain_head_provider = [db_access = db::ROAccess{chaindata_db}] {
+        auto chain_head_provider = [db_access = db::ROAccess{chaindata_env}] {
             return db::read_chain_head(db_access);
         };
         sentry::eth::StatusDataProvider eth_status_data_provider{std::move(chain_head_provider), node_settings.chain_config.value()};
@@ -265,12 +265,8 @@ int main(int argc, char* argv[]) {
         };
 
         // Execution: the execution layer engine
-        // NOLINTNEXTLINE(cppcoreguidelines-slicing)
-        silkworm::node::Node execution_node{settings.node_settings, sentry_client, chaindata_db};
+        silkworm::node::Node execution_node{context_pool.any_executor(), settings.node_settings, sentry_client, chaindata_env};  // NOLINT(cppcoreguidelines-slicing)
         execution::api::DirectClient& execution_client{execution_node.execution_direct_client()};
-
-        // Set up the execution node (e.g. load pre-verified hashes, download+index snapshots...)
-        execution_node.setup();
 
         // ChainSync: the chain synchronization process based on the consensus protocol
         chainsync::EngineRpcSettings rpc_settings{
@@ -283,16 +279,21 @@ int main(int argc, char* argv[]) {
         };
         chainsync::Sync chain_sync_process{
             context_pool.any_executor(),
-            chaindata_db,  // NOLINT(cppcoreguidelines-slicing)
+            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
             execution_client,
             sentry_client,
             *node_settings.chain_config,
             rpc_settings};
+        // Note: temp code until chainsync::Sync becomes a part of Node
+        auto chain_sync_process_run = [&execution_node](chainsync::Sync& sync) -> Task<void> {
+            co_await execution_node.wait_for_setup();
+            co_await sync.async_run();
+        };
 
         auto tasks =
             execution_node.run() &&
             embedded_sentry_run_if_needed(sentry_server) &&
-            chain_sync_process.async_run();
+            chain_sync_process_run(chain_sync_process);
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.any_executor()};

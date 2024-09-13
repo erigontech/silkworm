@@ -271,8 +271,8 @@ TEST_CASE("Schema Version", "[db][access_layer]") {
 
     SECTION("Incompatible schema") {
         // Reduce compat schema version
-        auto incompatible_version = VersionBase{db::table::kRequiredSchemaVersion.Major - 1, 0, 0};
-        REQUIRE_NOTHROW(db::write_schema_version(context.rw_txn(), incompatible_version));
+        constexpr VersionBase kIncompatibleVersion{db::table::kRequiredSchemaVersion.major - 1, 0, 0};
+        REQUIRE_NOTHROW(db::write_schema_version(context.rw_txn(), kIncompatibleVersion));
         REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.rw_txn()));
     }
 
@@ -440,20 +440,6 @@ TEST_CASE("Stages", "[db][access_layer]") {
     CHECK(block_num == expected_block_num);
     CHECK_NOTHROW(stages::write_stage_prune_progress(txn, stages::kBlockBodiesKey, 0));
     CHECK(stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey) == 0);
-}
-
-TEST_CASE("Snapshots", "[db][access_layer]") {
-    db::test_util::TempChainData context;
-    auto& txn{context.rw_txn()};
-
-    const std::vector<std::string> snapshot_list{
-        "v1-000000-000500-bodies.seg",
-        "v1-000000-000500-headers.seg",
-        "v1-000000-000500-transactions.seg",
-    };
-
-    CHECK_NOTHROW(write_snapshots(txn, snapshot_list));
-    CHECK(read_snapshots(txn) == snapshot_list);
 }
 
 TEST_CASE("Difficulty", "[db][access_layer]") {

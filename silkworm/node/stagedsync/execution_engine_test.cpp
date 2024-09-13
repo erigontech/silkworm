@@ -21,6 +21,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -33,13 +34,16 @@
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
-#include <silkworm/node/test_util/sample_blocks.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
 
 using namespace silkworm::test_util;
 using namespace stagedsync;
+
+using execution::api::InvalidChain;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
 
 class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
   public:
@@ -55,14 +59,14 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     auto db_context = db::test_util::TestDatabaseContext();
     auto node_settings = NodeSettings{
-        .data_directory = std::make_unique<DataDirectory>(db_context.get_mdbx_env().get_path(), false),
+        .data_directory = std::make_unique<DataDirectory>(db_context.mdbx_env().get_path(), false),
         .chaindata_env_config = db_context.get_env_config(),
         .chain_config = db_context.get_chain_config(),
         .parallel_fork_tracking_enabled = false,
         .keep_db_txn_open = true,
     };
 
-    db::RWAccess db_access{db_context.get_mdbx_env()};
+    db::RWAccess db_access{db_context.mdbx_env()};
 
     ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
     exec_engine.open();
@@ -126,7 +130,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     }
 
     SECTION("get_header_td returns correct total difficulty for genesis block") {
-        auto td = exec_engine.get_header_td(header0_hash);
+        auto td = exec_engine.get_header_td(header0_hash, std::nullopt);
         REQUIRE(td.has_value());
         CHECK(*td == 1);
     }

@@ -51,7 +51,7 @@ Senders::Senders(
 
 Stage::Result Senders::forward(db::RWTxn& txn) {
     std::unique_lock log_lock(sl_mutex_);
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     total_processed_blocks_ = 0;
     total_collected_transactions_ = 0;
     log_lock.unlock();
@@ -62,7 +62,7 @@ Stage::Result Senders::forward(db::RWTxn& txn) {
     }
 
     log_lock.lock();
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     log_lock.unlock();
 
     return res;
@@ -74,7 +74,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     current_key_.clear();
 
     using namespace std::chrono_literals;
@@ -92,7 +92,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
         const auto bodies_stage_progress{db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey)};
         if (previous_progress <= to || bodies_stage_progress <= to) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -151,13 +151,13 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
 Stage::Result Senders::prune(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
     current_key_.clear();
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
@@ -170,13 +170,13 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
     try {
         throw_if_stopping();
         if (!prune_mode_senders_.enabled()) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
         if (prune_progress >= forward_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -184,7 +184,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{prune_mode_senders_.value_from_head(forward_progress)};
         if (!prune_threshold) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -243,7 +243,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -520,7 +520,7 @@ void Senders::store_senders(db::RWTxn& txn) {
 std::vector<std::string> Senders::get_log_progress() {
     std::unique_lock lock{mutex_};
     switch (operation_) {
-        case OperationType::Forward: {
+        case OperationType::kForward: {
             return {"blocks", std::to_string(total_processed_blocks_),
                     "transactions", std::to_string(total_collected_transactions_)};
         }

@@ -96,7 +96,7 @@ TEST_CASE("RecSplit8-Par key_count=2", "[silkworm][node][recsplit]") {
 }
 
 template <typename RS>
-static void check_bijection(RS& rec_split, const std::vector<hash128_t>& keys) {
+static void check_bijection(RS& rec_split, const std::vector<Hash128>& keys) {
     // RecSplit implements a MPHF K={k1...kN} -> V={0..N-1} so we must check all codomain is exhausted
     std::vector<uint64_t> recsplit_values(keys.size());
     // Fill the codomain values w/ zero, so we can easily check if a value is already used or not
@@ -126,8 +126,7 @@ const std::size_t RecSplit4::kLowerAggregationBound;
 template <>
 const std::size_t RecSplit4::kUpperAggregationBound;
 template <>
-// NOLINTNEXTLINE(readability-identifier-naming)
-const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo;
+const std::array<uint32_t, kMaxBucketSize> RecSplit4::kMemo;
 
 auto par_build_strategy_4(ThreadPool& tp) { return std::make_unique<RecSplit4::ParallelBuildingStrategy>(tp); }
 
@@ -139,7 +138,7 @@ TEST_CASE("RecSplit4-Par: keys=1000 buckets=128", "[silkworm][node][recsplit]") 
     constexpr int kTestNumKeys{1'000};
     constexpr int kTestBucketSize{128};
 
-    std::vector<hash128_t> hashed_keys;
+    std::vector<Hash128> hashed_keys;
     for (std::size_t i{0}; i < kTestNumKeys; ++i) {
         hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
     }
@@ -188,7 +187,7 @@ TEST_CASE("RecSplit4-Par: multiple keys-buckets", "[silkworm][node][recsplit]") 
     };
     for (const auto [key_count, bucket_size] : recsplit_params_sequence) {
         SECTION("random_hash128 OK [" + std::to_string(key_count) + "-" + std::to_string(bucket_size) + "]") {  // NOLINT
-            std::vector<hash128_t> hashed_keys;
+            std::vector<Hash128> hashed_keys;
             for (std::size_t i{0}; i < key_count; ++i) {
                 hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
             }

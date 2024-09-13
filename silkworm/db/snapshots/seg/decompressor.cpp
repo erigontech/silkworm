@@ -109,7 +109,7 @@ static PatternTable::WordDistances build_word_distances() {
 }
 
 //! Initialize once and for all the word distances in the data for each power of 2
-const PatternTable::WordDistances PatternTable::word_distances_{build_word_distances()};
+const PatternTable::WordDistances PatternTable::kWordDistances{build_word_distances()};
 
 //! Initialize condensed table threshold for bit length using default value
 std::size_t PatternTable::condensed_table_bit_length_threshold_{kDefaultCondensedTableBitLengthThreshold};
@@ -228,7 +228,7 @@ const CodeWord* PatternTable::search_condensed(uint16_t code) const {
 }
 
 bool PatternTable::check_distance(std::size_t power, int distance) {
-    const auto& distances = PatternTable::word_distances_[power];
+    const auto& distances = PatternTable::kWordDistances[power];
     auto it = std::find_if(distances.cbegin(), distances.cend(), [distance](const int d) {
         return d == distance;
     });

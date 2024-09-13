@@ -176,22 +176,22 @@ namespace {
     mdbx::env_managed initialize_test_database() {
         const auto tests_dir = get_tests_dir();
         const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
-        auto db = open_db(db_dir.string());
-        db::RWTxnManaged txn{db};
+        auto env = open_db(db_dir.string());
+        db::RWTxnManaged txn{env};
         db::table::check_or_create_chaindata_tables(txn);
         auto state_buffer = populate_genesis(txn, tests_dir);
         populate_blocks(txn, tests_dir, state_buffer);
         txn.commit_and_stop();
 
-        return db;
+        return env;
     }
 
 }  // namespace
 
-TestDatabaseContext::TestDatabaseContext() : db_{initialize_test_database()} {}
+TestDatabaseContext::TestDatabaseContext() : env_{initialize_test_database()} {}
 
 silkworm::ChainConfig TestDatabaseContext::get_chain_config() {
-    db::ROTxnManaged txn{db_};
+    db::ROTxnManaged txn{env_};
     auto chain_config = db::read_chain_config(txn);
     return chain_config ? *chain_config : silkworm::ChainConfig{};
 }

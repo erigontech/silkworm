@@ -36,6 +36,8 @@ namespace silkworm {
 
 using namespace stagedsync;
 
+using silkworm::execution::api::ValidChain;
+
 class HeaderChainForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
     using HeaderChain::generate_request_id;

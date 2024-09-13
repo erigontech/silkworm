@@ -95,7 +95,9 @@ void ExtendingFork::extend_with(Hash head_hash, const Block& head) {
     });
 }
 
-VerificationResultFuture ExtendingFork::verify_chain() {
+ExtendingFork::VerificationResultFuture ExtendingFork::verify_chain() {
+    using execution::api::VerificationResult;
+
     propagate_exception_if_any();
 
     concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};  // note: promise uses an external io_context

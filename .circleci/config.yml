@@ -337,13 +337,36 @@ jobs:
           name: "Install clang-tidy"
           command: |
             sudo apt-get update
-            sudo apt-get install -y clang-tidy
+            sudo apt-get install -y clang-tidy-<<pipeline.parameters.clang_version_latest>>
+            sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-<<pipeline.parameters.clang_version_latest>> 100
       - checkout_with_submodules:
           ethereum_tests: false
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
+
+  linux-clang-tidy-diff:
+    environment:
+      BUILD_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    machine:
+      image: ubuntu-2404:2024.05.1
+    resource_class: 2xlarge
+    steps:
+      - run:
+          name: "Install clang-tidy"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y clang-tidy-<<pipeline.parameters.clang_version_latest>>
+            sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-<<pipeline.parameters.clang_version_latest>> 100
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+      - run:
+          command: ./third_party/clang-tidy/clang-tidy-diff.sh $(git merge-base master HEAD) ~/build
 
   linux-clang-fuzzer:
     parameters:
@@ -433,6 +456,7 @@ workflows:
         equal: [ master, <<pipeline.git.branch>> ]
     jobs:
       - lint
+      - linux-clang-tidy-diff
       - linux-release:
           name: linux-gcc-12-release
           compiler_id: gcc

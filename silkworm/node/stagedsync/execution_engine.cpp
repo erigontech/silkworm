@@ -25,6 +25,9 @@
 namespace silkworm::stagedsync {
 
 using namespace boost::asio;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+using execution::api::VerificationResult;
 
 ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
     : io_context_{ctx},
@@ -57,6 +60,10 @@ BlockId ExecutionEngine::last_finalized_block() const {
 
 BlockId ExecutionEngine::last_safe_block() const {
     return last_safe_block_;
+}
+
+BlockNum ExecutionEngine::highest_frozen_block_number() const {
+    return db::DataModel::highest_frozen_block_number();
 }
 
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {

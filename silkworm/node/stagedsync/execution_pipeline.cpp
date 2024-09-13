@@ -240,13 +240,15 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
         log::Info("ExecutionPipeline") << "Forward done";
 
-        if (stop_at_block && stop_at_block <= head_header_number_) return Stage::Result::kStoppedByEnv;
+        if (stop_at_block && stop_at_block <= head_header_number_) {
+            log::Warning("ExecutionPipeline") << "Interrupted by STOP_AT_BLOCK at block " + to_string(*stop_at_block);
+            return Stage::Result::kStoppedByEnv;
+        }
 
         return result;
-
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        log::Error("ExecPipeline") << "Forward aborted due to exception: " << ex.what();
+        log::Error("ExecutionPipeline") << "Forward aborted due to exception: " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
@@ -366,12 +368,11 @@ std::string ExecutionPipeline::get_log_prefix() const {
 }
 
 std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
-    auto log_timer = Timer::create(
+    return std::make_shared<Timer>(
         this->node_settings_->asio_context.get_executor(),
         this->node_settings_->sync_loop_log_interval_seconds * 1'000,
         [this]() { return log_timer_expired(); },
         /*auto_start=*/true);
-    return log_timer;
 }
 
 bool ExecutionPipeline::log_timer_expired() {

@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <silkworm/node/execution/api/client.hpp>
+#include <silkworm/execution/api/client.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 

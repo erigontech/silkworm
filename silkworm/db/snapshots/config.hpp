@@ -16,17 +16,12 @@
 
 #pragma once
 
-#include <span>
-#include <string>
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/small_map.hpp>
-#include <silkworm/db/snapshots/config/bor_mainnet.hpp>
-#include <silkworm/db/snapshots/config/mainnet.hpp>
-#include <silkworm/db/snapshots/config/mumbai.hpp>
-#include <silkworm/db/snapshots/config/sepolia.hpp>
-#include <silkworm/db/snapshots/entry.hpp>
+#include <silkworm/core/common/base.hpp>
+
+#include "entry.hpp"
 
 namespace silkworm::snapshots {
 
@@ -34,26 +29,19 @@ using PreverifiedList = std::vector<Entry>;
 
 class Config {
   public:
-    static Config lookup_known_config(ChainId chain_id, const std::vector<std::string>& whitelist);
+    static Config lookup_known_config(ChainId chain_id);
 
-    explicit Config(PreverifiedList preverified_snapshots);
+    explicit Config(PreverifiedList entries);
 
-    [[nodiscard]] const PreverifiedList& preverified_snapshots() const { return preverified_snapshots_; }
+    [[nodiscard]] const PreverifiedList& preverified_snapshots() const { return entries_; }
     [[nodiscard]] BlockNum max_block_number() const { return max_block_number_; }
 
   private:
-    BlockNum compute_max_block();
-    void remove_unsupported_snapshots();
+    static BlockNum compute_max_block(const PreverifiedList& entries);
+    static PreverifiedList remove_unsupported_snapshots(const PreverifiedList& entries);
 
-    PreverifiedList preverified_snapshots_;
+    PreverifiedList entries_;
     BlockNum max_block_number_;
-};
-
-inline constexpr SmallMap<ChainId, std::span<const Entry>> kKnownSnapshotConfigs{
-    {*kKnownChainNameToId.find("mainnet"sv), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
-    {*kKnownChainNameToId.find("sepolia"sv), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
-    {*kKnownChainNameToId.find("bor-mainnet"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
-    {*kKnownChainNameToId.find("mumbai"sv), {kMumbaiSnapshots.data(), kMumbaiSnapshots.size()}},
 };
 
 }  // namespace silkworm::snapshots

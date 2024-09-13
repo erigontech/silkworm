@@ -38,7 +38,7 @@ class Buffer {
 
     void put(Entry entry) {
         // Add a new entry to the buffer
-        size_ += entry.size() + sizeof(head_t);
+        size_ += entry.size() + sizeof(EntryHeader);
         buffer_.push_back(std::move(entry));
     }
 

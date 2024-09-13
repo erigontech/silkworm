@@ -201,6 +201,7 @@ void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) no
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(std::make_unique<state::UpdateDelta>(address, obj));
     obj.current->nonce = nonce;
+    touch(address);
 }
 
 ByteView IntraBlockState::get_code(const evmc::address& address) const noexcept {
@@ -241,6 +242,7 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
     new_code_.try_emplace(obj.current->code_hash, code.begin(), code.end());
+    touch(address);
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {

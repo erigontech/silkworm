@@ -62,7 +62,7 @@ class RemoteClientImpl final : public api::Service {
     /** Chain Validation and ForkChoice **/
 
     // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-    Task<api::ValidationResult> validate_chain(api::BlockNumAndHash number_and_hash) override {
+    Task<api::ValidationResult> validate_chain(BlockId number_and_hash) override {
         auto request = request_from_block_num_and_hash(number_and_hash);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncValidateChain, *stub_, std::move(request), grpc_context_);
         co_return validation_result_from_response(reply);

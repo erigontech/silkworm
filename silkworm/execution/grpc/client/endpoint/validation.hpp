@@ -23,7 +23,7 @@
 
 namespace silkworm::execution::grpc::client {
 
-::execution::ValidationRequest request_from_block_num_and_hash(const api::BlockNumAndHash&);
+::execution::ValidationRequest request_from_block_num_and_hash(const BlockId&);
 api::ValidationResult validation_result_from_response(const ::execution::ValidationReceipt&);
 
 ::execution::ForkChoice request_from_fork_choice(const api::ForkChoice&);

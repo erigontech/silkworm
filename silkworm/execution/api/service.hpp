@@ -46,7 +46,7 @@ struct Service {
     /** Chain Validation and ForkChoice **/
 
     // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-    virtual Task<ValidationResult> validate_chain(BlockNumAndHash) = 0;
+    virtual Task<ValidationResult> validate_chain(BlockId) = 0;
 
     // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);
     virtual Task<ForkChoiceResult> update_fork_choice(const ForkChoice&) = 0;

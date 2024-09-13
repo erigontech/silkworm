@@ -37,7 +37,7 @@ Task<InsertionResult> DirectService::insert_blocks(const Blocks& blocks) {
 /** Chain Validation and ForkChoice **/
 
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-Task<ValidationResult> DirectService::validate_chain(BlockNumAndHash number_and_hash) {
+Task<ValidationResult> DirectService::validate_chain(BlockId number_and_hash) {
     const auto verification = co_await exec_engine_.verify_chain(number_and_hash.hash);
     co_return verification;
 }

@@ -34,7 +34,7 @@ class InboundGetBlockBodies : public InboundMessage {
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
-    PeerId peerId_;
+    PeerId peer_id_;
     GetBlockBodiesPacket66 packet_;
 };
 

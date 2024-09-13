@@ -104,10 +104,10 @@ TEST_CASE("anchors") {
     }
 
     SECTION("construction") {
-        REQUIRE(anchor.parentHash == headers[1].parent_hash);
-        REQUIRE(anchor.blockHeight == headers[1].number);
-        REQUIRE(anchor.lastLinkHeight == headers[1].number);
-        REQUIRE(anchor.peerId == peer_id);
+        REQUIRE(anchor.parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor.block_height == headers[1].number);
+        REQUIRE(anchor.last_link_height == headers[1].number);
+        REQUIRE(anchor.peer_id == peer_id);
         REQUIRE(anchor.links.empty());
         REQUIRE(anchor.chainLength() == 1);
     }

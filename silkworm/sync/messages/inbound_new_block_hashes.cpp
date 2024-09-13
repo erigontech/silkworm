@@ -31,8 +31,8 @@
 namespace silkworm {
 
 InboundNewBlockHashes::InboundNewBlockHashes(ByteView data, PeerId peer_id)
-    : peerId_(std::move(peer_id)),
-      reqId_(Singleton<RandomNumber>::instance().generate_one())  // for trace purposes
+    : peer_id_(std::move(peer_id)),
+      req_id_(Singleton<RandomNumber>::instance().generate_one())  // for trace purposes
 {
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;
@@ -60,7 +60,7 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
 
         try {
             OutboundGetBlockHeaders request_message{packet.value()};
-            [[maybe_unused]] auto peers = sentry.send_message_by_id(request_message, peerId_);
+            [[maybe_unused]] auto peers = sentry.send_message_by_id(request_message, peer_id_);
 
             SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
                        << std::to_string(peers.size()) + " peer(s)";
@@ -72,7 +72,7 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
     hc.top_seen_block_height(max);
 }
 
-uint64_t InboundNewBlockHashes::reqId() const { return reqId_; }
+uint64_t InboundNewBlockHashes::reqId() const { return req_id_; }
 
 std::string InboundNewBlockHashes::content() const {
     std::stringstream content;

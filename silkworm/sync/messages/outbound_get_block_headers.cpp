@@ -52,7 +52,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     for (auto& penalization : penalizations_) {
         try {
             SILK_TRACE << "Penalizing " << penalization;
-            sentry.penalize_peer(penalization.peerId, penalization.penalty);
+            sentry.penalize_peer(penalization.peer_id, penalization.penalty);
         } catch (const boost::system::system_error& se) {
             SILK_TRACE << "OutboundGetBlockHeaders failed penalizing " << penalization << " error: " << se.what();
         }

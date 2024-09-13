@@ -145,23 +145,23 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     OldestFirstAnchorQueue queue;
 
     auto anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->blockHeight = 1;
+    anchor->block_height = 1;
     anchor->timestamp = now;
     queue.push(anchor);
 
     anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->blockHeight = 3;
+    anchor->block_height = 3;
     anchor->timestamp = now;
     queue.push(anchor);
 
     anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->blockHeight = 2;
+    anchor->block_height = 2;
     anchor->timestamp = now + 2s;
     queue.push(anchor);
     auto anchor2 = anchor;
 
     anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->blockHeight = 4;
+    anchor->block_height = 4;
     anchor->timestamp = now + 4s;
     queue.push(anchor);
 
@@ -170,9 +170,9 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     SECTION("element ordering") {
         REQUIRE(queue.size() == 4);
 
-        REQUIRE((queue.top()->timestamp == now && queue.top()->blockHeight == 1));
+        REQUIRE((queue.top()->timestamp == now && queue.top()->block_height == 1));
         queue.pop();
-        REQUIRE((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
+        REQUIRE((queue.top()->timestamp == now && queue.top()->block_height == 3));
         queue.pop();
         REQUIRE(queue.top()->timestamp == now + 2s);
         queue.pop();
@@ -185,9 +185,9 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     SECTION("in order iterating") {
         auto begin = queue.begin();
         auto& elem1 = *begin;
-        CHECK((elem1->timestamp == now && elem1->blockHeight == 1));
+        CHECK((elem1->timestamp == now && elem1->block_height == 1));
         auto& elem2 = *(++begin);
-        CHECK((elem2->timestamp == now && elem2->blockHeight == 3));
+        CHECK((elem2->timestamp == now && elem2->block_height == 3));
         auto& elem3 = *(++begin);
         CHECK((elem3->timestamp == now + 2s));
         auto& elem4 = *(++begin);
@@ -204,12 +204,12 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
         auto top_anchor = queue.top();
         queue.update(top_anchor, [&](auto& a) { a->timestamp = now + 5s; });
 
-        CHECK((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
+        CHECK((queue.top()->timestamp == now && queue.top()->block_height == 3));
         REQUIRE(queue.size() == 4);
         queue.pop();
         queue.pop();
         queue.pop();
-        CHECK((queue.top()->timestamp == now + 5s && queue.top()->blockHeight == 1));
+        CHECK((queue.top()->timestamp == now + 5s && queue.top()->block_height == 1));
     }
 
     SECTION("erase an element") {
@@ -218,11 +218,11 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
         auto top_anchor = queue.top();
         queue.erase(top_anchor);
         CHECK(queue.size() == 3);
-        CHECK((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
+        CHECK((queue.top()->timestamp == now && queue.top()->block_height == 3));
 
         queue.erase(anchor2);
         CHECK(queue.size() == 2);
-        CHECK((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
+        CHECK((queue.top()->timestamp == now && queue.top()->block_height == 3));
         queue.pop();
         CHECK(queue.top()->timestamp == now + 4s);
     }
@@ -236,11 +236,11 @@ TEST_CASE("Oldest_First_Anchor_Queue - siblings handling") {
     BlockHeader dummy_header;
 
     auto anchor1 = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor1->blockHeight = 1;
+    anchor1->block_height = 1;
     anchor1->timestamp = now;
 
     auto anchor2 = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor2->blockHeight = 1;  // same block number, it is a sibling
+    anchor2->block_height = 1;  // same block number, it is a sibling
     anchor2->timestamp = now;
 
     OldestFirstAnchorQueue queue;

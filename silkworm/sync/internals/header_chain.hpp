@@ -162,7 +162,7 @@ class HeaderChain {
 
     OldestFirstAnchorQueue anchor_queue_;      // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                            // Links by header hash
-    AnchorMap anchors_;                        // Mapping from parentHash to collection of anchors
+    AnchorMap anchors_;                        // Mapping from parent hash to collection of anchors
     OldestFirstLinkMap persisted_link_queue_;  // Priority queue of persisted links used to limit their number
     OldestFirstLinkQueue insert_list_;         // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;

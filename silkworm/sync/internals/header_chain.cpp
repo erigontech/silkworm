@@ -92,8 +92,8 @@ std::pair<BlockNum, BlockNum> HeaderChain::anchor_height_range() const {
     BlockNum min{std::numeric_limits<BlockNum>::max()}, max{0};
     for (auto& a : anchors_) {
         auto& anchor = a.second;
-        min = std::min(min, anchor->blockHeight);
-        max = std::max(max, anchor->blockHeight);
+        min = std::min(min, anchor->block_height);
+        max = std::max(max, anchor->block_height);
     }
     return {min, max};
 }
@@ -396,15 +396,15 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
 
 size_t HeaderChain::anchors_within_range(BlockNum max) {
     return static_cast<size_t>(
-        std::ranges::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
+        std::ranges::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->block_height < max; }));
 }
 
 std::optional<BlockNum> HeaderChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top) {
     BlockNum lowest = top;
     bool present = false;
     for (const auto& anchor : anchors_) {
-        if (anchor.second->blockHeight >= bottom && anchor.second->blockHeight < lowest) {
-            lowest = anchor.second->blockHeight;
+        if (anchor.second->block_height >= bottom && anchor.second->block_height < lowest) {
+            lowest = anchor.second->block_height;
             present = true;
         }
     }
@@ -414,7 +414,7 @@ std::optional<BlockNum> HeaderChain::lowest_anchor_within_range(BlockNum bottom,
 std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
     std::shared_ptr<Anchor> highest_anchor = nullptr;
     for (const auto& a : anchors_) {
-        if (highest_anchor == nullptr || a.second->blockHeight >= highest_anchor->blockHeight) {
+        if (highest_anchor == nullptr || a.second->block_height >= highest_anchor->block_height) {
             highest_anchor = a.second;
         }
     }
@@ -451,7 +451,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
     while (!anchor_queue_.empty()) {
         std::shared_ptr<Anchor> anchor = anchor_queue_.top();
 
-        if (!anchors_.contains(anchor->parentHash)) {
+        if (!anchors_.contains(anchor->parent_hash)) {
             anchor_queue_.pop();  // anchor disappeared (i.e. it became link as per our request) or unavailable,
             continue;             // normal condition, pop from the queue and move on
         }
@@ -470,15 +470,15 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
             auto request_message = send_penalties;
             auto& packet = request_message->packet();
             packet.requestId = generate_request_id();
-            packet.request = {{anchor->blockHeight},  // requesting from origin=blockHeight-1 make debugging difficult
+            packet.request = {{anchor->block_height},  // requesting from origin=block_height-1 make debugging difficult
                               kMaxLen,
                               0,
-                              true};  // we use blockHeight in place of parentHash to get also ommers if presents
+                              true};  // we use block_height in place of parent_hash to get also ommers if presents
 
             statistics_.requested_items += kMaxLen;
 
-            SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
-                       << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
+            SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->block_height
+                       << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->last_link_height << " )";
 
             extension_condition_ = "ok";
             return request_message;  // try (again) to extend this anchor
@@ -486,10 +486,10 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
 
         // ancestors of this anchor seem to be unavailable, invalidate and move on
         log::Warning("HeaderChain") << "invalidating anchor for suspected unavailability, "
-                                    << "height=" << anchor->blockHeight;
+                                    << "height=" << anchor->block_height;
         // no need to do anchor_queue_.pop(), implicitly done in the following
         invalidate(anchor);
-        send_penalties->penalties().emplace_back(Penalty::kAbandonedAnchorPenalty, anchor->peerId);
+        send_penalties->penalties().push_back(PeerPenalization{Penalty::kAbandonedAnchorPenalty, anchor->peer_id});
     }
 
     extension_condition_ = "void anchor queue";
@@ -537,7 +537,7 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
     } else {
         BlockNum bn = std::get<BlockNum>(packet.request.origin);
         for (const auto& p : anchors_) {
-            if (p.second->blockHeight == bn) {  // this search it is burdensome but should rarely occur
+            if (p.second->block_height == bn) {  // this search it is burdensome but should rarely occur
                 anchor = p.second;
                 break;
             }
@@ -755,8 +755,8 @@ void HeaderChain::reduce_links_to(size_t limit) {
 
     log::Info("HeaderStage") << "LinkQueue has too many links, cut down from " << initial_size
                              << " to " << pending_links()
-                             << " (removed chain bundle start=" << victim_anchor->blockHeight
-                             << " end=" << victim_anchor->lastLinkHeight << ")";
+                             << " (removed chain bundle start=" << victim_anchor->block_height
+                             << " end=" << victim_anchor->last_link_height << ")";
 }
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
@@ -831,7 +831,7 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
         throw SegmentCutAndPasteError(
             "anchor connected to bad headers, "
             "height=" +
-            std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
+            std::to_string(anchor->block_height) + " parent hash=" + to_hex(anchor->parent_hash));
     }
 
     // Iterate over headers backwards (from parents towards children)
@@ -849,7 +849,7 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
     auto [deep_a, deep_link] = find_anchor(attachment_link);
     if (deep_a.has_value()) {
         auto deepest_anchor = deep_a.value();
-        deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, anchor->lastLinkHeight);
+        deepest_anchor->last_link_height = std::max(deepest_anchor->last_link_height, anchor->last_link_height);
     } else {
         // if (!deep_link->persisted) error, else attachment to special anchor
     }
@@ -864,11 +864,11 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
 
     log::Trace() << "[INFO] HeaderChain, segment op: "
                  << (deep_a.has_value()
-                         ? "A " + to_string(deep_a.value()->blockHeight)
+                         ? "A " + to_string(deep_a.value()->block_height)
                          : "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
                  << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)" : "")
                  << " <-connect-> " << segment_slice.rbegin()->operator*().number << " --- " << prev_link->blockHeight
-                 << " <-connect-> " << anchor->blockHeight << " --- " << anchor->lastLinkHeight
+                 << " <-connect-> " << anchor->block_height << " --- " << anchor->last_link_height
                  << (anchor_preverified ? " (V)" : "");
 }
 
@@ -876,7 +876,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_
     // Add or find new anchor
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = false;
-    auto [new_anchor, pre_existing] = add_anchor_if_not_present(*new_anchor_header, anchor->peerId, check_limits);
+    auto [new_anchor, pre_existing] = add_anchor_if_not_present(*new_anchor_header, anchor->peer_id, check_limits);
 
     // Remove old anchor
     bool anchor_preverified =
@@ -897,7 +897,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_
         if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
-    new_anchor->lastLinkHeight = std::max(new_anchor->lastLinkHeight, anchor->lastLinkHeight);
+    new_anchor->last_link_height = std::max(new_anchor->last_link_height, anchor->last_link_height);
 
     prev_link->next = anchor->links;
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
@@ -905,9 +905,9 @@ HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_
     bool newanchor_preverified =
         std::ranges::any_of(new_anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    log::Trace() << "[INFO] HeaderChain, segment op: " << new_anchor->blockHeight
+    log::Trace() << "[INFO] HeaderChain, segment op: " << new_anchor->block_height
                  << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->blockHeight << " <-extend down "
-                 << anchor->blockHeight << " --- " << anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");
+                 << anchor->block_height << " --- " << anchor->last_link_height << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;
 }
@@ -939,14 +939,14 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
     auto [deep_a, deep_link] = find_anchor(attachment_link);
     if (deep_a.has_value()) {
         auto deepest_anchor = deep_a.value();
-        deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, prev_link->blockHeight);
+        deepest_anchor->last_link_height = std::max(deepest_anchor->last_link_height, prev_link->blockHeight);
     } else {
         // if (!deep_link->persisted) error, else attachment to special anchor
     }
 
     log::Trace() << "[INFO] HeaderChain, segment op: "
                  << (deep_a.has_value()
-                         ? "A " + to_string(deep_a.value()->blockHeight)
+                         ? "A " + to_string(deep_a.value()->block_height)
                          : "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
                  << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)" : "")
                  << " extend up-> " << segment_slice.rbegin()->operator*().number << " --- "
@@ -974,13 +974,13 @@ HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_s
         if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
-    anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
+    anchor->last_link_height = std::max(anchor->last_link_height, prev_link->blockHeight);
 
     bool anchor_preverified =
         std::ranges::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    log::Trace() << "[INFO] HeaderChain, segment op: new anchor " << anchor->blockHeight << " --- "
-                 << anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");
+    log::Trace() << "[INFO] HeaderChain, segment op: new anchor " << anchor->block_height << " --- "
+                 << anchor->last_link_height << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;
 }
@@ -1007,7 +1007,7 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
     }
 
     std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, std::move(peerId));
-    if (anchor->blockHeight > 0) {
+    if (anchor->block_height > 0) {
         anchors_[anchor_header.parent_hash] = anchor;
         anchor_queue_.push(anchor);
     }
@@ -1025,11 +1025,11 @@ std::shared_ptr<Link> HeaderChain::add_header_as_link(const BlockHeader& header,
 }
 
 void HeaderChain::remove(const std::shared_ptr<Anchor>& anchor) {
-    size_t erased1 = anchors_.erase(anchor->parentHash);
+    size_t erased1 = anchors_.erase(anchor->parent_hash);
     bool erased2 = anchor_queue_.erase(anchor);
 
     if (erased1 == 0 || !erased2) {
-        log::Warning("HeaderStage") << "removal of anchor failed, bn=" << anchor->blockHeight;
+        log::Warning("HeaderStage") << "removal of anchor failed, bn=" << anchor->block_height;
     }
 }
 
@@ -1069,7 +1069,7 @@ std::string HeaderChain::dump_chain_bundles() const {
     std::multimap<BlockNum, std::shared_ptr<Anchor>> ordered_anchors;
     for (auto& a : anchors_) {
         auto anchor = a.second;
-        ordered_anchors.insert({anchor->blockHeight, anchor});
+        ordered_anchors.insert({anchor->block_height, anchor});
     }
 
     // dump
@@ -1077,9 +1077,9 @@ std::string HeaderChain::dump_chain_bundles() const {
         auto anchor = a.second;
         auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now() - anchor->timestamp);
-        std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parentHash) +
-                                  ": start=" + std::to_string(anchor->blockHeight) +
-                                  ", end=" + std::to_string(anchor->lastLinkHeight) +
+        std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parent_hash) +
+                                  ": start=" + std::to_string(anchor->block_height) +
+                                  ", end=" + std::to_string(anchor->last_link_height) +
                                   ", len=" + std::to_string(anchor->chainLength()) +
                                   ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
         output += anchor_dump;

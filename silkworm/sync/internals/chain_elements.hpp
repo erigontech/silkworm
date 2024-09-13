@@ -33,12 +33,12 @@ namespace silkworm {
 
 // Auxiliary types needed to implement WorkingChain
 
-// A link corresponds to a block header, links are connected to each other by reverse of parentHash relation
+// A link corresponds to a block header, links are connected to each other by reverse of parent_hash relation
 struct Link {
     std::shared_ptr<BlockHeader> header;      // Header to which this link point to
     BlockNum blockHeight = 0;                 // Block height of the header, repeated here for convenience (remove?)
     Hash hash;                                // Hash of the header
-    std::vector<std::shared_ptr<Link>> next;  // Reverse of parentHash,allows iter.over links in asc. block height order
+    std::vector<std::shared_ptr<Link>> next;  // Reverse of parent_hash,allows iter.over links in asc. block height order
     bool persisted = false;                   // Whether this link comes from the database record
     bool preverified = false;                 // Ancestor of pre-verified header
 
@@ -62,24 +62,24 @@ struct Link {
 
 // An anchor is the bottom of a chain bundle that consists of one anchor and some chain links.
 struct Anchor {
-    Hash parentHash;                           // Hash of the header this anchor can be connected to (to disappear)
-    BlockNum blockHeight;                      // block height of the anchor
+    Hash parent_hash;                          // Hash of the header this anchor can be connected to (to disappear)
+    BlockNum block_height;                     // block height of the anchor
     time_point_t timestamp;                    // request/arrival time
     time_point_t prev_timestamp;               // Used to restore timestamp when a request fails for network reasons
-    int timeouts{0};                           // Number of timeout that this anchor has experienced;after certain threshold,it gets invalidated
+    int timeouts{0};                           // Number of timeout that this anchor has experienced; after certain threshold, it gets invalidated
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor
-    BlockNum lastLinkHeight{0};                // the blockHeight of the last link of the chain bundle anchored to this
-    PeerId peerId;
+    BlockNum last_link_height{0};              // the block_height of the last link of the chain bundle anchored to this
+    PeerId peer_id;
 
     Anchor(const BlockHeader& header, PeerId p)
-        : parentHash{header.parent_hash},
-          blockHeight{header.number},
-          lastLinkHeight{blockHeight},
+        : parent_hash{header.parent_hash},
+          block_height{header.number},
+          last_link_height{block_height},
           // timestamp{0},  // ready to get extended
-          peerId{std::move(p)} {
+          peer_id{std::move(p)} {
     }
 
-    BlockNum chainLength() const { return lastLinkHeight - blockHeight + 1; }
+    BlockNum chainLength() const { return last_link_height - block_height + 1; }
 
     void remove_child(const Link& child) {
         std::erase_if(links, [child](auto& link) { return (link->hash == child.hash); });
@@ -123,10 +123,10 @@ struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std:
         if (x->timestamp != y->timestamp) {
             return x->timestamp > y->timestamp;  // prefer smaller timestamp
         }
-        if (x->blockHeight != y->blockHeight) {
-            return x->blockHeight > y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        if (x->block_height != y->block_height) {
+            return x->block_height > y->block_height;  // when timestamps are the same prioritise low block_height
         }
-        return x > y;  // when blockHeight are the same preserve identity
+        return x > y;  // when block_height are the same preserve identity
     }
 };
 
@@ -135,10 +135,10 @@ struct AnchorOlderThan : public std::function<bool(std::shared_ptr<Anchor>, std:
         if (x->timestamp != y->timestamp) {
             return x->timestamp < y->timestamp;  // prefer smaller timestamp
         }
-        if (x->blockHeight != y->blockHeight) {
-            return x->blockHeight < y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        if (x->block_height != y->block_height) {
+            return x->block_height < y->block_height;  // when timestamps are the same prioritise low block_height
         }
-        return x < y;  // when blockHeight are the same preserve identity
+        return x < y;  // when block_height are the same preserve identity
     }
 };
 
@@ -181,7 +181,7 @@ using LinkMap = std::map<Hash, std::shared_ptr<Link>>;      // hash = link hash
 using AnchorMap = std::map<Hash, std::shared_ptr<Anchor>>;  // hash = anchor *parent* hash
 
 /* We can improve encapsulation:
- * AnchorMap key is the anchor parent hash, note 'parent', so it is better to encapsulate this knowledge in a class
+ * AnchorMap key is the anchor parent hash, note 'parent', so it is better to encapsulate this knowledge in a class,
  * so we can write anchor_map.add(anchor) in place of anchor_map[anchor->parent_hash] = anchor
  * Also anchorQueue and anchorMap should be encapsulated because if one change an anchor then anchorQueue must be
  * fixed (= re-ordered). For this purpose assess boost::multi-index-container to replace the queue + map pair

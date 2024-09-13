@@ -391,10 +391,10 @@ TEST_CASE("HeaderChain: (1) simple chain") {
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[1].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[1].number);
-        REQUIRE(anchor->lastLinkHeight == headers[2].number);
-        REQUIRE(anchor->peerId == peer_id);
+        REQUIRE(anchor->parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor->block_height == headers[1].number);
+        REQUIRE(anchor->last_link_height == headers[2].number);
+        REQUIRE(anchor->peer_id == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -424,9 +424,9 @@ TEST_CASE("HeaderChain: (1) simple chain") {
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[1].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[1].number);
-        REQUIRE(anchor->lastLinkHeight == headers[4].number);
+        REQUIRE(anchor->parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor->block_height == headers[1].number);
+        REQUIRE(anchor->last_link_height == headers[4].number);
         REQUIRE(anchor->links.size() == 1);
 
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -461,16 +461,16 @@ TEST_CASE("HeaderChain: (1) simple chain") {
 
         auto anchor1 = chain.anchors_[headers[1].parent_hash];
         REQUIRE(anchor1 != nullptr);
-        REQUIRE(anchor1->parentHash == headers[1].parent_hash);
-        REQUIRE(anchor1->blockHeight == headers[1].number);
-        REQUIRE(anchor1->lastLinkHeight == headers[4].number);
+        REQUIRE(anchor1->parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor1->block_height == headers[1].number);
+        REQUIRE(anchor1->last_link_height == headers[4].number);
         REQUIRE(anchor1->links.size() == 1);
 
         auto anchor2 = chain.anchors_[headers[8].parent_hash];
         REQUIRE(anchor2 != nullptr);
-        REQUIRE(anchor2->parentHash == headers[8].parent_hash);
-        REQUIRE(anchor2->blockHeight == headers[8].number);
-        REQUIRE(anchor2->lastLinkHeight == headers[9].number);
+        REQUIRE(anchor2->parent_hash == headers[8].parent_hash);
+        REQUIRE(anchor2->block_height == headers[8].number);
+        REQUIRE(anchor2->last_link_height == headers[9].number);
         REQUIRE(anchor2->links.size() == 1);
 
         REQUIRE(anchor1->links[0]->hash == headers[1].hash());
@@ -511,16 +511,16 @@ TEST_CASE("HeaderChain: (1) simple chain") {
 
         auto anchor1 = chain.anchors_[headers[1].parent_hash];
         REQUIRE(anchor1 != nullptr);
-        REQUIRE(anchor1->parentHash == headers[1].parent_hash);
-        REQUIRE(anchor1->blockHeight == headers[1].number);
-        REQUIRE(anchor1->lastLinkHeight == headers[4].number);
+        REQUIRE(anchor1->parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor1->block_height == headers[1].number);
+        REQUIRE(anchor1->last_link_height == headers[4].number);
         REQUIRE(anchor1->links.size() == 1);
 
         auto anchor2 = chain.anchors_[headers[6].parent_hash];
         REQUIRE(anchor2 != nullptr);
-        REQUIRE(anchor2->parentHash == headers[6].parent_hash);
-        REQUIRE(anchor2->blockHeight == headers[6].number);
-        REQUIRE(anchor2->lastLinkHeight == headers[9].number);
+        REQUIRE(anchor2->parent_hash == headers[6].parent_hash);
+        REQUIRE(anchor2->block_height == headers[6].number);
+        REQUIRE(anchor2->last_link_height == headers[9].number);
         REQUIRE(anchor2->links.size() == 1);
 
         REQUIRE(anchor2->links[0]->hash == headers[6].hash());
@@ -555,9 +555,9 @@ TEST_CASE("HeaderChain: (1) simple chain") {
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[1].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[1].number);
-        REQUIRE(anchor->lastLinkHeight == headers[9].number);
+        REQUIRE(anchor->parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor->block_height == headers[1].number);
+        REQUIRE(anchor->last_link_height == headers[9].number);
         REQUIRE(anchor->links.size() == 1);
 
         size_t i = 1;
@@ -624,8 +624,8 @@ TEST_CASE("HeaderChain: (2) extending down with 2 siblings") {
 
     auto anchor = chain.anchors_[h1.parent_hash];
     REQUIRE(anchor != nullptr);
-    REQUIRE(anchor->parentHash == h1.parent_hash);
-    REQUIRE(anchor->blockHeight == h1.number);
+    REQUIRE(anchor->parent_hash == h1.parent_hash);
+    REQUIRE(anchor->block_height == h1.number);
 
     REQUIRE(anchor->links.size() == 1);
     REQUIRE(anchor->links[0]->has_child(h2.hash()));
@@ -712,9 +712,9 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[1].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[1].number);
-        REQUIRE(anchor->peerId == peer_id);
+        REQUIRE(anchor->parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor->block_height == headers[1].number);
+        REQUIRE(anchor->peer_id == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -745,9 +745,9 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[1].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[1].number);
-        REQUIRE(anchor->peerId == peer_id);
+        REQUIRE(anchor->parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor->block_height == headers[1].number);
+        REQUIRE(anchor->peer_id == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -787,9 +787,9 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
 
         auto anchor = chain.anchors_[headers[7].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[7].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[7].number);
-        REQUIRE(anchor->peerId == peer_id);
+        REQUIRE(anchor->parent_hash == headers[7].parent_hash);
+        REQUIRE(anchor->block_height == headers[7].number);
+        REQUIRE(anchor->peer_id == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[7].hash());
@@ -1129,9 +1129,9 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
 
         auto anchor = chain.anchors_[headers[5].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[5].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[5].number);
-        REQUIRE(anchor->peerId == peer_id);
+        REQUIRE(anchor->parent_hash == headers[5].parent_hash);
+        REQUIRE(anchor->block_height == headers[5].number);
+        REQUIRE(anchor->peer_id == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[5].hash());
@@ -1154,8 +1154,8 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor->block_height == headers[3].number);
         REQUIRE(anchor->links.size() == 1);
 
         REQUIRE(anchor->links[0]->hash == headers[3].hash());
@@ -1188,8 +1188,8 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor->block_height == headers[3].number);
         REQUIRE(anchor->links.size() == 2);  // 2 siblings
 
         REQUIRE(anchor->links[0]->hash == headers[3].hash());
@@ -1225,8 +1225,8 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor->block_height == headers[3].number);
         REQUIRE(anchor->links.size() == 2);  // 2 siblings
 
         auto anchor2 = chain.anchors_[h5s.parent_hash];
@@ -1273,9 +1273,9 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
 
         auto anchor = chain.anchors_[headers[5].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[5].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[5].number);
-        REQUIRE(anchor->peerId == peer_id);
+        REQUIRE(anchor->parent_hash == headers[5].parent_hash);
+        REQUIRE(anchor->block_height == headers[5].number);
+        REQUIRE(anchor->peer_id == peer_id);
 
         REQUIRE(anchor->links.size() == 2);
         REQUIRE(anchor->has_child(headers[5].hash()));
@@ -1323,8 +1323,8 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor->block_height == headers[3].number);
         REQUIRE(anchor->links.size() == 1);
 
         REQUIRE(anchor->links[0]->hash == headers[3].hash());
@@ -1373,10 +1373,10 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto anchor = chain.anchors_[h5p.parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == h5p.parent_hash);
-        REQUIRE(anchor->blockHeight == h5p.number);
-        REQUIRE(anchor->lastLinkHeight == h5p.number);
-        REQUIRE(anchor->peerId == peer_id);
+        REQUIRE(anchor->parent_hash == h5p.parent_hash);
+        REQUIRE(anchor->block_height == h5p.number);
+        REQUIRE(anchor->last_link_height == h5p.number);
+        REQUIRE(anchor->peer_id == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == h5p.hash());
@@ -1397,10 +1397,10 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto anchor1 = chain.anchors_[h5p.parent_hash];
         REQUIRE(anchor1 != nullptr);
-        REQUIRE(anchor1->parentHash == h5p.parent_hash);
-        REQUIRE(anchor1->blockHeight == h5p.number);
-        REQUIRE(anchor1->lastLinkHeight == h5p.number);
-        REQUIRE(anchor1->peerId == peer_id);
+        REQUIRE(anchor1->parent_hash == h5p.parent_hash);
+        REQUIRE(anchor1->block_height == h5p.number);
+        REQUIRE(anchor1->last_link_height == h5p.number);
+        REQUIRE(anchor1->peer_id == peer_id);
 
         REQUIRE(anchor1->links.size() == 1);
         REQUIRE(anchor1->links[0]->hash == h5p.hash());
@@ -1413,10 +1413,10 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto anchor2 = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor2 != nullptr);
-        REQUIRE(anchor2->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor2->blockHeight == headers[3].number);
-        REQUIRE(anchor2->lastLinkHeight == headers[5].number);
-        REQUIRE(anchor2->peerId == peer_id);
+        REQUIRE(anchor2->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor2->block_height == headers[3].number);
+        REQUIRE(anchor2->last_link_height == headers[5].number);
+        REQUIRE(anchor2->peer_id == peer_id);
 
         REQUIRE(anchor2->links[0]->hash == headers[3].hash());
         REQUIRE(anchor2->links[0]->next.size() == 1);
@@ -1443,10 +1443,10 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto anchor1 = chain.anchors_[h5p.parent_hash];
         REQUIRE(anchor1 != nullptr);
-        REQUIRE(anchor1->parentHash == h5p.parent_hash);
-        REQUIRE(anchor1->blockHeight == h5p.number);
-        REQUIRE(anchor1->lastLinkHeight == h5p.number);
-        REQUIRE(anchor1->peerId == peer_id);
+        REQUIRE(anchor1->parent_hash == h5p.parent_hash);
+        REQUIRE(anchor1->block_height == h5p.number);
+        REQUIRE(anchor1->last_link_height == h5p.number);
+        REQUIRE(anchor1->peer_id == peer_id);
 
         REQUIRE(anchor1->links.size() == 1);
         REQUIRE(anchor1->links[0]->hash == h5p.hash());
@@ -1459,10 +1459,10 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto anchor2 = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor2 != nullptr);
-        REQUIRE(anchor2->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor2->blockHeight == headers[3].number);
-        REQUIRE(anchor2->lastLinkHeight == headers[5].number);
-        REQUIRE(anchor2->peerId == peer_id);
+        REQUIRE(anchor2->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor2->block_height == headers[3].number);
+        REQUIRE(anchor2->last_link_height == headers[5].number);
+        REQUIRE(anchor2->peer_id == peer_id);
 
         REQUIRE(anchor2->links[0]->hash == headers[3].hash());
         REQUIRE(anchor2->links[0]->next.size() == 1);
@@ -1554,10 +1554,10 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         anchor2 = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor2 != nullptr);
-        REQUIRE(anchor2->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor2->blockHeight == headers[3].number);
-        REQUIRE(anchor2->lastLinkHeight == headers[5].number);
-        REQUIRE(anchor2->peerId == peer_id);
+        REQUIRE(anchor2->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor2->block_height == headers[3].number);
+        REQUIRE(anchor2->last_link_height == headers[5].number);
+        REQUIRE(anchor2->peer_id == peer_id);
 
         REQUIRE(anchor2->links[0]->hash == headers[3].hash());
         REQUIRE(anchor2->links[0]->next.size() == 1);
@@ -1580,9 +1580,9 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor != nullptr);
-        REQUIRE(anchor->parentHash == headers[3].parent_hash);
-        REQUIRE(anchor->blockHeight == headers[3].number);
-        REQUIRE(anchor->lastLinkHeight == headers[5].number);  // this is wrong, change the code of reduce_links_to()
+        REQUIRE(anchor->parent_hash == headers[3].parent_hash);
+        REQUIRE(anchor->block_height == headers[3].number);
+        REQUIRE(anchor->last_link_height == headers[5].number);  // this is wrong, change the code of reduce_links_to()
         REQUIRE(anchor->links.size() == 1);
 
         auto link7_it = chain.links_.find(headers[7].hash());

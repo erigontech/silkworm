@@ -27,7 +27,7 @@ namespace silkworm::detail {
 
 template <typename Executor>
 struct ExecutorDispatcher {
-    Executor executor_;
+    Executor executor_;  // NOLINT(readability-identifier-naming)
 
     template <typename CompletionToken, typename... Args>
     void dispatch(CompletionToken&& token, Args&&... args) {

@@ -97,6 +97,12 @@ CheckOptions:
   readability-identifier-naming.GlobalConstantCase: CamelCase
   readability-identifier-naming.GlobalConstantPrefix: k
   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.PrivateMemberCase: lower_case
+  readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.ProtectedMemberCase: lower_case
+  readability-identifier-naming.ProtectedMemberSuffix: _
+  readability-identifier-naming.PublicMemberCase: lower_case
+  readability-identifier-naming.PublicMemberSuffix: ''
   readability-identifier-naming.StaticConstantCase: CamelCase
   readability-identifier-naming.StaticConstantPrefix: k
   readability-simplify-boolean-expr.SimplifyDeMorgan: false

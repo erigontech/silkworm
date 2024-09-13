@@ -50,11 +50,13 @@ class ContextTestBase {
 
     ~ContextTestBase();
 
+    // NOLINTBEGIN(readability-identifier-naming)
     silkworm::test_util::SetLogVerbosityGuard log_guard_;
     rpc::ClientContext context_;
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;
     std::thread context_thread_;
+    // NOLINTEND(readability-identifier-naming)
 };
 
 }  // namespace silkworm::test_util

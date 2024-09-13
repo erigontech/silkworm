@@ -117,7 +117,7 @@ TEST_CASE_METHOD(TimerTest, "Lifecycle race condition", "[infra][common][timer]"
 }
 
 TEST_CASE_METHOD(TimerTest, "Explicit stop not necessary", "[infra][common][timer]") {
-    for (const auto interval : kIntervals) {
+    for (const auto interval : intervals) {
         SECTION("Duration " + std::to_string(interval) + "ms: stopped") {
             {
                 Timer async_timer{io_context.get_executor(), interval, []() -> bool { return true; }};

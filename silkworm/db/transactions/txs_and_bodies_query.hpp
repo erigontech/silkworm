@@ -46,6 +46,7 @@ class TxsAndBodiesQuery {
             uint64_t expected_tx_count,
             std::string log_title);
 
+        // NOLINTNEXTLINE(readability-identifier-naming)
         struct value_type {
             BlockNum block_number{};
             ByteView body_rlp;

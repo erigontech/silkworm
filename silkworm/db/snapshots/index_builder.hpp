@@ -47,6 +47,7 @@ struct IndexDescriptor {
 struct IndexInputDataQuery {
     class Iterator {
       public:
+        // NOLINTNEXTLINE(readability-identifier-naming)
         struct value_type {
             ByteView key_data;
             uint64_t value{};

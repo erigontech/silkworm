@@ -35,7 +35,7 @@ namespace silkworm::stagedsync {
 
 Stage::Result Execution::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
         if (!rule_set_) {
@@ -52,7 +52,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         if (previous_progress == senders_stage_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
         if (previous_progress > senders_stage_progress) {
@@ -140,7 +140,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -314,15 +314,15 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         BlockNum previous_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (to >= previous_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return Stage::Result::kSuccess;
         }
 
-        operation_ = OperationType::Unwind;
+        operation_ = OperationType::kUnwind;
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
@@ -348,7 +348,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         Bytes start_key{db::block_key(to + 1)};
         for (const auto& map_config : kUnwindTables) {
             auto unwind_cursor = txn.rw_cursor(map_config);
-            auto erased{db::cursor_erase(*unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+            auto erased{db::cursor_erase(*unwind_cursor, start_key, db::CursorMoveDirection::kForward)};
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, to);
@@ -372,13 +372,13 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
 Stage::Result Execution::prune(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
 
     std::unique_ptr<StopWatch> stop_watch;
     if (log::test_verbosity(log::Level::kTrace)) {
@@ -389,14 +389,14 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         if (!prune_mode_.history().enabled() &&
             !prune_mode_.receipts().enabled() &&
             !prune_mode_.call_traces().enabled()) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
         BlockNum forward_progress{get_progress(txn)};
         BlockNum prune_progress{get_prune_progress(txn)};
         if (prune_progress >= forward_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -461,7 +461,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
             auto key{db::block_key(prune_threshold)};
             auto source = txn.rw_cursor(db::table::kBlockReceipts);
-            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -471,7 +471,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
 
             source->bind(txn, db::table::kLogs);
-            erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -493,7 +493,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
             auto key{db::block_key(prune_threshold)};
             auto source = txn.rw_cursor_dup_sort(db::table::kCallTraceSet);
-            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -524,7 +524,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 

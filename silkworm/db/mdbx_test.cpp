@@ -262,12 +262,12 @@ TEST_CASE("RWTxn") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{db::open_env(db_config)};
-    static const char* table_name{"GeneticCode"};
+    static const char* kTableName{"GeneticCode"};
 
     SECTION("Managed: commit_and_renew") {
         {
             auto tx{db::RWTxnManaged(env)};
-            db::PooledCursor table_cursor(*tx, {table_name});
+            db::PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -278,14 +278,14 @@ TEST_CASE("RWTxn") {
         }
 
         auto tx{env.start_read()};
-        db::PooledCursor table_cursor(tx, {table_name});
+        db::PooledCursor table_cursor(tx, {kTableName});
         REQUIRE(table_cursor.empty() == false);
     }
 
     SECTION("Managed: commit_and_stop") {
         {
             auto tx{db::RWTxnManaged(env)};
-            db::PooledCursor table_cursor(*tx, {table_name});
+            db::PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -296,7 +296,7 @@ TEST_CASE("RWTxn") {
         }
 
         auto tx{env.start_read()};
-        db::PooledCursor table_cursor(tx, {table_name});
+        db::PooledCursor table_cursor(tx, {kTableName});
         REQUIRE(table_cursor.empty() == false);
     }
 
@@ -304,33 +304,33 @@ TEST_CASE("RWTxn") {
         RWTxnManaged tx{env};
         tx.disable_commit();
         {
-            (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
+            (void)tx->create_map(kTableName, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit_and_renew();  // Does not have any effect
         }
         tx.abort();
         RWTxnManaged tx2{env};
-        REQUIRE(db::has_map(tx2, table_name) == false);
+        REQUIRE(db::has_map(tx2, kTableName) == false);
     }
 
     SECTION("External: commit_and_stop") {
         RWTxnManaged tx{env};
         tx.disable_commit();
         {
-            (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
+            (void)tx->create_map(kTableName, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit_and_stop();  // Does not have any effect
         }
         tx.abort();
         RWTxnManaged tx2{env};
-        REQUIRE(db::has_map(tx2, table_name) == false);
+        REQUIRE(db::has_map(tx2, kTableName) == false);
     }
 
     SECTION("Cursor from RWTxn") {
         auto tx{db::RWTxnManaged(env)};
-        db::PooledCursor table_cursor(tx, {table_name});
+        db::PooledCursor table_cursor(tx, {kTableName});
         REQUIRE(table_cursor.empty());
-        REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
+        REQUIRE_NOTHROW(table_cursor.bind(tx, {kTableName}));
         table_cursor.close();
-        REQUIRE_THROWS(table_cursor.bind(tx, {table_name}));
+        REQUIRE_THROWS(table_cursor.bind(tx, {kTableName}));
     }
 
     SECTION("Unmanaged: commit_and_renew") {
@@ -339,7 +339,7 @@ TEST_CASE("RWTxn") {
             ::mdbx::error::success_or_throw(::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &rw_txn));
 
             auto tx{db::RWTxnUnmanaged(rw_txn)};
-            db::PooledCursor table_cursor(*tx, {table_name});
+            db::PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -351,7 +351,7 @@ TEST_CASE("RWTxn") {
             ::mdbx::error::success_or_throw(::mdbx_txn_commit(rw_txn));
         }
         auto ro_txn{env.start_read()};
-        db::PooledCursor cursor(ro_txn, {table_name});
+        db::PooledCursor cursor(ro_txn, {kTableName});
         CHECK(cursor.empty() == false);
     }
 
@@ -361,7 +361,7 @@ TEST_CASE("RWTxn") {
             ::mdbx::error::success_or_throw(::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &rw_txn));
 
             auto tx{db::RWTxnUnmanaged(rw_txn)};
-            db::PooledCursor table_cursor(*tx, {table_name});
+            db::PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -373,7 +373,7 @@ TEST_CASE("RWTxn") {
             ::mdbx::error::success_or_throw(::mdbx_txn_commit(rw_txn));
         }
         auto ro_txn{env.start_read()};
-        db::PooledCursor cursor(ro_txn, {table_name});
+        db::PooledCursor cursor(ro_txn, {kTableName});
         CHECK(cursor.empty() == false);
     }
 }
@@ -384,9 +384,9 @@ TEST_CASE("Cursor walk") {
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
 
-    static const char* table_name{"GeneticCode"};
+    static const char* kTableName{"GeneticCode"};
 
-    db::PooledCursor table_cursor(txn, {table_name});
+    db::PooledCursor table_cursor(txn, {kTableName});
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
@@ -414,7 +414,7 @@ TEST_CASE("Cursor walk") {
         REQUIRE(table_cursor.empty() == false);
 
         // Rebind cursor so its position is undefined
-        table_cursor.bind(txn, {table_name});
+        table_cursor.bind(txn, {kTableName});
         REQUIRE(table_cursor.eof() == true);
 
         // read entire table forward
@@ -423,14 +423,14 @@ TEST_CASE("Cursor walk") {
         data_map.clear();
 
         // read entire table backwards
-        table_cursor.bind(txn, {table_name});
-        cursor_for_each(table_cursor, save_all_data_map, CursorMoveDirection::Reverse);
+        table_cursor.bind(txn, {kTableName});
+        cursor_for_each(table_cursor, save_all_data_map, CursorMoveDirection::kReverse);
         CHECK(data_map == kGeneticCode);
         data_map.clear();
 
         // Ensure the order is reversed
-        table_cursor.bind(txn, {table_name});
-        cursor_for_each(table_cursor, save_all_data_vec, CursorMoveDirection::Reverse);
+        table_cursor.bind(txn, {kTableName});
+        cursor_for_each(table_cursor, save_all_data_vec, CursorMoveDirection::kReverse);
         CHECK(data_vec.back().second == kGeneticCode.at("AAA"));
 
         // late start
@@ -512,7 +512,7 @@ TEST_CASE("Cursor walk") {
 
         // reverse read
         table_cursor.to_last();
-        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/4, CursorMoveDirection::Reverse);
+        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/4, CursorMoveDirection::kReverse);
         REQUIRE(data_map.size() == 4);
         CHECK(data_map.at("UUA") == "Leucine");
         CHECK(data_map.at("UUC") == "Phenylalanine");
@@ -551,7 +551,7 @@ TEST_CASE("Cursor walk") {
         }
 
         // Erase all records in forward order
-        table_cursor.bind(txn, {table_name});
+        table_cursor.bind(txn, {kTableName});
         cursor_erase(table_cursor, {});
         REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
@@ -565,8 +565,8 @@ TEST_CASE("Cursor walk") {
         set_key[0] = 'X';
         set_key[1] = 'X';
         set_key[2] = 'X';
-        table_cursor.bind(txn, {table_name});
-        cursor_erase(table_cursor, set_key, CursorMoveDirection::Reverse);
+        table_cursor.bind(txn, {kTableName});
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::kReverse);
         REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
@@ -578,7 +578,7 @@ TEST_CASE("Cursor walk") {
         set_key[0] = 'C';
         set_key[1] = 'A';
         set_key[2] = 'A';
-        cursor_erase(table_cursor, set_key, CursorMoveDirection::Reverse);
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::kReverse);
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.begin()->second == "Glutamine");
 
@@ -586,7 +586,7 @@ TEST_CASE("Cursor walk") {
         set_key[0] = 'U';
         set_key[1] = 'A';
         set_key[2] = 'A';
-        cursor_erase(table_cursor, set_key, CursorMoveDirection::Forward);
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::kForward);
         data_map.clear();
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.rbegin()->second == "Valine");

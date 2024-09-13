@@ -23,11 +23,13 @@ namespace silkworm::snapshots {
 //! The snapshot category corresponding to the snapshot file type
 //! @remark item names do NOT follow Google style to obtain the tag used in file names from magic_enum::enum_name
 //! @see SnapshotPath#build_filename
+// NOLINTBEGIN(readability-identifier-naming)
 enum SnapshotType : uint8_t {
     headers = 0,
     bodies = 1,
     transactions = 2,
     transactions_to_block = 3,
 };
+// NOLINTEND(readability-identifier-naming)
 
 }  // namespace silkworm::snapshots

@@ -149,7 +149,7 @@ size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void
             success_or_throw(rlp::decode(encoded_header, header));
             process_func(std::move(header));
         },
-        db::CursorMoveDirection::Forward);
+        db::CursorMoveDirection::kForward);
 
     return count;
 }
@@ -446,7 +446,7 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
             // invoke handler
             process_func(block);
         },
-        db::CursorMoveDirection::Forward);
+        db::CursorMoveDirection::kForward);
 
     return count;
 }

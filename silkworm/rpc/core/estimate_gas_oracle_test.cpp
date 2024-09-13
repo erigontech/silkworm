@@ -101,7 +101,7 @@ TEST_CASE("estimate gas") {
     const silkworm::ChainConfig& config{kMainnetConfig};
     RemoteDatabaseTest remote_db_test;
     test::BackEndMock backend;
-    auto tx = std::make_unique<db::kv::grpc::client::RemoteTransaction>(*remote_db_test.stub_,
+    auto tx = std::make_unique<db::kv::grpc::client::RemoteTransaction>(*remote_db_test.stub,
                                                                         remote_db_test.grpc_context_,
                                                                         &remote_db_test.state_cache_,
                                                                         ethdb::kv::block_provider(&backend),

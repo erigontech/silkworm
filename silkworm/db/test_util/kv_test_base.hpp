@@ -30,24 +30,25 @@ namespace silkworm::db::test_util {
 using testing::Expectation;
 using testing::Return;
 
-struct KVTestBase : public silkworm::test_util::ContextTestBase {
+class KVTestBase : public silkworm::test_util::ContextTestBase {
+  public:
     testing::Expectation expect_request_async_tx(bool ok) {
-        return expect_request_async_tx(*stub_, ok);
+        return expect_request_async_tx(*stub, ok);
     }
 
     testing::Expectation expect_request_async_statechanges(bool ok) {
-        return expect_request_async_statechanges(*stub_, ok);
+        return expect_request_async_statechanges(*stub, ok);
     }
 
-    testing::Expectation expect_request_async_tx(remote::MockKVStub& stub, bool ok) {
-        EXPECT_CALL(stub, PrepareAsyncTxRaw).WillOnce(Return(reader_writer_ptr_.release()));
+    testing::Expectation expect_request_async_tx(remote::MockKVStub& stb, bool ok) {
+        EXPECT_CALL(stb, PrepareAsyncTxRaw).WillOnce(Return(reader_writer_ptr_.release()));
         return EXPECT_CALL(reader_writer_, StartCall).WillOnce([&, ok](void* tag) {
             agrpc::process_grpc_tag(grpc_context_, tag, ok);
         });
     }
 
-    testing::Expectation expect_request_async_statechanges(remote::MockKVStub& stub, bool ok) {
-        EXPECT_CALL(stub, PrepareAsyncStateChangesRaw).WillOnce(Return(statechanges_reader_ptr_.release()));
+    testing::Expectation expect_request_async_statechanges(remote::MockKVStub& stb, bool ok) {
+        EXPECT_CALL(stb, PrepareAsyncStateChangesRaw).WillOnce(Return(statechanges_reader_ptr_.release()));
         return EXPECT_CALL(*statechanges_reader_, StartCall).WillOnce([&, ok](void* tag) {
             agrpc::process_grpc_tag(grpc_context_, tag, ok);
         });
@@ -58,8 +59,9 @@ struct KVTestBase : public silkworm::test_util::ContextTestBase {
     using StrictMockKVStateChangesAsyncReader = rpc::test::StrictMockAsyncReader<remote::StateChangeBatch>;
 
     //! Mocked stub of gRPC KV interface
-    std::unique_ptr<StrictMockKVStub> stub_{std::make_unique<StrictMockKVStub>()};
+    std::unique_ptr<StrictMockKVStub> stub{std::make_unique<StrictMockKVStub>()};
 
+  protected:
     //! Mocked reader/writer for Tx bidi streaming RPC of gRPC KV interface
     std::unique_ptr<StrictMockKVTxAsyncReaderWriter> reader_writer_ptr_{
         std::make_unique<StrictMockKVTxAsyncReaderWriter>()};

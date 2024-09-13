@@ -39,7 +39,7 @@ struct RemoteTransactionTest : db::test_util::KVTestBase {
     api::CoherentStateCache state_cache_;
 
   public:
-    RemoteTransaction remote_tx{*stub_,
+    RemoteTransaction remote_tx{*stub,
                                 grpc_context_,
                                 &state_cache_,
                                 {},
@@ -446,7 +446,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_get", "[db][k
     };
 
     rpc::test::StrictMockAsyncResponseReader<proto::DomainGetReply> reader;
-    EXPECT_CALL(*stub_, AsyncDomainGetRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub, AsyncDomainGetRaw).WillOnce(testing::Return(&reader));
 
     api::DomainPointResult result;
 
@@ -489,7 +489,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_seek", "[db]
     };
 
     rpc::test::StrictMockAsyncResponseReader<proto::HistorySeekReply> reader;
-    EXPECT_CALL(*stub_, AsyncHistorySeekRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub, AsyncHistorySeekRaw).WillOnce(testing::Return(&reader));
 
     api::HistoryPointResult result;
 
@@ -541,7 +541,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
     SECTION("throw on error") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillOnce(Return(&reader));
+        EXPECT_CALL(*stub, AsyncIndexRangeRaw).WillOnce(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call fails
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::IndexRangeReply{}));
         // Execute the test: trying to *use* index_range lazy result should throw
@@ -550,7 +550,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
     SECTION("success: empty") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({}, /*has_more*/ false)));
@@ -561,7 +561,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
     SECTION("success: one page") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({19}, /*has_more*/ false)));
@@ -584,7 +584,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
         // 5. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncIndexRangeRaw).WillRepeatedly(Return(&reader));
         // 6. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_index_range_reply({1, 2, 3}, /*has_more*/ true)))
@@ -637,7 +637,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
     SECTION("throw on error") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillOnce(Return(&reader));
+        EXPECT_CALL(*stub, AsyncHistoryRangeRaw).WillOnce(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call fails
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::Pairs{}));
         // Execute the test: trying to *use* index_range lazy result should throw
@@ -646,7 +646,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
     SECTION("success: empty") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({}, /*has_more*/ false)));
@@ -657,7 +657,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
     SECTION("success: one page") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1}, /*has_more*/ false)));
@@ -680,7 +680,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
         // 5. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
         // 6. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1, kv2}, /*has_more*/ true)))
@@ -723,7 +723,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
     SECTION("throw on error") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillOnce(Return(&reader));
+        EXPECT_CALL(*stub, AsyncDomainRangeRaw).WillOnce(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call fails
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::Pairs{}));
         // Execute the test: trying to *use* index_range lazy result should throw
@@ -732,7 +732,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
     SECTION("success: empty") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({}, /*has_more*/ false)));
@@ -743,7 +743,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
     SECTION("success: one page") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1}, /*has_more*/ false)));
@@ -766,7 +766,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
         // 5. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        EXPECT_CALL(*stub, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
         // 6. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1, kv2}, /*has_more*/ true)))

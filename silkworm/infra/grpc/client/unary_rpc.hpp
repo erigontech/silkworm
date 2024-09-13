@@ -52,30 +52,30 @@ class UnaryRpc<Async> {
   private:
     template <typename Dispatcher>
     struct Call {
-        UnaryRpc& self_;
-        const Request& request_;
-        [[no_unique_address]] Dispatcher dispatcher_;
+        UnaryRpc& self;
+        const Request& request;
+        [[no_unique_address]] Dispatcher dispatcher;
 
       public:
         template <typename Op>
         void operator()(Op& op) {
             SILK_TRACE << "UnaryRpc::initiate " << this;
-            self_.reader_ = agrpc::request(Async, self_.stub_, self_.context_, request_, self_.grpc_context_);
-            agrpc::finish(self_.reader_, self_.reply_, self_.status_, boost::asio::bind_executor(self_.grpc_context_, std::move(op)));
+            self.reader_ = agrpc::request(Async, self.stub_, self.context_, request, self.grpc_context_);
+            agrpc::finish(self.reader_, self.reply_, self.status_, boost::asio::bind_executor(self.grpc_context_, std::move(op)));
         }
 
         template <typename Op>
         void operator()(Op& op, bool /*ok*/) {
-            dispatcher_.dispatch(std::move(op), detail::DoneTag{});
+            dispatcher.dispatch(std::move(op), detail::DoneTag{});
         }
 
         template <typename Op>
         void operator()(Op& op, detail::DoneTag) {
-            SILK_DEBUG << "UnaryRpc::completed " << self_.status_;
-            if (self_.status_.ok()) {
-                op.complete({}, std::move(self_.reply_));
+            SILK_DEBUG << "UnaryRpc::completed " << self.status_;
+            if (self.status_.ok()) {
+                op.complete({}, std::move(self.reply_));
             } else {
-                op.complete(make_error_code(self_.status_.error_code(), self_.status_.error_message()), {});
+                op.complete(make_error_code(self.status_.error_code(), self.status_.error_message()), {});
             }
         }
     };

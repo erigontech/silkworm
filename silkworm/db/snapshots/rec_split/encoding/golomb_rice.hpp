@@ -108,7 +108,7 @@ class GolombRiceVector {
 
         GolombRiceVector build() {
             data_.resize(data_.size());
-            return GolombRiceVector{std::move(data)};
+            return GolombRiceVector{std::move(data_)};
         }
 
         void append_unary(uint32_t unary) {

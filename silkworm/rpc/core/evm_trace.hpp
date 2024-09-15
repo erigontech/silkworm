@@ -89,10 +89,10 @@ struct TraceMemory {
 };
 
 struct TraceEx {
+    int64_t used{0};
     std::optional<TraceMemory> memory;
     std::vector<std::string> stack;
     std::optional<TraceStorage> storage;
-    int64_t used{0};
 };
 
 struct VmTrace;
@@ -153,11 +153,6 @@ class VmTraceTracer : public silkworm::EvmTracer {
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
   private:
-    void fill_call_gas_info(TraceOp& trace_op,
-                            const evmone::ExecutionState& execution_state,
-                            const intx::uint256* stack_top,
-                            int stack_height,
-                            const silkworm::IntraBlockState& intra_block_state);
 
     VmTrace& vm_trace_;
     std::int32_t transaction_index_;
@@ -167,7 +162,6 @@ class VmTraceTracer : public silkworm::EvmTracer {
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<int64_t> start_gas_;
     std::stack<TraceMemory> trace_memory_stack_;
-    std::optional<FixCallGasInfo> fix_call_gas_info_;
     std::optional<uint8_t> last_opcode_;
 };
 

@@ -153,7 +153,6 @@ class VmTraceTracer : public silkworm::EvmTracer {
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
   private:
-
     VmTrace& vm_trace_;
     std::int32_t transaction_index_;
     std::stack<std::string> index_prefix_;

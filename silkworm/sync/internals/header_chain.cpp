@@ -362,7 +362,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
             if (target_block_) {                // we are syncing to a specific block
                 skeleton_condition_ = "near the top";
                 auto request_message = std::make_shared<OutboundGetBlockHeaders>();
-                request_message->packet().requestId = generate_request_id();
+                request_message->packet().request_id = generate_request_id();
                 request_message->packet().request = {{top}, kMaxLen, 0, true};  // request top header only
                 return request_message;
             }
@@ -382,7 +382,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
 
     auto request_message = std::make_shared<OutboundGetBlockHeaders>();
     auto& packet = request_message->packet();
-    packet.requestId = generate_request_id();
+    packet.request_id = generate_request_id();
     packet.request.origin = {highest_in_db_ + kStride};
     packet.request.amount = length;
     packet.request.skip = length > 1 ? kStride - 1 : 0;
@@ -469,7 +469,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
 
             auto request_message = send_penalties;
             auto& packet = request_message->packet();
-            packet.requestId = generate_request_id();
+            packet.request_id = generate_request_id();
             packet.request = {{anchor->block_height},  // requesting from origin=block_height-1 make debugging difficult
                               kMaxLen,
                               0,
@@ -517,7 +517,7 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::save_external_announce(Hash 
     if (has_link(hash)) return std::nullopt;  // we already have this link, no need to request it
 
     GetBlockHeadersPacket66 request;
-    request.requestId = Singleton<RandomNumber>::instance().generate_one();
+    request.request_id = Singleton<RandomNumber>::instance().generate_one();
     request.request.origin = {hash};
     request.request.amount = 1;
     request.request.skip = 0;
@@ -545,12 +545,12 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
     }
 
     if (anchor == nullptr) {
-        log::Trace() << "[WARNING] HeaderChain: failed restoring timestamp due to request nack, requestId="
-                     << packet.requestId;
+        log::Trace() << "[WARNING] HeaderChain: failed restoring timestamp due to request nack, request_id="
+                     << packet.request_id;
         return;  // not found
     }
 
-    log::Trace() << "[INFO] HeaderChain: restoring timestamp due to request nack, requestId=" << packet.requestId;
+    log::Trace() << "[INFO] HeaderChain: restoring timestamp due to request nack, request_id=" << packet.request_id;
 
     anchor_queue_.update(anchor, [&](auto& anchor_) { anchor_->restore_timestamp(); });
 }
@@ -577,7 +577,7 @@ bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
     });
 }
 
-std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64_t requestId, const PeerId& peer_id) {
+std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64_t request_id, const PeerId& peer_id) {
     bool request_more_headers = false;
 
     if (headers.empty()) {
@@ -589,9 +589,9 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
     statistics_.received_items += headers.size();
 
     if (headers.begin()->number < top_seen_height_ &&  // an old header announcement?
-        !is_valid_request_id(requestId)) {             // anyway is not requested by us...
+        !is_valid_request_id(request_id)) {            // anyway is not requested by us...
         statistics_.reject_causes.not_requested += headers.size();
-        SILK_TRACE << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
+        SILK_TRACE << "Rejecting message with reqId=" << request_id << " and first block=" << headers.begin()->number;
         return {Penalty::kNoPenalty, request_more_headers};
     }
 

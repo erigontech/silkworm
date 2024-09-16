@@ -23,7 +23,7 @@ namespace silkworm {
 using GetBlockBodiesPacket = std::vector<Hash>;
 
 struct GetBlockBodiesPacket66 {  // eth/66 version
-    uint64_t requestId{0};
+    uint64_t request_id{0};
     GetBlockBodiesPacket request;
 };
 
@@ -38,13 +38,13 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const GetBlockBodiesPacket66& packet) {
-    os << "reqId=" << packet.requestId;
+    os << "reqId=" << packet.request_id;
 
-    if (packet.request.size() == 1)
+    if (packet.request.size() == 1) {
         os << " hash=" << to_hex(packet.request[0]);
-    else
+    } else {
         os << " requested=" << packet.request.size() << " block hashes";
-
+    }
     return os;
 }
 

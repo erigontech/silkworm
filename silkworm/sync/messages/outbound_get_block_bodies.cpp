@@ -71,7 +71,7 @@ std::vector<PeerId> OutboundGetBlockBodies::send_packet(SentryClient& sentry) {
 
     auto peers = sentry.send_message_by_min_block(*this, min_block_, 0);
 
-    // SILK_TRACE << "Received sentry result of OutboundGetBlockBodies reqId=" << packet_.requestId << ": "
+    // SILK_TRACE << "Received sentry result of OutboundGetBlockBodies reqId=" << packet_.request_id << ": "
     //            << std::to_string(peers.size()) + " peer(s)";
 
     return peers;

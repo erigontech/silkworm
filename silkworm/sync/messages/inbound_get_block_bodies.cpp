@@ -43,7 +43,7 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     BodyRetrieval body_retrieval(db);
 
     BlockBodiesPacket66 reply;
-    reply.requestId = packet_.requestId;
+    reply.request_id = packet_.request_id;
     reply.request = body_retrieval.recover(packet_.request);
 
     if (reply.request.empty()) {
@@ -64,7 +64,7 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     }
 }
 
-uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }
+uint64_t InboundGetBlockBodies::reqId() const { return packet_.request_id; }
 
 std::string InboundGetBlockBodies::content() const {
     std::stringstream content;

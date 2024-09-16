@@ -143,7 +143,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         // accepting
         PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
-        response_packet.requestId = packet.requestId;
+        response_packet.request_id = packet.request_id;
         response_packet.request.push_back(block1);
 
         auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
@@ -226,7 +226,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
-        response_packet.requestId = packet.requestId;       // correct request-id
+        response_packet.request_id = packet.request_id;     // correct request-id
         response_packet.request.push_back(block1tampered);  // wrong body
 
         [[maybe_unused]] auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
@@ -265,7 +265,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         // accepting
         PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
-        response_packet.requestId = packet.requestId;
+        response_packet.request_id = packet.request_id;
         response_packet.request.push_back(block1);
 
         bs.accept_requested_bodies(response_packet, peer_id);
@@ -309,7 +309,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
-        response_packet.requestId = packet.requestId - 1;  // simulate response to prev request
+        response_packet.request_id = packet.request_id - 1;  // simulate response to prev request
         response_packet.request.push_back(block1);
 
         auto penalty = bs.accept_requested_bodies(response_packet, peer_id);

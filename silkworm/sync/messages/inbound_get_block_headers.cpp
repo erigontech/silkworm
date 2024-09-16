@@ -43,7 +43,7 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
     HeaderRetrieval header_retrieval(db);
 
     BlockHeadersPacket66 reply;
-    reply.requestId = packet_.requestId;
+    reply.request_id = packet_.request_id;
     if (holds_alternative<Hash>(packet_.request.origin)) {
         reply.request = header_retrieval.recover_by_hash(get<Hash>(packet_.request.origin), packet_.request.amount,
                                                          packet_.request.skip, packet_.request.reverse);
@@ -71,7 +71,7 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
     }
 }
 
-uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }
+uint64_t InboundGetBlockHeaders::reqId() const { return packet_.request_id; }
 
 std::string InboundGetBlockHeaders::content() const {
     std::stringstream content;

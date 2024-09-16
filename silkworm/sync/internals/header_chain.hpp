@@ -90,7 +90,7 @@ class HeaderChain {
     // core functionalities: process receiving headers
     // when a remote peer satisfy our request we receive one or more headers that will be processed
     using RequestMoreHeaders = bool;
-    std::tuple<Penalty, RequestMoreHeaders> accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&);
+    std::tuple<Penalty, RequestMoreHeaders> accept_headers(const std::vector<BlockHeader>&, uint64_t request_id, const PeerId&);
 
     // core functionalities: process header announcement
     std::optional<GetBlockHeadersPacket66> save_external_announce(Hash hash);

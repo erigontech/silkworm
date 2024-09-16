@@ -40,7 +40,7 @@ void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, 
     }
 
     // Save the headers
-    auto [penalty, requestMoreHeaders] = hc.accept_headers(packet_.request, packet_.requestId, peer_id_);
+    auto [penalty, requestMoreHeaders] = hc.accept_headers(packet_.request, packet_.request_id, peer_id_);
 
     // Reply
     if (penalty != Penalty::kNoPenalty) {
@@ -61,7 +61,7 @@ void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, 
     }
 }
 
-uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }
+uint64_t InboundBlockHeaders::reqId() const { return packet_.request_id; }
 
 std::string InboundBlockHeaders::content() const {
     std::stringstream content;

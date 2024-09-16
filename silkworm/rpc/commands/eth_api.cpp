@@ -464,6 +464,8 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
             const auto ommers = block_with_hash->block.ommers.size();
             reply = make_json_content(request, to_quantity(ommers));
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request, nullptr);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

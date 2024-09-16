@@ -58,7 +58,7 @@ if(NOT SILKWORM_CORE_ONLY)
       common/snapshot_options.cpp
       common/snapshot_options.hpp
   )
-  set(SILKWORM_LIBRARIES silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
+  set(SILKWORM_LIBRARIES silkworm_node cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
   add_executable(silkworm "${SILKWORM_CMD_SRC}")
   target_link_libraries(silkworm PRIVATE ${SILKWORM_LIBRARIES})
 

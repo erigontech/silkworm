@@ -37,7 +37,6 @@
 #include <silkworm/node/node.hpp>
 #include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/sentry_client_factory.hpp>
-#include <silkworm/sync/sync.hpp>
 
 #include "common/common.hpp"
 #include "common/db_checklist.hpp"
@@ -189,7 +188,6 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
 // main
 int main(int argc, char* argv[]) {
-    using namespace boost::placeholders;
     using namespace std::chrono;
     using namespace silkworm::concurrency::awaitable_wait_for_one;
     using namespace silkworm::concurrency::awaitable_wait_for_all;
@@ -264,24 +262,7 @@ int main(int argc, char* argv[]) {
             }
         };
 
-        chainsync::Sync* chain_sync_process_ptr = nullptr;
-        std::function<BlockNum()> last_pre_validated_block = [&chain_sync_process_ptr] {
-            SILKWORM_ASSERT(chain_sync_process_ptr);
-            return chain_sync_process_ptr->last_pre_validated_block();
-        };
-
-        // Execution: the execution layer engine
-        silkworm::node::Node execution_node{
-            context_pool.any_executor(),
-            settings.node_settings,
-            sentry_client,
-            std::move(last_pre_validated_block),
-            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
-        };
-        execution::api::DirectClient& execution_client{execution_node.execution_direct_client()};
-
-        // ChainSync: the chain synchronization process based on the consensus protocol
-        chainsync::EngineRpcSettings rpc_settings{
+        chainsync::EngineRpcSettings sync_engine_rpc_settings{
             .engine_end_point = settings.rpcdaemon_settings.engine_end_point,
             .engine_ifc_log_settings = settings.rpcdaemon_settings.engine_ifc_log_settings,
             .private_api_addr = settings.rpcdaemon_settings.private_api_addr,
@@ -289,25 +270,18 @@ int main(int argc, char* argv[]) {
             .wait_mode = settings.rpcdaemon_settings.context_pool_settings.wait_mode,
             .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file,
         };
-        chainsync::Sync chain_sync_process{
+
+        silkworm::node::Node execution_node{
             context_pool.any_executor(),
-            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
-            execution_client,
+            settings.node_settings,
             sentry_client,
-            *node_settings.chain_config,
-            /* use_preverified_hashes = */ true,
-            rpc_settings};
-        chain_sync_process_ptr = &chain_sync_process;
-        // Note: temp code until chainsync::Sync becomes a part of Node
-        auto chain_sync_process_run = [&execution_node](chainsync::Sync& sync) -> Task<void> {
-            co_await execution_node.wait_for_setup();
-            co_await sync.async_run();
+            std::move(sync_engine_rpc_settings),
+            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
         };
 
         auto tasks =
             execution_node.run() &&
-            embedded_sentry_run_if_needed(sentry_server) &&
-            chain_sync_process_run(chain_sync_process);
+            embedded_sentry_run_if_needed(sentry_server);
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.any_executor()};

@@ -144,6 +144,9 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     // Validate and assign settings
 
+    node_settings.log_settings = settings.log_settings;
+    node_settings.rpcdaemon_settings = settings.rpcdaemon_settings;
+
     const size_t chaindata_page_size = node_settings.chaindata_env_config.page_size;
     if ((chaindata_page_size & (chaindata_page_size - 1)) != 0) {
         throw std::invalid_argument("--chaindata.pagesize is not a power of 2");
@@ -262,20 +265,10 @@ int main(int argc, char* argv[]) {
             }
         };
 
-        chainsync::EngineRpcSettings sync_engine_rpc_settings{
-            .engine_end_point = settings.rpcdaemon_settings.engine_end_point,
-            .engine_ifc_log_settings = settings.rpcdaemon_settings.engine_ifc_log_settings,
-            .private_api_addr = settings.rpcdaemon_settings.private_api_addr,
-            .log_verbosity = settings.log_settings.log_verbosity,
-            .wait_mode = settings.rpcdaemon_settings.context_pool_settings.wait_mode,
-            .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file,
-        };
-
         silkworm::node::Node execution_node{
             context_pool.any_executor(),
             settings.node_settings,
             sentry_client,
-            std::move(sync_engine_rpc_settings),
             chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
         };
 

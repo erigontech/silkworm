@@ -48,7 +48,6 @@ class NodeImpl final {
         boost::asio::any_io_executor executor,
         Settings& settings,
         SentryClientPtr sentry_client,
-        chainsync::EngineRpcSettings sync_engine_rpc_settings,
         mdbx::env chaindata_env);
 
     NodeImpl(const NodeImpl&) = delete;
@@ -94,10 +93,23 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static auto make_execution_server_settings() {
+static rpc::ServerSettings make_execution_server_settings() {
     return rpc::ServerSettings{
         .address_uri = "localhost:9092",
         .context_pool_settings = {.num_contexts = 1},  // just one execution context
+    };
+}
+
+static chainsync::EngineRpcSettings make_sync_engine_rpc_settings(
+    const rpc::DaemonSettings& rpcdaemon_settings,
+    log::Level log_verbosity) {
+    return chainsync::EngineRpcSettings{
+        .engine_end_point = rpcdaemon_settings.engine_end_point,
+        .engine_ifc_log_settings = rpcdaemon_settings.engine_ifc_log_settings,
+        .private_api_addr = rpcdaemon_settings.private_api_addr,
+        .log_verbosity = log_verbosity,
+        .wait_mode = rpcdaemon_settings.context_pool_settings.wait_mode,
+        .jwt_secret_file = rpcdaemon_settings.jwt_secret_file,
     };
 }
 
@@ -116,7 +128,6 @@ NodeImpl::NodeImpl(
     boost::asio::any_io_executor executor,
     Settings& settings,
     SentryClientPtr sentry_client,
-    chainsync::EngineRpcSettings sync_engine_rpc_settings,
     mdbx::env chaindata_env)
     : settings_{settings},
       chaindata_env_{std::move(chaindata_env)},
@@ -138,7 +149,7 @@ NodeImpl::NodeImpl(
           sentry_client_,
           *settings.chain_config,
           /* use_preverified_hashes = */ true,
-          std::move(sync_engine_rpc_settings),
+          make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },
       resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_env_, sentry_client_);
@@ -213,13 +224,11 @@ Node::Node(
     boost::asio::any_io_executor executor,
     Settings& settings,
     SentryClientPtr sentry_client,
-    chainsync::EngineRpcSettings sync_engine_rpc_settings,
     mdbx::env chaindata_env)
     : p_impl_(std::make_unique<NodeImpl>(
           std::move(executor),
           settings,
           std::move(sentry_client),
-          std::move(sync_engine_rpc_settings),
           std::move(chaindata_env))) {}
 
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom

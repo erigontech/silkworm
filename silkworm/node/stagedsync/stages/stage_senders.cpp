@@ -302,13 +302,16 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         // Start from first block and read all in sequence
         for (auto current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
-            auto current_hash = db::read_canonical_header_hash(txn, current_block_num);
+            const auto current_hash = db::read_canonical_header_hash(txn, current_block_num);
             if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
                                                 "Canonical hash at height " + std::to_string(current_block_num) + " not found");
+            const auto block_header = data_model.read_header(current_block_num, *current_hash);
+            if (!block_header) throw StageError(Stage::Result::kBadChainSequence,
+                                                "Canonical header at height " + std::to_string(current_block_num) + " not found");
             BlockBody block_body;
-            auto found = data_model.read_body(*current_hash, current_block_num, block_body);
+            const auto found = data_model.read_body(*current_hash, current_block_num, block_body);
             if (!found) throw StageError(Stage::Result::kBadChainSequence,
-                                         "Canonical block at height " + std::to_string(current_block_num) + " not found");
+                                         "Canonical body at height " + std::to_string(current_block_num) + " not found");
 
             // Every 1024 blocks check if the SignalHandler has been triggered
             if ((current_block_num % 1024 == 0) && is_stopping()) {
@@ -322,7 +325,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
             }
 
             total_collected_senders += block_body.transactions.size();
-            success_or_throw(add_to_batch(current_block_num, *current_hash, block_body.transactions));
+            success_or_throw(add_to_batch(current_block_num, block_header->timestamp, *current_hash, block_body.transactions));
 
             // Process batch in parallel if max size has been reached
             if (batch_->size() >= max_batch_size_) {
@@ -374,13 +377,12 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result Senders::add_to_batch(BlockNum block_num, const Hash& block_hash, const std::vector<Transaction>& transactions) {
+Stage::Result Senders::add_to_batch(BlockNum block_num, BlockTime block_timestamp, const Hash& block_hash, const std::vector<Transaction>& transactions) {
     if (is_stopping()) {
         return Stage::Result::kAborted;
     }
 
-    // We're only interested in revisions up to London, so it's OK to not detect time-based forks.
-    const evmc_revision rev{chain_config_.revision(block_num, /*block_time=*/0)};
+    const evmc_revision rev{chain_config_.revision(block_num, block_timestamp)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
 

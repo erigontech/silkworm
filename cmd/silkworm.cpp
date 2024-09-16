@@ -41,8 +41,8 @@
 #include "common/node_options.hpp"
 #include "common/rpcdaemon_options.hpp"
 #include "common/sentry_options.hpp"
-#include "common/settings.hpp"
 #include "common/shutdown_signal.hpp"
+#include "common/snapshot_options.hpp"
 
 namespace sw_db = silkworm::db;
 namespace sw_log = silkworm::log;
@@ -52,13 +52,7 @@ using namespace silkworm;
 using silkworm::BlockNum;
 using silkworm::DataDirectory;
 using silkworm::human_size;
-using silkworm::cmd::common::add_logging_options;
-using silkworm::cmd::common::add_node_options;
-using silkworm::cmd::common::add_option_data_dir;
-using silkworm::cmd::common::add_rpcdaemon_options;
-using silkworm::cmd::common::add_sentry_options;
 using silkworm::cmd::common::ShutdownSignal;
-using silkworm::cmd::common::SilkwormSettings;
 
 const char* current_exception_name() {
 #ifdef WIN32
@@ -80,8 +74,15 @@ struct PruneModeValidator : public CLI::Validator {
     }
 };
 
-void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormSettings& settings) {
+void add_rpc_server_settings(CLI::App& cli, rpc::ServerSettings& server_settings) {
+    using namespace silkworm::cmd::common;
+    add_option_private_api_address(cli, server_settings.address_uri);
+    add_context_pool_options(cli, server_settings.context_pool_settings);
+}
+
+void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Settings& settings) {
     using namespace silkworm::cmd;
+    using namespace silkworm::cmd::common;
 
     std::filesystem::path data_dir_path;
     add_option_data_dir(cli, data_dir_path);
@@ -91,6 +92,11 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     // Sentry settings
     add_sentry_options(cli, settings.sentry_settings);
+
+    add_rpc_server_settings(cli, settings.server_settings);
+
+    // Snapshot&Bittorrent options
+    add_snapshot_options(cli, settings.snapshot_settings);
 
     // Prune options
     std::string prune_mode;
@@ -140,14 +146,11 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     // Validate and assign settings
 
-    // node::Settings
+    // node::NodeSettings
     auto& node_settings = settings.node_settings;
 
     const auto build_info = silkworm_get_buildinfo();
     node_settings.build_info = make_application_info(build_info);
-
-    node_settings.log_settings = settings.log_settings;
-    node_settings.rpcdaemon_settings = settings.rpcdaemon_settings;
 
     const size_t chaindata_page_size = node_settings.chaindata_env_config.page_size;
     if ((chaindata_page_size & (chaindata_page_size - 1)) != 0) {
@@ -187,7 +190,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                                 beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
     // snapshots::SnapshotSettings
-    auto& snapshot_settings = node_settings.snapshot_settings;
+    auto& snapshot_settings = settings.snapshot_settings;
     snapshot_settings.repository_dir = node_settings.data_directory->snapshots().path();
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 
@@ -195,7 +198,6 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     settings.sentry_settings.client_id = sentry::Sentry::make_client_id(*build_info);
     settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
     settings.sentry_settings.network_id = node_settings.network_id;
-    settings.node_settings.sentry_settings = settings.sentry_settings;
 }
 
 // main
@@ -222,7 +224,7 @@ int main(int argc, char* argv[]) {
     cli.get_formatter()->column_width(50);
 
     try {
-        SilkwormSettings settings;
+        node::Settings settings;
         parse_silkworm_command_line(cli, argc, argv, settings);
 
         // Initialize logging with cli settings
@@ -243,12 +245,12 @@ int main(int argc, char* argv[]) {
         mdbx::env_managed chaindata_env = db::open_env(settings.node_settings.chaindata_env_config);
 
         silkworm::rpc::ClientContextPool context_pool{
-            settings.node_settings.server_settings.context_pool_settings,
+            settings.server_settings.context_pool_settings,
         };
 
         silkworm::node::Node execution_node{
             context_pool,
-            settings.node_settings,
+            settings,
             chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
         };
 

@@ -70,6 +70,7 @@ class NodeImpl final {
     Task<void> embedded_sentry_run_if_needed();
 
     Settings& settings_;
+    ChainConfig& chain_config_;
 
     mdbx::env chaindata_env_;
 
@@ -141,36 +142,37 @@ NodeImpl::NodeImpl(
     Settings& settings,
     mdbx::env chaindata_env)
     : settings_{settings},
+      chain_config_{*settings_.node_settings.chain_config},
       chaindata_env_{std::move(chaindata_env)},
       execution_engine_{
           execution_context_,
-          settings_,
-          make_bodies_stage_factory(*settings_.chain_config, *this),
+          settings_.node_settings,
+          make_bodies_stage_factory(chain_config_, *this),
           db::RWAccess{chaindata_env_},
       },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
-      snapshot_sync_{settings.snapshot_settings, settings.chain_config->chain_id, chaindata_env_, settings_.data_directory->temp().path(), execution_engine_.stage_scheduler()},
+      snapshot_sync_{settings.snapshot_settings, chain_config_.chain_id, chaindata_env_, settings_.node_settings.data_directory->temp().path(), execution_engine_.stage_scheduler()},
       sentry_{
           sentry::SentryClientFactory::make_sentry(
               std::move(settings.sentry_settings),
-              settings.remote_sentry_addresses,
+              settings.node_settings.remote_sentry_addresses,
               context_pool.as_executor_pool(),
               context_pool,
-              make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, *settings.chain_config))},
+              make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, chain_config_))},
       chain_sync_{
           context_pool.any_executor(),
           chaindata_env_,
           execution_direct_client_,
           std::get<0>(sentry_),
-          *settings.chain_config,
+          chain_config_,
           /* use_preverified_hashes = */ true,
           make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },
-      resource_usage_log_{*settings_.data_directory} {
-    backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_env_, std::get<0>(sentry_));
-    backend_->set_node_name(settings_.build_info.node_name);
+      resource_usage_log_{*settings_.node_settings.data_directory} {
+    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, &chaindata_env_, std::get<0>(sentry_));
+    backend_->set_node_name(settings_.node_settings.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
 }
@@ -227,13 +229,14 @@ Task<void> NodeImpl::start_resource_usage_log() {
 
 Task<void> NodeImpl::start_execution_log_timer() {
     // Run Asio context in settings for execution timers // TODO(canepat) we need a better solution
+    auto& asio_context = settings_.node_settings.asio_context;
     using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-    auto asio_guard = std::make_unique<asio_guard_type>(settings_.asio_context.get_executor());
+    auto asio_guard = std::make_unique<asio_guard_type>(asio_context.get_executor());
 
-    auto run = [this] {
+    auto run = [&asio_context] {
         log::set_thread_name("ctx-log-tmr");
         log::Trace("Asio Timers", {"state", "started"});
-        settings_.asio_context.run();
+        asio_context.run();
         log::Trace("Asio Timers", {"state", "stopped"});
     };
     auto stop = [&asio_guard] { asio_guard.reset(); };

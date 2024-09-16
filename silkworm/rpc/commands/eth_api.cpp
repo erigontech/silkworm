@@ -921,6 +921,8 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, block_number_for_gas_limit);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request, to_quantity(0));
     } catch (const rpc::EstimateGasException& e) {
         SILK_ERROR << "EstimateGasException: code: " << e.error_code() << " message: " << e.message() << " processing request: " << request.dump();
         if (e.data().empty()) {

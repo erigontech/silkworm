@@ -301,7 +301,7 @@ CallResult EVM::deduct_entry_fees(const Transaction& txn) const {
         const auto owned_funds = state_.get_balance(*txn.sender());
         if (owned_funds < maximum_cost + txn.value) {
             std::string from = address_to_hex(*txn.sender());
-            std::string msg = "insufficient funds for gas * price + value: address " + from + " has " + intx::to_string(owned_funds) + " requires " + intx::to_string(maximum_cost + txn.value);
+            std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
             return {.status = EVMC_INSUFFICIENT_BALANCE, .error_message = msg};
         }
         state_.subtract_from_balance(*txn.sender(), required_funds);

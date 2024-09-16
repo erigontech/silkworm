@@ -40,6 +40,7 @@ struct CallResult {
     uint64_t gas_left{0};
     uint64_t gas_refund{0};
     Bytes data;
+    std::string error_message;
 };
 
 class EvmTracer {
@@ -79,8 +80,7 @@ using TransferFunc = void(IntraBlockState& state, const evmc::address& sender, c
 // See consensus.Transfer in Erigon
 inline void standard_transfer(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
                               const intx::uint256& amount, bool bailout) {
-    // TODO(yperbasis) why is the bailout condition different from Erigon?
-    if (!bailout || state.get_balance(sender) >= amount) {
+    if (!bailout) {
         state.subtract_from_balance(sender, amount);
     }
     state.add_to_balance(recipient, amount);
@@ -92,7 +92,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool gas_bailout = false) noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout = false) noexcept;
 
     ~EVM();
 
@@ -120,6 +120,8 @@ class EVM {
 
     gsl::not_null<TransferFunc*> transfer{standard_transfer};
 
+    CallResult deduct_entry_fees(const Transaction& txn) const;
+
   private:
     friend class EvmHost;
 
@@ -135,12 +137,10 @@ class EVM {
     gsl::owner<evmone::ExecutionState*> acquire_state() const noexcept;
     void release_state(gsl::owner<evmone::ExecutionState*> state) const noexcept;
 
-    bool validate_gas_and_funds(const evmc_message& message) const;
-
     const Block& block_;
     IntraBlockState& state_;
     const ChainConfig& config_;
-    bool gas_bailout_;
+    bool bailout_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;

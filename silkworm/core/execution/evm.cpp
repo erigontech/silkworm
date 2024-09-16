@@ -59,12 +59,12 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
-EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool gas_bailout) noexcept
+EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout) noexcept
     : beneficiary{block.header.beneficiary},
       block_{block},
       state_{state},
       config_{config},
-      gas_bailout_{gas_bailout},
+      bailout_{bailout},
       evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 {}
 
@@ -89,10 +89,6 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         .code_address = destination,
     };
 
-    if (!validate_gas_and_funds(message)) {
-        return CallResult { .status = EVMC_INSUFFICIENT_BALANCE};
-    }
-
     evmc::Result res{contract_creation ? create(message) : call(message)};
 
     const auto gas_left = static_cast<uint64_t>(res.gas_left);
@@ -104,8 +100,8 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     evmc::Result res{EVMC_SUCCESS, message.gas, 0};
 
     auto value{intx::be::load<intx::uint256>(message.value)};
-    const auto have = state_.get_balance(message.sender);
-    if (!gas_bailout_ && have < value) {
+    const auto owned_funds = state_.get_balance(message.sender);
+    if (!bailout_ && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
 
         for (auto tracer : tracers_) {
@@ -154,7 +150,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         state_.set_nonce(contract_addr, 1);
     }
 
-    transfer(state_, message.sender, contract_addr, value, gas_bailout_);
+    transfer(state_, message.sender, contract_addr, value, bailout_);
 
     const evmc_message deploy_message{
         .kind = message.depth > 0 ? message.kind : EVMC_CALL,
@@ -209,8 +205,8 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     evmc::Result res{EVMC_SUCCESS, message.gas};
 
     const auto value{intx::be::load<intx::uint256>(message.value)};
-    const auto have = state_.get_balance(message.sender);
-    if (!gas_bailout_ && message.kind != EVMC_DELEGATECALL && have < value) {
+    const auto owned_funds = state_.get_balance(message.sender);
+    if (!bailout_ && message.kind != EVMC_DELEGATECALL && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
@@ -223,7 +219,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             state_.touch(message.recipient);
         } else {
-            transfer(state_, message.sender, message.recipient, value, gas_bailout_);
+            transfer(state_, message.sender, message.recipient, value, bailout_);
         }
     }
 
@@ -274,58 +270,42 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
-bool EVM::validate_gas_and_funds(const Transaction& txn, const evmc_message& message) const {
+CallResult EVM::deduct_entry_fees(const Transaction& txn) const {
+    const evmc_revision rev{revision()};
+    const intx::uint256 base_fee_per_gas{block().header.base_fee_per_gas.value_or(0)};
 
     // EIP-1559 normal gas cost
-    intx::uint256 want;
+    intx::uint256 required_funds;
     if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
         // This method should be called after check (max_fee and base_fee) present in pre_check() method
         const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                         : txn.max_priority_fee_per_gas};
-        want = txn.gas_limit * effective_gas_price;
+        required_funds = txn.gas_limit * effective_gas_price;
     } else {
-        want = 0;
+        required_funds = 0;
     }
 
     // EIP-4844 blob gas cost (calc_data_fee)
-    if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
+    if (block().header.blob_gas_used && rev >= EVMC_CANCUN) {
         // compute blob fee for eip-4844 data blobs if any
-        const intx::uint256 blob_gas_price{evm.block().header.blob_gas_price().value_or(0)};
-        want += txn.total_blob_gas() * blob_gas_price;
+        const intx::uint256 blob_gas_price{block().header.blob_gas_price().value_or(0)};
+        required_funds += txn.total_blob_gas() * blob_gas_price;
     }
 
-    intx::uint512 max_want = want;
-    if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
-        max_want = txn.maximum_gas_cost();
+    intx::uint512 maximum_cost = required_funds;
+    if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
+        maximum_cost = txn.maximum_gas_cost();
     }
 
-    const auto have = ibs_state_.get_balance(*txn.sender());
-    if (have < max_want + txn.value) {
+    const auto owned_funds = state_.get_balance(*txn.sender());
+    if (owned_funds < maximum_cost + txn.value) {
         Bytes data{};
         std::string from = address_to_hex(*txn.sender());
-        std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(max_want + txn.value);
-        return {std::nullopt, txn.gas_limit, data, msg, PreCheckErrorCode::kInsufficientFunds};
+        std::string msg = "insufficient funds for gas * price + value: address " + from + " has " + intx::to_string(owned_funds) + " requires " + intx::to_string(maximum_cost + txn.value);
+        return {.status = EVMC_INSUFFICIENT_BALANCE, .error_message = msg};
     }
-    ibs_state_.subtract_from_balance(*txn.sender(), want);
-
-    if(!gas_bailout_) {
-        // Call
-        if (!gas_bailout_ && message.kind != EVMC_DELEGATECALL && have < value) {
-            res.status_code = EVMC_INSUFFICIENT_BALANCE;
-            return res;
-        }
-        // Create
-        if (!gas_bailout_ && have < value) {
-            res.status_code = EVMC_INSUFFICIENT_BALANCE;
-
-            for (auto tracer : tracers_) {
-                tracer.get().on_pre_check_failed(res.raw(), message);
-            }
-
-            return res;
-        }
-    }
-    return true;
+    state_.subtract_from_balance(*txn.sender(), required_funds);
+    return {.status = EVMC_SUCCESS};
 }
 
 evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {

@@ -89,6 +89,10 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         .code_address = destination,
     };
 
+    if (!validate_gas_and_funds(message)) {
+        return CallResult { .status = EVMC_INSUFFICIENT_BALANCE};
+    }
+
     evmc::Result res{contract_creation ? create(message) : call(message)};
 
     const auto gas_left = static_cast<uint64_t>(res.gas_left);
@@ -268,6 +272,60 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     }
 
     return res;
+}
+
+bool EVM::validate_gas_and_funds(const Transaction& txn, const evmc_message& message) const {
+
+    // EIP-1559 normal gas cost
+    intx::uint256 want;
+    if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
+        // This method should be called after check (max_fee and base_fee) present in pre_check() method
+        const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                        : txn.max_priority_fee_per_gas};
+        want = txn.gas_limit * effective_gas_price;
+    } else {
+        want = 0;
+    }
+
+    // EIP-4844 blob gas cost (calc_data_fee)
+    if (evm.block().header.blob_gas_used && rev >= EVMC_CANCUN) {
+        // compute blob fee for eip-4844 data blobs if any
+        const intx::uint256 blob_gas_price{evm.block().header.blob_gas_price().value_or(0)};
+        want += txn.total_blob_gas() * blob_gas_price;
+    }
+
+    intx::uint512 max_want = want;
+    if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
+        max_want = txn.maximum_gas_cost();
+    }
+
+    const auto have = ibs_state_.get_balance(*txn.sender());
+    if (have < max_want + txn.value) {
+        Bytes data{};
+        std::string from = address_to_hex(*txn.sender());
+        std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(have) + " want " + intx::to_string(max_want + txn.value);
+        return {std::nullopt, txn.gas_limit, data, msg, PreCheckErrorCode::kInsufficientFunds};
+    }
+    ibs_state_.subtract_from_balance(*txn.sender(), want);
+
+    if(!gas_bailout_) {
+        // Call
+        if (!gas_bailout_ && message.kind != EVMC_DELEGATECALL && have < value) {
+            res.status_code = EVMC_INSUFFICIENT_BALANCE;
+            return res;
+        }
+        // Create
+        if (!gas_bailout_ && have < value) {
+            res.status_code = EVMC_INSUFFICIENT_BALANCE;
+
+            for (auto tracer : tracers_) {
+                tracer.get().on_pre_check_failed(res.raw(), message);
+            }
+
+            return res;
+        }
+    }
+    return true;
 }
 
 evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {

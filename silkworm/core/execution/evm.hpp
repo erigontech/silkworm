@@ -135,6 +135,8 @@ class EVM {
     gsl::owner<evmone::ExecutionState*> acquire_state() const noexcept;
     void release_state(gsl::owner<evmone::ExecutionState*> state) const noexcept;
 
+    bool validate_gas_and_funds(const evmc_message& message) const;
+
     const Block& block_;
     IntraBlockState& state_;
     const ChainConfig& config_;

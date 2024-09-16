@@ -29,14 +29,12 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/db/chain_head.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/node.hpp>
-#include <silkworm/sentry/eth/status_data_provider.hpp>
-#include <silkworm/sentry/sentry_client_factory.hpp>
+#include <silkworm/sentry/sentry.hpp>
 
 #include "common/common.hpp"
 #include "common/db_checklist.hpp"
@@ -85,13 +83,11 @@ struct PruneModeValidator : public CLI::Validator {
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormSettings& settings) {
     using namespace silkworm::cmd;
 
-    auto& node_settings = settings.node_settings;
-
     std::filesystem::path data_dir_path;
     add_option_data_dir(cli, data_dir_path);
 
     // Node settings
-    add_node_options(cli, node_settings);
+    add_node_options(cli, settings.node_settings);
 
     // Sentry settings
     add_sentry_options(cli, settings.sentry_settings);
@@ -144,6 +140,12 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     // Validate and assign settings
 
+    // node::Settings
+    auto& node_settings = settings.node_settings;
+
+    const auto build_info = silkworm_get_buildinfo();
+    node_settings.build_info = make_application_info(build_info);
+
     node_settings.log_settings = settings.log_settings;
     node_settings.rpcdaemon_settings = settings.rpcdaemon_settings;
 
@@ -184,9 +186,16 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
                                 beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
+    // snapshots::SnapshotSettings
     auto& snapshot_settings = node_settings.snapshot_settings;
     snapshot_settings.repository_dir = node_settings.data_directory->snapshots().path();
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
+
+    // sentry::Settings
+    settings.sentry_settings.client_id = sentry::Sentry::make_client_id(*build_info);
+    settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
+    settings.sentry_settings.network_id = node_settings.network_id;
+    settings.node_settings.sentry_settings = settings.sentry_settings;
 }
 
 // main
@@ -216,17 +225,11 @@ int main(int argc, char* argv[]) {
         SilkwormSettings settings;
         parse_silkworm_command_line(cli, argc, argv, settings);
 
-        auto& node_settings = settings.node_settings;
-
         // Initialize logging with cli settings
         sw_log::init(settings.log_settings);
         sw_log::set_thread_name("main-thread");
 
-        // Output BuildInfo
-        const auto build_info{silkworm_get_buildinfo()};
-        node_settings.build_info = make_application_info(build_info);
-
-        sw_log::Info("Silkworm", build_info_as_log_args(build_info));
+        sw_log::Info("Silkworm", build_info_as_log_args(silkworm_get_buildinfo()));
 
         // Output mdbx build info
         auto mdbx_ver{mdbx::get_version()};
@@ -235,46 +238,19 @@ int main(int argc, char* argv[]) {
                       {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
         // Prepare database for takeoff
-        cmd::common::run_db_checklist(node_settings);
+        cmd::common::run_db_checklist(settings.node_settings);
 
-        mdbx::env_managed chaindata_env = db::open_env(node_settings.chaindata_env_config);
+        mdbx::env_managed chaindata_env = db::open_env(settings.node_settings.chaindata_env_config);
 
         silkworm::rpc::ClientContextPool context_pool{
             settings.node_settings.server_settings.context_pool_settings,
         };
 
-        // Sentry: the peer-2-peer proxy server
-        settings.sentry_settings.client_id = sentry::Sentry::make_client_id(*build_info);
-        settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
-        settings.sentry_settings.network_id = node_settings.network_id;
-
-        auto chain_head_provider = [db_access = db::ROAccess{chaindata_env}] {
-            return db::read_chain_head(db_access);
-        };
-        sentry::eth::StatusDataProvider eth_status_data_provider{std::move(chain_head_provider), node_settings.chain_config.value()};
-
-        auto [sentry_client, sentry_server] = sentry::SentryClientFactory::make_sentry(
-            std::move(settings.sentry_settings),
-            settings.node_settings.remote_sentry_addresses,
-            context_pool.as_executor_pool(),
-            context_pool,
-            eth_status_data_provider.to_factory_function());
-        auto embedded_sentry_run_if_needed = [](auto server) -> Task<void> {
-            if (server) {
-                co_await server->run();
-            }
-        };
-
         silkworm::node::Node execution_node{
-            context_pool.any_executor(),
+            context_pool,
             settings.node_settings,
-            sentry_client,
             chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
         };
-
-        auto tasks =
-            execution_node.run() &&
-            embedded_sentry_run_if_needed(sentry_server);
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.any_executor()};
@@ -282,7 +258,7 @@ int main(int argc, char* argv[]) {
         // Go!
         auto run_future = boost::asio::co_spawn(
             context_pool.any_executor(),
-            std::move(tasks) || shutdown_signal.wait(),
+            execution_node.run() || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();
         sw_log::Info() << "Silkworm is now running";

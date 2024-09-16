@@ -655,7 +655,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     trace_op.op_code = op_code;
     trace_op.op_name = op_name;
     trace_op.pc = pc;
-    trace_op.trace_ex = std::make_optional<struct TraceEx>({used});
+    trace_op.trace_ex = TraceEx{used};
 
     if (op_code == OP_SELFDESTRUCT) {
         trace_op.sub = std::make_shared<VmTrace>();

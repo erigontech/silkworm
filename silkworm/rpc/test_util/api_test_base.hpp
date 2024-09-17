@@ -45,6 +45,7 @@ class JsonApiWithWorkersTestBase : public ServiceContextTestBase {
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 
+  private:
     WorkerPool workers_;
 };
 

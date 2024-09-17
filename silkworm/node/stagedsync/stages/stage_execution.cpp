@@ -103,8 +103,9 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             const auto execution_result{execute_batch(txn, max_block_num, analysis_cache, state_pool,
                                                       prune_history, prune_receipts, prune_call_traces)};
 
-            // If we return with success we must persist data
-            if (execution_result != Stage::Result::kSuccess) {
+            // If we return with success we must persist data. Though counterintuitive, we must also persist on
+            // kInvalidBlock to save good progress done so far: the subsequent unwind will remove last invalid updates
+            if (execution_result != Stage::Result::kSuccess && execution_result != Stage::Result::kInvalidBlock) {
                 throw StageError(execution_result);
             }
 
@@ -119,6 +120,11 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             auto [_, duration]{commit_stopwatch.stop()};
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
+            // If we got an invalid block, now after persisting we can exit
+            if (execution_result == Stage::Result::kInvalidBlock) {
+                ret = execution_result;
+                break;
+            }
             block_num_++;
         }
 
@@ -235,7 +241,8 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets};
             try {
                 if (const ValidationResult res = block_executor.execute_single(block, buffer, analysis_cache, state_pool); res != ValidationResult::kOk) {
-                    // Persist work done so far
+                    // Flush work done so far not to lose progress up to the previous valid block and to correctly trigger unwind
+                    // This requires to commit in Execution::forward also for kInvalidBlock: unwind will remove last invalid block updates
                     if (write_receipts) {
                         buffer.insert_receipts(block_num_, receipts);
                     }
@@ -560,7 +567,7 @@ void Execution::revert_state(ByteView key, ByteView value, db::RWCursorDupSort& 
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
                 endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
-                auto new_code_hash{plain_code_table.find(db::to_slice(code_hash_key))};
+                auto new_code_hash = plain_code_table.find(db::to_slice(code_hash_key));
                 std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.data(), kHashLength);
             }
             // cleaning up contract codes

@@ -530,7 +530,7 @@ TEST_CASE("Validator engine_newPayloadV3: patch blobGasUsed regex", "[rpc][json_
         "method":"engine_newPayloadV3",
         "params":[
             {
-                "parent_hash":"0x448aadba99a68c0c761f85d786d9aa1972af991b1cd542421c7a4f4a62987cc4",
+                "parentHash":"0x448aadba99a68c0c761f85d786d9aa1972af991b1cd542421c7a4f4a62987cc4",
                 "feeRecipient":"0x0000006916a87b82333f4245046623b23794c65c",
                 "stateRoot":"0xd34d72e16fadc36e7d1173ee3d497f7a07e3d0d2c59298653d2c40d10810aff8",
                 "receiptsRoot":"0x08794b3ff9f42df2954a0c4913b1370c2a9294f5803ce1e6ea7d92091f30762e",
@@ -567,7 +567,7 @@ TEST_CASE("Validator engine_newPayloadV3: patch gasUsed regex", "[rpc][json_rpc]
         "method":"engine_newPayloadV3",
         "params":[
             {
-                "parent_hash":"0x89524ffba439f613e30cff04611bf1e8dca0ab013e3db80af09b5d687dff1201",
+                "parentHash":"0x89524ffba439f613e30cff04611bf1e8dca0ab013e3db80af09b5d687dff1201",
                 "feeRecipient":"0x0f35b0753e261375c9a6cb44316b4bdc7e765509",
                 "stateRoot":"0x3844a42d6aca69fac803e3c891e0841242908b8e55cab1561fd7d1a417fe9b80",
                 "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",

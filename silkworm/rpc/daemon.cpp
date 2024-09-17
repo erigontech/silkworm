@@ -255,10 +255,7 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
 
     // Schedule the retrieval of Erigon data storage model as first task on the execution contexts
-    SILK_INFO << "rpc::Daemon::Daemon standalone=" << std::boolalpha << settings_.standalone;
-    if (settings_.standalone) {
-        schedule_data_format_retrieval();
-    }
+    schedule_data_format_retrieval();
 
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();

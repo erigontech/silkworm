@@ -102,8 +102,9 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             const auto execution_result{execute_batch(txn, max_block_num, analysis_cache, state_pool,
                                                       prune_history, prune_receipts, prune_call_traces)};
 
-            // If we return with success we must persist data
-            if (execution_result != Stage::Result::kSuccess) {
+            // If we return with success we must persist data. Though counterintuitive we also must persist on
+            // kInvalidBlock to save good progress done so far: the subsequent unwind will remove last invalid block
+            if (execution_result != Stage::Result::kSuccess && execution_result != Stage::Result::kInvalidBlock) {
                 throw StageError(execution_result);
             }
 
@@ -118,6 +119,11 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             auto [_, duration]{commit_stopwatch.stop()};
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
+            // If we got an invalid block, now after persisting we can exit
+            if (execution_result == Stage::Result::kInvalidBlock) {
+                ret = execution_result;
+                break;
+            }
             block_num_++;
         }
 
@@ -236,7 +242,8 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
             processor.evm().add_tracer(tracer);
 
             if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
-                // Persist work done so far
+                // Flush work done so far not to lose progress up to the previous valid block
+                // This requires to commit also for kInvalidBlock result: unwind will take care of last invalid block
                 if (block_num_ >= prune_receipts_threshold) {
                     buffer.insert_receipts(block_num_, receipts);
                 }

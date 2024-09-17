@@ -64,8 +64,8 @@ HeaderChain::HeaderChain(protocol::RuleSetPtr rule_set, std::optional<intx::uint
     }
 
     RandomNumber random(100'000'000, 1'000'000'000);
-    request_id_prefix = random.generate_one();
-    SILK_TRACE << "HeaderChain: request id prefix=" << request_id_prefix;
+    request_id_prefix_ = random.generate_one();
+    SILK_TRACE << "HeaderChain: request id prefix=" << request_id_prefix_;
 }
 
 void HeaderChain::set_target_block(BlockNum target_block) {
@@ -1048,14 +1048,14 @@ void HeaderChain::set_preverified_hashes(PreverifiedHashes& ph) {
 }
 
 uint64_t HeaderChain::generate_request_id() {
-    request_count++;
-    if (request_count >= 10000) request_count = 0;
-    return request_id_prefix * 10000 + request_count;
+    request_count_++;
+    if (request_count_ >= 10000) request_count_ = 0;
+    return request_id_prefix_ * 10000 + request_count_;
 }
 
 uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) const {
     uint64_t prefix = request_id / 10000;
-    return request_id_prefix == prefix;
+    return request_id_prefix_ == prefix;
 }
 
 const DownloadStatistics& HeaderChain::statistics() const { return statistics_; }

@@ -27,12 +27,12 @@ namespace silkworm::detail {
 
 template <typename Executor>
 struct ExecutorDispatcher {
-    Executor executor_;  // NOLINT(readability-identifier-naming)
+    Executor executor;
 
     template <typename CompletionToken, typename... Args>
     void dispatch(CompletionToken&& token, Args&&... args) {
         boost::asio::dispatch(
-            boost::asio::bind_executor(executor_,
+            boost::asio::bind_executor(executor,
                                        boost::asio::append(std::forward<CompletionToken>(token),
                                                            std::forward<Args>(args)...)));
     }

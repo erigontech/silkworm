@@ -23,13 +23,13 @@ namespace silkworm::rpc::ethdb::kv {
 
 inline db::chain::BlockProvider block_provider(ethbackend::BackEnd* backend) {
     return [backend](auto block_num, HashAsSpan hash, bool read_senders, auto& block) -> Task<bool> {
-        return backend->get_block(block_num, hash, read_senders, block);
+        co_return co_await backend->get_block(block_num, hash, read_senders, block);
     };
 }
 
 inline db::chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider(ethbackend::BackEnd* backend) {
     return [backend](HashAsSpan hash) -> Task<BlockNum> {
-        return backend->get_block_number_from_txn_hash(hash);
+        co_return co_await backend->get_block_number_from_txn_hash(hash);
     };
 }
 

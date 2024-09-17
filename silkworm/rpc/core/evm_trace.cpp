@@ -1775,7 +1775,12 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     filter.count = trace_filter.count;
 
     auto block_number = trace_filter.from_block.number();
-    auto block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
+    std::shared_ptr<BlockWithHash> block_with_hash;
+    try {
+        block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
+    } catch (const std::invalid_argument& iv) {
+        block_with_hash = nullptr;
+    }
 
     while (block_number <= trace_filter.to_block.number()) {
         if (!block_with_hash) {
@@ -1798,7 +1803,11 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
         }
 
         block_number++;
-        block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_number);
+        try {
+            block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_number);
+        } catch (const std::invalid_argument& iv) {
+            block_with_hash = nullptr;
+        }
     }
 
     stream.close_array();

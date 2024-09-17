@@ -16,6 +16,7 @@
 
 #include "timer.hpp"
 
+#include <array>
 #include <string>
 #include <thread>
 
@@ -25,14 +26,14 @@
 namespace silkworm {
 
 struct TimerTest {
-    const std::vector<uint32_t> intervals{100, 10, 1};  // milliseconds
+    static constexpr std::array<uint32_t, 3> kIntervals{100, 10, 1};  // milliseconds
     boost::asio::io_context io_context;
 };
 
 TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
     constexpr static size_t kExpectedExpirations{2};
     size_t expired_count{0};  // The lambda capture-list content *must* outlive the scheduler execution loop
-    for (const auto interval : intervals) {
+    for (const auto interval : kIntervals) {
         Timer periodic_timer{io_context.get_executor(), interval, [&]() -> bool {
                                  ++expired_count;
                                  // Stop the timer scheduler after multiple expirations
@@ -60,7 +61,7 @@ TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
 
 TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
     bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
-    for (const auto interval : intervals) {
+    for (const auto interval : kIntervals) {
         Timer one_shot_timer{io_context.get_executor(), interval, [&]() -> bool {
                                  io_context.stop();
                                  timer_expired = true;
@@ -86,7 +87,7 @@ TEST_CASE_METHOD(TimerTest, "One shot timer", "[infra][common][timer]") {
 
 TEST_CASE_METHOD(TimerTest, "Cancellation before expiration", "[infra][common][timer]") {
     bool timer_expired{false};  // The lambda capture-list content *must* outlive the scheduler execution loop
-    for (const auto interval : intervals) {
+    for (const auto interval : kIntervals) {
         SECTION("Duration " + std::to_string(interval) + "ms") {
             Timer async_timer{
                 io_context.get_executor(), interval, [&]() -> bool {
@@ -103,7 +104,7 @@ TEST_CASE_METHOD(TimerTest, "Cancellation before expiration", "[infra][common][t
 }
 
 TEST_CASE_METHOD(TimerTest, "Lifecycle race condition", "[infra][common][timer]") {
-    for (const auto interval : intervals) {
+    for (const auto interval : kIntervals) {
         SECTION("Duration " + std::to_string(interval) + "ms") {
             {
                 Timer async_timer{io_context.get_executor(), interval, []() -> bool { return true; }};
@@ -117,7 +118,7 @@ TEST_CASE_METHOD(TimerTest, "Lifecycle race condition", "[infra][common][timer]"
 }
 
 TEST_CASE_METHOD(TimerTest, "Explicit stop not necessary", "[infra][common][timer]") {
-    for (const auto interval : intervals) {
+    for (const auto interval : kIntervals) {
         SECTION("Duration " + std::to_string(interval) + "ms: stopped") {
             {
                 Timer async_timer{io_context.get_executor(), interval, []() -> bool { return true; }};

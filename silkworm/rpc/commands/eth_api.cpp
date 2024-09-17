@@ -281,7 +281,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const 
             reply = make_json_content(request, nullptr);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request, 0x0);
+        reply = make_json_content(request, nullptr);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -318,7 +318,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(cons
             reply = make_json_content(request, nullptr);
         }
     } catch (const std::invalid_argument& iv) {
-        reply = make_json_content(request, 0x0);
+        reply = make_json_content(request, nullptr);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -921,6 +921,8 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, block_number_for_gas_limit);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request, to_quantity(0));
     } catch (const rpc::EstimateGasException& e) {
         SILK_ERROR << "EstimateGasException: code: " << e.error_code() << " message: " << e.message() << " processing request: " << request.dump();
         if (e.data().empty()) {

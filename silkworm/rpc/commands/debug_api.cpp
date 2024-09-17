@@ -260,6 +260,9 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         }
 
         reply = make_json_content(request, result);
+    } catch (const std::invalid_argument& e) {
+        nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
+        reply = make_json_content(request, result);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

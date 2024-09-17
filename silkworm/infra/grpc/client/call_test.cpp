@@ -84,17 +84,17 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
     std::unique_ptr<StrictMockKVStub> stub_{std::make_unique<StrictMockKVStub>()};
 
     //! Mocked reader for Version unary RPC of gRPC KV interface
-    std::unique_ptr<StrictMockKVVersionAsyncResponseReader> version_reader_ptr_{
+    std::unique_ptr<StrictMockKVVersionAsyncResponseReader> version_reader_ptr{
         std::make_unique<StrictMockKVVersionAsyncResponseReader>()};
-    StrictMockKVVersionAsyncResponseReader& version_reader_{*version_reader_ptr_};
+    StrictMockKVVersionAsyncResponseReader& version_reader{*version_reader_ptr};
 };
 
 TEST_CASE_METHOD(CallTest, "Unary gRPC threading: unary_rpc", "[grpc][client]") {
     // Set the call expectations:
     // 1. remote::KV::StubInterface::AsyncVersionRaw call succeeds
-    EXPECT_CALL(*stub_, AsyncVersionRaw).WillOnce(Return(version_reader_ptr_.get()));
+    EXPECT_CALL(*stub_, AsyncVersionRaw).WillOnce(Return(version_reader_ptr.get()));
     // 2. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-    EXPECT_CALL(version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+    EXPECT_CALL(version_reader, Finish).WillOnce(test::finish_ok(grpc_context_));
 
     // Trick necessary because expectations require MockKVStub, whilst production code wants remote::KV::StubInterface
     std::unique_ptr<proto::KV::StubInterface> stub{std::move(stub_)};
@@ -106,11 +106,11 @@ TEST_CASE_METHOD(CallTest, "Unary gRPC threading: unary_rpc", "[grpc][client]") 
 TEST_CASE_METHOD(CallTest, "Unary gRPC threading: agrpc::ClientRPC", "[grpc][client]") {
     // Set the call expectations:
     // 1. remote::KV::StubInterface::PrepareAsyncVersionRaw call succeeds
-    EXPECT_CALL(*stub_, PrepareAsyncVersionRaw).WillOnce(Return(version_reader_ptr_.get()));
+    EXPECT_CALL(*stub_, PrepareAsyncVersionRaw).WillOnce(Return(version_reader_ptr.get()));
     // 2. AsyncResponseReader<types::VersionReply>::StartCall call succeeds
-    EXPECT_CALL(version_reader_, StartCall).WillOnce([&]() {});
+    EXPECT_CALL(version_reader, StartCall).WillOnce([&]() {});
     // 3. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-    EXPECT_CALL(version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
+    EXPECT_CALL(version_reader, Finish).WillOnce(test::finish_ok(grpc_context_));
 
     // Execute the test: check threading assumptions during async Version RPC execution
     spawn_and_wait(check_unary_agrpc_client_threading(*stub_, google::protobuf::Empty{}, grpc_context_));
@@ -119,14 +119,14 @@ TEST_CASE_METHOD(CallTest, "Unary gRPC threading: agrpc::ClientRPC", "[grpc][cli
 TEST_CASE_METHOD(CallTest, "Unary gRPC cancelling: unary_rpc", "[grpc][client]") {
     // Set the call expectations:
     // 1. remote::KV::StubInterface::AsyncVersionRaw call succeeds
-    EXPECT_CALL(*stub_, AsyncVersionRaw).WillOnce(Return(version_reader_ptr_.get()));
+    EXPECT_CALL(*stub_, AsyncVersionRaw).WillOnce(Return(version_reader_ptr.get()));
     // 2. AsyncResponseReader<types::VersionReply>::Finish call fails w/ status CANCELLED
     boost::asio::cancellation_signal cancellation_signal;
     auto cancellation_slot = cancellation_signal.slot();
 
     // Trick: we use Finish as a hook to signal cancellation, but then we must trigger tag by hand anyway
     // Better solution possible with agrpc::ClientRPC: use StartCall as a hook to signal cancellation
-    EXPECT_CALL(version_reader_, Finish).WillOnce([&](auto&&, ::grpc::Status* status, void* tag) {
+    EXPECT_CALL(version_reader, Finish).WillOnce([&](auto&&, ::grpc::Status* status, void* tag) {
         cancellation_signal.emit(boost::asio::cancellation_type::all);
         *status = ::grpc::Status::CANCELLED;
         agrpc::process_grpc_tag(grpc_context_, tag, /*ok=*/true);

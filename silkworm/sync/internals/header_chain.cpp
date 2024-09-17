@@ -160,7 +160,7 @@ Headers HeaderChain::withdraw_stable_headers() {
         assessing_list.pop();
 
         // If it is in the pre-verified headers range do not verify it, wait for pre-verification
-        if (link->blockHeight <= last_preverified_hash_ && !link->preverified) {
+        if (link->block_height <= last_preverified_hash_ && !link->preverified) {
             insert_list_.push(link);
             continue;  // header should be pre-verified, but not yet, try again later
         }
@@ -171,14 +171,14 @@ Headers HeaderChain::withdraw_stable_headers() {
         if (assessment == kPostpone) {
             insert_list_.push(link);
             log::Warning() << "HeaderChain: added future link,"
-                           << " hash=" << link->hash << " height=" << link->blockHeight
+                           << " hash=" << link->hash << " height=" << link->block_height
                            << " timestamp=" << link->header->timestamp << ")";
             continue;
         }
 
         if (assessment == kSkip) {
             links_.erase(link->hash);
-            log::Warning() << "HeaderChain: skipping link at " << link->blockHeight;
+            log::Warning() << "HeaderChain: skipping link at " << link->block_height;
             continue;  // todo: do we need to invalidate all the descendants?
         }
 
@@ -187,15 +187,15 @@ Headers HeaderChain::withdraw_stable_headers() {
         // If we received an announcement for this header we must propagate it
         if (seen_announces_.get(link->hash)) {
             seen_announces_.remove(link->hash);
-            announces_to_do_.push_back({link->hash, link->blockHeight});
+            announces_to_do_.push_back({link->hash, link->block_height});
         }
 
         // Insert in the list of headers to persist
         stable_headers.push_back(link->header);  // will be persisted by HeaderPersistence
 
         // Update persisted height, and state
-        if (link->blockHeight > highest_in_db_) {
-            highest_in_db_ = link->blockHeight;
+        if (link->block_height > highest_in_db_) {
+            highest_in_db_ = link->block_height;
         }
         link->persisted = true;
         persisted_link_queue_.push(link);
@@ -811,7 +811,7 @@ std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> Header
     if (a == anchors_.end()) {
         log::Trace()
             << "[ERROR] HeaderChain: segment cut&paste error, segment without anchor or persisted attach point, "
-            << "starting bn=" << link->blockHeight << " ending bn=" << parent_link->blockHeight << " "
+            << "starting bn=" << link->block_height << " ending bn=" << parent_link->block_height << " "
             << "parent=" << to_hex(parent_link->header->parent_hash);
         return {std::nullopt, parent_link};  // wrong, invariant violation, no anchor but there should be
     }
@@ -865,9 +865,9 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
     log::Trace() << "[INFO] HeaderChain, segment op: "
                  << (deep_a.has_value()
                          ? "A " + to_string(deep_a.value()->block_height)
-                         : "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
-                 << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)" : "")
-                 << " <-connect-> " << segment_slice.rbegin()->operator*().number << " --- " << prev_link->blockHeight
+                         : "X " + to_string(deep_link->block_height) + (deep_link->persisted ? " (P)" : " (!P)"))
+                 << " --- " << attachment_link->block_height << (attachment_link->preverified ? " (V)" : "")
+                 << " <-connect-> " << segment_slice.rbegin()->operator*().number << " --- " << prev_link->block_height
                  << " <-connect-> " << anchor->block_height << " --- " << anchor->last_link_height
                  << (anchor_preverified ? " (V)" : "");
 }
@@ -906,7 +906,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_
         std::ranges::any_of(new_anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
     log::Trace() << "[INFO] HeaderChain, segment op: " << new_anchor->block_height
-                 << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->blockHeight << " <-extend down "
+                 << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->block_height << " <-extend down "
                  << anchor->block_height << " --- " << anchor->last_link_height << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;
@@ -920,7 +920,7 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
         throw SegmentCutAndPasteError(
             "connection to bad headers,"
             " height=" +
-            std::to_string(attachment_link->blockHeight) +
+            std::to_string(attachment_link->block_height) +
             " hash=" + to_hex(attachment_link->hash));
     }
 
@@ -939,7 +939,7 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
     auto [deep_a, deep_link] = find_anchor(attachment_link);
     if (deep_a.has_value()) {
         auto deepest_anchor = deep_a.value();
-        deepest_anchor->last_link_height = std::max(deepest_anchor->last_link_height, prev_link->blockHeight);
+        deepest_anchor->last_link_height = std::max(deepest_anchor->last_link_height, prev_link->block_height);
     } else {
         // if (!deep_link->persisted) error, else attachment to special anchor
     }
@@ -947,8 +947,8 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
     log::Trace() << "[INFO] HeaderChain, segment op: "
                  << (deep_a.has_value()
                          ? "A " + to_string(deep_a.value()->block_height)
-                         : "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
-                 << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)" : "")
+                         : "X " + to_string(deep_link->block_height) + (deep_link->persisted ? " (P)" : " (!P)"))
+                 << " --- " << attachment_link->block_height << (attachment_link->preverified ? " (V)" : "")
                  << " extend up-> " << segment_slice.rbegin()->operator*().number << " --- "
                  << (segment_slice.rend() - 1)->operator*().number;
 }
@@ -974,7 +974,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_s
         if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
-    anchor->last_link_height = std::max(anchor->last_link_height, prev_link->blockHeight);
+    anchor->last_link_height = std::max(anchor->last_link_height, prev_link->block_height);
 
     bool anchor_preverified =
         std::ranges::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });

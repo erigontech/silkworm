@@ -36,14 +36,14 @@ namespace silkworm {
 // A link corresponds to a block header, links are connected to each other by reverse of parent_hash relation
 struct Link {
     std::shared_ptr<BlockHeader> header;      // Header to which this link point to
-    BlockNum blockHeight = 0;                 // Block height of the header, repeated here for convenience (remove?)
+    BlockNum block_height = 0;                // Block height of the header, repeated here for convenience (remove?)
     Hash hash;                                // Hash of the header
     std::vector<std::shared_ptr<Link>> next;  // Reverse of parent_hash,allows iter.over links in asc. block height order
     bool persisted = false;                   // Whether this link comes from the database record
     bool preverified = false;                 // Ancestor of pre-verified header
 
     Link(BlockHeader h, bool persisted_)
-        : blockHeight{h.number},
+        : block_height{h.number},
           hash{h.hash()},  // save computation
           persisted{persisted_} {
         header = std::make_shared<BlockHeader>(std::move(h));
@@ -106,15 +106,15 @@ struct Anchor {
 // Binary relations to use in priority queues
 struct LinkOlderThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->blockHeight != y->blockHeight ? x->blockHeight < y->blockHeight :  // cause ordering
-                   x < y;                                                            // preserve identity
+        return x->block_height != y->block_height ? x->block_height < y->block_height :  // cause ordering
+                   x < y;                                                                // preserve identity
     }
 };
 
 struct LinkYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->blockHeight != y->blockHeight ? x->blockHeight > y->blockHeight :  // cause ordering
-                   x > y;                                                            // preserve identity
+        return x->block_height != y->block_height ? x->block_height > y->block_height :  // cause ordering
+                   x > y;                                                                // preserve identity
     }
 };
 
@@ -160,9 +160,9 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 }  // namespace silkworm
 template <>
-struct MbpqKey<std::shared_ptr<silkworm::Link>> {                                                 // extract key type and value
-    using type = silkworm::BlockNum;                                                              // type of the key
-    static type value(const std::shared_ptr<silkworm::Link>& link) { return link->blockHeight; }  // value of the key
+struct MbpqKey<std::shared_ptr<silkworm::Link>> {                                                  // extract key type and value
+    using type = silkworm::BlockNum;                                                               // type of the key
+    static type value(const std::shared_ptr<silkworm::Link>& link) { return link->block_height; }  // value of the key
 };
 namespace silkworm {  // reopen namespace
 

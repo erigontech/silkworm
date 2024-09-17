@@ -43,15 +43,15 @@ TEST_CASE("links") {
 
     SECTION("construction") {
         REQUIRE(*(link1.header) == headers[1]);
-        REQUIRE(link1.blockHeight == headers[1].number);
+        REQUIRE(link1.block_height == headers[1].number);
         REQUIRE(link1.hash == headers[1].hash());
         REQUIRE(link1.persisted == persisted);
         REQUIRE(link1.preverified == false);
         REQUIRE(link1.next.empty());
 
-        headers[1].number = 100;          // only for the following test
-        REQUIRE(link1.blockHeight == 1);  // link1 has a copy of headers[1]
-        headers[1].number = 1;            // ok
+        headers[1].number = 100;           // only for the following test
+        REQUIRE(link1.block_height == 1);  // link1 has a copy of headers[1]
+        headers[1].number = 1;             // ok
     }
 
     SECTION("children") {

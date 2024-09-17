@@ -1408,7 +1408,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto link5b = chain.links_[h5p.hash()];
         REQUIRE(link5b != nullptr);
-        REQUIRE(link5b->blockHeight == 5);
+        REQUIRE(link5b->block_height == 5);
         REQUIRE(link5b->hash == h5p.hash());
 
         auto anchor2 = chain.anchors_[headers[3].parent_hash];
@@ -1454,7 +1454,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
         auto link5b = chain.links_[h5p.hash()];
         REQUIRE(link5b != nullptr);
-        REQUIRE(link5b->blockHeight == 5);
+        REQUIRE(link5b->block_height == 5);
         REQUIRE(link5b->hash == h5p.hash());
 
         auto anchor2 = chain.anchors_[headers[3].parent_hash];

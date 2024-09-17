@@ -42,7 +42,7 @@ using MinerTest = test_util::GrpcApiTestBase<Miner, StrictMockMiningStub>;
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[rpc][txpool][miner]") {
     test::StrictMockAsyncResponseReader<::txpool::GetWorkReply> reader;
-    EXPECT_CALL(*stub_, AsyncGetWorkRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub, AsyncGetWorkRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call get_work and get result") {
         ::txpool::GetWorkReply response;
@@ -75,7 +75,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[rpc][txpool][miner]") {
 
 TEST_CASE_METHOD(MinerTest, "Miner::get_hashrate", "[rpc][txpool][miner]") {
     test::StrictMockAsyncResponseReader<::txpool::HashRateReply> reader;
-    EXPECT_CALL(*stub_, AsyncHashRateRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub, AsyncHashRateRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call get_hashrate and get result") {
         ::txpool::HashRateReply response;
@@ -99,7 +99,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_hashrate", "[rpc][txpool][miner]") {
 
 TEST_CASE_METHOD(MinerTest, "Miner::get_mining", "[rpc][txpool][miner]") {
     test::StrictMockAsyncResponseReader<::txpool::MiningReply> reader;
-    EXPECT_CALL(*stub_, AsyncMiningRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub, AsyncMiningRaw).WillOnce(testing::Return(&reader));
 
     const std::pair<bool, bool> enabled_running_pairs[] = {
         {false, false},
@@ -134,7 +134,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_mining", "[rpc][txpool][miner]") {
 
 TEST_CASE_METHOD(MinerTest, "Miner::submit_work", "[rpc][txpool][miner]") {
     test::StrictMockAsyncResponseReader<::txpool::SubmitWorkReply> reader;
-    EXPECT_CALL(*stub_, AsyncSubmitWorkRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub, AsyncSubmitWorkRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call submit_work and get result") {
         ::txpool::SubmitWorkReply response;
@@ -167,7 +167,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::submit_work", "[rpc][txpool][miner]") {
 
 TEST_CASE_METHOD(MinerTest, "Miner::submit_hash_rate", "[rpc][txpool][miner]") {
     test::StrictMockAsyncResponseReader<::txpool::SubmitHashRateReply> reader;
-    EXPECT_CALL(*stub_, AsyncSubmitHashRateRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub, AsyncSubmitHashRateRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call submit_hash_rate and get result") {
         ::txpool::SubmitHashRateReply response;

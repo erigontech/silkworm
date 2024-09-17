@@ -54,11 +54,11 @@ class GrpcApiTestBase : public ServiceContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        GrpcApi api{io_context_.get_executor(), std::move(stub_), grpc_context_};
+        GrpcApi api{io_context_.get_executor(), std::move(stub), grpc_context_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 
-    std::unique_ptr<Stub> stub_{std::make_unique<Stub>()};
+    std::unique_ptr<Stub> stub{std::make_unique<Stub>()};
 };
 
 }  // namespace silkworm::rpc::test_util

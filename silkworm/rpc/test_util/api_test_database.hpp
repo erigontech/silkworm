@@ -103,6 +103,7 @@ class RpcApiTestBase : public LocalContextTestBase {
         return spawn_and_wait((handler.*method)(std::forward<Args>(args)...));
     }
 
+  private:
     WorkerPool workers_;
     boost::asio::ip::tcp::socket socket_;
     commands::RpcApi rpc_api_;

@@ -63,9 +63,8 @@ class NodeImpl final {
     BlockNum last_pre_validated_block() const { return chain_sync_.last_pre_validated_block(); }
 
   private:
-    Task<void> start_execution_server();
-    Task<void> start_backend_kv_grpc_server();
-    Task<void> start_resource_usage_log();
+    Task<void> run_execution_server();
+    Task<void> run_backend_kv_grpc_server();
     Task<void> start_execution_log_timer();
     Task<void> embedded_sentry_run_if_needed();
 
@@ -196,14 +195,14 @@ Task<void> NodeImpl::run_tasks() {
     co_await wait_for_setup();
 
     co_await (
-        start_execution_server() &&
-        start_resource_usage_log() &&
+        run_execution_server() &&
+        resource_usage_log_.run() &&
         start_execution_log_timer() &&
         chain_sync_.async_run() &&
-        start_backend_kv_grpc_server());
+        run_backend_kv_grpc_server());
 }
 
-Task<void> NodeImpl::start_execution_server() {
+Task<void> NodeImpl::run_execution_server() {
     // Thread running block execution requires custom stack size because of deep EVM call stacks
     if (settings_.execution_server_enabled) {
         co_await execution_server_.async_run(/*stack_size=*/kExecutionThreadStackSize);
@@ -212,7 +211,7 @@ Task<void> NodeImpl::start_execution_server() {
     }
 }
 
-Task<void> NodeImpl::start_backend_kv_grpc_server() {
+Task<void> NodeImpl::run_backend_kv_grpc_server() {
     auto run = [this]() {
         backend_kv_rpc_server_->build_and_start();
         backend_kv_rpc_server_->join();
@@ -221,10 +220,6 @@ Task<void> NodeImpl::start_backend_kv_grpc_server() {
         backend_kv_rpc_server_->shutdown();
     };
     co_await concurrency::async_thread(std::move(run), std::move(stop), "bekv-server");
-}
-
-Task<void> NodeImpl::start_resource_usage_log() {
-    return resource_usage_log_.run();
 }
 
 Task<void> NodeImpl::start_execution_log_timer() {

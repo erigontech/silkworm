@@ -47,7 +47,6 @@ struct RemoteDatabaseTest : db::test_util::KVTestBase {
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
     db::kv::api::CoherentStateCache state_cache_;
     test::BackEndMock backend;
-    ethdb::kv::RemoteDatabase remote_db_{&backend, &state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
 using testing::_;

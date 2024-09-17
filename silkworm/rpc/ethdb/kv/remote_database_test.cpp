@@ -32,10 +32,12 @@ namespace silkworm::rpc::ethdb::kv {
 
 struct RemoteDatabaseTest : db::test_util::KVTestBase {
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
-    StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
-    db::kv::api::CoherentStateCache state_cache_;
+    StrictMockKVStub* kv_stub = new StrictMockKVStub;
     test::BackEndMock backend;
-    RemoteDatabase remote_db_{&backend, &state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
+    RemoteDatabase remote_db{&backend, &state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub}};
+
+  private:
+    db::kv::api::CoherentStateCache state_cache_;
 };
 
 #ifndef SILKWORM_SANITIZE
@@ -45,28 +47,28 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[rpc][ethdb][kv][
     SECTION("success") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
-        expect_request_async_tx(*kv_stub_, true);
+        expect_request_async_tx(*kv_stub, true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds setting the specified transaction ID
         remote::Pair pair;
         pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
 
         // Execute the test: RemoteDatabase::begin should return transaction w/ expected transaction ID
-        const auto txn = spawn_and_wait(remote_db_.begin());
+        const auto txn = spawn_and_wait(remote_db.begin());
         CHECK(txn->view_id() == 4);
     }
 
     SECTION("open failure") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call fails
-        expect_request_async_tx(*kv_stub_, /*ok=*/false);
+        expect_request_async_tx(*kv_stub, /*ok=*/false);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call returns w/ failure
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: RemoteDatabase::begin should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_db_.begin()),
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_db.begin()),
                              boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
@@ -74,7 +76,7 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[rpc][ethdb][kv][
     SECTION("read failure") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
-        expect_request_async_tx(*kv_stub_, true);
+        expect_request_async_tx(*kv_stub, true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call fails
         EXPECT_CALL(reader_writer_, Read).WillOnce([&](auto*, void* tag) {
             agrpc::process_grpc_tag(grpc_context_, tag, /*ok=*/false);
@@ -85,7 +87,7 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[rpc][ethdb][kv][
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: RemoteDatabase::begin should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_db_.begin()),
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_db.begin()),
                              boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }

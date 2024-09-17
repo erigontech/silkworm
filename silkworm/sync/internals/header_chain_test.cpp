@@ -41,6 +41,9 @@ class HeaderChainForTest : public HeaderChain {
     using HeaderChain::links_;
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
+
+    explicit HeaderChainForTest(const ChainConfig& chain_config)
+        : HeaderChain{chain_config, /* use_preverified_hashes = */ false} {}
 };
 
 // TESTs related to HeaderList::split_into_segments

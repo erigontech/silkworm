@@ -72,13 +72,18 @@ using execution::api::ValidationError;
 using execution::api::ValidChain;
 using execution::api::VerificationResult;
 
-MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
+MainChain::MainChain(
+    boost::asio::io_context& ctx,
+    NodeSettings& ns,
+    BodiesStageFactory bodies_stage_factory,
+    db::RWAccess dba)
     : io_context_{ctx},
       node_settings_{ns},
+      bodies_stage_factory_{std::move(bodies_stage_factory)},
       db_access_{std::move(dba)},
       tx_{db_access_.start_rw_tx()},
       data_model_{tx_},
-      pipeline_{&ns},
+      pipeline_{&ns, bodies_stage_factory_},
       interim_canonical_chain_(tx_) {
     // We commit and close the one-and-only RW txn here because it must be reopened below in MainChain::open
     tx_.commit_and_stop();
@@ -140,6 +145,10 @@ NodeSettings& MainChain::node_settings() {
 
 db::RWTxn& MainChain::tx() {
     return tx_;
+}
+
+const BodiesStageFactory& MainChain::bodies_stage_factory() const {
+    return bodies_stage_factory_;
 }
 
 StageScheduler& MainChain::stage_scheduler() const {

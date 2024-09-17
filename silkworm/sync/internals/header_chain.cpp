@@ -30,6 +30,7 @@
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "algorithm.hpp"
+#include "silkworm/rpc/common/util.hpp"
 
 namespace silkworm {
 
@@ -40,13 +41,27 @@ class SegmentCutAndPasteError : public std::logic_error {
     explicit SegmentCutAndPasteError(const std::string& reason) : std::logic_error(reason) {}
 };
 
-HeaderChain::HeaderChain(const ChainConfig& chain_config)
-    : HeaderChain(protocol::rule_set_factory(chain_config), chain_config.terminal_total_difficulty) {}
+static PreverifiedHashes& default_preverified_hashes(ChainId chain_id, bool use_preverified_hashes) {
+    static PreverifiedHashes kEmpty;
+    return use_preverified_hashes ? PreverifiedHashes::load(chain_id) : kEmpty;
+}
 
-HeaderChain::HeaderChain(protocol::RuleSetPtr rule_set, std::optional<intx::uint256> terminal_total_difficulty)
+HeaderChain::HeaderChain(const ChainConfig& chain_config, bool use_preverified_hashes)
+    : HeaderChain{
+          chain_config.chain_id,
+          protocol::rule_set_factory(chain_config),
+          chain_config.terminal_total_difficulty,
+          use_preverified_hashes,
+      } {}
+
+HeaderChain::HeaderChain(
+    ChainId chain_id,
+    protocol::RuleSetPtr rule_set,
+    std::optional<intx::uint256> terminal_total_difficulty,
+    bool use_preverified_hashes)
     : highest_in_db_(0),
       top_seen_height_(0),
-      preverified_hashes_(PreverifiedHashes::current),
+      preverified_hashes_(default_preverified_hashes(chain_id, use_preverified_hashes)),
       seen_announces_(1000),
       rule_set_{std::move(rule_set)},
       chain_state_(persisted_link_queue_),  // Erigon reads past headers from db, we hope to find them from this queue
@@ -1045,6 +1060,10 @@ void HeaderChain::mark_as_preverified(std::shared_ptr<Link> link) {
 void HeaderChain::set_preverified_hashes(PreverifiedHashes& ph) {
     preverified_hashes_ = ph;
     compute_last_preverified_hash();
+}
+
+BlockNum HeaderChain::last_pre_validated_block() const {
+    return preverified_hashes_.height;
 }
 
 uint64_t HeaderChain::generate_request_id() {

@@ -27,11 +27,15 @@
 #include <silkworm/infra/common/timer.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 
+#include "stages/stage_bodies_factory.hpp"
+
 namespace silkworm::stagedsync {
 
 class ExecutionPipeline : public Stoppable {
   public:
-    explicit ExecutionPipeline(NodeSettings*);
+    explicit ExecutionPipeline(
+        NodeSettings* node_settings,
+        BodiesStageFactory bodies_stage_factory);
     ~ExecutionPipeline() override = default;
 
     Stage::Result forward(db::RWTxn&, BlockNum target_height);
@@ -49,6 +53,7 @@ class ExecutionPipeline : public Stoppable {
 
   private:
     silkworm::NodeSettings* node_settings_;
+    BodiesStageFactory bodies_stage_factory_;
     std::unique_ptr<SyncContext> sync_context_;  // context shared across stages
 
     using StageContainer = std::map<const char*, std::unique_ptr<stagedsync::Stage>>;

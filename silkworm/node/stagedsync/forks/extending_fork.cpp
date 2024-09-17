@@ -63,10 +63,13 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
     post(*executor_, [this, new_head, blocks_ = std::move(blocks)]() {  // note: this requires a "stable" this pointer
         try {
             if (exception_) return;
-            fork_ = std::make_unique<Fork>(forking_point_,
-                                           db::ROTxnManaged(main_chain_.tx().db()),
-                                           main_chain_.node_settings());  // create the real fork
-            fork_->extend_with(blocks_);                                  // extend it with the blocks
+            // create the real fork
+            fork_ = std::make_unique<Fork>(
+                forking_point_,
+                db::ROTxnManaged(main_chain_.tx().db()),
+                main_chain_.bodies_stage_factory(),
+                main_chain_.node_settings());
+            fork_->extend_with(blocks_);
             ensure(fork_->current_head() == new_head, "fork head mismatch");
         } catch (...) {
             save_exception(std::current_exception());

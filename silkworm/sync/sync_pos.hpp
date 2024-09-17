@@ -20,7 +20,6 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
-#include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/rpc/engine/execution_engine.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>

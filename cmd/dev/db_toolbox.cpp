@@ -61,6 +61,7 @@
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
 #include "../common/common.hpp"
@@ -575,7 +576,14 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
         .chaindata_env_config = config,
         .chain_config = chain_config};
 
-    stagedsync::ExecutionPipeline stage_pipeline{&settings};
+    stagedsync::BodiesStageFactory bodies_stage_factory = [&](stagedsync::SyncContext* sync_context) {
+        return std::make_unique<stagedsync::BodiesStage>(sync_context, *settings.chain_config, [] { return 0; });
+    };
+
+    stagedsync::ExecutionPipeline stage_pipeline{
+        &settings,
+        std::move(bodies_stage_factory),
+    };
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
 
     ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
@@ -1287,10 +1295,10 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
  *
  * Can parse a custom genesis file in json format or import data from known chain configs
  *
- * \param DataDir data_dir : hold data directory info about db paths
+ * \param data_dir : hold data directory info about db paths
  * \param json_file : a string representing the path where to load custom json from
- * \param uint32_t chain_id : an identifier for a known chain
- * \param bool dry : whether or not commit data or run in simulation
+ * \param chain_id : an identifier for a known chain
+ * \param dry : whether to commit data or run in simulation
  *
  */
 void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uint32_t chain_id, bool dry) {

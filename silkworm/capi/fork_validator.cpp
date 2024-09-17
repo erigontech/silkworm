@@ -17,6 +17,8 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/environment.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -78,6 +80,12 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
     handle->node_settings.keep_db_txn_open = false;                // Ensure that the transaction is closed after each request, Erigon manages transactions differently
 }
 
+static silkworm::stagedsync::BodiesStageFactory make_bodies_stage_factory(const silkworm::ChainConfig& chain_config) {
+    return [chain_config](silkworm::stagedsync::SyncContext* sync_context) {
+        return std::make_unique<silkworm::stagedsync::BodiesStage>(sync_context, chain_config, [] { return 0; });
+    };
+};
+
 SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_env* mdbx_env, const struct SilkwormForkValidatorSettings* settings) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
@@ -103,7 +111,11 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
 
     silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
     silkworm::db::RWAccess rw_access{unmanaged_env};
-    handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(handle->node_settings.asio_context, handle->node_settings, rw_access);
+    handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(
+        handle->node_settings.asio_context,
+        handle->node_settings,
+        make_bodies_stage_factory(*handle->node_settings.chain_config),
+        rw_access);
 
     silkworm::log::Info("Execution engine created");
 

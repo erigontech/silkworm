@@ -23,7 +23,6 @@
 
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
@@ -46,8 +45,11 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
-ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
+ExecutionPipeline::ExecutionPipeline(
+    silkworm::NodeSettings* node_settings,
+    BodiesStageFactory bodies_stage_factory)
     : node_settings_{node_settings},
+      bodies_stage_factory_{std::move(bodies_stage_factory)},
       sync_context_{std::make_unique<SyncContext>()} {
     load_stages();
 }
@@ -87,8 +89,7 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
 void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kHeadersKey,
                     std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
-    stages_.emplace(db::stages::kBlockBodiesKey,
-                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), *node_settings_->chain_config, [] { return PreverifiedHashes::current.height; }));
+    stages_.emplace(db::stages::kBlockBodiesKey, bodies_stage_factory_(sync_context_.get()));
     stages_.emplace(db::stages::kBlockHashesKey,
                     std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kSendersKey,

@@ -27,9 +27,11 @@
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/resource_usage.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
+#include <silkworm/sync/sync.hpp>
 
 #include "backend_kv_server.hpp"
 
@@ -51,12 +53,13 @@ class NodeImpl final {
     NodeImpl(const NodeImpl&) = delete;
     NodeImpl& operator=(const NodeImpl&) = delete;
 
-    execution::api::DirectClient& execution_direct_client() { return execution_direct_client_; }
     std::shared_ptr<sentry::api::SentryClient> sentry_client() { return sentry_client_; }
 
     Task<void> run();
     Task<void> run_tasks();
     Task<void> wait_for_setup();
+
+    BlockNum last_pre_validated_block() const { return chain_sync_.last_pre_validated_block(); }
 
   private:
     Task<void> start_execution_server();
@@ -82,37 +85,77 @@ class NodeImpl final {
     std::unique_ptr<EthereumBackEnd> backend_;
     std::unique_ptr<BackEndKvServer> backend_kv_rpc_server_;
 
+    // ChainSync: the chain synchronization process based on the consensus protocol
+    chainsync::Sync chain_sync_;
+
     ResourceUsageLog resource_usage_log_;
 
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static auto make_execution_server_settings() {
+static rpc::ServerSettings make_execution_server_settings() {
     return rpc::ServerSettings{
         .address_uri = "localhost:9092",
         .context_pool_settings = {.num_contexts = 1},  // just one execution context
     };
 }
 
+static chainsync::EngineRpcSettings make_sync_engine_rpc_settings(
+    const rpc::DaemonSettings& rpcdaemon_settings,
+    log::Level log_verbosity) {
+    return chainsync::EngineRpcSettings{
+        .engine_end_point = rpcdaemon_settings.engine_end_point,
+        .engine_ifc_log_settings = rpcdaemon_settings.engine_ifc_log_settings,
+        .private_api_addr = rpcdaemon_settings.private_api_addr,
+        .log_verbosity = log_verbosity,
+        .wait_mode = rpcdaemon_settings.context_pool_settings.wait_mode,
+        .jwt_secret_file = rpcdaemon_settings.jwt_secret_file,
+    };
+}
+
+static stagedsync::BodiesStageFactory make_bodies_stage_factory(
+    const ChainConfig& chain_config,
+    const NodeImpl& node) {
+    return [&](stagedsync::SyncContext* sync_context) {
+        return std::make_unique<stagedsync::BodiesStage>(
+            sync_context,
+            chain_config,
+            [&node]() { return node.last_pre_validated_block(); });
+    };
+};
+
 NodeImpl::NodeImpl(
-    [[maybe_unused]] boost::asio::any_io_executor executor,  // NOLINT(*-unnecessary-value-param)
+    boost::asio::any_io_executor executor,
     Settings& settings,
     SentryClientPtr sentry_client,
     mdbx::env chaindata_env)
     : settings_{settings},
       chaindata_env_{std::move(chaindata_env)},
-      execution_engine_{execution_context_, settings_, db::RWAccess{chaindata_env_}},
+      execution_engine_{
+          execution_context_,
+          settings_,
+          make_bodies_stage_factory(*settings_.chain_config, *this),
+          db::RWAccess{chaindata_env_},
+      },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(), execution_service_},
       execution_direct_client_{execution_service_},
       snapshot_sync_{settings.snapshot_settings, settings.chain_config->chain_id, chaindata_env_, settings_.data_directory->temp().path(), execution_engine_.stage_scheduler()},
       sentry_client_{std::move(sentry_client)},
+      chain_sync_{
+          std::move(executor),
+          chaindata_env_,
+          execution_direct_client_,
+          sentry_client_,
+          *settings.chain_config,
+          /* use_preverified_hashes = */ true,
+          make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
+      },
       resource_usage_log_{*settings_.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_env_, sentry_client_);
     backend_->set_node_name(settings_.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
-    PreverifiedHashes::load(settings_.chain_config->chain_id);
 }
 
 Task<void> NodeImpl::wait_for_setup() {
@@ -134,6 +177,7 @@ Task<void> NodeImpl::run_tasks() {
         start_execution_server() &&
         start_resource_usage_log() &&
         start_execution_log_timer() &&
+        chain_sync_.async_run() &&
         start_backend_kv_grpc_server());
 }
 
@@ -181,14 +225,14 @@ Node::Node(
     Settings& settings,
     SentryClientPtr sentry_client,
     mdbx::env chaindata_env)
-    : p_impl_(std::make_unique<NodeImpl>(std::move(executor), settings, std::move(sentry_client), std::move(chaindata_env))) {}
+    : p_impl_(std::make_unique<NodeImpl>(
+          std::move(executor),
+          settings,
+          std::move(sentry_client),
+          std::move(chaindata_env))) {}
 
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom
 Node::~Node() = default;
-
-execution::api::DirectClient& Node::execution_direct_client() {
-    return p_impl_->execution_direct_client();
-}
 
 Task<void> Node::run() {
     return p_impl_->run();

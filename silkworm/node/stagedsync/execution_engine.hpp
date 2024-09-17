@@ -24,7 +24,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -36,10 +36,9 @@
 #include "forks/extending_fork.hpp"
 #include "forks/main_chain.hpp"
 #include "stages/stage_bodies_factory.hpp"
+#include "timer_factory.hpp"
 
 namespace silkworm::stagedsync {
-
-namespace asio = boost::asio;
 
 /**
  * ExecutionEngine is the main component of the staged sync.
@@ -56,10 +55,11 @@ namespace asio = boost::asio;
 class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable {
   public:
     ExecutionEngine(
-        asio::io_context&,
-        NodeSettings&,
+        boost::asio::any_io_executor executor,
+        NodeSettings& ns,
+        std::optional<TimerFactory> log_timer_factory,
         BodiesStageFactory bodies_stage_factory,
-        db::RWAccess);
+        db::RWAccess dba);
     ~ExecutionEngine() override = default;
 
     // needed to circumvent mdbx threading model limitations
@@ -108,7 +108,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     std::optional<ForkingPath> find_forking_point(const BlockHeader& header) const;
     void discard_all_forks();
 
-    asio::io_context& io_context_;
+    boost::asio::any_io_executor executor_;
     NodeSettings& node_settings_;
 
     MainChain main_chain_;

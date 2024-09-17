@@ -21,8 +21,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/io_context.hpp>
-
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/db/etl/collector_settings.hpp>
@@ -35,7 +33,6 @@ namespace silkworm {
 
 struct NodeSettings {
     ApplicationInfo build_info;                            // Application build info (human-readable)
-    boost::asio::io_context asio_context;                  // Async context (e.g. for timers)
     std::unique_ptr<DataDirectory> data_directory;         // Pointer to data folder
     db::EnvConfig chaindata_env_config{};                  // Chaindata db config
     uint64_t network_id{kMainnetConfig.chain_id};          // Network/Chain id

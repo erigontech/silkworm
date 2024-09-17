@@ -52,7 +52,7 @@ struct ActiveDirectServiceTest : public TaskRunner {
           dba{tmp_chaindata.env()} {
         tmp_chaindata.add_genesis_data();
         tmp_chaindata.commit_txn();
-        mock_execution_engine = std::make_unique<NiceMock<MockExecutionEngine>>(context(), settings, dba);
+        mock_execution_engine = std::make_unique<NiceMock<MockExecutionEngine>>(executor(), settings, dba);
         direct_service = std::make_unique<ActiveDirectServiceForTest>(*mock_execution_engine, execution_context);
         execution_context_thread = std::thread{[this]() {
             direct_service->execution_loop();

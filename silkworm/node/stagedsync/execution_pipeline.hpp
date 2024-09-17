@@ -19,7 +19,10 @@
 #include <atomic>
 #include <map>
 #include <memory>
+#include <optional>
 #include <vector>
+
+#include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/stage.hpp>
@@ -28,6 +31,7 @@
 #include <silkworm/node/common/node_settings.hpp>
 
 #include "stages/stage_bodies_factory.hpp"
+#include "timer_factory.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -35,6 +39,7 @@ class ExecutionPipeline : public Stoppable {
   public:
     explicit ExecutionPipeline(
         NodeSettings* node_settings,
+        std::optional<TimerFactory> log_timer_factory,
         BodiesStageFactory bodies_stage_factory);
     ~ExecutionPipeline() override = default;
 
@@ -53,6 +58,7 @@ class ExecutionPipeline : public Stoppable {
 
   private:
     silkworm::NodeSettings* node_settings_;
+    std::optional<TimerFactory> log_timer_factory_;
     BodiesStageFactory bodies_stage_factory_;
     std::unique_ptr<SyncContext> sync_context_;  // context shared across stages
 

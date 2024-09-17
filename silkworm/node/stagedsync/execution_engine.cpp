@@ -30,13 +30,20 @@ using execution::api::ValidChain;
 using execution::api::VerificationResult;
 
 ExecutionEngine::ExecutionEngine(
-    asio::io_context& ctx,
+    boost::asio::any_io_executor executor,
     NodeSettings& ns,
+    std::optional<TimerFactory> log_timer_factory,
     BodiesStageFactory bodies_stage_factory,
     db::RWAccess dba)
-    : io_context_{ctx},
+    : executor_{std::move(executor)},
       node_settings_{ns},
-      main_chain_{ctx, ns, std::move(bodies_stage_factory), std::move(dba)},
+      main_chain_{
+          executor_,
+          ns,
+          std::move(log_timer_factory),
+          std::move(bodies_stage_factory),
+          std::move(dba),
+      },
       block_cache_{kDefaultCacheSize} {}
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
@@ -216,7 +223,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
 
         // notify the fork of the update - we need to block here to restore the invariant
         auto fork_choice_aw_future = (*f)->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash);
-        std::future<bool> fork_choice_future = concurrency::spawn_future(io_context_, fork_choice_aw_future.get());
+        std::future<bool> fork_choice_future = concurrency::spawn_future(executor_, fork_choice_aw_future.get());
         bool updated = fork_choice_future.get();  // BLOCKING
         if (!updated) return false;
 

@@ -91,8 +91,9 @@ TEST_CASE("Headers receiving and saving") {
 
     // creating the ExecutionEngine
     ExecutionEngineForTest exec_engine{
-        runner.context(),
+        runner.executor(),
         node_settings,
+        /* log_timer_factory = */ std::nullopt,
         std::move(bodies_stage_factory),
         db_access,
     };

@@ -62,20 +62,20 @@ struct RemoteCursorTest : test_util::KVTestBase {
 
     // Execute the test preconditions: start a new Tx RPC and read first incoming message (tx_id)
     Task<::remote::Pair> start_and_read_tx_id() {
-        if (!co_await tx_rpc_.start(*stub)) {
-            const auto status = co_await tx_rpc_.finish();
+        if (!co_await tx_rpc.start(*stub)) {
+            const auto status = co_await tx_rpc.finish();
             throw boost::system::system_error{rpc::to_system_code(status.error_code())};
         }
         ::remote::Pair tx_id_pair;
-        if (!co_await tx_rpc_.read(tx_id_pair)) {
-            const auto status = co_await tx_rpc_.finish();
+        if (!co_await tx_rpc.read(tx_id_pair)) {
+            const auto status = co_await tx_rpc.finish();
             throw boost::system::system_error{rpc::to_system_code(status.error_code())};
         }
         co_return tx_id_pair;
     }
 
-    TxRpc tx_rpc_{grpc_context_};
-    RemoteCursor remote_cursor_{tx_rpc_};
+    TxRpc tx_rpc{grpc_context_};
+    RemoteCursor remote_cursor{tx_rpc};
 };
 
 #ifndef SILKWORM_SANITIZE
@@ -95,8 +95,8 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::open_cursor", "[rpc][ethdb][kv
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, open_pair));
 
         // Execute the test: opening a cursor on specified table should succeed and cursor should have expected cursor ID
-        CHECK_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
-        CHECK(remote_cursor_.cursor_id() == 3);
+        CHECK_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
+        CHECK(remote_cursor.cursor_id() == 3);
     }
     SECTION("failure in write") {
         // Set the call expectations:
@@ -106,7 +106,7 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::open_cursor", "[rpc][ethdb][kv
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.open_cursor("table1", false)),
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.open_cursor("table1", false)),
                              boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
@@ -122,7 +122,7 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::open_cursor", "[rpc][ethdb][kv
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.open_cursor("table1", false)),
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.open_cursor("table1", false)),
                              boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
@@ -149,11 +149,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::close_cursor", "[rpc][ethdb][k
             .WillOnce(test::read_success_with(grpc_context_, remote::Pair{}));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: closing a cursor should succeed and reset the cursor ID
-        CHECK_NOTHROW(spawn_and_wait(remote_cursor_.close_cursor()));
-        CHECK(remote_cursor_.cursor_id() == 0);
+        CHECK_NOTHROW(spawn_and_wait(remote_cursor.close_cursor()));
+        CHECK(remote_cursor.cursor_id() == 0);
     }
     SECTION("failure in write") {
         // Set the call expectations:
@@ -172,10 +172,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::close_cursor", "[rpc][ethdb][k
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: closing a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.close_cursor()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.close_cursor()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
@@ -199,10 +199,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::close_cursor", "[rpc][ethdb][k
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: closing a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.close_cursor()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.close_cursor()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -235,11 +235,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek", "[rpc][ethdb][kv][remot
             .WillOnce(test::read_success_with(grpc_context_, seek_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should succeed and return the expected value
         api::KeyValue kv;
-        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.seek(kPlainStateKeyBytes)));
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor.seek(kPlainStateKeyBytes)));
         CHECK(kv.key == kPlainStateKeyBytes);
         CHECK(kv.value == kPlainStateValueBytes);
     }
@@ -265,10 +265,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek", "[rpc][ethdb][kv][remot
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek(kPlainStateKeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek(kPlainStateKeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
@@ -296,10 +296,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek", "[rpc][ethdb][kv][remot
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek(kPlainStateKeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek(kPlainStateKeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -332,11 +332,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_exact", "[rpc][ethdb][kv]
             .WillOnce(test::read_success_with(grpc_context_, seek_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should succeed and return the expected value
         api::KeyValue kv;
-        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.seek_exact(kPlainStateKeyBytes)));
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor.seek_exact(kPlainStateKeyBytes)));
         CHECK(kv.key == kPlainStateKeyBytes);
         CHECK(kv.value == kPlainStateValueBytes);
     }
@@ -362,10 +362,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_exact", "[rpc][ethdb][kv]
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek_exact(kPlainStateKeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek_exact(kPlainStateKeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
@@ -393,10 +393,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_exact", "[rpc][ethdb][kv]
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek_exact(kPlainStateKeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek_exact(kPlainStateKeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -427,11 +427,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::first", "[rpc][ethdb][kv][remo
             .WillOnce(test::read_success_with(grpc_context_, first_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking first key should succeed and return the expected value
         api::KeyValue kv;
-        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.first()));
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor.first()));
         CHECK(kv.key == kPlainStateKeyBytes);
         CHECK(kv.value == kPlainStateValueBytes);
     }
@@ -455,10 +455,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::first", "[rpc][ethdb][kv][remo
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking first key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.first()), boost::system::system_error, test::exception_has_aborted_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.first()), boost::system::system_error, test::exception_has_aborted_grpc_status_code());
     }
     SECTION("failure in read") {
         // Set the call expectations:
@@ -483,10 +483,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::first", "[rpc][ethdb][kv][remo
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.first()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.first()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
     }
 }
 
@@ -516,11 +516,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::last", "[rpc][ethdb][kv][remot
             .WillOnce(test::read_success_with(grpc_context_, first_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking last key should succeed and return the expected value
         api::KeyValue kv;
-        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.last()));
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor.last()));
         CHECK(kv.key == kPlainStateKeyBytes);
         CHECK(kv.value == kPlainStateValueBytes);
     }
@@ -544,10 +544,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::last", "[rpc][ethdb][kv][remot
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking last key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.last()), boost::system::system_error, test::exception_has_aborted_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.last()), boost::system::system_error, test::exception_has_aborted_grpc_status_code());
     }
     SECTION("failure in read") {
         // Set the call expectations:
@@ -572,10 +572,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::last", "[rpc][ethdb][kv][remot
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.last()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.last()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
     }
 }
 
@@ -605,11 +605,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::next", "[rpc][ethdb][kv][remot
             .WillOnce(test::read_success_with(grpc_context_, next_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking next key should succeed and return the expected value
         api::KeyValue kv;
-        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.next()));
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor.next()));
         CHECK(kv.key == kPlainStateKeyBytes);
         CHECK(kv.value == kPlainStateValueBytes);
     }
@@ -633,10 +633,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::next", "[rpc][ethdb][kv][remot
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking next key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.next()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.next()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
@@ -662,10 +662,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::next", "[rpc][ethdb][kv][remot
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.next()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.next()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -696,11 +696,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::next_dup", "[rpc][ethdb][kv][r
             .WillOnce(test::read_success_with(grpc_context_, next_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", true)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", true)));
 
         // Execute the test: seeking next key should succeed and return the expected value
         api::KeyValue kv;
-        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.next_dup()));
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor.next_dup()));
         CHECK(kv.key == kPlainStateKeyBytes);
         CHECK(kv.value == kPlainStateValueBytes);
     }
@@ -724,10 +724,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::next_dup", "[rpc][ethdb][kv][r
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", true)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", true)));
 
         // Execute the test: seeking next key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.next_dup()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.next_dup()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
@@ -753,10 +753,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::next_dup", "[rpc][ethdb][kv][r
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", true)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", true)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.next_dup()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.next_dup()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -790,11 +790,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both", "[rpc][ethdb][kv][
             .WillOnce(test::read_success_with(grpc_context_, seek_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should succeed and return the expected value
         silkworm::Bytes value;
-        CHECK_NOTHROW(value = spawn_and_wait(remote_cursor_.seek_both(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)));
+        CHECK_NOTHROW(value = spawn_and_wait(remote_cursor.seek_both(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)));
         CHECK(value == kAccountChangeSetValueBytes);
     }
     SECTION("failure in write") {
@@ -819,10 +819,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both", "[rpc][ethdb][kv][
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek_both(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek_both(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
@@ -850,10 +850,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both", "[rpc][ethdb][kv][
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek_both(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek_both(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -887,11 +887,11 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both_exact", "[rpc][ethdb
             .WillOnce(test::read_success_with(grpc_context_, seek_pair));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should succeed and return the expected value
         api::KeyValue kv;
-        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor_.seek_both_exact(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)));
+        CHECK_NOTHROW(kv = spawn_and_wait(remote_cursor.seek_both_exact(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)));
         CHECK(kv.key == kAccountChangeSetKeyBytes);
         CHECK(kv.value == kAccountChangeSetValueBytes);
     }
@@ -917,10 +917,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both_exact", "[rpc][ethdb
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek_both_exact(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek_both_exact(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
@@ -948,10 +948,10 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both_exact", "[rpc][ethdb
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions: open a new cursor on specified table
-        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor_.open_cursor("table1", false)));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_cursor.open_cursor("table1", false)));
 
         // Execute the test: seeking a key should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor_.seek_both_exact(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_cursor.seek_both_exact(kAccountChangeSetKeyBytes, kAccountChangeSetSubkeyBytes)), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }

@@ -30,12 +30,13 @@ using execution::api::ValidChain;
 using execution::api::VerificationResult;
 
 ExecutionEngine::ExecutionEngine(
-    boost::asio::any_io_executor executor,
+    std::optional<boost::asio::any_io_executor> executor,
     NodeSettings& ns,
     std::optional<TimerFactory> log_timer_factory,
     BodiesStageFactory bodies_stage_factory,
     db::RWAccess dba)
-    : executor_{std::move(executor)},
+    : context_pool_{executor ? std::unique_ptr<concurrency::ContextPool<>>{} : std::make_unique<concurrency::ContextPool<>>(concurrency::ContextPoolSettings{1, concurrency::WaitMode::kSleeping})},
+      executor_{executor ? std::move(*executor) : context_pool_->any_executor()},
       node_settings_{ns},
       main_chain_{
           executor_,
@@ -47,6 +48,7 @@ ExecutionEngine::ExecutionEngine(
       block_cache_{kDefaultCacheSize} {}
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
+    if (context_pool_) context_pool_->start();
     main_chain_.open();
     last_finalized_block_ = main_chain_.last_finalized_head();
     last_fork_choice_ = main_chain_.last_chosen_head();
@@ -55,6 +57,7 @@ void ExecutionEngine::open() {  // needed to circumvent mdbx threading model lim
 
 void ExecutionEngine::close() {
     main_chain_.close();
+    context_pool_.reset();
 }
 
 BlockNum ExecutionEngine::block_progress() const {

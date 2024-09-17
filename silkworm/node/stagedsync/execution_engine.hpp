@@ -18,6 +18,8 @@
 
 #include <atomic>
 #include <concepts>
+#include <memory>
+#include <optional>
 #include <set>
 #include <variant>
 #include <vector>
@@ -31,6 +33,7 @@
 #include <silkworm/db/stage.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/execution/api/execution_engine.hpp>
+#include <silkworm/infra/concurrency/context_pool.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "forks/extending_fork.hpp"
@@ -55,7 +58,7 @@ namespace silkworm::stagedsync {
 class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable {
   public:
     ExecutionEngine(
-        boost::asio::any_io_executor executor,
+        std::optional<boost::asio::any_io_executor> executor,
         NodeSettings& ns,
         std::optional<TimerFactory> log_timer_factory,
         BodiesStageFactory bodies_stage_factory,
@@ -108,6 +111,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     std::optional<ForkingPath> find_forking_point(const BlockHeader& header) const;
     void discard_all_forks();
 
+    std::unique_ptr<concurrency::ContextPool<>> context_pool_;
     boost::asio::any_io_executor executor_;
     NodeSettings& node_settings_;
 

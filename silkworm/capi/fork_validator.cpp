@@ -112,7 +112,7 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
     silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
     silkworm::db::RWAccess rw_access{unmanaged_env};
     handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(
-        boost::asio::io_context().get_executor(),  // TODO: fix
+        /* executor = */ std::nullopt,  // ExecutionEngine manages an internal io_context
         handle->node_settings,
         /* log_timer_factory = */ std::nullopt,
         make_bodies_stage_factory(*handle->node_settings.chain_config),

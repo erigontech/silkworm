@@ -18,7 +18,7 @@
 
 #include <agrpc/asio_grpc.hpp>
 
-#include <silkworm/node/execution/grpc/client/remote_client.hpp>
+#include <silkworm/execution/grpc/client/remote_client.hpp>
 
 #include "execution_engine.hpp"
 

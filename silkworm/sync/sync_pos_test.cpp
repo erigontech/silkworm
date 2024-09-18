@@ -124,7 +124,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
     for (size_t i{0}; i < requests.size(); ++i) {
         const auto& request{requests[i]};
         const auto& payload{request.execution_payload};
-        execution::api::BlockNumAndHash block_number_or_hash{payload.number, payload.block_hash};
+        BlockId block_number_or_hash{payload.number, payload.block_hash};
         execution::api::BlockNumberOrHash parent_number_or_hash{payload.parent_hash};
         SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
             EXPECT_CALL(*execution_service, get_header(parent_number_or_hash))

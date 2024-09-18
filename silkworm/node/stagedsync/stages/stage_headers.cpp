@@ -101,7 +101,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
 
     Stage::Result result = Stage::Result::kUnspecified;
     std::thread message_receiving;
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
 
     try {
         auto initial_height = current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
@@ -159,7 +159,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return result;
 }
 
@@ -172,7 +172,7 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
     auto new_height = sync_context_->unwind_point.value();
     if (current_height_ <= new_height) return Stage::Result::kSuccess;
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
 
     const BlockNum segment_width{current_height_ - new_height};
     if (segment_width > db::stages::kSmallBlockSegmentWidth) {
@@ -205,7 +205,7 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return result;
 }
 

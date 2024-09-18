@@ -63,8 +63,8 @@ class SnapshotPath {
     [[nodiscard]] uint8_t version() const { return version_; }
 
     [[nodiscard]] BlockNum block_from() const { return block_from_; }
-
     [[nodiscard]] BlockNum block_to() const { return block_to_; }
+    [[nodiscard]] BlockNumRange block_range() const { return BlockNumRange{block_from_, block_to_}; }
 
     [[nodiscard]] SnapshotType type() const { return type_; }
 

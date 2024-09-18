@@ -78,8 +78,8 @@ StatusDataProvider::StatusData StatusDataProvider::get_status_data(uint8_t eth_v
     return make_status_data(chain_head, eth_version, chain_config_);
 }
 
-StatusDataProvider::StatusDataProviderFactory StatusDataProvider::to_factory_function() {
-    return [provider = *this](uint8_t eth_version) mutable -> Task<StatusData> {
+StatusDataProvider::StatusDataProviderFactory StatusDataProvider::to_factory_function(StatusDataProvider provider) {
+    return [provider = std::move(provider)](uint8_t eth_version) mutable -> Task<StatusData> {
         co_return provider.get_status_data(eth_version);
     };
 }

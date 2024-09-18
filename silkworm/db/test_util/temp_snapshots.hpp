@@ -170,7 +170,7 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
 //! At least 2 blocks are required because RecSplit key set must have at least *2* keys
 class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
   public:
-    inline static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001500-headers.seg"};
+    static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001500-headers.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleHeaderSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
@@ -212,7 +212,7 @@ class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
 //! Sample Bodies snapshot file: it contains the mainnet block bodies in range [1'500'012, 1'500'013]
 class SampleBodySnapshotFile : public TemporarySnapshotFile {
   public:
-    inline static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001500-bodies.seg"};
+    static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001500-bodies.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleBodySnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
@@ -253,7 +253,7 @@ class SampleBodySnapshotFile : public TemporarySnapshotFile {
 //! Sample Transactions snapshot file: it contains the mainnet block transactions in range [1'500'012, 1'500'013]
 class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
   public:
-    inline static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001500-transactions.seg"};
+    static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001500-transactions.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleTransactionSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)

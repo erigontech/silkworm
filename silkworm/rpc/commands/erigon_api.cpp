@@ -206,6 +206,13 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
         SILK_TRACE << "#receipts: " << receipts.size();
 
         const auto block{block_with_hash->block};
+        if (block.transactions.size() != receipts.size()) {
+            SILK_ERROR << "erigon_get_block_receipts_by_block_hash: receipts size mismatch transaction size: " << request.dump();
+            reply = make_json_content(request, {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+
         for (size_t i{0}; i < block.transactions.size(); i++) {
             receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
         }
@@ -249,6 +256,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
         } else {
             reply = make_json_content(request, *header);
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_error(request, kServerError, "block header not found: 0x" + silkworm::to_hex(block_hash));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -416,6 +425,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
         SILK_DEBUG << "logs.size(): " << logs.size();
 
         reply = make_json_content(request, logs);
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request, nullptr);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

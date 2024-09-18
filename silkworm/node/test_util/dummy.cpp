@@ -14,4 +14,5 @@
    limitations under the License.
 */
 
-// Empty compilation unit just to make silkworm_infra_test_util build under macOS
+// Empty compilation unit just to make silkworm_node_test_util build under macOS
+void node_test_util_dummy() {}

@@ -27,21 +27,28 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 
 namespace silkworm::execution::api {
 
 //! \brief gMock mock class for stagedsync::ExecutionEngine
 class MockExecutionEngine : public stagedsync::ExecutionEngine {
   public:
-    MockExecutionEngine(boost::asio::io_context& ioc, NodeSettings& ns, db::RWAccess dba)
-        : ExecutionEngine(ioc, ns, std::move(dba)) {}
+    static stagedsync::BodiesStageFactory empty_bodies_stage_factory() {
+        return [](stagedsync::SyncContext*) {
+            return std::unique_ptr<stagedsync::BodiesStage>{};
+        };
+    };
+
+    MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, db::RWAccess dba)
+        : ExecutionEngine(std::move(executor), ns, /* log_timer_factory = */ std::nullopt, empty_bodies_stage_factory(), std::move(dba)) {}
     ~MockExecutionEngine() override = default;
 
-    MOCK_METHOD((void), open, ());
-    MOCK_METHOD((void), close, ());
+    MOCK_METHOD((void), open, (), (override));
+    MOCK_METHOD((void), close, (), (override));
 
     MOCK_METHOD((void), insert_blocks, (const std::vector<std::shared_ptr<Block>>&), (override));
-    MOCK_METHOD((Task<stagedsync::VerificationResult>), verify_chain, (Hash), (override));
+    MOCK_METHOD((Task<execution::api::VerificationResult>), verify_chain, (Hash), (override));
     MOCK_METHOD((bool), notify_fork_choice_update1, (Hash));
     MOCK_METHOD((bool), notify_fork_choice_update2, (Hash, Hash));
     MOCK_METHOD((bool), notify_fork_choice_update3, (Hash, Hash, Hash));
@@ -63,7 +70,7 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
 
     MOCK_METHOD((std::optional<BlockNum>), get_block_number, (Hash), (const, override));
 
-    MOCK_METHOD((BlockHeaders), get_last_headers, (uint64_t), (const, override));
+    MOCK_METHOD((std::vector<BlockHeader>), get_last_headers, (uint64_t), (const, override));
     MOCK_METHOD((BlockNum), block_progress, (), (const, override));
 };
 

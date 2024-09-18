@@ -25,7 +25,7 @@ namespace silkworm::stagedsync {
 
 Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
 
@@ -36,7 +36,7 @@ Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
         const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
         if (previous_progress > target_progress) {
@@ -97,7 +97,7 @@ Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
     }
 
     collector_.reset();
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return is_stopping() ? Stage::Result::kAborted : ret;
 }
 
@@ -107,7 +107,7 @@ Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         throw_if_stopping();
 
@@ -120,7 +120,7 @@ Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
         const auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_stage_progress <= to) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -162,24 +162,24 @@ Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
     }
 
     collector_.reset();
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return is_stopping() ? Stage::Result::kAborted : ret;
 }
 
 Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
     try {
         throw_if_stopping();
         if (!prune_mode_history_.enabled()) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
         if (prune_progress >= forward_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -187,7 +187,7 @@ Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{prune_mode_history_.value_from_head(forward_progress)};
         if (!prune_threshold) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -234,7 +234,7 @@ Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -465,7 +465,7 @@ std::vector<std::string> HistoryIndex::get_log_progress() {
         ret.insert(ret.end(), {"db", "waiting ..."});
     } else {
         switch (operation_) {
-            case OperationType::Forward:
+            case OperationType::kForward:
                 if (loading_) {
                     current_key_ = collector_ ? abridge(collector_->get_load_key(), kAddressLength) : "";
                     ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
@@ -473,7 +473,7 @@ std::vector<std::string> HistoryIndex::get_log_progress() {
                     ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
                 }
                 break;
-            case OperationType::Unwind:
+            case OperationType::kUnwind:
                 if (index_loader_) {
                     current_key_ = index_loader_->get_current_key();
                     ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
@@ -481,7 +481,7 @@ std::vector<std::string> HistoryIndex::get_log_progress() {
                     ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
                 }
                 break;
-            case OperationType::Prune:
+            case OperationType::kPrune:
                 if (index_loader_) {
                     current_key_ = index_loader_->get_current_key();
                     ret.insert(ret.end(), {"to", current_target_, "key", current_key_});

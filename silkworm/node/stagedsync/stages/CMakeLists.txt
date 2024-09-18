@@ -27,6 +27,7 @@ set(LIBS_PUBLIC
     ethash::keccak
     evmc
     secp256k1
+    silkworm_block_execution
     silkworm_core
     silkworm_db
     silkworm_db_etl

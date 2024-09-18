@@ -23,11 +23,10 @@
 
 #include "common.hpp"
 #include "human_size_option.hpp"
-#include "snapshot_options.hpp"
 
 namespace silkworm::cmd::common {
 
-void add_node_options(CLI::App& cli, node::Settings& settings) {
+void add_node_options(CLI::App& cli, NodeSettings& settings) {
     cli.add_flag("--chaindata.exclusive", settings.chaindata_env_config.exclusive,
                  "Chaindata database opened in exclusive mode");
     cli.add_flag("--chaindata.readahead", settings.chaindata_env_config.read_ahead,
@@ -69,17 +68,10 @@ void add_node_options(CLI::App& cli, node::Settings& settings) {
 
     cli.add_flag("--fakepow", settings.fake_pow, "Disables proof-of-work verification");
 
-    add_option_private_api_address(cli, settings.server_settings.address_uri);
     add_option_remote_sentry_addresses(cli, settings.remote_sentry_addresses, /*is_required=*/false);
 
     // Chain options
     add_option_chain(cli, settings.network_id);
-
-    // RPC server options
-    add_context_pool_options(cli, settings.server_settings.context_pool_settings);
-
-    // Snapshot&Bittorrent options
-    add_snapshot_options(cli, settings.snapshot_settings);
 }
 
 }  // namespace silkworm::cmd::common

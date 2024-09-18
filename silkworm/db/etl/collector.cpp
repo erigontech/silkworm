@@ -165,7 +165,7 @@ std::filesystem::path Collector::set_work_path(const std::optional<std::filesyst
     // If something provided ensure exists as a directory
     if (provided_work_path.has_value()) {
         if (fs::exists(provided_work_path.value()) && !fs::is_directory(provided_work_path.value())) {
-            throw etl_error("Invalid collector directory name");
+            throw EtlError("Invalid collector directory name");
         }
         res = provided_work_path.value();
     } else {

@@ -31,7 +31,6 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     silkworm_db
     silkworm_core
     silkworm_interfaces
-    silkworm_node
     asio-grpc::asio-grpc
     cborcpp
     evmone
@@ -51,6 +50,7 @@ set(SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES
     absl::strings
     evmc::instructions
     roaring::roaring
+    silkworm_execution
 )
 # cmake-format: on
 

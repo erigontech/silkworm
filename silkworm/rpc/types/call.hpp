@@ -45,8 +45,7 @@ struct Call {
     std::optional<uint64_t> nonce;
     AccessList access_list;
 
-    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<intx::uint256>& base_fee_per_gas,
-                                                       const std::optional<AccessList>& override_access_list = std::nullopt,
+    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<AccessList>& override_access_list = std::nullopt,
                                                        const std::optional<uint64_t> override_nonce = std::nullopt) const {
         silkworm::Transaction txn{};
         txn.set_sender(from ? *from : evmc::address{});
@@ -78,7 +77,7 @@ struct Call {
             // SILKWORM_ASSERT(!gas_price);
             txn.type = TransactionType::kDynamicFee;
             txn.max_priority_fee_per_gas = max_priority_fee_per_gas.value_or(intx::uint256{0});
-            txn.max_fee_per_gas = max_fee_per_gas.value_or(base_fee_per_gas.value_or(intx::uint256{0}));
+            txn.max_fee_per_gas = max_fee_per_gas.value_or(intx::uint256{0});
         }
 
         txn.value = value.value_or(intx::uint256{0});

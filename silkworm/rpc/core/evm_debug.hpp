@@ -61,6 +61,7 @@ using Storage = std::map<std::string, std::string>;
 
 struct DebugLog {
     std::uint32_t pc{0};
+    unsigned char opcode{0};
     std::string op;
     std::int64_t gas{0};
     std::int64_t gas_cost{0};
@@ -69,16 +70,6 @@ struct DebugLog {
     std::vector<std::string> memory;
     std::vector<std::string> stack;
     Storage storage;
-};
-
-struct FixCallGasInfo {
-    unsigned char opcode;
-    int32_t depth{0};
-    int64_t stipend{0};
-    int16_t code_cost{0};
-    int64_t call_gas{0};
-    int64_t gas_cost{0};
-    bool precompiled{false};
 };
 
 class DebugTracer : public EvmTracer {
@@ -101,11 +92,6 @@ class DebugTracer : public EvmTracer {
 
   private:
     void write_log(const DebugLog& log);
-    void fill_call_gas_info(unsigned char opcode,
-                            const evmone::ExecutionState& execution_state,
-                            const intx::uint256* stack_top,
-                            int stack_height,
-                            const silkworm::IntraBlockState& intra_block_state);
 
     json::Stream& stream_;
     const DebugConfig& config_;
@@ -113,8 +99,6 @@ class DebugTracer : public EvmTracer {
     std::map<evmc::address, Storage> storage_;
     const char* const* opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
-    std::stack<std::int64_t> start_gas_;
-    std::optional<FixCallGasInfo> fix_call_gas_info_;
     std::optional<uint8_t> last_opcode_;
 };
 

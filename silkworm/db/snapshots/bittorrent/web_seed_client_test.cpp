@@ -89,7 +89,7 @@ static boost::urls::url make_e2_snapshots_provider_url() {
 }
 
 struct WebSeedClientTest : public test_util::ContextTestBase {
-    snapshots::Config known_config{snapshots::Config::lookup_known_config(/*chain_id=*/1, /*whitelist=*/{})};
+    snapshots::Config known_config{snapshots::Config::lookup_known_config(/*chain_id=*/1)};
     std::unique_ptr<WebSessionMock> session{std::make_unique<WebSessionMock>()};
     WebSeedClientForTest client{{kErigon2Snapshots}, known_config.preverified_snapshots()};
 };

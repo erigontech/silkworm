@@ -63,8 +63,8 @@ static inline CursorResult adjust_cursor_position_if_unpositioned(
     // that are not positioned, but also for those pointing to the end of data.
     // Unfortunately, there's no MDBX API to differentiate the two.
     if (c.eof()) {
-        return (d == CursorMoveDirection::Forward) ? c.to_first(/*throw_notfound=*/false)
-                                                   : c.to_last(/*throw_notfound=*/false);
+        return (d == CursorMoveDirection::kForward) ? c.to_first(/*throw_notfound=*/false)
+                                                    : c.to_last(/*throw_notfound=*/false);
     }
     return c.current(/*throw_notfound=*/false);
 }
@@ -80,7 +80,7 @@ static inline CursorResult strict_lower_bound(ROCursor& cursor, const ByteView k
 }
 
 static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection direction) {
-    return direction == CursorMoveDirection::Forward
+    return direction == CursorMoveDirection::kForward
                ? mdbx::cursor::move_operation::next
                : mdbx::cursor::move_operation::previous;
 }
@@ -93,17 +93,17 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     }
 
     // Check datafile exists if create is not set
-    fs::path db_path{config.path};
-    if (db_path.has_filename()) {
-        db_path += std::filesystem::path::preferred_separator;  // Remove ambiguity. It has to be a directory
+    fs::path env_path{config.path};
+    if (env_path.has_filename()) {
+        env_path += std::filesystem::path::preferred_separator;  // Remove ambiguity. It has to be a directory
     }
-    if (!fs::exists(db_path)) {
-        fs::create_directories(db_path);
-    } else if (!fs::is_directory(db_path)) {
-        throw std::runtime_error("Path " + db_path.string() + " is not valid");
+    if (!fs::exists(env_path)) {
+        fs::create_directories(env_path);
+    } else if (!fs::is_directory(env_path)) {
+        throw std::runtime_error("Path " + env_path.string() + " is not valid");
     }
 
-    fs::path db_file{db::get_datafile_path(db_path)};
+    fs::path db_file{db::get_datafile_path(env_path)};
     const size_t db_file_size{fs::exists(db_file) ? fs::file_size(db_file) : 0};
 
     if (!config.create && !db_file_size) {
@@ -169,7 +169,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     op.max_maps = config.max_tables;
     op.max_readers = config.max_readers;
 
-    ::mdbx::env_managed env{db_path.native(), cp, op, config.shared};
+    ::mdbx::env_managed env{env_path.native(), cp, op, config.shared};
 
     // MDBX will not change the page size if db already exists, so we need to read value
     config.page_size = env.get_pagesize();
@@ -272,7 +272,7 @@ void RWTxnManaged::commit_and_stop() {
     }
 }
 
-thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> PooledCursor::handles_pool_{};
+thread_local ObjectPool<MDBX_cursor, detail::CursorHandleDeleter> PooledCursor::handles_pool_{};
 
 PooledCursor::PooledCursor() {
     handle_ = handles_pool_.acquire();
@@ -633,7 +633,7 @@ size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t count,
 
 size_t cursor_erase(RWCursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
     CursorResult data{
-        direction == CursorMoveDirection::Forward
+        direction == CursorMoveDirection::kForward
             ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
             : strict_lower_bound(cursor, set_key)};
 

@@ -422,7 +422,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
             reply = make_json_content(request);
         } else {
             trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-            const auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction);
+            const auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction, /* gas_bailout */ false);
 
             uint16_t index = indices[0];
             if (rpc::compatibility::is_erigon_json_api_compatibility_required()) {
@@ -467,7 +467,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
             reply = make_json_content(request);
         } else {
             trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-            auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction);
+            auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction, /* gas_bailout */ false);
             reply = make_json_content(request, result);
         }
     } catch (const std::exception& e) {

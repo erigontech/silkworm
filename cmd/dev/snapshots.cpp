@@ -65,7 +65,8 @@ constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 constexpr int kDefaultRepetitions{1};
 
 //! The settings for handling Thorax snapshots customized for this tool
-struct SnapSettings : public SnapshotSettings {
+struct SnapshotSubcommandSettings {
+    SnapshotSettings settings;
     std::filesystem::path input_file_path;
     std::optional<std::string> snapshot_file_name;
     int page_size{kDefaultPageSize};
@@ -73,10 +74,13 @@ struct SnapSettings : public SnapshotSettings {
     std::optional<std::string> lookup_hash;
     std::optional<BlockNum> lookup_number;
     bool print{true};
+
+    const std::filesystem::path& repository_dir() const { return settings.repository_dir; }
 };
 
 //! The settings for handling BitTorrent protocol customized for this tool
-struct DownloadSettings : public bittorrent::BitTorrentSettings {
+struct DownloadSettings {
+    bittorrent::BitTorrentSettings bittorrent_settings;
     ChainId chain_id{kMainnetConfig.chain_id};
     std::string url_seed;
     bool download_web_seed_torrents{false};
@@ -109,7 +113,7 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
 //! The overall settings for the snapshot toolbox
 struct SnapshotToolboxSettings {
     log::Settings log_settings;
-    SnapSettings snapshot_settings;
+    SnapshotSubcommandSettings snapshot_settings;
     DownloadSettings download_settings;
     int repetitions{kDefaultRepetitions};
 };
@@ -141,7 +145,8 @@ struct BlockNumberValidator : public CLI::Validator {
 void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& snapshot_settings = settings.snapshot_settings;
-    auto& bittorrent_settings = settings.download_settings;
+    auto& download_settings = settings.download_settings;
+    auto& bittorrent_settings = settings.download_settings.bittorrent_settings;
 
     add_logging_options(app, log_settings);
 
@@ -151,7 +156,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     }
     app.require_subcommand(1);
 
-    app.add_option("--snapshot_dir", snapshot_settings.repository_dir, "Path to snapshot repository")
+    app.add_option("--snapshot_dir", snapshot_settings.settings.repository_dir, "Path to snapshot repository")
         ->capture_default_str();
     app.add_option("--repetitions", settings.repetitions, "How many times to repeat the execution")
         ->capture_default_str()
@@ -178,15 +183,15 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
             ->check(HashValidator{});
     }
     for (auto& cmd : {commands[SnapshotTool::download]}) {
-        add_option_chain(*cmd, bittorrent_settings.chain_id);
+        add_option_chain(*cmd, download_settings.chain_id);
         cmd->add_option("--torrent_dir", bittorrent_settings.repository_path, "Path to torrent file repository")
             ->capture_default_str();
-        cmd->add_option("--magnet", bittorrent_settings.magnet_uri, "Magnet link to download")
+        cmd->add_option("--magnet", download_settings.magnet_uri, "Magnet link to download")
             ->capture_default_str();
-        cmd->add_option("--url_seed", bittorrent_settings.url_seed, "URL seed to download from")
+        cmd->add_option("--url_seed", download_settings.url_seed, "URL seed to download from")
             ->capture_default_str();
         cmd->add_flag("--download_web_seed_torrents",
-                      bittorrent_settings.download_web_seed_torrents,
+                      download_settings.download_web_seed_torrents,
                       "Flag indicating if torrents got via URL seed should be downloaded")
             ->capture_default_str();
         cmd->add_option("--download_rate_limit",
@@ -204,10 +209,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
                         "Max number of downloads active simultaneously")
             ->capture_default_str()
             ->check(CLI::Range(3, 20));
-        cmd->add_flag("--seeding",
-                      bittorrent_settings.seeding,
-                      "Flag indicating if torrents should be seeded when download is finished")
-            ->capture_default_str();
     }
     for (auto& cmd : {commands[SnapshotTool::create_index],
                       commands[SnapshotTool::open_index],
@@ -232,8 +233,8 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
     app.parse(argc, argv);
 
-    bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
-    snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir / kTorrentRepoPath;
+    bittorrent_settings.repository_path = snapshot_settings.repository_dir() / kTorrentRepoPath;
+    snapshot_settings.settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir() / kTorrentRepoPath;
 }
 
 //! Convert one duration into another one returning the number of ticks for the latter one
@@ -242,7 +243,7 @@ auto duration_as(const std::chrono::duration<R, P>& elapsed) {
     return std::chrono::duration_cast<D>(elapsed).count();
 }
 
-void decode_segment(const SnapSettings& settings, int repetitions) {
+void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions) {
     ensure(settings.snapshot_file_name.has_value(), "decode_segment: --snapshot_file must be specified");
     const auto snap_file{SnapshotPath::parse(std::filesystem::path{*settings.snapshot_file_name})};
     ensure(snap_file.has_value(), "decode_segment: invalid snapshot_file path format");
@@ -261,8 +262,8 @@ static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
     return std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
 }
 
-void count_bodies(const SnapSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
+    SnapshotRepository snapshot_repo{settings.settings, bundle_factory()};
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int num_bodies{0};
@@ -286,8 +287,8 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     SILK_INFO << "How many bodies: " << num_bodies << " txs: " << num_txns << " duration: " << duration << " msec";
 }
 
-void count_headers(const SnapSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+void count_headers(const SnapshotSettings& settings, int repetitions) {
+    SnapshotRepository snapshot_repo{settings, bundle_factory()};
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
@@ -306,7 +307,7 @@ void count_headers(const SnapSettings& settings, int repetitions) {
     SILK_INFO << "How many headers: " << count << " duration: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
-void create_index(const SnapSettings& settings, int repetitions) {
+void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
     ensure(settings.snapshot_file_name.has_value(), "create_index: --snapshot_file must be specified");
     SILK_INFO << "Create index for snapshot: " << *settings.snapshot_file_name;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -345,9 +346,9 @@ void create_index(const SnapSettings& settings, int repetitions) {
     SILK_INFO << "Create index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
-void open_index(const SnapSettings& settings) {
+void open_index(const SnapshotSubcommandSettings& settings) {
     ensure(settings.snapshot_file_name.has_value(), "open_index: --snapshot_file must be specified");
-    std::filesystem::path segment_file_path{settings.repository_dir / *settings.snapshot_file_name};
+    std::filesystem::path segment_file_path{settings.repository_dir() / *settings.snapshot_file_name};
     SILK_INFO << "Open index for snapshot: " << segment_file_path;
     const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
     ensure(snapshot_path.has_value(), [&]() { return "open_index: invalid snapshot file " + segment_file_path.filename().string(); });
@@ -382,7 +383,7 @@ void open_index(const SnapSettings& settings) {
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
-    const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id, /*whitelist=*/{})};
+    const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id)};
     WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots()};
 
     boost::asio::io_context scheduler;
@@ -438,12 +439,11 @@ void download(const DownloadSettings& settings) {
 
     if (!settings.url_seed.empty()) {
         // Download the torrent files via web seeding from settings.url_seed
-        bittorrent::TorrentInfoPtrList web_seed_torrents;
-        web_seed_torrents = download_web_seed(settings);
+        bittorrent::TorrentInfoPtrList web_seed_torrents = download_web_seed(settings);
 
         // Optionally download also the target files by using the torrents just downloaded
         if (settings.download_web_seed_torrents) {
-            bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
+            bittorrent::BitTorrentClient client{settings.bittorrent_settings};
             for (auto it = web_seed_torrents.begin(); it != web_seed_torrents.end(); it = web_seed_torrents.erase(it)) {
                 client.add_torrent_info(*it);
             }
@@ -451,7 +451,7 @@ void download(const DownloadSettings& settings) {
         }
     } else if (settings.magnet_uri) {
         // Download the magnet link
-        bittorrent::BitTorrentClient client{settings};  // NOLINT(cppcoreguidelines-slicing)
+        bittorrent::BitTorrentClient client{settings.bittorrent_settings};
         SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnet_uri;
         client.add_magnet_uri(*settings.magnet_uri);
         download_bittorrent(client);
@@ -491,7 +491,7 @@ static void print_header(const BlockHeader& header, const std::string& snapshot_
               << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }()) << "\n";
 }
 
-void lookup_header_by_hash(const SnapSettings& settings) {
+void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     const auto hash{Hash::from_hex(*settings.lookup_hash)};
     ensure(hash.has_value(), "lookup_header_by_hash: lookup_hash is not a valid hash");
     SILK_INFO << "Lookup header hash: " << hash->to_hex();
@@ -499,7 +499,7 @@ void lookup_header_by_hash(const SnapSettings& settings) {
 
     std::optional<SnapshotPath> matching_snapshot;
     std::optional<BlockHeader> matching_header;
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
     snapshot_repository.reopen_folder();
     for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
@@ -524,12 +524,12 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
-void lookup_header_by_number(const SnapSettings& settings) {
+void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
     const auto block_number{*settings.lookup_number};
     SILK_INFO << "Lookup header number: " << block_number;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
     snapshot_repository.reopen_folder();
     const auto [snapshot_and_index, _] = snapshot_repository.find_segment(SnapshotType::headers, block_number);
     if (snapshot_and_index) {
@@ -548,7 +548,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
     SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
-void lookup_header(const SnapSettings& settings) {
+void lookup_header(const SnapshotSubcommandSettings& settings) {
     ensure(settings.lookup_hash || settings.lookup_number, "lookup_header: either --hash or --number must be used");
     if (settings.lookup_hash) {
         lookup_header_by_hash(settings);
@@ -564,8 +564,8 @@ static void print_body(const BlockBodyForStorage& body, const std::string& snaps
               << "rlp=" << to_hex(body.encode()) << "\n";
 }
 
-void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, const std::string& file_name) {
-    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir / file_name);
+void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum block_number, const std::string& file_name) {
+    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir() / file_name);
     ensure(snapshot_path.has_value(), "lookup_body: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -588,8 +588,8 @@ void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, con
     SILK_INFO << "Lookup body elapsed: " << duration_as<std::chrono::microseconds>(elapsed) << " usec";
 }
 
-void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum block_number) {
+    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
     snapshot_repository.reopen_folder();
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -610,7 +610,7 @@ void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
     SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::microseconds>(elapsed) << " usec";
 }
 
-void lookup_body(const SnapSettings& settings) {
+void lookup_body(const SnapshotSubcommandSettings& settings) {
     ensure(settings.lookup_number.has_value(), "lookup_body: --number must be specified");
     const auto block_number{*settings.lookup_number};
     SILK_INFO << "Lookup body number: " << block_number;
@@ -669,8 +669,8 @@ static void print_txn(const Transaction& txn, const std::string& snapshot_filena
               << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, txn); return b; }()) << "\n";
 }
 
-void lookup_txn_by_hash_in_one(const SnapSettings& settings, const Hash& hash, const std::string& file_name) {
-    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir / file_name);
+void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const Hash& hash, const std::string& file_name) {
+    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir() / file_name);
     ensure(snapshot_path.has_value(), "lookup_tx_by_hash_in_one: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -695,8 +695,8 @@ void lookup_txn_by_hash_in_one(const SnapSettings& settings, const Hash& hash, c
     SILK_INFO << "Lookup txn elapsed: " << duration_as<std::chrono::microseconds>(elapsed) << " usec";
 }
 
-void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const Hash& hash) {
+    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot;
@@ -722,7 +722,7 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
     }
 }
 
-void lookup_txn_by_hash(const SnapSettings& settings, const std::string& lookup_hash) {
+void lookup_txn_by_hash(const SnapshotSubcommandSettings& settings, const std::string& lookup_hash) {
     const auto hash{Hash::from_hex(lookup_hash)};
     ensure(hash.has_value(), "lookup_txn_by_hash: lookup_hash is not a valid hash");
     SILK_INFO << "Lookup txn hash: " << hash->to_hex();
@@ -734,8 +734,8 @@ void lookup_txn_by_hash(const SnapSettings& settings, const std::string& lookup_
     }
 }
 
-void lookup_txn_by_id_in_one(const SnapSettings& settings, uint64_t txn_id, const std::string& file_name) {
-    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir / file_name);
+void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_t txn_id, const std::string& file_name) {
+    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir() / file_name);
     ensure(snapshot_path.has_value(), "lookup_txn_by_id_in_one: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -760,8 +760,8 @@ void lookup_txn_by_id_in_one(const SnapSettings& settings, uint64_t txn_id, cons
     SILK_INFO << "Lookup txn elapsed: " << duration_as<std::chrono::microseconds>(elapsed) << " usec";
 }
 
-void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_t txn_id) {
+    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot;
@@ -787,7 +787,7 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
     }
 }
 
-void lookup_txn_by_id(const SnapSettings& settings, uint64_t txn_id) {
+void lookup_txn_by_id(const SnapshotSubcommandSettings& settings, uint64_t txn_id) {
     SILK_INFO << "Lookup txn ID: " << txn_id;
 
     if (settings.snapshot_file_name) {
@@ -797,7 +797,7 @@ void lookup_txn_by_id(const SnapSettings& settings, uint64_t txn_id) {
     }
 }
 
-void lookup_transaction(const SnapSettings& settings) {
+void lookup_transaction(const SnapshotSubcommandSettings& settings) {
     ensure(settings.lookup_hash || settings.lookup_number, "lookup_transaction: either --hash or --number must be used");
     if (settings.lookup_hash) {
         lookup_txn_by_hash(settings, *settings.lookup_hash);
@@ -806,8 +806,8 @@ void lookup_transaction(const SnapSettings& settings) {
     }
 }
 
-void merge(const SnapSettings& settings) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
+void merge(const SnapshotSettings& settings) {
+    SnapshotRepository snapshot_repository{settings, bundle_factory()};
     snapshot_repository.reopen_folder();
     TemporaryDirectory tmp_dir;
     db::SnapshotMerger merger{snapshot_repository, tmp_dir.path()};
@@ -815,15 +815,26 @@ void merge(const SnapSettings& settings) {
     runner.run(merger.exec());
 }
 
-void sync(const SnapSettings& settings) {
+void sync(const SnapshotSettings& settings) {
+    class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
+      public:
+        explicit NoopStageSchedulerAdapter() = default;
+        ~NoopStageSchedulerAdapter() override = default;
+        Task<void> schedule(std::function<void(db::RWTxn&)> /*callback*/) override {
+            co_return;
+        }
+    };
+
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};  // NOLINT(cppcoreguidelines-slicing)
-    db::SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
-    std::vector<std::string> snapshot_file_names;
-    if (settings.snapshot_file_name) {
-        snapshot_file_names.push_back(*settings.snapshot_file_name);
-    }
-    snapshot_sync.download_snapshots(snapshot_file_names);
+
+    TemporaryDirectory tmp_dir;
+    db::EnvConfig chaindata_env_config{tmp_dir.path()};
+    auto chaindata_env = db::open_env(chaindata_env_config);
+    test_util::TaskRunner runner;
+    NoopStageSchedulerAdapter stage_scheduler;
+    // NOLINTNEXTLINE(cppcoreguidelines-slicing)
+    db::SnapshotSync snapshot_sync{settings, kMainnetConfig.chain_id, chaindata_env, tmp_dir.path(), stage_scheduler};
+    runner.run(snapshot_sync.download_snapshots());
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
 
     SILK_INFO << "Sync elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";
@@ -853,7 +864,7 @@ int main(int argc, char* argv[]) {
                 count_bodies(settings.snapshot_settings, settings.repetitions);
                 break;
             case SnapshotTool::count_headers:
-                count_headers(settings.snapshot_settings, settings.repetitions);
+                count_headers(settings.snapshot_settings.settings, settings.repetitions);
                 break;
             case SnapshotTool::create_index:
                 create_index(settings.snapshot_settings, settings.repetitions);
@@ -877,7 +888,7 @@ int main(int argc, char* argv[]) {
                 lookup_transaction(settings.snapshot_settings);
                 break;
             case SnapshotTool::merge:
-                merge(settings.snapshot_settings);
+                merge(settings.snapshot_settings.settings);
                 break;
             case SnapshotTool::recompress:
                 snapshot_file_recompress(settings.snapshot_settings.input_file_path);
@@ -889,7 +900,7 @@ int main(int argc, char* argv[]) {
                 seg::seg_unzip(settings.snapshot_settings.input_file_path);
                 break;
             case SnapshotTool::sync:
-                sync(settings.snapshot_settings);
+                sync(settings.snapshot_settings.settings);
                 break;
         }
 

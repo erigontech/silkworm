@@ -16,17 +16,15 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
-#include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/execution/api/direct_client.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/settings.hpp>
-#include <silkworm/sentry/api/common/sentry_client.hpp>
-#include <silkworm/sentry/settings.hpp>
 
 namespace silkworm::node {
 
@@ -34,19 +32,17 @@ class NodeImpl;
 
 class Node {
   public:
-    Node(Settings& settings,
-         std::shared_ptr<sentry::api::SentryClient> sentry_client,
-         mdbx::env chaindata_db);
+    Node(
+        rpc::ClientContextPool& context_pool,
+        Settings& settings,
+        mdbx::env chaindata_env);
     ~Node();
 
     Node(const Node&) = delete;
     Node& operator=(const Node&) = delete;
 
-    execution::api::DirectClient& execution_direct_client();
-
-    void setup();
-
     Task<void> run();
+    Task<void> wait_for_setup();
 
   private:
     std::unique_ptr<NodeImpl> p_impl_;

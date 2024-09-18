@@ -26,10 +26,14 @@ namespace silkworm {
 // Switch off the null sanitizer because nullptr SentryClient is formally dereferenced in command->execute.
 [[clang::no_sanitize("null")]] TEST_CASE("internal message") {
     db::test_util::TempChainData context;
-    db::ROAccess dba(context.env());  // not used in the test execution
-    HeaderChain hc(kMainnetConfig);   // not used in the test execution
-    BodySequence bs;                  // not used in the test execution
-    SentryClient* sc = nullptr;       // not used in the test execution
+    // not used in the test execution
+    db::ROAccess dba(context.env());
+    // not used in the test execution
+    HeaderChain hc(kMainnetConfig, /* use_preverified_hashes = */ false);
+    // not used in the test execution
+    BodySequence bs;
+    // not used in the test execution
+    SentryClient* sc = nullptr;
 
     using result_t = std::vector<int>;
 

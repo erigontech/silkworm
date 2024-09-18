@@ -44,15 +44,20 @@ namespace fs = std::filesystem;
 using namespace std::chrono_literals;
 
 std::vector<char> BitTorrentClient::load_file(const fs::path& filename) {
-    std::ifstream input_file_stream{filename, std::ios_base::binary};
-    input_file_stream.unsetf(std::ios_base::skipws);
-    return {std::istream_iterator<char>(input_file_stream), std::istream_iterator<char>()};
+    if (!std::filesystem::exists(filename)) return {};
+    std::ifstream input_file_stream{filename, std::ios::binary | std::ios::ate};
+    input_file_stream.exceptions(std::ios::failbit | std::ios::badbit);
+    std::streamsize file_size = input_file_stream.tellg();
+    std::vector<char> contents(static_cast<size_t>(file_size));
+    input_file_stream.seekg(0);
+    input_file_stream.read(contents.data(), file_size);
+    return contents;
 }
 
 void BitTorrentClient::save_file(const fs::path& filename, const std::vector<char>& data) {
     SILK_TRACE << "Save #data=" << data.size() << " in file: " << filename;
-    std::ofstream output_file_stream{filename, std::ios_base::binary};
-    output_file_stream.unsetf(std::ios_base::skipws);
+    std::ofstream output_file_stream{filename, std::ios::binary | std::ios::trunc};
+    output_file_stream.exceptions(std::ios::failbit | std::ios::badbit);
     output_file_stream.write(data.data(), static_cast<std::streamsize>(data.size()));
 }
 
@@ -189,10 +194,6 @@ bool BitTorrentClient::exists_resume_file(const lt::info_hash_t& info_hashes) co
 
 void BitTorrentClient::execution_loop() {
     SILK_TRACE << "BitTorrentClient::execution_loop start";
-
-    if (settings_.verify_on_startup) {
-        recheck_all_finished_torrents();
-    }
 
     stats_metrics_ = lt::session_stats_metrics();
 

@@ -382,12 +382,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 }
                 },
                 "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7": {
-                "balance": {
-                    "*": {
-                    "from": "0x141e903194951083c424fd",
-                    "to": "0x141e903194951083bc1d57"
-                    }
-                },
+                "balance": "=",
                 "code": "=",
                 "nonce": {
                     "*": {
@@ -563,12 +558,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 }
                 },
                 "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7": {
-                "balance": {
-                    "*": {
-                    "from": "0x141e903194951083c424fd",
-                    "to": "0x141e903194951083bc1d57"
-                    }
-                },
+                "balance": "=",
                 "code": "=",
                 "nonce": {
                     "*": {
@@ -681,12 +671,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 }
                 },
                 "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7": {
-                "balance": {
-                    "*": {
-                    "from": "0x141e903194951083c424fd",
-                    "to": "0x141e903194951083bc1d57"
-                    }
-                },
+                "balance": "=",
                 "code": "=",
                 "nonce": {
                     "*": {
@@ -1176,7 +1161,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
                 "balance": {
                     "*": {
                     "from": "0x1a098914888dc0516d2",
-                    "to": "0x1a09891356e7914ae52"
+                    "to": "0x1a098914888d90a2652"
                     }
                 },
                 "code": "=",
@@ -1408,12 +1393,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
             "storage": {}
             },
             "0x578f0a154b23be77fc2033197fbc775637648ad4": {
-            "balance": {
-                "*": {
-                "from": "0x207fbc719f215d705",
-                "to": "0x207fbc719f1e8b991"
-                }
-            },
+            "balance": "=",
             "code": "=",
             "nonce": {
                 "*": {
@@ -1700,12 +1680,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
                     }
                 },
                 "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7": {
-                    "balance": {
-                    "*": {
-                        "from": "0x141e903194951083c424fd",
-                        "to": "0x141e903194951083bc1d57"
-                    }
-                    },
+                    "balance": "=",
                     "code": "=",
                     "nonce": {
                     "*": {
@@ -3664,7 +3639,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     block_with_hash.block.transactions.push_back(txn);
 
     TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
-    const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash, txn));
+    const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash, txn, true));
 
     CHECK(nlohmann::json(result) == R"([
         {
@@ -5644,10 +5619,7 @@ TEST_CASE("VmTrace json serialization") {
                 {
                     "cost":42,
                     "ex":{
-                        "mem":{
-                            "data":"data",
-                            "off":10
-                        },
+                        "mem": null,
                         "push":["0xdeadbeaf"],
                         "store":{
                             "key":"key",
@@ -5667,10 +5639,7 @@ TEST_CASE("VmTrace json serialization") {
         CHECK(nlohmann::json(trace_op) == R"({
             "cost":42,
             "ex":{
-                "mem":{
-                    "data":"data",
-                    "off":10
-                },
+                "mem": null,
                 "push":["0xdeadbeaf"],
                 "store":{
                     "key":"key",
@@ -5686,10 +5655,7 @@ TEST_CASE("VmTrace json serialization") {
     }
     SECTION("TraceEx") {
         CHECK(nlohmann::json(trace_ex) == R"({
-            "mem":{
-                "data":"data",
-                "off":10
-            },
+            "mem": null,
             "push":["0xdeadbeaf"],
             "store":{
                 "key":"key",

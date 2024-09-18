@@ -18,26 +18,30 @@
 
 #include <atomic>
 #include <concepts>
+#include <memory>
+#include <optional>
 #include <set>
 #include <variant>
 #include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
+#include <silkworm/execution/api/execution_engine.hpp>
+#include <silkworm/infra/concurrency/context_pool.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "forks/extending_fork.hpp"
 #include "forks/main_chain.hpp"
+#include "stages/stage_bodies_factory.hpp"
+#include "timer_factory.hpp"
 
 namespace silkworm::stagedsync {
-
-namespace asio = boost::asio;
 
 /**
  * ExecutionEngine is the main component of the staged sync.
@@ -51,42 +55,50 @@ namespace asio = boost::asio;
  * - notify_fork_choice_update need to block to set a consistent view of the chain
  * On main-chain operations are blocking because when there are no forks we do not need async execution
  */
-class ExecutionEngine : public Stoppable {
+class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable {
   public:
-    ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
+    ExecutionEngine(
+        std::optional<boost::asio::any_io_executor> executor,
+        NodeSettings& ns,
+        std::optional<TimerFactory> log_timer_factory,
+        BodiesStageFactory bodies_stage_factory,
+        db::RWAccess dba);
     ~ExecutionEngine() override = default;
 
-    void open();  // needed to circumvent mdbx threading model limitations
-    void close();
+    // needed to circumvent mdbx threading model limitations
+    void open() override;
+    void close() override;
 
     // actions
-    virtual void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
+    void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) override;
     bool insert_block(const std::shared_ptr<Block>& block);
 
-    VerificationResult verify_chain_no_fork_tracking(Hash head_block_hash);
-    virtual Task<VerificationResult> verify_chain(Hash head_block_hash);
+    execution::api::VerificationResult verify_chain_no_fork_tracking(Hash head_block_hash);
+    Task<execution::api::VerificationResult> verify_chain(Hash head_block_hash) override;
 
-    virtual bool notify_fork_choice_update(Hash head_block_hash,
-                                           std::optional<Hash> finalized_block_hash,
-                                           std::optional<Hash> safe_block_hash);
+    bool notify_fork_choice_update(
+        Hash head_block_hash,
+        std::optional<Hash> finalized_block_hash,
+        std::optional<Hash> safe_block_hash) override;
 
     // state
-    virtual BlockNum block_progress() const;
-    virtual BlockId last_fork_choice() const;
-    virtual BlockId last_finalized_block() const;
-    virtual BlockId last_safe_block() const;
+    BlockNum block_progress() const override;
+    BlockId last_fork_choice() const override;
+    BlockId last_finalized_block() const override;
+    BlockId last_safe_block() const override;
+    BlockNum highest_frozen_block_number() const override;
 
     // header/body retrieval
-    std::optional<BlockHeader> get_header(Hash) const;
+    std::optional<BlockHeader> get_header(Hash) const override;
     std::optional<BlockHeader> get_header(BlockNum, Hash) const;
-    std::optional<BlockHeader> get_canonical_header(BlockNum) const;
-    std::optional<Hash> get_canonical_hash(BlockNum) const;
-    std::optional<BlockBody> get_body(Hash) const;
-    std::optional<BlockBody> get_canonical_body(BlockNum) const;
-    bool is_canonical(Hash) const;
-    virtual std::optional<BlockNum> get_block_number(Hash) const;
-    virtual std::vector<BlockHeader> get_last_headers(uint64_t limit) const;
-    std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum> = std::nullopt) const;
+    std::optional<BlockHeader> get_canonical_header(BlockNum) const override;
+    std::optional<Hash> get_canonical_hash(BlockNum) const override;
+    std::optional<BlockBody> get_body(Hash) const override;
+    std::optional<BlockBody> get_canonical_body(BlockNum) const override;
+    bool is_canonical(Hash) const override;
+    std::optional<BlockNum> get_block_number(Hash) const override;
+    std::vector<BlockHeader> get_last_headers(uint64_t limit) const override;
+    std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum>) const override;
 
     StageScheduler& stage_scheduler() const;
 
@@ -99,7 +111,8 @@ class ExecutionEngine : public Stoppable {
     std::optional<ForkingPath> find_forking_point(const BlockHeader& header) const;
     void discard_all_forks();
 
-    asio::io_context& io_context_;
+    std::unique_ptr<concurrency::ContextPool<>> context_pool_;
+    boost::asio::any_io_executor executor_;
     NodeSettings& node_settings_;
 
     MainChain main_chain_;

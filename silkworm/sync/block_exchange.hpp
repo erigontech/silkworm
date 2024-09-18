@@ -19,6 +19,7 @@
 #include <memory>
 #include <variant>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
@@ -35,7 +36,11 @@ class SentryClient;
 //! \brief Implement the logic needed to download headers and bodies
 class BlockExchange : public ActiveComponent {
   public:
-    BlockExchange(SentryClient&, db::ROAccess, const ChainConfig&);
+    BlockExchange(
+        SentryClient& sentry,
+        db::ROAccess dba,
+        const ChainConfig& chain_config,
+        bool use_preverified_hashes);
     ~BlockExchange() override;
 
     // public interface for block downloading
@@ -65,6 +70,8 @@ class BlockExchange : public ActiveComponent {
 
     const ChainConfig& chain_config() const;
     SentryClient& sentry() const;
+
+    BlockNum last_pre_validated_block() const;
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages

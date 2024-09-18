@@ -19,6 +19,7 @@
 #include <functional>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -33,7 +34,7 @@ class BodiesStage : public Stage {
     BodiesStage(
         SyncContext* sync_context,
         const ChainConfig& chain_config,
-        std::function<uint64_t()> preverified_hashes_height);
+        std::function<BlockNum()> last_pre_validated_block);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage() override = default;
@@ -45,7 +46,7 @@ class BodiesStage : public Stage {
   private:
     std::vector<std::string> get_log_progress() override;  // thread safe
     const ChainConfig& chain_config_;
-    std::function<uint64_t()> preverified_hashes_height_;
+    std::function<BlockNum()> last_pre_validated_block_;
     std::atomic<BlockNum> current_height_{0};
 
   protected:

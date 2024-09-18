@@ -61,6 +61,7 @@
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
 #include "../common/common.hpp"
@@ -570,12 +571,26 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     auto chain_config{db::read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
+    boost::asio::io_context io_context;
+
     NodeSettings settings{
         .data_directory = std::make_unique<DataDirectory>(),
         .chaindata_env_config = config,
         .chain_config = chain_config};
 
-    stagedsync::ExecutionPipeline stage_pipeline{&settings};
+    stagedsync::BodiesStageFactory bodies_stage_factory = [&](stagedsync::SyncContext* sync_context) {
+        return std::make_unique<stagedsync::BodiesStage>(sync_context, *settings.chain_config, [] { return 0; });
+    };
+
+    stagedsync::TimerFactory log_timer_factory = [&](std::function<bool()> callback) {
+        return std::make_shared<Timer>(io_context.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
+    };
+
+    stagedsync::ExecutionPipeline stage_pipeline{
+        &settings,
+        std::move(log_timer_factory),
+        std::move(bodies_stage_factory),
+    };
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
 
     ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
@@ -1138,6 +1153,23 @@ static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo
         .key_mode = table2.info.key_mode(),
         .value_mode = table2.info.value_mode(),
     };
+
+    if (table1.stat.ms_entries == 0 && table2.stat.ms_entries == 0) {
+        std::cout << "Both tables ( " << table1.name << ", " << table2.name << ") have zero entries, skipping deep check"
+                  << "\n";
+        return;
+    }
+
+    if (constexpr std::array kIrrelevantTables = {
+            "FREE_DBI"sv,
+            "MAIN_DBI"sv,
+            "DbInfo"sv,
+        };
+        std::any_of(kIrrelevantTables.begin(), kIrrelevantTables.end(), [&table1](const std::string_view table_name) { return table_name == table1.name; })) {
+        std::cout << "Skipping irrelevant table: " << table1.name << "\n";
+        return;
+    }
+
     if (table1_config.value_mode == ::mdbx::value_mode::single) {
         const auto cursor1{txn1.ro_cursor(table1_config)};
         const auto cursor2{txn2.ro_cursor(table2_config)};
@@ -1189,29 +1221,32 @@ static DbComparisonResult compare_db_schema(const DbInfo& db1_info, const DbInfo
 }
 
 static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& db1_table, const DbTableInfo& db2_table,
-                                                bool check_layout, bool verbose) {
+                                                bool check_layout, bool deep, bool verbose) {
     // Check both databases have the same stats (e.g. number of records) for the specified table
-    if (const auto result{compare(db1_table, db2_table, check_layout)}; !result) {
-        const std::string error_message{"mismatch in table " + db1_table.name + ": " + result.error()};
-        if (verbose) {
-            std::cerr << error_message << "\n";
+    if (const auto result{compare(db1_table, db2_table, check_layout)}; !result || deep) {
+        if (!result) {
+            const std::string error_message{"mismatch in table " + db1_table.name + ": " + result.error()};
+            if (verbose) {
+                std::cerr << error_message << "\n";
+            }
             print_table_diff(txn1, txn2, db1_table, db2_table);
+            return tl::make_unexpected(error_message);
         }
-        return tl::make_unexpected(error_message);
+        print_table_diff(txn1, txn2, db1_table, db2_table);
     }
 
     return {};
 }
 
 static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbInfo& db1_info, const DbInfo& db2_info,
-                                             bool check_layout, bool verbose) {
+                                             bool check_layout, bool deep, bool verbose) {
     const auto& db1_tables{db1_info.tables};
     const auto& db2_tables{db2_info.tables};
     SILKWORM_ASSERT(db1_tables.size() == db2_tables.size());
 
     // Check both databases have the same content for each table
     for (size_t i{0}; i < db1_tables.size(); ++i) {
-        if (auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_layout, verbose)}; !result) {
+        if (auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_layout, deep, verbose)}; !result) {
             return result;
         }
     }
@@ -1219,7 +1254,7 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
     return {};
 }
 
-void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, std::optional<std::string_view> table) {
+void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, bool deep, std::optional<std::string_view> table) {
     ensure(fs::exists(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " does not exist"; });
     ensure(fs::is_directory(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " must be a folder"; });
 
@@ -1246,7 +1281,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
         }
 
         // Check both databases have the same content in the specified table
-        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, check_layout, verbose)}; !result) {
+        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, check_layout, deep, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     } else {
@@ -1256,7 +1291,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
         }
 
         // Check both databases have the same content in each table
-        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, check_layout, verbose)}; !result) {
+        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, check_layout, deep, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     }
@@ -1267,10 +1302,10 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
  *
  * Can parse a custom genesis file in json format or import data from known chain configs
  *
- * \param DataDir data_dir : hold data directory info about db paths
+ * \param data_dir : hold data directory info about db paths
  * \param json_file : a string representing the path where to load custom json from
- * \param uint32_t chain_id : an identifier for a known chain
- * \param bool dry : whether or not commit data or run in simulation
+ * \param chain_id : an identifier for a known chain
+ * \param dry : whether to commit data or run in simulation
  *
  */
 void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uint32_t chain_id, bool dry) {
@@ -2204,8 +2239,8 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir, bool keep_b
     snapshots::SnapshotSettings settings;
     settings.repository_dir = data_dir.snapshots().path();
     settings.no_downloader = true;
-    auto bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
-    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};  // NOLINT(cppcoreguidelines-slicing)
+    std::unique_ptr<snapshots::SnapshotBundleFactory> bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
+    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};
     repository.reopen_folder();
     db::DataModel::set_snapshot_repository(&repository);
 
@@ -2301,6 +2336,7 @@ int main(int argc, char* argv[]) {
     auto cmd_compare_datadir = cmd_compare->add_option("--other_datadir", "Path to other data directory")->required();
     auto cmd_compare_verbose = cmd_compare->add_flag("--verbose", "Print verbose output");
     auto cmd_compare_check_layout = cmd_compare->add_flag("--check_layout", "Check if B-tree structures match");
+    auto cmd_compare_deep = cmd_compare->add_flag("--deep", "Run a deep comparison between two databases or tables by comparing keys and values");
     std::optional<std::string> cmd_compare_table;
     cmd_compare->add_option("--table", cmd_compare_table, "Name of specific table to compare")
         ->capture_default_str();
@@ -2466,7 +2502,7 @@ int main(int argc, char* argv[]) {
                     cmd_copy_names, cmd_copy_xnames);
         } else if (*cmd_compare) {
             compare(src_config, cmd_compare_datadir->as<std::filesystem::path>(), cmd_compare_check_layout->as<bool>(),
-                    cmd_compare_verbose->as<bool>(), cmd_compare_table);
+                    cmd_compare_verbose->as<bool>(), cmd_compare_deep->as<bool>(), cmd_compare_table);
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
                          static_cast<bool>(*app_dry_opt));

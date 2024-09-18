@@ -16,6 +16,7 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+add_subdirectory(execution/block)
 add_subdirectory(stagedsync/stages)
 add_subdirectory(test_util)
 
@@ -29,6 +30,7 @@ find_package(Microsoft.GSL REQUIRED)
 find_package(Protobuf REQUIRED)
 
 set(SILKWORM_NODE_PUBLIC_LIBS
+    silkworm_block_execution
     silkworm_core
     silkworm_db
     silkworm_infra
@@ -40,17 +42,17 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     protobuf::libprotobuf
 )
 
-# cmake-format: off
 set(SILKWORM_NODE_PRIVATE_LIBS
     absl::strings
     evmone
     magic_enum::magic_enum
     Microsoft.GSL::GSL
     silkworm_db_etl
+    silkworm_execution
     silkworm_interfaces
     silkworm_stages
+    silkworm_sync
 )
-# cmake-format: on
 
 silkworm_library(
   silkworm_node

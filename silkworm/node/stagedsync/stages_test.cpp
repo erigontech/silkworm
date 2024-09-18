@@ -173,34 +173,51 @@ TEST_CASE("Sync Stages") {
     }
 
     SECTION("Senders") {
-        std::vector<evmc::bytes32> block_hashes{
-            0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32,
-            0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32,
-            0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
-
         auto sample_transactions{test::sample_transactions()};
+        REQUIRE(!sample_transactions.empty());
+        auto sample_receipts{test::sample_receipts()};
+        REQUIRE(!sample_receipts.empty());
 
-        BlockBody block_body;
+        Block block{};
+        block.header.gas_limit = 5'000'000;
+        block.header.gas_used = 21'000;
+
+        static constexpr auto kEncoder = [](Bytes& dest, const Receipt& r) { rlp::encode(dest, r); };
+        block.header.receipts_root = trie::root_hash(std::vector<Receipt>{sample_receipts[0]}, kEncoder);
+        block.transactions.resize(1);
+        block.transactions[0] = sample_transactions[0];
 
         // First block - 1 transaction
-        block_body.transactions.push_back(sample_transactions[0]);
-        REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[0].bytes, 1));
+        Block b1 = block;
+        b1.header.number = 1;
+        REQUIRE_NOTHROW(db::write_header(txn, b1.header));
+        const auto b1_hash = b1.header.hash();
+        REQUIRE_NOTHROW(db::write_body(txn, b1, b1_hash, b1.header.number));
         const auto tx_sequence_after_block1{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
         REQUIRE(tx_sequence_after_block1 == 5);  // 1 tx + 2 system txs for block 1
 
-        // Second block - 1 transactions
-        REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[1].bytes, 2));
+        // Second block - 1 transaction
+        Block b2 = block;
+        b2.header.number = 2;
+        REQUIRE_NOTHROW(db::write_header(txn, b2.header));
+        const auto b2_hash = b2.header.hash();
+        REQUIRE_NOTHROW(db::write_body(txn, b2, b2_hash, b2.header.number));
         const auto tx_sequence_after_block2{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
         REQUIRE(tx_sequence_after_block2 == 8);  // 1 tx + 2 system txs for block 2
 
         // Third block - 0 transactions
-        block_body.transactions.clear();
-        REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[2].bytes, 3));
+        Block b3 = block;
+        b3.header.number = 3;
+        b3.header.transactions_root = kEmptyRoot;
+        b3.transactions.clear();
+        REQUIRE_NOTHROW(db::write_header(txn, b3.header));
+        const auto b3_hash = b3.header.hash();
+        REQUIRE_NOTHROW(db::write_body(txn, b3, b3_hash, b3.header.number));
 
         // Write canonical hashes
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, block_hashes[0].bytes, 1));
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, block_hashes[1].bytes, 2));
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, block_hashes[2].bytes, 3));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, b1_hash.bytes, 1));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, b2_hash.bytes, 2));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, b3_hash.bytes, 3));
 
         // Update progresses
         REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, 3));
@@ -241,20 +258,20 @@ TEST_CASE("Sync Stages") {
 
         REQUIRE_NOTHROW(txn.commit_and_renew());
 
+        constexpr auto kExpectedSender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
         {
             auto senders_map{txn->open_map(db::table::kSenders.name)};
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 2);
 
-            auto expected_sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-            auto written_senders{db::read_senders(txn, 1, block_hashes[0].bytes)};
+            auto written_senders{db::read_senders(txn, 1, b1_hash.bytes)};
             REQUIRE(written_senders.size() == 1);
-            REQUIRE(written_senders[0] == expected_sender);
+            REQUIRE(written_senders[0] == kExpectedSender);
 
-            written_senders = db::read_senders(txn, 2, block_hashes[1].bytes);
+            written_senders = db::read_senders(txn, 2, b2_hash.bytes);
             REQUIRE(written_senders.size() == 1);
-            REQUIRE(written_senders[0] == expected_sender);
+            REQUIRE(written_senders[0] == kExpectedSender);
 
-            written_senders = db::read_senders(txn, 3, block_hashes[2].bytes);
+            written_senders = db::read_senders(txn, 3, b3_hash.bytes);
             REQUIRE(written_senders.empty());
         }
 
@@ -267,15 +284,14 @@ TEST_CASE("Sync Stages") {
             auto senders_map{txn->open_map(db::table::kSenders.name)};
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 1);
 
-            auto expected_sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-            auto written_senders{db::read_senders(txn, 1, block_hashes[0].bytes)};
+            auto written_senders{db::read_senders(txn, 1, b1_hash.bytes)};
             REQUIRE(written_senders.size() == 1);
-            REQUIRE(written_senders[0] == expected_sender);
+            REQUIRE(written_senders[0] == kExpectedSender);
 
-            written_senders = db::read_senders(txn, 2, block_hashes[1].bytes);
+            written_senders = db::read_senders(txn, 2, b2_hash.bytes);
             REQUIRE(written_senders.empty());
 
-            written_senders = db::read_senders(txn, 3, block_hashes[2].bytes);
+            written_senders = db::read_senders(txn, 3, b3_hash.bytes);
             REQUIRE(written_senders.empty());
         }
 
@@ -284,9 +300,11 @@ TEST_CASE("Sync Stages") {
         stage.set_prune_mode_senders(db::BlockAmount(db::BlockAmount::Type::kBefore, 2));
         stage_result = stage.prune(txn);
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
-        auto written_senders{db::read_senders(txn, 1, block_hashes[0].bytes)};
+        auto written_senders{db::read_senders(txn, 1, b1_hash.bytes)};
         REQUIRE(written_senders.empty());
     }
+
+    // TODO(canepat) refactor these tests to use Execution stage instead of mimicking it
 
     SECTION("Execution and HashState") {
         using namespace magic_enum;
@@ -297,7 +315,7 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
 
         uint64_t block_number{1};
-        auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+        const auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
         Block block{};
         block.header.number = block_number;
@@ -311,8 +329,7 @@ TEST_CASE("Sync Stages") {
         };
         block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
-        // This contract initially sets its 0th storage to 0x2a
-        // and its 1st storage to 0x01c9.
+        // This contract initially sets its 0th storage to 0x2a and its 1st storage to 0x01c9.
         // When called, it updates its 0th storage to the input provided.
         Bytes contract_code{*from_hex("600035600055")};
         Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
@@ -335,7 +352,10 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
         // Execute first block
         // ---------------------------------------
-        auto actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        std::vector<Receipt> block_receipts;
+        auto actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+        // We must insert receipts to mimic the behaviour of Execution stage
+        buffer.insert_receipts(block_number, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         auto contract_address{create_address(sender, /*nonce=*/0)};
@@ -356,7 +376,10 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].to = contract_address;
         block.transactions[0].data = ByteView(new_val);
 
-        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        block_receipts.clear();
+        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+        // We must insert receipts to mimic the behaviour of Execution stage
+        buffer.insert_receipts(block_number, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
 
@@ -373,12 +396,27 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].to = contract_address;
         block.transactions[0].data = ByteView{new_val};
 
-        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        block_receipts.clear();
+        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+        // We must insert receipts to mimic the behaviour of Execution stage
+        buffer.insert_receipts(block_number, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         REQUIRE_NOTHROW(buffer.write_to_db());
         REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3));
         REQUIRE_NOTHROW(txn.commit_and_renew());
+
+        // Check state after 3rd block in database
+        auto plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
+        REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+        auto current_record = plain_state_cursor->current(/*throw_notfound=*/false);
+        REQUIRE(current_record);
+        REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
+        auto decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+        REQUIRE(decoded_account);
+        REQUIRE(decoded_account->nonce == 3);
+        auto receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
+        REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(3))));
 
         SECTION("Execution Unwind") {
             // ---------------------------------------
@@ -406,6 +444,57 @@ TEST_CASE("Sync Stages") {
             evmc::bytes32 storage_key0{};
             evmc::bytes32 storage0{buffer2.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
             CHECK(storage0 == 0x000000000000000000000000000000000000000000000000000000000000003e_bytes32);
+
+            // Check state after unwind of the 3rd block in database
+            plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
+            REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+            current_record = plain_state_cursor->current(/*throw_notfound=*/false);
+            REQUIRE(current_record);
+            REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
+            decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+            REQUIRE(decoded_account);
+            REQUIRE(decoded_account->nonce == 2);
+            receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
+            REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(2))));
+        }
+
+        SECTION("Execution failure and unwind") {
+            // Execute INVALID 4th block
+            block_number = 4;
+            block.header.number = block_number;
+            block.transactions[0].nonce = 2;  // <- invalid, should be 3
+            block.transactions[0].value = 1000;
+            block.transactions[0].to = contract_address;
+
+            block_receipts.clear();
+            actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+
+            // Execution stage *must* flush state+progress updates and commit even in case of kInvalidBlock error
+            REQUIRE_NOTHROW(buffer.insert_receipts(block_number, block_receipts));
+            REQUIRE_NOTHROW(buffer.write_to_db());
+            REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 4));  // this was missing after PR #1511
+            txn.commit_and_renew();                                                                // this was missing after PR #1511
+
+            // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+            REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kWrongNonce)));
+
+            // Unwind 4th block and checks if state corresponds to 3rd block
+            stagedsync::SyncContext sync_context{};
+            sync_context.unwind_point.emplace(3);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
+
+            plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
+            REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+            current_record = plain_state_cursor->current(/*throw_notfound=*/false);
+            REQUIRE(current_record);
+            REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
+            decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+            REQUIRE(decoded_account);
+            REQUIRE(decoded_account->nonce == 3);
+            receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
+            REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(3))));
+            REQUIRE(!receipts_cursor->seek(db::to_slice(db::block_key(4))));  // <- this fails after PR #1511
         }
 
         SECTION("Execution Prune Default") {

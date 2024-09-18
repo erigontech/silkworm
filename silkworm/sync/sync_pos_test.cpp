@@ -34,14 +34,17 @@
 
 namespace silkworm::chainsync {
 
-struct PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
+class PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
+  public:
     SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
     mdbx::env_managed chaindata_env{};
     db::ROAccess db_access{chaindata_env};
     test_util::MockBlockExchange block_exchange{sentry_client, db_access, kSepoliaConfig};
     std::shared_ptr<test_util::MockExecutionService> execution_service{std::make_shared<test_util::MockExecutionService>()};
     test_util::MockExecutionClient execution_client{execution_service};
-    PoSSync sync{block_exchange, execution_client};
+
+  protected:
+    PoSSync sync_{block_exchange, execution_client};
 };
 
 Task<void> sleep(std::chrono::milliseconds duration) {
@@ -145,7 +148,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
                     co_return execution::api::ValidChain{};
                 }));
 
-            CHECK(spawn_and_wait(sync.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
         }
     }
 }

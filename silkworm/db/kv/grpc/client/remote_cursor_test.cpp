@@ -51,7 +51,8 @@ static const silkworm::Bytes kAccountChangeSetKeyBytes{string_to_bytes(kAccountC
 static const silkworm::Bytes kAccountChangeSetSubkeyBytes{string_to_bytes(kAccountChangeSetSubkey)};
 static const silkworm::Bytes kAccountChangeSetValueBytes{string_to_bytes(kAccountChangeSetValue)};
 
-struct RemoteCursorTest : test_util::KVTestBase {
+class RemoteCursorTest : public test_util::KVTestBase {
+  public:
     RemoteCursorTest() {
         // Set the call expectations common to all RemoteCursor tests:
         // remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
@@ -62,20 +63,23 @@ struct RemoteCursorTest : test_util::KVTestBase {
 
     // Execute the test preconditions: start a new Tx RPC and read first incoming message (tx_id)
     Task<::remote::Pair> start_and_read_tx_id() {
-        if (!co_await tx_rpc.start(*stub)) {
-            const auto status = co_await tx_rpc.finish();
+        if (!co_await tx_rpc_.start(*stub)) {
+            const auto status = co_await tx_rpc_.finish();
             throw boost::system::system_error{rpc::to_system_code(status.error_code())};
         }
         ::remote::Pair tx_id_pair;
-        if (!co_await tx_rpc.read(tx_id_pair)) {
-            const auto status = co_await tx_rpc.finish();
+        if (!co_await tx_rpc_.read(tx_id_pair)) {
+            const auto status = co_await tx_rpc_.finish();
             throw boost::system::system_error{rpc::to_system_code(status.error_code())};
         }
         co_return tx_id_pair;
     }
 
-    TxRpc tx_rpc{grpc_context_};
-    RemoteCursor remote_cursor{tx_rpc};
+  private:
+    TxRpc tx_rpc_{grpc_context_};
+
+  public:
+    RemoteCursor remote_cursor{tx_rpc_};
 };
 
 #ifndef SILKWORM_SANITIZE

@@ -27,8 +27,9 @@
 
 namespace silkworm::node {
 
-struct Settings : public NodeSettings {
+struct Settings {
     log::Settings log_settings;                     // Configuration for the logging facility
+    NodeSettings node_settings;                     // Configuration for the node
     rpc::DaemonSettings rpcdaemon_settings;         // Configuration for the RPC daemon
     sentry::Settings sentry_settings;               // Configuration for Sentry client + embedded server
     rpc::ServerSettings server_settings;            // Configuration for the gRPC server

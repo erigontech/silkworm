@@ -40,15 +40,15 @@ class KVTestBase : public silkworm::test_util::ContextTestBase {
         return expect_request_async_statechanges(*stub_, ok);
     }
 
-    testing::Expectation expect_request_async_tx(remote::MockKVStub& stb, bool ok) {
-        EXPECT_CALL(stb, PrepareAsyncTxRaw).WillOnce(Return(reader_writer_ptr_.release()));
+    testing::Expectation expect_request_async_tx(remote::MockKVStub& stub, bool ok) {
+        EXPECT_CALL(stub, PrepareAsyncTxRaw).WillOnce(Return(reader_writer_ptr_.release()));
         return EXPECT_CALL(reader_writer_, StartCall).WillOnce([&, ok](void* tag) {
             agrpc::process_grpc_tag(grpc_context_, tag, ok);
         });
     }
 
-    testing::Expectation expect_request_async_statechanges(remote::MockKVStub& stb, bool ok) {
-        EXPECT_CALL(stb, PrepareAsyncStateChangesRaw).WillOnce(Return(statechanges_reader_ptr_.release()));
+    testing::Expectation expect_request_async_statechanges(remote::MockKVStub& stub, bool ok) {
+        EXPECT_CALL(stub, PrepareAsyncStateChangesRaw).WillOnce(Return(statechanges_reader_ptr_.release()));
         return EXPECT_CALL(*statechanges_reader_, StartCall).WillOnce([&, ok](void* tag) {
             agrpc::process_grpc_tag(grpc_context_, tag, ok);
         });

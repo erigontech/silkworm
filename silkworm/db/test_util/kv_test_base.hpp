@@ -33,11 +33,11 @@ using testing::Return;
 class KVTestBase : public silkworm::test_util::ContextTestBase {
   public:
     testing::Expectation expect_request_async_tx(bool ok) {
-        return expect_request_async_tx(*stub, ok);
+        return expect_request_async_tx(*stub_, ok);
     }
 
     testing::Expectation expect_request_async_statechanges(bool ok) {
-        return expect_request_async_statechanges(*stub, ok);
+        return expect_request_async_statechanges(*stub_, ok);
     }
 
     testing::Expectation expect_request_async_tx(remote::MockKVStub& stb, bool ok) {
@@ -58,10 +58,12 @@ class KVTestBase : public silkworm::test_util::ContextTestBase {
     using StrictMockKVTxAsyncReaderWriter = rpc::test::StrictMockAsyncReaderWriter<remote::Cursor, remote::Pair>;
     using StrictMockKVStateChangesAsyncReader = rpc::test::StrictMockAsyncReader<remote::StateChangeBatch>;
 
-    //! Mocked stub of gRPC KV interface
-    std::unique_ptr<StrictMockKVStub> stub{std::make_unique<StrictMockKVStub>()};
+    StrictMockKVStub& stub() { return *stub_; }
 
   protected:
+    //! Mocked stub of gRPC KV interface
+    std::unique_ptr<StrictMockKVStub> stub_{std::make_unique<StrictMockKVStub>()};
+
     //! Mocked reader/writer for Tx bidi streaming RPC of gRPC KV interface
     std::unique_ptr<StrictMockKVTxAsyncReaderWriter> reader_writer_ptr_{
         std::make_unique<StrictMockKVTxAsyncReaderWriter>()};

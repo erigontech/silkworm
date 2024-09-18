@@ -113,7 +113,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::op
     // 2. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status cancelled
     EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
     // Execute the test: opening the stream should succeed until finishes
-    RemoteClient remote_client{make_remote_client(std::move(stub))};
+    RemoteClient remote_client{make_remote_client(std::move(stub_))};
     StateChangesStream stream{context_, remote_client};
     std::future<void> run_completed;
     CHECK_NOTHROW(run_completed = stream.open());
@@ -125,7 +125,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::ru
     SECTION("stream closed-by-peer") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncStateChangesRaw calls succeed
-        EXPECT_CALL(*stub, PrepareAsyncStateChangesRaw)
+        EXPECT_CALL(*stub_, PrepareAsyncStateChangesRaw)
             .WillOnce(InvokeWithoutArgs([&]() {
                 // 2. AsyncReader<remote::StateChangeBatch>::StartCall call succeed
                 EXPECT_CALL(*statechanges_reader_, StartCall)
@@ -146,7 +146,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::ru
                 return statechanges_reader_ptr_.release();
             }));
 
-        RemoteClient remote_client{make_remote_client(std::move(stub))};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         // remote_client.set_min_backoff_timeout(10ms);
         // remote_client.set_max_backoff_timeout(100ms);
         StateChangesStream stream{context_, remote_client};
@@ -163,7 +163,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::ru
         // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status aborted
         EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
-        RemoteClient remote_client{make_remote_client(std::move(stub))};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         StateChangesStream stream{context_, remote_client};
 
         // Execute the test: running the stream should succeed until finishes
@@ -180,7 +180,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::ru
         // 3. AsyncReader<remote::StateChangeBatch>::Finish call succeeds w/ status aborted
         EXPECT_CALL(*statechanges_reader_, Finish).WillOnce(test::finish_streaming_aborted(grpc_context_));
 
-        RemoteClient remote_client{make_remote_client(std::move(stub))};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         StateChangesStream stream{context_, remote_client};
 
         // Execute the test: running the stream should succeed until finishes
@@ -194,7 +194,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
     SECTION("while requesting w/ error every 10ms") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncStateChangesRaw calls succeed
-        EXPECT_CALL(*stub, PrepareAsyncStateChangesRaw)
+        EXPECT_CALL(*stub_, PrepareAsyncStateChangesRaw)
             .WillRepeatedly(InvokeWithoutArgs([&]() {
                 static int counter{0};
                 if (counter > 0) {
@@ -216,7 +216,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
                 return statechanges_reader_ptr_.release();
             }));
 
-        RemoteClient remote_client{make_remote_client(std::move(stub))};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         remote_client.set_min_backoff_timeout(5ms);
         remote_client.set_max_backoff_timeout(10ms);
         StateChangesStream stream{context_, remote_client};
@@ -237,7 +237,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
     SECTION("while reading w/ error every 10ms") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncStateChangesRaw calls succeed
-        EXPECT_CALL(*stub, PrepareAsyncStateChangesRaw)
+        EXPECT_CALL(*stub_, PrepareAsyncStateChangesRaw)
             .WillRepeatedly(InvokeWithoutArgs([&]() {
                 static int counter{0};
                 if (counter > 0) {
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(RemoteStateChangesStreamTest, "RemoteStateChangesStreamTest::cl
                 return statechanges_reader_ptr_.release();
             }));
 
-        RemoteClient remote_client{make_remote_client(std::move(stub))};
+        RemoteClient remote_client{make_remote_client(std::move(stub_))};
         remote_client.set_min_backoff_timeout(5ms);
         remote_client.set_max_backoff_timeout(10ms);
         StateChangesStream stream{context_, remote_client};

@@ -63,7 +63,7 @@ class RemoteCursorTest : public test_util::KVTestBase {
 
     // Execute the test preconditions: start a new Tx RPC and read first incoming message (tx_id)
     Task<::remote::Pair> start_and_read_tx_id() {
-        if (!co_await tx_rpc_.start(*stub)) {
+        if (!co_await tx_rpc_.start(*stub_)) {
             const auto status = co_await tx_rpc_.finish();
             throw boost::system::system_error{rpc::to_system_code(status.error_code())};
         }

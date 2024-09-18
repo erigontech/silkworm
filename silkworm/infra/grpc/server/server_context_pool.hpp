@@ -19,7 +19,6 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
-#include <ostream>
 
 #include <agrpc/asio_grpc.hpp>
 #include <grpcpp/grpcpp.h>
@@ -30,13 +29,11 @@
 namespace silkworm::rpc {
 
 using ServerCompletionQueuePtr = std::unique_ptr<::grpc::ServerCompletionQueue>;
-using ServerCompletionQueueFactory = std::function<ServerCompletionQueuePtr()>;
 
 //! Asynchronous server scheduler running an execution loop w/ integrated gRPC server.
 class ServerContext : public concurrency::Context {
   public:
-    ServerContext(std::size_t context_id, ServerCompletionQueuePtr&& server_queue,
-                  concurrency::WaitMode wait_mode = concurrency::WaitMode::kBlocking);
+    ServerContext(std::size_t context_id, ServerCompletionQueuePtr server_queue);
 
     [[nodiscard]] agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
     [[nodiscard]] agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }
@@ -45,16 +42,6 @@ class ServerContext : public concurrency::Context {
     void execute_loop() override;
 
   private:
-    //! Execute back-off loop until stopped.
-    void execute_loop_backoff();
-
-    //! Execute single-threaded loop until stopped.
-    template <typename IdleStrategy>
-    void execute_loop_single_threaded(IdleStrategy idle_strategy);
-
-    //! Execute multi-threaded loop until stopped.
-    void execute_loop_multi_threaded();
-
     //! The asio-grpc asynchronous event schedulers.
     std::unique_ptr<agrpc::GrpcContext> server_grpc_context_;
     std::unique_ptr<agrpc::GrpcContext> client_grpc_context_;
@@ -64,21 +51,15 @@ class ServerContext : public concurrency::Context {
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> client_grpc_context_work_;
 };
 
-std::ostream& operator<<(std::ostream& out, const ServerContext& c);
-
 //! Pool of \ref ServerContext instances running as separate reactive schedulers.
 class ServerContextPool : public concurrency::ContextPool<ServerContext> {
   public:
-    explicit ServerContextPool(std::size_t pool_size);
     ServerContextPool(
         concurrency::ContextPoolSettings settings,
-        const ServerCompletionQueueFactory& queue_factory);
+        grpc::ServerBuilder& server_builder);
 
     ServerContextPool(const ServerContextPool&) = delete;
     ServerContextPool& operator=(const ServerContextPool&) = delete;
-
-    //! Add a new \ref ServerContext to the pool.
-    void add_context(ServerCompletionQueuePtr queue, concurrency::WaitMode wait_mode);
 };
 
 }  // namespace silkworm::rpc

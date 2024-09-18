@@ -123,7 +123,6 @@ static chainsync::EngineRpcSettings make_sync_engine_rpc_settings(
         .engine_ifc_log_settings = rpcdaemon_settings.engine_ifc_log_settings,
         .private_api_addr = rpcdaemon_settings.private_api_addr,
         .log_verbosity = log_verbosity,
-        .wait_mode = rpcdaemon_settings.context_pool_settings.wait_mode,
         .jwt_secret_file = rpcdaemon_settings.jwt_secret_file,
     };
 }

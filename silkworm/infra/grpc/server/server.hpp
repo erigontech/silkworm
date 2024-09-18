@@ -37,10 +37,11 @@ class Server {
   public:
     //! Build a ready-to-start RPC server according to specified configuration.
     explicit Server(ServerSettings settings)
-        : settings_{std::move(settings)}, context_pool_{settings_.context_pool_settings.num_contexts} {}
+        : settings_{std::move(settings)},
+          context_pool_{settings_.context_pool_settings, builder_} {}
 
     /**
-     * No need to explicitly shutdown the server because this destructor takes care.
+     * No need to explicitly shut down the server because this destructor takes care.
      * Use \ref shutdown() if you want explicit control over termination before destruction.
      */
     virtual ~Server() {
@@ -61,7 +62,7 @@ class Server {
             return;
         }
 
-        grpc::ServerBuilder builder;
+        grpc::ServerBuilder& builder = builder_;
 
         // Disable SO_REUSEPORT socket option to obtain "address already in use" on Windows.
         builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
@@ -69,11 +70,6 @@ class Server {
         // Add the local endpoint to bind the RPC server to (selected_port will be set *after* BuildAndStart call).
         int selected_port{0};
         builder.AddListeningPort(settings_.address_uri, settings_.credentials, &selected_port);
-
-        // Add one server-side gRPC completion queue for each execution context.
-        for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
-            context_pool_.add_context(builder.AddCompletionQueue(), settings_.context_pool_settings.wait_mode);
-        }
 
         // gRPC async model requires the server to register the RPC services first.
         SILK_TRACE << "Server " << this << " registering async services";
@@ -104,7 +100,7 @@ class Server {
         SILK_TRACE << "Server::join " << this << " END";
     }
 
-    //! Stop this Server instance forever. Any subsequent call to \ref build_and_start() has not effect.
+    //! Stop this Server instance forever. Any subsequent call to \ref build_and_start() has no effect.
     void shutdown() {
         SILK_TRACE << "Server::shutdown " << this << " START";
 
@@ -140,7 +136,7 @@ class Server {
     }
 
     //! Returns the number of server contexts.
-    [[nodiscard]] std::size_t num_contexts() const { return context_pool_.num_contexts(); }
+    [[nodiscard]] std::size_t num_contexts() const { return context_pool_.size(); }
 
     //! Get the next server context in round-robin scheme.
     ServerContext const& next_context() { return context_pool_.next_context(); }
@@ -160,6 +156,8 @@ class Server {
   private:
     //! The server configuration options.
     ServerSettings settings_;
+
+    grpc::ServerBuilder builder_;
 
     //! The gRPC server instance tied to this Server lifetime.
     std::unique_ptr<grpc::Server> server_;

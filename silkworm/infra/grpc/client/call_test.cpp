@@ -34,19 +34,20 @@ using testing::Return;
 using namespace silkworm::grpc::test_util;
 namespace proto = ::remote;
 
-struct CallTest : public silkworm::test_util::ContextTestBase {
+class CallTest : public silkworm::test_util::ContextTestBase {
+  public:
     //! Check that before *and* after calling unary_rpc utility function we're executing on the same asio::io_context thread.
     //! This is a widespread threading assumption for our production code (e.g. rpcdaemon) but needs special handling because
     //! asio-grpc library functions currently used in unary_rpc do complete handlers on GrpcContext service thread
     template <class Stub, class Request, class Response>
     Task<Response> check_unary_grpc_threading(
         agrpc::detail::ClientUnaryRequest<Stub, Request, ::grpc::ClientAsyncResponseReaderInterface<Response>> rpc,
-        std::unique_ptr<Stub>& stb,
+        std::unique_ptr<Stub>& stub,
         Request request,
         agrpc::GrpcContext& grpc_context) {
         const auto this_thread_id{std::this_thread::get_id()};
         CHECK(io_context_.get_executor().running_in_this_thread());
-        const auto response = co_await unary_rpc(rpc, *stb, request, grpc_context);
+        const auto response = co_await unary_rpc(rpc, *stub, request, grpc_context);
         CHECK(io_context_.get_executor().running_in_this_thread());
         CHECK(this_thread_id == std::this_thread::get_id());
         co_return response;
@@ -55,7 +56,7 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
     //! Same check as above but for agrpc::ClientRPC<>::request, which does not require dispatching to asio::io_context executor
     //! because it does guarantee to complete handlers on the calling executor: https://github.com/erigontech/silkrpc/issues/439
     Task<::types::VersionReply> check_unary_agrpc_client_threading(
-        proto::KV::StubInterface& stb,
+        proto::KV::StubInterface& stub,
         google::protobuf::Empty request,
         agrpc::GrpcContext& grpc_context) {
         ::grpc::ClientContext client_context;
@@ -66,7 +67,7 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
         RPC::Response response;
         const auto this_thread_id{std::this_thread::get_id()};
         CHECK(io_context_.get_executor().running_in_this_thread());
-        ::grpc::Status status = co_await RPC::request(grpc_context, stb, client_context, request, response);
+        ::grpc::Status status = co_await RPC::request(grpc_context, stub, client_context, request, response);
         CHECK(io_context_.get_executor().running_in_this_thread());
         CHECK(this_thread_id == std::this_thread::get_id());
 
@@ -80,64 +81,65 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
     using StrictMockKVStub = testing::StrictMock<proto::MockKVStub>;
     using StrictMockKVVersionAsyncResponseReader = rpc::test::StrictMockAsyncResponseReader<::types::VersionReply>;
 
+  protected:
     //! Mocked stub of gRPC KV interface
-    std::unique_ptr<StrictMockKVStub> stub{std::make_unique<StrictMockKVStub>()};
+    std::unique_ptr<StrictMockKVStub> stub_{std::make_unique<StrictMockKVStub>()};
 
     //! Mocked reader for Version unary RPC of gRPC KV interface
-    std::unique_ptr<StrictMockKVVersionAsyncResponseReader> version_reader_ptr{
+    std::unique_ptr<StrictMockKVVersionAsyncResponseReader> version_reader_ptr_{
         std::make_unique<StrictMockKVVersionAsyncResponseReader>()};
-    StrictMockKVVersionAsyncResponseReader& version_reader{*version_reader_ptr};
+    StrictMockKVVersionAsyncResponseReader& version_reader_{*version_reader_ptr_};
 };
 
 TEST_CASE_METHOD(CallTest, "Unary gRPC threading: unary_rpc", "[grpc][client]") {
     // Set the call expectations:
     // 1. remote::KV::StubInterface::AsyncVersionRaw call succeeds
-    EXPECT_CALL(*stub, AsyncVersionRaw).WillOnce(Return(version_reader_ptr.get()));
+    EXPECT_CALL(*stub_, AsyncVersionRaw).WillOnce(Return(version_reader_ptr_.get()));
     // 2. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-    EXPECT_CALL(version_reader, Finish).WillOnce(test::finish_ok(grpc_context_));
+    EXPECT_CALL(version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
 
     // Trick necessary because expectations require MockKVStub, whilst production code wants remote::KV::StubInterface
-    std::unique_ptr<proto::KV::StubInterface> stub2{std::move(stub)};
+    std::unique_ptr<proto::KV::StubInterface> stub{std::move(stub_)};
 
     // Execute the test: check threading assumptions during async Version RPC execution
-    spawn_and_wait(check_unary_grpc_threading(&proto::KV::StubInterface::AsyncVersion, stub2, google::protobuf::Empty{}, grpc_context_));
+    spawn_and_wait(check_unary_grpc_threading(&proto::KV::StubInterface::AsyncVersion, stub, google::protobuf::Empty{}, grpc_context_));
 }
 
 TEST_CASE_METHOD(CallTest, "Unary gRPC threading: agrpc::ClientRPC", "[grpc][client]") {
     // Set the call expectations:
     // 1. remote::KV::StubInterface::PrepareAsyncVersionRaw call succeeds
-    EXPECT_CALL(*stub, PrepareAsyncVersionRaw).WillOnce(Return(version_reader_ptr.get()));
+    EXPECT_CALL(*stub_, PrepareAsyncVersionRaw).WillOnce(Return(version_reader_ptr_.get()));
     // 2. AsyncResponseReader<types::VersionReply>::StartCall call succeeds
-    EXPECT_CALL(version_reader, StartCall).WillOnce([&]() {});
+    EXPECT_CALL(version_reader_, StartCall).WillOnce([&]() {});
     // 3. AsyncResponseReader<types::VersionReply>::Finish call succeeds w/ status OK
-    EXPECT_CALL(version_reader, Finish).WillOnce(test::finish_ok(grpc_context_));
+    EXPECT_CALL(version_reader_, Finish).WillOnce(test::finish_ok(grpc_context_));
 
     // Execute the test: check threading assumptions during async Version RPC execution
-    spawn_and_wait(check_unary_agrpc_client_threading(*stub, google::protobuf::Empty{}, grpc_context_));
+    spawn_and_wait(check_unary_agrpc_client_threading(*stub_, google::protobuf::Empty{}, grpc_context_));
 }
 
 TEST_CASE_METHOD(CallTest, "Unary gRPC cancelling: unary_rpc", "[grpc][client]") {
     // Set the call expectations:
     // 1. remote::KV::StubInterface::AsyncVersionRaw call succeeds
-    EXPECT_CALL(*stub, AsyncVersionRaw).WillOnce(Return(version_reader_ptr.get()));
+    EXPECT_CALL(*stub_, AsyncVersionRaw).WillOnce(Return(version_reader_ptr_.get()));
     // 2. AsyncResponseReader<types::VersionReply>::Finish call fails w/ status CANCELLED
     boost::asio::cancellation_signal cancellation_signal;
     auto cancellation_slot = cancellation_signal.slot();
 
     // Trick: we use Finish as a hook to signal cancellation, but then we must trigger tag by hand anyway
     // Better solution possible with agrpc::ClientRPC: use StartCall as a hook to signal cancellation
-    EXPECT_CALL(version_reader, Finish).WillOnce([&](auto&&, ::grpc::Status* status, void* tag) {
+    EXPECT_CALL(version_reader_, Finish).WillOnce([&](auto&&, ::grpc::Status* status, void* tag) {
         cancellation_signal.emit(boost::asio::cancellation_type::all);
         *status = ::grpc::Status::CANCELLED;
         agrpc::process_grpc_tag(grpc_context_, tag, /*ok=*/true);
     });
 
     // Trick necessary because expectations require MockKVStub, whilst production code wants remote::KV::StubInterface
-    std::unique_ptr<proto::KV::StubInterface> stub2{std::move(stub)};
+    std::unique_ptr<proto::KV::StubInterface> stub{std::move(stub_)};
 
     // Execute the test: start and then cancel async Version RPC execution
     auto version_reply = spawn(unary_rpc(&proto::KV::StubInterface::AsyncVersion,
-                                         *stub2,
+                                         *stub,
                                          google::protobuf::Empty{},
                                          grpc_context_,
                                          &cancellation_slot));

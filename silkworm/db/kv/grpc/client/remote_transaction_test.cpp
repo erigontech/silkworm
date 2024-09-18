@@ -53,12 +53,12 @@ static remote::Pair make_fake_tx_created_pair() {
     return pair;
 }
 
-bool ensure_fake_tx_created_tx_id(const RemoteTransaction& remote_tx_) {
-    return remote_tx_.tx_id() == 1;
+bool ensure_fake_tx_created_tx_id(const RemoteTransaction& remote_tx) {
+    return remote_tx.tx_id() == 1;
 }
 
-bool ensure_fake_tx_created_view_id(const RemoteTransaction& remote_tx_) {
-    return remote_tx_.view_id() == 4;
+bool ensure_fake_tx_created_view_id(const RemoteTransaction& remote_tx) {
+    return remote_tx.view_id() == 4;
 }
 
 #ifndef SILKWORM_SANITIZE

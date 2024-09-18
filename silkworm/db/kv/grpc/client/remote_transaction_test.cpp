@@ -35,12 +35,12 @@ namespace proto = ::remote;
 namespace test = rpc::test;
 
 class RemoteTransactionTest : public db::test_util::KVTestBase {
-  public:
-    RemoteTransaction remote_tx{*stub_,
-                                grpc_context_,
-                                &state_cache_,
-                                {},
-                                {}};
+  protected:
+    RemoteTransaction remote_tx_{*stub_,
+                                 grpc_context_,
+                                 &state_cache_,
+                                 {},
+                                 {}};
 
   private:
     api::CoherentStateCache state_cache_;
@@ -53,12 +53,12 @@ static remote::Pair make_fake_tx_created_pair() {
     return pair;
 }
 
-bool ensure_fake_tx_created_tx_id(const RemoteTransaction& remote_tx) {
-    return remote_tx.tx_id() == 1;
+bool ensure_fake_tx_created_tx_id(const RemoteTransaction& remote_tx_) {
+    return remote_tx_.tx_id() == 1;
 }
 
-bool ensure_fake_tx_created_view_id(const RemoteTransaction& remote_tx) {
-    return remote_tx.view_id() == 4;
+bool ensure_fake_tx_created_view_id(const RemoteTransaction& remote_tx_) {
+    return remote_tx_.view_id() == 4;
 }
 
 #ifndef SILKWORM_SANITIZE
@@ -72,9 +72,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[db][kv][grp
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
 
         // Execute the test: opening a transaction should succeed and transaction should have expected transaction ID
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.open()));
-        CHECK(ensure_fake_tx_created_tx_id(remote_tx));
-        CHECK(ensure_fake_tx_created_view_id(remote_tx));
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        CHECK(ensure_fake_tx_created_tx_id(remote_tx_));
+        CHECK(ensure_fake_tx_created_view_id(remote_tx_));
     }
     SECTION("failure in request") {
         // Set the call expectations:
@@ -86,7 +86,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[db][kv][grp
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a transaction should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.open()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.open()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in read") {
         // Set the call expectations:
@@ -100,14 +100,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[db][kv][grp
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a transaction should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.open()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.open()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
     }
 }
 
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test: closing the transaction should throw
-        CHECK_THROWS_AS(spawn_and_wait(remote_tx.close()), boost::system::system_error);
+        CHECK_THROWS_AS(spawn_and_wait(remote_tx_.close()), boost::system::system_error);
     }
     SECTION("success w/ open w/o cursor in table") {
         // Set the call expectations:
@@ -123,14 +123,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[db][kv][gr
 
         // Execute the test preconditions:
         // open a new transaction w/ expected tx_id
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: closing the transaction should succeed and transaction should have zero transaction ID
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.close()));
-        CHECK(remote_tx.tx_id() == 0);
-        CHECK(remote_tx.view_id() == 0);
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
+        CHECK(remote_tx_.tx_id() == 0);
+        CHECK(remote_tx_.view_id() == 0);
     }
     SECTION("success w/ open w/ cursor in table") {
         // Set the call expectations:
@@ -148,16 +148,16 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[db][kv][gr
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
         // open a cursor within such transaction
-        const auto cursor = spawn_and_wait(remote_tx.cursor("table1"));
+        const auto cursor = spawn_and_wait(remote_tx_.cursor("table1"));
         REQUIRE(cursor != nullptr);
 
         // Execute the test: closing the transaction should succeed and transaction should have zero transaction ID
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.close()));
-        CHECK(remote_tx.view_id() == 0);
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
+        CHECK(remote_tx_.view_id() == 0);
     }
     SECTION("failure in write") {
         // Set the call expectations:
@@ -173,12 +173,12 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[db][kv][gr
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: closing the transaction should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.close()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in finish") {
         // Set the call expectations:
@@ -194,19 +194,19 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[db][kv][gr
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: closing the transaction should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.close()), boost::system::system_error, test::exception_has_unknown_grpc_status_code());
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error, test::exception_has_unknown_grpc_status_code());
     }
 }
 
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test: getting cursor from the transaction should throw
-        CHECK_THROWS_AS(spawn_and_wait(remote_tx.cursor("table1")), boost::system::system_error);
+        CHECK_THROWS_AS(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error);
     }
     SECTION("success") {
         // Set the call expectations:
@@ -229,23 +229,23 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][g
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test:
         // 1. opening a cursor should succeed and cursor should have expected cursor ID
         std::shared_ptr<api::Cursor> cursor1;
-        CHECK_NOTHROW(cursor1 = spawn_and_wait(remote_tx.cursor("table1")));
+        CHECK_NOTHROW(cursor1 = spawn_and_wait(remote_tx_.cursor("table1")));
         CHECK(cursor1->cursor_id() == 0x23);
         // 2. opening another cursor on the same table should succeed and cursor should have expected cursor ID
         std::shared_ptr<api::Cursor> cursor2;
-        CHECK_NOTHROW(cursor2 = spawn_and_wait(remote_tx.cursor("table1")));
+        CHECK_NOTHROW(cursor2 = spawn_and_wait(remote_tx_.cursor("table1")));
         CHECK(cursor2->cursor_id() == 0x23);
 
         // Execute the test postconditions:
         // close the transaction succeeds
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.close()));
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
     }
     SECTION("failure in read") {
         // Set the call expectations:
@@ -269,17 +269,17 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][g
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.cursor("table1")), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.close()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in write") {
@@ -298,17 +298,17 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][g
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.cursor("table1")), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.close()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -318,11 +318,11 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // Execute the test preconditions: none
 
         // Execute the test: getting cursor_dup_sort from the transaction should throw
-        CHECK_THROWS_AS(spawn_and_wait(remote_tx.cursor_dup_sort("table1")), boost::system::system_error);
+        CHECK_THROWS_AS(spawn_and_wait(remote_tx_.cursor_dup_sort("table1")), boost::system::system_error);
 
         // Execute the test postconditions:
         // close the transaction raises an exception
-        CHECK_THROWS_AS(spawn_and_wait(remote_tx.close()), boost::system::system_error);
+        CHECK_THROWS_AS(spawn_and_wait(remote_tx_.close()), boost::system::system_error);
     }
     SECTION("success") {
         // Set the call expectations:
@@ -344,23 +344,23 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test:
         // 1. opening a cursor should succeed and cursor should have expected cursor ID
         std::shared_ptr<api::Cursor> cursor1;
-        CHECK_NOTHROW(cursor1 = spawn_and_wait(remote_tx.cursor_dup_sort("table1")));
+        CHECK_NOTHROW(cursor1 = spawn_and_wait(remote_tx_.cursor_dup_sort("table1")));
         CHECK(cursor1->cursor_id() == 0x23);
         // 2. opening another cursor on the same table should succeed and cursor should have expected cursor ID
         std::shared_ptr<api::Cursor> cursor2;
-        CHECK_NOTHROW(cursor2 = spawn_and_wait(remote_tx.cursor_dup_sort("table1")));
+        CHECK_NOTHROW(cursor2 = spawn_and_wait(remote_tx_.cursor_dup_sort("table1")));
         CHECK(cursor2->cursor_id() == 0x23);
 
         // Execute the test postconditions:
         // close the transaction succeeds
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.close()));
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
     }
     SECTION("failure in read") {
         // Set the call expectations:
@@ -384,17 +384,17 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.cursor_dup_sort("table1")), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor_dup_sort("table1")), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.close()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in write") {
@@ -413,17 +413,17 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.cursor_dup_sort("table1")), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor_dup_sort("table1")), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
-        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx.close()), boost::system::system_error,
+        CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
                              test::exception_has_cancelled_grpc_status_code());
     }
 }
@@ -438,9 +438,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_get", "[db][k
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainPointQuery query;
-        const api::DomainPointResult result = co_await remote_tx.domain_get(std::move(query));
+        const api::DomainPointResult result = co_await remote_tx_.domain_get(std::move(query));
 #else
-        const api::DomainPointResult result = co_await remote_tx.domain_get(api::DomainPointQuery{});
+        const api::DomainPointResult result = co_await remote_tx_.domain_get(api::DomainPointQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
@@ -481,9 +481,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_seek", "[db]
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::HistoryPointQuery query;
-        const api::HistoryPointResult result = co_await remote_tx.history_seek(std::move(query));
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(std::move(query));
 #else
-        const api::HistoryPointResult result = co_await remote_tx.history_seek(api::HistoryPointQuery{});
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(api::HistoryPointQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
@@ -531,9 +531,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::IndexRangeQuery query;
-        auto paginated_timestamps = co_await remote_tx.index_range(std::move(query));
+        auto paginated_timestamps = co_await remote_tx_.index_range(std::move(query));
 #else
-        auto paginated_timestamps = co_await remote_tx.index_range(api::IndexRangeQuery{});
+        auto paginated_timestamps = co_await remote_tx_.index_range(api::IndexRangeQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_timestamps);
     };
@@ -593,16 +593,16 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: call index_range and flatten the data matches the expected data
         CHECK(spawn_and_wait(flatten_index_range) == api::ListOfTimestamp{1, 2, 3, 4, 5, 6, 7});
 
         // Execute the test postconditions:
         // close the transaction succeeds
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.close()));
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
     }
 }
 
@@ -627,9 +627,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::HistoryRangeQuery query;
-        auto paginated_keys_and_values = co_await remote_tx.history_range(std::move(query));
+        auto paginated_keys_and_values = co_await remote_tx_.history_range(std::move(query));
 #else
-        auto paginated_keys_and_values = co_await remote_tx.history_range(api::HistoryRangeQuery{});
+        auto paginated_keys_and_values = co_await remote_tx_.history_range(api::HistoryRangeQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_keys_and_values);
     };
@@ -689,16 +689,16 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: call index_range and flatten the data matches the expected data
         CHECK(spawn_and_wait(flatten_history_range) == std::vector<api::KeyValue>{kv1, kv2, kv2, kv1, kv3});
 
         // Execute the test postconditions:
         // close the transaction succeeds
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.close()));
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
     }
 }
 
@@ -713,9 +713,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainRangeQuery query;
-        auto paginated_keys_and_values = co_await remote_tx.domain_range(std::move(query));
+        auto paginated_keys_and_values = co_await remote_tx_.domain_range(std::move(query));
 #else
-        auto paginated_keys_and_values = co_await remote_tx.domain_range(api::DomainRangeQuery{});
+        auto paginated_keys_and_values = co_await remote_tx_.domain_range(api::DomainRangeQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_keys_and_values);
     };
@@ -775,16 +775,16 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
-        REQUIRE_NOTHROW(spawn_and_wait(remote_tx.open()));
-        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx));
-        REQUIRE(ensure_fake_tx_created_view_id(remote_tx));
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
 
         // Execute the test: call index_range and flatten the data matches the expected data
         CHECK(spawn_and_wait(flatten_domain_range) == std::vector<api::KeyValue>{kv1, kv2, kv2, kv1, kv3});
 
         // Execute the test postconditions:
         // close the transaction succeeds
-        CHECK_NOTHROW(spawn_and_wait(remote_tx.close()));
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
     }
 }
 

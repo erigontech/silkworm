@@ -33,6 +33,8 @@
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/types/block.hpp>
 
+#include "silkworm/core/types/address.hpp"
+
 namespace silkworm {
 
 struct CallResult {
@@ -40,6 +42,7 @@ struct CallResult {
     uint64_t gas_left{0};
     uint64_t gas_refund{0};
     Bytes data;
+    std::string error_message;
 };
 
 class EvmTracer {
@@ -92,7 +95,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool gas_bailout = false) noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout = false) noexcept;
 
     ~EVM();
 
@@ -120,6 +123,8 @@ class EVM {
 
     gsl::not_null<TransferFunc*> transfer{standard_transfer};
 
+    CallResult deduct_entry_fees(const Transaction& txn) const;
+
   private:
     friend class EvmHost;
 
@@ -138,7 +143,7 @@ class EVM {
     const Block& block_;
     IntraBlockState& state_;
     const ChainConfig& config_;
-    bool gas_bailout_;
+    bool bailout_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;

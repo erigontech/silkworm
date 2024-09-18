@@ -247,7 +247,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbacke
 // TODO(canepat) move these unit tests to execute.proto I/F implementation
 /*TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EngineGetPayloadResponse> reader;
-    EXPECT_CALL(*stub, AsyncEngineGetPayloadRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncEngineGetPayloadRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call engine_get_payload and get payload") {
         const auto p{new ::types::ExecutionPayload};
@@ -309,7 +309,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbacke
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EnginePayloadStatus> reader;
-    EXPECT_CALL(*stub, AsyncEngineNewPayloadRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncEngineNewPayloadRaw).WillOnce(testing::Return(&reader));
 
     silkworm::Bloom bloom;
     bloom.fill(0);
@@ -419,7 +419,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc]
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EngineForkChoiceUpdatedResponse> reader;
-    EXPECT_CALL(*stub, AsyncEngineForkChoiceUpdatedRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncEngineForkChoiceUpdatedRaw).WillOnce(testing::Return(&reader));
 
     const ForkChoiceUpdatedRequest forkchoice_request{
         .fork_choice_state =

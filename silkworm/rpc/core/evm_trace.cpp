@@ -731,12 +731,12 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
         case evmc_status_code::EVMC_STACK_OVERFLOW:
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
             if (op.op_code == evmc_opcode::OP_EXP) {  // In Erigon the static part is 0
-//                op.trace_ex->used = op.gas_cost;
-                op.trace_ex->used = start_gas; // modificata per trace_call 6
+                                                      //                op.trace_ex->used = op.gas_cost;
+                op.trace_ex->used = start_gas;        // modificata per trace_call 6
                 op.gas_cost = 0;
             } else {
                 /* EVM WA: EVMONE in case of this error returns always zero on gas-left */
-                if (op.trace_ex->used > 0) { // modificata per trace_call 11
+                if (op.trace_ex->used > 0) {  // modificata per trace_call 11
                     op.trace_ex->used -= op.gas_cost;
                 } else {
                     op.trace_ex->used = start_gas - op.gas_cost;
@@ -749,7 +749,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             op.gas_cost = 0;
             if (op.trace_ex->used == 0) {
-                op.trace_ex->used = start_gas; // aggiunta per trace_call 5
+                op.trace_ex->used = start_gas;  // aggiunta per trace_call 5
             }
             break;
 

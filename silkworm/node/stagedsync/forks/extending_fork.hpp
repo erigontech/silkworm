@@ -18,6 +18,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/db/mdbx/memory_mutation.hpp>
@@ -35,7 +36,10 @@ namespace silkworm::stagedsync {
 
 class ExtendingFork {
   public:
-    explicit ExtendingFork(BlockId forking_point, MainChain&, boost::asio::io_context&);
+    explicit ExtendingFork(
+        BlockId forking_point,
+        MainChain& main_chain,
+        boost::asio::any_io_executor external_executor);
     ExtendingFork(const ExtendingFork&) = delete;
     ExtendingFork(ExtendingFork&& orig) = delete;  // not movable, it schedules methods execution in another thread
     ~ExtendingFork();
@@ -67,7 +71,7 @@ class ExtendingFork {
 
     BlockId forking_point_;                              // starting point
     MainChain& main_chain_;                              // main chain
-    boost::asio::io_context& io_context_;                // for io
+    boost::asio::any_io_executor external_executor_;     // for promises
     std::unique_ptr<Fork> fork_;                         // for domain logic
     std::unique_ptr<boost::asio::io_context> executor_;  // for pipeline execution
     std::thread thread_;                                 // for executor

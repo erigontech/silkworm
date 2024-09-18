@@ -75,8 +75,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     db::RWAccess db_access{db_context.mdbx_env()};
 
     ExecutionEngineForTest exec_engine{
-        runner.context(),
+        runner.executor(),
         node_settings,
+        /* log_timer_factory = */ std::nullopt,
         make_bodies_stage_factory(*node_settings.chain_config),
         db_access,
     };
@@ -822,8 +823,9 @@ TEST_CASE("ExecutionEngine") {
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
     ExecutionEngineForTest exec_engine{
-        runner.context(),
+        runner.executor(),
         node_settings,
+        /* log_timer_factory = */ std::nullopt,
         make_bodies_stage_factory(*node_settings.chain_config),
         db_access,
     };

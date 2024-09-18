@@ -571,6 +571,8 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     auto chain_config{db::read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
+    boost::asio::io_context io_context;
+
     NodeSettings settings{
         .data_directory = std::make_unique<DataDirectory>(),
         .chaindata_env_config = config,
@@ -580,8 +582,13 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
         return std::make_unique<stagedsync::BodiesStage>(sync_context, *settings.chain_config, [] { return 0; });
     };
 
+    stagedsync::TimerFactory log_timer_factory = [&](std::function<bool()> callback) {
+        return std::make_shared<Timer>(io_context.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
+    };
+
     stagedsync::ExecutionPipeline stage_pipeline{
         &settings,
+        std::move(log_timer_factory),
         std::move(bodies_stage_factory),
     };
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};

@@ -141,7 +141,7 @@ std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
             // wrap remote client in a session client
             auto session_sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
                 remote_sentry_client,
-                silkworm::sentry::eth::StatusDataProvider::to_factory_function(std::move(eth_status_data_provider)));
+                silkworm::sentry::eth::StatusDataProvider::to_factory_function(eth_status_data_provider));
             clients.push_back(session_sentry_client);
         }
 

@@ -63,10 +63,8 @@ class NodeImpl final {
     BlockNum last_pre_validated_block() const { return chain_sync_.last_pre_validated_block(); }
 
   private:
-    Task<void> start_execution_server();
-    Task<void> start_backend_kv_grpc_server();
-    Task<void> start_resource_usage_log();
-    Task<void> start_execution_log_timer();
+    Task<void> run_execution_server();
+    Task<void> run_backend_kv_grpc_server();
     Task<void> embedded_sentry_run_if_needed();
 
     Settings& settings_;
@@ -116,6 +114,17 @@ static chainsync::EngineRpcSettings make_sync_engine_rpc_settings(
     };
 }
 
+static stagedsync::TimerFactory make_log_timer_factory(
+    const boost::asio::any_io_executor& executor,
+    uint32_t sync_loop_log_interval_seconds) {
+    return [=](std::function<bool()> callback) {
+        return std::make_shared<Timer>(
+            executor,
+            sync_loop_log_interval_seconds * 1'000,
+            std::move(callback));
+    };
+}
+
 static stagedsync::BodiesStageFactory make_bodies_stage_factory(
     const ChainConfig& chain_config,
     const NodeImpl& node) {
@@ -145,8 +154,9 @@ NodeImpl::NodeImpl(
       chain_config_{*settings_.node_settings.chain_config},
       chaindata_env_{std::move(chaindata_env)},
       execution_engine_{
-          execution_context_,
+          execution_context_.get_executor(),
           settings_.node_settings,
+          make_log_timer_factory(context_pool.any_executor(), settings_.node_settings.sync_loop_log_interval_seconds),
           make_bodies_stage_factory(chain_config_, *this),
           db::RWAccess{chaindata_env_},
       },
@@ -196,14 +206,13 @@ Task<void> NodeImpl::run_tasks() {
     co_await wait_for_setup();
 
     co_await (
-        start_execution_server() &&
-        start_resource_usage_log() &&
-        start_execution_log_timer() &&
+        run_execution_server() &&
+        resource_usage_log_.run() &&
         chain_sync_.async_run() &&
-        start_backend_kv_grpc_server());
+        run_backend_kv_grpc_server());
 }
 
-Task<void> NodeImpl::start_execution_server() {
+Task<void> NodeImpl::run_execution_server() {
     // Thread running block execution requires custom stack size because of deep EVM call stacks
     if (settings_.execution_server_enabled) {
         co_await execution_server_.async_run(/*stack_size=*/kExecutionThreadStackSize);
@@ -212,7 +221,7 @@ Task<void> NodeImpl::start_execution_server() {
     }
 }
 
-Task<void> NodeImpl::start_backend_kv_grpc_server() {
+Task<void> NodeImpl::run_backend_kv_grpc_server() {
     auto run = [this]() {
         backend_kv_rpc_server_->build_and_start();
         backend_kv_rpc_server_->join();
@@ -221,26 +230,6 @@ Task<void> NodeImpl::start_backend_kv_grpc_server() {
         backend_kv_rpc_server_->shutdown();
     };
     co_await concurrency::async_thread(std::move(run), std::move(stop), "bekv-server");
-}
-
-Task<void> NodeImpl::start_resource_usage_log() {
-    return resource_usage_log_.run();
-}
-
-Task<void> NodeImpl::start_execution_log_timer() {
-    // Run Asio context in settings for execution timers // TODO(canepat) we need a better solution
-    auto& asio_context = settings_.node_settings.asio_context;
-    using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-    auto asio_guard = std::make_unique<asio_guard_type>(asio_context.get_executor());
-
-    auto run = [&asio_context] {
-        log::set_thread_name("ctx-log-tmr");
-        log::Trace("Asio Timers", {"state", "started"});
-        asio_context.run();
-        log::Trace("Asio Timers", {"state", "stopped"});
-    };
-    auto stop = [&asio_guard] { asio_guard.reset(); };
-    co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop), "ctx-log-tmr");
 }
 
 Task<void> NodeImpl::embedded_sentry_run_if_needed() {

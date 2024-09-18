@@ -40,8 +40,8 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
         };
     };
 
-    MockExecutionEngine(boost::asio::io_context& ioc, NodeSettings& ns, db::RWAccess dba)
-        : ExecutionEngine(ioc, ns, empty_bodies_stage_factory(), std::move(dba)) {}
+    MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, db::RWAccess dba)
+        : ExecutionEngine(std::move(executor), ns, /* log_timer_factory = */ std::nullopt, empty_bodies_stage_factory(), std::move(dba)) {}
     ~MockExecutionEngine() override = default;
 
     MOCK_METHOD((void), open, (), (override));

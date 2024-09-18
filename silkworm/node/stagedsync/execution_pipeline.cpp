@@ -47,8 +47,10 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 
 ExecutionPipeline::ExecutionPipeline(
     silkworm::NodeSettings* node_settings,
+    std::optional<TimerFactory> log_timer_factory,
     BodiesStageFactory bodies_stage_factory)
     : node_settings_{node_settings},
+      log_timer_factory_{std::move(log_timer_factory)},
       bodies_stage_factory_{std::move(bodies_stage_factory)},
       sync_context_{std::make_unique<SyncContext>()} {
     load_stages();
@@ -206,7 +208,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 break;
             }
 
-            log_timer->reset();  // Resets the interval for next log line from now
+            if (log_timer) {
+                log_timer->reset();  // Resets the interval for next log line from now
+            }
 
             // forward
             const auto stage_result = current_stage_->second->forward(cycle_txn);
@@ -273,7 +277,10 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             }
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
-            log_timer->reset();  // Resets the interval for next log line from now
+
+            if (log_timer) {
+                log_timer->reset();  // Resets the interval for next log line from now
+            }
 
             // Do unwind on current stage
             const auto stage_result = current_stage_->second->unwind(cycle_txn);
@@ -332,7 +339,10 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
 
-            log_timer->reset();  // Resets the interval for next log line from now
+            if (log_timer) {
+                log_timer->reset();  // Resets the interval for next log line from now
+            }
+
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
             if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(), {"op", "Prune", "returned",
@@ -369,11 +379,10 @@ std::string ExecutionPipeline::get_log_prefix() const {
 }
 
 std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
-    return std::make_shared<Timer>(
-        this->node_settings_->asio_context.get_executor(),
-        this->node_settings_->sync_loop_log_interval_seconds * 1'000,
-        [this]() { return log_timer_expired(); },
-        /*auto_start=*/true);
+    if (log_timer_factory_) {
+        return log_timer_factory_.value()([this]() { return log_timer_expired(); });
+    }
+    return {};
 }
 
 bool ExecutionPipeline::log_timer_expired() {

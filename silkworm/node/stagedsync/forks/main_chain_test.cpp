@@ -79,8 +79,9 @@ TEST_CASE("MainChain transaction handling") {
             node_settings.keep_db_txn_open = keep_db_txn_open;
             db::RWAccess db_access{context.env()};
             MainChainForTest main_chain{
-                io,
+                io.get_executor(),
                 node_settings,
+                /* log_timer_factory = */ std::nullopt,
                 make_bodies_stage_factory(*node_settings.chain_config),
                 db_access,
             };
@@ -174,8 +175,9 @@ TEST_CASE("MainChain") {
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
     MainChainForTest main_chain{
-        io,
+        io.get_executor(),
         node_settings,
+        /* log_timer_factory = */ std::nullopt,
         make_bodies_stage_factory(*node_settings.chain_config),
         db_access,
     };
@@ -464,8 +466,9 @@ TEST_CASE("MainChain") {
 
         // opening another main chain (-> application start up)
         MainChainForTest main_chain2{
-            io,
+            io.get_executor(),
             node_settings,
+            /* log_timer_factory = */ std::nullopt,
             main_chain.bodies_stage_factory(),
             db_access,
         };

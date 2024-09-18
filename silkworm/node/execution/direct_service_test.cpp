@@ -44,7 +44,7 @@ struct DirectServiceTest : public TaskRunner {
           dba{tmp_chaindata.env()} {
         tmp_chaindata.add_genesis_data();
         tmp_chaindata.commit_txn();
-        mock_execution_engine = std::make_unique<MockExecutionEngine>(context(), settings, dba);
+        mock_execution_engine = std::make_unique<MockExecutionEngine>(executor(), settings, dba);
         direct_service = std::make_unique<DirectService>(*mock_execution_engine);
     }
 

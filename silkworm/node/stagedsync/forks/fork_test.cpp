@@ -72,8 +72,9 @@ TEST_CASE("Fork") {
     };
 
     MainChain main_chain{
-        io,
+        io.get_executor(),
         node_settings,
+        /* log_timer_factory = */ std::nullopt,
         std::move(bodies_stage_factory),
         db_access,
     };
@@ -129,6 +130,7 @@ TEST_CASE("Fork") {
                 ForkForTest fork{
                     forking_point,
                     db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                    /* log_timer_factory = */ std::nullopt,
                     main_chain.bodies_stage_factory(),
                     node_settings,
                 };

@@ -73,17 +73,19 @@ using execution::api::ValidChain;
 using execution::api::VerificationResult;
 
 MainChain::MainChain(
-    boost::asio::io_context& ctx,
+    boost::asio::any_io_executor executor,
     NodeSettings& ns,
+    std::optional<TimerFactory> log_timer_factory,
     BodiesStageFactory bodies_stage_factory,
     db::RWAccess dba)
-    : io_context_{ctx},
+    : executor_{std::move(executor)},
       node_settings_{ns},
+      log_timer_factory_{std::move(log_timer_factory)},
       bodies_stage_factory_{std::move(bodies_stage_factory)},
       db_access_{std::move(dba)},
       tx_{db_access_.start_rw_tx()},
       data_model_{tx_},
-      pipeline_{&ns, bodies_stage_factory_},
+      pipeline_{&ns, log_timer_factory_, bodies_stage_factory_},
       interim_canonical_chain_(tx_) {
     // We commit and close the one-and-only RW txn here because it must be reopened below in MainChain::open
     tx_.commit_and_stop();
@@ -149,6 +151,10 @@ db::RWTxn& MainChain::tx() {
 
 const BodiesStageFactory& MainChain::bodies_stage_factory() const {
     return bodies_stage_factory_;
+}
+
+const std::optional<TimerFactory>& MainChain::log_timer_factory() const {
+    return log_timer_factory_;
 }
 
 StageScheduler& MainChain::stage_scheduler() const {
@@ -406,7 +412,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
 
 std::unique_ptr<ExtendingFork> MainChain::fork(BlockId forking_point) {
     ensure(std::holds_alternative<ValidChain>(interim_head_status_), "forking is allowed from a valid state");
-    return std::make_unique<ExtendingFork>(forking_point, *this, io_context_);
+    return std::make_unique<ExtendingFork>(forking_point, *this, executor_);
 }
 
 void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {

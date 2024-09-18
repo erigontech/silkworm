@@ -33,7 +33,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
@@ -52,6 +52,12 @@ class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::main_chain_;
 };
 
+static BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_config) {
+    return [chain_config](SyncContext* sync_context) {
+        return std::make_unique<BodiesStage>(sync_context, chain_config, [] { return 0; });
+    };
+};
+
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
     test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
     test_util::TaskRunner runner;
@@ -68,7 +74,13 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     db::RWAccess db_access{db_context.mdbx_env()};
 
-    ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{
+        runner.executor(),
+        node_settings,
+        /* log_timer_factory = */ std::nullopt,
+        make_bodies_stage_factory(*node_settings.chain_config),
+        db_access,
+    };
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
@@ -806,12 +818,17 @@ TEST_CASE("ExecutionEngine") {
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.clear();                           // disable preverified hashes
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    ExecutionEngineForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{
+        runner.executor(),
+        node_settings,
+        /* log_timer_factory = */ std::nullopt,
+        make_bodies_stage_factory(*node_settings.chain_config),
+        db_access,
+    };
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread

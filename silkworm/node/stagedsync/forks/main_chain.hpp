@@ -18,11 +18,12 @@
 
 #include <atomic>
 #include <concepts>
+#include <optional>
 #include <set>
 #include <variant>
 #include <vector>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -32,6 +33,8 @@
 #include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
+#include "../stages/stage_bodies_factory.hpp"
+#include "../timer_factory.hpp"
 #include "canonical_chain.hpp"
 
 namespace silkworm::stagedsync {
@@ -41,7 +44,12 @@ class ExtendingFork;
 
 class MainChain {
   public:
-    explicit MainChain(boost::asio::io_context&, NodeSettings&, db::RWAccess);
+    explicit MainChain(
+        boost::asio::any_io_executor executor,
+        NodeSettings& ns,
+        std::optional<TimerFactory> log_timer_factory,
+        BodiesStageFactory bodies_stage_factory,
+        db::RWAccess dba);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -87,7 +95,8 @@ class MainChain {
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
-
+    const std::optional<TimerFactory>& log_timer_factory() const;
+    const BodiesStageFactory& bodies_stage_factory() const;
     StageScheduler& stage_scheduler() const;
 
   protected:
@@ -101,8 +110,10 @@ class MainChain {
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, execution::api::InvalidChain& invalid_chain);
 
-    boost::asio::io_context& io_context_;
+    boost::asio::any_io_executor executor_;
     NodeSettings& node_settings_;
+    std::optional<TimerFactory> log_timer_factory_;
+    BodiesStageFactory bodies_stage_factory_;
     mutable db::RWAccess db_access_;
     mutable db::RWTxnManaged tx_;
     db::DataModel data_model_;

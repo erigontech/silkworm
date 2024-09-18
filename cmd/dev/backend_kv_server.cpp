@@ -40,6 +40,7 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend_kv_server.hpp>
+#include <silkworm/node/settings.hpp>
 #include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
@@ -47,7 +48,6 @@
 
 #include "../common/common.hpp"
 #include "../common/db_max_readers_option.hpp"
-#include "../common/settings.hpp"
 #include "../common/shutdown_signal.hpp"
 
 using namespace silkworm;
@@ -63,7 +63,7 @@ std::string get_library_versions() {
 }
 
 //! Standalone BackEndKV server settings
-struct StandaloneBackEndKVSettings : public SilkwormSettings {
+struct StandaloneBackEndKVSettings : public node::Settings {
     bool simulate_state_changes{false};
 };
 
@@ -71,7 +71,7 @@ struct StandaloneBackEndKVSettings : public SilkwormSettings {
 void parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndKVSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& node_settings = settings.node_settings;
-    auto& server_settings = settings.node_settings.server_settings;
+    auto& server_settings = settings.server_settings;
 
     // Node options
     std::filesystem::path data_dir;
@@ -84,7 +84,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEnd
     add_option_db_max_readers(app, max_readers);
 
     // RPC Server options
-    add_option_private_api_address(app, node_settings.server_settings.address_uri);
+    add_option_private_api_address(app, server_settings.address_uri);
     add_option_remote_sentry_addresses(app, node_settings.remote_sentry_addresses, /* is_required = */ true);
     add_context_pool_options(app, server_settings.context_pool_settings);
 
@@ -129,7 +129,7 @@ std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
         // wrap remote client in a session client
         sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
             remote_sentry_client,
-            eth_status_data_provider.to_factory_function());
+            silkworm::sentry::eth::StatusDataProvider::to_factory_function(std::move(eth_status_data_provider)));
     } else {
         std::vector<std::shared_ptr<silkworm::sentry::api::SentryClient>> clients;
 
@@ -141,7 +141,7 @@ std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
             // wrap remote client in a session client
             auto session_sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
                 remote_sentry_client,
-                eth_status_data_provider.to_factory_function());
+                silkworm::sentry::eth::StatusDataProvider::to_factory_function(eth_status_data_provider));
             clients.push_back(session_sentry_client);
         }
 
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
 
         auto& log_settings = settings.log_settings;
         auto& node_settings = settings.node_settings;
-        auto& server_settings = settings.node_settings.server_settings;
+        auto& server_settings = settings.server_settings;
 
         // Initialize logging with custom settings
         log::init(log_settings);
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
         SILK_LOG << "BackEndKvServer build info: " << node_name;
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
         SILK_LOG << "BackEndKvServer launched with chaindata: " << node_settings.chaindata_env_config.path
-                 << " address: " << node_settings.server_settings.address_uri
+                 << " address: " << server_settings.address_uri
                  << " contexts: " << server_settings.context_pool_settings.num_contexts;
 
         auto database_env = db::open_env(node_settings.chaindata_env_config);

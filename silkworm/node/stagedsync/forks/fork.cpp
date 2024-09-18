@@ -46,12 +46,21 @@ static db::MemoryOverlay create_memory_db(const std::filesystem::path& base_path
     return memory_overlay;
 }
 
-Fork::Fork(BlockId forking_point, db::ROTxnManaged&& main_chain_tx, NodeSettings& ns)
+Fork::Fork(
+    BlockId forking_point,
+    db::ROTxnManaged&& main_chain_tx,
+    std::optional<TimerFactory> log_timer_factory,
+    BodiesStageFactory bodies_stage_factory,
+    NodeSettings& ns)
     : main_tx_{std::move(main_chain_tx)},
       memory_db_{create_memory_db(ns.data_directory->forks().path(), main_tx_)},
       memory_tx_{memory_db_},
       data_model_{memory_tx_},
-      pipeline_{&ns},
+      pipeline_{
+          &ns,
+          std::move(log_timer_factory),
+          std::move(bodies_stage_factory),
+      },
       canonical_chain_(memory_tx_),
       current_head_{forking_point}  // actual head
 {

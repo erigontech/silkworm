@@ -304,6 +304,8 @@ TEST_CASE("Sync Stages") {
         REQUIRE(written_senders.empty());
     }
 
+    // TODO(canepat) refactor these tests to use Execution stage instead of mimicking it
+
     SECTION("Execution and HashState") {
         using namespace magic_enum;
         using StageResult = stagedsync::Stage::Result;
@@ -313,7 +315,7 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
 
         uint64_t block_number{1};
-        auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+        const auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
         Block block{};
         block.header.number = block_number;
@@ -327,8 +329,7 @@ TEST_CASE("Sync Stages") {
         };
         block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
-        // This contract initially sets its 0th storage to 0x2a
-        // and its 1st storage to 0x01c9.
+        // This contract initially sets its 0th storage to 0x2a and its 1st storage to 0x01c9.
         // When called, it updates its 0th storage to the input provided.
         Bytes contract_code{*from_hex("600035600055")};
         Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
@@ -351,7 +352,10 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
         // Execute first block
         // ---------------------------------------
-        auto actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        std::vector<Receipt> block_receipts;
+        auto actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+        // We must insert receipts to mimic the behaviour of Execution stage
+        buffer.insert_receipts(block_number, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         auto contract_address{create_address(sender, /*nonce=*/0)};
@@ -372,7 +376,10 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].to = contract_address;
         block.transactions[0].data = ByteView(new_val);
 
-        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        block_receipts.clear();
+        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+        // We must insert receipts to mimic the behaviour of Execution stage
+        buffer.insert_receipts(block_number, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
 
@@ -389,12 +396,27 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].to = contract_address;
         block.transactions[0].data = ByteView{new_val};
 
-        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value());
+        block_receipts.clear();
+        actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+        // We must insert receipts to mimic the behaviour of Execution stage
+        buffer.insert_receipts(block_number, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         REQUIRE_NOTHROW(buffer.write_to_db());
         REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3));
         REQUIRE_NOTHROW(txn.commit_and_renew());
+
+        // Check state after 3rd block in database
+        auto plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
+        REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+        auto current_record = plain_state_cursor->current(/*throw_notfound=*/false);
+        REQUIRE(current_record);
+        REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
+        auto decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+        REQUIRE(decoded_account);
+        REQUIRE(decoded_account->nonce == 3);
+        auto receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
+        REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(3))));
 
         SECTION("Execution Unwind") {
             // ---------------------------------------
@@ -422,6 +444,57 @@ TEST_CASE("Sync Stages") {
             evmc::bytes32 storage_key0{};
             evmc::bytes32 storage0{buffer2.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
             CHECK(storage0 == 0x000000000000000000000000000000000000000000000000000000000000003e_bytes32);
+
+            // Check state after unwind of the 3rd block in database
+            plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
+            REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+            current_record = plain_state_cursor->current(/*throw_notfound=*/false);
+            REQUIRE(current_record);
+            REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
+            decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+            REQUIRE(decoded_account);
+            REQUIRE(decoded_account->nonce == 2);
+            receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
+            REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(2))));
+        }
+
+        SECTION("Execution failure and unwind") {
+            // Execute INVALID 4th block
+            block_number = 4;
+            block.header.number = block_number;
+            block.transactions[0].nonce = 2;  // <- invalid, should be 3
+            block.transactions[0].value = 1000;
+            block.transactions[0].to = contract_address;
+
+            block_receipts.clear();
+            actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
+
+            // Execution stage *must* flush state+progress updates and commit even in case of kInvalidBlock error
+            REQUIRE_NOTHROW(buffer.insert_receipts(block_number, block_receipts));
+            REQUIRE_NOTHROW(buffer.write_to_db());
+            REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 4));  // this was missing after PR #1511
+            txn.commit_and_renew();                                                                // this was missing after PR #1511
+
+            // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
+            REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kWrongNonce)));
+
+            // Unwind 4th block and checks if state corresponds to 3rd block
+            stagedsync::SyncContext sync_context{};
+            sync_context.unwind_point.emplace(3);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
+
+            plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
+            REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+            current_record = plain_state_cursor->current(/*throw_notfound=*/false);
+            REQUIRE(current_record);
+            REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
+            decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+            REQUIRE(decoded_account);
+            REQUIRE(decoded_account->nonce == 3);
+            receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
+            REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(3))));
+            REQUIRE(!receipts_cursor->seek(db::to_slice(db::block_key(4))));  // <- this fails after PR #1511
         }
 
         SECTION("Execution Prune Default") {

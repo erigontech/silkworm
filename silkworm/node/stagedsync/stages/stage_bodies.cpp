@@ -97,10 +97,10 @@ bool BodiesStage::BodyDataModel::get_canonical_block(BlockNum height, Block& blo
 BodiesStage::BodiesStage(
     SyncContext* sync_context,
     const ChainConfig& chain_config,
-    std::function<uint64_t()> preverified_hashes_height)
+    std::function<BlockNum()> last_pre_validated_block)
     : Stage(sync_context, db::stages::kBlockBodiesKey),
       chain_config_(chain_config),
-      preverified_hashes_height_(std::move(preverified_hashes_height)) {}
+      last_pre_validated_block_(std::move(last_pre_validated_block)) {}
 
 Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
@@ -134,7 +134,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         }
 
         BodyDataModel body_persistence(tx, current_height_, chain_config_);
-        body_persistence.set_preverified_height(preverified_hashes_height_());
+        body_persistence.set_preverified_height(last_pre_validated_block_());
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(current_height_);

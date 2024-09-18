@@ -24,18 +24,21 @@
 #include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
 
-BlockExchange::BlockExchange(SentryClient& sentry, db::ROAccess dba, const ChainConfig& chain_config)
+BlockExchange::BlockExchange(
+    SentryClient& sentry,
+    db::ROAccess dba,
+    const ChainConfig& chain_config,
+    bool use_preverified_hashes)
     : db_access_{std::move(dba)},
       sentry_{sentry},
       chain_config_{chain_config},
-      header_chain_{chain_config},
+      header_chain_{chain_config, use_preverified_hashes},
       body_sequence_{} {
 }
 
@@ -43,12 +46,12 @@ BlockExchange::~BlockExchange() {
     BlockExchange::stop();
 }
 
-const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
-
-SentryClient& BlockExchange::sentry() const { return sentry_; }
 BlockExchange::ResultQueue& BlockExchange::result_queue() { return results_; }
 bool BlockExchange::in_sync() const { return in_sync_; }
 BlockNum BlockExchange::current_height() const { return current_height_; }
+const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
+SentryClient& BlockExchange::sentry() const { return sentry_; }
+BlockNum BlockExchange::last_pre_validated_block() const { return header_chain_.last_pre_validated_block(); }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) {
     statistics_.internal_msgs++;

@@ -51,6 +51,7 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     silkworm_execution
     silkworm_interfaces
     silkworm_stages
+    silkworm_sync
 )
 
 silkworm_library(

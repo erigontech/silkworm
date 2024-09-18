@@ -28,7 +28,7 @@
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
@@ -53,6 +53,12 @@ class MainChainForTest : public stagedsync::MainChain {
     using stagedsync::MainChain::tx_;
 };
 
+static BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_config) {
+    return [chain_config](SyncContext* sync_context) {
+        return std::make_unique<BodiesStage>(sync_context, chain_config, [] { return 0; });
+    };
+};
+
 TEST_CASE("MainChain transaction handling") {
     for (int i = 0; i < 2; i++) {
         auto keep_db_txn_open = i == 1;
@@ -67,13 +73,18 @@ TEST_CASE("MainChain transaction handling") {
             context.add_genesis_data();
             context.commit_txn();
 
-            PreverifiedHashes::current.clear();                           // disable preverified hashes
             Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
             NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             node_settings.keep_db_txn_open = keep_db_txn_open;
             db::RWAccess db_access{context.env()};
-            MainChainForTest main_chain{io, node_settings, db_access};
+            MainChainForTest main_chain{
+                io.get_executor(),
+                node_settings,
+                /* log_timer_factory = */ std::nullopt,
+                make_bodies_stage_factory(*node_settings.chain_config),
+                db_access,
+            };
             main_chain.open();
 
             auto& tx = main_chain.tx();
@@ -159,12 +170,17 @@ TEST_CASE("MainChain") {
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.clear();                           // disable preverified hashes
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    MainChainForTest main_chain{io, node_settings, db_access};
+    MainChainForTest main_chain{
+        io.get_executor(),
+        node_settings,
+        /* log_timer_factory = */ std::nullopt,
+        make_bodies_stage_factory(*node_settings.chain_config),
+        db_access,
+    };
     main_chain.open();
 
     auto& tx = main_chain.tx();
@@ -449,7 +465,13 @@ TEST_CASE("MainChain") {
         main_chain.close();
 
         // opening another main chain (-> application start up)
-        MainChainForTest main_chain2{io, node_settings, db_access};
+        MainChainForTest main_chain2{
+            io.get_executor(),
+            node_settings,
+            /* log_timer_factory = */ std::nullopt,
+            main_chain.bodies_stage_factory(),
+            db_access,
+        };
         main_chain2.open();
 
         // checking that the initial state sees the prev fcu

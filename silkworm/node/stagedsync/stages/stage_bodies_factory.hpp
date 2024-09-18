@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,20 +16,16 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/settings.hpp>
-#include <silkworm/rpc/settings.hpp>
-#include <silkworm/sentry/settings.hpp>
+#include <functional>
+#include <memory>
 
-namespace silkworm::cmd::common {
+#include <silkworm/core/common/base.hpp>
 
-//! The overall settings
-struct SilkwormSettings {
-    log::Settings log_settings;
-    node::Settings node_settings;
-    sentry::Settings sentry_settings;
-    rpc::DaemonSettings rpcdaemon_settings;
-};
+namespace silkworm::stagedsync {
 
-}  // namespace silkworm::cmd::common
+class BodiesStage;
+struct SyncContext;
+
+using BodiesStageFactory = std::function<std::unique_ptr<BodiesStage>(SyncContext*)>;
+
+}  // namespace silkworm::stagedsync

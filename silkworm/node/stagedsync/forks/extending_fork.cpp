@@ -30,10 +30,13 @@ static void ensure(bool condition, const std::string& message) {
     }
 }
 
-ExtendingFork::ExtendingFork(BlockId forking_point, MainChain& main_chain, io_context& ctx)
+ExtendingFork::ExtendingFork(
+    BlockId forking_point,
+    MainChain& main_chain,
+    any_io_executor external_executor)
     : forking_point_{forking_point},
       main_chain_{main_chain},
-      io_context_{ctx},
+      external_executor_{std::move(external_executor)},
       current_head_{forking_point} {}
 
 ExtendingFork::~ExtendingFork() {
@@ -63,10 +66,14 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
     post(*executor_, [this, new_head, blocks_ = std::move(blocks)]() {  // note: this requires a "stable" this pointer
         try {
             if (exception_) return;
-            fork_ = std::make_unique<Fork>(forking_point_,
-                                           db::ROTxnManaged(main_chain_.tx().db()),
-                                           main_chain_.node_settings());  // create the real fork
-            fork_->extend_with(blocks_);                                  // extend it with the blocks
+            // create the real fork
+            fork_ = std::make_unique<Fork>(
+                forking_point_,
+                db::ROTxnManaged(main_chain_.tx().db()),
+                main_chain_.log_timer_factory(),
+                main_chain_.bodies_stage_factory(),
+                main_chain_.node_settings());
+            fork_->extend_with(blocks_);
             ensure(fork_->current_head() == new_head, "fork head mismatch");
         } catch (...) {
             save_exception(std::current_exception());
@@ -100,7 +107,7 @@ ExtendingFork::VerificationResultFuture ExtendingFork::verify_chain() {
 
     propagate_exception_if_any();
 
-    concurrency::AwaitablePromise<VerificationResult> promise{io_context_.get_executor()};  // note: promise uses an external io_context
+    concurrency::AwaitablePromise<VerificationResult> promise{external_executor_};  // note: promise uses an external io_context
     auto awaitable_future = promise.get_future();
 
     post(*executor_, [this, promise_ = std::move(promise)]() mutable {
@@ -122,7 +129,7 @@ concurrency::AwaitableFuture<bool> ExtendingFork::fork_choice(Hash head_block_ha
                                                               std::optional<Hash> safe_block_hash) {
     propagate_exception_if_any();
 
-    concurrency::AwaitablePromise<bool> promise{io_context_.get_executor()};  // note: promise uses an external io_context
+    concurrency::AwaitablePromise<bool> promise{external_executor_};  // note: promise uses an external io_context
     auto awaitable_future = promise.get_future();
 
     post(*executor_, [this, promise_ = std::move(promise), head_block_hash, finalized_block_hash, safe_block_hash]() mutable {

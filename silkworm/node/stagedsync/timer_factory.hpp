@@ -14,5 +14,15 @@
    limitations under the License.
 */
 
-// Empty compilation unit just to make silkworm_node_test_util build under macOS
-void node_test_util_dummy() {}
+#pragma once
+
+#include <functional>
+#include <memory>
+
+#include <silkworm/infra/common/timer.hpp>
+
+namespace silkworm::stagedsync {
+
+using TimerFactory = std::function<std::shared_ptr<Timer>(std::function<bool()> callback)>;
+
+}  // namespace silkworm::stagedsync

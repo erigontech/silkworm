@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <concepts>
+#include <optional>
 #include <set>
 #include <variant>
 #include <vector>
@@ -27,6 +28,8 @@
 #include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
+#include "../stages/stage_bodies_factory.hpp"
+#include "../timer_factory.hpp"
 #include "canonical_chain.hpp"
 
 namespace silkworm::stagedsync {
@@ -35,7 +38,12 @@ class MainChain;
 
 class Fork {
   public:
-    explicit Fork(BlockId forking_point, db::ROTxnManaged&& main_chain_tx, NodeSettings&);
+    explicit Fork(
+        BlockId forking_point,
+        db::ROTxnManaged&& main_chain_tx,
+        std::optional<TimerFactory> log_timer_factory,
+        BodiesStageFactory bodies_stage_factory,
+        NodeSettings&);
     Fork(const Fork&) = delete;
 
     void close();

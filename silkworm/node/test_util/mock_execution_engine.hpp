@@ -27,14 +27,21 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 
 namespace silkworm::execution::api {
 
 //! \brief gMock mock class for stagedsync::ExecutionEngine
 class MockExecutionEngine : public stagedsync::ExecutionEngine {
   public:
-    MockExecutionEngine(boost::asio::io_context& ioc, NodeSettings& ns, db::RWAccess dba)
-        : ExecutionEngine(ioc, ns, std::move(dba)) {}
+    static stagedsync::BodiesStageFactory empty_bodies_stage_factory() {
+        return [](stagedsync::SyncContext*) {
+            return std::unique_ptr<stagedsync::BodiesStage>{};
+        };
+    };
+
+    MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, db::RWAccess dba)
+        : ExecutionEngine(std::move(executor), ns, /* log_timer_factory = */ std::nullopt, empty_bodies_stage_factory(), std::move(dba)) {}
     ~MockExecutionEngine() override = default;
 
     MOCK_METHOD((void), open, (), (override));

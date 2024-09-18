@@ -34,31 +34,17 @@ class JsonApiTestBase : public ServiceContextTestBase {
     }
 };
 
-template <typename JsonApi>
-class JsonApiWithWorkersTestBase : public ServiceContextTestBase {
-  public:
-    explicit JsonApiWithWorkersTestBase() : ServiceContextTestBase(), workers_{1} {}
-
-    template <auto method, typename... Args>
-    auto run(Args&&... args) {
-        JsonApi api{io_context_, workers_};
-        return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
-    }
-
-  private:
-    WorkerPool workers_;
-};
-
 template <typename GrpcApi, typename Stub>
 class GrpcApiTestBase : public ServiceContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        GrpcApi api{io_context_.get_executor(), std::move(stub), grpc_context_};
+        GrpcApi api{io_context_.get_executor(), std::move(stub_), grpc_context_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 
-    std::unique_ptr<Stub> stub{std::make_unique<Stub>()};
+  protected:
+    std::unique_ptr<Stub> stub_{std::make_unique<Stub>()};
 };
 
 }  // namespace silkworm::rpc::test_util

@@ -44,7 +44,6 @@ namespace silkworm::rpc {
 class RemoteDatabaseTest : public db::test_util::KVTestBase {
   public:
     db::kv::api::CoherentStateCache state_cache;
-    test::BackEndMock backend;
 };
 
 using testing::_;

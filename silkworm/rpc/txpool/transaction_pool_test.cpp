@@ -75,7 +75,7 @@ using TransactionPoolTest = test_util::GrpcApiTestBase<TransactionPool, StrictMo
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::add_transaction", "[rpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::AddReply> reader;
-    EXPECT_CALL(*stub, AsyncAddRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncAddRaw).WillOnce(testing::Return(&reader));
     const silkworm::Bytes tx_rlp{0x00, 0x01};
 
     SECTION("call add_transaction and check import success") {
@@ -117,7 +117,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::add_transaction", "[rpc]
 
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transaction", "[rpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::TransactionsReply> reader;
-    EXPECT_CALL(*stub, AsyncTransactionsRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncTransactionsRaw).WillOnce(testing::Return(&reader));
     const auto tx_hash{0x3763e4f6e4198413383534c763f3f5dac5c5e939f0a81724e3beb96d6e2ad0d5_bytes32};
 
     SECTION("call get_transaction and check success") {
@@ -154,7 +154,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transaction", "[rpc]
 
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::nonce", "[rpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::NonceReply> reader;
-    EXPECT_CALL(*stub, AsyncNonceRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncNonceRaw).WillOnce(testing::Return(&reader));
     const auto account{0x99f9b87991262f6ba471f09758cde1c0fc1de734_address};
 
     SECTION("call nonce and check success") {
@@ -191,7 +191,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::nonce", "[rpc][txpool][t
 
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_status", "[rpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::StatusReply> reader;
-    EXPECT_CALL(*stub, AsyncStatusRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncStatusRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call get_status and check success") {
         ::txpool::StatusReply response;
@@ -221,7 +221,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_status", "[rpc][txpo
 
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[rpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::AllReply> reader;
-    EXPECT_CALL(*stub, AsyncAllRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncAllRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call get_transactions and check success [one tx]") {
         ::txpool::AllReply response;

@@ -64,7 +64,7 @@ using EthBackendTest = test_util::GrpcApiTestBase<ethbackend::RemoteBackEnd, Str
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::etherbase", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EtherbaseReply> reader;
-    EXPECT_CALL(*stub, AsyncEtherbaseRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncEtherbaseRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call etherbase and get address") {
         ::remote::EtherbaseReply response;
@@ -88,7 +88,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::etherbase", "[silkworm][rpc][ethbacke
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::protocol_version", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::ProtocolVersionReply> reader;
-    EXPECT_CALL(*stub, AsyncProtocolVersionRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncProtocolVersionRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call protocol_version and get version") {
         ::remote::ProtocolVersionReply response;
@@ -112,7 +112,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::protocol_version", "[silkworm][rpc][e
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::net_version", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::NetVersionReply> reader;
-    EXPECT_CALL(*stub, AsyncNetVersionRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncNetVersionRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call net_version and get version") {
         ::remote::NetVersionReply response;
@@ -136,7 +136,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::net_version", "[silkworm][rpc][ethbac
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::client_version", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::ClientVersionReply> reader;
-    EXPECT_CALL(*stub, AsyncClientVersionRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncClientVersionRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call client_version and get version") {
         ::remote::ClientVersionReply response;
@@ -161,7 +161,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::client_version", "[silkworm][rpc][eth
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_txn_hash", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::TxnLookupReply> reader;
     const Hash hash;
-    EXPECT_CALL(*stub, AsyncTxnLookupRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncTxnLookupRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call get_block_number_from_txn_hash and get number") {
         ::remote::TxnLookupReply response;
@@ -185,7 +185,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_txn_hash", "[si
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::net_peer_count", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::NetPeerCountReply> reader;
-    EXPECT_CALL(*stub, AsyncNetPeerCountRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncNetPeerCountRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call net_peer_count and get count") {
         ::remote::NetPeerCountReply response;
@@ -209,7 +209,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::net_peer_count", "[silkworm][rpc][eth
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::NodesInfoReply> reader;
-    EXPECT_CALL(*stub, AsyncNodeInfoRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncNodeInfoRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call node_info") {
         ::remote::NodesInfoReply response;
@@ -465,7 +465,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated", "[silkwor
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::peers", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::PeersReply> reader;
-    EXPECT_CALL(*stub, AsyncPeersRaw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncPeersRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call peers") {
         ::remote::PeersReply response;

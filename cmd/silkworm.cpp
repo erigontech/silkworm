@@ -167,6 +167,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
     }
 
     node_settings.data_directory = std::make_unique<DataDirectory>(data_dir_path, /*create=*/true);
+    node_settings.chaindata_env_config.path = node_settings.data_directory->chaindata().path().string();
 
     // Parse prune mode
     sw_db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
@@ -239,7 +240,13 @@ int main(int argc, char* argv[]) {
                       {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
         // Prepare database for takeoff
-        cmd::common::run_db_checklist(settings.node_settings);
+        settings.node_settings.data_directory->deploy();
+        settings.node_settings.chain_config = cmd::common::run_db_checklist(cmd::common::DbChecklistSettings{
+            .chaindata_env_config = settings.node_settings.chaindata_env_config,
+            .prune_mode = settings.node_settings.prune_mode,
+            .network_id = settings.node_settings.network_id,
+            .init_if_empty = true,
+        });
 
         mdbx::env_managed chaindata_env = db::open_env(settings.node_settings.chaindata_env_config);
 

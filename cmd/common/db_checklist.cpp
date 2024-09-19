@@ -26,20 +26,14 @@
 
 namespace silkworm::cmd::common {
 
-void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
-    node_settings.data_directory->deploy();                                  // Ensures all subdirs are present
-    bool chaindata_exclusive{node_settings.chaindata_env_config.exclusive};  // Save setting
-    {
-        auto& config = node_settings.chaindata_env_config;
-        config.path = node_settings.data_directory->chaindata().path().string();
-        config.create =
-            !std::filesystem::exists(db::get_datafile_path(node_settings.data_directory->chaindata().path()));
-        config.exclusive = true;  // Will be cleared after this phase
-    }
+ChainConfig run_db_checklist(const DbChecklistSettings& node_settings) {
+    auto chaindata_env_config = node_settings.chaindata_env_config;
+    chaindata_env_config.create = !std::filesystem::exists(db::get_datafile_path(chaindata_env_config.path));
+    chaindata_env_config.exclusive = true;
 
     // Open chaindata environment and check tables are consistent
-    log::Info("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
-    auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
+    log::Info("Opening database", {"path", chaindata_env_config.path});
+    mdbx::env_managed chaindata_env = db::open_env(chaindata_env_config);
     db::RWTxnManaged tx(chaindata_env);
 
     // Ensures all tables are present
@@ -51,9 +45,10 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
     const auto header_download_progress{db::stages::read_stage_progress(tx, db::stages::kHeadersKey)};
 
     // Check db is initialized with chain config
+    std::optional<ChainConfig> chain_config;
     {
-        node_settings.chain_config = db::read_chain_config(tx);
-        if (!node_settings.chain_config.has_value() && init_if_empty) {
+        chain_config = db::read_chain_config(tx);
+        if (!chain_config.has_value() && node_settings.init_if_empty) {
             auto source_data{read_genesis_data(node_settings.network_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
             if (genesis_json.is_discarded()) {
@@ -63,14 +58,14 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
             log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
             db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
             tx.commit_and_renew();
-            node_settings.chain_config = db::read_chain_config(tx);
+            chain_config = db::read_chain_config(tx);
         }
 
-        if (!node_settings.chain_config.has_value()) {
+        if (!chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain configuration");
         }
 
-        const ChainId chain_id{node_settings.chain_config->chain_id};
+        const ChainId chain_id = chain_config->chain_id;
         if (chain_id != node_settings.network_id) {
             throw std::runtime_error("Incompatible network id. Command line expects " +
                                      std::to_string(node_settings.network_id) + "; Database has " +
@@ -78,11 +73,11 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
         }
 
         const auto known_chain{kKnownChainConfigs.find(chain_id)};
-        if (known_chain && **known_chain != *(node_settings.chain_config)) {
+        if (known_chain && **known_chain != *chain_config) {
             // If loaded config is known we must ensure is up-to-date with hardcoded one
             // Loop all respective JSON members to find discrepancies
             auto known_chain_config_json{(*known_chain)->to_json()};
-            auto active_chain_config_json{node_settings.chain_config->to_json()};
+            auto active_chain_config_json = chain_config->to_json();
             bool new_members_added{false};
             bool old_members_changed(false);
             for (auto& [known_key, known_value] : known_chain_config_json.items()) {
@@ -152,17 +147,17 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
             if (new_members_added || old_members_changed) {
                 db::update_chain_config(tx, **known_chain);
                 tx.commit_and_renew();
-                node_settings.chain_config = **known_chain;
+                chain_config = **known_chain;
             }
         }
 
         // Load genesis_hash
-        node_settings.chain_config->genesis_hash = db::read_canonical_header_hash(tx, 0);
-        if (!node_settings.chain_config->genesis_hash.has_value())
+        chain_config->genesis_hash = db::read_canonical_header_hash(tx, 0);
+        if (!chain_config->genesis_hash.has_value())
             throw std::runtime_error("Could not load genesis hash");
 
         log::Info("Starting Silkworm", {"chain", (known_chain ? std::to_string(chain_id) : "unknown/custom"),
-                                        "config", node_settings.chain_config->to_json().dump()});
+                                        "config", chain_config->to_json().dump()});
     }
 
     // Detect prune-mode and verify is compatible
@@ -176,15 +171,14 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
                                          db_prune_mode.to_string() + " got " + node_settings.prune_mode.to_string());
             }
             db::write_prune_mode(*tx, node_settings.prune_mode);
-            node_settings.prune_mode = db::PruneMode(db::read_prune_mode(*tx));
         }
         log::Info("Effective pruning", {"mode", node_settings.prune_mode.to_string()});
     }
 
     tx.commit_and_stop();
     chaindata_env.close();
-    node_settings.chaindata_env_config.exclusive = chaindata_exclusive;
-    node_settings.chaindata_env_config.create = false;  // Has already been created
+
+    return std::move(*chain_config);
 }
 
 }  // namespace silkworm::cmd::common

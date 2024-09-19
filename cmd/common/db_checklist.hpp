@@ -16,11 +16,20 @@
 
 #pragma once
 
-#include <silkworm/node/common/node_settings.hpp>
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/prune_mode.hpp>
 
 namespace silkworm::cmd::common {
 
+struct DbChecklistSettings {
+    db::EnvConfig chaindata_env_config;
+    db::PruneMode prune_mode;
+    ChainId network_id{0};
+    bool init_if_empty{true};
+};
+
 //! \brief Ensure database is ready to take off and consistent with command line arguments
-void run_db_checklist(NodeSettings& node_settings, bool init_if_empty = true);
+ChainConfig run_db_checklist(const DbChecklistSettings& node_settings);
 
 }  // namespace silkworm::cmd::common

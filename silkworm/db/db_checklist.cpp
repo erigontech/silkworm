@@ -24,7 +24,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::cmd::common {
+namespace silkworm::db {
 
 ChainConfig run_db_checklist(const DbChecklistSettings& node_settings) {
     auto chaindata_env_config = node_settings.chaindata_env_config;
@@ -181,4 +181,4 @@ ChainConfig run_db_checklist(const DbChecklistSettings& node_settings) {
     return std::move(*chain_config);
 }
 
-}  // namespace silkworm::cmd::common
+}  // namespace silkworm::db

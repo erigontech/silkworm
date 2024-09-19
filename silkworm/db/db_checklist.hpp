@@ -20,7 +20,7 @@
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 
-namespace silkworm::cmd::common {
+namespace silkworm::db {
 
 struct DbChecklistSettings {
     db::EnvConfig chaindata_env_config;
@@ -32,4 +32,4 @@ struct DbChecklistSettings {
 //! \brief Ensure database is ready to take off and consistent with command line arguments
 ChainConfig run_db_checklist(const DbChecklistSettings& node_settings);
 
-}  // namespace silkworm::cmd::common
+}  // namespace silkworm::db

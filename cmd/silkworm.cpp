@@ -29,6 +29,7 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/db/db_checklist.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
@@ -36,7 +37,6 @@
 #include <silkworm/node/node.hpp>
 
 #include "common/common.hpp"
-#include "common/db_checklist.hpp"
 #include "common/node_options.hpp"
 #include "common/rpcdaemon_options.hpp"
 #include "common/sentry_options.hpp"
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
 
         // Prepare database for takeoff
         settings.node_settings.data_directory->deploy();
-        settings.node_settings.chain_config = cmd::common::run_db_checklist(cmd::common::DbChecklistSettings{
+        settings.node_settings.chain_config = db::run_db_checklist(db::DbChecklistSettings{
             .chaindata_env_config = settings.node_settings.chaindata_env_config,
             .prune_mode = settings.node_settings.prune_mode,
             .network_id = settings.node_settings.network_id,

@@ -49,6 +49,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <span>
 #include <utility>
 #include <vector>
@@ -103,6 +104,18 @@ static void set_bits(std::span<T, Extent> bits, const uint64_t start, const uint
 //! 32-bit Elias-Fano (EF) list that can be used to encode one monotone non-decreasing sequence
 class EliasFanoList32 {
   public:
+    static constexpr std::size_t kCountLength{sizeof(uint64_t)};
+    static constexpr std::size_t kULength{sizeof(uint64_t)};
+
+    //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
+    static std::unique_ptr<EliasFanoList32> from_encoded_data(std::span<uint8_t> encoded_data) {
+        ensure(encoded_data.size() >= kCountLength + kULength, "EliasFanoList32::from_encoded_data data too short");
+        const uint64_t count = endian::load_big_u64(encoded_data.data());
+        const uint64_t u = endian::load_big_u64(encoded_data.subspan(kCountLength).data());
+        const auto remaining_data = encoded_data.subspan(kCountLength + kULength);
+        return std::make_unique<EliasFanoList32>(count, u, remaining_data);
+    }
+
     //! Create an empty new 32-bit EF list prepared for specified sequence length and max offset
     EliasFanoList32(uint64_t sequence_length, uint64_t max_offset)
         : count_(sequence_length - 1),
@@ -135,6 +148,8 @@ class EliasFanoList32 {
     [[nodiscard]] std::size_t min() const { return get(0); }
 
     [[nodiscard]] const Uint64Sequence& data() const { return data_; }
+
+    [[nodiscard]] std::size_t encoded_data_size() const { return kCountLength + kULength + data_.size() * sizeof(uint64_t); }
 
     [[nodiscard]] uint64_t get(uint64_t i) const {
         uint64_t lower = i * l_;

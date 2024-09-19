@@ -43,6 +43,7 @@
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/bittorrent/web_seed_client.hpp>
+#include <silkworm/db/snapshots/index/btree_index.hpp>
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/snapshot_repository.hpp>
@@ -97,6 +98,7 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
     count_headers,
     create_index,
     open_index,
+    open_btree_index,
     decode_segment,
     download,
     lookup_header,
@@ -218,6 +220,10 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
             ->capture_default_str();
     }
 
+    commands[SnapshotTool::open_btree_index]
+        ->add_option("--file", snapshot_settings.input_file_path, ".kv file to open with associated .bt file")
+        ->required()
+        ->check(CLI::ExistingFile);
     commands[SnapshotTool::recompress]
         ->add_option("--file", snapshot_settings.input_file_path, ".seg file to decompress and compress again")
         ->required()
@@ -380,6 +386,48 @@ void open_index(const SnapshotSubcommandSettings& settings) {
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+}
+
+void open_btree_index(const SnapshotSubcommandSettings& settings) {
+    ensure(!settings.input_file_path.empty(), "open_btree_index: --file must be specified");
+    ensure(settings.input_file_path.extension() == ".kv", "open_btree_index: --file must be .kv file");
+
+    std::filesystem::path bt_index_file_path = settings.input_file_path;
+    bt_index_file_path.replace_extension(".bt");
+    SILK_INFO << "KV file: " << settings.input_file_path.string() << " BT file: " << bt_index_file_path.string();
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    seg::Decompressor kv_decompressor{settings.input_file_path};
+    kv_decompressor.open();
+    snapshots::index::BTreeIndex bt_index{kv_decompressor, bt_index_file_path};
+    SILK_INFO << "Starting KV scan and BTreeIndex check, total keys: " << bt_index.key_count();
+    size_t matching_count{0}, key_count{0};
+    bool is_key{true};
+    Bytes key, value;
+    auto kv_iterator = kv_decompressor.begin();
+    while (kv_iterator != kv_decompressor.end()) {
+        if (is_key) {
+            key = *kv_iterator;
+            ++key_count;
+        } else {
+            value = *kv_iterator;
+            const auto v = bt_index.get(key, kv_iterator);
+            SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value) << " v=" << (v ? to_hex(*v) : "");
+            ensure(v == value,
+                   [&]() { return "open_btree_index: value mismatch for key=" + to_hex(key) + " position=" + std::to_string(key_count); });
+            if (v == value) {
+                ++matching_count;
+            }
+            if (key_count % 10'000'000 == 0) {
+                SILK_INFO << "BTreeIndex check progress: " << key_count << " different: " << (key_count - matching_count);
+            }
+        }
+        ++kv_iterator;
+        is_key = !is_key;
+    }
+    ensure(key_count == bt_index.key_count(), "open_btree_index: total key count does not match");
+    SILK_INFO << "Open btree index matching: " << matching_count << " different: " << (key_count - matching_count);
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Open btree index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
@@ -871,6 +919,9 @@ int main(int argc, char* argv[]) {
                 break;
             case SnapshotTool::open_index:
                 open_index(settings.snapshot_settings);
+                break;
+            case SnapshotTool::open_btree_index:
+                open_btree_index(settings.snapshot_settings);
                 break;
             case SnapshotTool::decode_segment:
                 decode_segment(settings.snapshot_settings, settings.repetitions);

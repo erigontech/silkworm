@@ -364,7 +364,7 @@ void Decompressor::open() {
     const auto pattern_dict_length = endian::load_big_u64(address + kWordsCountSize + kEmptyWordsCountSize);
     SILK_TRACE << "Decompress pattern dictionary length: " << pattern_dict_length;
     if (pattern_dict_length > compressed_file_size - kMinimumFileSize) {
-        throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_size));
+        throw std::runtime_error("invalid pattern_dict_length for compressed file size: " + std::to_string(compressed_file_size));
     }
 
     const std::size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
@@ -374,7 +374,7 @@ void Decompressor::open() {
     const auto position_dict_length = endian::load_big_u64(address + patterns_dict_offset + pattern_dict_length);
     SILK_TRACE << "Decompress position dictionary length: " << position_dict_length;
     if (position_dict_length > compressed_file_size - pattern_dict_length - kMinimumFileSize) {
-        throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_size));
+        throw std::runtime_error("invalid position_dict_length for compressed file size: " + std::to_string(compressed_file_size));
     }
 
     const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};

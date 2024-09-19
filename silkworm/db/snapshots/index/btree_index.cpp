@@ -26,12 +26,12 @@
 
 namespace silkworm::snapshots::index {
 
-BTreeIndex::BTreeIndex(seg::Decompressor& data_decompressor,
+BTreeIndex::BTreeIndex(seg::Decompressor& kv_decompressor,
                        std::filesystem::path index_file_path,
                        std::optional<MemoryMappedRegion> index_region,
                        uint64_t btree_fanout)
     : file_path_(std::move(index_file_path)) {
-    ensure(data_decompressor.is_open(), "BTreeIndex: data decompressor must be opened");
+    ensure(kv_decompressor.is_open(), "BTreeIndex: KV file decompressor must be opened");
 
     // Gracefully handle the case of empty index file before memory mapping to avoid error
     if (std::filesystem::file_size(file_path_) == 0) {
@@ -50,16 +50,16 @@ BTreeIndex::BTreeIndex(seg::Decompressor& data_decompressor,
     const auto encoded_nodes = memory_mapped_range.subspan(data_offsets_->encoded_data_size());
 
     // Let the OS know we're going to read data sequentially now, then restore normal (i.e. unknown) reading behavior
-    data_decompressor.advise_sequential();
-    [[maybe_unused]] auto _ = gsl::finally([&]() { data_decompressor.advise_normal(); });
-    auto data_it = data_decompressor.begin();
+    kv_decompressor.advise_sequential();
+    [[maybe_unused]] auto _ = gsl::finally([&]() { kv_decompressor.advise_normal(); });
+    auto kv_it = kv_decompressor.begin();
 
     btree_ = std::make_unique<BTree>(
         data_offsets_->sequence_length(),
         btree_fanout,
         [this](auto data_index, auto& data_it) { return lookup_data(data_index, data_it); },
         [this](auto key, auto data_index, auto& data_it) { return compare_key(key, data_index, data_it); },
-        data_it,
+        kv_it,
         encoded_nodes);
 }
 

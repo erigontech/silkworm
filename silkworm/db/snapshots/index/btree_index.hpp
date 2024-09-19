@@ -74,7 +74,7 @@ class BTreeIndex {
         DataIterator data_it_;
     };
 
-    BTreeIndex(seg::Decompressor& data_decompressor,
+    BTreeIndex(seg::Decompressor& kv_decompressor,
                std::filesystem::path index_file_path,
                std::optional<MemoryMappedRegion> index_region = {},
                uint64_t btree_fanout = kDefaultFanout);

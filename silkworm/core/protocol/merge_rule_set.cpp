@@ -100,10 +100,10 @@ void MergeRuleSet::initialize(EVM& evm) {
     }
 }
 
-ValidationResult MergeRuleSet::finalize(IntraBlockState& state, const Block& block, EVM& evm) {
+ValidationResult MergeRuleSet::finalize(IntraBlockState& state, const Block& block, EVM& evm, const std::vector<Log>& logs) {
     if (block.header.difficulty != 0) {
         if (pre_merge_rule_set_) {
-            return pre_merge_rule_set_->finalize(state, block, evm);
+            return pre_merge_rule_set_->finalize(state, block, evm, logs);
         }
     }
 
@@ -116,7 +116,7 @@ ValidationResult MergeRuleSet::finalize(IntraBlockState& state, const Block& blo
     }
 
     if (evm.revision() >= EVMC_PRAGUE && block.header.requests_hash) {
-        return validate_requests_root(block.header, state.logs(), evm);
+        return validate_requests_root(block.header, logs, evm);
     }
     return ValidationResult::kOk;
 }

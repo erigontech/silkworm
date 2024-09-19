@@ -329,8 +329,8 @@ ValidationResult validate_requests_root(const BlockHeader& header, const std::ve
         system_txn.to = kConsolidationRequestAddress;
         system_txn.data = Bytes{};
         system_txn.set_sender(kSystemAddress);
-        const auto withdrawals = evm.execute(system_txn, kSystemCallGasLimit);
-        requests.add_request(FlatRequestType::kConsolidationRequest, withdrawals.data);
+        const auto consolidations = evm.execute(system_txn, kSystemCallGasLimit);
+        requests.add_request(FlatRequestType::kConsolidationRequest, consolidations.data);
     }
 
     const auto computed_hash = requests.calculate_sha256();

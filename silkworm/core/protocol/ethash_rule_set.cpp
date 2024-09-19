@@ -71,7 +71,7 @@ void EthashRuleSet::initialize(EVM& evm) {
     }
 }
 
-ValidationResult EthashRuleSet::finalize(IntraBlockState& state, const Block& block, EVM&) {
+ValidationResult EthashRuleSet::finalize(IntraBlockState& state, const Block& block, EVM&, const std::vector<Log>&) {
     const BlockReward reward{compute_reward(block)};
     state.add_to_balance(get_beneficiary(block.header), reward.miner);
     for (size_t i{0}; i < block.ommers.size(); ++i) {

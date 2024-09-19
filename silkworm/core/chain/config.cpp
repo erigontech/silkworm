@@ -190,9 +190,9 @@ bool ChainConfig::is_london(BlockNum block_number) const noexcept {
 }
 
 evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) const noexcept {
+    if (prague_time && block_time >= prague_time) return EVMC_PRAGUE;
     if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;
     if (shanghai_time && block_time >= shanghai_time) return EVMC_SHANGHAI;
-    if (prague_time && block_time >= prague_time) return EVMC_PRAGUE;
 
     const auto* bor{std::get_if<protocol::bor::Config>(&rule_set_config)};
     if (bor && block_number >= bor->agra_block) return EVMC_SHANGHAI;

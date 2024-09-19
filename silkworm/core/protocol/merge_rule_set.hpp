@@ -37,7 +37,7 @@ class MergeRuleSet : public RuleSet {
 
     void initialize(EVM& evm) override;
 
-    ValidationResult finalize(IntraBlockState& state, const Block& block, EVM& evm) override;
+    ValidationResult finalize(IntraBlockState& state, const Block& block, EVM& evm, const std::vector<Log>& logs) override;
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
 

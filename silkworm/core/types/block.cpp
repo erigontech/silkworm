@@ -237,7 +237,7 @@ namespace rlp {
 
         if (from.length() > leftover) {
             to.requests_hash = evmc::bytes32{};
-            if (DecodingResult res{decode(from, *to.requests_hash)}; !res) {
+            if (DecodingResult res{decode(from, *to.requests_hash, Leftover::kAllow)}; !res) {
                 return res;
             }
         } else {

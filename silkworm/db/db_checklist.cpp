@@ -27,6 +27,18 @@
 namespace silkworm::db {
 
 ChainConfig run_db_checklist(const DbChecklistSettings& node_settings) {
+    // Output mdbx build info
+    log::Debug(
+        "libmdbx",
+        {
+            "version",
+            mdbx::get_version().git.describe,
+            "build",
+            mdbx::get_build().target,
+            "compiler",
+            mdbx::get_build().compiler,
+        });
+
     auto chaindata_env_config = node_settings.chaindata_env_config;
     chaindata_env_config.create = !std::filesystem::exists(db::get_datafile_path(chaindata_env_config.path));
     chaindata_env_config.exclusive = true;

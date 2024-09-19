@@ -34,8 +34,7 @@ class Node {
   public:
     Node(
         rpc::ClientContextPool& context_pool,
-        Settings& settings,
-        mdbx::env chaindata_env);
+        Settings& settings);
     ~Node();
 
     Node(const Node&) = delete;

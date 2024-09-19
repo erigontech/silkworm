@@ -29,7 +29,6 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/db/db_checklist.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
@@ -233,23 +232,6 @@ int main(int argc, char* argv[]) {
 
         sw_log::Info("Silkworm", build_info_as_log_args(silkworm_get_buildinfo()));
 
-        // Output mdbx build info
-        auto mdbx_ver{mdbx::get_version()};
-        auto mdbx_bld{mdbx::get_build()};
-        sw_log::Debug("libmdbx",
-                      {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
-
-        // Prepare database for takeoff
-        settings.node_settings.data_directory->deploy();
-        settings.node_settings.chain_config = db::run_db_checklist(db::DbChecklistSettings{
-            .chaindata_env_config = settings.node_settings.chaindata_env_config,
-            .prune_mode = settings.node_settings.prune_mode,
-            .network_id = settings.node_settings.network_id,
-            .init_if_empty = true,
-        });
-
-        mdbx::env_managed chaindata_env = db::open_env(settings.node_settings.chaindata_env_config);
-
         silkworm::rpc::ClientContextPool context_pool{
             settings.server_settings.context_pool_settings,
         };
@@ -257,7 +239,6 @@ int main(int argc, char* argv[]) {
         silkworm::node::Node execution_node{
             context_pool,
             settings,
-            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
         };
 
         // Trap OS signals

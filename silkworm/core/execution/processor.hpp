@@ -33,7 +33,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state, const ChainConfig& config, bool bailout);
 
     /**
      * Execute a transaction, but do not write to the DB yet.

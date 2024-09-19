@@ -175,6 +175,10 @@ enum class CompressionKind : uint8_t {
     kValues = 0b10,
 };
 
+consteval void enable_bitmask_operator_and(CompressionKind);
+consteval void enable_bitmask_operator_or(CompressionKind);
+consteval void enable_bitmask_operator_not(CompressionKind);
+
 //! Snapshot decoder using modified Condensed Huffman Table (CHT) algorithm
 class Decompressor {
   public:
@@ -286,7 +290,7 @@ class Decompressor {
 
     explicit Decompressor(std::filesystem::path compressed_path,
                           std::optional<MemoryMappedRegion> compressed_region = {},
-                          CompressionKind compression = CompressionKind::kKeys);
+                          CompressionKind compression = CompressionKind::kKeys | CompressionKind::kValues);
     ~Decompressor();
 
     Decompressor(Decompressor&&) = default;
@@ -364,9 +368,5 @@ class Decompressor {
     //! The size in bytes of the data words
     uint64_t words_length_{0};
 };
-
-consteval void enable_bitmask_operator_and(CompressionKind);
-consteval void enable_bitmask_operator_or(CompressionKind);
-consteval void enable_bitmask_operator_not(CompressionKind);
 
 }  // namespace silkworm::snapshots::seg

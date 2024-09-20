@@ -37,7 +37,7 @@ Senders::Senders(
     SyncContext* sync_context,
     const ChainConfig& chain_config,
     size_t batch_size,
-    const db::etl::CollectorSettings& etl_settings,
+    db::etl::CollectorSettings etl_settings,
     db::BlockAmount prune_mode_senders)
     : Stage(sync_context, db::stages::kSendersKey),
       chain_config_(chain_config),

@@ -54,7 +54,7 @@ class Senders final : public Stage {
         SyncContext* sync_context,
         const ChainConfig& chain_config,
         size_t batch_size,
-        const db::etl::CollectorSettings& etl_settings,
+        db::etl::CollectorSettings etl_settings,
         db::BlockAmount prune_mode_senders);
     ~Senders() override = default;
 

@@ -168,8 +168,7 @@ inline std::shared_ptr<Block> generate_sample_child_blocks(const BlockHeader& pa
     auto parent_hash = parent.hash();
 
     // Random number generator setup
-    std::random_device rd;                                          // Seed for the random number engine
-    std::mt19937 gen(rd());                                         // Mersenne Twister engine
+    std::mt19937 gen(std::random_device{}());                       // Mersenne Twister engine with seed
     std::uniform_int_distribution<uint64_t> dis(1, 1'000'000'000);  // Distribution range
 
     // BlockHeader

@@ -25,7 +25,7 @@ class HashState final : public Stage {
   public:
     HashState(
         SyncContext* sync_context,
-        const db::etl::CollectorSettings& etl_settings)
+        db::etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kHashStateKey),
           etl_settings_(std::move(etl_settings)) {}
     HashState(const HashState&) = delete;  // not copyable

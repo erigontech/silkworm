@@ -40,20 +40,6 @@ class BTreeIndex {
 
     class Cursor {
       public:
-        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = std::tuple<ByteView, ByteView, DataIndex>;
-        using pointer = value_type*;
-        using reference = value_type&;
-
-        // reference operator*() { return key_value_index_; }
-        // pointer operator->() { return &key_value_index_; }
-
-        Cursor& operator++() {
-            next();
-            return *this;
-        }
-
         ByteView key() const noexcept { return key_; }
         ByteView value() const noexcept { return value_; }
         DataIndex data_index() const noexcept { return data_index_; }
@@ -70,7 +56,6 @@ class BTreeIndex {
         Bytes key_;
         Bytes value_;
         DataIndex data_index_;
-        // value_type key_value_index_;
         DataIterator data_it_;
     };
 
@@ -88,18 +73,22 @@ class BTreeIndex {
     //! Return the number of keys included into this index
     size_t key_count() const { return data_offsets_ ? data_offsets_->sequence_length() : 0; };
 
-    //! Seek and return cursor at position where key >= \p seek_key
-    //! \param seek_key the given key to seek cursor at
-    //! \return a cursor positioned at key >= \p seek_key
+    //! Seek and return a cursor at position where key >= \p seek_key
+    //! \param seek_key the given key at which the cursor must be seeked
+    //! \param data_it an iterator to the key-value data sequence
+    //! \return a cursor positioned at key >= \p seek_key or nullptr
     //! \details if \p seek_key is empty, first key is returned
-    //! \details if \p seek_key greater than any other key, nullptr is returned
-    std::unique_ptr<Cursor> seek(ByteView seek_key, DataIterator data_it);
+    //! \details if \p seek_key is greater than any other key, std::nullopt is returned
+    std::optional<Cursor> seek(ByteView seek_key, DataIterator data_it);
 
     //! Get the value associated to the given key with exact match
+    //! \param key the data key to match exactly
+    //! \param data_it an iterator to the key-value data sequence
+    //! \return the value associated at \p key or std::nullopt if not found
     std::optional<Bytes> get(ByteView key, DataIterator data_it);
 
   private:
-    std::unique_ptr<Cursor> new_cursor(ByteView key, ByteView value, DataIndex data_index, DataIterator data_it);
+    Cursor new_cursor(ByteView key, ByteView value, DataIndex data_index, DataIterator data_it);
 
     BTree::LookupResult lookup_data(DataIndex data_index, DataIterator data_it);
     BTree::CompareResult compare_key(ByteView key, DataIndex data_index, DataIterator data_it);

@@ -66,12 +66,12 @@ BTreeIndex::BTreeIndex(seg::Decompressor& kv_decompressor,
 BTreeIndex::Cursor::Cursor(BTreeIndex* index, ByteView key, ByteView value, DataIndex data_index, DataIterator data_it)
     : index_(index), key_(key), value_(value), data_index_(data_index), data_it_(std::move(data_it)) {}
 
-std::unique_ptr<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, DataIterator data_it) {
+std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, DataIterator data_it) {
     const auto [found, key, value, data_index] = btree_->seek(seek_key, data_it);
     if (key.compare(seek_key) >= 0) {
         return new_cursor(key, value, data_index, data_it);
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 std::optional<Bytes> BTreeIndex::get(ByteView key, DataIterator data_it) {
@@ -123,8 +123,8 @@ BTree::CompareResult BTreeIndex::compare_key(ByteView key, DataIndex data_index,
     return {data_key.compare(key), data_key};
 }
 
-std::unique_ptr<BTreeIndex::Cursor> BTreeIndex::new_cursor(ByteView key, ByteView value, DataIndex data_index, DataIterator data_it) {
-    return std::unique_ptr<BTreeIndex::Cursor>{new BTreeIndex::Cursor{this, key, value, data_index, std::move(data_it)}};
+BTreeIndex::Cursor BTreeIndex::new_cursor(ByteView key, ByteView value, DataIndex data_index, DataIterator data_it) {
+    return BTreeIndex::Cursor{this, key, value, data_index, std::move(data_it)};
 }
 
 bool BTreeIndex::Cursor::next() {

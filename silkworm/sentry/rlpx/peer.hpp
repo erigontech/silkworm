@@ -81,11 +81,11 @@ class Peer {
     }
 
     boost::asio::ip::tcp::endpoint local_endpoint() const {
-        return stream_.socket().local_endpoint();
+        return local_endpoint_;
     }
 
     boost::asio::ip::tcp::endpoint remote_endpoint() const {
-        return stream_.socket().remote_endpoint();
+        return remote_endpoint_;
     }
 
     bool is_inbound() const { return is_inbound_; };
@@ -113,6 +113,8 @@ class Peer {
     Task<void> ping_periodically(framing::MessageStream& message_stream);
 
     SocketStream stream_;
+    boost::asio::ip::tcp::endpoint local_endpoint_;
+    boost::asio::ip::tcp::endpoint remote_endpoint_;
     EccKeyPair node_key_;
     std::string client_id_;
     uint16_t node_listen_port_;

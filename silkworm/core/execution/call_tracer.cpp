@@ -59,8 +59,8 @@ inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t&
     }
     if constexpr (instr::traits[Op].stack_height_required > 0) {
         // Check stack underflow using pointer comparison <= (better optimization).
-        static constexpr auto min_offset = instr::traits[Op].stack_height_required - 1;
-        if (INTX_UNLIKELY(stack_top <= stack_bottom + min_offset))
+        static constexpr auto kMinOffset = instr::traits[Op].stack_height_required - 1;
+        if (INTX_UNLIKELY(stack_top <= stack_bottom + kMinOffset))
             return EVMC_STACK_UNDERFLOW;
     }
 

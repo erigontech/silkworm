@@ -27,7 +27,7 @@ namespace silkworm::rpc::commands {
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_blockNumber succeeds if request well-formed", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]})"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -38,7 +38,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_blockNumber succeeds if re
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_blockNumber fails if request empty", "[rpc][api]") {
     const auto request = R"({})"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":null,
@@ -54,7 +54,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails r
         "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f0724456"]
     })"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -70,7 +70,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails l
         "params": ["0x01f87482053980843b9aca008509502f9000830493e080809a608060405260098060116000396000f3fe6080604052600080fdc001a02f770992b74b52f9e2beef5b33376590e6dc7669ee7ab648e1e31ad3a377f627a07c3030ba71736bb982ccbb1e36b073489abe0c18ffc14be5206c29f1c026c99a"]
     })"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -86,7 +86,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails t
         "params": ["0x02f87482053980843b9aca008509502f9000830493e080809a608060405260098060116000396000f3fe6080604052600080fdc001a02f770992b74b52f9e2beef5b33376590e6dc7669ee7ab648e1e31ad3a377f627a07c3030ba71736bb982ccbb1e36b073489abe0c18ffc14be5206c29f1c026c99a"]
     })"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -97,7 +97,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails t
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if request well-formed", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1","0x867A80",[25,75]]})"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -105,21 +105,21 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if req
     })"_json);
 }
 
-TEST_CASE_METHOD(test_util::RpcApiE2ETest, "fuzzy: eth_call invalid params", "[rpc][api]") {
+TEST_CASE_METHOD(test_util::RpcApiE2ETest, "eth_call without params on gas", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{}, "latest"]})"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "error":{"code":-32000,"message":"insufficient funds for gas * price + value: address 0x0000000000000000000000000000000000000000 have 0 want 15240199550000000"}
+        "result":"0x"
    })"_json);
 }
 
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv invalid input", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["5x1","0x2",[95,99]]})"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
@@ -130,7 +130,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv invali
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv valid input", "[rpc][api]") {
     const auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x5","0x2",[95,99]]})"_json;
     std::string reply;
-    run<&test_util::RequestHandler_ForTest::request_and_create_reply>(request, reply);
+    run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,

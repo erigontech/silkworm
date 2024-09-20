@@ -27,6 +27,7 @@ set(PRIVATE_LIBS
     silkworm_core
     silkworm_db
     silkworm_sentry
+    silkworm_node
     silkworm_rpcdaemon
 )
 

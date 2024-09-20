@@ -50,7 +50,7 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
             co_return cursor_it->second;
         }
     }
-    auto cursor = std::make_shared<LocalCursor>(txn_, ++last_cursor_id_, table);
+    auto cursor = std::make_shared<LocalCursor>(txn_, ++last_cursor_id_);
     co_await cursor->open_cursor(table, is_cursor_dup_sort);
     if (is_cursor_dup_sort) {
         dup_cursors_[table] = cursor;
@@ -69,12 +69,42 @@ std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
 }
 
 // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<PaginatedTimestamps> LocalTransaction::index_range(api::IndexRangeQuery&& /*query*/) {
+Task<DomainPointResult> LocalTransaction::domain_get(DomainPointQuery&& /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    co_return DomainPointResult{};
+}
+
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery&& /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    co_return HistoryPointResult{};
+}
+
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery&& /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = []() mutable -> Task<api::PaginatedTimestamps::PageResult> {
         co_return api::PaginatedTimestamps::PageResult{};
     };
     co_return api::PaginatedTimestamps{std::move(paginator)};
+}
+
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery&& /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    auto paginator = []() mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        co_return api::PaginatedKeysValues::PageResult{};
+    };
+    co_return api::PaginatedKeysValues{std::move(paginator)};
+}
+
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+Task<PaginatedKeysValues> LocalTransaction::domain_range(DomainRangeQuery&& /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    auto paginator = []() mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        co_return api::PaginatedKeysValues::PageResult{};
+    };
+    co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
 }  // namespace silkworm::db::kv::api

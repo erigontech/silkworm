@@ -38,19 +38,19 @@ Context::Context(std::size_t context_id, WaitMode wait_mode)
 
 void Context::execute_loop() {
     switch (wait_mode_) {
-        case WaitMode::backoff:
+        case WaitMode::kBackoff:
             execute_loop_single_threaded(YieldingIdleStrategy{});  // TODO(canepat) replace with BackOffIdleStrategy
             break;
-        case WaitMode::blocking:
+        case WaitMode::kBlocking:
             execute_loop_multi_threaded();
             break;
-        case WaitMode::yielding:
+        case WaitMode::kYielding:
             execute_loop_single_threaded(YieldingIdleStrategy{});
             break;
-        case WaitMode::sleeping:
+        case WaitMode::kSleeping:
             execute_loop_single_threaded(SleepingIdleStrategy{});
             break;
-        case WaitMode::busy_spin:
+        case WaitMode::kBusySpin:
             execute_loop_single_threaded(BusySpinIdleStrategy{});
             break;
     }
@@ -61,11 +61,11 @@ void Context::stop() {
 }
 
 template <typename IdleStrategy>
-void Context::execute_loop_single_threaded(IdleStrategy&& idle_strategy) {
+void Context::execute_loop_single_threaded(IdleStrategy idle_strategy) {
     SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
     while (!io_context_->stopped()) {
         std::size_t work_count = io_context_->poll();
-        std::forward<IdleStrategy>(idle_strategy).idle(work_count);
+        idle_strategy.idle(work_count);
     }
     SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
 }

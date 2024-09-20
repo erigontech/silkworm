@@ -145,7 +145,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
         }
 
         auto expected_code{j["code"].get<std::string>()};
-        Bytes actual_code{state.read_code(account->code_hash)};
+        Bytes actual_code{state.read_code(address, account->code_hash)};
         if (actual_code != from_hex(expected_code)) {
             std::cout << "Code mismatch for " << entry.key() << ":\n"
                       << to_hex(actual_code) << " != " << expected_code << std::endl;
@@ -240,16 +240,14 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
             std::cout << "postStateHash mismatch:\n"
                       << to_hex(state_root) << " != " << expected_hex << std::endl;
             return Status::kFailed;
-        } else {
-            return Status::kPassed;
         }
+        return Status::kPassed;
     }
 
     if (post_check(state, json_test["postState"])) {
         return Status::kPassed;
-    } else {
-        return Status::kFailed;
     }
+    return Status::kFailed;
 }
 
 static void print_test_status(std::string_view key, const RunResults& res) {
@@ -321,9 +319,8 @@ RunResults transaction_test(const nlohmann::json& j) {
             if (should_be_valid) {
                 std::cout << "Failed to decode valid transaction" << std::endl;
                 return Status::kFailed;
-            } else {
-                continue;
             }
+            continue;
         }
 
         const ChainConfig& config{test::kNetworkConfig.at(entry.key())};
@@ -336,9 +333,8 @@ RunResults transaction_test(const nlohmann::json& j) {
             if (should_be_valid) {
                 std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
                 return Status::kFailed;
-            } else {
-                continue;
             }
+            continue;
         }
 
         if (should_be_valid && !txn.sender()) {
@@ -401,11 +397,10 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
                                                                   parent_timestamp, parent_has_uncles, config)};
     if (calculated_difficulty == current_difficulty) {
         return Status::kPassed;
-    } else {
-        std::cout << "Difficulty mismatch for block " << block_number << "\n"
-                  << hex(calculated_difficulty) << " != " << hex(current_difficulty) << std::endl;
-        return Status::kFailed;
     }
+    std::cout << "Difficulty mismatch for block " << block_number << "\n"
+              << hex(calculated_difficulty) << " != " << hex(current_difficulty) << std::endl;
+    return Status::kFailed;
 }
 
 RunResults difficulty_tests(const nlohmann::json& outer) {

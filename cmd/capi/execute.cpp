@@ -34,7 +34,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>
@@ -151,7 +151,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
     std::vector<SilkwormBodiesSnapshot> bodies_snapshot_sequence;
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
 
-    for (const SnapshotBundle& bundle : snapshot_repository.view_bundles()) {
+    for (const auto& bundle_ptr : snapshot_repository.view_bundles()) {
+        const auto& bundle = *bundle_ptr;
         {
             {
                 SilkwormHeadersSnapshot raw_headers_snapshot{
@@ -315,9 +316,8 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, Snapsh
     // Execute blocks
     if (settings.use_internal_txn) {
         return execute_with_internal_txn(handle, settings, env);
-    } else {
-        return execute_with_external_txn(handle, settings, env);
     }
+    return execute_with_external_txn(handle, settings, env);
 }
 
 int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const DataDirectory& data_dir) {

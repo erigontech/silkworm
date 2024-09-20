@@ -432,7 +432,7 @@ const char descriptor_table_protodef_txpool_2ftxpool_2eproto[] PROTOBUF_SECTION_
   "l.OnAddReply0\001\0224\n\006Status\022\025.txpool.Status"
   "Request\032\023.txpool.StatusReply\0221\n\005Nonce\022\024."
   "txpool.NonceRequest\032\022.txpool.NonceReplyB"
-  "\021Z\017./txpool;txpoolb\006proto3"
+  "\026Z\024./txpool;txpoolprotob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2ftxpool_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -440,7 +440,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2ftxpool_2ep
 };
 static ::_pbi::once_flag descriptor_table_txpool_2ftxpool_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_txpool_2ftxpool_2eproto = {
-    false, false, 1506, descriptor_table_protodef_txpool_2ftxpool_2eproto,
+    false, false, 1511, descriptor_table_protodef_txpool_2ftxpool_2eproto,
     "txpool/txpool.proto",
     &descriptor_table_txpool_2ftxpool_2eproto_once, descriptor_table_txpool_2ftxpool_2eproto_deps, 2, 16,
     schemas, file_default_instances, TableStruct_txpool_2ftxpool_2eproto::offsets,

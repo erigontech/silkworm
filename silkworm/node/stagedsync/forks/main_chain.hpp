@@ -18,20 +18,24 @@
 
 #include <atomic>
 #include <concepts>
+#include <optional>
 #include <set>
 #include <variant>
 #include <vector>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/mdbx/memory_mutation.hpp>
 #include <silkworm/db/stage.hpp>
+#include <silkworm/db/stage_scheduler.hpp>
+#include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
+#include "../stages/stage_bodies_factory.hpp"
+#include "../timer_factory.hpp"
 #include "canonical_chain.hpp"
-#include "verification_result.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -40,7 +44,12 @@ class ExtendingFork;
 
 class MainChain {
   public:
-    explicit MainChain(boost::asio::io_context&, NodeSettings&, db::RWAccess);
+    explicit MainChain(
+        boost::asio::any_io_executor executor,
+        NodeSettings& ns,
+        std::optional<TimerFactory> log_timer_factory,
+        BodiesStageFactory bodies_stage_factory,
+        db::RWAccess dba);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -57,6 +66,7 @@ class MainChain {
     bool is_finalized_canonical(BlockId block) const;
 
     // verification
+    using VerificationResult = execution::api::VerificationResult;
     // verify chain up to head_block_hash
     VerificationResult verify_chain(Hash head_block_hash);
     // accept the current chain up to head_block_hash
@@ -85,6 +95,9 @@ class MainChain {
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
+    const std::optional<TimerFactory>& log_timer_factory() const;
+    const BodiesStageFactory& bodies_stage_factory() const;
+    StageScheduler& stage_scheduler() const;
 
   protected:
     Hash insert_header(const BlockHeader&);
@@ -95,10 +108,12 @@ class MainChain {
     bool is_canonical(BlockNum block_height, const Hash& block_hash) const;
     bool is_canonical_head_ancestor(const Hash& block_hash) const;
 
-    std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
+    std::set<Hash> collect_bad_headers(db::RWTxn& tx, execution::api::InvalidChain& invalid_chain);
 
-    boost::asio::io_context& io_context_;
+    boost::asio::any_io_executor executor_;
     NodeSettings& node_settings_;
+    std::optional<TimerFactory> log_timer_factory_;
+    BodiesStageFactory bodies_stage_factory_;
     mutable db::RWAccess db_access_;
     mutable db::RWTxnManaged tx_;
     db::DataModel data_model_;

@@ -42,10 +42,10 @@ using Capabilities = std::vector<std::string>;
 //! ExecutionPayloadV3 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#executionpayloadv3
 struct ExecutionPayload {
     enum Version : uint8_t {
-        V1 = 1,
-        V2 = 2,
-        V3 = 3
-    } version{V1};
+        kV1 = 1,
+        kV2 = 2,
+        kV3 = 3
+    } version{kV1};
 
     BlockNum number{0};
     uint64_t timestamp{0};
@@ -81,10 +81,10 @@ struct ForkChoiceState {
 //! PayloadAttributesV3 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#payloadattributesv3
 struct PayloadAttributes {
     enum Version : uint8_t {
-        V1 = 1,
-        V2 = 2,
-        V3 = 3
-    } version{V1};
+        kV1 = 1,
+        kV2 = 2,
+        kV3 = 3
+    } version{kV1};
 
     uint64_t timestamp{0};
     evmc::bytes32 prev_randao;
@@ -101,23 +101,23 @@ struct NewPayloadRequest {
 
 //! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
 struct PayloadStatus {
-    static inline const char* kValid{"VALID"};
-    static inline const char* kInvalid{"INVALID"};
-    static inline const char* kSyncing{"SYNCING"};
-    static inline const char* kAccepted{"ACCEPTED"};
-    static inline const char* kInvalidBlockHash{"INVALID_BLOCK_HASH"};
-    static const PayloadStatus Syncing;
-    static const PayloadStatus Accepted;
-    static const PayloadStatus InvalidBlockHash;
+    static inline const char* kValidStr{"VALID"};
+    static inline const char* kInvalidStr{"INVALID"};
+    static inline const char* kSyncingStr{"SYNCING"};
+    static inline const char* kAcceptedStr{"ACCEPTED"};
+    static inline const char* kInvalidBlockHashStr{"INVALID_BLOCK_HASH"};
+    static const PayloadStatus kSyncing;
+    static const PayloadStatus kAccepted;
+    static const PayloadStatus kInvalidBlockHash;
 
     std::string status;
     std::optional<Hash> latest_valid_hash;
     std::optional<std::string> validation_error;
 };
 
-inline const PayloadStatus PayloadStatus::Syncing{.status = PayloadStatus::kSyncing};
-inline const PayloadStatus PayloadStatus::Accepted{.status = PayloadStatus::kAccepted};
-inline const PayloadStatus PayloadStatus::InvalidBlockHash{.status = PayloadStatus::kInvalidBlockHash};
+inline const PayloadStatus PayloadStatus::kSyncing{.status = PayloadStatus::kSyncingStr};
+inline const PayloadStatus PayloadStatus::kAccepted{.status = PayloadStatus::kAcceptedStr};
+inline const PayloadStatus PayloadStatus::kInvalidBlockHash{.status = PayloadStatus::kInvalidBlockHashStr};
 
 inline bool operator==(const PayloadStatus& lhs, const PayloadStatus& rhs) {
     return lhs.status == rhs.status;

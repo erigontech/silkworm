@@ -37,7 +37,7 @@ using db::etl_mdbx::Collector;
 
 Stage::Result InterHashes::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
 
     try {
         throw_if_stopping();
@@ -48,9 +48,10 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
         auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
         if (previous_progress == hashstate_stage_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return Stage::Result::kSuccess;
-        } else if (previous_progress > hashstate_stage_progress) {
+        }
+        if (previous_progress > hashstate_stage_progress) {
             // Something bad had happened. Not possible hashstate stage is ahead of bodies
             // Maybe we need to unwind ?
             // Something bad had happened.  Maybe we need to unwind ?
@@ -119,7 +120,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -129,7 +130,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
 
     try {
         throw_if_stopping();
@@ -138,7 +139,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
         BlockNum previous_progress{get_progress(txn)};
         if (to >= previous_progress) {
             // Actually nothing to unwind
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return Stage::Result::kSuccess;
         }
         const BlockNum segment_width{previous_progress - to};
@@ -197,7 +198,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -217,7 +218,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     BlockNum max_blocknum{std::max(from, to)};
 
     absl::btree_set<Bytes> deleted_ts_prefixes{};
-    silkworm::lru_cache<evmc::address, std::optional<Account>> plainstate_accounts(100'000);
+    silkworm::LruCache<evmc::address, std::optional<Account>> plainstate_accounts(100'000);
 
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
@@ -239,7 +240,8 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
         check_block_sequence(reached_blocknum, expected_blocknum);
         if (reached_blocknum > max_blocknum) {
             break;
-        } else if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        }
+        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
             log_time = now + 5s;
@@ -378,7 +380,8 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
         if (reached_blocknum > to) {
             break;
-        } else if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        }
+        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
             log_time = now + 5s;

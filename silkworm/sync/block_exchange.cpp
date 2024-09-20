@@ -24,18 +24,21 @@
 #include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
 
-BlockExchange::BlockExchange(SentryClient& sentry, db::ROAccess dba, const ChainConfig& chain_config)
+BlockExchange::BlockExchange(
+    SentryClient& sentry,
+    db::ROAccess dba,
+    const ChainConfig& chain_config,
+    bool use_preverified_hashes)
     : db_access_{std::move(dba)},
       sentry_{sentry},
       chain_config_{chain_config},
-      header_chain_{chain_config},
+      header_chain_{chain_config, use_preverified_hashes},
       body_sequence_{} {
 }
 
@@ -43,12 +46,12 @@ BlockExchange::~BlockExchange() {
     BlockExchange::stop();
 }
 
-const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
-
-SentryClient& BlockExchange::sentry() const { return sentry_; }
 BlockExchange::ResultQueue& BlockExchange::result_queue() { return results_; }
 bool BlockExchange::in_sync() const { return in_sync_; }
 BlockNum BlockExchange::current_height() const { return current_height_; }
+const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
+SentryClient& BlockExchange::sentry() const { return sentry_; }
+BlockNum BlockExchange::last_pre_validated_block() const { return header_chain_.last_pre_validated_block(); }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) {
     statistics_.internal_msgs++;
@@ -123,7 +126,7 @@ void BlockExchange::execution_loop() {
             request_bodies(now, room_for_new_requests);  // if headers do not used all the room we use it for body requests
 
             // todo: check if it is better to apply a policy based on the current sync status
-            // for example: if (header_chain_.current_height() - body_sequence_.current_height() > stride) { ... }
+            // for example: if (header_chain_.current_height() - body_sequence_.current_height() > kStride) { ... }
 
             // collect downloaded headers & bodies
             collect_headers();
@@ -216,15 +219,15 @@ void BlockExchange::collect_bodies() {
 }
 
 void BlockExchange::log_status() {
-    static constexpr seconds_t interval_for_stats_{60};
-    static Network_Statistics prev_statistic{};
+    static constexpr seconds_t kIntervalForStats{60};
+    static NetworkStatistics prev_statistic{};
     auto now = std::chrono::system_clock::now();
 
     log::Debug() << "BlockExchange         peers: " << sentry_.active_peers();
     log::Debug() << "BlockExchange      messages: " << std::setfill('_') << std::right
                  << "in-queue:" << std::setw(5) << messages_.size()
                  //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
-                 << Interval_Network_Statistics{prev_statistic, statistics_, interval_for_stats_};
+                 << IntervalNetworkStatistics{prev_statistic, statistics_, kIntervalForStats};
 
     auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
     log::Debug() << "BlockExchange header queues: " << std::setfill('_') << std::right
@@ -264,8 +267,8 @@ void BlockExchange::initial_state(std::vector<BlockHeader> last_headers) {
     accept(message);
 }
 
-void BlockExchange::download_blocks(BlockNum current_height, Target_Tracking) {
-    // todo: handle the Target_Tracking mode
+void BlockExchange::download_blocks(BlockNum current_height, TargetTracking) {
+    // todo: handle the TargetTracking mode
 
     auto message = std::make_shared<InternalMessage<void>>(
         [this, current_height](HeaderChain& hc, BodySequence& bc) {
@@ -285,7 +288,7 @@ void BlockExchange::new_target_block(std::shared_ptr<Block> block) {
     auto message = std::make_shared<InternalMessage<void>>(
         [block = std::move(block)](HeaderChain& hc, BodySequence& bc) {
             hc.add_header(block->header, std::chrono::system_clock::now());
-            bc.accept_new_block(*block, no_peer);
+            bc.accept_new_block(*block, kNoPeer);
         });
 
     accept(message);

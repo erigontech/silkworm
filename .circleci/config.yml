@@ -142,7 +142,7 @@ commands:
       - install_conan
       - run:
           name: "Install compiler"
-          command: cmake/setup/compiler_install.sh clang 15
+          command: cmake/setup/compiler_install.sh clang <<pipeline.parameters.clang_version_min>>
       - run:
           name: "CMake Fuzzer"
           working_directory: ~/build
@@ -260,7 +260,7 @@ jobs:
         type: boolean
         default: true
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - checkout_with_submodules:
@@ -337,13 +337,36 @@ jobs:
           name: "Install clang-tidy"
           command: |
             sudo apt-get update
-            sudo apt-get install -y clang-tidy
+            sudo apt-get install -y clang-tidy-<<pipeline.parameters.clang_version_latest>>
+            sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-<<pipeline.parameters.clang_version_latest>> 100
       - checkout_with_submodules:
           ethereum_tests: false
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
+
+  linux-clang-tidy-diff:
+    environment:
+      BUILD_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    machine:
+      image: ubuntu-2404:2024.05.1
+    resource_class: 2xlarge
+    steps:
+      - run:
+          name: "Install clang-tidy"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y clang-tidy-<<pipeline.parameters.clang_version_latest>>
+            sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-<<pipeline.parameters.clang_version_latest>> 100
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+      - run:
+          command: ./third_party/clang-tidy/clang-tidy-diff.sh $(git merge-base master HEAD) ~/build
 
   linux-clang-fuzzer:
     parameters:
@@ -354,8 +377,8 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_FUZZER=ON
       UBSAN_OPTIONS: print_stacktrace=1
-    docker:
-      - image: cimg/python:3.12
+    machine:
+      image: ubuntu-2404:2024.05.1
     resource_class: 2xlarge
     steps:
       - build_fuzzer
@@ -393,7 +416,7 @@ jobs:
           name: "Build GMP"
           working_directory: ~/tmp3
           command: |
-            git clone https://github.com/torquem-ch/gmp-wasm
+            git clone https://github.com/erigontech/gmp-wasm
             cd gmp-wasm
             git checkout 87e9087
             ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none AR=llvm-ar RANLIB=llvm-ranlib --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong
@@ -415,7 +438,7 @@ jobs:
 parameters:
   clang_version_min:
     type: integer
-    default: 15
+    default: 16
   clang_version_latest:
     type: integer
     default: 18
@@ -433,6 +456,7 @@ workflows:
         equal: [ master, <<pipeline.git.branch>> ]
     jobs:
       - lint
+      - linux-clang-tidy-diff
       - linux-release:
           name: linux-gcc-12-release
           compiler_id: gcc

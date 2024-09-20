@@ -106,7 +106,7 @@ class PatternTable : public DecodingTable {
     std::size_t build_condensed(std::span<Pattern> patterns);
 
   private:
-    static const WordDistances word_distances_;
+    static const WordDistances kWordDistances;
     static std::size_t condensed_table_bit_length_threshold_;
 
     [[nodiscard]] static bool check_distance(std::size_t power, int distance);
@@ -223,7 +223,7 @@ class Decompressor {
 
         //! input_iterator concept boilerplate
 
-        using iterator_category = std::input_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using value_type = Bytes;
         using pointer = value_type*;

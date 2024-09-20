@@ -42,7 +42,7 @@ const std::uint8_t kSamples = 3;
 const std::uint8_t kMaxSamples = kCheckBlocks * kSamples;
 const std::uint8_t kPercentile = 60;
 
-typedef std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)> BlockProvider;
+using BlockProvider = std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)>;
 
 class GasPriceOracle {
   public:

@@ -37,9 +37,9 @@
 
 // In debug mode we dump malformed messages received from Sentry
 #ifdef NDEBUG
-constexpr bool dump_malformed_msg{false};
+constexpr bool kDumpMalformedMsg{false};
 #else
-constexpr bool dump_malformed_msg{true};
+constexpr bool kDumpMalformedMsg{true};
 #endif
 
 namespace silkworm {
@@ -93,7 +93,7 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
                                 << " msg_id=" << static_cast<int>(message_from_peer.message.id)
                                 << " eth_message_id=" << static_cast<int>(eth_message_id)
                                 << " error=" << error.what();
-        if (dump_malformed_msg) {
+        if (kDumpMalformedMsg) {
             static int i{0};
             std::ofstream malformed_msg{"sentry_malformed_msg_" + std::to_string(++i) + ".txt", std::ios::binary};
             malformed_msg << std::hex << "peer=" << peer_id << "\n";
@@ -109,7 +109,7 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
 
     if (penalize_peer_id) {
         malformed_message_subscription();
-        co_await penalize_peer_async(penalize_peer_id.value(), BadBlockPenalty);
+        co_await penalize_peer_async(penalize_peer_id.value(), kBadBlockPenalty);
         co_return;
     }
 
@@ -263,11 +263,10 @@ Task<void> SentryClient::receive_messages() {
 static std::string describe_peer_info(const std::optional<silkworm::sentry::api::PeerInfo>& peer_info_opt) {
     if (!peer_info_opt) {
         return "-info-not-found-";
-    } else {
-        const auto& peer_info = peer_info_opt.value();
-        std::string info = "client_id=" + peer_info.client_id + " / enode_url=" + peer_info.url.to_string();
-        return info;
     }
+    const auto& peer_info = peer_info_opt.value();
+    std::string info = "client_id=" + peer_info.client_id + " / enode_url=" + peer_info.url.to_string();
+    return info;
 }
 
 static std::string describe_peer_event(
@@ -333,7 +332,7 @@ std::string SentryClient::request_peer_info(PeerId peer_id) {
 }
 
 Task<void> SentryClient::penalize_peer_async(PeerId peer_id, Penalty penalty) {
-    if (penalty == Penalty::NoPenalty) {
+    if (penalty == Penalty::kNoPenalty) {
         co_return;
     }
     auto peer_public_key = sentry::EccPublicKey::deserialize(peer_id);

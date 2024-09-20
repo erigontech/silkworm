@@ -19,10 +19,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/bodies/body_queries.hpp>
-#include <silkworm/db/headers/header_index.hpp>
-#include <silkworm/db/headers/header_queries.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/bodies/body_queries.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
@@ -41,9 +41,9 @@ using silkworm::test_util::SetLogVerbosityGuard;
 
 static const SnapshotPath kValidHeadersSegmentPath{*SnapshotPath::parse("v1-014500-015000-headers.seg")};
 
-class SnapshotPath_ForTest : public SnapshotPath {
+class SnapshotPathForTest : public SnapshotPath {
   public:
-    SnapshotPath_ForTest(const std::filesystem::path& tmp_dir, BlockNum block_from, BlockNum block_to)
+    SnapshotPathForTest(const std::filesystem::path& tmp_dir, BlockNum block_from, BlockNum block_to)
         : SnapshotPath(SnapshotPath::from(tmp_dir,
                                           kSnapshotV1,
                                           block_from,
@@ -51,12 +51,12 @@ class SnapshotPath_ForTest : public SnapshotPath {
                                           SnapshotType::headers)) {}
 };
 
-class Snapshot_ForTest : public Snapshot {
+class SnapshotForTest : public Snapshot {
   public:
-    explicit Snapshot_ForTest(SnapshotPath path) : Snapshot(std::move(path)) {}
-    explicit Snapshot_ForTest(std::filesystem::path path) : Snapshot(*SnapshotPath::parse(std::move(path))) {}
-    Snapshot_ForTest(const std::filesystem::path& tmp_dir, BlockNum block_from, BlockNum block_to)
-        : Snapshot(SnapshotPath_ForTest{tmp_dir, block_from, block_to}) {}
+    explicit SnapshotForTest(SnapshotPath path) : Snapshot(std::move(path)) {}
+    explicit SnapshotForTest(std::filesystem::path path) : Snapshot(*SnapshotPath::parse(std::move(path))) {}
+    SnapshotForTest(const std::filesystem::path& tmp_dir, BlockNum block_from, BlockNum block_to)
+        : Snapshot(SnapshotPathForTest{tmp_dir, block_from, block_to}) {}
 };
 
 TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
@@ -67,7 +67,7 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
             {1'000, 1'000},
             {1'000, 2'000}};
         for (const auto& [block_from, block_to] : block_ranges) {
-            Snapshot_ForTest snapshot{tmp_dir.path(), block_from, block_to};
+            SnapshotForTest snapshot{tmp_dir.path(), block_from, block_to};
             CHECK(!snapshot.fs_path().empty());
             CHECK(snapshot.block_from() == block_from);
             CHECK(snapshot.block_to() == block_to);
@@ -79,7 +79,7 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
         std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
             {1'000, 999}};
         for (const auto& [block_from, block_to] : block_ranges) {
-            CHECK_THROWS_AS(Snapshot_ForTest(tmp_dir.path(), block_from, block_to), std::logic_error);
+            CHECK_THROWS_AS(SnapshotForTest(tmp_dir.path(), block_from, block_to), std::logic_error);
         }
     }
 }
@@ -88,7 +88,7 @@ TEST_CASE("Snapshot::reopen_segment", "[silkworm][node][snapshot][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename(), test::SnapshotHeader{}};
-    Snapshot_ForTest snapshot{tmp_snapshot_file.path()};
+    SnapshotForTest snapshot{tmp_snapshot_file.path()};
     snapshot.reopen_segment();
 }
 
@@ -96,7 +96,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::HelloWorldSnapshotFile hello_world_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename()};
-    Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path()};
+    SnapshotForTest tmp_snapshot{hello_world_snapshot_file.path()};
     tmp_snapshot.reopen_segment();
     CHECK(!tmp_snapshot.empty());
     CHECK(tmp_snapshot.item_count() == 1);
@@ -115,7 +115,7 @@ TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
     TemporaryDirectory tmp_dir;
     test::HelloWorldSnapshotFile hello_world_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename()};
     seg::Decompressor decoder{hello_world_snapshot_file.path()};
-    Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path()};
+    SnapshotForTest tmp_snapshot{hello_world_snapshot_file.path()};
     tmp_snapshot.reopen_segment();
     CHECK_NOTHROW(tmp_snapshot.close());
 }

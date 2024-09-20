@@ -57,7 +57,7 @@ TEST_CASE("BorConfig JSON") {
     const std::optional<Config> config{Config::from_json(json)};
     REQUIRE(config);
 
-    static constexpr Config expected_config{
+    static constexpr Config kExpectedConfig{
         .period = {
             {0, 2},
             {25'275'000, 5},
@@ -88,25 +88,25 @@ TEST_CASE("BorConfig JSON") {
         .agra_block = 789,
     };
 
-    CHECK(config == expected_config);
+    CHECK(config == kExpectedConfig);
     CHECK(config->to_json() == json);
 }
 
 TEST_CASE("bor_config_value_lookup") {
-    static constexpr SmallMap<BlockNum, std::string_view> config{{20, "b"sv}, {10, "a"sv}, {30, "c"sv}};
+    static constexpr SmallMap<BlockNum, std::string_view> kConfig{{20, "b"sv}, {10, "a"sv}, {30, "c"sv}};
 
-    static_assert(!config_value_lookup(config, 0));
-    static_assert(!config_value_lookup(config, 1));
-    static_assert(!config_value_lookup(config, 9));
-    static_assert(*config_value_lookup(config, 10) == "a"sv);
-    static_assert(*config_value_lookup(config, 11) == "a"sv);
-    static_assert(*config_value_lookup(config, 19) == "a"sv);
-    static_assert(*config_value_lookup(config, 20) == "b"sv);
-    static_assert(*config_value_lookup(config, 21) == "b"sv);
-    static_assert(*config_value_lookup(config, 29) == "b"sv);
-    static_assert(*config_value_lookup(config, 30) == "c"sv);
-    static_assert(*config_value_lookup(config, 31) == "c"sv);
-    static_assert(*config_value_lookup(config, 100) == "c"sv);
+    static_assert(!config_value_lookup(kConfig, 0));
+    static_assert(!config_value_lookup(kConfig, 1));
+    static_assert(!config_value_lookup(kConfig, 9));
+    static_assert(*config_value_lookup(kConfig, 10) == "a"sv);
+    static_assert(*config_value_lookup(kConfig, 11) == "a"sv);
+    static_assert(*config_value_lookup(kConfig, 19) == "a"sv);
+    static_assert(*config_value_lookup(kConfig, 20) == "b"sv);
+    static_assert(*config_value_lookup(kConfig, 21) == "b"sv);
+    static_assert(*config_value_lookup(kConfig, 29) == "b"sv);
+    static_assert(*config_value_lookup(kConfig, 30) == "c"sv);
+    static_assert(*config_value_lookup(kConfig, 31) == "c"sv);
+    static_assert(*config_value_lookup(kConfig, 100) == "c"sv);
 }
 
 }  // namespace silkworm::protocol::bor

@@ -37,7 +37,7 @@ Bytes cbor_encode(const std::vector<Receipt>& v) {
         encoder.write_int(static_cast<unsigned>(r.type));
         encoder.write_null();  // no PostState
         encoder.write_int(r.success ? 1u : 0u);
-        encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));
+        encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));  // NOLINT(google-runtime-int)
 
         // Bloom filter and logs are omitted, same as in Erigon
     }

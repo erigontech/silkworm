@@ -153,7 +153,8 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
         const Bytes address{value.substr(0, kAddressLength)};
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
-    } else if (key.length() == sizeof(BlockNum) + kPlainStoragePrefixLength) {
+    }
+    if (key.length() == sizeof(BlockNum) + kPlainStoragePrefixLength) {
         if (value.length() < kHashLength) {
             throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
                                      " for storage changeset in " + std::string(__FUNCTION__));
@@ -192,6 +193,21 @@ void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix
         std::memcpy(&new_db_value[location.length()], new_value.data(), new_value.length());
         state_cursor.upsert(to_slice(storage_prefix), to_slice(new_db_value));
     }
+}
+
+Bytes account_domain_key(const evmc::address& address) {
+    return {address.bytes, kAddressLength};
+}
+
+Bytes storage_domain_key(const evmc::address& address, const evmc::bytes32& location) {
+    Bytes key(kAddressLength + kHashLength, '\0');
+    std::memcpy(key.data(), address.bytes, kAddressLength);
+    std::memcpy(key.data() + kAddressLength, location.bytes, kHashLength);
+    return key;
+}
+
+Bytes code_domain_key(const evmc::address& address) {
+    return {address.bytes, kAddressLength};
 }
 
 }  // namespace silkworm::db

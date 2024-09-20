@@ -39,7 +39,7 @@ class StatusDataProvider {
     [[nodiscard]] StatusData get_status_data(uint8_t eth_version);
 
     using StatusDataProviderFactory = std::function<Task<StatusData>(uint8_t eth_version)>;
-    [[nodiscard]] StatusDataProviderFactory to_factory_function();
+    static StatusDataProviderFactory to_factory_function(StatusDataProvider provider);
 
   private:
     static StatusData make_status_data(

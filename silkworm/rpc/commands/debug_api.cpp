@@ -260,6 +260,9 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         }
 
         reply = make_json_content(request, result);
+    } catch (const std::invalid_argument& e) {
+        nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
+        reply = make_json_content(request, result);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -632,7 +635,8 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
         std::stringstream msg;
         msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
         throw std::invalid_argument(msg.str());
-    } else if (start_block_number <= end_block_number) {
+    }
+    if (start_block_number <= end_block_number) {
         auto walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
             auto block_number = static_cast<BlockNum>(std::stol(silkworm::to_hex(key), nullptr, 16));
             if (block_number <= end_block_number) {
@@ -707,7 +711,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
     try {
         const auto chain_storage = tx->create_storage();
         const auto block_number = co_await core::get_block_number(block_id, *tx);
-        const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
+        const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_number);
         const auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
         if (!header) {
             throw std::invalid_argument("header " + std::to_string(block_number) + " not found");
@@ -730,7 +734,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
 }
 
 Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawTransaction params: " + params.dump();
         SILK_ERROR << error_msg;

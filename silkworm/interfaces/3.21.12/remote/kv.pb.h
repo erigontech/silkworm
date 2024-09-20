@@ -64,15 +64,15 @@ extern DomainGetReqDefaultTypeInternal _DomainGetReq_default_instance_;
 class DomainRangeReq;
 struct DomainRangeReqDefaultTypeInternal;
 extern DomainRangeReqDefaultTypeInternal _DomainRangeReq_default_instance_;
-class HistoryGetReply;
-struct HistoryGetReplyDefaultTypeInternal;
-extern HistoryGetReplyDefaultTypeInternal _HistoryGetReply_default_instance_;
-class HistoryGetReq;
-struct HistoryGetReqDefaultTypeInternal;
-extern HistoryGetReqDefaultTypeInternal _HistoryGetReq_default_instance_;
 class HistoryRangeReq;
 struct HistoryRangeReqDefaultTypeInternal;
 extern HistoryRangeReqDefaultTypeInternal _HistoryRangeReq_default_instance_;
+class HistorySeekReply;
+struct HistorySeekReplyDefaultTypeInternal;
+extern HistorySeekReplyDefaultTypeInternal _HistorySeekReply_default_instance_;
+class HistorySeekReq;
+struct HistorySeekReqDefaultTypeInternal;
+extern HistorySeekReqDefaultTypeInternal _HistorySeekReq_default_instance_;
 class IndexPagination;
 struct IndexPaginationDefaultTypeInternal;
 extern IndexPaginationDefaultTypeInternal _IndexPagination_default_instance_;
@@ -119,9 +119,9 @@ template<> ::remote::Cursor* Arena::CreateMaybeMessage<::remote::Cursor>(Arena*)
 template<> ::remote::DomainGetReply* Arena::CreateMaybeMessage<::remote::DomainGetReply>(Arena*);
 template<> ::remote::DomainGetReq* Arena::CreateMaybeMessage<::remote::DomainGetReq>(Arena*);
 template<> ::remote::DomainRangeReq* Arena::CreateMaybeMessage<::remote::DomainRangeReq>(Arena*);
-template<> ::remote::HistoryGetReply* Arena::CreateMaybeMessage<::remote::HistoryGetReply>(Arena*);
-template<> ::remote::HistoryGetReq* Arena::CreateMaybeMessage<::remote::HistoryGetReq>(Arena*);
 template<> ::remote::HistoryRangeReq* Arena::CreateMaybeMessage<::remote::HistoryRangeReq>(Arena*);
+template<> ::remote::HistorySeekReply* Arena::CreateMaybeMessage<::remote::HistorySeekReply>(Arena*);
+template<> ::remote::HistorySeekReq* Arena::CreateMaybeMessage<::remote::HistorySeekReq>(Arena*);
 template<> ::remote::IndexPagination* Arena::CreateMaybeMessage<::remote::IndexPagination>(Arena*);
 template<> ::remote::IndexRangeReply* Arena::CreateMaybeMessage<::remote::IndexRangeReply>(Arena*);
 template<> ::remote::IndexRangeReq* Arena::CreateMaybeMessage<::remote::IndexRangeReq>(Arena*);
@@ -157,13 +157,12 @@ enum Op : int {
   OPEN = 30,
   CLOSE = 31,
   OPEN_DUP_SORT = 32,
-  COUNT = 33,
   Op_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   Op_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool Op_IsValid(int value);
 constexpr Op Op_MIN = FIRST;
-constexpr Op Op_MAX = COUNT;
+constexpr Op Op_MAX = OPEN_DUP_SORT;
 constexpr int Op_ARRAYSIZE = Op_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Op_descriptor();
@@ -2578,24 +2577,24 @@ class DomainGetReply final :
 };
 // -------------------------------------------------------------------
 
-class HistoryGetReq final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.HistoryGetReq) */ {
+class HistorySeekReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.HistorySeekReq) */ {
  public:
-  inline HistoryGetReq() : HistoryGetReq(nullptr) {}
-  ~HistoryGetReq() override;
-  explicit PROTOBUF_CONSTEXPR HistoryGetReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline HistorySeekReq() : HistorySeekReq(nullptr) {}
+  ~HistorySeekReq() override;
+  explicit PROTOBUF_CONSTEXPR HistorySeekReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  HistoryGetReq(const HistoryGetReq& from);
-  HistoryGetReq(HistoryGetReq&& from) noexcept
-    : HistoryGetReq() {
+  HistorySeekReq(const HistorySeekReq& from);
+  HistorySeekReq(HistorySeekReq&& from) noexcept
+    : HistorySeekReq() {
     *this = ::std::move(from);
   }
 
-  inline HistoryGetReq& operator=(const HistoryGetReq& from) {
+  inline HistorySeekReq& operator=(const HistorySeekReq& from) {
     CopyFrom(from);
     return *this;
   }
-  inline HistoryGetReq& operator=(HistoryGetReq&& from) noexcept {
+  inline HistorySeekReq& operator=(HistorySeekReq&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2618,20 +2617,20 @@ class HistoryGetReq final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const HistoryGetReq& default_instance() {
+  static const HistorySeekReq& default_instance() {
     return *internal_default_instance();
   }
-  static inline const HistoryGetReq* internal_default_instance() {
-    return reinterpret_cast<const HistoryGetReq*>(
-               &_HistoryGetReq_default_instance_);
+  static inline const HistorySeekReq* internal_default_instance() {
+    return reinterpret_cast<const HistorySeekReq*>(
+               &_HistorySeekReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     12;
 
-  friend void swap(HistoryGetReq& a, HistoryGetReq& b) {
+  friend void swap(HistorySeekReq& a, HistorySeekReq& b) {
     a.Swap(&b);
   }
-  inline void Swap(HistoryGetReq* other) {
+  inline void Swap(HistorySeekReq* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2644,7 +2643,7 @@ class HistoryGetReq final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(HistoryGetReq* other) {
+  void UnsafeArenaSwap(HistorySeekReq* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2652,14 +2651,14 @@ class HistoryGetReq final :
 
   // implements Message ----------------------------------------------
 
-  HistoryGetReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<HistoryGetReq>(arena);
+  HistorySeekReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<HistorySeekReq>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const HistoryGetReq& from);
+  void CopyFrom(const HistorySeekReq& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const HistoryGetReq& from) {
-    HistoryGetReq::MergeImpl(*this, from);
+  void MergeFrom( const HistorySeekReq& from) {
+    HistorySeekReq::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -2677,15 +2676,15 @@ class HistoryGetReq final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(HistoryGetReq* other);
+  void InternalSwap(HistorySeekReq* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.HistoryGetReq";
+    return "remote.HistorySeekReq";
   }
   protected:
-  explicit HistoryGetReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit HistorySeekReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -2750,7 +2749,7 @@ class HistoryGetReq final :
   void _internal_set_ts(uint64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:remote.HistoryGetReq)
+  // @@protoc_insertion_point(class_scope:remote.HistorySeekReq)
  private:
   class _Internal;
 
@@ -2769,24 +2768,24 @@ class HistoryGetReq final :
 };
 // -------------------------------------------------------------------
 
-class HistoryGetReply final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.HistoryGetReply) */ {
+class HistorySeekReply final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.HistorySeekReply) */ {
  public:
-  inline HistoryGetReply() : HistoryGetReply(nullptr) {}
-  ~HistoryGetReply() override;
-  explicit PROTOBUF_CONSTEXPR HistoryGetReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline HistorySeekReply() : HistorySeekReply(nullptr) {}
+  ~HistorySeekReply() override;
+  explicit PROTOBUF_CONSTEXPR HistorySeekReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  HistoryGetReply(const HistoryGetReply& from);
-  HistoryGetReply(HistoryGetReply&& from) noexcept
-    : HistoryGetReply() {
+  HistorySeekReply(const HistorySeekReply& from);
+  HistorySeekReply(HistorySeekReply&& from) noexcept
+    : HistorySeekReply() {
     *this = ::std::move(from);
   }
 
-  inline HistoryGetReply& operator=(const HistoryGetReply& from) {
+  inline HistorySeekReply& operator=(const HistorySeekReply& from) {
     CopyFrom(from);
     return *this;
   }
-  inline HistoryGetReply& operator=(HistoryGetReply&& from) noexcept {
+  inline HistorySeekReply& operator=(HistorySeekReply&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2809,20 +2808,20 @@ class HistoryGetReply final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const HistoryGetReply& default_instance() {
+  static const HistorySeekReply& default_instance() {
     return *internal_default_instance();
   }
-  static inline const HistoryGetReply* internal_default_instance() {
-    return reinterpret_cast<const HistoryGetReply*>(
-               &_HistoryGetReply_default_instance_);
+  static inline const HistorySeekReply* internal_default_instance() {
+    return reinterpret_cast<const HistorySeekReply*>(
+               &_HistorySeekReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     13;
 
-  friend void swap(HistoryGetReply& a, HistoryGetReply& b) {
+  friend void swap(HistorySeekReply& a, HistorySeekReply& b) {
     a.Swap(&b);
   }
-  inline void Swap(HistoryGetReply* other) {
+  inline void Swap(HistorySeekReply* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2835,7 +2834,7 @@ class HistoryGetReply final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(HistoryGetReply* other) {
+  void UnsafeArenaSwap(HistorySeekReply* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2843,14 +2842,14 @@ class HistoryGetReply final :
 
   // implements Message ----------------------------------------------
 
-  HistoryGetReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<HistoryGetReply>(arena);
+  HistorySeekReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<HistorySeekReply>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const HistoryGetReply& from);
+  void CopyFrom(const HistorySeekReply& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const HistoryGetReply& from) {
-    HistoryGetReply::MergeImpl(*this, from);
+  void MergeFrom( const HistorySeekReply& from) {
+    HistorySeekReply::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -2868,15 +2867,15 @@ class HistoryGetReply final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(HistoryGetReply* other);
+  void InternalSwap(HistorySeekReply* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.HistoryGetReply";
+    return "remote.HistorySeekReply";
   }
   protected:
-  explicit HistoryGetReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit HistorySeekReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -2916,7 +2915,7 @@ class HistoryGetReply final :
   void _internal_set_ok(bool value);
   public:
 
-  // @@protoc_insertion_point(class_scope:remote.HistoryGetReply)
+  // @@protoc_insertion_point(class_scope:remote.HistorySeekReply)
  private:
   class _Internal;
 
@@ -6327,64 +6326,64 @@ inline void DomainGetReply::set_ok(bool value) {
 
 // -------------------------------------------------------------------
 
-// HistoryGetReq
+// HistorySeekReq
 
 // uint64 tx_id = 1;
-inline void HistoryGetReq::clear_tx_id() {
+inline void HistorySeekReq::clear_tx_id() {
   _impl_.tx_id_ = uint64_t{0u};
 }
-inline uint64_t HistoryGetReq::_internal_tx_id() const {
+inline uint64_t HistorySeekReq::_internal_tx_id() const {
   return _impl_.tx_id_;
 }
-inline uint64_t HistoryGetReq::tx_id() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.tx_id)
+inline uint64_t HistorySeekReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.HistorySeekReq.tx_id)
   return _internal_tx_id();
 }
-inline void HistoryGetReq::_internal_set_tx_id(uint64_t value) {
+inline void HistorySeekReq::_internal_set_tx_id(uint64_t value) {
   
   _impl_.tx_id_ = value;
 }
-inline void HistoryGetReq::set_tx_id(uint64_t value) {
+inline void HistorySeekReq::set_tx_id(uint64_t value) {
   _internal_set_tx_id(value);
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.tx_id)
+  // @@protoc_insertion_point(field_set:remote.HistorySeekReq.tx_id)
 }
 
 // string table = 2;
-inline void HistoryGetReq::clear_table() {
+inline void HistorySeekReq::clear_table() {
   _impl_.table_.ClearToEmpty();
 }
-inline const std::string& HistoryGetReq::table() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.table)
+inline const std::string& HistorySeekReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.HistorySeekReq.table)
   return _internal_table();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void HistoryGetReq::set_table(ArgT0&& arg0, ArgT... args) {
+void HistorySeekReq::set_table(ArgT0&& arg0, ArgT... args) {
  
  _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.table)
+  // @@protoc_insertion_point(field_set:remote.HistorySeekReq.table)
 }
-inline std::string* HistoryGetReq::mutable_table() {
+inline std::string* HistorySeekReq::mutable_table() {
   std::string* _s = _internal_mutable_table();
-  // @@protoc_insertion_point(field_mutable:remote.HistoryGetReq.table)
+  // @@protoc_insertion_point(field_mutable:remote.HistorySeekReq.table)
   return _s;
 }
-inline const std::string& HistoryGetReq::_internal_table() const {
+inline const std::string& HistorySeekReq::_internal_table() const {
   return _impl_.table_.Get();
 }
-inline void HistoryGetReq::_internal_set_table(const std::string& value) {
+inline void HistorySeekReq::_internal_set_table(const std::string& value) {
   
   _impl_.table_.Set(value, GetArenaForAllocation());
 }
-inline std::string* HistoryGetReq::_internal_mutable_table() {
+inline std::string* HistorySeekReq::_internal_mutable_table() {
   
   return _impl_.table_.Mutable(GetArenaForAllocation());
 }
-inline std::string* HistoryGetReq::release_table() {
-  // @@protoc_insertion_point(field_release:remote.HistoryGetReq.table)
+inline std::string* HistorySeekReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.HistorySeekReq.table)
   return _impl_.table_.Release();
 }
-inline void HistoryGetReq::set_allocated_table(std::string* table) {
+inline void HistorySeekReq::set_allocated_table(std::string* table) {
   if (table != nullptr) {
     
   } else {
@@ -6396,45 +6395,45 @@ inline void HistoryGetReq::set_allocated_table(std::string* table) {
     _impl_.table_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.HistoryGetReq.table)
+  // @@protoc_insertion_point(field_set_allocated:remote.HistorySeekReq.table)
 }
 
 // bytes k = 3;
-inline void HistoryGetReq::clear_k() {
+inline void HistorySeekReq::clear_k() {
   _impl_.k_.ClearToEmpty();
 }
-inline const std::string& HistoryGetReq::k() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.k)
+inline const std::string& HistorySeekReq::k() const {
+  // @@protoc_insertion_point(field_get:remote.HistorySeekReq.k)
   return _internal_k();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void HistoryGetReq::set_k(ArgT0&& arg0, ArgT... args) {
+void HistorySeekReq::set_k(ArgT0&& arg0, ArgT... args) {
  
  _impl_.k_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.k)
+  // @@protoc_insertion_point(field_set:remote.HistorySeekReq.k)
 }
-inline std::string* HistoryGetReq::mutable_k() {
+inline std::string* HistorySeekReq::mutable_k() {
   std::string* _s = _internal_mutable_k();
-  // @@protoc_insertion_point(field_mutable:remote.HistoryGetReq.k)
+  // @@protoc_insertion_point(field_mutable:remote.HistorySeekReq.k)
   return _s;
 }
-inline const std::string& HistoryGetReq::_internal_k() const {
+inline const std::string& HistorySeekReq::_internal_k() const {
   return _impl_.k_.Get();
 }
-inline void HistoryGetReq::_internal_set_k(const std::string& value) {
+inline void HistorySeekReq::_internal_set_k(const std::string& value) {
   
   _impl_.k_.Set(value, GetArenaForAllocation());
 }
-inline std::string* HistoryGetReq::_internal_mutable_k() {
+inline std::string* HistorySeekReq::_internal_mutable_k() {
   
   return _impl_.k_.Mutable(GetArenaForAllocation());
 }
-inline std::string* HistoryGetReq::release_k() {
-  // @@protoc_insertion_point(field_release:remote.HistoryGetReq.k)
+inline std::string* HistorySeekReq::release_k() {
+  // @@protoc_insertion_point(field_release:remote.HistorySeekReq.k)
   return _impl_.k_.Release();
 }
-inline void HistoryGetReq::set_allocated_k(std::string* k) {
+inline void HistorySeekReq::set_allocated_k(std::string* k) {
   if (k != nullptr) {
     
   } else {
@@ -6446,69 +6445,69 @@ inline void HistoryGetReq::set_allocated_k(std::string* k) {
     _impl_.k_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.HistoryGetReq.k)
+  // @@protoc_insertion_point(field_set_allocated:remote.HistorySeekReq.k)
 }
 
 // uint64 ts = 4;
-inline void HistoryGetReq::clear_ts() {
+inline void HistorySeekReq::clear_ts() {
   _impl_.ts_ = uint64_t{0u};
 }
-inline uint64_t HistoryGetReq::_internal_ts() const {
+inline uint64_t HistorySeekReq::_internal_ts() const {
   return _impl_.ts_;
 }
-inline uint64_t HistoryGetReq::ts() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.ts)
+inline uint64_t HistorySeekReq::ts() const {
+  // @@protoc_insertion_point(field_get:remote.HistorySeekReq.ts)
   return _internal_ts();
 }
-inline void HistoryGetReq::_internal_set_ts(uint64_t value) {
+inline void HistorySeekReq::_internal_set_ts(uint64_t value) {
   
   _impl_.ts_ = value;
 }
-inline void HistoryGetReq::set_ts(uint64_t value) {
+inline void HistorySeekReq::set_ts(uint64_t value) {
   _internal_set_ts(value);
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.ts)
+  // @@protoc_insertion_point(field_set:remote.HistorySeekReq.ts)
 }
 
 // -------------------------------------------------------------------
 
-// HistoryGetReply
+// HistorySeekReply
 
 // bytes v = 1;
-inline void HistoryGetReply::clear_v() {
+inline void HistorySeekReply::clear_v() {
   _impl_.v_.ClearToEmpty();
 }
-inline const std::string& HistoryGetReply::v() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReply.v)
+inline const std::string& HistorySeekReply::v() const {
+  // @@protoc_insertion_point(field_get:remote.HistorySeekReply.v)
   return _internal_v();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void HistoryGetReply::set_v(ArgT0&& arg0, ArgT... args) {
+void HistorySeekReply::set_v(ArgT0&& arg0, ArgT... args) {
  
  _impl_.v_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReply.v)
+  // @@protoc_insertion_point(field_set:remote.HistorySeekReply.v)
 }
-inline std::string* HistoryGetReply::mutable_v() {
+inline std::string* HistorySeekReply::mutable_v() {
   std::string* _s = _internal_mutable_v();
-  // @@protoc_insertion_point(field_mutable:remote.HistoryGetReply.v)
+  // @@protoc_insertion_point(field_mutable:remote.HistorySeekReply.v)
   return _s;
 }
-inline const std::string& HistoryGetReply::_internal_v() const {
+inline const std::string& HistorySeekReply::_internal_v() const {
   return _impl_.v_.Get();
 }
-inline void HistoryGetReply::_internal_set_v(const std::string& value) {
+inline void HistorySeekReply::_internal_set_v(const std::string& value) {
   
   _impl_.v_.Set(value, GetArenaForAllocation());
 }
-inline std::string* HistoryGetReply::_internal_mutable_v() {
+inline std::string* HistorySeekReply::_internal_mutable_v() {
   
   return _impl_.v_.Mutable(GetArenaForAllocation());
 }
-inline std::string* HistoryGetReply::release_v() {
-  // @@protoc_insertion_point(field_release:remote.HistoryGetReply.v)
+inline std::string* HistorySeekReply::release_v() {
+  // @@protoc_insertion_point(field_release:remote.HistorySeekReply.v)
   return _impl_.v_.Release();
 }
-inline void HistoryGetReply::set_allocated_v(std::string* v) {
+inline void HistorySeekReply::set_allocated_v(std::string* v) {
   if (v != nullptr) {
     
   } else {
@@ -6520,27 +6519,27 @@ inline void HistoryGetReply::set_allocated_v(std::string* v) {
     _impl_.v_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.HistoryGetReply.v)
+  // @@protoc_insertion_point(field_set_allocated:remote.HistorySeekReply.v)
 }
 
 // bool ok = 2;
-inline void HistoryGetReply::clear_ok() {
+inline void HistorySeekReply::clear_ok() {
   _impl_.ok_ = false;
 }
-inline bool HistoryGetReply::_internal_ok() const {
+inline bool HistorySeekReply::_internal_ok() const {
   return _impl_.ok_;
 }
-inline bool HistoryGetReply::ok() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReply.ok)
+inline bool HistorySeekReply::ok() const {
+  // @@protoc_insertion_point(field_get:remote.HistorySeekReply.ok)
   return _internal_ok();
 }
-inline void HistoryGetReply::_internal_set_ok(bool value) {
+inline void HistorySeekReply::_internal_set_ok(bool value) {
   
   _impl_.ok_ = value;
 }
-inline void HistoryGetReply::set_ok(bool value) {
+inline void HistorySeekReply::set_ok(bool value) {
   _internal_set_ok(value);
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReply.ok)
+  // @@protoc_insertion_point(field_set:remote.HistorySeekReply.ok)
 }
 
 // -------------------------------------------------------------------

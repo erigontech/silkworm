@@ -24,8 +24,8 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/etl/collector.hpp>
-#include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {
@@ -47,6 +47,7 @@ struct IndexDescriptor {
 struct IndexInputDataQuery {
     class Iterator {
       public:
+        // NOLINTNEXTLINE(readability-identifier-naming)
         struct value_type {
             ByteView key_data;
             uint64_t value{};
@@ -55,7 +56,7 @@ struct IndexInputDataQuery {
         Iterator(IndexInputDataQuery* query, std::shared_ptr<void> impl, value_type entry)
             : query_(query), impl_(std::move(impl)), entry_(entry) {}
 
-        using iterator_category = std::input_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;
@@ -88,7 +89,7 @@ struct IndexInputDataQuery {
 
 class DecompressorIndexInputDataQuery : public IndexInputDataQuery {
   public:
-    DecompressorIndexInputDataQuery(
+    explicit DecompressorIndexInputDataQuery(
         SnapshotPath segment_path,
         std::optional<MemoryMappedRegion> segment_region = std::nullopt)
         : segment_path_(std::move(segment_path)),

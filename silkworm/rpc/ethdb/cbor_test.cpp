@@ -29,9 +29,9 @@
 
 namespace {
 #ifdef _WIN32
-const auto invalidArgumentMessage = "invalid argument";
+const auto kInvalidArgumentMessage = "invalid argument";
 #else
-const auto invalidArgumentMessage = "Invalid argument";
+const auto kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
@@ -183,7 +183,7 @@ TEST_CASE("decode receipts from incorrect bytes", "[rpc][ethdb][cbor]") {
     const auto b1 = *silkworm::from_hex("81");
     CHECK_THROWS(cbor_decode(b1, receipts));
     const auto b2 = *silkworm::from_hex("83808040");
-    CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
+    CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + kInvalidArgumentMessage));
 }
 
 }  // namespace silkworm::rpc

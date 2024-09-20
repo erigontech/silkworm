@@ -314,14 +314,14 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
         ensure(config.shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
 
         // We MUST check that CL has sent the expected ExecutionPayload version [Specification for params]
-        if (payload.timestamp < config.shanghai_time && payload.version != ExecutionPayload::V1) {
+        if (payload.timestamp < config.shanghai_time && payload.version != ExecutionPayload::kV1) {
             const auto error_msg = "consensus layer must use ExecutionPayloadV1 if timestamp lower than Shanghai";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kInvalidParams, error_msg);
             co_await tx->close();
             co_return;
         }
-        if (payload.timestamp >= config.shanghai_time && payload.version != ExecutionPayload::V2) {
+        if (payload.timestamp >= config.shanghai_time && payload.version != ExecutionPayload::kV2) {
             const auto error_msg = "consensus layer must use ExecutionPayloadV2 if timestamp greater or equal to Shanghai";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kInvalidParams, error_msg);
@@ -378,7 +378,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
         ensure(config.cancun_time.has_value(), "execution layer has no Cancun timestamp in configuration");
 
         // We MUST check that CL has sent the expected ExecutionPayload version [Specification for params]
-        if (payload.timestamp >= config.cancun_time && payload.version != ExecutionPayload::V3) {
+        if (payload.timestamp >= config.cancun_time && payload.version != ExecutionPayload::kV3) {
             const auto error_msg = "consensus layer must use ExecutionPayloadV3 if timestamp greater or equal to Cancun";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kUnsupportedFork, error_msg);
@@ -626,18 +626,18 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v2(const
                                                                            const ForkChoiceUpdatedReply& reply,
                                                                            const std::optional<silkworm::ChainConfig>& config) {
     // Payload attributes must be validated only if non-null and FCU is valid
-    if (!attributes || reply.payload_status.status != PayloadStatus::kValid) {
+    if (!attributes || reply.payload_status.status != PayloadStatus::kValidStr) {
         return {};
     }
 
     ensure(config.has_value(), "execution layer has invalid configuration");
     ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
 
-    if (attributes->timestamp < config->shanghai_time && attributes->version != PayloadAttributes::V1) {
+    if (attributes->timestamp < config->shanghai_time && attributes->version != PayloadAttributes::kV1) {
         return tl::make_unexpected<ApiError>(
             {kInvalidParams, "consensus layer must use PayloadAttributesV1 if timestamp lower than Shanghai"});
     }
-    if (attributes->timestamp >= config->shanghai_time && attributes->version != PayloadAttributes::V2) {
+    if (attributes->timestamp >= config->shanghai_time && attributes->version != PayloadAttributes::kV2) {
         return tl::make_unexpected<ApiError>(
             {kInvalidParams, "consensus layer must use PayloadAttributesV2 if timestamp greater or equal to Shanghai"});
     }
@@ -652,7 +652,7 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v3(const
                                                                            const ForkChoiceUpdatedReply& reply,
                                                                            const std::optional<silkworm::ChainConfig>& config) {
     // Payload attributes must be validated only if non-null and FCU is valid
-    if (!attributes || reply.payload_status.status != PayloadStatus::kValid) {
+    if (!attributes || reply.payload_status.status != PayloadStatus::kValidStr) {
         return {};
     }
 
@@ -664,7 +664,7 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v3(const
         return tl::make_unexpected<ApiError>(
             {kUnsupportedFork, "consensus layer must not use PayloadAttributesV3 if timestamp lower than Cancun"});
     }
-    if (attributes->timestamp >= config->cancun_time && attributes->version != PayloadAttributes::V3) {
+    if (attributes->timestamp >= config->cancun_time && attributes->version != PayloadAttributes::kV3) {
         return tl::make_unexpected<ApiError>(
             {kInvalidPayloadAttributes, "consensus layer must use PayloadAttributesV3 if timestamp greater or equal to Cancun"});
     }

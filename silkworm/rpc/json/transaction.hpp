@@ -51,13 +51,15 @@ struct GlazeJsonTransaction {
     std::optional<std::string> chain_id;
     std::optional<std::string> max_fee_per_gas;
     std::optional<std::string> max_pri_fee_per_gas;
-    std::optional<std::vector<GlazeJsonAccessList>> access_list;
+    std::optional<std::string> max_fee_per_blob_gas;
     std::optional<std::string> to;
     std::optional<std::monostate> nullto;
+    std::optional<std::vector<GlazeJsonAccessList>> access_list;
+    std::optional<std::vector<std::string>> blob_versioned_hashes;
 
     struct glaze {
         using T = GlazeJsonTransaction;
-
+        // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
             "from", &T::from,
             "gas", &T::gas,
@@ -68,6 +70,8 @@ struct GlazeJsonTransaction {
             "chainId", &T::chain_id,
             "maxPriorityFeePerGas", &T::max_pri_fee_per_gas,
             "maxFeePerGas", &T::max_fee_per_gas,
+            "maxFeePerBlobGas", &T::max_fee_per_blob_gas,
+            "blobVersionedHashes", &T::blob_versioned_hashes,
             "accessList", &T::access_list,
             "to", &T::to,
             "to", &T::nullto,

@@ -37,7 +37,8 @@ static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const db::Map
         auto data{cursor->find(mdbx::slice(item_key.c_str()), /*throw_notfound*/ false)};
         if (!data) {
             return 0;
-        } else if (data.value.size() != sizeof(uint64_t)) {
+        }
+        if (data.value.size() != sizeof(uint64_t)) {
             throw std::length_error("Expected 8 bytes of data got " + std::to_string(data.value.size()));
         }
         return endian::load_big_u64(static_cast<uint8_t*>(data.value.data()));
@@ -84,14 +85,6 @@ void write_stage_progress(RWTxn& txn, const char* stage_name, BlockNum block_num
 
 void write_stage_prune_progress(RWTxn& txn, const char* stage_name, BlockNum block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress, "prune_");
-}
-
-BlockNum read_stage_unwind(ROTxn& txn, const char* stage_name) {
-    return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageUnwind);
-}
-
-void write_stage_unwind(RWTxn& txn, const char* stage_name, BlockNum block_num) {
-    set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageUnwind);
 }
 
 bool is_known_stage(const char* name) {

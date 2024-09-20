@@ -27,7 +27,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 
+#include <silkworm/core/test_util/null_stream.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
 namespace silkworm::rpc {
 
@@ -38,11 +43,11 @@ using Catch::Matchers::Message;
 
 TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
     concurrency::WaitMode all_wait_modes[] = {
-        concurrency::WaitMode::backoff,
-        concurrency::WaitMode::blocking,
-        concurrency::WaitMode::sleeping,
-        concurrency::WaitMode::yielding,
-        concurrency::WaitMode::busy_spin};
+        concurrency::WaitMode::kBackoff,
+        concurrency::WaitMode::kBlocking,
+        concurrency::WaitMode::kSleeping,
+        concurrency::WaitMode::kYielding,
+        concurrency::WaitMode::kBusySpin};
     for (auto wait_mode : all_wait_modes) {
         ClientContext context{0, wait_mode};
 
@@ -230,6 +235,64 @@ TEST_CASE("ClientContextPool: handle loop exception", "[silkworm][infra][grpc][c
     boost::asio::post(cp.next_io_context(), [&]() { throw std::logic_error{"unexpected"}; });
     CHECK_NOTHROW(context_pool_thread.join());
     CHECK(bool(run_exception));
+}
+
+TEST_CASE("ClientContextPool: start/stop/join w/ tasks enqueued") {
+    using StubInterface = ::remote::KV::StubInterface;
+    auto channel = ::grpc::CreateChannel("localhost:9090", grpc::InsecureChannelCredentials());
+    std::unique_ptr<StubInterface> stub = ::remote::KV::NewStub(channel);
+    ClientContextPool context_pool{5};
+    SECTION("no dispatch interleaving: i-th GrpcContext notifies i-th asio::io_context") {
+        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+            const auto& context = context_pool.next_context();
+            concurrency::spawn_future(*context.io_context(), [&]() -> Task<void> {
+                co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, *context.grpc_context());
+            });
+        }
+    }
+    SECTION("dispatch interleaving: (i+1)-th GrpcContext notifies i-th asio::io_context") {
+        // Check that dispatching calls from i-th agrpc::GrpcContext to j-th boost::asio::io_context w/ i != j works
+        // This test executed in tight loop of 10'000 iterations triggered a segmentation fault in ~ClientContextPool
+        // https://github.com/boostorg/asio/blob/boost-1.83.0/include/boost/asio/detail/impl/scheduler.ipp#L373
+        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+            concurrency::spawn_future(context_pool.any_executor(), [&]() -> Task<void> {
+                auto& grpc_context = context_pool.any_grpc_context();
+                co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, grpc_context);
+            });
+        }
+    }
+    context_pool.start();
+    context_pool.stop();
+    CHECK_NOTHROW(context_pool.join());
+}
+
+TEST_CASE("ClientContextPool: start/destroy w/ tasks enqueued") {
+    using StubInterface = ::remote::KV::StubInterface;
+    auto channel = ::grpc::CreateChannel("localhost:9090", grpc::InsecureChannelCredentials());
+    std::unique_ptr<StubInterface> stub = ::remote::KV::NewStub(channel);
+    ClientContextPool context_pool{5};
+    SECTION("no dispatch interleaving: i-th GrpcContext notifies i-th asio::io_context") {
+        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+            const auto& context = context_pool.next_context();
+            concurrency::spawn_future(*context.io_context(), [&]() -> Task<void> {
+                co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, *context.grpc_context());
+            });
+        }
+    }
+    SECTION("dispatch interleaving: (i+1)-th GrpcContext notifies i-th asio::io_context") {
+        // Check that dispatching calls from i-th agrpc::GrpcContext to j-th boost::asio::io_context w/ i != j works
+        // This test executed in tight loop of 10'000 iterations triggered a segmentation fault in ~ClientContextPool
+        // https://github.com/boostorg/asio/blob/boost-1.83.0/include/boost/asio/detail/impl/scheduler.ipp#L373
+        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+            concurrency::spawn_future(context_pool.any_executor(), [&]() -> Task<void> {
+                auto& grpc_context = context_pool.any_grpc_context();
+                co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, grpc_context);
+            });
+        }
+    }
+    context_pool.start();
+    // We do not call ClientContextPool::stop and ClientContextPool::join explicitly here, which is a valid API usage
+    // ~ClientContextPool must call them in order to allow this scenario (they're idempotent methods)
 }
 
 #endif  // SILKWORM_SANITIZE

@@ -53,7 +53,6 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }
-    const auto block_number = block_with_hash->block.header.number;
 
     dump_accounts.root = block_with_hash->block.header.state_root;
 
@@ -77,9 +76,10 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     };
 
     AccountWalker walker{transaction_};
-    co_await walker.walk_of_accounts(block_number + 1, start_address, collector);
+    const auto block_number = block_with_hash->block.header.number + 1;
+    co_await walker.walk_of_accounts(block_number, start_address, collector);
 
-    co_await load_accounts(collected_data, dump_accounts, exclude_code);
+    co_await load_accounts(block_number, collected_data, dump_accounts, exclude_code);
     if (!exclude_storage) {
         co_await load_storage(block_number, dump_accounts);
     }
@@ -87,8 +87,8 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     co_return dump_accounts;
 }
 
-Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
-    StateReader state_reader{transaction_};
+Task<void> AccountDumper::load_accounts(BlockNum block_number, const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
+    StateReader state_reader{transaction_, block_number};
     for (const auto& kv : collected_data) {
         const auto address = bytes_to_address(kv.key);
 
@@ -109,7 +109,7 @@ Task<void> AccountDumper::load_accounts(const std::vector<KeyValue>& collected_d
             }
         }
         if (!exclude_code) {
-            auto code = co_await state_reader.read_code(account->code_hash);
+            auto code = co_await state_reader.read_code(address, dump_account.code_hash);
             dump_account.code.swap(code);
         }
         dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));

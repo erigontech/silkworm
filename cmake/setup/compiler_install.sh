@@ -19,7 +19,16 @@ function install_clang {
     echo "Installing clang $CLANG_VERSION..."
 
 	sudo apt-get update
-	sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
+	package_available=$(apt list llvm-$CLANG_VERSION  2>/dev/null | grep llvm-$CLANG_VERSION)
+
+	if [[ -n "$package_available" ]]; then
+		echo "The package llvm-$CLANG_VERSION is available in apt repositories"
+		sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
+	else
+		echo "Package llvm-$CLANG_VERSION not available, attempting to install using llvm.sh script"
+		sudo ../../third_party/llvm/llvm.sh $CLANG_VERSION
+	fi
+
 	sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
 	sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
 	sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100

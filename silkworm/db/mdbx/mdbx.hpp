@@ -66,12 +66,13 @@ inline bool operator==(const CursorResult& lhs, const CursorResult& rhs) noexcep
 }
 
 namespace detail {
-    struct cursor_handle_deleter {  // default deleter for pooled cursors
-        constexpr cursor_handle_deleter() noexcept = default;
+    struct CursorHandleDeleter {  // default deleter for pooled cursors
+        constexpr CursorHandleDeleter() noexcept = default;
         void operator()(MDBX_cursor* ptr) const noexcept { mdbx_cursor_close(ptr); }
     };
 
     std::string dump_mdbx_result(const db::CursorResult& result);
+    std::string slice_as_hex(const db::Slice& data);
 }  // namespace detail
 
 class ROTxn;
@@ -204,7 +205,7 @@ class ROTxn {
     // Access to the underling raw mdbx transaction
     mdbx::txn& operator*() { return txn_ref_; }
     mdbx::txn* operator->() { return &txn_ref_; }
-    operator mdbx::txn&() { return txn_ref_; }  // NOLINT(google-explicit-constructor)
+    operator mdbx::txn&() { return txn_ref_; }  // NOLINT(google-explicit-constructor, hicpp-explicit-conversions)
 
     [[nodiscard]] uint64_t id() const { return txn_ref_.id(); }
     [[nodiscard]] virtual bool is_open() const { return txn_ref_.txn::operator bool(); }
@@ -509,10 +510,10 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     bool erase(const Slice& key, const Slice& value) override;
 
     //! \brief Exposes handles cache
-    static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
+    static const ObjectPool<MDBX_cursor, detail::CursorHandleDeleter>& handles_cache() { return handles_pool_; }
 
   private:
-    static thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_;
+    static thread_local ObjectPool<MDBX_cursor, detail::CursorHandleDeleter> handles_pool_;
 };
 
 //! \brief Checks whether a provided map name exists in database
@@ -535,8 +536,8 @@ inline std::filesystem::path get_datafile_path(const std::filesystem::path& base
 
 //! \brief Defines the direction of cursor while looping by cursor_for_each or cursor_for_count
 enum class CursorMoveDirection : uint8_t {
-    Forward,
-    Reverse
+    kForward,
+    kReverse
 };
 
 //! \brief Executes a function on each record reachable by the provided cursor
@@ -548,7 +549,7 @@ enum class CursorMoveDirection : uint8_t {
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
 size_t cursor_for_each(ROCursor& cursor, WalkFuncRef walker,
-                       CursorMoveDirection direction = CursorMoveDirection::Forward);
+                       CursorMoveDirection direction = CursorMoveDirection::kForward);
 
 //! \brief Executes a function on each record reachable by the provided cursor asserting keys start with provided prefix
 //! \param [in] cursor : A reference to a cursor opened on a map
@@ -558,7 +559,7 @@ size_t cursor_for_each(ROCursor& cursor, WalkFuncRef walker,
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of processed records
 size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef walker,
-                         CursorMoveDirection direction = CursorMoveDirection::Forward);
+                         CursorMoveDirection direction = CursorMoveDirection::kForward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
 //! \param [in] cursor : A reference to a cursor opened on a map
@@ -571,7 +572,7 @@ size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef walker,
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
 size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t max_count,
-                        CursorMoveDirection direction = CursorMoveDirection::Forward);
+                        CursorMoveDirection direction = CursorMoveDirection::kForward);
 
 //! \brief Erases map records by cursor until any record is found
 //! \param [in] cursor : A reference to a cursor opened on a map
@@ -581,7 +582,7 @@ size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t max_count,
 //! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all
 //! keys lower than set_key will be deleted.
 size_t cursor_erase(RWCursor& cursor, ByteView set_key,
-                    CursorMoveDirection direction = CursorMoveDirection::Forward);
+                    CursorMoveDirection direction = CursorMoveDirection::kForward);
 
 //! \brief Erases all records whose key starts with a prefix
 //! \param [in] cursor : A reference to a cursor opened on a map

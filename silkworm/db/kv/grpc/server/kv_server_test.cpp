@@ -97,9 +97,9 @@ class KvClient {
         return stub_->Snapshots(&context, request, response);
     }
 
-    grpc::Status history_get(const remote::HistoryGetReq& request, remote::HistoryGetReply* response) {
+    grpc::Status history_seek(const remote::HistorySeekReq& request, remote::HistorySeekReply* response) {
         grpc::ClientContext context;
-        return stub_->HistoryGet(&context, request, response);
+        return stub_->HistorySeek(&context, request, response);
     }
 
     grpc::Status domain_get(const remote::DomainGetReq& request, remote::DomainGetReply* response) {
@@ -654,10 +654,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(status.ok());
     }
 
-    SECTION("HistoryGet: return value in target history") {
-        remote::HistoryGetReq request;
-        remote::HistoryGetReply response;
-        const auto status = kv_client->history_get(request, &response);
+    SECTION("HistorySeek: return value in target history") {
+        remote::HistorySeekReq request;
+        remote::HistorySeekReply response;
+        const auto status = kv_client->history_seek(request, &response);
         CHECK(status.ok());
     }
 

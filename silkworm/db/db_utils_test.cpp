@@ -30,8 +30,8 @@ TEST_CASE("db access layer addendum") {
 
     db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
 
-    auto db = db::open_env(db_config);
-    db::RWAccess rw_access(db);
+    auto env = db::open_env(db_config);
+    db::RWAccess rw_access{env};
     db::RWTxnManaged tx = rw_access.start_rw_tx();
 
     db::table::check_or_create_chaindata_tables(tx);
@@ -66,7 +66,7 @@ TEST_CASE("db access layer addendum") {
 
     SECTION("read/write canonical hash") {
         CHECK_NOTHROW(db::write_canonical_hash(tx, header.number, header.hash()));
-        auto read_hash = db::read_canonical_hash(tx, header.number);
+        auto read_hash = db::read_canonical_header_hash(tx, header.number);
 
         REQUIRE(read_hash != std::nullopt);   // Warning: this is a limited test, we only test that
         REQUIRE(read_hash == header.hash());  // read and write are implemented in a symmetric way
@@ -92,7 +92,7 @@ TEST_CASE("db access layer addendum") {
         REQUIRE_NOTHROW(db::write_canonical_hash(tx, header.number, header.hash()));
         REQUIRE_NOTHROW(db::delete_canonical_hash(tx, header.number));
 
-        auto read_hash = db::read_canonical_hash(tx, header.number);
+        auto read_hash = db::read_canonical_header_hash(tx, header.number);
 
         REQUIRE(read_hash == std::nullopt);
     }

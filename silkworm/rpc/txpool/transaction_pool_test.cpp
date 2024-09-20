@@ -233,7 +233,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[rpc
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto transactions = run<&TransactionPool::get_transactions>();
         REQUIRE(transactions.size() == 1);
-        CHECK(transactions[0].transaction_type == TransactionType::QUEUED);
+        CHECK(transactions[0].transaction_type == TransactionType::kQueued);
         CHECK(transactions[0].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddcc_address);
         CHECK(transactions[0].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x34});
     }
@@ -258,13 +258,13 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[rpc
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto transactions = run<&TransactionPool::get_transactions>();
         REQUIRE(transactions.size() == 3);
-        CHECK(transactions[0].transaction_type == txpool::TransactionType::QUEUED);
+        CHECK(transactions[0].transaction_type == txpool::TransactionType::kQueued);
         CHECK(transactions[0].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddcc_address);
         CHECK(transactions[0].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x34});
-        CHECK(transactions[1].transaction_type == txpool::TransactionType::PENDING);
+        CHECK(transactions[1].transaction_type == txpool::TransactionType::kPending);
         CHECK(transactions[1].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccdddddd_address);
         CHECK(transactions[1].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x36});
-        CHECK(transactions[2].transaction_type == txpool::TransactionType::BASE_FEE);
+        CHECK(transactions[2].transaction_type == txpool::TransactionType::kBaseFee);
         CHECK(transactions[2].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddee_address);
         CHECK(transactions[2].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x37});
     }

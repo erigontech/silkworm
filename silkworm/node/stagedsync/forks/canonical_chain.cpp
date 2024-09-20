@@ -27,7 +27,7 @@ namespace silkworm::stagedsync {
 CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
     : tx_{tx},
       data_model_{tx_},  // todo: put an header cache into the data_model_ and share the data_model_ with the owner
-      canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(cache_size)} {
+      canonical_hash_cache_{std::make_unique<LruCache<BlockNum, Hash>>(cache_size)} {
     open();
 }
 
@@ -36,7 +36,7 @@ CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
       data_model_{tx_},
       initial_head_{copy.initial_head_},
       current_head_{copy.current_head_},
-      canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
+      canonical_hash_cache_{std::make_unique<LruCache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
     open();
 }
 
@@ -131,7 +131,7 @@ void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be 
     auto ancestor_hash = hash;
     auto ancestor_height = height;
 
-    std::optional<Hash> persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
+    std::optional<Hash> persisted_canon_hash = db::read_canonical_header_hash(tx_, ancestor_height);
     // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
     while (!persisted_canon_hash ||
            std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
@@ -146,7 +146,7 @@ void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be 
         ancestor_hash = ancestor->parent_hash;
         --ancestor_height;
 
-        persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
+        persisted_canon_hash = db::read_canonical_header_hash(tx_, ancestor_height);
     }
 
     current_head_.number = height;
@@ -160,7 +160,7 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
     }
 
     current_head_.number = unwind_point;
-    auto current_head_hash = db::read_canonical_hash(tx_, unwind_point);
+    auto current_head_hash = db::read_canonical_header_hash(tx_, unwind_point);
     ensure_invariant(current_head_hash.has_value(),
                      [&]() { return "hash not found on canonical at height " + std::to_string(unwind_point); });
 
@@ -174,7 +174,7 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
 std::optional<Hash> CanonicalChain::get_hash(BlockNum height) const {
     auto canon_hash = canonical_hash_cache_->get_as_copy(height);  // look in the cache first
     if (!canon_hash) {
-        canon_hash = db::read_canonical_hash(tx_, height);                // then look in the db
+        canon_hash = db::read_canonical_header_hash(tx_, height);         // then look in the db
         if (canon_hash) canonical_hash_cache_->put(height, *canon_hash);  // and cache it
     }
     return canon_hash;

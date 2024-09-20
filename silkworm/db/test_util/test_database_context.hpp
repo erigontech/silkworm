@@ -34,18 +34,17 @@ class TestDatabaseContext {
     TestDatabaseContext();
 
     ~TestDatabaseContext() {
-        auto db_path = db_.get_path();
-        db_.close();
-        std::filesystem::remove_all(db_path);
+        auto env_path = env_.get_path();
+        env_.close();
+        std::filesystem::remove_all(env_path);
     }
 
-    mdbx::env& mdbx_env() { return db_; }
-    mdbx::env_managed& get_mdbx_env() { return db_; }
+    mdbx::env& mdbx_env() { return env_; }
     db::EnvConfig get_env_config() { return env_config_; }
     silkworm::ChainConfig get_chain_config();
 
   private:
-    mdbx::env_managed db_;
+    mdbx::env_managed env_;
     db::EnvConfig env_config_;
 };
 

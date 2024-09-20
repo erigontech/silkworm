@@ -144,7 +144,8 @@ struct adl_serializer<silkworm::rpc::BlockNumberOrHash> {
     static silkworm::rpc::BlockNumberOrHash from_json(const json& json) {
         if (json.is_string()) {
             return silkworm::rpc::BlockNumberOrHash{json.get<std::string>()};
-        } else if (json.is_number()) {
+        }
+        if (json.is_number()) {
             return silkworm::rpc::BlockNumberOrHash{json.get<silkworm::BlockNum>()};
         }
         return silkworm::rpc::BlockNumberOrHash{0};

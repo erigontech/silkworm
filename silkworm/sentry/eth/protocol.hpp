@@ -46,7 +46,7 @@ class Protocol : public rlpx::Protocol {
     void handle_peer_first_message(const Message& message) override;
     bool is_compatible_enr_entry(std::string_view name, ByteView data) override;
 
-    static const uint8_t kVersion;
+    static constexpr uint8_t kVersion{68};
 
   private:
     std::function<StatusData()> status_provider_;

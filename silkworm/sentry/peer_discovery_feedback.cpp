@@ -29,7 +29,7 @@ Task<void> PeerDiscoveryFeedback::run(
     // loop until a cancelled exception
     while (true) {
         auto [public_key, disconnect_reason] = co_await self->peer_disconnected_events_.receive();
-        bool is_useless = disconnect_reason && (*disconnect_reason == rlpx::DisconnectReason::UselessPeer);
+        bool is_useless = disconnect_reason && (*disconnect_reason == rlpx::DisconnectReason::kUselessPeer);
         if (is_useless) {
             co_await discovery.on_peer_useless(*public_key);
         }
@@ -51,7 +51,7 @@ void PeerDiscoveryFeedback::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
 
 // PeerManagerObserver
 void PeerDiscoveryFeedback::on_peer_connect_error(const EnodeUrl& peer_url) {
-    peer_disconnected_events_.try_send({peer_url.public_key(), rlpx::DisconnectReason::NetworkError});
+    peer_disconnected_events_.try_send({peer_url.public_key(), rlpx::DisconnectReason::kNetworkError});
 }
 
 }  // namespace silkworm::sentry

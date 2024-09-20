@@ -38,6 +38,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('grpc/1.54.3')
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
+        self.requires('libtorrent/2.0.10')
         self.requires('mimalloc/2.1.2')
         self.requires('openssl/3.2.1')
         self.requires('protobuf/3.21.12')
@@ -58,14 +59,14 @@ class SilkwormRecipe(ConanFile):
         if self.settings.os == 'Windows':
             return
 
-        # Disable Catch2 version 3.x.x signaling handling on WASM
+        # Disable Catch2 version 3.x.x signal handling on WASM
         if self.settings.arch == 'wasm':
             self.options['catch2'].no_posix_signals = True
 
         self.options['boost'].asio_no_deprecated = True
         if self.settings.os == 'Macos':
-            CMAKE_OSX_DEPLOYMENT_TARGET = '10.13'
-            os_version_min_flag = f'-mmacosx-version-min={CMAKE_OSX_DEPLOYMENT_TARGET}'
+            cmake_osx_deployment_target = '10.13'
+            os_version_min_flag = f'-mmacosx-version-min={cmake_osx_deployment_target}'
             self.options['boost'].extra_b2_flags = f'cxxflags="{os_version_min_flag}" linkflags="{os_version_min_flag}"'
 
         # Disable building unused boost components
@@ -106,7 +107,6 @@ class SilkwormRecipe(ConanFile):
             'thread',
             'timer',
             'type_erasure',
-            'url',
             'wave',
         ]
 
@@ -118,6 +118,7 @@ class SilkwormRecipe(ConanFile):
             'iostreams',
             'system',
             'thread',
+            'url',
 
             # Boost::iostreams requires
             'random',

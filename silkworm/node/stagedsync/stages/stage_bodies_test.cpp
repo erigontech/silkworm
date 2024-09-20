@@ -28,11 +28,11 @@
 
 namespace silkworm {
 
-class BodiesStage_ForTest : public stagedsync::BodiesStage {
+class BodiesStageForTest : public stagedsync::BodiesStage {
   public:
     using stagedsync::BodiesStage::BodyDataModel;
 };
-using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
+using BodyDataModelForTest = BodiesStageForTest::BodyDataModel;
 
 TEST_CASE("BodiesStage - data model") {
     db::test_util::TempChainData context;
@@ -49,7 +49,7 @@ TEST_CASE("BodiesStage - data model") {
     SECTION("one invalid body after the genesis") {
         db::RWTxnManaged tx(context.env());
 
-        auto header0_hash = db::read_canonical_hash(tx, 0);
+        auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);
@@ -63,7 +63,7 @@ TEST_CASE("BodiesStage - data model") {
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
         BlockNum bodies_stage_height = 0;
-        BodyDataModel_ForTest bm(tx, bodies_stage_height, chain_config);
+        BodyDataModelForTest bm(tx, bodies_stage_height, chain_config);
 
         REQUIRE(bm.initial_height() == 0);
         REQUIRE(bm.highest_height() == 0);
@@ -84,7 +84,7 @@ TEST_CASE("BodiesStage - data model") {
     SECTION("one valid body after the genesis") {
         db::RWTxnManaged tx(context.env());
 
-        auto header0_hash = db::read_canonical_hash(tx, 0);
+        auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);
@@ -111,7 +111,7 @@ TEST_CASE("BodiesStage - data model") {
         REQUIRE(decoding_result);
 
         BlockNum bodies_stage_height = 0;
-        BodyDataModel_ForTest bm(tx, bodies_stage_height, chain_config);
+        BodyDataModelForTest bm(tx, bodies_stage_height, chain_config);
 
         // check internal status
         REQUIRE(bm.initial_height() == 0);

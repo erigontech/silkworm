@@ -141,37 +141,70 @@ evmc::address BorRuleSet::get_beneficiary(const BlockHeader& header) {
     return *ecrecover(header, config().jaipur_block);
 }
 
-// See https://github.com/maticnetwork/bor/blob/v1.0.6/core/bor_fee_log.go
+namespace {
+    // See https://github.com/maticnetwork/bor/blob/v1.3.7/core/bor_fee_log.go
+    void add_transfer_log(IntraBlockState& state, const evmc::bytes32& event_sig, const evmc::address& sender,
+                          const evmc::address& recipient, const intx::uint256& amount,
+                          const intx::uint256& input1, const intx::uint256& input2,
+                          const intx::uint256& output1, const intx::uint256& output2) {
+        if (amount == 0) {
+            return;
+        }
+        static constexpr evmc::address kFeeAddress{0x0000000000000000000000000000000000001010_address};
+        SILKWORM_THREAD_LOCAL Log log{
+            .address = kFeeAddress,
+            .topics = {
+                {},
+                to_bytes32(kFeeAddress.bytes),
+                {},
+                {},
+            },
+            .data = Bytes(32 * 5, 0),
+        };
+        log.topics[0] = event_sig;
+        log.topics[2] = to_bytes32(sender.bytes);
+        log.topics[3] = to_bytes32(recipient.bytes);
+
+        intx::be::unsafe::store(&log.data[32 * 0], amount);
+        intx::be::unsafe::store(&log.data[32 * 1], input1);
+        intx::be::unsafe::store(&log.data[32 * 2], input2);
+        intx::be::unsafe::store(&log.data[32 * 3], output1);
+        intx::be::unsafe::store(&log.data[32 * 4], output2);
+
+        state.add_log(log);
+    }
+
+    void bor_transfer(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
+                      const intx::uint256& amount, bool bailout) {
+        static constexpr auto kTransferLogSig{
+            0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4_bytes32};
+        intx::uint256 sender_initial_balance{state.get_balance(sender)};
+        intx::uint256 recipient_initial_balance{state.get_balance(recipient)};
+        // TODO(yperbasis) why is the bailout condition different from that of Erigon?
+        if (!bailout || sender_initial_balance >= amount) {
+            state.subtract_from_balance(sender, amount);
+        }
+        state.add_to_balance(recipient, amount);
+        intx::uint256 output1{state.get_balance(sender)};
+        intx::uint256 output2{state.get_balance(recipient)};
+        add_transfer_log(state, kTransferLogSig, sender, recipient, amount, sender_initial_balance,
+                         recipient_initial_balance, output1, output2);
+    }
+}  // namespace
+
 void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
                                       const intx::uint256& sender_initial_balance, const evmc::address& recipient,
                                       const intx::uint256& recipient_initial_balance) {
-    SILKWORM_ASSERT(amount <= sender_initial_balance);
-
-    static constexpr evmc::address kFeeAddress{0x0000000000000000000000000000000000001010_address};
-    static constexpr evmc::bytes32 kTransferFeeLogSig{
+    static constexpr auto kTransferFeeLogSig{
         0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63_bytes32};
+    SILKWORM_ASSERT(amount <= sender_initial_balance);
+    add_transfer_log(state, kTransferFeeLogSig, sender, recipient, amount,
+                     sender_initial_balance, recipient_initial_balance,
+                     sender_initial_balance - amount, recipient_initial_balance + amount);
+}
 
-    SILKWORM_THREAD_LOCAL Log log{
-        .address = kFeeAddress,
-        .topics = {
-            kTransferFeeLogSig,
-            to_bytes32(kFeeAddress.bytes),
-            {},
-            {},
-        },
-        .data = Bytes(32 * 5, 0),
-    };
-
-    log.topics[2] = to_bytes32(sender.bytes);
-    log.topics[3] = to_bytes32(recipient.bytes);
-
-    intx::be::unsafe::store(&log.data[32 * 0], amount);
-    intx::be::unsafe::store(&log.data[32 * 1], sender_initial_balance);
-    intx::be::unsafe::store(&log.data[32 * 2], recipient_initial_balance);
-    intx::be::unsafe::store(&log.data[32 * 3], sender_initial_balance - amount);
-    intx::be::unsafe::store(&log.data[32 * 4], recipient_initial_balance + amount);
-
-    state.add_log(log);
+TransferFunc* BorRuleSet::transfer_func() const {
+    return bor_transfer;
 }
 
 const bor::Config& BorRuleSet::config() const {

@@ -26,20 +26,9 @@
 #include <absl/strings/match.h>
 #include <toml.hpp>
 
-namespace fs = std::filesystem;
+#include <silkworm/core/common/util.hpp>
 
-std::string snake_to_camel(std::string_view snake) {
-    std::string camel;
-    camel += static_cast<char>(std::toupper(static_cast<unsigned char>(snake[0])));
-    for (std::size_t i = 1; i < snake.length(); ++i) {
-        if (snake[i] == '_' && (i + 1) < snake.length()) {
-            camel += static_cast<char>(std::toupper(static_cast<unsigned char>(snake[++i])));
-        } else {
-            camel += snake[i];
-        }
-    }
-    return camel;
-}
+namespace fs = std::filesystem;
 
 int main(int argc, char* argv[]) {
     // Define the command line options
@@ -79,7 +68,7 @@ int main(int argc, char* argv[]) {
             std::ofstream output{output_path};
 
             // Write the snapshots as a constexpr std::array
-            std::string snapshot_name = snake_to_camel(entry_filename.stem().string());
+            std::string snapshot_name = silkworm::snake_to_camel(entry_filename.stem().string());
 
             output << "/* Generated from " << entry.path().filename().string() << " using Silkworm embed_toml */\n\n";
             output << "#pragma once\n\n";
@@ -97,7 +86,7 @@ int main(int argc, char* argv[]) {
                 output << "    Entry{\"" << key_str << "\"sv, \"" << val_str << "\"sv},\n";
             }
             output << "};\n\n";
-            output << "}\n";
+            output << "}  // namespace silkworm::snapshots\n";
         }
     }
 

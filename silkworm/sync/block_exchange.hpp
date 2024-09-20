@@ -19,6 +19,7 @@
 #include <memory>
 #include <variant>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
@@ -35,20 +36,24 @@ class SentryClient;
 //! \brief Implement the logic needed to download headers and bodies
 class BlockExchange : public ActiveComponent {
   public:
-    BlockExchange(SentryClient&, db::ROAccess, const ChainConfig&);
+    BlockExchange(
+        SentryClient& sentry,
+        db::ROAccess dba,
+        const ChainConfig& chain_config,
+        bool use_preverified_hashes);
     ~BlockExchange() override;
 
     // public interface for block downloading
 
     void initial_state(std::vector<BlockHeader> last_headers);  // set the initial state of the sync
 
-    enum class Target_Tracking : uint8_t {
+    enum class TargetTracking : uint8_t {
         kByAnnouncements,
         kByNewPayloads
     };
-    void download_blocks(BlockNum current_height, Target_Tracking);  // start downloading blocks from current_height
+    void download_blocks(BlockNum current_height, TargetTracking);  // start downloading blocks from current_height
 
-    void new_target_block(std::shared_ptr<Block> block);  // set a new target block to download, to use with Target_Tracking::kByNewPayloads
+    void new_target_block(std::shared_ptr<Block> block);  // set a new target block to download, to use with TargetTracking::kByNewPayloads
 
     void stop_downloading();  // stop downloading blocks
 
@@ -66,6 +71,8 @@ class BlockExchange : public ActiveComponent {
     const ChainConfig& chain_config() const;
     SentryClient& sentry() const;
 
+    BlockNum last_pre_validated_block() const;
+
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
 
@@ -81,7 +88,7 @@ class BlockExchange : public ActiveComponent {
     const ChainConfig& chain_config_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;
-    Network_Statistics statistics_;
+    NetworkStatistics statistics_;
 
     ResultQueue results_{};
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry

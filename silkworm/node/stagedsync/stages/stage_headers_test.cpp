@@ -25,11 +25,11 @@
 
 namespace silkworm {
 
-class HeadersStage_ForTest : public stagedsync::HeadersStage {
+class HeadersStageForTest : public stagedsync::HeadersStage {
   public:
     using stagedsync::HeadersStage::HeaderDataModel;
 };
-using HeaderDataModel_ForTest = HeadersStage_ForTest::HeaderDataModel;
+using HeaderDataModelForTest = HeadersStageForTest::HeaderDataModel;
 
 TEST_CASE("HeadersStage - data model") {
     db::test_util::TempChainData context;
@@ -44,14 +44,14 @@ TEST_CASE("HeadersStage - data model") {
     SECTION("one header after the genesis") {
         db::RWTxnManaged tx(context.env());
 
-        auto header0_hash = db::read_canonical_hash(tx, 0);
+        auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
 
         BlockNum headers_stage_height = 0;
-        HeaderDataModel_ForTest hm(tx, headers_stage_height);
+        HeaderDataModelForTest hm(tx, headers_stage_height);
 
         REQUIRE(hm.highest_height() == 0);
         REQUIRE(hm.highest_hash() == header0_hash);
@@ -113,7 +113,7 @@ TEST_CASE("HeadersStage - data model") {
 
         // updating the data model
         BlockNum headers_stage_height = 0;
-        HeaderDataModel_ForTest hm(tx, headers_stage_height);
+        HeaderDataModelForTest hm(tx, headers_stage_height);
 
         hm.update_tables(header1);
         hm.update_tables(header2);
@@ -131,7 +131,7 @@ TEST_CASE("HeadersStage - data model") {
 
         // Now we suppose CL triggers an unwind, resetting to h0
         BlockNum headers_stage_height_fork = 0;
-        HeaderDataModel_ForTest hm_fork(tx, headers_stage_height_fork);
+        HeaderDataModelForTest hm_fork(tx, headers_stage_height_fork);
 
         hm_fork.update_tables(header1b);  // suppose it arrives after header2
 

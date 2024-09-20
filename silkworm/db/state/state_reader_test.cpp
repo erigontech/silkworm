@@ -58,7 +58,7 @@ static const evmc::bytes32 kCodeHash{0xef722d9baf50b9983c2fce6329c5a43a15b8d5ba7
 
 struct StateReaderTest : public silkworm::test_util::ContextTestBase {
     db::test_util::MockTransaction transaction_;
-    StateReader state_reader_{transaction_};
+    StateReader state_reader_{transaction_, kEarliestBlockNumber};
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
@@ -75,7 +75,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return no account
         std::optional<Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress)));
         CHECK(!account);
     }
 
@@ -92,7 +92,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return the expected account
         std::optional<Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress)));
         CHECK(account);
         if (account) {
             CHECK(account->nonce == 2);
@@ -115,7 +115,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return expected account
         std::optional<Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress)));
         CHECK(account);
         if (account) {
             CHECK(account->nonce == 2);
@@ -142,7 +142,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 
         // Execute the test: calling read_account should return the expected account
         std::optional<Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress, kEarliestBlockNumber)));
+        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress)));
         CHECK(account);
         if (account) {
             CHECK(account->nonce == 12345);
@@ -167,7 +167,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
 
         // Execute the test: calling read_storage should return empty storage value
         evmc::bytes32 location;
-        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, kEarliestBlockNumber)));
+        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash)));
         CHECK(location == evmc::bytes32{});
     }
 
@@ -184,7 +184,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
-        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, kEarliestBlockNumber)));
+        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash)));
         CHECK(location == to_bytes32(kStorageLocation));
     }
 
@@ -203,7 +203,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
-        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash, kEarliestBlockNumber)));
+        CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash)));
         CHECK(location == to_bytes32(kStorageLocation));
     }
 }
@@ -212,7 +212,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     SECTION("no code for empty code hash") {
         // Execute the test: calling read_code should return no code for empty hash
         std::optional<Bytes> code;
-        CHECK_NOTHROW(code = spawn_and_wait(state_reader_.read_code(kEmptyHash)));
+        CHECK_NOTHROW(code = spawn_and_wait(state_reader_.read_code(kZeroAddress, kEmptyHash)));
         CHECK(!code);
     }
 
@@ -225,7 +225,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
 
         // Execute the test: calling read_code should return an empty code
         std::optional<Bytes> code;
-        CHECK_NOTHROW(code = spawn_and_wait(state_reader_.read_code(kCodeHash)));
+        CHECK_NOTHROW(code = spawn_and_wait(state_reader_.read_code(kZeroAddress, kCodeHash)));
         CHECK(code);
         if (code) {
             CHECK(code->empty());
@@ -241,7 +241,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
 
         // Execute the test: calling read_code should return a non-empty code
         std::optional<Bytes> code;
-        CHECK_NOTHROW(code = spawn_and_wait(state_reader_.read_code(kCodeHash)));
+        CHECK_NOTHROW(code = spawn_and_wait(state_reader_.read_code(kZeroAddress, kCodeHash)));
         CHECK(code);
         if (code) {
             CHECK(to_hex(*code) == to_hex(kBinaryCode));

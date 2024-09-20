@@ -21,7 +21,6 @@
 
 namespace silkworm {
 
-// TODO(canepat) rename BlockNumberAndHash
 struct BlockId {
     BlockNum number{};
     Hash hash;

@@ -24,9 +24,9 @@
 namespace silkworm::rpc::commands {
 
 //! Utility class to expose handle hooks publicly just for tests
-class ErigonRpcApi_ForTest : public ErigonRpcApi {
+class ErigonRpcApiForTest : public ErigonRpcApi {
   public:
-    explicit ErigonRpcApi_ForTest(boost::asio::io_context& io_context) : ErigonRpcApi{io_context} {}
+    explicit ErigonRpcApiForTest(boost::asio::io_context& io_context) : ErigonRpcApi{io_context} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
     Task<void> erigon_get_block_by_timestamp(const nlohmann::json& request, std::string& reply) {
@@ -52,7 +52,7 @@ class ErigonRpcApi_ForTest : public ErigonRpcApi {
     }
 };
 
-using ErigonRpcApiTest = test_util::JsonApiTestBase<ErigonRpcApi_ForTest>;
+using ErigonRpcApiTest = test_util::JsonApiTestBase<ErigonRpcApiForTest>;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_timestamp", "[rpc][erigon_api]") {
@@ -60,7 +60,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
     nlohmann::json exp_rsp;
 
     SECTION("request params is empty: return error") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_get_block_by_timestamp>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -73,7 +73,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
         CHECK(reply == expected_rsp);
     }
     SECTION("request params are incomplete: return error") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_get_block_by_timestamp>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -90,7 +90,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
         CHECK(reply == expected_rsp);
     }
     SECTION("request 1st param is invalid: return error") {
-        CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_get_block_by_timestamp>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,
@@ -101,7 +101,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
                         nlohmann::json::exception);
     }
     SECTION("request 2nd param is invalid: return error") {
-        CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_get_block_by_timestamp>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,
@@ -113,7 +113,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
     }
     // TODO(canepat) we need to mock silkworm::core functions properly, then we must change this check
     SECTION("request params are valid: return block w/ full transactions") {
-        CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_get_block_by_timestamp>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,
@@ -129,7 +129,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_header_by_ha
     nlohmann::json reply;
 
     SECTION("request params is empty: success and return error") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_get_header_by_hash>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_get_header_by_hash>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -149,7 +149,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_header_by_nu
     nlohmann::json reply;
 
     SECTION("request params is empty: success and return error") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_get_header_by_number>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_get_header_by_number>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -169,7 +169,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_logs_by_hash
     nlohmann::json reply;
 
     SECTION("request params is empty: success and return error") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_get_logs_by_hash>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_get_logs_by_hash>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -189,7 +189,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_forks", "[rpc][e
     nlohmann::json reply;
 
     SECTION("no server connection: failure") {
-        CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_forks>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_forks>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,
@@ -206,7 +206,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
 
 #ifndef _WIN32
     SECTION("request invalid params number") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_block_number>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_block_number>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -223,7 +223,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
 #endif  // _WIN32
 
     SECTION("request earliest") {
-        CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_block_number>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_block_number>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,
@@ -235,7 +235,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
     }
 
     SECTION("request empty param") {
-        CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_block_number>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_block_number>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,
@@ -251,7 +251,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_node_info", "[rp
     nlohmann::json reply;
 
     SECTION("request node_info") {
-        CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::erigon_node_info>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_node_info>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,

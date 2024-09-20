@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
-    db::etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
+    db::etl::Collector collector(data_dir.temp().path().string().c_str(), /* flush size */ 512 * kMebi);
 
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};

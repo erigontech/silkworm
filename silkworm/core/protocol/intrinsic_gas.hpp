@@ -23,7 +23,7 @@
 namespace silkworm {
 
 // Words in EVM are 32-bytes long
-inline constexpr uint64_t num_words(uint64_t num_bytes) noexcept {
+constexpr uint64_t num_words(uint64_t num_bytes) noexcept {
     return num_bytes / 32 + static_cast<uint64_t>(num_bytes % 32 != 0);
 }
 

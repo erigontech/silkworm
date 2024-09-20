@@ -168,7 +168,7 @@ class SnapshotsCall : public rpc::server::UnaryCall<remote::SnapshotsRequest, re
 
 //! Unary RPC for HistoryGet method of 'kv' gRPC protocol.
 //! rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-class HistoryGetCall : public rpc::server::UnaryCall<remote::HistoryGetReq, remote::HistoryGetReply> {
+class HistorySeekCall : public rpc::server::UnaryCall<remote::HistorySeekReq, remote::HistorySeekReply> {
   public:
     using Base::UnaryCall;
 

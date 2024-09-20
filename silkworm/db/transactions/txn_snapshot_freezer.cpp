@@ -19,17 +19,19 @@
 #include <stdexcept>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "txn_snapshot.hpp"
 
 namespace silkworm::db {
 
-void TransactionSnapshotFreezer::copy(ROTxn& txn, BlockNumRange range, snapshots::SnapshotFileWriter& file_writer) const {
+void TransactionSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SnapshotFileWriter& file_writer) const {
+    BlockNumRange range = command.range;
     snapshots::TransactionSnapshotWriter writer{file_writer};
     auto out = writer.out();
     auto system_tx = snapshots::empty_system_tx();
 
-    for (BlockNum i = range.first; i < range.second; i++) {
+    for (BlockNum i = range.start; i < range.end; i++) {
         BlockBody body;
         bool found = read_canonical_body(txn, i, /* read_senders = */ true, body);
         if (!found) throw std::runtime_error{"TransactionSnapshotFreezer::copy missing body for block " + std::to_string(i)};
@@ -39,6 +41,26 @@ void TransactionSnapshotFreezer::copy(ROTxn& txn, BlockNumRange range, snapshots
             *out++ = value;
         }
         *out++ = system_tx;
+    }
+}
+
+void TransactionSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
+    for (BlockNum i = range.start, count = 1; i < range.end; i++, count++) {
+        auto hash_opt = read_canonical_header_hash(txn, i);
+        if (!hash_opt) continue;
+        auto hash = *hash_opt;
+
+        delete_senders(txn, hash, i);
+
+        auto body_opt = read_canonical_body_for_storage(txn, i);
+        if (body_opt) {
+            auto& body = *body_opt;
+            delete_transactions(txn, body.base_txn_id + 1, body.txn_count - 2);
+        }
+
+        if ((count > 10000) && ((count % 10000) == 0)) {
+            log::Debug("TransactionSnapshotFreezer") << "cleaned up until block " << i;
+        }
     }
 }
 

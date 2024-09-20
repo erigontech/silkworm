@@ -21,9 +21,12 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <tuple>
 
 #include <intx/intx.hpp>
+
+#include <silkworm/core/common/assert.hpp>
 
 #if defined(__wasm__)
 #define SILKWORM_THREAD_LOCAL static
@@ -40,8 +43,17 @@ concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::ui
                            std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
 using BlockNum = uint64_t;
-using BlockNumRange = std::pair<BlockNum, BlockNum>;
 using BlockTime = uint64_t;
+
+struct BlockNumRange {
+    BlockNum start;
+    BlockNum end;
+    BlockNumRange(BlockNum start1, BlockNum end1) : start(start1), end(end1) {}
+    friend bool operator==(const BlockNumRange&, const BlockNumRange&) = default;
+    bool contains(BlockNum num) const { return (start <= num) && (num < end); }
+    BlockNum size() const { return end - start; }
+    std::string to_string() const { return std::string("[") + std::to_string(start) + ", " + std::to_string(end) + ")"; }
+};
 
 inline constexpr BlockNum kEarliestBlockNumber{0ul};
 
@@ -58,9 +70,21 @@ inline constexpr uint64_t kTebi{1024 * kGibi};
 inline constexpr uint64_t kGiga{1'000'000'000};   // = 10^9
 inline constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18
 
-constexpr uint64_t operator"" _Kibi(unsigned long long x) { return x * kKibi; }
-constexpr uint64_t operator"" _Mebi(unsigned long long x) { return x * kMebi; }
-constexpr uint64_t operator"" _Gibi(unsigned long long x) { return x * kGibi; }
-constexpr uint64_t operator"" _Tebi(unsigned long long x) { return x * kTebi; }
+consteval uint64_t operator"" _Kibi(unsigned long long x) {
+    SILKWORM_ASSERT(x <= std::numeric_limits<uint64_t>::max() / kKibi);
+    return x * kKibi;
+}
+consteval uint64_t operator"" _Mebi(unsigned long long x) {
+    SILKWORM_ASSERT(x <= std::numeric_limits<uint64_t>::max() / kMebi);
+    return x * kMebi;
+}
+consteval uint64_t operator"" _Gibi(unsigned long long x) {
+    SILKWORM_ASSERT(x <= std::numeric_limits<uint64_t>::max() / kGibi);
+    return x * kGibi;
+}
+consteval uint64_t operator"" _Tebi(unsigned long long x) {
+    SILKWORM_ASSERT(x <= std::numeric_limits<uint64_t>::max() / kTebi);
+    return x * kTebi;
+}
 
 }  // namespace silkworm

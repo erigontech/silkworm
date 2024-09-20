@@ -22,7 +22,7 @@
 
 #include <silkworm/db/etl/collector.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/path.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "txn_index.hpp"
@@ -32,7 +32,7 @@ namespace silkworm::snapshots {
 
 class TransactionToBlockIndexInputDataQuery : public IndexInputDataQuery {
   public:
-    TransactionToBlockIndexInputDataQuery(TxsAndBodiesQuery query)
+    explicit TransactionToBlockIndexInputDataQuery(TxsAndBodiesQuery query)
         : query_(std::move(query)) {}
 
     Iterator begin() override;

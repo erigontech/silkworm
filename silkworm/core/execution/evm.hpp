@@ -23,6 +23,7 @@
 #include <evmone/baseline.hpp>
 #include <evmone/execution_state.hpp>
 #include <evmone/vm.hpp>
+#include <gsl/pointers>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/config.hpp>
@@ -32,6 +33,8 @@
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/types/block.hpp>
 
+#include "silkworm/core/types/address.hpp"
+
 namespace silkworm {
 
 struct CallResult {
@@ -39,6 +42,7 @@ struct CallResult {
     uint64_t gas_left{0};
     uint64_t gas_refund{0};
     Bytes data;
+    std::string error_message;
 };
 
 class EvmTracer {
@@ -70,7 +74,20 @@ class EvmTracer {
 
 using EvmTracers = std::vector<std::reference_wrapper<EvmTracer>>;
 
-using AnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
+using AnalysisCache = LruCache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
+
+using TransferFunc = void(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
+                          const intx::uint256& amount, bool bailout);
+
+// See consensus.Transfer in Erigon
+inline void standard_transfer(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
+                              const intx::uint256& amount, bool bailout) {
+    // TODO(yperbasis) why is the bailout condition different from Erigon?
+    if (!bailout || state.get_balance(sender) >= amount) {
+        state.subtract_from_balance(sender, amount);
+    }
+    state.add_to_balance(recipient, amount);
+}
 
 class EVM {
   public:
@@ -78,7 +95,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool gas_bailout = false) noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout = false) noexcept;
 
     ~EVM();
 
@@ -104,6 +121,10 @@ class EVM {
 
     evmc::address beneficiary;  // see IRuleSet::get_beneficiary
 
+    gsl::not_null<TransferFunc*> transfer{standard_transfer};
+
+    CallResult deduct_entry_fees(const Transaction& txn) const;
+
   private:
     friend class EvmHost;
 
@@ -122,7 +143,7 @@ class EVM {
     const Block& block_;
     IntraBlockState& state_;
     const ChainConfig& config_;
-    bool gas_bailout_;
+    bool bailout_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;

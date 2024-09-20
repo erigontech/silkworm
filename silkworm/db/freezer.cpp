@@ -22,28 +22,22 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/filesystem.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "access_layer.hpp"
-#include "bodies/body_snapshot_freezer.hpp"
-#include "headers/header_snapshot_freezer.hpp"
+#include "blocks/bodies/body_snapshot_freezer.hpp"
+#include "blocks/headers/header_snapshot_freezer.hpp"
 #include "prune_mode.hpp"
 #include "snapshot_freezer.hpp"
-#include "snapshots/path.hpp"
 #include "snapshots/snapshot_bundle.hpp"
+#include "snapshots/snapshot_path.hpp"
 #include "snapshots/snapshot_writer.hpp"
 #include "transactions/txn_snapshot_freezer.hpp"
 
 namespace silkworm::db {
 
 using namespace silkworm::snapshots;
-
-struct FreezerCommand : public DataMigrationCommand {
-    BlockNumRange range;
-
-    explicit FreezerCommand(BlockNumRange range1)
-        : range(std::move(range1)) {}
-    ~FreezerCommand() override = default;
-};
 
 struct FreezerResult : public DataMigrationResult {
     SnapshotBundle bundle;
@@ -58,6 +52,17 @@ static BlockNum get_tip_num(ROTxn& txn) {
     return num;
 }
 
+static BlockNum get_first_stored_header_num(ROTxn& txn) {
+    auto num_opt = db::read_stored_header_number_after(txn, 1);
+    return num_opt.value_or(0);
+}
+
+static std::optional<uint64_t> get_next_base_txn_id(BlockNum number) {
+    auto body = DataModel::read_body_for_storage_from_snapshot(number);
+    if (!body) return std::nullopt;
+    return body->base_txn_id + body->txn_count;
+}
+
 std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
     BlockNum last_frozen = snapshots_.max_block_available();
     BlockNum start = (last_frozen > 0) ? last_frozen + 1 : 0;
@@ -68,8 +73,15 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
         return get_tip_num(db_tx);
     }();
 
+    uint64_t base_txn_id = [last_frozen]() -> uint64_t {
+        if (last_frozen == 0) return 0;
+        auto id = get_next_base_txn_id(last_frozen);
+        assert(id.has_value());
+        return *id;
+    }();
+
     if (end + kFullImmutabilityThreshold <= tip) {
-        return std::make_unique<FreezerCommand>(FreezerCommand{{start, end}});
+        return std::make_unique<FreezerCommand>(FreezerCommand{{start, end}, base_txn_id});
     }
     return {};
 }
@@ -80,11 +92,11 @@ static const SnapshotFreezer& get_snapshot_freezer(SnapshotType type) {
     static TransactionSnapshotFreezer txn_snapshot_freezer;
 
     switch (type) {
-        case snapshots::headers:
+        case SnapshotType::headers:
             return header_snapshot_freezer;
-        case snapshots::bodies:
+        case SnapshotType::bodies:
             return body_snapshot_freezer;
-        case snapshots::transactions:
+        case SnapshotType::transactions:
             return txn_snapshot_freezer;
         default:
             assert(false);
@@ -103,7 +115,7 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
         {
             auto db_tx = db_access_.start_ro_tx();
             auto& freezer = get_snapshot_freezer(path.type());
-            freezer.copy(db_tx, range, file_writer);
+            freezer.copy(db_tx, freezer_command, file_writer);
         }
         SnapshotFileWriter::flush(std::move(file_writer));
     }
@@ -114,37 +126,50 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
 void Freezer::index(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
     auto& bundle = freezer_result.bundle;
-
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        SnapshotPath snapshot_path = snapshot_ref.get().path();
-        auto index_builders = snapshots_.bundle_factory().index_builders(snapshot_path);
-        for (auto& index_builder : index_builders) {
-            index_builder->build();
-        }
-    }
-}
-
-static void move_file(const std::filesystem::path& path, const std::filesystem::path& target_dir_path) {
-    std::filesystem::rename(path, target_dir_path / path.filename());
+    snapshots_.build_indexes(bundle);
 }
 
 void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
     auto& bundle = freezer_result.bundle;
-
-    for (auto& index_ref : bundle.indexes()) {
-        move_file(index_ref.get().path().path(), snapshots_.path());
-    }
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        move_file(snapshot_ref.get().path().path(), snapshots_.path());
-    }
+    move_files(bundle.files(), snapshots_.path());
 
     auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.block_range());
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
 }
 
-void Freezer::cleanup() {
-    // TODO
+BlockNumRange Freezer::cleanup_range() {
+    BlockNum last_frozen = snapshots_.max_block_available();
+
+    BlockNum first_stored_header_num = [this] {
+        auto db_tx = db_access_.start_ro_tx();
+        return get_first_stored_header_num(db_tx);
+    }();
+
+    BlockNum end = (last_frozen > 0) ? last_frozen + 1 : 0;
+    BlockNum start = (first_stored_header_num > 0) ? first_stored_header_num : end;
+    return BlockNumRange{start, end};
+}
+
+Task<void> Freezer::cleanup() {
+    BlockNumRange range = cleanup_range();
+    if (range.start >= range.end) co_return;
+    log::Debug(name()) << "cleanup " << range.to_string();
+
+    if (keep_blocks_) {
+        log::Debug(name()) << "skipping cleanup";
+        co_return;
+    }
+
+    co_await stage_scheduler_.schedule([this, range](RWTxn& db_tx) {
+        this->cleanup(db_tx, range);
+    });
+}
+
+void Freezer::cleanup(RWTxn& db_tx, BlockNumRange range) const {
+    get_snapshot_freezer(SnapshotType::transactions).cleanup(db_tx, range);
+    get_snapshot_freezer(SnapshotType::bodies).cleanup(db_tx, range);
+    get_snapshot_freezer(SnapshotType::headers).cleanup(db_tx, range);
 }
 
 }  // namespace silkworm::db

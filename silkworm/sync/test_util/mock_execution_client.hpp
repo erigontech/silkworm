@@ -28,7 +28,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/execution/api/client.hpp>
+#include <silkworm/execution/api/client.hpp>
 
 namespace silkworm::chainsync::test_util {
 
@@ -39,7 +39,7 @@ class MockExecutionService : public execution::api::Service {
   public:
     MOCK_METHOD((Task<api::InsertionResult>), insert_blocks, (const api::Blocks&), (override));
 
-    MOCK_METHOD((Task<api::ValidationResult>), validate_chain, (api::BlockNumAndHash), (override));
+    MOCK_METHOD((Task<api::ValidationResult>), validate_chain, (BlockId), (override));
     MOCK_METHOD((Task<api::ForkChoiceResult>), update_fork_choice, (const api::ForkChoice&), (override));
 
     MOCK_METHOD((Task<api::AssembleBlockResult>), assemble_block, (const api::BlockUnderConstruction&), (override));

@@ -25,12 +25,18 @@ void add_snapshot_options(CLI::App& cli, snapshots::SnapshotSettings& snapshot_s
     cli.add_flag("--snapshots.no_downloader", snapshot_settings.no_downloader)
         ->description("If set, the snapshot downloader is disabled and just already present local snapshots are used")
         ->capture_default_str();
+    cli.add_flag("--snapshots.keepblocks", snapshot_settings.keep_blocks)
+        ->description("If set, the blocks exported from mdbx to snapshots are kept in mdbx")
+        ->capture_default_str();
+    cli.add_flag("--snapshots.stop", snapshot_settings.stop_freezer)
+        ->description("Stop producing new snapshots. Useful to workaround any snapshots-related critical bugs. It will stop moving historical data from DB to new immutable snapshots. DB will grow and may slightly slow-down.")
+        ->capture_default_str();
     cli.add_option("--snapshots.repository.path", snapshot_settings.repository_dir)
         ->description("Filesystem path where snapshots will be stored")
         ->capture_default_str();
 
     // TODO(canepat) add options for the other snapshot settings and for all bittorrent settings
-    cli.add_option("--torrent.verify_on_startup", snapshot_settings.bittorrent_settings.verify_on_startup)
+    cli.add_option("--torrent.verify_on_startup", snapshot_settings.verify_on_startup)
         ->description(
             "If set, the snapshot downloader will verify snapshots on startup."
             " It will not report founded problems but just re-download broken pieces")

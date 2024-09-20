@@ -89,8 +89,8 @@ Task<bool> LocalChainStorage::read_body(const Hash& hash, BlockBody& body) const
     co_return data_model_.read_body(hash, body);
 }
 
-Task<std::optional<Hash>> LocalChainStorage::read_canonical_hash(BlockNum number) const {
-    co_return data_model_.read_canonical_hash(number);
+Task<std::optional<Hash>> LocalChainStorage::read_canonical_header_hash(BlockNum number) const {
+    co_return data_model_.read_canonical_header_hash(number);
 }
 
 Task<std::optional<BlockHeader>> LocalChainStorage::read_canonical_header(BlockNum number) const {
@@ -122,7 +122,7 @@ Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash
     if (!block_number) {
         co_return false;
     }
-    auto block_hash = data_model_.read_canonical_hash(*block_number);
+    auto block_hash = data_model_.read_canonical_header_hash(*block_number);
     if (!block_hash) {
         co_return false;
     }

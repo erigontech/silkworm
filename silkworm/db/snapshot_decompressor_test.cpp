@@ -29,6 +29,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/test_util/null_stream.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -44,9 +45,9 @@ using silkworm::test_util::TemporaryFile;
 using namespace snapshots::seg;
 
 //! DecodingTable exposed for white-box testing
-class DecodingTable_ForTest : public DecodingTable {
+class DecodingTableForTest : public DecodingTable {
   public:
-    explicit DecodingTable_ForTest(std::size_t max_depth) : DecodingTable(max_depth) {}
+    explicit DecodingTableForTest(std::size_t max_depth) : DecodingTable(max_depth) {}
     [[nodiscard]] std::size_t max_depth() const { return max_depth_; }
 };
 
@@ -71,7 +72,7 @@ TEST_CASE("DecodingTable::DecodingTable", "[silkworm][node][seg][decompressor]")
     for (const auto& [test_name, test_pair] : test_params) {
         std::size_t max_depth = test_pair.first;
         std::size_t expected_bit_length = test_pair.second;
-        DecodingTable_ForTest table{max_depth};
+        DecodingTableForTest table{max_depth};
         CHECK(table.max_depth() == max_depth);
         CHECK(table.bit_length() == expected_bit_length);
     }

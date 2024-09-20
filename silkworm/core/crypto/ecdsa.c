@@ -24,7 +24,7 @@
 
 //! \brief Tries recover public key used for message signing.
 static bool recover(uint8_t public_key[65], const uint8_t message[32], const uint8_t signature[64], uint8_t recovery_id,
-                    secp256k1_context* context) {
+                    const secp256k1_context* context) {
     secp256k1_ecdsa_recoverable_signature sig;
     if (!secp256k1_ecdsa_recoverable_signature_parse_compact(context, &sig, signature, recovery_id)) {
         return false;
@@ -53,7 +53,7 @@ static bool public_key_to_address(uint8_t out[20], const uint8_t public_key[65])
 }
 
 bool silkworm_recover_address(uint8_t out[20], const uint8_t message[32], const uint8_t signature[64],
-                              uint8_t recovery_id, secp256k1_context* context) {
+                              uint8_t recovery_id, const secp256k1_context* context) {
     uint8_t public_key[65];
     if (!recover(public_key, message, signature, recovery_id, context)) {
         return false;

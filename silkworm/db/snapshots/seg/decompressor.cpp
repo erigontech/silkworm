@@ -109,7 +109,7 @@ static PatternTable::WordDistances build_word_distances() {
 }
 
 //! Initialize once and for all the word distances in the data for each power of 2
-const PatternTable::WordDistances PatternTable::word_distances_{build_word_distances()};
+const PatternTable::WordDistances PatternTable::kWordDistances{build_word_distances()};
 
 //! Initialize condensed table threshold for bit length using default value
 std::size_t PatternTable::condensed_table_bit_length_threshold_{kDefaultCondensedTableBitLengthThreshold};
@@ -165,17 +165,19 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t 
 CodeWord* PatternTable::insert_word(CodeWord* codeword) {
     CodeWord* inserted{nullptr};
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
-        const auto code_step = 1 << codeword->code_length();
-        const auto code_from = codeword->code();
-        const auto code_to =
-            bit_length_ != codeword->code_length() && codeword->code_length() > 0 ? code_from | 1 << bit_length_ : code_from + code_step;
-        for (auto c{code_from}; c < code_to; c += code_step) {
+        const size_t code_step = 1 << codeword->code_length();
+        const size_t code_from = codeword->code();
+        const size_t code_to =
+            ((bit_length_ != codeword->code_length()) && (codeword->code_length() > 0))
+                ? code_from | (1 << bit_length_)
+                : code_from + code_step;
+        for (size_t c = code_from; c < code_to; c += code_step) {
             auto cw = codewords_[c];
             if (cw == nullptr) {
                 codewords_[c] = codeword;
                 inserted = codewords_[c];
             } else {
-                cw->reset_content(c, codeword->code_length(), codeword->pattern());
+                cw->reset_content(static_cast<uint16_t>(c), codeword->code_length(), codeword->pattern());
                 inserted = cw;
             }
         }
@@ -198,36 +200,35 @@ CodeWord* PatternTable::insert_word(CodeWord* codeword) {
 const CodeWord* PatternTable::search_condensed(uint16_t code) const {
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
         return codeword(code);
-    } else {
-        CodeWord* previous{nullptr};
-        for (auto* current = head_; current != nullptr; previous = current, current = current->next()) {
-            if (current->code() == code) {
-                if (previous != nullptr) {
-                    previous->set_next(current->next());
-                    current->set_next(head_);
-                    head_ = current;
-                }
-                return current;
+    }
+    CodeWord* previous{nullptr};
+    for (auto* current = head_; current != nullptr; previous = current, current = current->next()) {
+        if (current->code() == code) {
+            if (previous != nullptr) {
+                previous->set_next(current->next());
+                current->set_next(head_);
+                head_ = current;
             }
-            const auto distance = code - current->code();
-            if ((distance & 0x1) != 0) {
-                continue;
+            return current;
+        }
+        const auto distance = code - current->code();
+        if ((distance & 0x1) != 0) {
+            continue;
+        }
+        if (check_distance(current->code_length(), distance)) {
+            if (previous != nullptr) {
+                previous->set_next(current->next());
+                current->set_next(head_);
+                head_ = current;
             }
-            if (check_distance(current->code_length(), distance)) {
-                if (previous != nullptr) {
-                    previous->set_next(current->next());
-                    current->set_next(head_);
-                    head_ = current;
-                }
-                return current;
-            }
+            return current;
         }
     }
     return nullptr;
 }
 
 bool PatternTable::check_distance(std::size_t power, int distance) {
-    const auto& distances = PatternTable::word_distances_[power];
+    const auto& distances = PatternTable::kWordDistances[power];
     auto it = std::find_if(distances.cbegin(), distances.cend(), [distance](const int d) {
         return d == distance;
     });
@@ -257,10 +258,10 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
             lengths_[code] = static_cast<uint8_t>(bits);
             children_[code] = nullptr;
         } else {
-            const auto code_step = 1 << bits;
-            const auto code_from = code;
-            const auto code_to = code_from | 1 << bit_length_;
-            for (auto c{code_from}; c < code_to; c += code_step) {
+            const size_t code_step = 1 << bits;
+            const size_t code_from = code;
+            const size_t code_to = code_from | (1 << bit_length_);
+            for (size_t c = code_from; c < code_to; c += code_step) {
                 positions_[c] = first_position.value;
                 lengths_[c] = static_cast<uint8_t>(bits);
                 children_[c] = nullptr;

@@ -13,5 +13,5 @@ go run main.go
 
 on macOS:
 ```bash
-CGO_LDFLAGS=-mmacosx-version-min=13.3 go run main.go
+CGO_LDFLAGS=-mmacosx-version-min=14.0 go run main.go
 ```

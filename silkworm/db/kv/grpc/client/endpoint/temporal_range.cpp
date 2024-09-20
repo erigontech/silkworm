@@ -16,7 +16,7 @@
 
 #include "temporal_range.hpp"
 
-#include <silkworm/core/common/util.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/grpc/common/bytes.hpp>
 
 namespace silkworm::db::kv::grpc::client {
@@ -61,11 +61,11 @@ proto::HistoryRangeReq history_range_request_from_query(const api::HistoryRangeQ
 
 api::HistoryRangeResult history_range_result_from_response(const proto::Pairs& response) {
     api::HistoryRangeResult result;
-    for (const auto& hex_key : response.keys()) {
-        rpc::deserialize_hex_as_bytes(hex_key, result.keys);
+    for (const auto& key : response.keys()) {
+        result.keys.emplace_back(string_to_bytes(key));
     }
-    for (const auto& hex_value : response.values()) {
-        rpc::deserialize_hex_as_bytes(hex_value, result.values);
+    for (const auto& value : response.values()) {
+        result.values.emplace_back(string_to_bytes(value));
     }
     result.next_page_token = response.next_page_token();
     return result;
@@ -77,6 +77,11 @@ api::HistoryRangeResult history_range_result_from_response(const proto::Pairs& r
     request.set_table(query.table);
     request.set_from_key(query.from_key.data(), query.from_key.size());
     request.set_to_key(query.to_key.data(), query.to_key.size());
+    if (query.timestamp) {
+        request.set_ts(static_cast<uint64_t>(*query.timestamp));
+    } else {
+        request.set_latest(true);
+    }
     request.set_order_ascend(query.ascending_order);
     request.set_limit(static_cast<int64_t>(query.limit));
     request.set_page_size(static_cast<int32_t>(query.page_size));

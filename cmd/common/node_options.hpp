@@ -18,10 +18,10 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/node/settings.hpp>
+#include <silkworm/node/common/node_settings.hpp>
 
 namespace silkworm::cmd::common {
 
-void add_node_options(CLI::App& cli, node::Settings& settings);
+void add_node_options(CLI::App& cli, NodeSettings& settings);
 
 }  // namespace silkworm::cmd::common

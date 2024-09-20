@@ -21,13 +21,14 @@ find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 
 set(SILKWORM_SYNC_PUBLIC_LIBS
-    silkworm_rpcdaemon
-    silkworm_node
-    silkworm_core
-    mdbx-static
+    absl::btree
     absl::flat_hash_map
     absl::flat_hash_set
-    absl::btree
+    mdbx-static
+    silkworm_core
+    silkworm_execution
+    silkworm_rpcdaemon
+    silkworm_sentry
 )
 
 # cmake-format: off

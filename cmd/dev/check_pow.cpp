@@ -34,7 +34,7 @@
 namespace fs = std::filesystem;
 using namespace silkworm;
 
-struct app_options_t {
+struct AppOptions {
     std::string datadir{};          // Provided database path
     uint32_t block_from{1u};        // Initial block number to start from
     uint32_t block_to{UINT32_MAX};  // Final block number to process
@@ -44,7 +44,7 @@ struct app_options_t {
 int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Check PoW.");
-    app_options_t options{};
+    AppOptions options{};
     options.datadir = DataDirectory{}.chaindata().path().string();  // Default chain data db path
 
     // Command line arguments

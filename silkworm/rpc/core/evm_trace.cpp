@@ -24,7 +24,6 @@
 
 #include <boost/asio/use_awaitable.hpp>
 #include <evmc/hex.hpp>
-#include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions_traits.hpp>
 #include <intx/intx.hpp>
@@ -119,7 +118,12 @@ void to_json(nlohmann::json& json, const VmTrace& vm_trace) {
 
 void to_json(nlohmann::json& json, const TraceOp& trace_op) {
     json["cost"] = trace_op.gas_cost;
-    json["ex"] = trace_op.trace_ex;
+    // In case of out-of-gas Erigon gives null trace_ex, so we must handle it
+    if (!trace_op.trace_ex) {
+        json["ex"] = nlohmann::json::value_t::null;
+    } else {
+        json["ex"] = *(trace_op.trace_ex);
+    }
     json["idx"] = trace_op.idx;
     json["op"] = trace_op.op_name;
     json["pc"] = trace_op.pc;
@@ -131,7 +135,7 @@ void to_json(nlohmann::json& json, const TraceOp& trace_op) {
 }
 
 void to_json(nlohmann::json& json, const TraceEx& trace_ex) {
-    if (trace_ex.memory) {
+    if (trace_ex.memory && trace_ex.memory->len) {
         const auto& memory = trace_ex.memory.value();
         json["mem"] = memory;
     } else {
@@ -572,13 +576,10 @@ std::string to_string(intx::uint256 value) {
 }
 
 void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    last_opcode_ = std::nullopt;
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
-    }
-    if (precompile::is_precompile(msg.code_address, rev)) {
-        is_precompile_ = true;
-        return;
     }
 
     start_gas_.push(msg.gas);
@@ -598,13 +599,13 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
         index_prefix_.push(index_prefix);
 
         auto& op = vm_trace.ops[vm_trace.ops.size() - 1];
-        if (op.op_code == evmc_opcode::OP_STATICCALL || op.op_code == evmc_opcode::OP_DELEGATECALL || op.op_code == evmc_opcode::OP_CALL) {
-            auto& op_1 = vm_trace.ops[vm_trace.ops.size() - 2];
-            auto cap = op_1.trace_ex.used - msg.gas;
-            op.depth = msg.depth;
-            op.gas_cost = op.gas_cost - msg.gas;
-            op.call_gas_cap = cap;
+
+        if (op.op_code == OP_CREATE || op.op_code == OP_CREATE2) {
+            op.gas_cost = msg.gas;
+        } else {
+            op.gas_cost = msg.gas_cost;
         }
+
         op.sub = std::make_shared<VmTrace>();
         traces_stack_.emplace(*op.sub);
         op.sub->code = "0x" + silkworm::to_hex(code);
@@ -626,35 +627,46 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
                                          const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto op_code = execution_state.original_code[pc];
     auto op_name = get_opcode_name(opcode_names_, op_code);
+    last_opcode_ = op_code;
 
+    int64_t used = 0;
     auto& vm_trace = traces_stack_.top().get();
     if (!vm_trace.ops.empty()) {
         auto& op = vm_trace.ops[vm_trace.ops.size() - 1];
-        if (op.precompiled_call_gas) {
-            op.gas_cost = op.gas_cost - op.precompiled_call_gas.value();
+        if (op.op_code == OP_RETURN || op.op_code == OP_STOP || op.op_code == OP_REVERT) {
+            op.gas_cost = 0;
+        } else if (op.op_code == OP_CREATE || op.op_code == OP_CREATE2) {
+            op.gas_cost += execution_state.last_opcode_gas_cost;
         } else if (op.depth == execution_state.msg->depth) {
-            op.gas_cost = op.gas_cost - gas;
+            op.gas_cost = execution_state.last_opcode_gas_cost;
         }
-        op.trace_ex.used = gas;
-
-        copy_memory(execution_state.memory, op.trace_ex.memory);
-        copy_stack(op.op_code, stack_top, op.trace_ex.stack);
+        op.trace_ex->used = gas;
+        used = op.trace_ex->used;
+        copy_memory(execution_state.memory, op.trace_ex->memory);
+        copy_stack(op.op_code, stack_top, op.trace_ex->stack);
     }
 
     auto index_prefix = index_prefix_.top() + std::to_string(vm_trace.ops.size());
 
     TraceOp trace_op;
-    trace_op.gas_cost = gas;
+    trace_op.gas_cost = metrics_[op_code].gas_cost;
     trace_op.idx = index_prefix;
     trace_op.depth = execution_state.msg->depth;
     trace_op.op_code = op_code;
     trace_op.op_name = op_name;
     trace_op.pc = pc;
+    trace_op.trace_ex = TraceEx{used};
 
-    copy_memory_offset_len(op_code, stack_top, trace_op.trace_ex.memory);
-    copy_store(op_code, stack_top, trace_op.trace_ex.storage);
+    if (op_code == OP_SELFDESTRUCT) {
+        trace_op.sub = std::make_shared<VmTrace>();
+        trace_op.sub->code = "0x";
+    }
+
+    copy_memory_offset_len(op_code, stack_top, trace_op.trace_ex->memory);
+    copy_store(op_code, stack_top, trace_op.trace_ex->storage);
 
     vm_trace.ops.push_back(trace_op);
+
     SILK_DEBUG << "VmTraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(op_code)
@@ -683,17 +695,11 @@ void VmTraceTracer::on_precompiled_run(const evmc_result& result, int64_t gas, c
 }
 
 void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    if (is_precompile_) {
-        is_precompile_ = false;
-        return;
-    }
     auto& vm_trace = traces_stack_.top().get();
     traces_stack_.pop();
 
     int64_t start_gas = start_gas_.top();
     start_gas_.pop();
-
-    index_prefix_.pop();
 
     SILK_DEBUG << "VmTraceTracer::on_execution_end:"
                << " result.status_code: " << result.status_code
@@ -701,6 +707,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
                << ", gas_left: " << std::dec << result.gas_left;
 
     if (vm_trace.ops.empty()) {
+        index_prefix_.pop();
         return;
     }
     auto& op = vm_trace.ops[vm_trace.ops.size() - 1];
@@ -712,35 +719,63 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
 
     switch (result.status_code) {
         case evmc_status_code::EVMC_OUT_OF_GAS:
-            op.trace_ex.used = result.gas_left;
-            op.gas_cost -= result.gas_left;
+            // If we run out of gas, we reset trace_ex to null (no matter what the content is) as Erigon does
+            op.trace_ex = std::nullopt;
+            if (op.op_code != OP_CALLCODE) {
+                op.gas_cost = result.gas_cost;
+            }
             break;
 
         // We need to adjust gas used and gas cost from evmone to match evm.go values
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            if (op.op_code == evmc_opcode::OP_EXP) {  // Erigon the static part is 0
-                op.trace_ex.used = op.gas_cost;
+            if (op.op_code == evmc_opcode::OP_EXP) {  // In Erigon the static part is 0
+                op.trace_ex->used = start_gas;
                 op.gas_cost = 0;
             } else {
-                op.trace_ex.used = op.gas_cost - metrics_[op.op_code].gas_cost;
+                /* EVM WA: EVMONE in case of this error returns always zero on gas-left */
+                if (op.trace_ex->used > 0) {
+                    op.trace_ex->used -= op.gas_cost;
+                } else {
+                    op.trace_ex->used = start_gas - op.gas_cost;
+                }
                 op.gas_cost = metrics_[op.op_code].gas_cost;
             }
             break;
 
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
-            op.trace_ex.used = op.gas_cost;
             op.gas_cost = 0;
+            if (op.trace_ex->used == 0) {
+                op.trace_ex->used = start_gas;
+            }
             break;
 
-        case evmc_status_code::EVMC_REVERT:
         default:
-            op.gas_cost = op.gas_cost - result.gas_left;
-            op.trace_ex.used = result.gas_left;
+            if (op.op_code == OP_CALL || op.op_code == OP_CALLCODE || op.op_code == OP_STATICCALL || op.op_code == OP_DELEGATECALL || op.op_code == OP_CREATE || op.op_code == OP_CREATE2) {
+                op.gas_cost += result.gas_cost;
+            }
+            op.trace_ex->used = result.gas_left;
             break;
     }
+
+    /* EVM WA: EVMONE add OP_STOP at the end of tx if not present but doesn't notify to the tracer. Add sw to add STOP to the op list */
+    if (result.status_code == EVMC_SUCCESS && last_opcode_ && last_opcode_ != OP_SELFDESTRUCT && last_opcode_ != OP_RETURN && last_opcode_ != OP_STOP) {
+        auto index_prefix = index_prefix_.top() + std::to_string(vm_trace.ops.size());
+        TraceOp trace_op;
+        trace_op.gas_cost = 0;
+        trace_op.idx = index_prefix;
+        trace_op.depth = op.depth;
+        trace_op.op_code = OP_STOP;
+        trace_op.op_name = get_opcode_name(opcode_names_, OP_STOP);
+        trace_op.pc = op.pc + 1;
+        trace_op.trace_ex = std::make_optional<struct TraceEx>();
+        trace_op.trace_ex->used = result.gas_left;
+
+        vm_trace.ops.push_back(trace_op);
+    }
+    index_prefix_.pop();
 }
 
 void VmTraceTracer::on_pre_check_failed(const evmc_result& /*result*/, const evmc_message& msg) noexcept {
@@ -788,10 +823,14 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         trace.trace_result->output.emplace();
         trace_action.input = silkworm::ByteView{msg.input_data, msg.input_size};
         trace_action.to = recipient;
-        bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
-                trace_action.call_type = in_static_mode ? "staticcall" : "call";
+                if (last_opcode_) {
+                    /* EVM WA: EVMONE doesn't set flags STATICCALL CALL bases, but if one CALL is static all the next calls are signalled STATIC in the same tx */
+                    trace_action.call_type = last_opcode_ == OP_STATICCALL ? "staticcall" : "call";
+                } else {
+                    trace_action.call_type = "call";
+                }
                 break;
             case evmc_call_kind::EVMC_DELEGATECALL:
                 trace_action.call_type = "delegatecall";
@@ -800,6 +839,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                 break;
             case evmc_call_kind::EVMC_CALLCODE:
                 trace_action.call_type = "callcode";
+                trace_action.to = code_address;
                 break;
             case evmc_call_kind::EVMC_CREATE:
             case evmc_call_kind::EVMC_CREATE2:
@@ -836,7 +876,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
-    current_opcode_ = opcode;
+    last_opcode_ = opcode;
 
     Trace& last_trace = traces_[traces_.size() - 1];
     last_trace.stack_height = stack_height;
@@ -925,7 +965,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            trace.error = "invalid opcode: opcode " + get_opcode_hex(current_opcode_.value_or(0)) + " not defined";
+            trace.error = "invalid opcode: opcode " + get_opcode_hex(last_opcode_.value_or(0)) + " not defined";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
@@ -948,7 +988,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             break;
     }
 
-    current_opcode_.reset();
+    last_opcode_.reset();
 
     SILK_DEBUG << "TraceTracer::on_execution_end:"
                << " result.status_code: " << result.status_code
@@ -1050,6 +1090,19 @@ silkworm::ByteView StateAddresses::get_code(const evmc::address& address) const 
     return initial_ibs_.get_code(address);
 }
 
+void StateAddresses::remove(const evmc::address& address) noexcept {
+    balances_.erase(address);
+    nonces_.erase(address);
+    codes_.erase(address);
+}
+
+bool StateAddresses::exists(const evmc::address& address) const noexcept {
+    if (balances_.contains(address) || nonces_.contains(address) || codes_.contains(address)) {
+        return true;
+    }
+    return initial_ibs_.exists(address);
+}
+
 void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
@@ -1114,7 +1167,7 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
 
     for (const auto& address : intra_block_state.touched()) {
         auto initial_exists = state_addresses_.exists(address);
-        auto exists = intra_block_state.exists(address);
+        auto exists = intra_block_state.exists(address) && !intra_block_state.is_self_destructed(address);
         auto& diff_storage = diff_storage_[address];
 
         auto address_key = address_to_hex(address);
@@ -1215,14 +1268,18 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
         << ", #touched: " << intra_block_state.touched().size();
 
     for (auto& address : intra_block_state.touched()) {
-        auto balance = intra_block_state.get_balance(address);
-        state_addresses_.set_balance(address, balance);
+        if (intra_block_state.exists(address) && !intra_block_state.is_self_destructed(address)) {
+            auto balance = intra_block_state.get_balance(address);
+            state_addresses_.set_balance(address, balance);
 
-        auto nonce = intra_block_state.get_nonce(address);
-        state_addresses_.set_nonce(address, nonce);
+            auto nonce = intra_block_state.get_nonce(address);
+            state_addresses_.set_nonce(address, nonce);
 
-        auto code = intra_block_state.get_code(address);
-        state_addresses_.set_code(address, code);
+            auto code = intra_block_state.get_code(address);
+            state_addresses_.set_code(address, code);
+        } else {
+            state_addresses_.remove(address);
+        }
     }
 }
 
@@ -1386,7 +1443,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
             tracers.push_back(ibs_tracer);
 
-            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/false);
             if (execution_result.pre_check_error) {
                 result.pre_check_error = execution_result.pre_check_error.value();
             } else {
@@ -1401,8 +1458,8 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
-    rpc::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
-    auto result = co_await execute(block.header.number, block, transaction, -1, config);
+    rpc::Transaction transaction{call.to_transaction()};
+    auto result = co_await execute(block.header.number, block, transaction, -1, config, true);
     co_return result;
 }
 
@@ -1428,7 +1485,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         for (size_t index{0}; index < calls.size(); index++) {
             const auto& config = calls[index].trace_config;
 
-            silkworm::Transaction transaction{calls[index].call.to_transaction(block.header.base_fee_per_gas)};
+            silkworm::Transaction transaction{calls[index].call.to_transaction()};
 
             Tracers tracers;
             TraceCallTraces traces;
@@ -1502,11 +1559,15 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     co_return deploy_result;
 }
 
-Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
+Task<TraceCallResult> TraceCallExecutor::trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
+    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, false);
+}
+
+Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction, bool gas_bailout) {
     std::vector<Trace> traces;
 
     const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
-                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false});
+                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false}, gas_bailout);
     const auto& trace_result = result.traces.trace;
 
     const auto tnx_hash = transaction.hash();
@@ -1643,20 +1704,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
 Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream) {
     SILK_TRACE << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
-    const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
-    if (!from_block_with_hash) {
-        const Error error{-32000, "invalid parameters: fromBlock not found"};
-        stream.write_json_field("error", error);
-        co_return;
-    }
-    const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.to_block);
-    if (!to_block_with_hash) {
-        const Error error{-32000, "invalid parameters: toBlock not found"};
-        stream.write_json_field("error", error);
-        co_return;
-    }
-
-    if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
+    if (trace_filter.from_block.number() > trace_filter.to_block.number()) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};
         stream.write_json_field("error", error);
         stream.write_json_field("result", nlohmann::json::value_t::null);
@@ -1672,24 +1720,39 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     filter.after = trace_filter.after;
     filter.count = trace_filter.count;
 
-    auto block_number = from_block_with_hash->block.header.number;
-    auto block_with_hash = from_block_with_hash;
-    while (block_number++ <= to_block_with_hash->block.header.number) {
-        const Block block{block_with_hash, {}, false};
-        SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
-                   << " block_number: " << block_number - 1
-                   << " block: " << block;
+    auto block_number = trace_filter.from_block.number();
+    std::shared_ptr<BlockWithHash> block_with_hash;
+    try {
+        block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
+    } catch (const std::invalid_argument& iv) {
+        block_with_hash = nullptr;
+    }
 
-        co_await trace_block(*block_with_hash, filter, &stream);
+    while (block_number <= trace_filter.to_block.number()) {
+        if (!block_with_hash) {
+            stream.open_object();
+            const std::string error_msg = "could not find block " + std::to_string(block_number);
+            const Error error{-32000, error_msg};
+            stream.write_json_field("error", error);
+            stream.close_object();
+        } else {
+            const Block block{block_with_hash, {}, false};
+            SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
+                       << " block_number: " << block_number - 1
+                       << " block: " << block;
 
-        if (filter.count == 0) {
-            break;
+            co_await trace_block(*block_with_hash, filter, &stream);
+
+            if (filter.count == 0) {
+                break;
+            }
         }
 
-        if (block_number == to_block_with_hash->block.header.number) {
-            block_with_hash = to_block_with_hash;
-        } else {
+        block_number++;
+        try {
             block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_number);
+        } catch (const std::invalid_argument& iv) {
+            block_with_hash = nullptr;
         }
     }
 
@@ -1705,7 +1768,8 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     const silkworm::Block& block,
     const rpc::Transaction& transaction,
     std::int32_t index,
-    const TraceConfig& config) {
+    const TraceConfig& config,
+    bool gas_bailout) {
     SILK_DEBUG << "execute: "
                << " block_number: " << std::dec << block_number
                << " transaction: {" << transaction << "}"
@@ -1727,7 +1791,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         EVMExecutor executor{chain_config, workers_, curr_state};
         for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
             silkworm::Transaction txn{block.transactions[idx]};
-            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);
             if (execution_result.pre_check_error) {
                 SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
             }
@@ -1753,7 +1817,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         if (index != -1) {
             traces.transaction_hash = transaction.hash();  // to have same behaviour as erigon, should be done PR on erigon
         }
-        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, gas_bailout);
 
         if (execution_result.pre_check_error) {
             result.pre_check_error = execution_result.pre_check_error.value();
@@ -1833,11 +1897,14 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         str_input = "0x" + silkworm::to_hex(code);
         result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
     } else {
-        const bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
-            case evmc_call_kind::EVMC_CALL:
-                in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
-                break;
+            case evmc_call_kind::EVMC_CALL: {
+                if (last_opcode_ == OP_STATICCALL) {
+                    result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input});
+                } else {
+                    result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+                }
+            } break;
             case evmc_call_kind::EVMC_DELEGATECALL:
                 result_.push_back(TraceEntry{"DELEGATECALL", msg.depth, recipient, code_address, "", str_input});
                 break;
@@ -1863,9 +1930,14 @@ void EntryTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size});
 }
 
+void EntryTracer::on_instruction_start(uint32_t pc, const intx::uint256* /* stack_top */, const int /* stack_height */, const int64_t /* gas */,
+                                       const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /* intra_block_state */) noexcept {
+    last_opcode_ = execution_state.original_code[pc];
+}
+
 void OperationTracer::on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept {
     auto balance = initial_ibs_.get_balance(address);
-    result_.push_back(InternalOperation{OperationType::OP_SELF_DESTRUCT, address, beneficiary, "0x" + intx::to_string(balance, 16)});
+    result_.push_back(InternalOperation{OperationType::kOpSelfDestruct, address, beneficiary, "0x" + intx::to_string(balance, 16)});
 }
 
 void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
@@ -1879,11 +1951,11 @@ void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg,
 
     if (msg.depth > 0) {
         if (msg.kind == evmc_call_kind::EVMC_CREATE) {
-            result_.push_back(InternalOperation{OperationType::OP_CREATE, sender, recipient, str_value});
+            result_.push_back(InternalOperation{OperationType::kOpCreate, sender, recipient, str_value});
         } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
-            result_.push_back(InternalOperation{OperationType::OP_CREATE2, sender, recipient, str_value});
+            result_.push_back(InternalOperation{OperationType::kOpCreate2, sender, recipient, str_value});
         } else if (msg.kind == evmc_call_kind::EVMC_CALL && intx::be::load<intx::uint256>(msg.value) > 0) {
-            result_.push_back(InternalOperation{OperationType::OP_TRANSFER, sender, recipient, str_value});
+            result_.push_back(InternalOperation{OperationType::kOpTransfer, sender, recipient, str_value});
         }
     }
 

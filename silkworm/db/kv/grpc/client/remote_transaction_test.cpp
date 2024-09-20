@@ -21,9 +21,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_predicate.hpp>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_matcher.hpp>
+
+#include "../test_util/sample_protos.hpp"
 
 namespace silkworm::db::kv::grpc::client {
 
@@ -31,7 +34,7 @@ using testing::_;
 namespace proto = ::remote;
 namespace test = rpc::test;
 
-struct RemoteTransactionTest : test_util::KVTestBase {
+struct RemoteTransactionTest : db::test_util::KVTestBase {
     api::CoherentStateCache state_cache_;
     RemoteTransaction remote_tx_{*stub_,
                                  grpc_context_,
@@ -56,7 +59,7 @@ bool ensure_fake_tx_created_view_id(const RemoteTransaction& remote_tx) {
 }
 
 #ifndef SILKWORM_SANITIZE
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("success") {
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
@@ -74,7 +77,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[rpc][ethdb]
         // Set the call expectations:
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call fails
         expect_request_async_tx(/*ok=*/false);
-        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_)).WillOnce(test::writes_done_failure(grpc_context_));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a transaction should raise an exception w/ expected gRPC status code
@@ -86,7 +91,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[rpc][ethdb]
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call fails
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_failure(grpc_context_));
-        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_)).WillOnce(test::writes_done_failure(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test: opening a transaction should raise an exception w/ expected gRPC status code
@@ -94,7 +101,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[rpc][ethdb]
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test: closing the transaction should throw
         CHECK_THROWS_AS(spawn_and_wait(remote_tx_.close()), boost::system::system_error);
@@ -193,7 +200,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[rpc][ethdb
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test: getting cursor from the transaction should throw
         CHECK_THROWS_AS(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error);
@@ -248,8 +255,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[rpc][ethd
             .WillOnce(test::read_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
-        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_))
+            .WillOnce(test::writes_done_failure(grpc_context_))
+            .WillOnce(test::writes_done_failure(grpc_context_));
+        // 5. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -276,7 +289,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[rpc][ethd
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -295,7 +310,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[rpc][ethd
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[db][kv][grpc][client][remote_transaction]") {
     SECTION("throw w/o open") {
         // Execute the test preconditions: none
 
@@ -355,8 +370,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
             .WillOnce(test::read_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
-        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
+        EXPECT_CALL(reader_writer_, WritesDone(_))
+            .WillOnce(test::writes_done_failure(grpc_context_))
+            .WillOnce(test::writes_done_failure(grpc_context_));
+        // 5. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -383,7 +404,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
-        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_cancelled(grpc_context_));
+        EXPECT_CALL(reader_writer_, Finish)
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_))
+            .WillOnce(test::finish_streaming_cancelled(grpc_context_));
 
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
@@ -403,8 +426,94 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 }
 #endif  // SILKWORM_SANITIZE
 
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_get", "[db][kv][grpc][client][remote_transaction]") {
+    using db::kv::test_util::sample_proto_domain_get_response;
+
+    auto domain_get = [&]() -> Task<api::DomainPointResult> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::DomainPointQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::DomainPointQuery query;
+        const api::DomainPointResult result = co_await remote_tx_.domain_get(std::move(query));
+#else
+        const api::DomainPointResult result = co_await remote_tx_.domain_get(api::DomainPointQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return result;
+    };
+
+    rpc::test::StrictMockAsyncResponseReader<proto::DomainGetReply> reader;
+    EXPECT_CALL(*stub_, AsyncDomainGetRaw).WillOnce(testing::Return(&reader));
+
+    api::DomainPointResult result;
+
+    SECTION("call domain_get and get result") {
+        proto::DomainGetReply reply{sample_proto_domain_get_response()};
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
+
+        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK(result.success);
+        CHECK(result.value == from_hex("ff00ff00"));
+    }
+    SECTION("call domain_get and get empty result") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
+
+        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK_FALSE(result.success);
+        CHECK(result.value.empty());
+    }
+    SECTION("call domain_get and get error") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
+
+        CHECK_THROWS_AS(spawn_and_wait(domain_get), boost::system::system_error);
+    }
+}
+
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_seek", "[db][kv][grpc][client][remote_transaction]") {
+    using db::kv::test_util::sample_proto_history_seek_response;
+
+    auto history_seek = [&]() -> Task<api::HistoryPointResult> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::HistoryPointQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::HistoryPointQuery query;
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(std::move(query));
+#else
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(api::HistoryPointQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return result;
+    };
+
+    rpc::test::StrictMockAsyncResponseReader<proto::HistorySeekReply> reader;
+    EXPECT_CALL(*stub_, AsyncHistorySeekRaw).WillOnce(testing::Return(&reader));
+
+    api::HistoryPointResult result;
+
+    SECTION("call history_seek and get result") {
+        proto::HistorySeekReply reply{sample_proto_history_seek_response()};
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
+
+        CHECK_NOTHROW((result = spawn_and_wait(history_seek)));
+        CHECK(result.success);
+        CHECK(result.value == from_hex("ff00ff00"));
+    }
+    SECTION("call history_seek and get empty result") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
+
+        CHECK_NOTHROW((result = spawn_and_wait(history_seek)));
+        CHECK_FALSE(result.success);
+        CHECK(result.value.empty());
+    }
+    SECTION("call history_seek and get error") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
+
+        CHECK_THROWS_AS(spawn_and_wait(history_seek), boost::system::system_error);
+    }
+}
+
 static ::remote::IndexRangeReply make_index_range_reply(const api::ListOfTimestamp& timestamps, bool has_more) {
-    ::remote::IndexRangeReply reply;
+    proto::IndexRangeReply reply;
     for (const auto ts : timestamps) {
         reply.add_timestamps(static_cast<uint64_t>(ts));
     }
@@ -412,7 +521,7 @@ static ::remote::IndexRangeReply make_index_range_reply(const api::ListOfTimesta
     return reply;
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc][ethdb][kv][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][kv][grpc][client][remote_transaction]") {
     auto flatten_index_range = [&]() -> Task<api::ListOfTimestamp> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
         // Before GCC 13, we must avoid passing api::IndexRangeQuery as temporary because co_await-ing expressions
@@ -431,7 +540,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc]
         // 1. remote::KV::StubInterface::AsyncIndexRangeRaw call succeeds
         EXPECT_CALL(*stub_, AsyncIndexRangeRaw).WillOnce(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call fails
-        EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, ::remote::IndexRangeReply{}));
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::IndexRangeReply{}));
         // Execute the test: trying to *use* index_range lazy result should throw
         CHECK_THROWS_AS(spawn_and_wait(flatten_index_range), boost::system::system_error);
     }
@@ -487,6 +596,188 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[rpc]
 
         // Execute the test: call index_range and flatten the data matches the expected data
         CHECK(spawn_and_wait(flatten_index_range) == api::ListOfTimestamp{1, 2, 3, 4, 5, 6, 7});
+
+        // Execute the test postconditions:
+        // close the transaction succeeds
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
+    }
+}
+
+static proto::Pairs make_key_value_range_reply(const std::vector<api::KeyValue>& keys_and_values, bool has_more) {
+    proto::Pairs reply;
+    for (const auto& kv : keys_and_values) {
+        reply.add_keys(bytes_to_string(kv.key));
+        reply.add_values(bytes_to_string(kv.value));
+    }
+    reply.set_next_page_token(has_more ? "token" : "");
+    return reply;
+}
+
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db][kv][grpc][client][remote_transaction]") {
+    const api::KeyValue kv1{*from_hex("0011FF0011AA"), *from_hex("0011")};
+    const api::KeyValue kv2{*from_hex("0011FF0011BB"), *from_hex("0022")};
+    const api::KeyValue kv3{*from_hex("0011FF0011CC"), *from_hex("0033")};
+
+    auto flatten_history_range = [&]() -> Task<std::vector<api::KeyValue>> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::HistoryRangeQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::HistoryRangeQuery query;
+        auto paginated_keys_and_values = co_await remote_tx_.history_range(std::move(query));
+#else
+        auto paginated_keys_and_values = co_await remote_tx_.history_range(api::HistoryRangeQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return co_await paginated_to_vector(paginated_keys_and_values);
+    };
+    rpc::test::StrictMockAsyncResponseReader<proto::Pairs> reader;
+    SECTION("throw on error") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillOnce(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call fails
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::Pairs{}));
+        // Execute the test: trying to *use* index_range lazy result should throw
+        CHECK_THROWS_AS(spawn_and_wait(flatten_history_range), boost::system::system_error);
+    }
+    SECTION("success: empty") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call succeeds 3 times
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({}, /*has_more*/ false)));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_history_range).empty());
+    }
+    SECTION("success: one page") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call succeeds
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1}, /*has_more*/ false)));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_history_range) == std::vector<api::KeyValue>{kv1});
+    }
+    SECTION("success: more than one page") {
+        // Set the call expectations: [just once let's do the whole procedure by calling Tx first]
+        // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
+        expect_request_async_tx(/*ok=*/true);
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
+        remote::Pair tx_id_pair{make_fake_tx_created_pair()};
+        remote::Pair cursor_id_pair;
+        cursor_id_pair.set_cursor_id(0x23);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
+        EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
+        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
+        // 5. remote::KV::StubInterface::AsyncHistoryRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncHistoryRangeRaw).WillRepeatedly(Return(&reader));
+        // 6. AsyncResponseReader<>::Finish call succeeds 3 times
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1, kv2}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv2, kv1}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv3}, /*has_more*/ false)));
+
+        // Execute the test preconditions:
+        // open a new transaction w/ expected transaction ID
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_history_range) == std::vector<api::KeyValue>{kv1, kv2, kv2, kv1, kv3});
+
+        // Execute the test postconditions:
+        // close the transaction succeeds
+        CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
+    }
+}
+
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db][kv][grpc][client][remote_transaction]") {
+    const api::KeyValue kv1{*from_hex("0011FF0011AA"), *from_hex("0011")};
+    const api::KeyValue kv2{*from_hex("0011FF0011BB"), *from_hex("0022")};
+    const api::KeyValue kv3{*from_hex("0011FF0011CC"), *from_hex("0033")};
+
+    auto flatten_domain_range = [&]() -> Task<std::vector<api::KeyValue>> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::DomainRangeQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::DomainRangeQuery query;
+        auto paginated_keys_and_values = co_await remote_tx_.domain_range(std::move(query));
+#else
+        auto paginated_keys_and_values = co_await remote_tx_.domain_range(api::DomainRangeQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return co_await paginated_to_vector(paginated_keys_and_values);
+    };
+    rpc::test::StrictMockAsyncResponseReader<proto::Pairs> reader;
+    SECTION("throw on error") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillOnce(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call fails
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::Pairs{}));
+        // Execute the test: trying to *use* index_range lazy result should throw
+        CHECK_THROWS_AS(spawn_and_wait(flatten_domain_range), boost::system::system_error);
+    }
+    SECTION("success: empty") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call succeeds 3 times
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({}, /*has_more*/ false)));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_domain_range).empty());
+    }
+    SECTION("success: one page") {
+        // Set the call expectations:
+        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 2. AsyncResponseReader<>::Finish call succeeds
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1}, /*has_more*/ false)));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_domain_range) == std::vector<api::KeyValue>{kv1});
+    }
+    SECTION("success: more than one page") {
+        // Set the call expectations: [just once let's do the whole procedure by calling Tx first]
+        // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
+        expect_request_async_tx(/*ok=*/true);
+        // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
+        remote::Pair tx_id_pair{make_fake_tx_created_pair()};
+        remote::Pair cursor_id_pair;
+        cursor_id_pair.set_cursor_id(0x23);
+        EXPECT_CALL(reader_writer_, Read)
+            .WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
+        // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
+        EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
+        // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
+        EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
+        // 5. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 6. AsyncResponseReader<>::Finish call succeeds 3 times
+        EXPECT_CALL(reader, Finish)
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1, kv2}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv2, kv1}, /*has_more*/ true)))
+            .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv3}, /*has_more*/ false)));
+
+        // Execute the test preconditions:
+        // open a new transaction w/ expected transaction ID
+        REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
+        REQUIRE(ensure_fake_tx_created_tx_id(remote_tx_));
+        REQUIRE(ensure_fake_tx_created_view_id(remote_tx_));
+
+        // Execute the test: call index_range and flatten the data matches the expected data
+        CHECK(spawn_and_wait(flatten_domain_range) == std::vector<api::KeyValue>{kv1, kv2, kv2, kv1, kv3});
 
         // Execute the test postconditions:
         // close the transaction succeeds

@@ -33,8 +33,6 @@ namespace silkworm::sentry::rlpx::auth {
 
 using namespace silkworm::sentry::crypto::ecdsa_signature;
 
-const uint8_t AuthMessage::version = 4;
-
 AuthMessage::AuthMessage(
     const EccKeyPair& initiator_key_pair,
     EccPublicKey recipient_public_key,
@@ -72,7 +70,7 @@ AuthMessage::AuthMessage(ByteView data, const EccKeyPair& recipient_key_pair)
 
 Bytes AuthMessage::body_as_rlp() const {
     Bytes data;
-    rlp::encode(data, signature_, initiator_public_key_.serialized(), nonce_, version);
+    rlp::encode(data, signature_, initiator_public_key_.serialized(), nonce_, kVersion);
     return data;
 }
 

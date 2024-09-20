@@ -54,8 +54,8 @@ inline bool has_hex_prefix(std::string_view s) {
 }
 
 inline bool is_valid_hex(std::string_view s) {
-    static const std::regex hexRegex("^0x[0-9a-fA-F]+$");
-    return std::regex_match(s.data(), hexRegex);
+    static const std::regex kHexRegex("^0x[0-9a-fA-F]+$");
+    return std::regex_match(s.data(), kHexRegex);
 }
 
 inline bool is_valid_hash(std::string_view s) {
@@ -182,5 +182,7 @@ inline std::ostream& operator<<(std::ostream& out, const Bytes& bytes) {
 }
 
 float to_float(const intx::uint256&) noexcept;
+
+std::string snake_to_camel(std::string_view snake);
 
 }  // namespace silkworm

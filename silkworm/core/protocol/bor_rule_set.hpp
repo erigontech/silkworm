@@ -38,6 +38,8 @@ class BorRuleSet : public RuleSet {
                               const intx::uint256& sender_initial_balance, const evmc::address& recipient,
                               const intx::uint256& recipient_initial_balance) override;
 
+    TransferFunc* transfer_func() const override;
+
   protected:
     ValidationResult validate_extra_data(const BlockHeader& header) const override;
 

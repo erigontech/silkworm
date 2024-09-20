@@ -22,6 +22,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/test_util/hex.hpp>
 #include <silkworm/interfaces/remote/kv.pb.h>
 
 #include "../../api/endpoint/temporal_point.hpp"
@@ -30,14 +31,7 @@
 namespace silkworm::db::kv::test_util {
 
 namespace proto = ::remote;
-
-inline std::string ascii_from_hex(const std::string& hex) {
-    const std::optional<Bytes> bytes{from_hex(hex)};
-    if (!bytes) {
-        throw std::runtime_error{"ascii_from_hex"};
-    }
-    return std::string{byte_view_to_string_view(*bytes)};
-}
+using silkworm::test_util::ascii_from_hex;
 
 inline api::HistoryPointQuery sample_history_point_query() {
     return {
@@ -48,19 +42,19 @@ inline api::HistoryPointQuery sample_history_point_query() {
     };
 }
 
-inline proto::HistoryGetReq sample_proto_history_point_request() {
-    proto::HistoryGetReq request;
+inline proto::HistorySeekReq sample_proto_history_seek_request() {
+    proto::HistorySeekReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
-    request.set_k("0011ff");
+    request.set_k(ascii_from_hex("0011ff"));
     request.set_ts(1234567);
     return request;
 }
 
-inline proto::HistoryGetReply sample_proto_history_get_response() {
-    proto::HistoryGetReply response;
+inline proto::HistorySeekReply sample_proto_history_seek_response() {
+    proto::HistorySeekReply response;
     response.set_ok(true);
-    response.set_v("ff00ff00");
+    response.set_v(ascii_from_hex("ff00ff00"));
     return response;
 }
 
@@ -85,16 +79,16 @@ inline proto::DomainGetReq sample_proto_domain_point_request() {
     proto::DomainGetReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
-    request.set_k("0011ff");
+    request.set_k(ascii_from_hex("0011ff"));
     request.set_ts(1234567);
-    request.set_k2("001122");
+    request.set_k2(ascii_from_hex("001122"));
     return request;
 }
 
 inline proto::DomainGetReply sample_proto_domain_get_response() {
     proto::DomainGetReply response;
     response.set_ok(true);
-    response.set_v("ff00ff00");
+    response.set_v(ascii_from_hex("ff00ff00"));
     return response;
 }
 
@@ -188,10 +182,10 @@ inline proto::HistoryRangeReq sample_proto_history_range_request() {
 
 inline proto::Pairs sample_proto_history_range_response() {
     proto::Pairs response;
-    response.add_keys("00110011AA");
-    response.add_keys("00110011BB");
-    response.add_values("00110011EE");
-    response.add_values("00110011FF");
+    response.add_keys(bytes_to_string(*from_hex("00110011AA")));
+    response.add_keys(bytes_to_string(*from_hex("00110011BB")));
+    response.add_values(bytes_to_string(*from_hex("00110011EE")));
+    response.add_values(bytes_to_string(*from_hex("00110011FF")));
     response.set_next_page_token("token2");
     return response;
 }
@@ -210,6 +204,7 @@ inline api::DomainRangeQuery sample_domain_range_query() {
         .table = "AAA",
         .from_key = {0x00, 0x11, 0xaa},
         .to_key = {0x00, 0x11, 0xff},
+        .timestamp = 180'000'000,
         .ascending_order = true,
         .limit = 1'000,
         .page_size = 100,
@@ -229,6 +224,7 @@ inline proto::DomainRangeReq sample_proto_domain_range_request() {
     request.set_table("AAA");
     request.set_from_key(ascii_from_hex("0011aa"));
     request.set_to_key(ascii_from_hex("0011ff"));
+    request.set_ts(180'000'000);
     request.set_order_ascend(true);
     request.set_limit(1'000);
     request.set_page_size(100);

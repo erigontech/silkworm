@@ -23,7 +23,7 @@
 
 static silkworm::rpc::json_rpc::Validator validator{};
 
-const nlohmann::json requests[2] = {
+const nlohmann::json kRequests[2] = {
     {
         {"jsonrpc", "2.0"},
         {"method", "eth_getBlockByNumber"},
@@ -40,8 +40,7 @@ const nlohmann::json requests[2] = {
                 }}}}};
 
 static void json_rpc_validator(benchmark::State& state) {
-    nlohmann::json json = requests[state.range(0)];
-
+    nlohmann::json json = kRequests[state.range(0)];
     for ([[maybe_unused]] auto _ : state) {
         validator.validate(json);
     }

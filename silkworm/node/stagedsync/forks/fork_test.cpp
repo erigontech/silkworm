@@ -21,13 +21,13 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
-#include <silkworm/node/test_util/sample_blocks.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 #include "main_chain.hpp"
@@ -39,7 +39,9 @@ using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
 
-class Fork_ForTest : public Fork {
+using execution::api::ValidChain;
+
+class ForkForTest : public Fork {
   public:
     using Fork::canonical_chain_;
     using Fork::current_head_;
@@ -60,17 +62,27 @@ TEST_CASE("Fork") {
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
-    PreverifiedHashes::current.clear();                           // disable preverified hashes
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    MainChain main_chain{io, node_settings, db_access};
+
+    BodiesStageFactory bodies_stage_factory = [&](SyncContext* sync_context) {
+        return std::make_unique<BodiesStage>(sync_context, *node_settings.chain_config, [] { return 0; });
+    };
+
+    MainChain main_chain{
+        io.get_executor(),
+        node_settings,
+        /* log_timer_factory = */ std::nullopt,
+        std::move(bodies_stage_factory),
+        db_access,
+    };
 
     main_chain.open();
     auto& tx = main_chain.tx();
 
-    auto header0_hash = db::read_canonical_hash(tx, 0);
+    auto header0_hash = db::read_canonical_header_hash(tx, 0);
     REQUIRE(header0_hash.has_value());
 
     auto header0 = db::read_canonical_header(tx, 0);
@@ -115,9 +127,13 @@ TEST_CASE("Fork") {
 
                 BlockId forking_point = main_chain.last_chosen_head();
 
-                Fork_ForTest fork{forking_point,
-                                  db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
-                                  node_settings};
+                ForkForTest fork{
+                    forking_point,
+                    db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                    /* log_timer_factory = */ std::nullopt,
+                    main_chain.bodies_stage_factory(),
+                    node_settings,
+                };
 
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);

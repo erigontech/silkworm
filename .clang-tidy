@@ -1,5 +1,5 @@
 FormatStyle: file
-HeaderFilterRegex: 'silkworm/(capi|core|infra|node|rpc|sentry|sync|wasm)/.+\.hpp$'
+HeaderFilterRegex: 'silkworm/(capi|core|db|execution|infra|node|rpc|sentry|sync|wasm)/.+\.hpp$'
 WarningsAsErrors: '*'
 Checks: >
   abseil-*,
@@ -9,11 +9,16 @@ Checks: >
   -bugprone-empty-catch,
   -bugprone-exception-escape,
   -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-suspicious-stringview-data-usage,
   -bugprone-unchecked-optional-access,
   -bugprone-unused-raii,
+  -bugprone-unused-return-value,
   cert-*,
   -cert-dcl21-cpp,
+  -cert-dcl58-cpp,
+  -cert-err33-c,
   -cert-err58-cpp,
+  -cert-int09-c,
   -clang-analyzer-*,
   clang-diagnostic-*,
   concurrency-*,
@@ -39,56 +44,59 @@ Checks: >
   google-*,
   -google-build-using-namespace,
   -google-readability-braces-around-statements,
-  -google-readability-namespace-comments,
   -google-readability-todo,
-  -google-runtime-int,
   hicpp-*,
   -hicpp-avoid-c-arrays,
   -hicpp-braces-around-statements,
   -hicpp-named-parameter,
   -hicpp-no-array-decay,
-  -hicpp-no-malloc,
   -hicpp-signed-bitwise,
   -hicpp-uppercase-literal-suffix,
-  -hicpp-use-override,
   -hicpp-vararg,
   -hicpp-special-member-functions,
   misc-*,
   -misc-const-correctness,
   -misc-no-recursion,
   -misc-non-private-member-variables-in-classes,
-  -misc-redundant-expression,
-  -misc-unused-using-decls,
   -misc-use-anonymous-namespace,
+  -misc-use-internal-linkage,
   -misc-include-cleaner,
   modernize-*,
   -modernize-avoid-c-arrays,
-  -modernize-macro-to-enum,
+  -modernize-use-designated-initializers,
   -modernize-use-nodiscard,
-  -modernize-use-using,
-  -modernize-use-default-member-init,
   -modernize-use-trailing-return-type,
-  -modernize-use-transparent-functors,
   performance-*,
   -performance-avoid-endl,
   -performance-enum-size,
   portability-*,
   readability-*,
-  -readability-avoid-nested-conditional-operator,
   -readability-braces-around-statements,
   -readability-container-data-pointer,
   -readability-convert-member-functions-to-static,
-  -readability-else-after-return,
   -readability-function-cognitive-complexity,
   -readability-identifier-length,
   -readability-implicit-bool-conversion,
   -readability-isolate-declaration,
   -readability-magic-numbers,
+  -readability-math-missing-parentheses,
   -readability-named-parameter,
   -readability-qualified-auto,
-  -readability-redundant-inline-specifier,
   -readability-redundant-member-init,
-  -readability-redundant-smartptr-get,
-  -readability-simplify-boolean-expr,
   -readability-suspicious-call-argument,
   -readability-uppercase-literal-suffix
+CheckOptions:
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.ClassIgnoredRegexp: buildinfo|glaze
+  readability-identifier-naming.ClassMethodCase: lower_case
+  readability-identifier-naming.ConstexprVariableCase: CamelCase
+  readability-identifier-naming.ConstexprVariablePrefix: k
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: CamelCase
+  readability-identifier-naming.EnumConstantPrefix: k
+  readability-identifier-naming.GlobalConstantCase: CamelCase
+  readability-identifier-naming.GlobalConstantPrefix: k
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.StaticConstantCase: CamelCase
+  readability-identifier-naming.StaticConstantPrefix: k
+  readability-simplify-boolean-expr.SimplifyDeMorgan: false

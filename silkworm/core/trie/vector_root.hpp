@@ -30,11 +30,11 @@ namespace silkworm::trie {
 inline size_t adjust_index_for_rlp(size_t i, size_t len) {
     if (i > 0x7f) {
         return i;
-    } else if (i == 0x7f || i + 1 == len) {
-        return 0;
-    } else {
-        return i + 1;
     }
+    if (i == 0x7f || i + 1 == len) {
+        return 0;
+    }
+    return i + 1;
 }
 
 // Trie root hash of RLP-encoded values, the keys are RLP-encoded integers.

@@ -37,7 +37,7 @@ std::optional<Account> InMemoryState::read_account(const evmc::address& address)
     return it->second;
 }
 
-ByteView InMemoryState::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView InMemoryState::read_code(const evmc::address& /*address*/, const evmc::bytes32& code_hash) const noexcept {
     auto it{code_.find(code_hash)};
     if (it == code_.end()) {
         return {};
@@ -123,7 +123,7 @@ void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) 
     BlockNum block_number{block.header.number};
 
     headers_[block_number][hash] = block.header;
-    bodies_[block_number][hash] = static_cast<BlockBody>(block);  // NOLINT(cppcoreguidelines-slicing)
+    bodies_[block_number][hash] = block.copy_body();
     if (block_number == 0) {
         difficulty_[block_number][hash] = 0;
     } else {

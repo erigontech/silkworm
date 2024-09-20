@@ -49,7 +49,7 @@ Task<size_t> lookup(
 
     size_t total_neighbors = 0;
     auto group_task_factory = [&](size_t index) -> Task<void> {
-        auto node_id = node_ids[index];
+        const auto& node_id = node_ids[index];
         try {
             total_neighbors += co_await find_neighbors(node_id, local_node_id, message_sender, on_neighbors_signal, db);
         } catch (const boost::system::system_error& ex) {

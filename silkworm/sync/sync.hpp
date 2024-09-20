@@ -24,10 +24,11 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/execution/api/client.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/execution/api/client.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
@@ -46,12 +47,15 @@ class Sync {
          execution::api::Client& execution,
          const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
          const ChainConfig& config,
+         bool use_preverified_hashes,
          const EngineRpcSettings& rpc_settings = {});
 
     Sync(const Sync&) = delete;
     Sync& operator=(const Sync&) = delete;
 
     Task<void> async_run();
+
+    BlockNum last_pre_validated_block() const;
 
   private:
     Task<void> run_tasks();

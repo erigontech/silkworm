@@ -32,10 +32,20 @@
 
 namespace silkworm::rpc::test {
 
-inline db::kv::api::PaginatedTimestamps::Paginator empty_paginator(db::kv::api::IndexRangeQuery&& query) {
-    return [query = std::move(query)]() mutable -> Task<db::kv::api::PaginatedTimestamps::PageResult> {
-        co_return db::kv::api::PaginatedTimestamps::PageResult{};
+template <typename Paginated>
+inline Paginated empty_paginated_sequence() {
+    auto paginator = []() -> Task<typename Paginated::PageResult> {
+        co_return typename Paginated::PageResult{};
     };
+    return Paginated{paginator};
+}
+
+inline db::kv::api::PaginatedTimestamps empty_paginated_timestamps() {
+    return empty_paginated_sequence<db::kv::api::PaginatedTimestamps>();
+}
+
+inline db::kv::api::PaginatedKeysValues empty_paginated_keys_and_values() {
+    return empty_paginated_sequence<db::kv::api::PaginatedKeysValues>();
 }
 
 //! This dummy transaction just gives you the same cursor over and over again.
@@ -70,8 +80,29 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
 
     Task<void> close() override { co_return; }
 
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
-        co_return db::kv::api::PaginatedTimestamps{empty_paginator(std::move(query))};
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery&& /*query*/) override {
+        co_return db::kv::api::DomainPointResult{};
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery&& /*query*/) override {
+        co_return db::kv::api::HistoryPointResult{};
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& /*query*/) override {
+        co_return empty_paginated_timestamps();
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery&& /*query*/) override {
+        co_return empty_paginated_keys_and_values();
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_keys_and_values();
     }
 
   private:

@@ -33,7 +33,6 @@
 namespace silkworm::rpc {
 
 using evmc::literals::operator""_address;
-using evmc::literals::operator""_bytes32;
 
 ::types::H160* make_h160(uint64_t hi_hi, uint64_t hi_lo, uint32_t lo) {
     auto h128_ptr{new ::types::H128()};
@@ -318,7 +317,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc]
     const auto transaction{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
     const NewPayloadRequest request_v1{
         .execution_payload = ExecutionPayload{
-            .version = ExecutionPayload::V1,
+            .version = ExecutionPayload::kV1,
             .timestamp = 0x5,
             .gas_limit = 0x1c9c380,
             .gas_used = 0x9,
@@ -335,7 +334,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc]
     };
     const NewPayloadRequest request_v2_no_w{
         .execution_payload = ExecutionPayload{
-            .version = ExecutionPayload::V2,
+            .version = ExecutionPayload::kV2,
             .timestamp = 0x5,
             .gas_limit = 0x1c9c380,
             .gas_used = 0x9,
@@ -353,7 +352,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc]
     };
     const NewPayloadRequest request_v2_w{
         .execution_payload = ExecutionPayload{
-            .version = ExecutionPayload::V2,
+            .version = ExecutionPayload::kV2,
             .timestamp = 0x5,
             .gas_limit = 0x1c9c380,
             .gas_used = 0x9,

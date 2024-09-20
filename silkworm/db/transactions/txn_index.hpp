@@ -23,13 +23,13 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/etl/collector.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/path.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {
 
 struct TransactionKeyFactory : IndexKeyFactory {
-    TransactionKeyFactory(uint64_t first_tx_id) : first_tx_id_(first_tx_id) {}
+    explicit TransactionKeyFactory(uint64_t first_tx_id) : first_tx_id_(first_tx_id) {}
     ~TransactionKeyFactory() override = default;
 
     Bytes make(ByteView key_data, uint64_t i) override;

@@ -87,7 +87,7 @@ class BodySequence {
     [[nodiscard]] size_t ready_bodies() const;
     [[nodiscard]] size_t requests() const;
 
-    [[nodiscard]] const Download_Statistics& statistics() const;
+    [[nodiscard]] const DownloadStatistics& statistics() const;
 
     // downloading process tuning parameters
     static constexpr size_t kMaxInMemoryRequests = 400000;
@@ -142,7 +142,7 @@ class BodySequence {
     BlockNum target_height_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};
-    Download_Statistics statistics_;
+    DownloadStatistics statistics_;
     std::string retrieval_condition_;
 };
 

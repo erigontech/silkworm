@@ -23,13 +23,13 @@
 
 namespace silkworm::db::etl {
 
-class etl_error : public std::runtime_error {
+class EtlError : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;
 };
 
 // Head of each data chunk on file
-union head_t {
+union EntryHeader {
     uint32_t lengths[2];
     uint8_t bytes[8];
 };

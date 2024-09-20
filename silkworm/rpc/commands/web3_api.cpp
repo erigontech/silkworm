@@ -42,7 +42,7 @@ Task<void> Web3RpcApi::handle_web3_client_version(const nlohmann::json& request,
 
 // https://eth.wiki/json-rpc/API#web3_sha3
 Task<void> Web3RpcApi::handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid web3_sha3 params: " + params.dump();
         SILK_ERROR << error_msg;

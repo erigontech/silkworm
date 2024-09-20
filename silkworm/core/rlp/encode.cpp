@@ -33,9 +33,8 @@ void encode_header(Bytes& to, Header header) {
 size_t length_of_length(uint64_t payload_length) noexcept {
     if (payload_length < 56) {
         return 1;
-    } else {
-        return 1 + intx::count_significant_bytes(payload_length);
     }
+    return 1 + intx::count_significant_bytes(payload_length);
 }
 
 void encode(Bytes& to, bool x) {

@@ -56,21 +56,21 @@ TEST_CASE("DataDirectory::from_chaindata") {
     {
         DataDirectory data_dir{DataDirectory::from_chaindata(fake_path)};
         REQUIRE_NOTHROW(data_dir.deploy());
-        REQUIRE(data_dir.etl().is_empty());
+        REQUIRE(data_dir.temp().is_empty());
 
         // Drop a file into etl temp
         {
-            std::string filename{data_dir.etl().path().string() + "/fake.txt"};
+            std::string filename{data_dir.temp().path().string() + "/fake.txt"};
             std::ofstream f(filename.c_str());
             f << "Some fake text" << std::flush;
             f.close();
         }
-        std::filesystem::path etl_subpath{data_dir.etl().path() / "subdir"};
+        std::filesystem::path etl_subpath{data_dir.temp().path() / "subdir"};
         std::filesystem::create_directories(etl_subpath);
-        REQUIRE_FALSE(data_dir.etl().is_empty());
-        REQUIRE(data_dir.etl().size() != 0);
-        data_dir.etl().clear();
-        REQUIRE(data_dir.etl().is_empty());
+        REQUIRE_FALSE(data_dir.temp().is_empty());
+        REQUIRE(data_dir.temp().size() != 0);
+        data_dir.temp().clear();
+        REQUIRE(data_dir.temp().is_empty());
     }
 }
 

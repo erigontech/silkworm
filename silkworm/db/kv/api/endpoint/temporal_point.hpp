@@ -41,7 +41,7 @@ struct DomainPointQuery {
     TxId tx_id{0};
     std::string table;
     Bytes key;
-    std::optional<Timestamp> timestamp{0};  // not present means 'latest state' (no history lookup)
+    std::optional<Timestamp> timestamp;  // not present means 'latest state' (no history lookup)
     Bytes sub_key;
 };
 

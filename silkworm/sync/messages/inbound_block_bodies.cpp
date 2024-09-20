@@ -34,7 +34,7 @@ void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, S
 
     Penalty penalty = bs.accept_requested_bodies(packet_, peerId_);
 
-    if (penalty != Penalty::NoPenalty) {
+    if (penalty != Penalty::kNoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
         SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
         try {

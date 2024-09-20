@@ -44,9 +44,8 @@ static std::vector<Entry> generate_entry_set(size_t size) {
         if (keys.contains(key)) {
             // we want unique keys
             continue;
-        } else {
-            keys.insert(key);
         }
+        keys.insert(key);
         if (pairs.size() % 100) {
             Bytes value(8, '\0');
             endian::store_big_u64(&value[0], rnd.generate_one());
@@ -70,7 +69,7 @@ void run_collector_test(const etl_mdbx::LoadFunc& load_func, bool do_copy = true
     }
 
     // expect 10 files
-    etl_mdbx::Collector collector{context.dir().etl().path(), generated_size / 10};
+    etl_mdbx::Collector collector{context.dir().temp().path(), generated_size / 10};
 
     // Collection
     for (auto&& entry : set) {
@@ -80,7 +79,7 @@ void run_collector_test(const etl_mdbx::LoadFunc& load_func, bool do_copy = true
             collector.collect(std::move(entry));
     }
     // Check whether temporary files were generated
-    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 10);
+    CHECK(std::distance(fs::directory_iterator{context.dir().temp().path()}, fs::directory_iterator{}) == 10);
     CHECK(collector.bytes_size() == (generated_size - 8 * set.size()));
 
     // Load data while reading loading key from another thread
@@ -96,7 +95,7 @@ void run_collector_test(const etl_mdbx::LoadFunc& load_func, bool do_copy = true
     db::PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
     collector.load(to, load_func);
     // Check whether temporary files were cleaned
-    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 0);
+    CHECK(std::distance(fs::directory_iterator{context.dir().temp().path()}, fs::directory_iterator{}) == 0);
     key_reader_thread.join();
 }
 

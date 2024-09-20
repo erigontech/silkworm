@@ -26,10 +26,9 @@
 #include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/client/reconnect.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 
 #include "endpoint/state_change.hpp"
-#include "endpoint/temporal_point.hpp"
-#include "endpoint/temporal_range.hpp"
 #include "remote_transaction.hpp"
 
 namespace silkworm::db::kv::grpc::client {
@@ -135,38 +134,6 @@ class RemoteClientImpl final : public api::Service {
             const auto timeout = rpc::backoff_timeout(attempt++, min_backoff_timeout_.count(), max_backoff_timeout_.count());
             co_await sleep(std::chrono::milliseconds(timeout));
         }
-    }
-
-    /** Temporal Point Queries **/
-
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-    Task<api::HistoryPointResult> get_history(const api::HistoryPointQuery& query) override {
-        auto request = history_get_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryGet, *stub_, std::move(request), grpc_context_);
-        co_return history_get_result_from_response(reply);
-    }
-
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    Task<api::DomainPointResult> get_domain(const api::DomainPointQuery& query) override {
-        auto request = domain_get_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainGet, *stub_, std::move(request), grpc_context_);
-        co_return domain_get_result_from_response(reply);
-    }
-
-    /** Temporal Range Queries **/
-
-    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<api::HistoryRangeResult> get_history_range(const api::HistoryRangeQuery& query) override {
-        auto request = history_range_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, *stub_, std::move(request), grpc_context_);
-        co_return history_range_result_from_response(reply);
-    }
-
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    Task<api::DomainRangeResult> get_domain_range(const api::DomainRangeQuery& query) override {
-        auto request = domain_range_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, *stub_, std::move(request), grpc_context_);
-        co_return domain_range_result_from_response(reply);
     }
 
     void set_min_backoff_timeout(const std::chrono::milliseconds& min_backoff_timeout) {

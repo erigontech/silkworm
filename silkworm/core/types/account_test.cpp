@@ -85,4 +85,64 @@ TEST_CASE("Decode account from storage") {
     }
 }
 
+TEST_CASE("Decode account from storage V3") {
+    SECTION("Correct payload") {
+        Bytes encoded{*from_hex("01020203e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
+        const auto decoded{Account::from_encoded_storage_v3(encoded)};
+        REQUIRE(decoded);
+
+        CHECK(decoded->nonce == 2);
+        CHECK(decoded->balance == 1000);
+        CHECK(decoded->code_hash == 0xf1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239_bytes32);
+        CHECK(decoded->incarnation == 5);
+    }
+
+    SECTION("Empty payload") {
+        Bytes encoded{};
+        const auto decoded{Account::from_encoded_storage_v3(encoded)};
+        REQUIRE(decoded);
+
+        CHECK(decoded->nonce == 0);
+        CHECK(decoded->balance == 0);
+        CHECK(decoded->code_hash == kEmptyHash);
+        CHECK(decoded->incarnation == 0);
+    }
+
+    SECTION("Insufficient zero byte payload") {
+        std::vector<std::string_view> encoded_sequence{"00", "0000", "000000"};
+        for (const auto encoded_payload : encoded_sequence) {
+            Bytes encoded{*from_hex(encoded_payload)};
+            CHECK(Account::from_encoded_storage_v3(encoded) == tl::unexpected{DecodingError::kUnexpectedLength});
+        }
+    }
+
+    SECTION("All zero byte payload") {
+        Bytes encoded{*from_hex("00000000")};
+        CHECK(Account::from_encoded_storage_v3(encoded));
+    }
+
+    SECTION("Too short payload") {
+        std::vector<std::string_view> encoded_sequence{
+            "0f",
+            "0102",
+            "01020203e8",
+            "0805c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4",
+        };
+        for (const auto encoded_payload : encoded_sequence) {
+            Bytes encoded{*from_hex(encoded_payload)};
+            CHECK(Account::from_encoded_storage_v3(encoded) == tl::unexpected{DecodingError::kInputTooShort});
+        }
+    }
+
+    SECTION("Wrong nonce payload") {
+        Bytes encoded{*from_hex("020001")};
+        CHECK(Account::from_encoded_storage_v3(encoded) == tl::unexpected{DecodingError::kLeadingZero});
+    }
+
+    SECTION("Wrong code_hash payload") {
+        Bytes encoded{*from_hex("01020203e822f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
+        CHECK(Account::from_encoded_storage_v3(encoded) == tl::unexpected{DecodingError::kUnexpectedLength});
+    }
+}
+
 }  // namespace silkworm

@@ -58,32 +58,4 @@ Task<void> DirectService::state_changes(const api::StateChangeOptions& options, 
     }
 }
 
-/** Temporal Point Queries **/
-
-// rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-Task<HistoryPointResult> DirectService::get_history(const HistoryPointQuery&) {
-    // TODO(canepat) implement
-    co_return HistoryPointResult{};
-}
-
-// rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-Task<DomainPointResult> DirectService::get_domain(const DomainPointQuery&) {
-    // TODO(canepat) implement
-    co_return DomainPointResult{};
-}
-
-/** Temporal Range Queries **/
-
-// rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-Task<HistoryRangeResult> DirectService::get_history_range(const HistoryRangeQuery&) {
-    // TODO(canepat) implement
-    co_return HistoryRangeResult{};
-}
-
-// rpc DomainRange(DomainRangeReq) returns (Pairs);
-Task<DomainRangeResult> DirectService::get_domain_range(const DomainRangeQuery&) {
-    // TODO(canepat) implement
-    co_return DomainRangeResult{};
-}
-
 }  // namespace silkworm::db::kv::api

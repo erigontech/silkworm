@@ -30,13 +30,13 @@ using namespace silkworm::test_util;
 namespace proto = ::remote;
 
 TEST_CASE("history_get_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::HistoryPointQuery, proto::HistoryGetReq> fixtures{
+    const Fixtures<api::HistoryPointQuery, proto::HistorySeekReq> fixtures{
         {{}, {}},
-        {sample_history_point_query(), sample_proto_history_point_request()},
+        {sample_history_point_query(), sample_proto_history_seek_request()},
     };
     for (const auto& [query, expected_point_request] : fixtures) {
         SECTION("query: " + std::to_string(query.tx_id)) {
-            const auto& point_request{history_get_request_from_query(query)};
+            const auto& point_request{history_seek_request_from_query(query)};
             // CHECK(point_request == expected_point_request);  // requires operator== in gRPC
             CHECK(point_request.tx_id() == expected_point_request.tx_id());
             CHECK(point_request.table() == expected_point_request.table());
@@ -47,13 +47,13 @@ TEST_CASE("history_get_request_from_query", "[node][remote][kv][grpc]") {
 }
 
 TEST_CASE("history_get_result_from_response", "[node][remote][kv][grpc]") {
-    const Fixtures<proto::HistoryGetReply, api::HistoryPointResult> fixtures{
+    const Fixtures<proto::HistorySeekReply, api::HistoryPointResult> fixtures{
         {{}, {}},
-        {sample_proto_history_get_response(), sample_history_point_result()},
+        {sample_proto_history_seek_response(), sample_history_point_result()},
     };
     for (const auto& [response, expected_point_result] : fixtures) {
         SECTION("ok: " + std::to_string(response.ok())) {
-            const auto& point_result{history_get_result_from_response(response)};
+            const auto& point_result{history_seek_result_from_response(response)};
             // CHECK(point_result == expected_point_result);  // requires operator== in gRPC
             CHECK(point_result.success == expected_point_result.success);
             CHECK(point_result.value == expected_point_result.value);
@@ -63,7 +63,6 @@ TEST_CASE("history_get_result_from_response", "[node][remote][kv][grpc]") {
 
 TEST_CASE("domain_get_request_from_query", "[node][remote][kv][grpc]") {
     const Fixtures<api::DomainPointQuery, proto::DomainGetReq> fixtures{
-        {{}, {}},
         {sample_domain_point_query(), sample_proto_domain_point_request()},
     };
     for (const auto& [query, expected_point_request] : fixtures) {

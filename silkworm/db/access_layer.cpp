@@ -23,11 +23,11 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/bodies/body_queries.hpp>
-#include <silkworm/db/headers/header_queries.hpp>
+#include <silkworm/db/blocks/bodies/body_queries.hpp>
+#include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
-#include <silkworm/db/snapshots/repository.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/transactions/txn_queries.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -43,14 +43,14 @@ std::optional<VersionBase> read_schema_version(ROTxn& txn) {
         return std::nullopt;
     }
 
-    auto data{cursor->current()};
+    auto data = cursor->current();
     SILKWORM_ASSERT(data.value.length() == 12);
-    auto Major{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
+    const auto major = endian::load_big_u32(static_cast<uint8_t*>(data.value.data()));
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Minor{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
+    const auto minor = endian::load_big_u32(static_cast<uint8_t*>(data.value.data()));
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Patch{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
-    return VersionBase{Major, Minor, Patch};
+    const auto patch = endian::load_big_u32(static_cast<uint8_t*>(data.value.data()));
+    return VersionBase{major, minor, patch};
 }
 
 void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
@@ -65,9 +65,9 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
         }
     }
     Bytes value(12, '\0');
-    endian::store_big_u32(&value[0], schema_version.Major);
-    endian::store_big_u32(&value[4], schema_version.Minor);
-    endian::store_big_u32(&value[8], schema_version.Patch);
+    endian::store_big_u32(&value[0], schema_version.major);
+    endian::store_big_u32(&value[4], schema_version.minor);
+    endian::store_big_u32(&value[8], schema_version.patch);
 
     PooledCursor src(txn, db::table::kDatabaseInfo);
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
@@ -77,23 +77,6 @@ void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height) {
     auto cursor = txn.rw_cursor(db::table::kDatabaseInfo);
     Bytes value{db::block_key(height)};
     cursor->upsert(db::to_slice(key), db::to_slice(value));
-}
-
-std::vector<std::string> read_snapshots(ROTxn& txn) {
-    auto db_info_cursor = txn.ro_cursor(table::kDatabaseInfo);
-    if (!db_info_cursor->seek(mdbx::slice{kDbSnapshotsKey})) {
-        return {};
-    }
-    const auto data{db_info_cursor->current()};
-    // https://github.com/nlohmann/json/issues/2204
-    const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, /*.allow_exceptions=*/false);
-    return json.get<std::vector<std::string>>();
-}
-
-void write_snapshots(RWTxn& txn, const std::vector<std::string>& snapshot_file_names) {
-    auto db_info_cursor = txn.rw_cursor(table::kDatabaseInfo);
-    nlohmann::json json_value = snapshot_file_names;
-    db_info_cursor->upsert(mdbx::slice{kDbSnapshotsKey}, mdbx::slice(json_value.dump().data()));
 }
 
 std::optional<BlockHeader> read_header(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash) {
@@ -166,7 +149,7 @@ size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void
             success_or_throw(rlp::decode(encoded_header, header));
             process_func(std::move(header));
         },
-        db::CursorMoveDirection::Forward);
+        db::CursorMoveDirection::kForward);
 
     return count;
 }
@@ -191,16 +174,24 @@ evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_h
     return header_hash;
 }
 
-std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash) {
-    auto header_cursor = txn.ro_cursor(db::table::kHeaders);
-    auto key = db::block_key(bn, hash.bytes);
-    auto data = header_cursor->find(db::to_slice(key), /*throw_notfound*/ false);
-    if (!data) return std::nullopt;
-    return db::from_slice(data.value);
+void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash) {
+    auto cursor = txn.rw_cursor(table::kHeaders);
+    auto key = block_key(number, hash.bytes);
+    cursor->erase(to_slice(key));
+}
+
+std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number) {
+    auto cursor = txn.ro_cursor(db::table::kHeaders);
+    auto key = db::block_key(min_number);
+    auto result = cursor->lower_bound(db::to_slice(key), /* throw_notfound = */ false);
+    if (!result) {
+        return std::nullopt;
+    }
+    return block_number_from_key(result.key);
 }
 
 std::optional<BlockHeader> read_canonical_header(ROTxn& txn, BlockNum b) {  // also known as read-header-by-number
-    std::optional<evmc::bytes32> h = read_canonical_hash(txn, b);
+    std::optional<evmc::bytes32> h = read_canonical_header_hash(txn, b);
     if (!h) {
         return std::nullopt;  // not found
     }
@@ -229,6 +220,12 @@ void write_header_number(RWTxn& txn, const uint8_t (&hash)[kHashLength], const B
     auto target = txn.rw_cursor(table::kHeaderNumbers);
     auto value{db::block_key(number)};
     target->upsert({hash, kHashLength}, to_slice(value));
+}
+
+void delete_header_number(RWTxn& txn, const evmc::bytes32& hash) {
+    auto cursor = txn.rw_cursor(table::kHeaderNumbers);
+    auto key = header_numbers_key(hash);
+    cursor->erase(to_slice(key));
 }
 
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum b, const evmc::bytes32& hash) {
@@ -374,6 +371,15 @@ static void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, 
     SILKWORM_ASSERT(i == count);
 }
 
+void delete_transactions(RWTxn& txn, uint64_t base_id, uint64_t count) {
+    auto cursor = txn.rw_cursor(table::kBlockTransactions);
+    auto first_key = db::block_key(base_id);
+    auto result = cursor->find(to_slice(first_key), /* throw_notfound = */ false);
+    for (uint64_t i = 0; result && (i < count); result = cursor->to_next(/* throw_notfound = */ false), i++) {
+        cursor->erase();
+    }
+}
+
 bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block& block) {
     auto canonical_hashes_cursor = txn.ro_cursor(table::kCanonicalHashes);
     const Bytes key{block_key(number)};
@@ -440,7 +446,7 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
             // invoke handler
             process_func(block);
         },
-        db::CursorMoveDirection::Forward);
+        db::CursorMoveDirection::kForward);
 
     return count;
 }
@@ -504,19 +510,19 @@ bool read_body(ROTxn& txn, const evmc::bytes32& h, BlockBody& body) {
 }
 
 bool read_canonical_body(ROTxn& txn, BlockNum block_number, bool read_senders, BlockBody& body) {
-    auto hash = read_canonical_hash(txn, block_number);
+    auto hash = read_canonical_header_hash(txn, block_number);
     if (!hash) return false;
     return read_body(txn, block_number, hash->bytes, read_senders, body);
 }
 
 std::optional<BlockBodyForStorage> read_canonical_body_for_storage(ROTxn& txn, BlockNum height) {
-    auto hash = read_canonical_hash(txn, height);
+    auto hash = read_canonical_header_hash(txn, height);
     if (!hash) return std::nullopt;
     return read_body_for_storage(txn, block_key(height, hash->bytes));
 }
 
 bool read_canonical_block(ROTxn& txn, BlockNum height, Block& block) {
-    std::optional<evmc::bytes32> h = read_canonical_hash(txn, height);
+    std::optional<evmc::bytes32> h = read_canonical_header_hash(txn, height);
     if (!h) return false;
 
     bool present = read_header(txn, *h, height, block.header);
@@ -569,6 +575,12 @@ void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash
     target->upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
+}
+
+void delete_body(RWTxn& txn, const evmc::bytes32& hash, BlockNum number) {
+    auto cursor = txn.rw_cursor(table::kBlockBodies);
+    auto key = db::block_key(number, hash.bytes);
+    cursor->erase(to_slice(key));
 }
 
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {
@@ -624,6 +636,12 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
     }
 
     target->upsert(to_slice(key), to_slice(data));
+}
+
+void delete_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number) {
+    auto cursor = txn.rw_cursor(table::kSenders);
+    auto key = db::block_key(number, hash.bytes);
+    cursor->erase(to_slice(key));
 }
 
 void write_tx_lookup(RWTxn& txn, const Block& block) {
@@ -889,16 +907,6 @@ std::optional<evmc::bytes32> read_head_header_hash(ROTxn& txn) {
     return to_bytes32(from_slice(data.value));
 }
 
-std::optional<evmc::bytes32> read_canonical_hash(ROTxn& txn, BlockNum b) {  // throws db exceptions
-    auto hashes_table = txn.ro_cursor(db::table::kCanonicalHashes);
-    // accessing this table with only b we will get the hash of the canonical block at height b
-    auto key = db::block_key(b);
-    auto data = hashes_table->find(db::to_slice(key), /*throw_notfound*/ false);
-    if (!data) return std::nullopt;  // not found
-    assert(data.value.length() == kHashLength);
-    return to_bytes32(from_slice(data.value));  // copy
-}
-
 void write_canonical_hash(RWTxn& txn, BlockNum b, const evmc::bytes32& hash) {
     Bytes key = db::block_key(b);
     auto skey = db::to_slice(key);
@@ -1056,18 +1064,16 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const H
             return header;
         }
         return {};
-    } else {
-        return db::read_header(txn_, block_number, block_hash);
     }
+    return db::read_header(txn_, block_number, block_hash);
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number) const {
     if (repository_ && repository_->max_block_available() && block_number <= repository_->max_block_available()) {
         return read_header_from_snapshot(block_number);
-    } else {
-        auto hash = db::read_canonical_hash(txn_, block_number);
-        return db::read_header(txn_, block_number, *hash);
     }
+    auto hash = db::read_canonical_header_hash(txn_, block_number);
+    return db::read_header(txn_, block_number, *hash);
 }
 
 std::optional<BlockHeader> DataModel::read_header(const Hash& block_hash) const {
@@ -1134,26 +1140,26 @@ bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
     return false;
 }
 
-std::optional<Hash> DataModel::read_canonical_hash(BlockNum height) const {
-    return db::read_canonical_hash(txn_, height);
+std::optional<Hash> DataModel::read_canonical_header_hash(BlockNum height) const {
+    return db::read_canonical_header_hash(txn_, height);
 }
 
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum height) const {
-    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    const auto canonical_hash{db::read_canonical_header_hash(txn_, height)};
     if (!canonical_hash) return {};
 
     return read_header(height, *canonical_hash);
 }
 
 bool DataModel::read_canonical_body(BlockNum height, BlockBody& body) const {
-    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    const auto canonical_hash{db::read_canonical_header_hash(txn_, height)};
     if (!canonical_hash) return {};
 
     return read_body(*canonical_hash, height, body);
 }
 
 bool DataModel::read_canonical_block(BlockNum height, Block& block) const {
-    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    const auto canonical_hash{db::read_canonical_header_hash(txn_, height)};
     if (!canonical_hash) return {};
 
     return read_block(*canonical_hash, height, block);
@@ -1185,7 +1191,7 @@ bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& bl
 }
 
 void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
-    constexpr bool throw_notfound{false};
+    const bool throw_notfound{false};
 
     // Try to read N headers from the database
     size_t read_count{0};
@@ -1228,7 +1234,7 @@ void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&
 }
 
 bool DataModel::read_block(BlockNum number, bool read_senders, Block& block) const {
-    const auto hash{db::read_canonical_hash(txn_, number)};
+    const auto hash{db::read_canonical_header_hash(txn_, number)};
     if (!hash) {
         return false;
     }
@@ -1255,7 +1261,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height)
 
     std::optional<BlockHeader> block_header;
     // We know the header snapshot in advance: find it based on target block number
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::headers, height);
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::headers, height);
     if (snapshot_and_index) {
         block_header = HeaderFindByBlockNumQuery{*snapshot_and_index}.exec(height);
     }
@@ -1269,7 +1275,8 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
 
     std::optional<BlockHeader> block_header;
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
-    for (const SnapshotBundle& bundle : repository_->view_bundles_reverse()) {
+    for (const auto& bundle_ptr : repository_->view_bundles_reverse()) {
+        const auto& bundle = *bundle_ptr;
         auto snapshot_and_index = bundle.snapshot_and_index(SnapshotType::headers);
         block_header = HeaderFindByHashQuery{snapshot_and_index}.exec(hash);
         if (block_header) break;
@@ -1277,16 +1284,21 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
     return block_header;
 }
 
-bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
+std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum height) {
     if (!repository_) {
-        return false;
+        return std::nullopt;
     }
 
     // We know the body snapshot in advance: find it based on target block number
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::bodies, height);
-    if (!snapshot_and_index) return false;
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
+    if (!snapshot_and_index) return std::nullopt;
 
     auto stored_body = BodyFindByBlockNumQuery{*snapshot_and_index}.exec(height);
+    return stored_body;
+}
+
+bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
+    auto stored_body = read_body_for_storage_from_snapshot(height);
     if (!stored_body) return false;
 
     // Skip first and last *system transactions* in block body
@@ -1309,7 +1321,7 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
     }
 
     // We know the body snapshot in advance: find it based on target block number
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::bodies, height);
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
     if (snapshot_and_index) {
         const auto stored_body = BodyFindByBlockNumQuery{*snapshot_and_index}.exec(height);
         return stored_body.has_value();
@@ -1323,7 +1335,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
         return true;
     }
 
-    const auto snapshot_and_index = repository_->find_segment(SnapshotType::transactions, height);
+    const auto [snapshot_and_index, _] = repository_->find_segment(SnapshotType::transactions, height);
     if (!snapshot_and_index) return false;
 
     txs = TransactionRangeFromIdQuery{*snapshot_and_index}.exec_into_vector(base_txn_id, txn_count);
@@ -1332,7 +1344,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
 }
 
 bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) {
-    const auto body_snapshot_and_index = repository_->find_segment(SnapshotType::bodies, height);
+    const auto [body_snapshot_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
     if (body_snapshot_and_index) {
         auto stored_body = BodyFindByBlockNumQuery{*body_snapshot_and_index}.exec(height);
         if (!stored_body) return false;
@@ -1343,7 +1355,7 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector
 
         if (txn_count == 0) return true;
 
-        const auto tx_snapshot_and_index = repository_->find_segment(SnapshotType::transactions, height);
+        const auto [tx_snapshot_and_index, _2] = repository_->find_segment(SnapshotType::transactions, height);
         if (!tx_snapshot_and_index) return false;
 
         rlp_txs = TransactionPayloadRlpRangeFromIdQuery{*tx_snapshot_and_index}.exec_into_vector(base_txn_id, txn_count);

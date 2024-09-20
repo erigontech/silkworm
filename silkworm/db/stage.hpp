@@ -71,10 +71,10 @@ class Stage : public Stoppable {
     };
 
     enum class OperationType {
-        None,     // Actually no operation running
-        Forward,  // Executing Forward
-        Unwind,   // Executing Unwind
-        Prune,    // Executing Prune
+        kNone,     // Actually no operation running
+        kForward,  // Executing Forward
+        kUnwind,   // Executing Unwind
+        kPrune,    // Executing Prune
     };
 
     Stage(SyncContext* sync_context, const char* stage_name);
@@ -125,11 +125,13 @@ class Stage : public Stoppable {
     void throw_if_stopping();
 
   protected:
-    SyncContext* sync_context_;                                  // Shared context across stages
-    const char* stage_name_;                                     // Human friendly identifier of the stage
-    std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out
-    std::mutex sl_mutex_;                                        // To synchronize access by outer sync loop
-    std::string log_prefix_;                                     // Log lines prefix holding the progress among stages
+    // Shared context across stages
+    SyncContext* sync_context_;
+    const char* stage_name_;
+    std::atomic<OperationType> operation_{OperationType::kNone};
+    // To synchronize access by outer sync loop
+    std::mutex sl_mutex_;
+    std::string log_prefix_;
 
     //! \brief Throws if actual block != expected block
     static void check_block_sequence(BlockNum actual, BlockNum expected);

@@ -25,25 +25,24 @@
 
 namespace silkworm::rpc {
 
-Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block) {
+Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<BlockNum> block_number_for_gas_limit) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
-    auto block_number = block.header.number;
+    const auto block_number = block.header.number;
 
     uint64_t hi = 0;
     uint64_t lo = kTxGas - 1;
 
     if (call.gas.value_or(0) >= kTxGas) {
-        SILK_DEBUG << "Set HI with gas in args: " << call.gas.value_or(0);
+        SILK_DEBUG << "Set gas limit using call args: " << call.gas.value_or(0);
         hi = call.gas.value();
     } else {
-        const auto header = co_await block_header_provider_(block_number);
+        const auto header = co_await block_header_provider_(block_number_for_gas_limit.value_or(block_number));
         if (!header) {
-            throw EstimateGasException{-1, "header " + std::to_string(block_number) + " not found"};
+            co_return 0;
         }
-
         hi = header->gas_limit;
-        SILK_DEBUG << "Evaluate HI with gas in block " << header->gas_limit;
+        SILK_DEBUG << "Set gas limit using block: " << header->gas_limit;
     }
 
     std::optional<intx::uint256> gas_price = call.gas_price;
@@ -84,7 +83,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         auto state = transaction_.create_state(this_executor, storage_, block_number);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
-        silkworm::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
+        silkworm::Transaction transaction{call.to_transaction()};
         while (lo + 1 < hi) {
             EVMExecutor executor{config_, workers_, state};
             auto mid = (hi + lo) / 2;
@@ -130,14 +129,12 @@ void EstimateGasOracle::throw_exception(ExecutionResult& result) {
     if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
         throw EstimateGasException{-32000, *result.pre_check_error};
-    } else {
-        auto error_message = result.error_message();
-        SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;
-        if (result.data.empty()) {
-            throw EstimateGasException{-32000, error_message};
-        } else {
-            throw EstimateGasException{3, error_message, result.data};
-        }
     }
+    auto error_message = result.error_message();
+    SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;
+    if (result.data.empty()) {
+        throw EstimateGasException{-32000, error_message};
+    }
+    throw EstimateGasException{3, error_message, result.data};
 }
 }  // namespace silkworm::rpc

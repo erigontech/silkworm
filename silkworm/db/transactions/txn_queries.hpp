@@ -54,11 +54,12 @@ class TransactionBlockNumByTxnHashQuery {
 template <std::ranges::view TBundlesView, class TBundle = typename std::ranges::iterator_t<TBundlesView>::value_type>
 class TransactionBlockNumByTxnHashRepoQuery {
   public:
-    TransactionBlockNumByTxnHashRepoQuery(TBundlesView bundles)
+    explicit TransactionBlockNumByTxnHashRepoQuery(TBundlesView bundles)
         : bundles_(std::move(bundles)) {}
 
     std::optional<BlockNum> exec(const Hash& hash) {
-        for (const TBundle& bundle : bundles_) {
+        for (const TBundle& bundle_ptr : bundles_) {
+            const auto& bundle = *bundle_ptr;
             const Snapshot& snapshot = bundle.txn_snapshot;
             const Index& idx_txn_hash = bundle.idx_txn_hash;
             const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block;

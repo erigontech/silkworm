@@ -41,12 +41,13 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/db/snapshots/bittorrent/settings.hpp>
+#include <silkworm/infra/concurrency/active_component.hpp>
 
 namespace silkworm::snapshots::bittorrent {
 
 //! The BitTorrent protocol client handling multiple torrents *asynchronously* using one thread.
 //! \details The user code should probably run the `execute_loop` method in a dedicated thread.
-class BitTorrentClient {
+class BitTorrentClient : public ActiveComponent {
   public:
     constexpr static const char* kSessionFileName{".session"};
     constexpr static const char* kResumeDirName{".resume"};
@@ -55,8 +56,10 @@ class BitTorrentClient {
     using FileCallback = void(const std::filesystem::path&);
     using StatsCallback = void(lt::span<const int64_t> counters);
 
-    explicit BitTorrentClient(BitTorrentSettings settings = {});
-    ~BitTorrentClient();
+    explicit BitTorrentClient(BitTorrentSettings settings);
+    ~BitTorrentClient() override;
+
+    const BitTorrentSettings& settings() const { return settings_; }
 
     //! Subscription for torrent added announcements
     boost::signals2::signal<FileCallback> added_subscription;
@@ -72,22 +75,32 @@ class BitTorrentClient {
     //! Add the specified info hash to the download list
     void add_info_hash(std::string_view name, std::string_view info_hash);
 
+    //! Add the specified info hash to the download list
+    void add_info_hash(std::string_view name, std::string_view info_hash, std::vector<std::string> trackers);
+
+    //! Add the specified torrent info to the download list
+    void add_torrent_info(std::shared_ptr<lt::torrent_info> info);
+
+    //! Add the specified magnet link to the download list
+    void add_magnet_uri(const std::string& magnet_uri);
+
     //! Run the client execution loop until it is stopped or has finished downloading and seeding is not required
-    void execute_loop();
+    void execution_loop() override;
 
     //! Ask the client to stop execution
-    void stop();
+    bool stop() override;
+
+    void recheck_all_finished_torrents() const;
 
   protected:
     static std::vector<char> load_file(const std::filesystem::path& filename);
     static void save_file(const std::filesystem::path& filename, const std::vector<char>& data);
 
     [[nodiscard]] lt::session_params load_or_create_session_parameters() const;
-    [[nodiscard]] std::vector<lt::add_torrent_params> resume_or_create_magnets() const;
+    [[nodiscard]] std::vector<lt::add_torrent_params> load_resume_data() const;
     [[nodiscard]] std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
     [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
 
-    void recheck_all_finished_torrents();
     void request_torrent_updates(bool stats_included);
     void request_save_resume_data(lt::resume_data_flags_t flags);
     void process_alerts();
@@ -102,9 +115,6 @@ class BitTorrentClient {
 
     //! The directory containing the resume state files
     std::filesystem::path resume_dir_;
-
-    //! The BitTorrent client session
-    lt::session session_;
 
     //! The session statistics
     std::vector<lt::stats_metric> stats_metrics_;
@@ -121,8 +131,9 @@ class BitTorrentClient {
     //! Condition indicating that the client should stop
     std::condition_variable stop_condition_;
 
-    //! Flag indicating stop protected by mutex and signalled by condition variable
-    bool stop_requested_{false};
+  protected:
+    //! The BitTorrent client session
+    lt::session session_;
 };
 
 }  // namespace silkworm::snapshots::bittorrent

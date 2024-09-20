@@ -42,7 +42,7 @@ struct Log {
     std::optional<uint64_t> timestamp{std::nullopt};
 };
 
-typedef std::vector<Log> Logs;
+using Logs = std::vector<Log>;
 
 std::ostream& operator<<(std::ostream& out, const Log& log);
 

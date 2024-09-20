@@ -53,12 +53,6 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version);
 //! upgrades or downgrades of Silkworm's build
 void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height);
 
-//! \brief Read the list of snapshot file names
-std::vector<std::string> read_snapshots(ROTxn& txn);
-
-//! \brief Write the list of snapshot file names
-void write_snapshots(RWTxn& txn, const std::vector<std::string>& snapshot_file_names);
-
 //! \brief Reads a header with the specified key (block number, hash)
 std::optional<BlockHeader> read_header(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 std::optional<BlockHeader> read_header(ROTxn& txn, BlockNum block_number, const evmc::bytes32&);
@@ -74,9 +68,6 @@ std::vector<BlockHeader> read_headers(ROTxn& txn, BlockNum height);
 //! \brief Apply a user defined func to the headers at specific height
 size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func);
 
-//! \brief Reads a header without rlp-decoding it
-std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash);
-
 //! \brief Reads the canonical head
 std::tuple<BlockNum, evmc::bytes32> read_canonical_head(ROTxn& txn);
 
@@ -89,11 +80,20 @@ void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_number
 //! \brief Writes given header to table::kHeaders and returns its hash
 evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_header_numbers);
 
+//! \brief Deletes a header from table::kHeaders
+void delete_header(RWTxn& txn, BlockNum number, const evmc::bytes32& hash);
+
+//! \brief Finds the first header with a number >= min_number in table::kHeaders
+std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_number);
+
 //! \brief Read block number from hash
 std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash);
 
 //! \brief Writes header hash in table::kHeaderNumbers
 void write_header_number(RWTxn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
+
+//! \brief Deletes a header hash to number entry in table::kHeaderNumbers
+void delete_header_number(RWTxn& txn, const evmc::bytes32& hash);
 
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header(RWTxn& txn, const BlockHeader& header);
@@ -131,6 +131,9 @@ void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, Bl
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
 void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 
+//! \brief Deletes a block body from table::kBlockBodies
+void delete_body(RWTxn& txn, const evmc::bytes32& hash, BlockNum number);
+
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const evmc::bytes32& hash);
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const uint8_t (&hash)[kHashLength]);
@@ -158,6 +161,7 @@ std::vector<evmc::address> read_senders(ROTxn& txn, BlockNum block_number, const
 //! \brief Fills transactions' senders addresses directly in place
 void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
+void delete_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number);
 
 void write_tx_lookup(RWTxn& txn, const Block& block);
 void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number);
@@ -172,6 +176,9 @@ bool read_rlp_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& has
 //! The key starts from base_id and is incremented by 1 for each transaction.
 //! \remarks Before calling this ensure you got a proper base_id by incrementing sequence for table::kBlockTransactions.
 void write_transactions(RWTxn& txn, const std::vector<Transaction>& transactions, uint64_t base_id);
+
+//! \brief Delete transactions from table::kBlockTransactions.
+void delete_transactions(RWTxn& txn, uint64_t base_id, uint64_t count);
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash);
 
@@ -204,9 +211,6 @@ void write_head_header_hash(RWTxn& txn, const evmc::bytes32& hash);
 
 //! \brief Reads highest header hash from table::kHeadHeader
 std::optional<evmc::bytes32> read_head_header_hash(ROTxn& txn);
-
-//! \brief Reads canonical hash from block number
-std::optional<evmc::bytes32> read_canonical_hash(ROTxn& txn, BlockNum b);
 
 //! \brief Delete a canonical hash associated to a block number
 void delete_canonical_hash(RWTxn& txn, BlockNum b);
@@ -301,8 +305,11 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockNum height, BlockBody& body) const;
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
+    //! Read block body for storage from the snapshot repository
+    [[nodiscard]] static std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum height);
+
     //! Read the canonical block header at specified height
-    [[nodiscard]] std::optional<Hash> read_canonical_hash(BlockNum height) const;
+    [[nodiscard]] std::optional<Hash> read_canonical_header_hash(BlockNum height) const;
 
     //! Read the canonical block header at specified height
     [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;

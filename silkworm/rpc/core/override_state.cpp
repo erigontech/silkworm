@@ -65,14 +65,14 @@ std::optional<silkworm::Account> OverrideState::read_account(const evmc::address
     return optional_account;
 }
 
-silkworm::ByteView OverrideState::read_code(const evmc::bytes32& code_hash) const noexcept {
+silkworm::ByteView OverrideState::read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept {
     SILK_DEBUG << "OverrideState::read_code code_hash=" << to_hex(code_hash) << " start";
     auto it = code_hash_.find(code_hash);
     if (it != code_hash_.end()) {
         SILK_DEBUG << "OverrideState::read_code code_hash=" << to_hex(code_hash) << " code: " << it->second;
         return it->second;
     }
-    return inner_state_.read_code(code_hash);
+    return inner_state_.read_code(address, code_hash);
 }
 
 evmc::bytes32 OverrideState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {

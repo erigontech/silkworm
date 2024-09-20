@@ -64,14 +64,11 @@ inline constexpr const char* kCallTracesKey{"CallTraces"};
 //! \brief Generating transactions lookup index
 inline constexpr const char* kTxLookupKey{"TxLookup"};
 
-//! \brief Starts Backend
-inline constexpr const char* kTxPoolKey{"TxPool"};
+//! \brief Triggers stage
+inline constexpr const char* kTriggersStageKey{"Triggers"};
 
 //! \brief Nominal stage after all other stages
 inline constexpr const char* kFinishKey{"Finish"};
-
-//! \brief Not an actual stage rather placeholder for global unwind point
-inline constexpr const char* kUnwindKey{"Unwind"};
 
 //! \brief List of all known stages
 inline constexpr const char* kAllStages[]{
@@ -88,9 +85,8 @@ inline constexpr const char* kAllStages[]{
     kLogIndexKey,
     kCallTracesKey,
     kTxLookupKey,
-    kTxPoolKey,
+    kTriggersStageKey,
     kFinishKey,
-    kUnwindKey,
 };
 
 //! \brief Stages won't log their "start" if segment is below this threshold
@@ -124,22 +120,6 @@ void write_stage_progress(RWTxn& txn, const char* stage_name, BlockNum block_num
 //! \param [in] block_num : the actual chain height (BlockNum) the stage must record
 //! \remarks A pruned height X means the prune stage function has run up to this block
 void write_stage_prune_progress(RWTxn& txn, const char* stage_name, BlockNum block_num);
-
-//! \brief Reads from db the invalidation point (block height) of provided stage name. Invalidation point means that
-//! that stage needs to roll back to the invalidation point and re-execute its work for subsequent blocks (if any)
-//! \param [in] txn : a reference to a ro/rw db transaction
-//! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
-//! \return The invalidation point
-//! \remarks An invalidation point == 0 means there is no invalidation point. BlockNum 0 is the genesis and you can't
-//! unwind it
-BlockNum read_stage_unwind(ROTxn& txn, const char* stage_name);
-
-//! \brief Writes into db the invalidation point (block height) for the provided stage name
-//! \param [in] txn : a reference to a rw db transaction
-//! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
-//! \param [in] block_num : the actual chain invalidation point (BlockNum) the stage must record. If omitted the value
-//! defaults to 0 which means to clear any previously recorded invalidation point.
-void write_stage_unwind(RWTxn& txn, const char* stage_name, BlockNum block_num = 0);
 
 //! \brief Whether the provided stage name is known to Silkworm
 //! \param [in] stage_name : The name of the stage to check for

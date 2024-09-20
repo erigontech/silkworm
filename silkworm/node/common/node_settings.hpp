@@ -21,12 +21,6 @@
 #include <string>
 #include <vector>
 
-#ifdef __APPLE__
-// otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
-#define _DARWIN_C_SOURCE
-#endif
-#include <boost/asio/io_context.hpp>
-
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/db/etl/collector_settings.hpp>
@@ -39,7 +33,6 @@ namespace silkworm {
 
 struct NodeSettings {
     ApplicationInfo build_info;                            // Application build info (human-readable)
-    boost::asio::io_context asio_context;                  // Async context (e.g. for timers)
     std::unique_ptr<DataDirectory> data_directory;         // Pointer to data folder
     db::EnvConfig chaindata_env_config{};                  // Chaindata db config
     uint64_t network_id{kMainnetConfig.chain_id};          // Network/Chain id
@@ -55,8 +48,8 @@ struct NodeSettings {
     bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
     bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
 
-    inline db::etl::CollectorSettings etl() const {
-        return {data_directory->etl().path(), etl_buffer_size};
+    db::etl::CollectorSettings etl() const {
+        return {data_directory->temp().path(), etl_buffer_size};
     }
 };
 

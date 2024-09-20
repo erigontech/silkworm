@@ -120,17 +120,25 @@ struct LinkYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::s
 
 struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
-        return x->timestamp != y->timestamp ? x->timestamp > y->timestamp :               // prefer smaller timestamp
-                   (x->blockHeight != y->blockHeight ? x->blockHeight > y->blockHeight :  // when timestamps are the same prioritise low blockHeight
-                        x > y);                                                           // when blockHeight are the same preserve identity
+        if (x->timestamp != y->timestamp) {
+            return x->timestamp > y->timestamp;  // prefer smaller timestamp
+        }
+        if (x->blockHeight != y->blockHeight) {
+            return x->blockHeight > y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        }
+        return x > y;  // when blockHeight are the same preserve identity
     }
 };
 
 struct AnchorOlderThan : public std::function<bool(std::shared_ptr<Anchor>, std::shared_ptr<Anchor>)> {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
-        return x->timestamp != y->timestamp ? x->timestamp < y->timestamp :               // prefer smaller timestamp
-                   (x->blockHeight != y->blockHeight ? x->blockHeight < y->blockHeight :  // when timestamps are the same prioritise low blockHeight
-                        x < y);                                                           // when blockHeight are the same preserve identity
+        if (x->timestamp != y->timestamp) {
+            return x->timestamp < y->timestamp;  // prefer smaller timestamp
+        }
+        if (x->blockHeight != y->blockHeight) {
+            return x->blockHeight < y->blockHeight;  // when timestamps are the same prioritise low blockHeight
+        }
+        return x < y;  // when blockHeight are the same preserve identity
     }
 };
 
@@ -152,21 +160,21 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 }  // namespace silkworm
 template <>
-struct mbpq_key<std::shared_ptr<silkworm::Link>> {                                                // extract key type and value
+struct MbpqKey<std::shared_ptr<silkworm::Link>> {                                                 // extract key type and value
     using type = silkworm::BlockNum;                                                              // type of the key
     static type value(const std::shared_ptr<silkworm::Link>& link) { return link->blockHeight; }  // value of the key
 };
 namespace silkworm {  // reopen namespace
 
 // A queue of older links to evict when we need to free memory
-using OldestFirstLinkMap = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
+using OldestFirstLinkMap = MapBasedPriorityQueue<std::shared_ptr<Link>, BlockOlderThan>;
 
 // A queue of younger links to get the next link to process
-using OldestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>, LinkOlderThan>;
+using OldestFirstLinkQueue = SetBasedPriorityQueue<std::shared_ptr<Link>, LinkOlderThan>;
 
 // We need a queue for anchors to get anchors in reverse order respect to timestamp
 // (that is the time at which we asked peers for ancestor of the anchor)
-using OldestFirstAnchorQueue = set_based_priority_queue<std::shared_ptr<Anchor>, AnchorOlderThan>;
+using OldestFirstAnchorQueue = SetBasedPriorityQueue<std::shared_ptr<Anchor>, AnchorOlderThan>;
 
 // Maps to get a link or an anchor by hash
 using LinkMap = std::map<Hash, std::shared_ptr<Link>>;      // hash = link hash
@@ -185,13 +193,13 @@ using LinkLIFOQueue = std::stack<std::shared_ptr<Link>>;
 
 using Headers = std::vector<std::shared_ptr<BlockHeader>>;
 
-inline BlockHeader& header_at(Headers::iterator it) { return *it->get(); }
+inline BlockHeader& header_at(Headers::iterator it) { return **it; }
 
-inline BlockHeader& header_at(Headers::reverse_iterator it) { return *it->get(); }
+inline BlockHeader& header_at(Headers::reverse_iterator it) { return **it; }
 
-inline const BlockHeader& header_at(Headers::const_iterator it) { return *it->get(); }
+inline const BlockHeader& header_at(Headers::const_iterator it) { return **it; }
 
-inline const BlockHeader& header_at(Headers::const_reverse_iterator it) { return *it->get(); }
+inline const BlockHeader& header_at(Headers::const_reverse_iterator it) { return **it; }
 
 struct Segment;  // forward declaration
 
@@ -223,17 +231,17 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
         return refs;
     }
 
-    static std::tuple<bool, Penalty> childParentValidity(Header_Ref child, Header_Ref parent) {
-        if (parent->number + 1 != child->number) return {false, Penalty::WrongChildBlockHeightPenalty};
-        return {true, NoPenalty};
+    static std::tuple<bool, Penalty> child_parent_validity(Header_Ref child, Header_Ref parent) {
+        if (parent->number + 1 != child->number) return {false, Penalty::kWrongChildBlockHeightPenalty};
+        return {true, kNoPenalty};
     }
 
-    static std::tuple<bool, Penalty> childrenParentValidity(const std::vector<Header_Ref>& children, Header_Ref parent) {
+    static std::tuple<bool, Penalty> children_parent_validity(const std::vector<Header_Ref>& children, Header_Ref parent) {
         for (auto& child : children) {
-            auto [valid, penalty] = childParentValidity(child, parent);
+            auto [valid, penalty] = child_parent_validity(child, parent);
             if (!valid) return {false, penalty};
         }
-        return {true, Penalty::NoPenalty};
+        return {true, Penalty::kNoPenalty};
     }
 };
 

@@ -89,10 +89,10 @@ struct TraceMemory {
 };
 
 struct TraceEx {
+    int64_t used{0};
     std::optional<TraceMemory> memory;
     std::vector<std::string> stack;
     std::optional<TraceStorage> storage;
-    int64_t used{0};
 };
 
 struct VmTrace;
@@ -101,7 +101,7 @@ struct TraceOp {
     int64_t gas_cost{0};
     std::optional<int64_t> precompiled_call_gas;
     std::optional<int64_t> call_gas_cap;
-    TraceEx trace_ex;
+    std::optional<TraceEx> trace_ex;
     std::string idx;
     int32_t depth{0};
     uint8_t op_code{0};
@@ -128,6 +128,15 @@ void copy_store(std::uint8_t op_code, const evmone::uint256* stack, std::optiona
 void copy_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, std::optional<TraceMemory>& trace_memory);
 void push_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, std::stack<TraceMemory>& tms);
 
+struct FixCallGasInfo {
+    int32_t depth{0};
+    int64_t stipend{0};
+    int16_t code_cost{0};
+    TraceOp& trace_op_;
+    int64_t gas_cost{0};
+    bool precompiled{false};
+};
+
 class VmTraceTracer : public silkworm::EvmTracer {
   public:
     explicit VmTraceTracer(VmTrace& vm_trace, std::int32_t index = -1) : vm_trace_(vm_trace), transaction_index_{index} {}
@@ -144,15 +153,15 @@ class VmTraceTracer : public silkworm::EvmTracer {
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
   private:
-    bool is_precompile_{false};
     VmTrace& vm_trace_;
     std::int32_t transaction_index_;
     std::stack<std::string> index_prefix_;
     std::stack<std::reference_wrapper<VmTrace>> traces_stack_;
     const char* const* opcode_names_ = nullptr;
+    const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<int64_t> start_gas_;
     std::stack<TraceMemory> trace_memory_stack_;
-    const evmc_instruction_metrics* metrics_ = nullptr;
+    std::optional<uint8_t> last_opcode_;
 };
 
 struct TraceAction {
@@ -208,7 +217,7 @@ void to_json(nlohmann::json& json, const TraceResult& trace_result);
 void to_json(nlohmann::json& json, const Trace& trace);
 
 template <typename T, typename Container = std::deque<T>>
-class iterable_stack : public std::stack<T, Container> {
+class IterableStack : public std::stack<T, Container> {
     using std::stack<T, Container>::c;
 
   public:
@@ -240,12 +249,12 @@ class TraceTracer : public silkworm::EvmTracer {
     bool is_precompile_{false};
     std::vector<Trace>& traces_;
     silkworm::IntraBlockState& initial_ibs_;
-    std::optional<uint8_t> current_opcode_;
+    std::optional<uint8_t> last_opcode_;
     const char* const* opcode_names_ = nullptr;
     int64_t initial_gas_{0};
     int32_t current_depth_{-1};
     std::set<evmc::address> created_address_;
-    iterable_stack<size_t> index_stack_;
+    IterableStack<size_t> index_stack_;
     std::stack<int64_t> start_gas_;
 };
 
@@ -272,7 +281,7 @@ class StateAddresses {
     StateAddresses(const StateAddresses&) = delete;
     StateAddresses& operator=(const StateAddresses&) = delete;
 
-    [[nodiscard]] bool exists(const evmc::address& address) const noexcept { return initial_ibs_.exists(address); }
+    [[nodiscard]] bool exists(const evmc::address& address) const noexcept;
 
     [[nodiscard]] intx::uint256 get_balance(const evmc::address& address) const noexcept;
     void set_balance(const evmc::address& address, const intx::uint256& value) noexcept { balances_[address] = value; }
@@ -282,6 +291,8 @@ class StateAddresses {
 
     [[nodiscard]] silkworm::ByteView get_code(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, silkworm::ByteView code) noexcept { codes_[address] = silkworm::Bytes{code}; }
+
+    void remove(const evmc::address& address) noexcept;
 
   private:
     std::map<evmc::address, intx::uint256> balances_;
@@ -350,10 +361,10 @@ struct TraceEntry {
 };
 
 enum OperationType : int {
-    OP_TRANSFER = 0,
-    OP_SELF_DESTRUCT = 1,
-    OP_CREATE = 2,
-    OP_CREATE2 = 3
+    kOpTransfer = 0,
+    kOpSelfDestruct = 1,
+    kOpCreate = 2,
+    kOpCreate2 = 3
 };
 
 struct InternalOperation {
@@ -412,6 +423,9 @@ class EntryTracer : public silkworm::EvmTracer {
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
+                              const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_self_destruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
     TraceEntriesResult result() const { return result_; }
@@ -421,6 +435,7 @@ class EntryTracer : public silkworm::EvmTracer {
     TraceEntriesResult result_;
     std::stack<uint64_t> traces_stack_idx_;
     int32_t current_depth_{-1};
+    std::optional<uint8_t> last_opcode_;
 };
 
 class OperationTracer : public silkworm::EvmTracer {
@@ -483,11 +498,9 @@ class TraceCallExecutor {
     Task<std::vector<TraceCallResult>> trace_block_transactions(const silkworm::Block& block, const TraceConfig& config);
     Task<TraceCallResult> trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config);
     Task<TraceManyCallResult> trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls);
-    Task<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-        return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config);
-    }
     Task<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
-    Task<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
+    Task<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config);
+    Task<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction, bool gas_bailout);
     Task<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
     Task<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
     Task<TraceOperationsResult> trace_operations(const TransactionWithBlock& transaction_with_block);
@@ -502,7 +515,8 @@ class TraceCallExecutor {
         const silkworm::Block& block,
         const rpc::Transaction& transaction,
         std::int32_t index,
-        const TraceConfig& config);
+        const TraceConfig& config,
+        bool gas_bailout);
 
     silkworm::BlockCache& block_cache_;
     const ChainStorage& chain_storage_;

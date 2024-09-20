@@ -67,13 +67,25 @@ namespace silkworm::stagedsync {
 //! The number of inserted blocks between two successive commits on db
 constexpr uint64_t kInsertedBlockBatch{1'000};
 
-MainChain::MainChain(boost::asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
-    : io_context_{ctx},
+using execution::api::InvalidChain;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+using execution::api::VerificationResult;
+
+MainChain::MainChain(
+    boost::asio::any_io_executor executor,
+    NodeSettings& ns,
+    std::optional<TimerFactory> log_timer_factory,
+    BodiesStageFactory bodies_stage_factory,
+    db::RWAccess dba)
+    : executor_{std::move(executor)},
       node_settings_{ns},
+      log_timer_factory_{std::move(log_timer_factory)},
+      bodies_stage_factory_{std::move(bodies_stage_factory)},
       db_access_{std::move(dba)},
       tx_{db_access_.start_rw_tx()},
       data_model_{tx_},
-      pipeline_{&ns},
+      pipeline_{&ns, log_timer_factory_, bodies_stage_factory_},
       interim_canonical_chain_(tx_) {
     // We commit and close the one-and-only RW txn here because it must be reopened below in MainChain::open
     tx_.commit_and_stop();
@@ -135,6 +147,18 @@ NodeSettings& MainChain::node_settings() {
 
 db::RWTxn& MainChain::tx() {
     return tx_;
+}
+
+const BodiesStageFactory& MainChain::bodies_stage_factory() const {
+    return bodies_stage_factory_;
+}
+
+const std::optional<TimerFactory>& MainChain::log_timer_factory() const {
+    return log_timer_factory_;
+}
+
+StageScheduler& MainChain::stage_scheduler() const {
+    return pipeline_.stage_scheduler();
 }
 
 BlockId MainChain::current_head() const {
@@ -219,19 +243,20 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
         if (block_header->number <= last_fork_choice_.number) {
             // Last FCU block is greater than or equal to incoming canonical block, chain is valid up to last FCU block
             return ValidChain{last_fork_choice_.number, last_fork_choice_.hash};
-        } else if (std::holds_alternative<ValidChain>(interim_head_status_)) {
+        }
+        if (std::holds_alternative<ValidChain>(interim_head_status_)) {
             // Chain is valid up to canonical head
             return ValidChain{interim_canonical_chain_.current_head().number, interim_canonical_chain_.current_head().hash};
-        } else if (std::holds_alternative<InvalidChain>(interim_head_status_)) {
+        }
+        if (std::holds_alternative<InvalidChain>(interim_head_status_)) {
             // Chain is valid up to unwind point
             const auto& invalid_chain{std::get<InvalidChain>(interim_head_status_)};
             if (block_header->number <= invalid_chain.unwind_point.number) {
                 // Unwind point is greater than or equal incoming canonical block, chain is valid up to unwind point
                 return ValidChain{invalid_chain.unwind_point.number, invalid_chain.unwind_point.hash};
-            } else {
-                // Incoming canonical block is greater than unwind point, so chain is invalid
-                return invalid_chain;
             }
+            // Incoming canonical block is greater than unwind point, so chain is invalid
+            return invalid_chain;
         }
     }
 
@@ -285,7 +310,10 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
             verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
             break;
         default:
-            verify_result = ValidationError{pipeline_.head_header_number(), pipeline_.head_header_hash()};
+            verify_result = ValidationError{
+                .latest_valid_head = BlockId{pipeline_.head_header_number(), pipeline_.head_header_hash()},
+            };
+            break;
     }
     interim_head_status_ = verify_result;
 
@@ -358,7 +386,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     std::set<Hash> bad_headers;
     for (BlockNum current_height = interim_canonical_chain_.current_head().number;
          current_height > invalid_chain.unwind_point.number; current_height--) {
-        auto current_hash = db::read_canonical_hash(tx, current_height);
+        auto current_hash = db::read_canonical_header_hash(tx, current_height);
         bad_headers.insert(*current_hash);
     }
 
@@ -371,7 +399,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
 
         if (max_block_num == 0) {
             max_block_num = unwind_point;
-            max_hash = *db::read_canonical_hash(tx, max_block_num);
+            max_hash = *db::read_canonical_header_hash(tx, max_block_num);
         }
 
         db::write_head_header_hash(tx, max_hash);
@@ -384,7 +412,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
 
 std::unique_ptr<ExtendingFork> MainChain::fork(BlockId forking_point) {
     ensure(std::holds_alternative<ValidChain>(interim_head_status_), "forking is allowed from a valid state");
-    return std::make_unique<ExtendingFork>(forking_point, *this, io_context_);
+    return std::make_unique<ExtendingFork>(forking_point, *this, executor_);
 }
 
 void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
@@ -551,7 +579,10 @@ void MainChain::forward(BlockNum head_height, const Hash& head_hash) {
             verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
             break;
         default:
-            verify_result = ValidationError{pipeline_.head_header_number(), pipeline_.head_header_hash()};
+            verify_result = ValidationError{
+                .latest_valid_head = BlockId{pipeline_.head_header_number(), pipeline_.head_header_hash()},
+            };
+            break;
     }
     interim_head_status_ = verify_result;
 }

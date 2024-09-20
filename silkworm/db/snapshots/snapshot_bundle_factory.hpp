@@ -24,8 +24,8 @@
 #include <silkworm/core/common/base.hpp>
 
 #include "index_builder.hpp"
-#include "path.hpp"
 #include "snapshot_bundle.hpp"
+#include "snapshot_path.hpp"
 #include "snapshot_type.hpp"
 
 namespace silkworm::snapshots {
@@ -38,6 +38,7 @@ struct SnapshotBundleFactory {
     virtual SnapshotBundle make(const std::filesystem::path& dir_path, BlockNumRange range) const = 0;
 
     virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPath& seg_file) const = 0;
+    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& snapshot_paths) const = 0;
 };
 
 }  // namespace silkworm::snapshots

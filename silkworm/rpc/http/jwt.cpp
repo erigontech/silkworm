@@ -49,6 +49,9 @@ std::string generate_jwt_token(const std::filesystem::path& file_path) {
         SILK_ERROR << error_msg;
         throw std::runtime_error{error_msg};
     }
+    if (!std::filesystem::exists(file_path)) {
+        std::filesystem::create_directories(file_path.parent_path());
+    }
 
     std::string jwt_token;
     jwt_token.reserve(kTokenSize);

@@ -18,9 +18,9 @@
 
 #include <cassert>
 
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/headers/header_index.hpp>
-#include <silkworm/db/snapshots/path.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
 
@@ -29,7 +29,7 @@ namespace silkworm::db {
 using namespace snapshots;
 
 SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const {
-    return SnapshotBundle{
+    return SnapshotBundle{{
         .header_snapshot = Snapshot(snapshot_path(SnapshotType::headers)),
         .idx_header_hash = Index(index_path(SnapshotType::headers)),
 
@@ -39,15 +39,15 @@ SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path,
         .txn_snapshot = Snapshot(snapshot_path(SnapshotType::transactions)),
         .idx_txn_hash = Index(index_path(SnapshotType::transactions)),
         .idx_txn_hash_2_block = Index(index_path(SnapshotType::transactions_to_block)),
-    };
+    }};
 }
 
 SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, BlockNumRange range) const {
     PathByTypeProvider snapshot_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::from(dir_path, kSnapshotV1, range.first, range.second, type);
+        return SnapshotPath::from(dir_path, kSnapshotV1, range.start, range.end, type);
     };
     PathByTypeProvider index_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::from(dir_path, kSnapshotV1, range.first, range.second, type, kIdxExtension);
+        return SnapshotPath::from(dir_path, kSnapshotV1, range.start, range.end, type, kIdxExtension);
     };
     return make(std::move(snapshot_path), std::move(index_path));
 }
@@ -70,6 +70,15 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
             assert(false);
             return {};
     }
+}
+
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPathList& snapshot_paths) const {
+    std::vector<std::shared_ptr<IndexBuilder>> all_builders;
+    for (const auto& path : snapshot_paths) {
+        auto builders = index_builders(path);
+        all_builders.insert(all_builders.end(), builders.begin(), builders.end());
+    }
+    return all_builders;
 }
 
 }  // namespace silkworm::db

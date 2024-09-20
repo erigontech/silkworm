@@ -22,23 +22,23 @@ namespace silkworm::concurrency {
 
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error) {
     if (text == "backoff") {
-        *wait_mode = WaitMode::backoff;
+        *wait_mode = WaitMode::kBackoff;
         return true;
     }
     if (text == "blocking") {
-        *wait_mode = WaitMode::blocking;
+        *wait_mode = WaitMode::kBlocking;
         return true;
     }
     if (text == "sleeping") {
-        *wait_mode = WaitMode::sleeping;
+        *wait_mode = WaitMode::kSleeping;
         return true;
     }
     if (text == "yielding") {
-        *wait_mode = WaitMode::yielding;
+        *wait_mode = WaitMode::kYielding;
         return true;
     }
     if (text == "busy_spin") {
-        *wait_mode = WaitMode::busy_spin;
+        *wait_mode = WaitMode::kBusySpin;
         return true;
     }
     *error = "unknown value for WaitMode";
@@ -47,15 +47,15 @@ bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* err
 
 std::string AbslUnparseFlag(WaitMode wait_mode) {
     switch (wait_mode) {
-        case WaitMode::backoff:
+        case WaitMode::kBackoff:
             return "backoff";
-        case WaitMode::blocking:
+        case WaitMode::kBlocking:
             return "blocking";
-        case WaitMode::sleeping:
+        case WaitMode::kSleeping:
             return "sleeping";
-        case WaitMode::yielding:
+        case WaitMode::kYielding:
             return "yielding";
-        case WaitMode::busy_spin:
+        case WaitMode::kBusySpin:
             return "busy_spin";
         default:
             return absl::StrCat(wait_mode);

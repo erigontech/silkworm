@@ -26,7 +26,7 @@
 namespace silkworm {
 
 // HashOrNumber is a variant of Hash and BlockNum
-// It uses struct in place of "using", to obtain a strong typedef and avoid overload resolution ambiguities
+// It uses struct in place of "using", to obtain a strong type and avoid overload resolution ambiguities
 // in the rlp encoding/decoding functions
 struct HashOrNumber : public std::variant<Hash, BlockNum> {};
 
@@ -34,17 +34,18 @@ struct HashOrNumber : public std::variant<Hash, BlockNum> {};
 namespace rlp {
 
     inline void encode(Bytes& to, const HashOrNumber& from) {
-        if (std::holds_alternative<Hash>(from))
+        if (std::holds_alternative<Hash>(from)) {
             rlp::encode(to, std::get<Hash>(from));
-        else
+        } else {
             rlp::encode(to, std::get<BlockNum>(from));
+        }
     }
 
     inline size_t length(const HashOrNumber& from) {
-        if (std::holds_alternative<Hash>(from))
+        if (std::holds_alternative<Hash>(from)) {
             return rlp::length(std::get<Hash>(from));
-        else
-            return rlp::length(std::get<BlockNum>(from));
+        }
+        return rlp::length(std::get<BlockNum>(from));
     }
 
     inline DecodingResult decode(ByteView& from, HashOrNumber& to, Leftover mode = Leftover::kProhibit) noexcept {

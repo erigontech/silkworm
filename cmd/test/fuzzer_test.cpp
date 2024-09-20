@@ -34,7 +34,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
 
     RpcApiE2ETest api_e2e_test;
     std::string reply;
-    api_e2e_test.run<&RequestHandler_ForTest::handle_request>(request, reply);
+    api_e2e_test.run<&RequestHandlerForTest::handle_request>(request, reply);
 
     if (!nlohmann::json::accept(reply)) {
         return -1;

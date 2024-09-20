@@ -29,12 +29,13 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/node/execution/block/block_executor.hpp>
 
 namespace silkworm::stagedsync {
 
 Stage::Result Execution::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
         if (!rule_set_) {
@@ -51,9 +52,10 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         if (previous_progress == senders_stage_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
-        } else if (previous_progress > senders_stage_progress) {
+        }
+        if (previous_progress > senders_stage_progress) {
             // Something bad had happened. Not possible execution stage is ahead of senders
             // Maybe we need to unwind ?
             std::string what{"Bad progress sequence. Execution stage progress " + std::to_string(previous_progress) +
@@ -101,8 +103,9 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             const auto execution_result{execute_batch(txn, max_block_num, analysis_cache, state_pool,
                                                       prune_history, prune_receipts, prune_call_traces)};
 
-            // If we return with success we must persist data
-            if (execution_result != Stage::Result::kSuccess) {
+            // If we return with success we must persist data. Though counterintuitive, we must also persist on
+            // kInvalidBlock to save good progress done so far: the subsequent unwind will remove last invalid updates
+            if (execution_result != Stage::Result::kSuccess && execution_result != Stage::Result::kInvalidBlock) {
                 throw StageError(execution_result);
             }
 
@@ -117,6 +120,11 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             auto [_, duration]{commit_stopwatch.stop()};
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
+            // If we got an invalid block, now after persisting we can exit
+            if (execution_result == Stage::Result::kInvalidBlock) {
+                ret = execution_result;
+                break;
+            }
             block_num_++;
         }
 
@@ -138,7 +146,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -163,7 +171,8 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
             if (reached_block_num != block_num) {
                 throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
                                          " got " + std::to_string(reached_block_num));
-            } else if (value.length() != kHashLength) {
+            }
+            if (value.length() != kHashLength) {
                 throw std::runtime_error("Invalid value for hash in " +
                                          std::string(db::table::kCanonicalHashes.name) +
                                          " expected=" + std::to_string(kHashLength) +
@@ -194,7 +203,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
                                        ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
                                        BlockNum prune_receipts_threshold, BlockNum prune_call_traces_threshold) {
-    Stage::Result ret{Stage::Result::kSuccess};
+    Result ret{Result::kSuccess};
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
@@ -225,49 +234,38 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                 log_time = now + 5s;
             }
 
-            ExecutionProcessor processor(block, *rule_set_, buffer, chain_config_);
-            processor.evm().analysis_cache = &analysis_cache;
-            processor.evm().state_pool = &state_pool;
+            const auto write_receipts = block_num_ >= prune_receipts_threshold;
+            const auto write_traces = block_num_ >= prune_call_traces_threshold;
+            constexpr auto kWriteChangeSets = true;
 
-            CallTraces traces;
-            CallTracer tracer{traces};
-            processor.evm().add_tracer(tracer);
-
-            if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
-                // Persist work done so far
-                if (block_num_ >= prune_receipts_threshold) {
-                    buffer.insert_receipts(block_num_, receipts);
-                }
-                buffer.write_to_db();
-                prefetched_blocks_.clear();
-
-                // Notify sync_loop we need to unwind
-                sync_context_->unwind_point.emplace(block_num_ - 1u);
-                sync_context_->bad_block_hash.emplace(block.header.hash());
-
-                // Display warning and return
-                log::Warning(log_prefix_,
-                             {"block", std::to_string(block_num_),
-                              "hash", to_hex(block.header.hash().bytes, true),
-                              "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
-                return Stage::Result::kInvalidBlock;
-            }
-
+            execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets};
             try {
-                processor.flush_state();
+                if (const ValidationResult res = block_executor.execute_single(block, buffer, analysis_cache, state_pool); res != ValidationResult::kOk) {
+                    // Flush work done so far not to lose progress up to the previous valid block and to correctly trigger unwind
+                    // This requires to commit in Execution::forward also for kInvalidBlock: unwind will remove last invalid block updates
+                    if (write_receipts) {
+                        buffer.insert_receipts(block_num_, receipts);
+                    }
+                    buffer.write_to_db();
+
+                    // Notify sync_loop we need to unwind
+                    sync_context_->unwind_point.emplace(block_num_ - 1u);
+                    sync_context_->bad_block_hash.emplace(block.header.hash());
+
+                    // Display warning and return
+                    log::Warning(log_prefix_,
+                                 {"block", std::to_string(block_num_),
+                                  "hash", to_hex(block.header.hash().bytes, true),
+                                  "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
+
+                    prefetched_blocks_.clear();  // Must stay here to keep `block` reference valid
+                    return Result::kInvalidBlock;
+                }
+
             } catch (const db::Buffer::MemoryLimitError&) {
                 // batch done
                 break;
             }
-
-            if (block_num_ >= prune_receipts_threshold) {
-                buffer.insert_receipts(block_num_, receipts);
-            }
-            if (block_num_ >= prune_call_traces_threshold) {
-                buffer.insert_call_traces(block_num_, traces);
-            }
-
-            buffer.write_history_to_db();
 
             // Stats
             std::unique_lock progress_lock(progress_mtx_);
@@ -312,27 +310,27 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
 }
 
 Stage::Result Execution::unwind(db::RWTxn& txn) {
-    static const db::MapConfig unwind_tables[5] = {
-        db::table::kAccountChangeSet,  //
-        db::table::kStorageChangeSet,  //
-        db::table::kBlockReceipts,     //
-        db::table::kLogs,              //
-        db::table::kCallTraceSet       //
+    static const db::MapConfig kUnwindTables[5] = {
+        db::table::kAccountChangeSet,
+        db::table::kStorageChangeSet,
+        db::table::kBlockReceipts,
+        db::table::kLogs,
+        db::table::kCallTraceSet,
     };
 
     Stage::Result ret{Stage::Result::kSuccess};
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         BlockNum previous_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (to >= previous_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return Stage::Result::kSuccess;
         }
 
-        operation_ = OperationType::Unwind;
+        operation_ = OperationType::kUnwind;
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
@@ -356,9 +354,9 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         // Delete records which has keys greater than unwind point
         // Note erasing forward the start key is included that's why we increase unwind_point by 1
         Bytes start_key{db::block_key(to + 1)};
-        for (const auto& map_config : unwind_tables) {
+        for (const auto& map_config : kUnwindTables) {
             auto unwind_cursor = txn.rw_cursor(map_config);
-            auto erased{db::cursor_erase(*unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+            auto erased{db::cursor_erase(*unwind_cursor, start_key, db::CursorMoveDirection::kForward)};
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, to);
@@ -382,13 +380,13 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
 Stage::Result Execution::prune(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
 
     std::unique_ptr<StopWatch> stop_watch;
     if (log::test_verbosity(log::Level::kTrace)) {
@@ -399,14 +397,14 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         if (!prune_mode_.history().enabled() &&
             !prune_mode_.receipts().enabled() &&
             !prune_mode_.call_traces().enabled()) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
         BlockNum forward_progress{get_progress(txn)};
         BlockNum prune_progress{get_prune_progress(txn)};
         if (prune_progress >= forward_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -471,7 +469,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
             auto key{db::block_key(prune_threshold)};
             auto source = txn.rw_cursor(db::table::kBlockReceipts);
-            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -481,7 +479,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
 
             source->bind(txn, db::table::kLogs);
-            erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -503,7 +501,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
             auto key{db::block_key(prune_threshold)};
             auto source = txn.rw_cursor_dup_sort(db::table::kCallTraceSet);
-            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(*source, key, db::CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
                 log::Trace(log_prefix_,
@@ -534,7 +532,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -570,7 +568,7 @@ void Execution::revert_state(ByteView key, ByteView value, db::RWCursorDupSort& 
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
                 endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
-                auto new_code_hash{plain_code_table.find(db::to_slice(code_hash_key))};
+                auto new_code_hash = plain_code_table.find(db::to_slice(code_hash_key));
                 std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.data(), kHashLength);
             }
             // cleaning up contract codes

@@ -26,8 +26,8 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
-#include <silkworm/db/snapshots/path.hpp>
 #include <silkworm/db/snapshots/seg/decompressor.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {
@@ -46,6 +46,7 @@ class TxsAndBodiesQuery {
             uint64_t expected_tx_count,
             std::string log_title);
 
+        // NOLINTNEXTLINE(readability-identifier-naming)
         struct value_type {
             BlockNum block_number{};
             ByteView body_rlp;
@@ -53,7 +54,7 @@ class TxsAndBodiesQuery {
             ByteView tx_buffer;
         };
 
-        using iterator_category = std::input_iterator_tag;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;

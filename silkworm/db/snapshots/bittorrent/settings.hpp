@@ -30,9 +30,6 @@ struct BitTorrentSettings {
     //! Directory path where torrent files will be stored
     std::filesystem::path repository_path{kDefaultTorrentRepoPath};
 
-    //! Path for magnet links
-    std::optional<std::string> magnets_file_path;
-
     //! Time interval between two alert polling loops
     std::chrono::seconds wait_between_alert_polls{1};
 
@@ -41,12 +38,6 @@ struct BitTorrentSettings {
 
     //! Time interval between two resume data savings
     std::chrono::seconds resume_data_save_interval{60};
-
-    //! Flag indicating if snapshots will be verified on startup
-    bool verify_on_startup{false};
-
-    //! Flag indicating if the client should seed torrents when done or not
-    bool seeding{false};
 
     //! Flag indicating if BitTorrent failure/error alerts should be treated as warnings
     bool warn_on_error_alerts{false};

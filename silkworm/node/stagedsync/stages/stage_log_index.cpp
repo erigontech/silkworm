@@ -58,7 +58,7 @@ namespace {
 
 Stage::Result LogIndex::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
 
@@ -67,9 +67,10 @@ Stage::Result LogIndex::forward(db::RWTxn& txn) {
         const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
-        } else if (previous_progress > target_progress) {
+        }
+        if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress,
                              "LogIndex progress " + std::to_string(previous_progress) +
@@ -118,7 +119,7 @@ Stage::Result LogIndex::forward(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     addresses_collector_.reset();
     topics_collector_.reset();
     return ret;
@@ -130,7 +131,7 @@ Stage::Result LogIndex::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         throw_if_stopping();
 
@@ -139,7 +140,7 @@ Stage::Result LogIndex::unwind(db::RWTxn& txn) {
         const auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_stage_progress <= to) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -180,25 +181,25 @@ Stage::Result LogIndex::unwind(db::RWTxn& txn) {
 
     addresses_collector_.reset();
     topics_collector_.reset();
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
 Stage::Result LogIndex::prune(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
 
     try {
         throw_if_stopping();
         if (!prune_mode_history_.enabled()) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
         if (prune_progress >= forward_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -206,7 +207,7 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{prune_mode_history_.value_from_head(forward_progress)};
         if (!prune_threshold) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -258,7 +259,7 @@ void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     const db::MapConfig source_config{db::table::kLogs};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     loading_ = false;
     topics_collector_ = std::make_unique<Collector>(etl_settings_);
     addresses_collector_ = std::make_unique<Collector>(etl_settings_);
@@ -298,7 +299,7 @@ void LogIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     const db::MapConfig source_config{db::table::kLogs};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     loading_ = false;
     current_source_ = std::string(source_config.name);
     current_key_.clear();
@@ -457,7 +458,7 @@ void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
 
 void LogIndex::prune_impl(db::RWTxn& txn, BlockNum threshold, const db::MapConfig& target) {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
     loading_ = false;
     current_source_ = target.name;
     current_target_ = current_source_;
@@ -482,7 +483,7 @@ std::vector<std::string> LogIndex::get_log_progress() {
         ret.insert(ret.end(), {"db", "waiting ..."});
     } else {
         switch (operation_) {
-            case OperationType::Forward:
+            case OperationType::kForward:
                 if (loading_) {
                     if (current_target_ == db::table::kLogAddressIndex.name) {
                         current_key_ = abridge(addresses_collector_->get_load_key(), kAddressLength);
@@ -496,7 +497,7 @@ std::vector<std::string> LogIndex::get_log_progress() {
                     ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
                 }
                 break;
-            case OperationType::Unwind:
+            case OperationType::kUnwind:
                 if (index_loader_) {
                     current_key_ = index_loader_->get_current_key();
                     ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
@@ -504,7 +505,7 @@ std::vector<std::string> LogIndex::get_log_progress() {
                     ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
                 }
                 break;
-            case OperationType::Prune:
+            case OperationType::kPrune:
                 if (index_loader_) {
                     current_key_ = index_loader_->get_current_key();
                     ret.insert(ret.end(), {"to", current_target_, "key", current_key_});

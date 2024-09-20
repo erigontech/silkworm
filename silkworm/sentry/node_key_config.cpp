@@ -66,9 +66,8 @@ NodeKey node_key_get_or_generate(
         const Bytes* data = get_if<Bytes>(&node_key_option.value());
         if (data) {
             return NodeKey(*data);
-        } else {
-            config = NodeKeyConfig(get<fs::path>(node_key_option.value()));
         }
+        config = NodeKeyConfig(get<fs::path>(node_key_option.value()));
     }
 
     if (config.exists()) {

@@ -26,6 +26,6 @@ cmake_policy(SET CMP0063 NEW)
 cmake_policy(SET CMP0074 NEW)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET
-    "13.3"
+    "14.0"
     CACHE STRING ""
 )

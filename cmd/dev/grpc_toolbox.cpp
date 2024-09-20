@@ -687,12 +687,15 @@ int kv_seek_both(const std::string& target, const std::string& table_name, silkw
 }
 
 ABSL_FLAG(std::string, key, "", "key as hex string w/o leading 0x");
-// ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level as string");
 ABSL_FLAG(std::string, seekkey, "", "seek key as hex string w/o leading 0x");
 ABSL_FLAG(std::string, subkey, "", "subkey as hex string w/o leading 0x");
 ABSL_FLAG(std::string, tool, "", "gRPC remote interface tool name as string");
 ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "Silkworm location as string <address>:<port>");
 ABSL_FLAG(std::string, table, "", "database table name as string");
+ABSL_FLAG(int, limit, -1, "max number of items returned by Temporal KV range queries");
+ABSL_FLAG(std::string, from_key, "", "start lookup key as hex string w/o leading 0x");
+ABSL_FLAG(std::string, to_key, "", "end lookup key as hex string w/o leading 0x");
+ABSL_FLAG(int64_t, timestamp, -1, "history timestamp for Temporal KV domain_range query");
 ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as integer");
 ABSL_FLAG(bool, verbose, false, "verbose output");
 
@@ -845,6 +848,35 @@ int kv_seek() {
     return kv_seek(target, table_name, key_bytes.value());
 }
 
+Task<void> kv_domain_get_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
+                               db::kv::api::DomainPointQuery&& query,
+                               const bool /*verbose*/) {
+    try {
+        auto tx = co_await kv_service->begin_transaction();
+        std::cout << "KV DomainGet -> " << query.table << " key=" << to_hex(query.key)
+                  << " ts=" << (query.timestamp ? *query.timestamp : -1) << " [latest: " << !query.timestamp.has_value() << "]\n";
+        const auto result = co_await tx->domain_get(std::move(query));
+        std::cout << "KV DomainGet <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
+        co_await tx->close();
+    } catch (const std::exception& e) {
+        std::cout << "KV DomainGet <- error: " << e.what() << "\n";
+    }
+}
+
+Task<void> kv_history_seek_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
+                                 db::kv::api::HistoryPointQuery&& query,
+                                 const bool /*verbose*/) {
+    try {
+        auto tx = co_await kv_service->begin_transaction();
+        std::cout << "KV HistorySeek -> " << query.table << " key=" << to_hex(query.key) << " ts=" << query.timestamp << "\n";
+        const auto result = co_await tx->history_seek(std::move(query));
+        std::cout << "KV HistorySeek <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
+        co_await tx->close();
+    } catch (const std::exception& e) {
+        std::cout << "KV HistorySeek <- error: " << e.what() << "\n";
+    }
+}
+
 Task<void> kv_index_range_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
                                 db::kv::api::IndexRangeQuery&& query,
                                 const bool verbose) {
@@ -873,7 +905,67 @@ Task<void> kv_index_range_query(const std::shared_ptr<db::kv::api::Service>& kv_
     }
 }
 
-int kv_index_range_coro(const std::string& target, const std::string& table, const Bytes& key, const bool verbose) {
+Task<void> kv_history_range_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
+                                  db::kv::api::HistoryRangeQuery&& query,
+                                  const bool verbose) {
+    try {
+        auto tx = co_await kv_service->begin_transaction();
+        std::cout << "KV HistoryRange -> " << query.table << " limit=" << query.limit << "\n";
+        auto paginated_result = co_await tx->history_range(std::move(query));
+        auto it = co_await paginated_result.begin();
+        std::cout << "KV HistoryRange <- #keys and #values: ";
+        int count{0};
+        std::vector<db::kv::api::KeyValue> keys_and_values;
+        while (it != paginated_result.end()) {
+            keys_and_values.emplace_back(*it);
+            ++count;
+            co_await ++it;
+        }
+        std::cout << count << "\n";
+        if (verbose) {
+            for (const auto& key_value_pair : keys_and_values) {
+                std::cout << "k=" << to_hex(key_value_pair.key) << " v=" << to_hex(key_value_pair.value) << "\n";
+            }
+        }
+        co_await tx->close();
+    } catch (const std::exception& e) {
+        std::cout << "KV HistoryRange <- error: " << e.what() << "\n";
+    }
+}
+
+Task<void> kv_domain_range_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
+                                 db::kv::api::DomainRangeQuery&& query,
+                                 const bool verbose) {
+    try {
+        auto tx = co_await kv_service->begin_transaction();
+        std::cout << "KV DomainRange -> " << query.table << " limit=" << query.limit << "\n";
+        auto paginated_result = co_await tx->domain_range(std::move(query));
+        auto it = co_await paginated_result.begin();
+        std::cout << "KV DomainRange <- #keys and #values: ";
+        int count{0};
+        std::vector<db::kv::api::KeyValue> keys_and_values;
+        while (it != paginated_result.end()) {
+            keys_and_values.emplace_back(*it);
+            ++count;
+            co_await ++it;
+        }
+        std::cout << count << "\n";
+        if (verbose) {
+            for (const auto& key_value_pair : keys_and_values) {
+                std::cout << "k=" << to_hex(key_value_pair.key) << " v=" << to_hex(key_value_pair.value) << "\n";
+            }
+        }
+        co_await tx->close();
+    } catch (const std::exception& e) {
+        std::cout << "KV DomainRange <- error: " << e.what() << "\n";
+    }
+}
+
+template <typename Q>
+using KVQueryFunc = Task<void> (*)(const std::shared_ptr<db::kv::api::Service>&, Q&&, bool);
+
+template <typename Q>
+int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_func, Q&& query, const bool verbose) {
     try {
         ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
@@ -901,15 +993,9 @@ int kv_index_range_coro(const std::string& target, const std::string& table, con
                                                   rpc::ethdb::kv::block_provider(&eth_backend),
                                                   rpc::ethdb::kv::block_number_from_txn_hash_provider(&eth_backend)};
         auto kv_service = client.service();
-        db::kv::api::IndexRangeQuery query{
-            .table = table,
-            .key = key,
-            .from_timestamp = 0,
-            .to_timestamp = -1,
-            .ascending_order = true,
-        };
+
         // NOLINTNEXTLINE(performance-unnecessary-value-param)
-        boost::asio::co_spawn(*io_context, kv_index_range_query(kv_service, std::move(query), verbose), [&](std::exception_ptr) {
+        boost::asio::co_spawn(*io_context, query_func(kv_service, std::forward<Q>(query), verbose), [&](std::exception_ptr) {
             context_pool.stop();
         });
 
@@ -922,11 +1008,11 @@ int kv_index_range_coro(const std::string& target, const std::string& table, con
     return 0;
 }
 
-int kv_index_range() {
+int kv_domain_get() {
     const auto target{absl::GetFlag(FLAGS_target)};
     if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
-        std::cerr << "Use --target flag to specify the location of Erigon running instance\n";
+        std::cerr << "Use --target flag to specify the location of Erigon running instance in <host>:<port> format\n";
         return -1;
     }
 
@@ -941,13 +1027,200 @@ int kv_index_range() {
     const auto key_bytes = silkworm::from_hex(key);
     if (key.empty() || !key_bytes.has_value()) {
         std::cerr << "Parameter key is invalid: [" << key << "]\n";
-        std::cerr << "Use --key flag to specify the key in key-value dupsort table\n";
+        std::cerr << "Use --key flag to specify the start key in key-value table as hex string\n";
+        return -1;
+    }
+
+    const auto timestamp{absl::GetFlag(FLAGS_timestamp)};
+    if (timestamp < -1) {
+        std::cerr << "Parameter timestamp is invalid: [" << timestamp << "]\n";
+        std::cerr << "Use --timestamp flag to specify the timestamp for TKV domain_get query\n";
         return -1;
     }
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    return kv_index_range_coro(target, table_name, *key_bytes, verbose);
+    db::kv::api::DomainPointQuery query{
+        .table = table_name,
+        .key = *key_bytes,
+        .timestamp = timestamp > -1 ? std::make_optional(timestamp) : std::nullopt,
+    };
+    return execute_temporal_kv_query(target, kv_domain_get_query, std::move(query), verbose);
+}
+
+int kv_history_seek() {
+    const auto target{absl::GetFlag(FLAGS_target)};
+    if (target.empty() || !absl::StrContains(target, ":")) {
+        std::cerr << "Parameter target is invalid: [" << target << "]\n";
+        std::cerr << "Use --target flag to specify the location of Erigon running instance in <host>:<port> format\n";
+        return -1;
+    }
+
+    const auto table_name{absl::GetFlag(FLAGS_table)};
+    if (table_name.empty()) {
+        std::cerr << "Parameter table is invalid: [" << table_name << "]\n";
+        std::cerr << "Use --table flag to specify the name of Erigon database table\n";
+        return -1;
+    }
+
+    const auto key{absl::GetFlag(FLAGS_key)};
+    const auto key_bytes = silkworm::from_hex(key);
+    if (key.empty() || !key_bytes.has_value()) {
+        std::cerr << "Parameter key is invalid: [" << key << "]\n";
+        std::cerr << "Use --key flag to specify the start key in key-value table as hex string\n";
+        return -1;
+    }
+
+    const auto timestamp{absl::GetFlag(FLAGS_timestamp)};
+    if (timestamp < -1) {
+        std::cerr << "Parameter timestamp is invalid: [" << timestamp << "]\n";
+        std::cerr << "Use --timestamp flag to specify the history timestamp for TKV history_seek query\n";
+        return -1;
+    }
+
+    const auto verbose{absl::GetFlag(FLAGS_verbose)};
+
+    db::kv::api::HistoryPointQuery query{
+        .table = table_name,
+        .key = *key_bytes,
+        .timestamp = timestamp,
+    };
+    return execute_temporal_kv_query(target, kv_history_seek_query, std::move(query), verbose);
+}
+
+int kv_index_range() {
+    const auto target{absl::GetFlag(FLAGS_target)};
+    if (target.empty() || !absl::StrContains(target, ":")) {
+        std::cerr << "Parameter target is invalid: [" << target << "]\n";
+        std::cerr << "Use --target flag to specify the location of Erigon running instance in <host>:<port> format\n";
+        return -1;
+    }
+
+    const auto table_name{absl::GetFlag(FLAGS_table)};
+    if (table_name.empty()) {
+        std::cerr << "Parameter table is invalid: [" << table_name << "]\n";
+        std::cerr << "Use --table flag to specify the name of Erigon database table\n";
+        return -1;
+    }
+
+    const auto key{absl::GetFlag(FLAGS_key)};
+    const auto key_bytes = silkworm::from_hex(key);
+    if (key.empty() || !key_bytes.has_value()) {
+        std::cerr << "Parameter key is invalid: [" << key << "]\n";
+        std::cerr << "Use --key flag to specify the start key in key-value table as hex string\n";
+        return -1;
+    }
+
+    const auto limit{absl::GetFlag(FLAGS_limit)};
+    if (limit < -1) {
+        std::cerr << "Parameter limit is invalid: [" << limit << "]\n";
+        std::cerr << "Use --limit flag to specify the max number of items returned by TKV queries (-1 means no limit)\n";
+        return -1;
+    }
+
+    const auto verbose{absl::GetFlag(FLAGS_verbose)};
+
+    db::kv::api::IndexRangeQuery query{
+        .table = table_name,
+        .key = *key_bytes,
+        .from_timestamp = 0,
+        .to_timestamp = -1,
+        .ascending_order = true,
+        .limit = limit,
+    };
+    return execute_temporal_kv_query(target, kv_index_range_query, std::move(query), verbose);
+}
+
+int kv_history_range() {
+    const auto target{absl::GetFlag(FLAGS_target)};
+    if (target.empty() || !absl::StrContains(target, ":")) {
+        std::cerr << "Parameter target is invalid: [" << target << "]\n";
+        std::cerr << "Use --target flag to specify the location of Erigon running instance in <host>:<port> format\n";
+        return -1;
+    }
+
+    const auto table_name{absl::GetFlag(FLAGS_table)};
+    if (table_name.empty()) {
+        std::cerr << "Parameter table is invalid: [" << table_name << "]\n";
+        std::cerr << "Use --table flag to specify the name of Erigon database table\n";
+        return -1;
+    }
+
+    const auto limit{absl::GetFlag(FLAGS_limit)};
+    if (limit < -1) {
+        std::cerr << "Parameter limit is invalid: [" << limit << "]\n";
+        std::cerr << "Use --limit flag to specify the max number of items returned by TKV queries (-1 means no limit)\n";
+        return -1;
+    }
+
+    const auto verbose{absl::GetFlag(FLAGS_verbose)};
+
+    db::kv::api::HistoryRangeQuery query{
+        .table = table_name,
+        .from_timestamp = 0,
+        .to_timestamp = -1,
+        .ascending_order = true,
+        .limit = limit,
+    };
+    return execute_temporal_kv_query(target, kv_history_range_query, std::move(query), verbose);
+}
+
+int kv_domain_range() {
+    const auto target{absl::GetFlag(FLAGS_target)};
+    if (target.empty() || !absl::StrContains(target, ":")) {
+        std::cerr << "Parameter target is invalid: [" << target << "]\n";
+        std::cerr << "Use --target flag to specify the location of Erigon running instance in <host>:<port> format\n";
+        return -1;
+    }
+
+    const auto table_name{absl::GetFlag(FLAGS_table)};
+    if (table_name.empty()) {
+        std::cerr << "Parameter table is invalid: [" << table_name << "]\n";
+        std::cerr << "Use --table flag to specify the name of Erigon database table\n";
+        return -1;
+    }
+
+    const auto from_key{absl::GetFlag(FLAGS_from_key)};
+    const auto from_key_bytes = silkworm::from_hex(from_key);
+    if (from_key.empty() || !from_key_bytes.has_value()) {
+        std::cerr << "Parameter from_key is invalid: [" << from_key << "]\n";
+        std::cerr << "Use --from_key flag to specify the start key in key-value table lookup as hex string\n";
+        return -1;
+    }
+
+    const auto to_key{absl::GetFlag(FLAGS_to_key)};
+    const auto to_key_bytes = silkworm::from_hex(to_key);
+    if (to_key.empty() || !to_key_bytes.has_value()) {
+        std::cerr << "Parameter to_key is invalid: [" << to_key << "]\n";
+        std::cerr << "Use --to_key flag to specify the end key in key-value table lookup as hex string\n";
+        return -1;
+    }
+
+    const auto timestamp{absl::GetFlag(FLAGS_timestamp)};
+    if (timestamp < -1) {
+        std::cerr << "Parameter timestamp is invalid: [" << timestamp << "]\n";
+        std::cerr << "Use --timestamp flag to specify the history timestamp for TKV domain_range query (-1 means latest)\n";
+        return -1;
+    }
+
+    const auto limit{absl::GetFlag(FLAGS_limit)};
+    if (limit < -1) {
+        std::cerr << "Parameter limit is invalid: [" << limit << "]\n";
+        std::cerr << "Use --limit flag to specify the max number of items returned by TKV queries (-1 means no limit)\n";
+        return -1;
+    }
+
+    const auto verbose{absl::GetFlag(FLAGS_verbose)};
+
+    db::kv::api::DomainRangeQuery query{
+        .table = table_name,
+        .from_key = *from_key_bytes,
+        .to_key = *to_key_bytes,
+        .timestamp = timestamp > -1 ? std::make_optional(timestamp) : std::nullopt,
+        .ascending_order = true,
+        .limit = limit,
+    };
+    return execute_temporal_kv_query(target, kv_domain_range_query, std::move(query), verbose);
 }
 
 int main(int argc, char* argv[]) {
@@ -960,7 +1233,11 @@ int main(int argc, char* argv[]) {
         "\tkv_seek_async\t\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_async_callback\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_both\t\t\tquery using SEEK_BOTH the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
-        "\tkv_index_range\t\tquery using INDEX_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to database\n");
+        "\tkv_domain_get\t\tquery the Erigon/Silkworm Key-Value (KV) remote interface to data storage using DOMAIN_GET\n"
+        "\tkv_history_seek\t\tquery using HISTORY_SEEK the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
+        "\tkv_index_range\t\tquery using INDEX_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
+        "\tkv_history_range\t\tquery using HISTORY_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
+        "\tkv_domain_range\t\tquery using DOMAIN_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n");
     const auto positional_args = absl::ParseCommandLine(argc, argv);
     if (positional_args.size() < 2) {
         std::cerr << "No gRPC tool specified as first positional argument\n\n";
@@ -992,8 +1269,20 @@ int main(int argc, char* argv[]) {
     if (tool == "kv_seek") {
         return kv_seek();
     }
+    if (tool == "kv_domain_get") {
+        return kv_domain_get();
+    }
+    if (tool == "kv_history_seek") {
+        return kv_history_seek();
+    }
     if (tool == "kv_index_range") {
         return kv_index_range();
+    }
+    if (tool == "kv_history_range") {
+        return kv_history_range();
+    }
+    if (tool == "kv_domain_range") {
+        return kv_domain_range();
     }
 
     std::cerr << "Unknown tool " << tool << " specified as first argument\n\n";

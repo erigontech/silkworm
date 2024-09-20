@@ -37,18 +37,18 @@ rpc::ForkChoiceUpdatedReply fork_choice_updated_reply_from_result(const ForkChoi
     rpc::ForkChoiceUpdatedReply reply;
     switch (result.status) {
         case ExecutionStatus::kSuccess:
-            reply.payload_status = rpc::PayloadStatus::Accepted;
+            reply.payload_status = rpc::PayloadStatus::kAccepted;
             break;
         case ExecutionStatus::kInvalidForkchoice:
-            reply.payload_status.status = rpc::PayloadStatus::kInvalid;
+            reply.payload_status.status = rpc::PayloadStatus::kInvalidStr;
             break;
         case ExecutionStatus::kBadBlock:
-            reply.payload_status.status = rpc::PayloadStatus::kInvalidBlockHash;
+            reply.payload_status.status = rpc::PayloadStatus::kInvalidBlockHashStr;
             break;
         case ExecutionStatus::kBusy:
         case ExecutionStatus::kMissingSegment:
         case ExecutionStatus::kTooFarAway:
-            reply.payload_status.status = rpc::PayloadStatus::kSyncing;
+            reply.payload_status.status = rpc::PayloadStatus::kSyncingStr;
             break;
     }
     if (!result) {

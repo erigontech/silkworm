@@ -695,29 +695,27 @@ class AsyncTxCall
             if (cursor_id_ == kInvalidCursorId) {
                 SILK_DEBUG << "Tx cursor closed, closing tx";
                 return true;  // reads done, close tx
-            } else {
-                SILK_INFO << "Tx queried: " << reply_ << ", queries done closing cursor";
-                request_.set_op(remote::Op::CLOSE);
-                request_.set_cursor(cursor_id_);
-                cursor_id_ = kInvalidCursorId;
-                return false;
             }
-        } else {
-            if (cursor_id_ == kInvalidCursorId) {
-                SILK_INFO << "Tx opened: cursor=" << reply_.cursor_id();
-                cursor_id_ = reply_.cursor_id();
-                SILK_DEBUG << "Tx: prepare request FIRST cursor=" << cursor_id_;
-                request_.set_op(remote::Op::FIRST);
-                request_.set_cursor(cursor_id_);
-            } else {
-                SILK_INFO << "Tx queried: " << reply_;
-                --query_count_;
-                SILK_DEBUG << "Tx: prepare request NEXT cursor=" << cursor_id_;
-                request_.set_op(remote::Op::NEXT);
-                request_.set_cursor(cursor_id_);
-            }
+            SILK_INFO << "Tx queried: " << reply_ << ", queries done closing cursor";
+            request_.set_op(remote::Op::CLOSE);
+            request_.set_cursor(cursor_id_);
+            cursor_id_ = kInvalidCursorId;
             return false;
         }
+        if (cursor_id_ == kInvalidCursorId) {
+            SILK_INFO << "Tx opened: cursor=" << reply_.cursor_id();
+            cursor_id_ = reply_.cursor_id();
+            SILK_DEBUG << "Tx: prepare request FIRST cursor=" << cursor_id_;
+            request_.set_op(remote::Op::FIRST);
+            request_.set_cursor(cursor_id_);
+        } else {
+            SILK_INFO << "Tx queried: " << reply_;
+            --query_count_;
+            SILK_DEBUG << "Tx: prepare request NEXT cursor=" << cursor_id_;
+            request_.set_op(remote::Op::NEXT);
+            request_.set_cursor(cursor_id_);
+        }
+        return false;
     }
 
     bool handle_write() override {
@@ -791,17 +789,17 @@ class AsyncStateChangesCall
 };
 
 enum class Rpc {
-    etherbase = 0,
-    net_version = 1,
-    net_peer_count = 2,
-    backend_version = 3,
-    protocol_version = 4,
-    client_version = 5,
-    subscribe = 6,
-    node_info = 7,
-    kv_version = 8,
-    tx = 9,
-    state_changes = 10
+    kEtherbase = 0,
+    kNetVersion = 1,
+    kNetPeerCount = 2,
+    kBackendVersion = 3,
+    kProtocolVersion = 4,
+    kClientVersion = 5,
+    kSubscribe = 6,
+    kNodeInfo = 7,
+    kKvVersion = 8,
+    kTx = 9,
+    kStateChanges = 10
 };
 
 struct BatchOptions {
@@ -828,67 +826,67 @@ class AsyncCallFactory {
 
     void start_batch(std::atomic_bool& stop, const BatchOptions& batch_options) {
         for (auto i{0}; i < batch_options.batch_size && !stop; i++) {
-            if (batch_options.is_configured(Rpc::etherbase)) {
+            if (batch_options.is_configured(Rpc::kEtherbase)) {
                 auto* etherbase = new AsyncEtherbaseCall(queue_, ethbackend_stub_.get());
                 etherbase->start(remote::EtherbaseRequest{});
                 SILK_DEBUG << "New Etherbase async call started: " << etherbase;
             }
 
-            if (batch_options.is_configured(Rpc::net_version)) {
+            if (batch_options.is_configured(Rpc::kNetVersion)) {
                 auto* net_version = new AsyncNetVersionCall(queue_, ethbackend_stub_.get());
                 net_version->start(remote::NetVersionRequest{});
                 SILK_DEBUG << "New NetVersion async call started: " << net_version;
             }
 
-            if (batch_options.is_configured(Rpc::net_peer_count)) {
+            if (batch_options.is_configured(Rpc::kNetPeerCount)) {
                 auto* net_peer_count = new AsyncNetPeerCountCall(queue_, ethbackend_stub_.get());
                 net_peer_count->start(remote::NetPeerCountRequest{});
                 SILK_DEBUG << "New NetPeerCount async call started: " << net_peer_count;
             }
 
-            if (batch_options.is_configured(Rpc::backend_version)) {
+            if (batch_options.is_configured(Rpc::kBackendVersion)) {
                 auto* backend_version = new AsyncBackEndVersionCall(queue_, ethbackend_stub_.get());
                 backend_version->start(google::protobuf::Empty{});
                 SILK_DEBUG << "New ETHBACKEND Version async call started: " << backend_version;
             }
 
-            if (batch_options.is_configured(Rpc::protocol_version)) {
+            if (batch_options.is_configured(Rpc::kProtocolVersion)) {
                 auto* protocol_version = new AsyncProtocolVersionCall(queue_, ethbackend_stub_.get());
                 protocol_version->start(remote::ProtocolVersionRequest{});
                 SILK_DEBUG << "New ProtocolVersion async call started: " << protocol_version;
             }
 
-            if (batch_options.is_configured(Rpc::client_version)) {
+            if (batch_options.is_configured(Rpc::kClientVersion)) {
                 auto* client_version = new AsyncClientVersionCall(queue_, ethbackend_stub_.get());
                 client_version->start(remote::ClientVersionRequest{});
                 SILK_DEBUG << "New ClientVersion async call started: " << client_version;
             }
 
-            if (batch_options.is_configured(Rpc::subscribe)) {
+            if (batch_options.is_configured(Rpc::kSubscribe)) {
                 auto* subscribe = new AsyncSubscribeCall(queue_, ethbackend_stub_.get());
                 subscribe->start(remote::SubscribeRequest{});
                 SILK_DEBUG << "New Subscribe async call started: " << subscribe;
             }
 
-            if (batch_options.is_configured(Rpc::node_info)) {
+            if (batch_options.is_configured(Rpc::kNodeInfo)) {
                 auto* node_info = new AsyncNodeInfoCall(queue_, ethbackend_stub_.get());
                 node_info->start(remote::NodesInfoRequest{});
                 SILK_DEBUG << "New NodeInfo async call started: " << node_info;
             }
 
-            if (batch_options.is_configured(Rpc::kv_version)) {
+            if (batch_options.is_configured(Rpc::kKvVersion)) {
                 auto* kv_version = new AsyncKvVersionCall(queue_, kv_stub_.get());
                 kv_version->start(google::protobuf::Empty{});
                 SILK_DEBUG << "New KV Version async call started: " << kv_version;
             }
 
-            if (batch_options.is_configured(Rpc::tx)) {
+            if (batch_options.is_configured(Rpc::kTx)) {
                 auto* tx = new AsyncTxCall(queue_, kv_stub_.get());
                 tx->start();
                 SILK_DEBUG << "New Tx async call started: " << tx;
             }
 
-            if (batch_options.is_configured(Rpc::state_changes) && AsyncStateChangesCall::num_pending_calls() < 10000) {
+            if (batch_options.is_configured(Rpc::kStateChanges) && AsyncStateChangesCall::num_pending_calls() < 10000) {
                 auto* state_changes = new AsyncStateChangesCall(queue_, kv_stub_.get());
                 state_changes->start(remote::StateChangeRequest{});
                 SILK_DEBUG << "New StateChanges async call started: " << state_changes;
@@ -904,37 +902,37 @@ class AsyncCallFactory {
 };
 
 void print_stats(const BatchOptions& batch_options) {
-    if (batch_options.is_configured(Rpc::etherbase)) {
+    if (batch_options.is_configured(Rpc::kEtherbase)) {
         SILK_LOG << "Unary stats Etherbase: " << AsyncEtherbaseCall::stats();
     }
-    if (batch_options.is_configured(Rpc::net_version)) {
+    if (batch_options.is_configured(Rpc::kNetVersion)) {
         SILK_LOG << "Unary stats NetVersion: " << AsyncNetVersionCall::stats();
     }
-    if (batch_options.is_configured(Rpc::net_peer_count)) {
+    if (batch_options.is_configured(Rpc::kNetPeerCount)) {
         SILK_LOG << "Unary stats NetPeerCount: " << AsyncNetPeerCountCall::stats();
     }
-    if (batch_options.is_configured(Rpc::backend_version)) {
+    if (batch_options.is_configured(Rpc::kBackendVersion)) {
         SILK_LOG << "Unary stats ETHBACKEND Version: " << AsyncBackEndVersionCall::stats();
     }
-    if (batch_options.is_configured(Rpc::protocol_version)) {
+    if (batch_options.is_configured(Rpc::kProtocolVersion)) {
         SILK_LOG << "Unary stats ProtocolVersion: " << AsyncProtocolVersionCall::stats();
     }
-    if (batch_options.is_configured(Rpc::client_version)) {
+    if (batch_options.is_configured(Rpc::kClientVersion)) {
         SILK_LOG << "Unary stats ClientVersion: " << AsyncClientVersionCall::stats();
     }
-    if (batch_options.is_configured(Rpc::node_info)) {
+    if (batch_options.is_configured(Rpc::kNodeInfo)) {
         SILK_LOG << "Unary stats NodeInfo: " << AsyncNodeInfoCall::stats();
     }
-    if (batch_options.is_configured(Rpc::kv_version)) {
+    if (batch_options.is_configured(Rpc::kKvVersion)) {
         SILK_LOG << "Unary stats KV Version: " << AsyncKvVersionCall::stats();
     }
-    if (batch_options.is_configured(Rpc::subscribe)) {
+    if (batch_options.is_configured(Rpc::kSubscribe)) {
         SILK_LOG << "Server streaming stats Subscribe: " << AsyncSubscribeCall::stats();
     }
-    if (batch_options.is_configured(Rpc::state_changes)) {
+    if (batch_options.is_configured(Rpc::kStateChanges)) {
         SILK_LOG << "Server streaming stats StateChanges: " << AsyncStateChangesCall::stats();
     }
-    if (batch_options.is_configured(Rpc::tx)) {
+    if (batch_options.is_configured(Rpc::kTx)) {
         SILK_LOG << "Bidirectional streaming stats Tx: " << AsyncTxCall::stats();
     }
 }

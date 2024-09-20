@@ -33,9 +33,9 @@ class MockKVStub : public KV::StubInterface {
   MOCK_METHOD3(DomainGet, ::grpc::Status(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::remote::DomainGetReply* response));
   MOCK_METHOD3(AsyncDomainGetRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>*(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncDomainGetRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>*(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(HistoryGet, ::grpc::Status(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::remote::HistoryGetReply* response));
-  MOCK_METHOD3(AsyncHistoryGetRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>*(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(PrepareAsyncHistoryGetRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>*(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(HistorySeek, ::grpc::Status(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::remote::HistorySeekReply* response));
+  MOCK_METHOD3(AsyncHistorySeekRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>*(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncHistorySeekRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>*(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(IndexRange, ::grpc::Status(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::remote::IndexRangeReply* response));
   MOCK_METHOD3(AsyncIndexRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>*(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncIndexRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>*(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq));

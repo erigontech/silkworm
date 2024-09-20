@@ -21,9 +21,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
-#include <silkworm/db/bodies/body_index.hpp>
-#include <silkworm/db/headers/header_index.hpp>
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshots/index.hpp>
 #include <silkworm/db/snapshots/index_builder.hpp>
@@ -35,7 +36,6 @@
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
 
-#include "../node/test_util/sample_blocks.hpp"
 #include "instance.hpp"
 
 namespace silkworm {
@@ -45,7 +45,8 @@ namespace snapshot_test = snapshots::test_util;
 struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
-    mdbx::env_managed& db{get_mdbx_env()};
+    mdbx::env& env{mdbx_env()};
+    std::filesystem::path env_path() { return mdbx_env().get_path(); }
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array
@@ -84,7 +85,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty data folder path", "[silkw
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm][capi]") {
-    copy_path(settings.data_dir_path, db.get_path().string().c_str());
+    copy_path(settings.data_dir_path, env_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "");
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INCOMPATIBLE_LIBMDBX);
@@ -92,7 +93,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: empty MDBX version", "[silkworm]
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[silkworm][capi]") {
-    copy_path(settings.data_dir_path, db.get_path().string().c_str());
+    copy_path(settings.data_dir_path, env_path().string().c_str());
     copy_git_version(settings.libmdbx_version, "v0.1.0");
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_INCOMPATIBLE_LIBMDBX);
@@ -100,7 +101,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: incompatible MDBX version", "[si
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_init: OK", "[silkworm][capi]") {
-    copy_path(settings.data_dir_path, db.get_path().string().c_str());
+    copy_path(settings.data_dir_path, env_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
     CHECK(silkworm_init(&handle, &settings) == SILKWORM_OK);
@@ -114,7 +115,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: not initialized", "[silkworm][ca
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
-    copy_path(settings.data_dir_path, db.get_path().string().c_str());
+    copy_path(settings.data_dir_path, env_path().string().c_str());
     copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
     SilkwormHandle handle{nullptr};
     REQUIRE(silkworm_init(&handle, &settings) == SILKWORM_OK);
@@ -124,9 +125,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[silkworm][capi]") {
 //! \brief Utility class using RAII pattern to wrap the Silkworm C API.
 //! \note This is useful for tests that do *not* specifically play with silkworm_init/silkworm_fini or invalid handles
 struct SilkwormLibrary {
-    explicit SilkwormLibrary(const std::filesystem::path& db_path) {
+    explicit SilkwormLibrary(const std::filesystem::path& env_path) {
         SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
-        copy_path(settings.data_dir_path, db_path.string().c_str());
+        copy_path(settings.data_dir_path, env_path.string().c_str());
         copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
         silkworm_init(&handle_, &settings);
     }
@@ -195,7 +196,7 @@ struct SilkwormLibrary {
     }
 
     int fork_validator_verify_chain(silkworm::Hash head_hash) const {
-        struct SilkwormBytes32 head_hash_bytes {};
+        SilkwormBytes32 head_hash_bytes{};
         std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
 
         auto result = std::make_unique<SilkwormForkValidatorValidationResult>();
@@ -204,8 +205,7 @@ struct SilkwormLibrary {
     }
 
     int execution_engine_fork_choice_update(silkworm::Hash head_hash, silkworm::Hash finalized_hash, silkworm::Hash safe_hash) const {
-        struct SilkwormBytes32 head_hash_bytes {
-        }, finalized_hash_bytes{}, safe_hash_bytes{};
+        SilkwormBytes32 head_hash_bytes{}, finalized_hash_bytes{}, safe_hash_bytes{};
         std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
         std::memcpy(finalized_hash_bytes.bytes, finalized_hash.bytes, 32);
         std::memcpy(safe_hash_bytes.bytes, safe_hash.bytes, 32);
@@ -222,13 +222,13 @@ struct SilkwormLibrary {
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: block not found", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const int chain_id{1};
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{10};  // This does not exist, TestDatabaseContext db contains up to block 9
     BlockNum end_block{100};
-    db::RWTxnManaged external_txn{db};
+    db::RWTxnManaged external_txn{env};
     const auto result0{
         silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
                                     true, true, true)};
@@ -240,14 +240,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: block not fo
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: block not found", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const int chain_id{1};
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{10};  // This does not exist, TestDatabaseContext db contains up to block 9
     BlockNum end_block{100};
     const auto result0{
-        silkworm_lib.execute_blocks_perpetual(db, chain_id, start_block, end_block, batch_size,
+        silkworm_lib.execute_blocks_perpetual(env, chain_id, start_block, end_block, batch_size,
                                               true, true, true)};
     CHECK(result0.execute_block_result == SILKWORM_BLOCK_NOT_FOUND);
     CHECK(result0.last_executed_block == 0);
@@ -256,13 +256,13 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: block not fo
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: chain id not found", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const uint64_t chain_id{1000000};
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{1};
     BlockNum end_block{2};
-    db::RWTxnManaged external_txn{db};
+    db::RWTxnManaged external_txn{env};
     const auto result0{
         silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
                                     true, true, true)};
@@ -274,14 +274,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: chain id not
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: chain id not found", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const uint64_t chain_id{1000000};
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{1};
     BlockNum end_block{2};
     const auto result0{
-        silkworm_lib.execute_blocks_perpetual(db, chain_id, start_block, end_block, batch_size,
+        silkworm_lib.execute_blocks_perpetual(env, chain_id, start_block, end_block, batch_size,
                                               true, true, true)};
     CHECK(result0.execute_block_result == SILKWORM_UNKNOWN_CHAIN_ID);
     CHECK(result0.last_executed_block == 0);
@@ -312,7 +312,7 @@ static void insert_block(mdbx::env& env, Block& block) {
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const int chain_id{1};
     const uint64_t batch_size{256 * kMebi};
@@ -359,10 +359,10 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].set_sender(from);
 
-    insert_block(db, block);
+    insert_block(env, block);
 
     // Execute block 11 using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{db};
+    db::RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -370,7 +370,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{db};
+    db::ROTxnManaged ro_txn{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
@@ -381,10 +381,10 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     block.header.number = 11;
     block.transactions[0].nonce++;
 
-    insert_block(db, block);
+    insert_block(env, block);
 
     // Execute block 11 using an *external* txn, then commit
-    db::RWTxnManaged external_txn1{db};
+    db::RWTxnManaged external_txn1{env};
 
     start_block = 11, end_block = 11;
     const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
@@ -393,14 +393,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{db};
+    ro_txn = db::ROTxnManaged{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const int chain_id{1};
     const uint64_t batch_size{256 * kMebi};
@@ -409,7 +409,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     const bool write_call_traces{false};  // For coherence but don't care
 
     auto execute_blocks = [&](auto start_block, auto end_block) {
-        return silkworm_lib.execute_blocks_perpetual(db,
+        return silkworm_lib.execute_blocks_perpetual(env,
                                                      chain_id,
                                                      start_block,
                                                      end_block,
@@ -447,7 +447,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].set_sender(from);
 
-    insert_block(db, block);
+    insert_block(env, block);
 
     // Execute block 10 using an *internal* txn
     BlockNum start_block{10}, end_block{10};
@@ -456,7 +456,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{db};
+    db::ROTxnManaged ro_txn{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
@@ -467,7 +467,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     block.header.number = 11;
     block.transactions[0].nonce++;
 
-    insert_block(db, block);
+    insert_block(env, block);
 
     // Execute block 11 using an *internal* txn
     start_block = 11, end_block = 11;
@@ -476,14 +476,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{db};
+    ro_txn = db::ROTxnManaged{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple blocks: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const int chain_id{1};
     const uint64_t batch_size{256 * kMebi};
@@ -534,14 +534,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     // Insert N blocks
     for (size_t i{10}; i < 10 + kBlocks; ++i) {
         block.header.number = i;
-        insert_block(db, block);
+        insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{db};
+    db::RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10 + kBlocks - 1};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -549,7 +549,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{db};
+    db::ROTxnManaged ro_txn{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == kBlocks * value);
     ro_txn.abort();
@@ -557,14 +557,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     // Insert N blocks again
     for (size_t i{10 + kBlocks}; i < (10 + 2 * kBlocks); ++i) {
         block.header.number = i;
-        insert_block(db, block);
+        insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn1{db};
+    db::RWTxnManaged external_txn1{env};
 
     start_block = 10 + kBlocks, end_block = 10 + 2 * kBlocks - 1;
     const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
@@ -573,14 +573,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{db};
+    ro_txn = db::ROTxnManaged{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple blocks: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     const int chain_id{1};
     const uint64_t batch_size{256 * kMebi};
@@ -589,7 +589,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     const bool write_call_traces{false};  // For coherence but don't care
 
     auto execute_blocks = [&](auto start_block, auto end_block) {
-        return silkworm_lib.execute_blocks_perpetual(db,
+        return silkworm_lib.execute_blocks_perpetual(env,
                                                      chain_id,
                                                      start_block,
                                                      end_block,
@@ -631,7 +631,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     // Insert N blocks
     for (size_t i{10}; i < 10 + kBlocks; ++i) {
         block.header.number = i;
-        insert_block(db, block);
+        insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
@@ -644,7 +644,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{db};
+    db::ROTxnManaged ro_txn{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == kBlocks * value);
     ro_txn.abort();
@@ -652,7 +652,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     // Insert N blocks again
     for (size_t i{10 + kBlocks}; i < (10 + 2 * kBlocks); ++i) {
         block.header.number = i;
-        insert_block(db, block);
+        insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
         block.transactions[0].nonce++;
@@ -665,7 +665,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{db};
+    ro_txn = db::ROTxnManaged{env};
     REQUIRE(db::read_account(ro_txn, to));
     CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
@@ -762,7 +762,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     SECTION("invalid header segment path") {
         SilkwormHeadersSnapshot invalid_shs{valid_shs};
@@ -860,25 +860,25 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_start_rpcdaemon", "[silkworm][capi]") 
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        CHECK(silkworm_start_rpcdaemon(handle, db, &kValidRpcSettings) == SILKWORM_INVALID_HANDLE);
+        CHECK(silkworm_start_rpcdaemon(handle, env, &kValidRpcSettings) == SILKWORM_INVALID_HANDLE);
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     SECTION("invalid settings") {
-        CHECK(silkworm_lib.start_rpcdaemon(db, nullptr) == SILKWORM_INVALID_SETTINGS);
+        CHECK(silkworm_lib.start_rpcdaemon(env, nullptr) == SILKWORM_INVALID_SETTINGS);
     }
 
     // The following test fails on Windows with silkworm_start_rpcdaemon returning SILKWORM_OK
 #ifndef _WIN32
     SECTION("test settings: invalid port") {
-        CHECK(silkworm_lib.start_rpcdaemon(db, &kInvalidRpcSettings) == SILKWORM_INTERNAL_ERROR);
+        CHECK(silkworm_lib.start_rpcdaemon(env, &kInvalidRpcSettings) == SILKWORM_INTERNAL_ERROR);
     }
 #endif  // _WIN32
 
     SECTION("test settings: valid port") {
-        CHECK(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
+        CHECK(silkworm_lib.start_rpcdaemon(env, &kValidRpcSettings) == SILKWORM_OK);
         REQUIRE(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }
@@ -891,14 +891,14 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[silkworm][capi]") {
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     SECTION("not yet started") {
         CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 
     SECTION("already started") {
-        REQUIRE(silkworm_lib.start_rpcdaemon(db, &kValidRpcSettings) == SILKWORM_OK);
+        REQUIRE(silkworm_lib.start_rpcdaemon(env, &kValidRpcSettings) == SILKWORM_OK);
         CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
     }
 }
@@ -917,28 +917,28 @@ static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
 static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kInfo);
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{db.get_path()};
+    SilkwormLibrary silkworm_lib{env_path()};
 
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        CHECK(silkworm_start_fork_validator(handle, db, &kValidForkValidatorSettings) == SILKWORM_INVALID_HANDLE);
+        CHECK(silkworm_start_fork_validator(handle, env, &kValidForkValidatorSettings) == SILKWORM_INVALID_HANDLE);
     }
 
     SECTION("invalid settings") {
-        CHECK(silkworm_lib.start_fork_validator(db, nullptr) == SILKWORM_INVALID_SETTINGS);
+        CHECK(silkworm_lib.start_fork_validator(env, nullptr) == SILKWORM_INVALID_SETTINGS);
     }
 
     SECTION("starts fork validator with valid settings") {
-        CHECK(silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings) == SILKWORM_OK);
+        CHECK(silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings) == SILKWORM_OK);
         REQUIRE(silkworm_lib.stop_fork_validator() == SILKWORM_OK);
     }
 
-    SECTION("validates single chain") {
-        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
+    SECTION("validates chain") {
+        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
         CHECK(current_head_id.number == 9);
@@ -955,7 +955,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     }
 
     SECTION("validates multiple chains") {
-        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
+        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
         CHECK(current_head_id.number == 9);
@@ -978,7 +978,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     }
 
     SECTION("executes fork choice update") {
-        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
+        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
         auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();
@@ -997,7 +997,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
     }
 
     SECTION("executes fork choice update with final and safe blocks") {
-        silkworm_lib.start_fork_validator(db, &kValidForkValidatorSettings);
+        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
         auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();

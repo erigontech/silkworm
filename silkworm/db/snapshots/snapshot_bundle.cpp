@@ -20,6 +20,10 @@
 
 namespace silkworm::snapshots {
 
+SnapshotBundle::~SnapshotBundle() {
+    close();
+}
+
 void SnapshotBundle::reopen() {
     for (auto& snapshot_ref : snapshots()) {
         snapshot_ref.get().reopen_segment();
@@ -39,6 +43,32 @@ void SnapshotBundle::close() {
     for (auto& snapshot_ref : snapshots()) {
         snapshot_ref.get().close();
     }
+    if (on_close_callback_) {
+        on_close_callback_(*this);
+    }
+}
+
+std::vector<std::filesystem::path> SnapshotBundle::files() {
+    std::vector<std::filesystem::path> files;
+    files.reserve(kSnapshotsCount + kIndexesCount);
+
+    for (auto& snapshot_ref : snapshots()) {
+        files.push_back(snapshot_ref.get().path().path());
+    }
+    for (auto& index_ref : indexes()) {
+        files.push_back(index_ref.get().path().path());
+    }
+    return files;
+}
+
+std::vector<SnapshotPath> SnapshotBundle::snapshot_paths() {
+    std::vector<SnapshotPath> paths;
+    paths.reserve(kSnapshotsCount);
+
+    for (auto& snapshot_ref : snapshots()) {
+        paths.push_back(snapshot_ref.get().path());
+    }
+    return paths;
 }
 
 }  // namespace silkworm::snapshots

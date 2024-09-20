@@ -42,7 +42,7 @@ class Superstring {
     size_t size() const { return superstring_.size(); }
     void clear() { superstring_.clear(); }
 
-    inline bool has_same_chars(int i1, int j1) const {
+    bool has_same_chars(int i1, int j1) const {
         auto i = static_cast<size_t>(i1);
         auto j = static_cast<size_t>(j1);
         return superstring_[i * 2] && superstring_[j * 2] && (superstring_[i * 2 + 1] == superstring_[j * 2 + 1]);

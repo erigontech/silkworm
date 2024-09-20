@@ -38,7 +38,7 @@ using db::state::StateReader;
 
 // https://eth.wiki/json-rpc/API#parity_getblockreceipts
 Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid parity_getBlockReceipts params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -61,10 +61,14 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
             SILK_TRACE << "#receipts: " << receipts.size();
 
             const auto block{block_with_hash->block};
-            for (size_t i{0}; i < block.transactions.size(); i++) {
-                receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+            if (receipts.size() == block.transactions.size()) {
+                for (size_t i{0}; i < block.transactions.size(); i++) {
+                    receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+                }
+                reply = make_json_content(request, receipts);
+            } else {
+                reply = make_json_content(request, {});
             }
-            reply = make_json_content(request, receipts);
         } else {
             reply = make_json_content(request, {});
         }
@@ -108,11 +112,10 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        StateReader state_reader{*tx};
-
         const auto block_number = co_await core::get_block_number(block_id, *tx);
         SILK_DEBUG << "read account with address: " << address << " block number: " << block_number;
-        std::optional<Account> account = co_await state_reader.read_account(address, block_number);
+        StateReader state_reader{*tx, block_number};
+        std::optional<Account> account = co_await state_reader.read_account(address);
         if (!account) throw std::domain_error{"account not found"};
 
         Bytes seek_bytes = db::storage_prefix(address.bytes, account->incarnation);

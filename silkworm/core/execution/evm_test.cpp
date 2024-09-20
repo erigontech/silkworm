@@ -1107,8 +1107,8 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
 
     Block block{};
     block.header.number = *chain_config.constantinople_block;
-    constexpr auto zero_address = 0x0000000000000000000000000000000000000000_address;
-    constexpr auto caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    static constexpr auto kZeroAddress = 0x0000000000000000000000000000000000000000_address;
+    const auto caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
     const auto contract_address{create_address(caller, 0)};
 
     InMemoryState db;
@@ -1152,7 +1152,7 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
     if (account_changes_per_block.contains(block.header.number)) {
         const auto& account_changes{account_changes_per_block.at(block.header.number)};
         CHECK(account_changes.contains(caller));             // transaction caller pays for execution
-        CHECK(!account_changes.contains(zero_address));      // destruction beneficiary receives zero balance (hence unchanged)
+        CHECK(!account_changes.contains(kZeroAddress));      // destruction beneficiary receives zero balance (hence unchanged)
         CHECK(!account_changes.contains(contract_address));  // contract address hasn't changed after all
     }
     CHECK(state.number_of_self_destructs() == 1);
@@ -1160,7 +1160,7 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
 
 // First occurrence at mainnet block 1'639'553
 TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]") {
-    constexpr auto zero_address = 0x0000000000000000000000000000000000000000_address;
+    static constexpr auto kZeroAddress = 0x0000000000000000000000000000000000000000_address;
     evmc::address external_account{0xf466859ead1932d743d622cb74fc058882e8648a_address};
     const auto caller_address{create_address(external_account, 0)};
     const auto callee_address{create_address(external_account, 1)};
@@ -1243,7 +1243,7 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
     CHECK(call_traces.senders.contains(external_account));  // all txs originates from external_account
     CHECK(call_traces.senders.contains(caller_address));    // 3rd tx triggers one delegate call from caller_address
     CHECK(call_traces.recipients.size() == 3);
-    CHECK(call_traces.recipients.contains(zero_address));    // 1st+2nd txs go to zero_address (contract creation)
+    CHECK(call_traces.recipients.contains(kZeroAddress));    // 1st+2nd txs go to zero_address (contract creation)
     CHECK(call_traces.recipients.contains(caller_address));  // 3rd tx goes to caller_address
     CHECK(call_traces.recipients.contains(callee_address));  // 3rd tx triggers one delegate call to callee_address
 }

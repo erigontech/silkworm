@@ -59,12 +59,12 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
-EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool gas_bailout) noexcept
+EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout) noexcept
     : beneficiary{block.header.beneficiary},
       block_{block},
       state_{state},
       config_{config},
-      gas_bailout_{gas_bailout},
+      bailout_{bailout},
       evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 {}
 
@@ -100,8 +100,8 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     evmc::Result res{EVMC_SUCCESS, message.gas, 0};
 
     auto value{intx::be::load<intx::uint256>(message.value)};
-    const auto have = state_.get_balance(message.sender);
-    if (!gas_bailout_ && have < value) {
+    const auto owned_funds = state_.get_balance(message.sender);
+    if (!bailout_ && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
 
         for (auto tracer : tracers_) {
@@ -150,15 +150,13 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         state_.set_nonce(contract_addr, 1);
     }
 
-    if (!gas_bailout_ || have >= value) {
-        state_.subtract_from_balance(message.sender, value);
-    }
-    state_.add_to_balance(contract_addr, value);
+    transfer(state_, message.sender, contract_addr, value, bailout_);
 
     const evmc_message deploy_message{
         .kind = message.depth > 0 ? message.kind : EVMC_CALL,
         .depth = message.depth,
         .gas = message.gas,
+        .gas_cost = message.gas_cost,
         .recipient = contract_addr,
         .sender = message.sender,
         .value = message.value,
@@ -207,8 +205,8 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     evmc::Result res{EVMC_SUCCESS, message.gas};
 
     const auto value{intx::be::load<intx::uint256>(message.value)};
-    const auto have = state_.get_balance(message.sender);
-    if (!gas_bailout_ && message.kind != EVMC_DELEGATECALL && have < value) {
+    const auto owned_funds = state_.get_balance(message.sender);
+    if (!bailout_ && message.kind != EVMC_DELEGATECALL && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
@@ -221,10 +219,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             state_.touch(message.recipient);
         } else {
-            if (!gas_bailout_ || have >= value) {
-                state_.subtract_from_balance(message.sender, value);
-            }
-            state_.add_to_balance(message.recipient, value);
+            transfer(state_, message.sender, message.recipient, value, bailout_);
         }
     }
 
@@ -241,7 +236,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         } else {
             const std::optional<Bytes> output{contract.run(input)};
             if (output) {
-                res = evmc::Result{EVMC_SUCCESS, message.gas - static_cast<int64_t>(gas), 0,
+                res = evmc::Result{EVMC_SUCCESS, message.gas - static_cast<int64_t>(gas), 0, message.gas_cost,
                                    output->data(), output->size()};
             } else {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
@@ -275,16 +270,53 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
+CallResult EVM::deduct_entry_fees(const Transaction& txn) const {
+    if (!bailout_) {
+        const evmc_revision rev{revision()};
+        const intx::uint256 base_fee_per_gas{block().header.base_fee_per_gas.value_or(0)};
+
+        // EIP-1559 normal gas cost
+        intx::uint256 required_funds;
+        if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
+            // This method should be called after check (max_fee and base_fee) present in pre_check() method
+            const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                            : txn.max_priority_fee_per_gas};
+            required_funds = txn.gas_limit * effective_gas_price;
+        } else {
+            required_funds = 0;
+        }
+
+        // EIP-4844 blob gas cost (calc_data_fee)
+        if (block().header.blob_gas_used && rev >= EVMC_CANCUN) {
+            // compute blob fee for eip-4844 data blobs if any
+            const intx::uint256 blob_gas_price{block().header.blob_gas_price().value_or(0)};
+            required_funds += txn.total_blob_gas() * blob_gas_price;
+        }
+
+        intx::uint512 maximum_cost = required_funds;
+        if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
+            maximum_cost = txn.maximum_gas_cost();
+        }
+
+        const auto owned_funds = state_.get_balance(*txn.sender());
+        if (owned_funds < maximum_cost + txn.value) {
+            std::string from = address_to_hex(*txn.sender());
+            std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
+            return {.status = EVMC_INSUFFICIENT_BALANCE, .error_message = msg};
+        }
+        state_.subtract_from_balance(*txn.sender(), required_funds);
+    }
+    return {.status = EVMC_SUCCESS};
+}
+
 evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {
     const evmc_revision rev{revision()};
-
     if (exo_evm) {
         EvmHost host{*this};
         return exo_evm->execute(exo_evm, &EvmHost::get_interface(), host.to_context(), rev, &message,
                                 code.data(), code.size());
-    } else {
-        return execute_with_baseline_interpreter(rev, message, code, code_hash);
     }
+    return execute_with_baseline_interpreter(rev, message, code, code_hash);
 }
 
 gsl::owner<evmone::ExecutionState*> EVM::acquire_state() const noexcept {
@@ -344,12 +376,10 @@ void EVM::add_tracer(EvmTracer& tracer) noexcept {
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     const evmc_revision rev{evm_.revision()};
-
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         return !evm_.state().is_dead(address);
-    } else {
-        return evm_.state().exists(address);
     }
+    return evm_.state().exists(address);
 }
 
 evmc_access_status EvmHost::access_account(const evmc::address& address) noexcept {
@@ -389,18 +419,16 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
         // !is_zero(original_val)
         if (is_zero(value)) {
             return EVMC_STORAGE_DELETED;
-        } else {
-            return EVMC_STORAGE_MODIFIED;
         }
+        return EVMC_STORAGE_MODIFIED;
     }
     // original_val != current_val
     if (!is_zero(original_val)) {
         if (is_zero(current_val)) {
             if (original_val == value) {
                 return EVMC_STORAGE_DELETED_RESTORED;
-            } else {
-                return EVMC_STORAGE_DELETED_ADDED;
             }
+            return EVMC_STORAGE_DELETED_ADDED;
         }
         // !is_zero(current_val)
         if (is_zero(value)) {
@@ -409,16 +437,14 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
         // !is_zero(value)
         if (original_val == value) {
             return EVMC_STORAGE_MODIFIED_RESTORED;
-        } else {
-            return EVMC_STORAGE_ASSIGNED;
         }
+        return EVMC_STORAGE_ASSIGNED;
     }
     // is_zero(original_val)
     if (original_val == value) {
         return EVMC_STORAGE_ADDED_DELETED;
-    } else {
-        return EVMC_STORAGE_ASSIGNED;
     }
+    return EVMC_STORAGE_ASSIGNED;
 }
 
 evmc::uint256be EvmHost::get_balance(const evmc::address& address) const noexcept {
@@ -433,9 +459,8 @@ size_t EvmHost::get_code_size(const evmc::address& address) const noexcept {
 evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcept {
     if (evm_.state().is_dead(address)) {
         return {};
-    } else {
-        return evm_.state().get_code_hash(address);
     }
+    return evm_.state().get_code_hash(address);
 }
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
@@ -475,14 +500,12 @@ evmc::Result EvmHost::call(const evmc_message& message) noexcept {
         if (res.status_code == EVMC_REVERT) {
             // geth returns CREATE output only in case of REVERT
             return res;
-        } else {
-            evmc::Result res_with_no_output{res.status_code, res.gas_left, res.gas_refund};
-            res_with_no_output.create_address = res.create_address;
-            return res_with_no_output;
         }
-    } else {
-        return evm_.call(message);
+        evmc::Result res_with_no_output{res.status_code, res.gas_left, res.gas_refund};
+        res_with_no_output.create_address = res.create_address;
+        return res_with_no_output;
     }
+    return evm_.call(message);
 }
 
 evmc_tx_context EvmHost::get_tx_context() const noexcept {

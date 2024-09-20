@@ -28,9 +28,10 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
            execution::api::Client& execution,
            const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
            const ChainConfig& config,
+           bool use_preverified_hashes,
            const EngineRpcSettings& rpc_settings)
     : sync_sentry_client_{executor, sentry_client},
-      block_exchange_{sync_sentry_client_, db::ROAccess{chaindata_env}, config} {
+      block_exchange_{sync_sentry_client_, db::ROAccess{chaindata_env}, config, use_preverified_hashes} {
     // If terminal total difficulty is present in chain config, the network will use Proof-of-Stake sooner or later
     if (config.terminal_total_difficulty.has_value()) {
         // Configure and activate the Execution Layer Engine API RPC server
@@ -40,8 +41,8 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
             },
             .engine_ifc_log_settings = rpc_settings.engine_ifc_log_settings,
             .context_pool_settings{
-                .num_contexts = 1,                             // single-client so just one scheduler is OK
-                .wait_mode = concurrency::WaitMode::blocking,  // single-client so no need to play w/ strategies
+                .num_contexts = 1,                              // single-client so just one scheduler is OK
+                .wait_mode = concurrency::WaitMode::kBlocking,  // single-client so no need to play w/ strategies
             },
             .eth_end_point = "",  // no need for Ethereum JSON RPC end-point
             .engine_end_point = rpc_settings.engine_end_point,
@@ -61,6 +62,10 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
         // Create the synchronization algorithm based on GHOST, i.e. PoW
         chain_sync_ = std::make_shared<PoWSync>(block_exchange_, execution);
     }
+}
+
+BlockNum Sync::last_pre_validated_block() const {
+    return block_exchange_.last_pre_validated_block();
 }
 
 Task<void> Sync::async_run() {

@@ -53,9 +53,13 @@ class MockAsyncReaderWriter : public ::grpc::ClientAsyncReaderWriterInterface<Re
     MOCK_METHOD(void, ReadInitialMetadata, (void*), (override));
     MOCK_METHOD(void, Read, (Reply*, void*), (override));
     MOCK_METHOD(void, Write, (const Request&, void*), (override));
-    MOCK_METHOD(void, Write, (const Request&, ::grpc::WriteOptions, void*), (override));
     MOCK_METHOD(void, WritesDone, (void*), (override));
     MOCK_METHOD(void, Finish, (::grpc::Status*, void*), (override));
+
+    // gMock does not support mocking overloaded methods at runtime, but you can delegate from one another
+    void Write(const Request& r, ::grpc::WriteOptions, void* tag) override {
+        Write(r, tag);
+    }
 };
 
 template <typename Request, typename Reply>

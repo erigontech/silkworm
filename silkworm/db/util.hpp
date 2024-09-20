@@ -39,11 +39,11 @@ namespace silkworm::db {
 
 // Used to compare versions of entities (e.g. DbSchema)
 struct VersionBase {
-    uint32_t Major{0};
-    uint32_t Minor{0};
-    uint32_t Patch{0};
+    uint32_t major{0};
+    uint32_t minor{0};
+    uint32_t patch{0};
 
-    [[nodiscard]] std::string to_string() const { return absl::StrCat(Major, ".", Minor, ".", Patch); }
+    [[nodiscard]] std::string to_string() const { return absl::StrCat(major, ".", minor, ".", patch); }
 
     // NOLINTNEXTLINE(hicpp-use-nullptr, modernize-use-nullptr)
     friend auto operator<=>(const VersionBase&, const VersionBase&) = default;
@@ -53,9 +53,6 @@ struct VersionBase {
 
 //! Key for DbInfo bucket storing db schema version
 inline constexpr const char* kDbSchemaVersionKey{"dbVersion"};
-
-//! Key for DbInfo bucket storing snapshot file names
-inline constexpr const char* kDbSnapshotsKey{"snapshots"};
 
 inline constexpr size_t kIncarnationLength{8};
 inline constexpr size_t kLocationLength{32};
@@ -141,5 +138,14 @@ std::optional<ByteView> find_value_suffix(ROCursorDupSort& table, ByteView key, 
 
 // We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
 void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
+
+//! Build key for account domain given the target address and location
+Bytes account_domain_key(const evmc::address& address);
+
+//! Build key for storage domain given the target address and location
+Bytes storage_domain_key(const evmc::address& address, const evmc::bytes32& location);
+
+//! Build key for code domain given the target address and location
+Bytes code_domain_key(const evmc::address& address);
 
 }  // namespace silkworm::db

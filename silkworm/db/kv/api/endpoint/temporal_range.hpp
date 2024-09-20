@@ -70,6 +70,7 @@ struct DomainRangeQuery {
     std::string table;
     Bytes from_key;
     Bytes to_key;
+    std::optional<Timestamp> timestamp;  // not present means 'latest state' (no history lookup)
     bool ascending_order{false};
     int64_t limit{kUnlimited};
     uint32_t page_size{0};
@@ -79,5 +80,6 @@ struct DomainRangeQuery {
 using DomainRangeResult = RangeResult;
 
 using PaginatedTimestamps = PaginatedSequence<Timestamp>;
+using PaginatedKeysValues = PaginatedSequencePair<Bytes, Bytes>;
 
 }  // namespace silkworm::db::kv::api

@@ -29,7 +29,7 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
     return db::read_account(txn_, address, block_number_ + 1);
 }
 
-ByteView LocalState::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView LocalState::read_code(const evmc::address& /*address*/, const evmc::bytes32& code_hash) const noexcept {
     auto code_optional = db::read_code(txn_, code_hash);
     if (!code_optional) {
         return ByteView{};
@@ -46,15 +46,15 @@ uint64_t LocalState::previous_incarnation(const evmc::address& /*address*/) cons
 }
 
 std::optional<BlockHeader> LocalState::read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
-    return db::read_header(txn_, block_number, block_hash);
+    return data_model_.read_header(block_number, block_hash);
 }
 
 bool LocalState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
-    return db::read_body(txn_, block_hash, block_number, out);
+    return data_model_.read_body(block_hash, block_number, out);
 }
 
 std::optional<intx::uint256> LocalState::total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept {
-    return db::read_total_difficulty(txn_, block_number, block_hash);
+    return data_model_.read_total_difficulty(block_number, block_hash);
 }
 
 evmc::bytes32 LocalState::state_root_hash() const {
@@ -68,7 +68,7 @@ BlockNum LocalState::current_canonical_block() const {
 
 std::optional<evmc::bytes32> LocalState::canonical_hash(BlockNum block_number) const {
     // This method should not be called by EVM::execute
-    return db::read_canonical_hash(txn_, block_number);
+    return data_model_.read_canonical_header_hash(block_number);
 }
 
 }  // namespace silkworm::db::state

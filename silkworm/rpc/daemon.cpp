@@ -32,10 +32,12 @@
 #include <silkworm/db/kv/api/direct_client.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/state/version.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
@@ -246,24 +248,14 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
-    auto& io_context = *context.io_context();
-    auto& grpc_context = *context.grpc_context();
-    auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
-    auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(io_context)};
-    if (settings_.standalone) {
-        kv_client_ = std::make_unique<db::kv::grpc::client::RemoteClient>(
-            create_channel_, grpc_context, state_cache, block_provider(backend), block_number_from_txn_hash_provider(backend));
-    } else {
-        // TODO(canepat) finish implementation and clean-up composition of objects here
-        db::kv::api::StateChangeRunner runner{io_context.get_executor()};
-        db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
-        kv_client_ = std::make_unique<db::kv::api::DirectClient>(
-            std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
-    }
+    kv_client_ = make_kv_client(context);
     state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client_);
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
+
+    // Schedule the retrieval of Erigon data storage model as first task on the execution contexts
+    schedule_data_format_retrieval();
 
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();
@@ -316,6 +308,34 @@ void Daemon::add_shared_services() {
         add_shared_service<db::kv::api::StateCache>(io_context, std::move(state_cache));
         add_shared_service(io_context, filter_storage);
         add_shared_service<engine::ExecutionEngine>(io_context, std::move(engine));
+    }
+}
+
+std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& context) {
+    auto& io_context = *context.io_context();
+    auto& grpc_context = *context.grpc_context();
+    auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
+    auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(io_context)};
+    if (settings_.standalone) {
+        return std::make_unique<db::kv::grpc::client::RemoteClient>(
+            create_channel_, grpc_context, state_cache, block_provider(backend), block_number_from_txn_hash_provider(backend));
+    }
+    // TODO(canepat) finish implementation and clean-up composition of objects here
+    db::kv::api::StateChangeRunner runner{io_context.get_executor()};
+    db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
+    return std::make_unique<db::kv::api::DirectClient>(
+        std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
+}
+
+void Daemon::schedule_data_format_retrieval() {
+    // Schedule the retrieval of Erigon data storage model as first task on all the execution contexts
+    // This ensures that the data format is set in any case *before* any API request handling happens
+    for (size_t i{0}; i < context_pool_.num_contexts(); ++i) {
+        auto& context = context_pool_.next_context();
+        concurrency::spawn_future(*context.io_context(), [this, &context]() -> Task<void> {
+            const auto kv_client = make_kv_client(context);
+            co_await db::state::set_data_format(*kv_client);
+        });
     }
 }
 

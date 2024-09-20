@@ -28,7 +28,7 @@ static const char* KV_method_names[] = {
   "/remote.KV/Snapshots",
   "/remote.KV/Range",
   "/remote.KV/DomainGet",
-  "/remote.KV/HistoryGet",
+  "/remote.KV/HistorySeek",
   "/remote.KV/IndexRange",
   "/remote.KV/HistoryRange",
   "/remote.KV/DomainRange",
@@ -47,7 +47,7 @@ KV::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const 
   , rpcmethod_Snapshots_(KV_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_Range_(KV_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_DomainGet_(KV_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_HistoryGet_(KV_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HistorySeek_(KV_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_IndexRange_(KV_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_HistoryRange_(KV_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_DomainRange_(KV_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
@@ -177,25 +177,25 @@ void KV::Stub::async::DomainGet(::grpc::ClientContext* context, const ::remote::
   return result;
 }
 
-::grpc::Status KV::Stub::HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::remote::HistoryGetReply* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::remote::HistoryGetReq, ::remote::HistoryGetReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HistoryGet_, context, request, response);
+::grpc::Status KV::Stub::HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::remote::HistorySeekReply* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::HistorySeekReq, ::remote::HistorySeekReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HistorySeek_, context, request, response);
 }
 
-void KV::Stub::async::HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::remote::HistoryGetReq, ::remote::HistoryGetReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HistoryGet_, context, request, response, std::move(f));
+void KV::Stub::async::HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::HistorySeekReq, ::remote::HistorySeekReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HistorySeek_, context, request, response, std::move(f));
 }
 
-void KV::Stub::async::HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HistoryGet_, context, request, response, reactor);
+void KV::Stub::async::HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HistorySeek_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>* KV::Stub::PrepareAsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::HistoryGetReply, ::remote::HistoryGetReq, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_HistoryGet_, context, request);
+::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>* KV::Stub::PrepareAsyncHistorySeekRaw(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::HistorySeekReply, ::remote::HistorySeekReq, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_HistorySeek_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>* KV::Stub::AsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>* KV::Stub::AsyncHistorySeekRaw(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) {
   auto* result =
-    this->PrepareAsyncHistoryGetRaw(context, request, cq);
+    this->PrepareAsyncHistorySeekRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -333,12 +333,12 @@ KV::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       KV_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< KV::Service, ::remote::HistoryGetReq, ::remote::HistoryGetReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< KV::Service, ::remote::HistorySeekReq, ::remote::HistorySeekReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](KV::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::remote::HistoryGetReq* req,
-             ::remote::HistoryGetReply* resp) {
-               return service->HistoryGet(ctx, req, resp);
+             const ::remote::HistorySeekReq* req,
+             ::remote::HistorySeekReply* resp) {
+               return service->HistorySeek(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       KV_method_names[7],
@@ -416,7 +416,7 @@ KV::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status KV::Service::HistoryGet(::grpc::ServerContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response) {
+::grpc::Status KV::Service::HistorySeek(::grpc::ServerContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response) {
   (void) context;
   (void) request;
   (void) response;

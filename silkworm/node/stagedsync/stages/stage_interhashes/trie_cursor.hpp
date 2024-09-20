@@ -80,7 +80,7 @@ class TrieCursor {
     TrieCursor& operator=(const TrieCursor&) = delete;
 
     //! \brief Represent the data returned after a move operation (to_prefix or to_next)
-    struct move_operation_result {
+    struct MoveOperationResult {
         std::optional<Bytes> key{};              // Nibbled key of node
         std::optional<evmc::bytes32> hash{};     // Hash of node
         bool children_in_trie{false};            // Whether there are children in trie
@@ -88,10 +88,10 @@ class TrieCursor {
     };
 
     //! \brief Acquires the prefix and position the cursor to the first occurrence
-    [[nodiscard]] move_operation_result to_prefix(ByteView prefix);
+    [[nodiscard]] MoveOperationResult to_prefix(ByteView prefix);
 
     //! \brief Moves the cursor to next relevant position
-    [[nodiscard]] move_operation_result to_next();
+    [[nodiscard]] MoveOperationResult to_next();
 
   private:
     uint32_t level_{0};                      // Depth level in sub_nodes_

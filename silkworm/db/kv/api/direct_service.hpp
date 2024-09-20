@@ -46,22 +46,6 @@ class DirectService : public Service {
     // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
     Task<void> state_changes(const StateChangeOptions&, StateChangeConsumer) override;
 
-    /** Temporal Point Queries **/
-
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-    Task<HistoryPointResult> get_history(const HistoryPointQuery&) override;
-
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    Task<DomainPointResult> get_domain(const DomainPointQuery&) override;
-
-    /** Temporal Range Queries **/
-
-    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<HistoryRangeResult> get_history_range(const HistoryRangeQuery&) override;
-
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) override;
-
   private:
     //! The router to service endpoint implementation
     ServiceRouter router_;

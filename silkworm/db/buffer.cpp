@@ -479,7 +479,7 @@ void Buffer::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
     Bytes key{block_key(block_number, hash.bytes)};
     headers_[key] = block.header;
-    bodies_[key] = block;  // NOLINT(cppcoreguidelines-slicing)
+    bodies_[key] = block.copy_body();
 
     if (block_number == 0) {
         difficulty_[key] = 0;
@@ -524,16 +524,13 @@ std::optional<Account> Buffer::read_account(const evmc::address& address) const 
     return db_account;
 }
 
-ByteView Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView Buffer::read_code(const evmc::address& /*address*/, const evmc::bytes32& code_hash) const noexcept {
     if (auto it{hash_to_code_.find(code_hash)}; it != hash_to_code_.end()) {
         return it->second;
     }
     std::optional<ByteView> code{db::read_code(txn_, code_hash)};
-    if (code.has_value()) {
-        return *code;
-    } else {
-        return {};
-    }
+    ByteView empty;
+    return code.value_or(empty);
 }
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,

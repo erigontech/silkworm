@@ -37,11 +37,11 @@ namespace silkworm::db::state {
 class AsyncRemoteState {
   public:
     explicit AsyncRemoteState(kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number)
-        : storage_(storage), block_number_(block_number), state_reader_{tx} {}
+        : storage_(storage), state_reader_(tx, block_number + 1) {}
 
     Task<std::optional<Account>> read_account(const evmc::address& address) const noexcept;
 
-    Task<ByteView> read_code(const evmc::bytes32& code_hash) const noexcept;
+    Task<ByteView> read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept;
 
     Task<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept;
 
@@ -63,7 +63,6 @@ class AsyncRemoteState {
     static std::unordered_map<evmc::bytes32, Bytes> code_;
 
     const chain::ChainStorage& storage_;
-    BlockNum block_number_;
     StateReader state_reader_;
 };
 
@@ -74,7 +73,7 @@ class RemoteState : public State {
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
-    ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
+    ByteView read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept override;
 
     evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept override;
 

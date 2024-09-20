@@ -95,7 +95,7 @@ TEST_CASE("RecSplit8: key_count=2", "[silkworm][snapshots][recsplit]") {
 }
 
 template <typename RS>
-static void check_bijection(RS& rec_split, const std::vector<hash128_t>& keys) {
+static void check_bijection(RS& rec_split, const std::vector<Hash128>& keys) {
     // RecSplit implements a MPHF K={k1...kN} -> V={0..N-1} so we must check all codomain is exhausted
     std::vector<uint64_t> recsplit_values(keys.size());
     // Fill the codomain values w/ zero, so we can easily check if a value is already used or not
@@ -124,7 +124,7 @@ const std::size_t RecSplit4::kLowerAggregationBound = RecSplit4::SplitStrategy::
 template <>
 const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
 template <>
-const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
+const std::array<uint32_t, kMaxBucketSize> RecSplit4::kMemo = RecSplit4::fill_golomb_rice();
 
 using RecSplit4 = RecSplit<kTestLeaf>;
 auto seq_build_strategy_4() { return std::make_unique<RecSplit4::SequentialBuildingStrategy>(db::etl::kOptimalBufferSize); }
@@ -136,7 +136,7 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][snapshots][recsplit]")
     constexpr int kTestNumKeys{1'000};
     constexpr int kTestBucketSize{128};
 
-    std::vector<hash128_t> hashed_keys;
+    std::vector<Hash128> hashed_keys;
     for (std::size_t i{0}; i < kTestNumKeys; ++i) {
         hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
     }
@@ -184,7 +184,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][snapshots][recsplit]")
     };
     for (const auto [key_count, bucket_size] : recsplit_params_sequence) {
         SECTION("random_hash128 OK [" + std::to_string(key_count) + "-" + std::to_string(bucket_size) + "]") {  // NOLINT
-            std::vector<hash128_t> hashed_keys;
+            std::vector<Hash128> hashed_keys;
             for (std::size_t i{0}; i < key_count; ++i) {
                 hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
             }

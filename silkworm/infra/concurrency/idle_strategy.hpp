@@ -50,11 +50,10 @@ class SleepingIdleStrategy {
   public:
     explicit SleepingIdleStrategy(std::chrono::milliseconds duration = 1ms) : duration_(duration) {}
 
-    inline void idle(std::size_t work_count) {
+    void idle(std::size_t work_count) {
         if (work_count > 0) {
             return;
         }
-
         std::this_thread::sleep_for(duration_);
     }
 
@@ -64,27 +63,26 @@ class SleepingIdleStrategy {
 
 class YieldingIdleStrategy {
   public:
-    static inline void idle(std::size_t work_count) {
+    static void idle(std::size_t work_count) {
         if (work_count > 0) {
             return;
         }
-
         std::this_thread::yield();
     }
 };
 
 class BusySpinIdleStrategy {
   public:
-    inline void idle(std::size_t /*work_count*/) {
+    void idle(std::size_t /*work_count*/) {
     }
 };
 
 enum class WaitMode {
-    backoff,
-    blocking,
-    sleeping,
-    yielding,
-    busy_spin
+    kBackoff,
+    kBlocking,
+    kSleeping,
+    kYielding,
+    kBusySpin
 };
 
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error);

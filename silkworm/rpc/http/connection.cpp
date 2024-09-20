@@ -269,7 +269,7 @@ Task<void> Connection::close_stream() {
 
 //! Write chunked response content to the underlying socket
 Task<std::size_t> Connection::write(std::string_view content, bool /*last*/) {
-    unsigned long bytes_transferred{0};
+    size_t bytes_transferred{0};
     try {
         if (gzip_encoding_requested_) {
             std::string compressed_content;
@@ -439,11 +439,11 @@ bool Connection::is_method_allowed(boost::beast::http::verb method) {
 }
 
 std::string Connection::get_date_time() {
-    static const absl::TimeZone tz{absl::LocalTimeZone()};
+    static const absl::TimeZone kTz{absl::LocalTimeZone()};
     const absl::Time now{absl::Now()};
 
     std::stringstream ss;
-    ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S ", now, tz) << tz.name();
+    ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S ", now, kTz) << kTz.name();
     return ss.str();
 }
 

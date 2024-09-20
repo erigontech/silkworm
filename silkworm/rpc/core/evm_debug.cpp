@@ -21,6 +21,7 @@
 
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
+#include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -102,14 +103,19 @@ void insert_error(DebugLog& log, evmc_status_code status_code) {
 }
 
 void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    last_opcode_ = std::nullopt;
     if (opcode_names_ == nullptr) {
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
-    start_gas_.push(msg.gas);
 
     const evmc::address recipient(msg.recipient);
     const evmc::address sender(msg.sender);
+
+    if (!logs_.empty()) {
+        auto& log = logs_[logs_.size() - 1];  // it should be a CALL* opcode
+        log.gas_cost = msg.gas_cost;
+    }
 
     SILK_DEBUG << "on_execution_start:"
                << " rev: " << rev
@@ -128,6 +134,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     const auto opcode = execution_state.original_code[pc];
     const auto opcode_name = get_opcode_name(opcode_names_, opcode);
+    last_opcode_ = opcode;
 
     SILK_DEBUG << "on_instruction_start:"
                << " pc: " << std::dec << pc
@@ -159,23 +166,11 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
-        if (fix_call_gas_info_) {  // previuos opcodw was a CALL*
-            if (execution_state.msg->depth == fix_call_gas_info_->depth) {
-                if (fix_call_gas_info_->gas_cost) {
-                    log.gas_cost = fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
-                } else if (!fix_call_gas_info_->precompiled) {
-                    log.gas_cost = log.gas - gas + fix_call_gas_info_->stipend;
-                }
-            } else {
-                log.gas_cost = gas + fix_call_gas_info_->stipend + fix_call_gas_info_->code_cost;
-            }
 
-            fix_call_gas_info_.reset();
-        } else {
-            const auto depth = log.depth;
-            if (depth == execution_state.msg->depth + 1 || depth == execution_state.msg->depth) {
-                log.gas_cost = log.gas - gas;
-            }
+        if (log.opcode == OP_RETURN || log.opcode == OP_STOP || log.opcode == OP_REVERT) {
+            log.gas_cost = 0;
+        } else if (log.depth == execution_state.msg->depth + 1) {
+            log.gas_cost = execution_state.last_opcode_gas_cost;
         }
     }
 
@@ -185,10 +180,9 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         logs_.erase(logs_.begin());
     }
 
-    fill_call_gas_info(opcode, execution_state, stack_top, stack_height, intra_block_state);
-
     DebugLog log;
     log.pc = pc;
+    log.opcode = opcode;
     log.op = opcode_name;
     log.gas = gas;
     log.gas_cost = metrics_[opcode].gas_cost;
@@ -216,17 +210,12 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
                << " status: " << result.status_code
                << ", gas: " << std::dec << gas;
 
-    if (fix_call_gas_info_) {
-        fix_call_gas_info_->gas_cost += gas + fix_call_gas_info_->code_cost;
-        fix_call_gas_info_->code_cost = 0;
-        fix_call_gas_info_->precompiled = true;
+    if (logs_.size() > 1) {
+        flush_logs();
     }
 }
 
 void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    auto start_gas = start_gas_.top();
-    start_gas_.pop();
-
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
 
@@ -237,76 +226,53 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             case evmc_status_code::EVMC_STACK_OVERFLOW:
             case evmc_status_code::EVMC_STACK_UNDERFLOW:
-                log.gas_cost = 0;
+                log.gas_cost = result.gas_cost;
                 break;
 
             case evmc_status_code::EVMC_OUT_OF_GAS:
-                if (fix_call_gas_info_) {
-                    log.gas_cost += fix_call_gas_info_->gas_cost;
+                if (log.opcode != OP_CALLCODE) {
+                    log.gas_cost = result.gas_cost;
                 }
                 break;
 
             default:
-                if (fix_call_gas_info_) {
-                    if (result.gas_left == 0 && !fix_call_gas_info_->precompiled) {
-                        log.gas_cost = fix_call_gas_info_->stipend + fix_call_gas_info_->gas_cost;
-                    } else if (!fix_call_gas_info_->precompiled) {
-                        log.gas_cost = result.gas_left + fix_call_gas_info_->gas_cost + fix_call_gas_info_->code_cost;
-                        fix_call_gas_info_->gas_cost = 0;
-                    } else if (fix_call_gas_info_->precompiled) {
-                        log.gas_cost = fix_call_gas_info_->gas_cost;
-                        fix_call_gas_info_->gas_cost = 0;
-                    } else {
-                        fix_call_gas_info_->gas_cost = 0;
-                    }
+                if (log.opcode == OP_CALL || log.opcode == OP_CALLCODE || log.opcode == OP_STATICCALL || log.opcode == OP_DELEGATECALL || log.opcode == OP_CREATE || log.opcode == OP_CREATE2) {
+                    log.gas_cost += result.gas_cost;
+                } else {
+                    log.gas_cost = log.gas_cost;
                 }
                 break;
+        }
+
+        /* EVM WA: EVMONE add OP_STOP at the end of tx if not present but doesn't notify to the tracer. Add sw to add STOP to the op list */
+        if (result.status_code == EVMC_SUCCESS && last_opcode_ && last_opcode_ != OP_SELFDESTRUCT && last_opcode_ != OP_RETURN && last_opcode_ != OP_STOP) {
+            DebugLog newlog;
+            newlog.pc = log.pc + 1;
+            newlog.op = get_opcode_name(opcode_names_, OP_STOP);
+            newlog.opcode = OP_STOP;
+            newlog.gas = log.gas - log.gas_cost;
+            newlog.gas_cost = 0;
+            newlog.depth = log.depth;
+            newlog.memory = log.memory;
+            logs_.push_back(newlog);
         }
     }
 
     if (logs_.size() > 1) {
-        auto& log = logs_.front();
-        write_log(log);
-        logs_.erase(logs_.begin());
+        flush_logs();
     }
 
     SILK_DEBUG << "on_execution_end:"
                << " result.status_code: " << result.status_code
-               << " start_gas: " << std::dec << start_gas
-               << " gas_left: " << std::dec << result.gas_left;
+               << " gas_left: " << std::dec << result.gas_left
+               << " gas_cost: " << std::dec << result.gas_cost;
 }
 
 void DebugTracer::flush_logs() {
     for (const auto& log : logs_) {
         write_log(log);
     }
-}
-
-void DebugTracer::fill_call_gas_info(unsigned char opcode, const evmone::ExecutionState& execution_state, const intx::uint256* stack_top, const int stack_height, const silkworm::IntraBlockState& intra_block_state) {
-    if (opcode == OP_CALL || opcode == OP_CALLCODE || opcode == OP_STATICCALL || opcode == OP_DELEGATECALL || opcode == OP_CREATE || opcode == OP_CREATE2) {
-        fix_call_gas_info_ = std::make_unique<FixCallGasInfo>(FixCallGasInfo{execution_state.msg->depth, 0, metrics_[opcode].gas_cost});
-        const auto value = stack_top[-2];  // value
-        if (value != 0) {
-            fix_call_gas_info_->gas_cost += 9000;
-        }
-        if (opcode == OP_CALL) {
-            if (opcode == OP_CALL && stack_height >= 7 && value != 0) {
-                fix_call_gas_info_->stipend = 2300;  // for CALLs with value, include stipend
-            }
-            const auto call_gas = stack_top[0];                              // gas
-            const auto dst = intx::be::trunc<evmc::address>(stack_top[-1]);  // dst
-
-            if ((value != 0 || execution_state.rev < EVMC_SPURIOUS_DRAGON) && !intra_block_state.exists(dst)) {
-                fix_call_gas_info_->gas_cost += 25000;
-            }
-            SILK_DEBUG << "DebugTracer::evaluate_call_fixes:"
-                       << " call_gas: " << call_gas
-                       << " dst: " << dst
-                       << " value: " << value
-                       << " gas_cost: " << fix_call_gas_info_->gas_cost
-                       << " stipend: " << fix_call_gas_info_->stipend;
-        }
-    }
+    logs_.clear();
 }
 
 void AccountTracer::on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& intra_block_state) noexcept {
@@ -393,7 +359,7 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHa
     if (!block_with_hash) {
         co_return;
     }
-    rpc::Transaction transaction{call.to_transaction(block_with_hash->block.header.base_fee_per_gas)};
+    rpc::Transaction transaction{call.to_transaction()};
 
     const auto& block = block_with_hash->block;
     const auto number = block.header.number;
@@ -492,7 +458,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 }
 
 Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
-    rpc::Transaction transaction{call.to_transaction(block.header.base_fee_per_gas)};
+    rpc::Transaction transaction{call.to_transaction()};
     co_await execute(stream, storage, block.header.number, block, transaction, -1);
     co_return;
 }
@@ -599,7 +565,7 @@ Task<void> DebugExecutor::execute(
             stream.open_array();
 
             for (const auto& call : bundle.transactions) {
-                silkworm::Transaction txn{call.to_transaction(block.header.base_fee_per_gas)};
+                silkworm::Transaction txn{call.to_transaction()};
 
                 stream.open_object();
                 stream.write_field("structLogs");

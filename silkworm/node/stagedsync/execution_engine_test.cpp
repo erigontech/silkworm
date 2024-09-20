@@ -21,6 +21,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -32,8 +33,7 @@
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
-#include <silkworm/node/test_util/sample_blocks.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
@@ -41,11 +41,21 @@ namespace silkworm {
 using namespace silkworm::test_util;
 using namespace stagedsync;
 
-class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
+using execution::api::InvalidChain;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+
+class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::ExecutionEngine;
     using stagedsync::ExecutionEngine::forks_;
     using stagedsync::ExecutionEngine::main_chain_;
+};
+
+static BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_config) {
+    return [chain_config](SyncContext* sync_context) {
+        return std::make_unique<BodiesStage>(sync_context, chain_config, [] { return 0; });
+    };
 };
 
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
@@ -55,16 +65,22 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     auto db_context = db::test_util::TestDatabaseContext();
     auto node_settings = NodeSettings{
-        .data_directory = std::make_unique<DataDirectory>(db_context.get_mdbx_env().get_path(), false),
+        .data_directory = std::make_unique<DataDirectory>(db_context.mdbx_env().get_path(), false),
         .chaindata_env_config = db_context.get_env_config(),
         .chain_config = db_context.get_chain_config(),
         .parallel_fork_tracking_enabled = false,
         .keep_db_txn_open = true,
     };
 
-    db::RWAccess db_access{db_context.get_mdbx_env()};
+    db::RWAccess db_access{db_context.mdbx_env()};
 
-    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{
+        runner.executor(),
+        node_settings,
+        /* log_timer_factory = */ std::nullopt,
+        make_bodies_stage_factory(*node_settings.chain_config),
+        db_access,
+    };
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
@@ -126,7 +142,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     }
 
     SECTION("get_header_td returns correct total difficulty for genesis block") {
-        auto td = exec_engine.get_header_td(header0_hash);
+        auto td = exec_engine.get_header_td(header0_hash, std::nullopt);
         REQUIRE(td.has_value());
         CHECK(*td == 1);
     }
@@ -802,17 +818,22 @@ TEST_CASE("ExecutionEngine") {
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.clear();                           // disable preverified hashes
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
-    ExecutionEngine_ForTest exec_engine{runner.context(), node_settings, db_access};
+    ExecutionEngineForTest exec_engine{
+        runner.executor(),
+        node_settings,
+        /* log_timer_factory = */ std::nullopt,
+        make_bodies_stage_factory(*node_settings.chain_config),
+        db_access,
+    };
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
-    auto header0_hash = db::read_canonical_hash(tx, 0);
+    auto header0_hash = db::read_canonical_header_hash(tx, 0);
     REQUIRE(header0_hash.has_value());
 
     auto header0 = db::read_canonical_header(tx, 0);

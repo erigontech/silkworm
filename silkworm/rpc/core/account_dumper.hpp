@@ -54,7 +54,7 @@ class AccountDumper {
         bool exclude_storage);
 
   private:
-    Task<void> load_accounts(const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
+    Task<void> load_accounts(BlockNum block_number, const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
     Task<void> load_storage(BlockNum block_number, DumpAccounts& dump_accounts);
 
     db::kv::api::Transaction& transaction_;

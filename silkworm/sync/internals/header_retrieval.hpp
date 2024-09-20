@@ -27,9 +27,9 @@ namespace silkworm {
  */
 class HeaderRetrieval {
   public:
-    static const long soft_response_limit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
-    static const long est_header_rlp_size = 500;              // Approximate size of an RLP encoded block header
-    static const long max_headers_serve = 1024;               // Amount of block headers to be fetched per retrieval request
+    static const int kSoftResponseLimit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
+    static const int kEstHeaderRlpSize = 500;               // Approximate size of an RLP encoded block header
+    static const int kMaxHeadersServe = 1024;               // Amount of block headers to be fetched per retrieval request
 
     explicit HeaderRetrieval(db::ROAccess);
 

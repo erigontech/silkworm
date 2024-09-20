@@ -38,21 +38,26 @@ ClientContext::ClientContext(std::size_t context_id, WaitMode wait_mode)
       grpc_context_{std::make_unique<agrpc::GrpcContext>()},
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())} {}
 
+void ClientContext::destroy_grpc_context() {
+    grpc_context_work_.reset();
+    grpc_context_.reset();
+}
+
 void ClientContext::execute_loop() {
     switch (wait_mode_) {
-        case WaitMode::backoff:
+        case WaitMode::kBackoff:
             execute_loop_backoff();
             break;
-        case WaitMode::blocking:
+        case WaitMode::kBlocking:
             execute_loop_multi_threaded();
             break;
-        case WaitMode::yielding:
+        case WaitMode::kYielding:
             execute_loop_single_threaded(YieldingIdleStrategy{});
             break;
-        case WaitMode::sleeping:
+        case WaitMode::kSleeping:
             execute_loop_single_threaded(SleepingIdleStrategy{});
             break;
-        case WaitMode::busy_spin:
+        case WaitMode::kBusySpin:
             execute_loop_single_threaded(BusySpinIdleStrategy{});
             break;
     }
@@ -65,19 +70,20 @@ void ClientContext::execute_loop_backoff() {
 }
 
 template <typename IdleStrategy>
-void ClientContext::execute_loop_single_threaded(IdleStrategy&& idle_strategy) {
+void ClientContext::execute_loop_single_threaded(IdleStrategy idle_strategy) {
     SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
     while (!io_context_->stopped()) {
         std::size_t work_count = grpc_context_->poll_completion_queue();
         work_count += io_context_->poll();
-        std::forward<IdleStrategy>(idle_strategy).idle(work_count);
+        idle_strategy.idle(work_count);
     }
     SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
 
 void ClientContext::execute_loop_multi_threaded() {
     SILK_DEBUG << "Multi-thread execution loop start [" << std::this_thread::get_id() << "]";
-    std::thread grpc_context_thread{[grpc_context = grpc_context_]() {
+    std::thread grpc_context_thread{[context_id = context_id_, grpc_context = grpc_context_]() {
+        log::set_thread_name(("grpc_ctx_s" + std::to_string(context_id)).c_str());
         grpc_context->run_completion_queue();
     }};
     std::exception_ptr run_exception;
@@ -107,6 +113,17 @@ ClientContextPool::ClientContextPool(std::size_t pool_size, concurrency::WaitMod
 
 ClientContextPool::ClientContextPool(concurrency::ContextPoolSettings settings)
     : ClientContextPool(settings.num_contexts, settings.wait_mode) {}
+
+ClientContextPool::~ClientContextPool() {
+    stop();  // must be called to simplify exposed API, no problem because idempotent
+    join();  // must be called to simplify exposed API, no problem because idempotent
+
+    // Ensure *all* agrpc::GrpcContext get destroyed BEFORE any boost::asio::io_context is destroyed to avoid triggering
+    // undefined behavior when dispatching calls from i-th agrpc::GrpcContext to j-th boost::asio::io_context w/ i != j
+    for (auto& context : contexts_) {
+        context.destroy_grpc_context();
+    }
+}
 
 void ClientContextPool::start() {
     // Cannot restart because ::grpc::CompletionQueue inside agrpc::GrpcContext cannot be reused

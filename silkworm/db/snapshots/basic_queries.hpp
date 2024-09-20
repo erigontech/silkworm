@@ -30,7 +30,7 @@ namespace silkworm::snapshots {
 template <SnapshotReaderConcept TSnapshotReader>
 class BasicQuery {
   public:
-    BasicQuery(
+    explicit BasicQuery(
         const SnapshotAndIndex snapshot_and_index)
         : reader_{snapshot_and_index.snapshot},
           index_{snapshot_and_index.index} {}

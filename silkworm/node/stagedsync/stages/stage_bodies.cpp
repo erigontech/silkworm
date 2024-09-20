@@ -97,10 +97,10 @@ bool BodiesStage::BodyDataModel::get_canonical_block(BlockNum height, Block& blo
 BodiesStage::BodiesStage(
     SyncContext* sync_context,
     const ChainConfig& chain_config,
-    std::function<uint64_t()> preverified_hashes_height)
+    std::function<BlockNum()> last_pre_validated_block)
     : Stage(sync_context, db::stages::kBlockBodiesKey),
       chain_config_(chain_config),
-      preverified_hashes_height_(std::move(preverified_hashes_height)) {}
+      last_pre_validated_block_(std::move(last_pre_validated_block)) {}
 
 Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
@@ -108,7 +108,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using namespace std::chrono;
 
     Stage::Result result = Stage::Result::kUnspecified;
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
 
     try {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
@@ -117,7 +117,8 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         if (current_height_ == target_height) {
             // Nothing to process
             return Stage::Result::kSuccess;
-        } else if (current_height_ > target_height) {
+        }
+        if (current_height_ > target_height) {
             // Something bad had happened. Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress,
                              "Previous progress " + std::to_string(current_height_) +
@@ -133,7 +134,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         }
 
         BodyDataModel body_persistence(tx, current_height_, chain_config_);
-        body_persistence.set_preverified_height(preverified_hashes_height_());
+        body_persistence.set_preverified_height(last_pre_validated_block_());
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(current_height_);
@@ -174,7 +175,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return result;
 }
 
@@ -187,7 +188,7 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
     auto new_height = sync_context_->unwind_point.value();
     if (current_height_ <= new_height) return Stage::Result::kSuccess;
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
 
     const BlockNum segment_width{current_height_ - new_height};
     if (segment_width > db::stages::kSmallBlockSegmentWidth) {
@@ -217,7 +218,7 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return result;
 }
 

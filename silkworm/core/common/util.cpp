@@ -161,9 +161,9 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
         return 0ull;
     }
 
-    static const std::regex pattern{R"(^(\d*)(\.\d{1,3})?\ *?(B|KB|MB|GB|TB)?$)", std::regex_constants::icase};
+    static const std::regex kPattern{R"(^(\d*)(\.\d{1,3})?\ *?(B|KB|MB|GB|TB)?$)", std::regex_constants::icase};
     std::smatch matches;
-    if (!std::regex_search(sizestr, matches, pattern, std::regex_constants::match_default)) {
+    if (!std::regex_search(sizestr, matches, kPattern, std::regex_constants::match_default)) {
         return std::nullopt;
     }
 
@@ -202,12 +202,11 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
 
 std::string human_size(uint64_t bytes, const char* unit) {
     static const char* suffix[]{"", "K", "M", "G", "T"};
-    static const uint32_t items{sizeof(suffix) / sizeof(suffix[0])};
     uint32_t index{0};
     double value{static_cast<double>(bytes)};
     while (value >= kKibi) {
         value /= kKibi;
-        if (++index == (items - 1)) {
+        if (++index == (std::size(suffix) - 1)) {
             break;
         }
     }
@@ -228,13 +227,26 @@ size_t prefix_length(ByteView a, ByteView b) {
 }
 
 float to_float(const intx::uint256& n) noexcept {
-    static constexpr float k2_64{18446744073709551616.};  // 2^64
+    static constexpr float k2to64{18446744073709551616.};  // 2^64
     const uint64_t* words{intx::as_words(n)};
     auto res{static_cast<float>(words[3])};
-    res = k2_64 * res + static_cast<float>(words[2]);
-    res = k2_64 * res + static_cast<float>(words[1]);
-    res = k2_64 * res + static_cast<float>(words[0]);
+    res = k2to64 * res + static_cast<float>(words[2]);
+    res = k2to64 * res + static_cast<float>(words[1]);
+    res = k2to64 * res + static_cast<float>(words[0]);
     return res;
+}
+
+std::string snake_to_camel(std::string_view snake) {
+    std::string camel;
+    camel += static_cast<char>(std::toupper(static_cast<unsigned char>(snake[0])));
+    for (std::size_t i = 1; i < snake.length(); ++i) {
+        if (snake[i] == '_' && (i + 1) < snake.length()) {
+            camel += static_cast<char>(std::toupper(static_cast<unsigned char>(snake[++i])));
+        } else {
+            camel += snake[i];
+        }
+    }
+    return camel;
 }
 
 }  // namespace silkworm

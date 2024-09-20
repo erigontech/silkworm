@@ -25,7 +25,7 @@ namespace silkworm {
 
 using namespace evmc::literals;
 
-const std::vector<AccessListEntry> access_list{
+const std::vector<AccessListEntry> kAccessList{
     {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
      {
          0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,
@@ -63,7 +63,7 @@ TEST_CASE("Legacy Transaction RLP") {
     // Check that non-legacy fields (access_list, max_fee_per_blob_gas, blob_versioned_hashes) and from are cleared
     decoded.max_priority_fee_per_gas = 17;
     decoded.max_fee_per_gas = 31;
-    decoded.access_list = access_list;
+    decoded.access_list = kAccessList;
     decoded.max_fee_per_blob_gas = 123;
     decoded.blob_versioned_hashes.emplace_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
     decoded.set_sender(0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address);
@@ -85,7 +85,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
     txn.to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
     txn.value = 2 * kEther;
     txn.data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd");
-    txn.access_list = access_list;
+    txn.access_list = kAccessList;
     txn.odd_y_parity = false;
     txn.r = intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0");
     txn.s = intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094");
@@ -150,7 +150,7 @@ TEST_CASE("EIP-1559 Transaction RLP") {
     txn.to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
     txn.value = 2 * kEther;
     txn.data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd");
-    txn.access_list = access_list;
+    txn.access_list = kAccessList;
     txn.odd_y_parity = false;
     txn.r = intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0");
     txn.s = intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094");
@@ -175,7 +175,7 @@ TEST_CASE("EIP-4844 Transaction RLP") {
     txn.gas_limit = 5748100;
     txn.to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
     txn.data = *from_hex("04f7");
-    txn.access_list = access_list;
+    txn.access_list = kAccessList;
     txn.max_fee_per_blob_gas = 123;
     txn.blob_versioned_hashes = {
         0xc6bdd1de713471bd6cfa62dd8b5a5b42969ed09e26212d3377f3f8426d8ec210_bytes32,

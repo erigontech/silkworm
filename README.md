@@ -42,6 +42,14 @@ At the very beginning, one of the main goals of Silkworm was implementing high-p
 directly within Erigon itself. Recently we focused again on this initial target, making it our highest priority and
 delivering the first release of [Erigon++] starting from Erigon 2.59.0.
 
+Erigon++ is supported on platforms:
+
+* Linux x86_64 with glibc 34+, glibcpp 30+ (such as Debian 12+, Ubuntu 22+, etc.)
+* macOS 14+ arm64
+
+It is not supported on any arm64 Linux, Alpine Linux.
+Test compatibility by running [silkworm_compat_check.sh](https://github.com/erigontech/erigon/blob/main/turbo/silkworm/silkworm_compat_check.sh)
+
 Please note that Erigon++ is just a fancy name for identifying such usage of Silkworm libraries within Erigon, which can
 be selectively enabled by specifying optional flags in Erigon command-line.
 
@@ -83,7 +91,7 @@ git submodule update --init --recursive
 ## Building on Linux & macOS
 
 Building Silkworm requires:
-* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 15
+* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 16
 or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 15)
 * [CMake](https://cmake.org)
 * [Conan](https://conan.io)

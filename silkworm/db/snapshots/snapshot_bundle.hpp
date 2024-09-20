@@ -18,17 +18,20 @@
 
 #include <array>
 #include <cassert>
+#include <filesystem>
 #include <functional>
+#include <vector>
 
 #include <silkworm/core/common/base.hpp>
 
 #include "index.hpp"
 #include "snapshot_and_index.hpp"
+#include "snapshot_path.hpp"
 #include "snapshot_reader.hpp"
 
 namespace silkworm::snapshots {
 
-struct SnapshotBundle {
+struct SnapshotBundleData {
     Snapshot header_snapshot;
     //! Index header_hash -> block_num -> headers_segment_offset
     Index idx_header_hash;
@@ -45,6 +48,14 @@ struct SnapshotBundle {
 
     static constexpr size_t kSnapshotsCount = 3;
     static constexpr size_t kIndexesCount = 4;
+};
+
+struct SnapshotBundle : public SnapshotBundleData {
+    explicit SnapshotBundle(SnapshotBundleData bundle) : SnapshotBundleData(std::move(bundle)) {}
+    virtual ~SnapshotBundle();
+
+    SnapshotBundle(SnapshotBundle&&) = default;
+    SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
     std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
         return {
@@ -117,9 +128,20 @@ struct SnapshotBundle {
     BlockNum block_from() const { return header_snapshot.block_from(); }
     BlockNum block_to() const { return header_snapshot.block_to(); }
     BlockNumRange block_range() const { return {block_from(), block_to()}; }
+    size_t block_count() const { return block_range().size(); }
+
+    std::vector<std::filesystem::path> files();
+    std::vector<SnapshotPath> snapshot_paths();
 
     void reopen();
     void close();
+
+    void on_close(std::function<void(SnapshotBundle&)> callback) {
+        on_close_callback_ = std::move(callback);
+    }
+
+  private:
+    std::function<void(SnapshotBundle&)> on_close_callback_;
 };
 
 }  // namespace silkworm::snapshots

@@ -16,42 +16,81 @@
 
 #pragma once
 
+#include <atomic>
+#include <filesystem>
+#include <functional>
+#include <latch>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/freezer.hpp>
+#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/snapshots/repository.hpp>
-#include <silkworm/db/snapshots/settings.hpp>
+#include <silkworm/db/snapshots/config.hpp>
+#include <silkworm/db/snapshots/snapshot_bundle.hpp>
+#include <silkworm/db/snapshots/snapshot_path.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
+#include <silkworm/db/stage_scheduler.hpp>
+#include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
 namespace silkworm::db {
 
-class SnapshotSync : public Stoppable {
+class SnapshotSync {
   public:
-    SnapshotSync(snapshots::SnapshotRepository* repository, const ChainConfig& config);
-    ~SnapshotSync() override;
+    SnapshotSync(
+        snapshots::SnapshotSettings settings,
+        ChainId chain_id,
+        mdbx::env chaindata_env,
+        std::filesystem::path tmp_dir_path,
+        stagedsync::StageScheduler& stage_scheduler);
 
-    bool stop() override;
+    Task<void> run();
 
-    bool download_and_index_snapshots(db::RWTxn& txn);
-    bool download_snapshots(const std::vector<std::string>& snapshot_file_names);
+    Task<void> download_snapshots();
+    Task<void> wait_for_setup();
 
   protected:
-    void build_missing_indexes();
-    void update_database(db::RWTxn& txn, BlockNum max_block_available);
-    void update_block_headers(db::RWTxn& txn, BlockNum max_block_available);
+    Task<void> setup_and_run();
+    Task<void> setup();
+    Task<void> download_snapshots_if_needed();
+    Task<void> build_missing_indexes();
+
+    void seed_frozen_local_snapshots();
+    void seed_frozen_bundle(BlockNumRange range);
+    void seed_bundle(snapshots::SnapshotBundle& bundle);
+    void seed_snapshot(const snapshots::SnapshotPath& path);
+
+    void update_database(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping);
+    void update_block_headers(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping);
     void update_block_bodies(db::RWTxn& txn, BlockNum max_block_available);
     static void update_block_hashes(db::RWTxn& txn, BlockNum max_block_available);
     static void update_block_senders(db::RWTxn& txn, BlockNum max_block_available);
+    snapshots::SnapshotRepository& repository() { return repository_; };
 
-    snapshots::SnapshotRepository* repository_;
-    const snapshots::SnapshotSettings& settings_;
-    const ChainConfig& config_;
+    snapshots::SnapshotSettings settings_;
+    const snapshots::Config snapshots_config_;
+    mdbx::env chaindata_env_;
+
+    snapshots::SnapshotRepository repository_;
+
     snapshots::bittorrent::BitTorrentClient client_;
-    std::thread client_thread_;
+
+    db::Freezer snapshot_freezer_;
+    db::SnapshotMerger snapshot_merger_;
+
+    std::latch is_stopping_latch_;
+    std::atomic_bool setup_done_;
+    concurrency::AwaitableConditionVariable setup_done_cond_var_;
+    std::mutex setup_done_mutex_;
 };
 
 }  // namespace silkworm::db

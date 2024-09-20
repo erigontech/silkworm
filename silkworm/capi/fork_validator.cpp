@@ -15,9 +15,10 @@
 */
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/environment.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -43,14 +44,14 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
 
     auto db_env_flags = unmanaged_env.get_flags();
     handle->node_settings.chaindata_env_config = silkworm::db::EnvConfig{
-        .path = handle->data_dir_path,
+        .path = handle->data_dir_path.string(),
         .create = false,
-        .readonly = db_env_flags & MDBX_RDONLY ? true : false,
-        .exclusive = db_env_flags & MDBX_EXCLUSIVE ? true : false,
-        .in_memory = db_env_flags & MDBX_NOMETASYNC ? true : false,
-        .shared = db_env_flags & MDBX_ACCEDE ? true : false,
-        .read_ahead = db_env_flags & MDBX_NORDAHEAD ? false : true,
-        .write_map = db_env_flags & MDBX_WRITEMAP ? true : false,
+        .readonly = (db_env_flags & MDBX_RDONLY) != 0,
+        .exclusive = (db_env_flags & MDBX_EXCLUSIVE) != 0,
+        .in_memory = (db_env_flags & MDBX_NOMETASYNC) != 0,
+        .shared = (db_env_flags & MDBX_ACCEDE) != 0,
+        .read_ahead = (db_env_flags & MDBX_NORDAHEAD) == 0,
+        .write_map = (db_env_flags & MDBX_WRITEMAP) != 0,
         .page_size = unmanaged_env.get_pagesize(),
         .max_size = unmanaged_env.dbsize_max(),
         //.growth_size = ?
@@ -79,6 +80,12 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
     handle->node_settings.keep_db_txn_open = false;                // Ensure that the transaction is closed after each request, Erigon manages transactions differently
 }
 
+static silkworm::stagedsync::BodiesStageFactory make_bodies_stage_factory(const silkworm::ChainConfig& chain_config) {
+    return [chain_config](silkworm::stagedsync::SyncContext* sync_context) {
+        return std::make_unique<silkworm::stagedsync::BodiesStage>(sync_context, chain_config, [] { return 0; });
+    };
+};
+
 SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_env* mdbx_env, const struct SilkwormForkValidatorSettings* settings) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
@@ -104,7 +111,12 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
 
     silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
     silkworm::db::RWAccess rw_access{unmanaged_env};
-    handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(handle->node_settings.asio_context, handle->node_settings, rw_access);
+    handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(
+        /* executor = */ std::nullopt,  // ExecutionEngine manages an internal io_context
+        handle->node_settings,
+        /* log_timer_factory = */ std::nullopt,
+        make_bodies_stage_factory(*handle->node_settings.chain_config),
+        rw_access);
 
     silkworm::log::Info("Execution engine created");
 
@@ -124,6 +136,8 @@ SILKWORM_EXPORT int silkworm_stop_fork_validator(SilkwormHandle handle) SILKWORM
 }
 
 SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, struct SilkwormBytes32 head_hash_bytes, struct SilkwormForkValidatorValidationResult* result) SILKWORM_NOEXCEPT {
+    using namespace silkworm::execution::api;
+
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -138,14 +152,14 @@ SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, 
     try {
         auto execution_result = handle->execution_engine->verify_chain_no_fork_tracking(head_hash);
 
-        if (std::holds_alternative<silkworm::stagedsync::ValidChain>(execution_result)) {
+        if (std::holds_alternative<ValidChain>(execution_result)) {
             result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_SUCCESS;
-            memcpy(result->last_valid_hash.bytes, std::get<silkworm::stagedsync::ValidChain>(execution_result).current_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
+            memcpy(result->last_valid_hash.bytes, std::get<ValidChain>(execution_result).current_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
         }
 
-        if (std::holds_alternative<silkworm::stagedsync::InvalidChain>(execution_result)) {
+        if (std::holds_alternative<InvalidChain>(execution_result)) {
             result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_INVALID;
-            auto invalid_chain = std::get<silkworm::stagedsync::InvalidChain>(execution_result);
+            auto invalid_chain = std::get<InvalidChain>(execution_result);
             memcpy(result->last_valid_hash.bytes, invalid_chain.unwind_point.hash.bytes, sizeof(result->last_valid_hash.bytes));
 
             if (invalid_chain.bad_block) {
@@ -153,9 +167,9 @@ SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, 
             }
         }
 
-        if (std::holds_alternative<silkworm::stagedsync::ValidationError>(execution_result)) {
+        if (std::holds_alternative<ValidationError>(execution_result)) {
             result->execution_status = SILKWORM_FORK_VALIDATOR_RESULT_STATUS_INVALID;
-            auto validation_error = std::get<silkworm::stagedsync::ValidationError>(execution_result);
+            auto validation_error = std::get<ValidationError>(execution_result);
             memcpy(result->last_valid_hash.bytes, validation_error.latest_valid_head.hash.bytes, sizeof(result->last_valid_hash.bytes));
             strcpy(result->error_message, "Validation error");
         }
@@ -191,13 +205,10 @@ SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle ha
 
     try {
         auto result = handle->execution_engine->notify_fork_choice_update(head_hash, finalized_hash_opt, safe_hash_opt);
-
         if (result) {
             return SILKWORM_OK;
-        } else {
-            SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed with unknown error";
         }
-
+        SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed with unknown error";
     } catch (const std::exception& ex) {
         SILK_ERROR << "[Silkworm Fork Validator] Fork Choice Update failed: " << ex.what();
     }

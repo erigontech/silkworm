@@ -16,13 +16,13 @@
 
 #include "execution_pipeline.hpp"
 
+#include <memory>
+
 #include <absl/strings/str_format.h>
 #include <magic_enum.hpp>
 
-#include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
@@ -34,6 +34,7 @@
 #include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_log_index.hpp>
 #include <silkworm/node/stagedsync/stages/stage_senders.hpp>
+#include <silkworm/node/stagedsync/stages/stage_triggers.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
 
 namespace silkworm::stagedsync {
@@ -44,37 +45,13 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
-class ExecutionPipeline::LogTimer : public Timer {
-    ExecutionPipeline* pipeline_;
-
-  public:
-    LogTimer(const boost::asio::any_io_executor& executor, ExecutionPipeline* pipeline, uint32_t interval_seconds)
-        : Timer{
-              executor,
-              interval_seconds * 1'000,
-              [this] { return expired(); },
-              /*.auto_start=*/true},
-          pipeline_{pipeline} {}
-
-    bool expired() {
-        if (pipeline_->is_stopping()) {
-            log::Info(pipeline_->get_log_prefix()) << "stopping ...";
-            return false;
-        }
-        log::Info(pipeline_->get_log_prefix(), pipeline_->current_stage_->second->get_log_progress());
-        return true;
-    }
-};
-
-std::unique_ptr<ExecutionPipeline::LogTimer> ExecutionPipeline::make_log_timer() {
-    return std::make_unique<LogTimer>(
-        this->node_settings_->asio_context.get_executor(),
-        this,
-        this->node_settings_->sync_loop_log_interval_seconds);
-}
-
-ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
+ExecutionPipeline::ExecutionPipeline(
+    silkworm::NodeSettings* node_settings,
+    std::optional<TimerFactory> log_timer_factory,
+    BodiesStageFactory bodies_stage_factory)
     : node_settings_{node_settings},
+      log_timer_factory_{std::move(log_timer_factory)},
+      bodies_stage_factory_{std::move(bodies_stage_factory)},
       sync_context_{std::make_unique<SyncContext>()} {
     load_stages();
 }
@@ -114,8 +91,7 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
 void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kHeadersKey,
                     std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
-    stages_.emplace(db::stages::kBlockBodiesKey,
-                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), *node_settings_->chain_config, [] { return PreverifiedHashes::current.height; }));
+    stages_.emplace(db::stages::kBlockBodiesKey, bodies_stage_factory_(sync_context_.get()));
     stages_.emplace(db::stages::kBlockHashesKey,
                     std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
     stages_.emplace(db::stages::kSendersKey,
@@ -134,6 +110,8 @@ void ExecutionPipeline::load_stages() {
                     std::make_unique<stagedsync::CallTraceIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.call_traces()));
     stages_.emplace(db::stages::kTxLookupKey,
                     std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
+    stages_.emplace(db::stages::kTriggersStageKey,
+                    std::make_unique<stagedsync::TriggersStage>(sync_context_.get()));
     stages_.emplace(db::stages::kFinishKey,
                     std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info.build_description));
     current_stage_ = stages_.begin();
@@ -181,6 +159,10 @@ bool ExecutionPipeline::stop() {
     return stopped;
 }
 
+StageScheduler& ExecutionPipeline::stage_scheduler() const {
+    return *dynamic_cast<StageScheduler*>(stages_.at(db::stages::kTriggersStageKey).get());
+}
+
 Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
@@ -214,10 +196,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 if (start_stage_name != stage_id) {
                     log::Info("Skipping " + std::string(stage_id) + "...", {"START_AT_STAGE", *start_stage_name, "hit", "true"});
                     continue;
-                } else {
-                    // Start stage just found, avoid skipping next stages
-                    start_stage_name = std::nullopt;
                 }
+                // Start stage just found, avoid skipping next stages
+                start_stage_name = std::nullopt;
             }
 
             // Check if we have to stop due to environment variable
@@ -227,7 +208,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 break;
             }
 
-            log_timer->reset();  // Resets the interval for next log line from now
+            if (log_timer) {
+                log_timer->reset();  // Resets the interval for next log line from now
+            }
 
             // forward
             const auto stage_result = current_stage_->second->forward(cycle_txn);
@@ -262,13 +245,15 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
         log::Info("ExecutionPipeline") << "Forward done";
 
-        if (stop_at_block && stop_at_block <= head_header_number_) return Stage::Result::kStoppedByEnv;
+        if (stop_at_block && stop_at_block <= head_header_number_) {
+            log::Warning("ExecutionPipeline") << "Interrupted by STOP_AT_BLOCK at block " + to_string(*stop_at_block);
+            return Stage::Result::kStoppedByEnv;
+        }
 
         return result;
-
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        log::Error("ExecPipeline") << "Forward aborted due to exception: " << ex.what();
+        log::Error("ExecutionPipeline") << "Forward aborted due to exception: " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
@@ -292,7 +277,10 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             }
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
-            log_timer->reset();  // Resets the interval for next log line from now
+
+            if (log_timer) {
+                log_timer->reset();  // Resets the interval for next log line from now
+            }
 
             // Do unwind on current stage
             const auto stage_result = current_stage_->second->unwind(cycle_txn);
@@ -351,7 +339,10 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
 
-            log_timer->reset();  // Resets the interval for next log line from now
+            if (log_timer) {
+                log_timer->reset();  // Resets the interval for next log line from now
+            }
+
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
             if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(), {"op", "Prune", "returned",
@@ -385,6 +376,22 @@ std::string ExecutionPipeline::get_log_prefix() const {
                            current_stage_number_,
                            current_stages_count_,
                            current_stage_->first);
+}
+
+std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
+    if (log_timer_factory_) {
+        return log_timer_factory_.value()([this]() { return log_timer_expired(); });
+    }
+    return {};
+}
+
+bool ExecutionPipeline::log_timer_expired() {
+    if (is_stopping()) {
+        log::Info(get_log_prefix()) << "stopping ...";
+        return false;
+    }
+    log::Info(get_log_prefix(), current_stage_->second->get_log_progress());
+    return true;
 }
 
 }  // namespace silkworm::stagedsync

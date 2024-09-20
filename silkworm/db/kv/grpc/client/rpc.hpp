@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include <silkworm/infra/grpc/client/bidi_streaming_rpc.hpp>
-#include <silkworm/infra/grpc/client/server_streaming_rpc.hpp>
+#include <agrpc/client_rpc.hpp>
+#include <boost/asio/use_awaitable.hpp>
+
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
 namespace silkworm::db::kv::grpc::client {
 
-using TxRpc = BidiStreamingRpc<&::remote::KV::StubInterface::PrepareAsyncTx>;
+using TxRpc = boost::asio::use_awaitable_t<>::as_default_on_t<agrpc::ClientRPC<&::remote::KV::StubInterface::PrepareAsyncTx>>;
 
 }  // namespace silkworm::db::kv::grpc::client

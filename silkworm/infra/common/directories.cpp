@@ -177,8 +177,8 @@ std::filesystem::path silkworm::DataDirectory::get_default_storage_path() {
 void DataDirectory::deploy() {
     Directory::create();
     chaindata_.create();
-    etl_.create();
-    etl_.clear();
+    temp_.create();
+    temp_.clear();
     nodes_.create();
 }
 

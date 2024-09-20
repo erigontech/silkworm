@@ -30,7 +30,7 @@
 namespace silkworm::rpc::commands {
 
 using silkworm::test_util::SetLogVerbosityGuard;
-using test_util::RequestHandler_ForTest;
+using test_util::RequestHandlerForTest;
 using test_util::RpcApiTestBase;
 
 // Function to recursively sort JSON arrays
@@ -68,13 +68,13 @@ bool are_equivalent(const nlohmann::json& obj1, const nlohmann::json& obj2) {
     return str1 == str2;
 }
 
-static const std::vector<std::string> tests_to_ignore = {
+const std::vector<std::string> kTestsToIgnore = {
     "eth_getProof",            // not implemented
     "debug_getRawReceipts",    // not implemented
     "eth_sendRawTransaction",  // call to txpool fails, needs mocking
 };
 
-static const std::vector<std::string> subtests_to_ignore = {
+const std::vector<std::string> kSubtestsToIgnore = {
     "create-al-multiple-reads.io",  // eth_createAccessList: expected value doesn't contain gas optimization
     "estimate-simple-transfer.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas
     "estimate-simple-contract.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas
@@ -92,11 +92,11 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
             auto test_name = test_file.path().filename().string();
             auto group_name = test_file.path().parent_path().filename().string();
 
-            if (std::find(tests_to_ignore.begin(), tests_to_ignore.end(), group_name) != tests_to_ignore.end()) {
+            if (std::find(kTestsToIgnore.begin(), kTestsToIgnore.end(), group_name) != kTestsToIgnore.end()) {
                 continue;
             }
 
-            if (std::find(subtests_to_ignore.begin(), subtests_to_ignore.end(), test_name) != subtests_to_ignore.end()) {
+            if (std::find(kSubtestsToIgnore.begin(), kSubtestsToIgnore.end(), test_name) != kSubtestsToIgnore.end()) {
                 continue;
             }
 
@@ -108,7 +108,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
 
             SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
                 auto context = db::test_util::TestDatabaseContext();
-                RpcApiTestBase<RequestHandler_ForTest> test_base{context.get_mdbx_env()};
+                RpcApiTestBase<RequestHandlerForTest> test_base{context.mdbx_env()};
 
                 std::string line_out;
                 std::string line_in;
@@ -122,7 +122,7 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
                     auto expected = nlohmann::json::parse(line_in.substr(3));
 
                     std::string response;
-                    test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, response);
+                    test_base.run<&RequestHandlerForTest::request_and_create_reply>(request, response);
                     INFO("Request:           " << request.dump());
                     INFO("Actual response:   " << response);
                     INFO("Expected response: " << expected.dump());
@@ -141,13 +141,13 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
 TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     auto context = db::test_util::TestDatabaseContext();
-    RpcApiTestBase<RequestHandler_ForTest> test_base{context.get_mdbx_env()};
+    RpcApiTestBase<RequestHandlerForTest> test_base{context.mdbx_env()};
 
     SECTION("sample test") {
         auto request = R"({"jsonrpc":"2.0","id":1,"method":"debug_getRawTransaction","params":["0x74e41d593675913d6d5521f46523f1bd396dff1891bdb35f59be47c7e5e0b34b"]})"_json;
         std::string response;
 
-        test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, response);
+        test_base.run<&RequestHandlerForTest::request_and_create_reply>(request, response);
         CHECK(nlohmann::json::parse(response) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
     }
 }

@@ -34,7 +34,7 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include "co_spawn_sw.hpp"
+#include "spawn.hpp"
 
 namespace silkworm::concurrency::awaitable_wait_for_one {
 
@@ -70,8 +70,8 @@ awaitable<std::variant<std::monostate, std::monostate>, Executor> operator||(awa
     auto ex = co_await this_coro::executor;
 
     auto [order, ex0, ex1] =
-        co_await make_parallel_group(co_spawn_sw(ex, std::move(t), deferred),
-                                     co_spawn_sw(ex, std::move(u), deferred))
+        co_await make_parallel_group(co_spawn(ex, std::move(t), deferred),
+                                     co_spawn(ex, std::move(u), deferred))
             .async_wait(wait_for_one(), use_awaitable_t<Executor>{});
 
     if (order[0] == 0) {
@@ -93,8 +93,8 @@ awaitable<std::variant<std::monostate, U>, Executor> operator||(awaitable<void, 
     auto ex = co_await this_coro::executor;
 
     auto [order, ex0, ex1, r1] =
-        co_await make_parallel_group(co_spawn_sw(ex, std::move(t), deferred),
-                                     co_spawn_sw(ex, detail::awaitable_wrap(std::move(u)), deferred))
+        co_await make_parallel_group(co_spawn(ex, std::move(t), deferred),
+                                     co_spawn(ex, detail::awaitable_wrap(std::move(u)), deferred))
             .async_wait(wait_for_one(), use_awaitable_t<Executor>{});
 
     if (order[0] == 0) {
@@ -119,8 +119,8 @@ awaitable<std::variant<T, std::monostate>, Executor> operator||(awaitable<T, Exe
     auto ex = co_await this_coro::executor;
 
     auto [order, ex0, r0, ex1] =
-        co_await make_parallel_group(co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-                                     co_spawn_sw(ex, std::move(u), deferred))
+        co_await make_parallel_group(co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+                                     co_spawn(ex, std::move(u), deferred))
             .async_wait(wait_for_one(), use_awaitable_t<Executor>{});
 
     if (order[0] == 0) {
@@ -145,8 +145,8 @@ awaitable<std::variant<T, U>, Executor> operator||(awaitable<T, Executor> t, awa
     auto ex = co_await this_coro::executor;
 
     auto [order, ex0, r0, ex1, r1] =
-        co_await make_parallel_group(co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-                                     co_spawn_sw(ex, detail::awaitable_wrap(std::move(u)), deferred))
+        co_await make_parallel_group(co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+                                     co_spawn(ex, detail::awaitable_wrap(std::move(u)), deferred))
             .async_wait(wait_for_one(), use_awaitable_t<Executor>{});
 
     if (order[0] == 0) {
@@ -169,8 +169,8 @@ awaitable<std::variant<T..., std::monostate>, Executor> operator||(awaitable<std
     auto ex = co_await this_coro::executor;
 
     auto [order, ex0, r0, ex1] =
-        co_await make_parallel_group(co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-                                     co_spawn_sw(ex, std::move(u), deferred))
+        co_await make_parallel_group(co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+                                     co_spawn(ex, std::move(u), deferred))
             .async_wait(wait_for_one(), use_awaitable_t<Executor>{});
 
     using widen = detail::widen_variant<T..., std::monostate>;
@@ -194,8 +194,8 @@ awaitable<std::variant<T..., U>, Executor> operator||(awaitable<std::variant<T..
     auto ex = co_await this_coro::executor;
 
     auto [order, ex0, r0, ex1, r1] =
-        co_await make_parallel_group(co_spawn_sw(ex, detail::awaitable_wrap(std::move(t)), deferred),
-                                     co_spawn_sw(ex, detail::awaitable_wrap(std::move(u)), deferred))
+        co_await make_parallel_group(co_spawn(ex, detail::awaitable_wrap(std::move(t)), deferred),
+                                     co_spawn(ex, detail::awaitable_wrap(std::move(u)), deferred))
             .async_wait(wait_for_one(), use_awaitable_t<Executor>{});
 
     using widen = detail::widen_variant<T..., U>;

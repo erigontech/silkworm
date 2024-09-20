@@ -22,6 +22,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/test_util/null_stream.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {

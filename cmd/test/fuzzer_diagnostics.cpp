@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 
     try {
         RpcApiE2ETest api_e2e_test;
-        api_e2e_test.run<&RequestHandler_ForTest::handle_request>(input_str, reply);
+        api_e2e_test.run<&RequestHandlerForTest::handle_request>(input_str, reply);
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
         try {

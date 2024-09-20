@@ -33,7 +33,7 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
      */
 
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
 
@@ -43,9 +43,10 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
 
         if (previous_progress == headers_stage_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
-        } else if (previous_progress > headers_stage_progress) {
+        }
+        if (previous_progress > headers_stage_progress) {
             // Something bad had happened.
             // Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress,
@@ -84,7 +85,7 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     collector_.reset();
     return ret;
 }
@@ -94,14 +95,14 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         throw_if_stopping();
 
         const auto previous_progress{get_progress(txn)};
         if (previous_progress <= to) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
         const BlockNum segment_width{previous_progress - to};
@@ -134,7 +135,7 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -180,7 +181,7 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
                                                           " expected " + std::to_string(kHashLength));
         }
 
-        collector_->collect(Entry{Bytes{db::from_slice(data.value)}, operation_ == OperationType::Forward
+        collector_->collect(Entry{Bytes{db::from_slice(data.value)}, operation_ == OperationType::kForward
                                                                          ? Bytes{db::from_slice(data.key)}
                                                                          : Bytes{}});
 

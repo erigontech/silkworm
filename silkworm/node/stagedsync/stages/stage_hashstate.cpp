@@ -30,11 +30,10 @@
 namespace silkworm::stagedsync {
 
 using db::etl::Entry;
-using db::etl_mdbx::Collector;
 
 Stage::Result HashState::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
 
@@ -44,7 +43,8 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
         if (previous_progress == execution_stage_progress) {
             // Nothing to process
             return ret;
-        } else if (previous_progress > execution_stage_progress) {
+        }
+        if (previous_progress > execution_stage_progress) {
             // Something bad had happened. Not possible execution stage is ahead of bodies
             // Maybe we need to unwind ?
             std::string what{std::string(stage_name_) + " progress " + std::to_string(previous_progress) +
@@ -113,8 +113,7 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
     }
 
     reset_log_progress();
-    operation_ = OperationType::None;
-    log::Info("JG HashState resetting collector");
+    operation_ = OperationType::kNone;
     collector_.reset();
     return ret;
 }
@@ -124,7 +123,7 @@ Stage::Result HashState::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         throw_if_stopping();
         auto previous_progress{db::stages::read_stage_progress(txn, stage_name_)};
@@ -169,7 +168,7 @@ Stage::Result HashState::unwind(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
@@ -434,7 +433,7 @@ Stage::Result HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum pr
         ChangedAddresses changed_addresses{};
 
         std::unique_lock log_lck(log_mtx_);
-        operation_ = OperationType::Forward;
+        operation_ = OperationType::kForward;
         incremental_ = true;
         current_source_ = std::string(db::table::kAccountChangeSet.name);
         current_key_ = std::to_string(expected_blocknum);
@@ -518,7 +517,7 @@ Stage::Result HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum pr
         absl::btree_map<evmc::address, evmc::bytes32> hashed_addresses{};
 
         std::unique_lock log_lck(log_mtx_);
-        operation_ = OperationType::Forward;
+        operation_ = OperationType::kForward;
         incremental_ = true;
         current_source_ = std::string(db::table::kStorageChangeSet.name);
         current_key_ = std::to_string(previous_progress + 1);
@@ -623,7 +622,7 @@ Stage::Result HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum 
         ChangedAddresses changed_addresses{};
 
         std::unique_lock log_lck(log_mtx_);
-        operation_ = OperationType::Unwind;
+        operation_ = OperationType::kUnwind;
         current_source_ = std::string(db::table::kAccountChangeSet.name);
         current_key_ = std::to_string(expected_blocknum);
         log_lck.unlock();
@@ -713,7 +712,7 @@ Stage::Result HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum 
         absl::btree_map<evmc::address, evmc::bytes32> hashed_addresses{};
 
         std::unique_lock log_lck(log_mtx_);
-        operation_ = OperationType::Unwind;
+        operation_ = OperationType::kUnwind;
         incremental_ = true;
         current_source_ = std::string(db::table::kStorageChangeSet.name);
         current_key_ = std::to_string(to + 1);
@@ -895,7 +894,7 @@ std::vector<std::string> HashState::get_log_progress() {
     }
     std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                                  "mode", (incremental_ ? "incr" : "full")};
-    if (operation_ == OperationType::None) {
+    if (operation_ == OperationType::kNone) {
         return ret;
     }
     if (loading_) {

@@ -183,23 +183,20 @@ Transaction StateTransition::get_transaction(const ExpectedSubState& expected_su
 
     if (expected_sub_state.dataIndex >= j_transaction.at("data").size()) {
         throw std::runtime_error("data index out of range");
-    } else {
-        txn.data = from_hex(j_transaction.at("data").at(expected_sub_state.dataIndex).get<std::string>()).value();
     }
+    txn.data = from_hex(j_transaction.at("data").at(expected_sub_state.dataIndex).get<std::string>()).value();
 
     if (expected_sub_state.gasIndex >= j_transaction.at("gasLimit").size()) {
         throw std::runtime_error("gas limit index out of range");
-    } else {
-        txn.gas_limit = std::stoull(j_transaction.at("gasLimit").at(expected_sub_state.gasIndex).get<std::string>(), nullptr, 16);
     }
+    txn.gas_limit = std::stoull(j_transaction.at("gasLimit").at(expected_sub_state.gasIndex).get<std::string>(), nullptr, 16);
 
     if (expected_sub_state.valueIndex >= j_transaction.at("value").size()) {
         throw std::runtime_error("value index out of range");
-    } else {
-        auto value_str = j_transaction.at("value").at(expected_sub_state.valueIndex).get<std::string>();
-        // in case of bigint, set max value; compatible with all test cases so far
-        txn.value = (value_str.starts_with("0x:bigint ")) ? std::numeric_limits<intx::uint256>::max() : intx::from_string<intx::uint256>(value_str);
     }
+    auto value_str = j_transaction.at("value").at(expected_sub_state.valueIndex).get<std::string>();
+    // in case of bigint, set max value; compatible with all test cases so far
+    txn.value = (value_str.starts_with("0x:bigint ")) ? std::numeric_limits<intx::uint256>::max() : intx::from_string<intx::uint256>(value_str);
 
     if (j_transaction.contains("accessLists")) {
         auto j_access_list = j_transaction.at("accessLists").at(expected_sub_state.dataIndex);

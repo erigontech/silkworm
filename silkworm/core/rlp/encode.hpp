@@ -62,10 +62,9 @@ template <UnsignedIntegral T>
 size_t length(const T& n) noexcept {
     if (n < kEmptyStringCode) {
         return 1;
-    } else {
-        const size_t n_bytes{intx::count_significant_bytes(n)};
-        return n_bytes + length_of_length(n_bytes);
     }
+    const size_t n_bytes{intx::count_significant_bytes(n)};
+    return n_bytes + length_of_length(n_bytes);
 }
 
 inline size_t length(bool) noexcept {

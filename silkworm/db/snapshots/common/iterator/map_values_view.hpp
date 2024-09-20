@@ -26,17 +26,17 @@ namespace silkworm {
 template <typename TMapKey, typename TMapValue>
 class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapValue>> {
   public:
-    using TMap = std::map<TMapKey, TMapValue>;
+    using Map = std::map<TMapKey, TMapValue>;
 
     class Iterator {
       public:
-        using value_type = typename TMap::mapped_type;
-        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = typename Map::mapped_type;
+        using iterator_category [[maybe_unused]] = std::bidirectional_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = const value_type*;
         using reference = const value_type&;
 
-        Iterator(typename TMap::const_iterator it) : it_(it) {}
+        explicit Iterator(typename Map::const_iterator it) : it_(it) {}
         Iterator() = default;
 
         reference operator*() const { return it_->second; }
@@ -57,12 +57,12 @@ class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapVal
         friend bool operator==(const Iterator& lhs, const Iterator& rhs) = default;
 
       private:
-        typename TMap::const_iterator it_;
+        typename Map::const_iterator it_;
     };
 
     static_assert(std::bidirectional_iterator<Iterator>);
 
-    MapValuesView(const TMap& map)
+    explicit MapValuesView(const Map& map)
         : begin_(Iterator{map.cbegin()}),
           end_(Iterator{map.cend()}) {}
     MapValuesView() = default;

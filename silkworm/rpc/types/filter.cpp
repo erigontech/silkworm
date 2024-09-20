@@ -22,7 +22,7 @@
 
 std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::FilterAddresses>& addresses) {
     if (addresses.has_value()) {
-        auto address_vector = addresses.value();
+        const auto& address_vector = addresses.value();
         out << "[";
         for (std::size_t i{0}; i < address_vector.size(); i++) {
             out << address_vector[i];
@@ -51,7 +51,7 @@ std::ostream& operator<<(std::ostream& out, const silkworm::rpc::FilterSubTopics
 
 std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::FilterTopics>& topics) {
     if (topics.has_value()) {
-        auto topic_vector = topics.value();
+        const auto& topic_vector = topics.value();
         out << "[";
         for (std::size_t i{0}; i < topic_vector.size(); i++) {
             out << topic_vector[i];

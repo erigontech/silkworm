@@ -25,7 +25,11 @@
 
 namespace silkworm::db::table {
 
-inline constexpr VersionBase kRequiredSchemaVersion{3, 0, 0};  // We're compatible with this
+//! Database schema version for compatibility w/ Erigon
+//! 5.0 - BlockTransaction table has canonical IDs (txs of non-canonical blocks moved to NonCanonicalTransaction table)
+//! 6.0 - BlockTransaction table has system-txs before/after each block (absent if block has no system-tx, but sequence increasing)
+//! 6.1 - BlockTransaction table contains canonical/non-canonical/bad-block transactions; add BadBlockNumber table
+inline constexpr VersionBase kRequiredSchemaVersion{6, 1, 0};  // Erigon2 latest schema version
 
 /* Canonical tables */
 
@@ -104,15 +108,6 @@ inline constexpr db::MapConfig kDifficulty{kDifficultyName};
 inline constexpr const char* kBlockReceiptsName{"Receipt"};
 inline constexpr db::MapConfig kBlockReceipts{kBlockReceiptsName};
 
-inline constexpr const char* kBloomBitsIndexName{"BloomBitsIndex"};
-inline constexpr db::MapConfig kBloomBitsIndex{kBloomBitsIndexName};
-
-inline constexpr const char* kBloomBitsName{"BloomBits"};
-inline constexpr db::MapConfig kBloomBits{kBloomBitsName};
-
-inline constexpr const char* kBodiesSnapshotInfoName{"BodiesSnapshotInfo"};
-inline constexpr db::MapConfig kBodiesSnapshotInfo{kBodiesSnapshotInfoName};
-
 //! \details Stores the mapping of block number to the set (sorted) of all accounts touched by call traces.
 //! \struct
 //! \verbatim
@@ -166,9 +161,6 @@ inline constexpr db::MapConfig kDatabaseInfo{kDatabaseInfoName};
 inline constexpr const char* kBlockTransactionsName{"BlockTransaction"};
 inline constexpr db::MapConfig kBlockTransactions{kBlockTransactionsName};
 
-inline constexpr const char* kNonCanonicalTransactionsName{"NonCanonicalTransaction"};
-inline constexpr db::MapConfig kNonCanonicalTransactions{kNonCanonicalTransactionsName};
-
 //! \details Store "current" state for accounts with hashed address key
 //! \remarks This table stores the same values for PlainState (Account record type) but with hashed key
 //! \struct
@@ -214,9 +206,6 @@ inline constexpr db::MapConfig kHeadHeader{kHeadHeaderName};
 
 inline constexpr const char* kHeaderNumbersName{"HeaderNumber"};
 inline constexpr db::MapConfig kHeaderNumbers{kHeaderNumbersName};
-
-inline constexpr const char* kHeadersSnapshotInfoName{"HeadersSnapshotInfo"};
-inline constexpr db::MapConfig kHeadersSnapshotInfo{kHeadersSnapshotInfoName};
 
 //! \details Stores the last incarnation of last contract SelfDestruct
 //! \struct
@@ -312,12 +301,6 @@ inline constexpr db::MapConfig kSenders{kSendersName};
 inline constexpr const char* kSequenceName{"Sequence"};
 inline constexpr db::MapConfig kSequence{kSequenceName};
 
-inline constexpr const char* kSnapshotInfoName{"SnapshotInfo"};
-inline constexpr db::MapConfig kSnapshotInfo{kSnapshotInfoName};
-
-inline constexpr const char* kStateSnapshotInfoName{"StateSnapshotInfo"};
-inline constexpr db::MapConfig kStateSnapshotInfo{kStateSnapshotInfoName};
-
 //! \details At block N stores value of state of storage for block N-1.
 //! \struct
 //! \verbatim
@@ -356,11 +339,6 @@ inline constexpr db::MapConfig kStorageHistory{kStorageHistoryName};
 inline constexpr const char* kSyncStageProgressName{"SyncStage"};
 inline constexpr db::MapConfig kSyncStageProgress{kSyncStageProgressName};
 
-//! \brief Unwind point for stages
-//! \struct stage name -> block_num_u64 (BE)
-inline constexpr const char* kSyncStageUnwindName{"SyncStageUnwind"};
-inline constexpr db::MapConfig kSyncStageUnwind{kSyncStageUnwindName};
-
 //! \brief Hold the nodes composing the StateRoot
 //! \verbatim
 //!   key   : node key
@@ -386,20 +364,20 @@ inline constexpr db::MapConfig kTxLookup{kTxLookupName};
 inline constexpr const char* kLastForkchoiceName{"LastForkchoice"};
 inline constexpr db::MapConfig kLastForkchoice{kLastForkchoiceName};
 
-inline constexpr const char* kIssuanceName{"Issuance"};
-inline constexpr db::MapConfig kIssuance{kIssuanceName};
-
-inline constexpr const char* kCumulativeGasIndexName{"CumulativeGasIndex"};
-inline constexpr db::MapConfig kCumulativeGasIndex{kCumulativeGasIndexName};
+//! \brief Hold the maximum canonical transaction number for each block
+//! \verbatim
+//!  key: block_number_u64 (BE)
+//!  value: max_tx_num_in_block_u64 (BE)
+//! \endverbatim
+//! \details In Erigon3: table MaxTxNum storing TxNum (not TxnID). History/Indices are using TxNum (not TxnID).
+inline constexpr const char* kMaxTxNumName{"MaxTxNum"};
+inline constexpr db::MapConfig kMaxTxNum{kMaxTxNumName};
 
 inline constexpr db::MapConfig kChainDataTables[]{
     kAccountChangeSet,
     kAccountHistory,
     kBlockBodies,
     kBlockReceipts,
-    kBloomBits,
-    kBloomBitsIndex,
-    kBodiesSnapshotInfo,
     kCallFromIndex,
     kCallToIndex,
     kCallTraceSet,
@@ -416,23 +394,20 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kHeadBlock,
     kHeadHeader,
     kHeaderNumbers,
-    kHeadersSnapshotInfo,
     kIncarnationMap,
     kLastForkchoice,
     kLogAddressIndex,
     kLogTopicIndex,
     kLogs,
+    kMaxTxNum,
     kMigrations,
     kPlainCodeHash,
     kPlainState,
     kSenders,
     kSequence,
-    kSnapshotInfo,
-    kStateSnapshotInfo,
     kStorageChangeSet,
     kStorageHistory,
     kSyncStageProgress,
-    kSyncStageUnwind,
     kTrieOfAccounts,
     kTrieOfStorage,
     kTxLookup,
@@ -443,5 +418,16 @@ void check_or_create_chaindata_tables(RWTxn& txn);
 
 //! \brief Get the table config associated to the table name (if any)
 std::optional<db::MapConfig> get_map_config(const std::string& map_name);
+
+/// Part of the compatibility layer with Erigon snapshot format
+
+//! \details Domain storing the account common information
+inline constexpr const char* kAccountDomain{"accounts"};
+
+//! \details Domain storing the account storage information
+inline constexpr const char* kStorageDomain{"storage"};
+
+//! \details Domain storing the account code information
+inline constexpr const char* kCodeDomain{"code"};
 
 }  // namespace silkworm::db::table

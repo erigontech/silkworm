@@ -24,8 +24,8 @@ namespace silkworm {
 
 class BodyRetrieval {
   public:
-    static const long soft_response_limit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
-    static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
+    static const int kSoftResponseLimit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
+    static const int kMaxBodiesServe = 1024;                // Amount of block bodies to be fetched per retrieval request
 
     explicit BodyRetrieval(db::ROAccess db_access);
 

@@ -27,7 +27,7 @@ using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v1{
-        .version = ExecutionPayload::V1,
+        .version = ExecutionPayload::kV1,
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -75,7 +75,7 @@ TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
         "blockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
         "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"]
     })"_json;
-    CHECK(payload.version == ExecutionPayload::V1);
+    CHECK(payload.version == ExecutionPayload::kV1);
     CHECK(payload.parent_hash == 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32);
     CHECK(payload.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
     CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);
@@ -92,7 +92,7 @@ TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
 
 TEST_CASE("serialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v2{
-        .version = ExecutionPayload::V2,
+        .version = ExecutionPayload::kV2,
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -168,7 +168,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
             "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"],
             "withdrawals":[]
         })"_json;
-        CHECK(payload.version == ExecutionPayload::V2);
+        CHECK(payload.version == ExecutionPayload::kV2);
         CHECK(payload.parent_hash == 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32);
         CHECK(payload.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
         CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);
@@ -200,7 +200,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
             "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"],
             "withdrawals":[{"address":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b","amount":"0x2710","index":"0x6","validatorIndex":"0xc"}]
         })"_json;
-        CHECK(payload.version == ExecutionPayload::V2);
+        CHECK(payload.version == ExecutionPayload::kV2);
         CHECK(payload.parent_hash == 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32);
         CHECK(payload.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
         CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);
@@ -241,7 +241,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
 
 TEST_CASE("serialize ExecutionPayloadAndValue", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v1{
-        .version = ExecutionPayload::V1,
+        .version = ExecutionPayload::kV1,
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -290,7 +290,7 @@ TEST_CASE("serialize ExecutionPayloadBody", "[silkworm][rpc][json]") {
 
 TEST_CASE("serialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v3{
-        .version = ExecutionPayload::V3,
+        .version = ExecutionPayload::kV3,
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -414,7 +414,7 @@ TEST_CASE("deserialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
             "blobGasUsed":"0x1000",
             "excessBlobGas":"0x0100"
         })"_json;
-        CHECK(payload.version == ExecutionPayload::V3);
+        CHECK(payload.version == ExecutionPayload::kV3);
         CHECK(payload.parent_hash == 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32);
         CHECK(payload.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
         CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);

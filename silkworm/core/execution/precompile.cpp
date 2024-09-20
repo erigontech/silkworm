@@ -23,6 +23,10 @@
 #include <cstring>
 #include <limits>
 
+#include <evmone_precompiles/blake2b.hpp>
+#include <evmone_precompiles/ripemd160.hpp>
+#include <evmone_precompiles/sha256.hpp>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -34,12 +38,9 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/crypto/blake2b.h>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/kzg.hpp>
-#include <silkworm/core/crypto/rmd160.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
-#include <silkworm/core/crypto/sha256.h>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/types/hash.hpp>
 
@@ -84,7 +85,9 @@ uint64_t sha256_gas(ByteView input, evmc_revision) noexcept {
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
     Bytes out(32, 0);
-    silkworm_sha256(out.data(), input.data(), input.length(), /*use_cpu_extensions=*/true);
+    evmone::crypto::sha256(reinterpret_cast<std::byte*>(out.data()),
+                           reinterpret_cast<const std::byte*>(input.data()),
+                           input.length());
     return out;
 }
 
@@ -95,7 +98,9 @@ uint64_t rip160_gas(ByteView input, evmc_revision) noexcept {
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
     Bytes out(32, 0);
     SILKWORM_ASSERT(input.length() <= std::numeric_limits<uint32_t>::max());
-    silkworm_rmd160(&out[12], input.data(), static_cast<uint32_t>(input.length()));
+    evmone::crypto::ripemd160(reinterpret_cast<std::byte*>(&out[12]),
+                              reinterpret_cast<const std::byte*>(input.data()),
+                              input.size());
     return out;
 }
 
@@ -111,11 +116,11 @@ static intx::uint256 mult_complexity_eip198(const intx::uint256& x) noexcept {
     const intx::uint256 x_squared{x * x};
     if (x <= 64) {
         return x_squared;
-    } else if (x <= 1024) {
-        return (x_squared >> 2) + 96 * x - 3072;
-    } else {
-        return (x_squared >> 4) + 480 * x - 199680;
     }
+    if (x <= 1024) {
+        return (x_squared >> 2) + 96 * x - 3072;
+    }
+    return (x_squared >> 4) + 480 * x - 199680;
 }
 
 static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) noexcept {
@@ -182,9 +187,8 @@ uint64_t expmod_gas(ByteView input_view, evmc_revision rev) noexcept {
 
     if (intx::count_significant_words(gas) > 1) {
         return UINT64_MAX;
-    } else {
-        return std::max(min_gas, static_cast<uint64_t>(gas));
     }
+    return std::max(min_gas, static_cast<uint64_t>(gas));
 }
 
 std::optional<Bytes> expmod_run(ByteView input_view) noexcept {
@@ -429,8 +433,8 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     init_libff();
     using namespace libff;
 
-    static const auto one{alt_bn128_Fq12::one()};
-    auto accumulator{one};
+    static const auto kOne{alt_bn128_Fq12::one()};
+    auto accumulator{kOne};
 
     for (size_t i{0}; i < k; ++i) {
         std::optional<alt_bn128_G1> a{decode_g1_element(&input[i * kSnarkvStride])};
@@ -450,7 +454,7 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     }
 
     Bytes out(32, 0);
-    if (alt_bn128_final_exponentiation(accumulator) == one) {
+    if (alt_bn128_final_exponentiation(accumulator) == kOne) {
         out[31] = 1;
     }
     return out;
@@ -468,30 +472,25 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
     if (input.length() != 213) {
         return std::nullopt;
     }
-    uint8_t f{input[212]};
+    const uint8_t f{input[212]};
     if (f != 0 && f != 1) {
         return std::nullopt;
     }
 
-    SilkwormBlake2bState state{};
-    if (f) {
-        state.f[0] = std::numeric_limits<uint64_t>::max();
-    }
+    uint64_t h[8];
+    std::memcpy(h, &input[4], sizeof(h));
+    uint64_t m[16];
+    std::memcpy(m, &input[68], sizeof(m));
+    uint64_t t[2];
+    std::memcpy(t, &input[196], sizeof(t));
 
     static_assert(std::endian::native == std::endian::little);
-    static_assert(sizeof(state.h) == 8 * 8);
-    std::memcpy(&state.h, &input[4], 8 * 8);
-
-    uint8_t block[SILKWORM_BLAKE2B_BLOCKBYTES];
-    std::memcpy(block, &input[68], SILKWORM_BLAKE2B_BLOCKBYTES);
-
-    std::memcpy(&state.t, &input[196], 8 * 2);
 
     uint32_t r{endian::load_big_u32(input.data())};
-    silkworm_blake2b_compress(&state, block, r);
+    evmone::crypto::blake2b_compress(r, h, m, t, f != 0);
 
-    Bytes out(8 * 8, 0);
-    std::memcpy(&out[0], &state.h[0], 8 * 8);
+    Bytes out(sizeof(h), 0);
+    std::memcpy(&out[0], h, sizeof(h));
     return out;
 }
 

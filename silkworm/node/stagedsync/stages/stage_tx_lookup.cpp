@@ -29,7 +29,7 @@ using db::etl_mdbx::Collector;
 
 Stage::Result TxLookup::forward(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
 
@@ -38,9 +38,10 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
         const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
-        } else if (previous_progress > target_progress) {
+        }
+        if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
             throw StageError(Stage::Result::kInvalidProgress,
                              "TxLookup progress " + std::to_string(previous_progress) +
@@ -97,7 +98,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     collector_.reset();
     return ret;
 }
@@ -108,7 +109,7 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
     if (!sync_context_->unwind_point.has_value()) return ret;
     BlockNum to{sync_context_->unwind_point.value()};
 
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     try {
         throw_if_stopping();
 
@@ -117,7 +118,7 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
         const auto execution_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_progress <= to) {
             // Nothing to process
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -162,26 +163,26 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     collector_.reset();
     return ret;
 }
 
 Stage::Result TxLookup::prune(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
 
     try {
         throw_if_stopping();
         if (!prune_mode_tx_index_.enabled()) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
         if (prune_progress >= forward_progress) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -189,7 +190,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{prune_mode_tx_index_.value_from_head(forward_progress)};
         if (!prune_threshold) {
-            operation_ = OperationType::None;
+            operation_ = OperationType::kNone;
             return ret;
         }
 
@@ -230,13 +231,13 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
         ret = Stage::Result::kUnexpectedError;
     }
 
-    operation_ = OperationType::None;
+    operation_ = OperationType::kNone;
     return ret;
 }
 
 void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Forward;
+    operation_ = OperationType::kForward;
     loading_.store(false);
     collector_ = std::make_unique<Collector>(etl_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
@@ -268,7 +269,7 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
 
 void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Unwind;
+    operation_ = OperationType::kUnwind;
     loading_.store(false);
     collector_ = std::make_unique<Collector>(etl_settings_);
     current_source_ = std::string(db::table::kBlockBodies.name);
@@ -301,7 +302,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     const db::MapConfig source_config{db::table::kBlockBodies};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Prune;
+    operation_ = OperationType::kPrune;
     loading_.store(false);
     collector_ = std::make_unique<Collector>(etl_settings_);
     current_source_ = std::string(source_config.name);
@@ -344,7 +345,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
     Bytes etl_value{};
 
     for (BlockNum current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
-        auto current_hash = db::read_canonical_hash(txn, current_block_num);
+        auto current_hash = db::read_canonical_header_hash(txn, current_block_num);
         if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
                                             "Canonical hash at height " + std::to_string(current_block_num) + " not found");
         std::vector<Bytes> rlp_encoded_txs;

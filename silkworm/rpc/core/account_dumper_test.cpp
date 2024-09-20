@@ -39,10 +39,10 @@ using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 
-static const nlohmann::json empty;
-static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT
+const nlohmann::json kEmpty;
+const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 #ifdef TEST_DISABLED
-static const evmc::bytes32 zero_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+const evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 #endif
 
 class DummyCursor : public CursorDupSort {
@@ -55,7 +55,7 @@ class DummyCursor : public CursorDupSort {
 
     Task<void> open_cursor(const std::string& table_name, bool /*is_dup_sorted*/) override {
         table_name_ = table_name;
-        table_ = json_.value(table_name_, empty);
+        table_ = json_.value(table_name_, kEmpty);
         itr_ = table_.end();
 
         co_return;
@@ -74,7 +74,7 @@ class DummyCursor : public CursorDupSort {
             auto actual = key_;
             auto delta = itr_.key().size() - actual.size();
             if (delta > 0) {
-                actual += zeros.substr(0, delta);
+                actual += kZeros.substr(0, delta);
             }
             if (itr_.key() >= actual) {
                 auto kk{*silkworm::from_hex(itr_.key())};
@@ -88,13 +88,21 @@ class DummyCursor : public CursorDupSort {
     }
 
     Task<KeyValue> seek_exact(silkworm::ByteView key) override {
-        const nlohmann::json table = json_.value(table_name_, empty);
+        const nlohmann::json table = json_.value(table_name_, kEmpty);
         const auto& entry = table.value(silkworm::to_hex(key), "");
         auto value{*silkworm::from_hex(entry)};
 
         auto kv = KeyValue{silkworm::Bytes{key}, value};
 
         co_return kv;
+    }
+
+    Task<KeyValue> first() override {
+        throw std::logic_error{"not implemented"};
+    }
+
+    Task<KeyValue> last() override {
+        throw std::logic_error{"not implemented"};
     }
 
     Task<KeyValue> next() override {
@@ -137,7 +145,7 @@ class DummyCursor : public CursorDupSort {
         silkworm::Bytes key_{key};
         key_ += value;
 
-        const nlohmann::json table = json_.value(table_name_, empty);
+        const nlohmann::json table = json_.value(table_name_, kEmpty);
         const auto& entry = table.value(silkworm::to_hex(key_), "");
         auto out{*silkworm::from_hex(entry)};
 
@@ -148,7 +156,7 @@ class DummyCursor : public CursorDupSort {
         silkworm::Bytes key_{key};
         key_ += value;
 
-        const nlohmann::json table = json_.value(table_name_, empty);
+        const nlohmann::json table = json_.value(table_name_, kEmpty);
         const auto& entry = table.value(silkworm::to_hex(key_), "");
         auto out{*silkworm::from_hex(entry)};
         auto kv = KeyValue{silkworm::Bytes{}, out};
@@ -200,8 +208,29 @@ class DummyTransaction : public BaseTransaction {
         co_return;
     }
 
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& query) override {
-        co_return db::kv::api::PaginatedTimestamps{test::empty_paginator(std::move(query))};
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery&& /*query*/) override {
+        co_return db::kv::api::DomainPointResult{};
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery&& /*query*/) override {
+        co_return db::kv::api::HistoryPointResult{};
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_timestamps();
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_keys_and_values();
+    }
+
+    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery&& /*query*/) override {
+        co_return test::empty_paginated_keys_and_values();
     }
 
   private:
@@ -331,7 +360,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 1549204747057049000);
         CHECK(account.nonce == 2026);
         CHECK(account.incarnation == 0);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_1);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -352,7 +381,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 1549204747057049000);
         CHECK(account.nonce == 2026);
         CHECK(account.incarnation == 0);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_1);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -362,7 +391,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 0);
         CHECK(account.nonce == 1);
         CHECK(account.incarnation == 1);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_2);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -383,7 +412,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 1549204747057049000);
         CHECK(account.nonce == 2026);
         CHECK(account.incarnation == 0);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_1);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -393,7 +422,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 0);
         CHECK(account.nonce == 1);
         CHECK(account.incarnation == 1);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_2);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -403,7 +432,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 0);
         CHECK(account.nonce == 1);
         CHECK(account.incarnation == 1);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_3);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -425,7 +454,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 1549204747057049000);
         CHECK(account.nonce == 2026);
         CHECK(account.incarnation == 0);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_1);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -446,7 +475,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 1549204747057049000);
         CHECK(account.nonce == 2026);
         CHECK(account.incarnation == 0);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_1);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -456,7 +485,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 0);
         CHECK(account.nonce == 1);
         CHECK(account.incarnation == 1);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_2);
         CHECK(account.code.has_value());
         CHECK(account.code.value() == *silkworm::from_hex("0x363d3d373d3d3d363d73a8607bb8554de1589893d21d08832ccadbba53ff5af43d82803e903d91602b57fd5bf3"));
@@ -478,7 +507,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 1549204747057049000);
         CHECK(account.nonce == 2026);
         CHECK(account.incarnation == 0);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_1);
         CHECK(!account.code.has_value());
         CHECK(!account.storage.has_value());
@@ -488,7 +517,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 0);
         CHECK(account.nonce == 1);
         CHECK(account.incarnation == 1);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_2);
         CHECK(account.code.has_value());
         CHECK(account.code.value() == *silkworm::from_hex("0x363d3d373d3d3d363d73a8607bb8554de1589893d21d08832ccadbba53ff5af43d82803e903d91602b57fd5bf3"));
@@ -499,7 +528,7 @@ TEST_CASE("account dumper") {
         CHECK(account.balance == 0);
         CHECK(account.nonce == 1);
         CHECK(account.incarnation == 1);
-        CHECK(account.root == zero_hash);
+        CHECK(account.root == kZeroHash);
         CHECK(account.code_hash == code_hash_3);
         CHECK(account.code.has_value());
         CHECK(!account.storage.has_value());

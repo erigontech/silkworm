@@ -37,22 +37,6 @@ struct Service {
 
     // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
     virtual Task<void> state_changes(const StateChangeOptions& options, StateChangeConsumer consumer) = 0;
-
-    /** Temporal Point Queries **/
-
-    // rpc HistoryGet(HistoryGetReq) returns (HistoryGetReply);
-    virtual Task<HistoryPointResult> get_history(const HistoryPointQuery&) = 0;
-
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    virtual Task<DomainPointResult> get_domain(const DomainPointQuery&) = 0;
-
-    /** Temporal Range Queries **/
-
-    // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    virtual Task<HistoryRangeResult> get_history_range(const HistoryRangeQuery&) = 0;
-
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    virtual Task<DomainRangeResult> get_domain_range(const DomainRangeQuery&) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

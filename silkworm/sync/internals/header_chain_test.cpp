@@ -33,14 +33,17 @@ class HeaderChainForTest : public HeaderChain {
     using HeaderChain::anchor_queue_;
     using HeaderChain::anchor_skeleton_request;
     using HeaderChain::anchors_;
-    using HeaderChain::extension_req_timeout;
     using HeaderChain::find_anchor;
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
+    using HeaderChain::kExtensionReqTimeout;
     using HeaderChain::last_nack_;
     using HeaderChain::links_;
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
+
+    explicit HeaderChainForTest(const ChainConfig& chain_config)
+        : HeaderChain{chain_config, /* use_preverified_hashes = */ false} {}
 };
 
 // TESTs related to HeaderList::split_into_segments
@@ -55,7 +58,7 @@ TEST_CASE("HeaderList::split_into_segments no headers") {
     auto [segments, penalty] = headerList->split_into_segments();
 
     REQUIRE(segments.empty());
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
 }
 
 TEST_CASE("HeaderList::split_into_segments single header") {
@@ -71,7 +74,7 @@ TEST_CASE("HeaderList::split_into_segments single header") {
     auto [segments, penalty] = headerList->split_into_segments();
 
     REQUIRE(segments.size() == 1);
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
 }
 
 TEST_CASE("HeaderList::split_into_segments single header repeated twice") {
@@ -88,7 +91,7 @@ TEST_CASE("HeaderList::split_into_segments single header repeated twice") {
     auto [segments, penalty] = headerList->split_into_segments();
 
     REQUIRE(segments.empty());
-    REQUIRE(penalty == Penalty::DuplicateHeaderPenalty);
+    REQUIRE(penalty == Penalty::kDuplicateHeaderPenalty);
 }
 
 TEST_CASE("HeaderList::split_into_segments two connected headers") {
@@ -110,7 +113,7 @@ TEST_CASE("HeaderList::split_into_segments two connected headers") {
 
     auto [segments, penalty] = headerList->split_into_segments();
 
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 1);                      // 1 segment
     REQUIRE(segments[0].size() == 2);                   // 2 headers
     REQUIRE(segments[0][0]->number == header2.number);  // the highest at the beginning
@@ -137,7 +140,7 @@ TEST_CASE("HeaderList::split_into_segments two connected headers with wrong numb
     auto [segments, penalty] = headerList->split_into_segments();
 
     REQUIRE(segments.empty());
-    REQUIRE(penalty == Penalty::WrongChildBlockHeightPenalty);
+    REQUIRE(penalty == Penalty::kWrongChildBlockHeightPenalty);
 }
 
 /* input:
@@ -173,7 +176,7 @@ TEST_CASE("HeaderList::split_into_segments two headers connected to the third he
 
     auto [segments, penalty] = headerList->split_into_segments();
 
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 3);                      // 3 segment
     REQUIRE(segments[0].size() == 1);                   // 1 headers
     REQUIRE(segments[1].size() == 1);                   // 1 headers
@@ -211,7 +214,7 @@ TEST_CASE("HeaderList::split_into_segments same three headers, but in a reverse 
 
     auto [segments, penalty] = headerList->split_into_segments();
 
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 3);                      // 3 segment
     REQUIRE(segments[0].size() == 1);                   // 1 headers
     REQUIRE(segments[2][0]->number == header1.number);  // expected h1 to be the root
@@ -252,7 +255,7 @@ TEST_CASE("HeaderList::split_into_segments two headers not connected to each oth
 
     auto [segments, penalty] = headerList->split_into_segments();
 
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 2);              // 1 segment
     REQUIRE(segments[0].size() == 1);           // 1 header each
     REQUIRE(segments[1].size() == 1);           // 1 header each
@@ -289,7 +292,7 @@ TEST_CASE("HeaderList::split_into_segments three headers connected") {
 
     auto [segments, penalty] = headerList->split_into_segments();
 
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 1);                      // 1 segment
     REQUIRE(segments[0].size() == 3);                   // 3 headers
     REQUIRE(segments[0][0]->number == header3.number);  // expected h3 at the top
@@ -336,7 +339,7 @@ TEST_CASE("HeaderList::split_into_segments four headers connected") {
 
     auto [segments, penalty] = headerList->split_into_segments();
 
-    REQUIRE(penalty == Penalty::NoPenalty);
+    REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 3);                      // 3 segment
     REQUIRE(segments[0].size() == 1);                   // segment 0 - 1 headers
     REQUIRE(segments[1].size() == 1);                   // segment 1 - 1 headers
@@ -382,7 +385,7 @@ TEST_CASE("HeaderChain: (1) simple chain") {
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1], headers[2]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -415,7 +418,7 @@ TEST_CASE("HeaderChain: (1) simple chain") {
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -452,7 +455,7 @@ TEST_CASE("HeaderChain: (1) simple chain") {
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[8], headers[9]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
@@ -502,7 +505,7 @@ TEST_CASE("HeaderChain: (1) simple chain") {
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[6], headers[7]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchors_.size() == 2);
         REQUIRE(chain.anchor_queue_.size() == 2);
@@ -546,7 +549,7 @@ TEST_CASE("HeaderChain: (1) simple chain") {
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.anchor_queue_.size() == 1);
@@ -704,7 +707,7 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -737,7 +740,7 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[2], h3a, h4a, headers[3]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -779,7 +782,7 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[8], headers[9], headers[7]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
@@ -815,7 +818,7 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], headers[6], h6a, h6b, headers[4], h7b}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -1121,7 +1124,7 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -1146,7 +1149,7 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
             {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -1180,7 +1183,7 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
         // add a segment with a siblings with far parent
         auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -1217,7 +1220,7 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
         // add a segment with a siblings with far parent
         auto [penalty, requestMoreHeaders] = chain.accept_headers({h5s}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
@@ -1265,7 +1268,7 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -1289,7 +1292,7 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = HeaderChainForTest::extension_req_timeout;
+        seconds_t timeout = HeaderChainForTest::kExtensionReqTimeout;
 
         auto anchor = chain.anchor_queue_.top();
         anchor->timeouts = 10;
@@ -1315,7 +1318,7 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
             {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -1365,7 +1368,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
     {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
@@ -1389,7 +1392,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
@@ -1432,7 +1435,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == false);  // fails to extend
 
         // following conditions are as before
@@ -1480,7 +1483,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         std::shared_ptr<Anchor> anchor = chain.anchor_queue_.top();
         auto prev_timeouts = anchor->timeouts;
         auto prev_timestamp = anchor->timestamp;
-        auto timeout = HeaderChainForTest::extension_req_timeout;
+        auto timeout = HeaderChainForTest::kExtensionReqTimeout;
         auto now = prev_timestamp + timeout;
 
         // request an anchor extension
@@ -1516,7 +1519,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = HeaderChainForTest::extension_req_timeout;
+        seconds_t timeout = HeaderChainForTest::kExtensionReqTimeout;
 
         chain.last_nack_ = now - timeout;  // otherwise the request is ignored
 
@@ -1608,7 +1611,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], headers[6], headers[7]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(penalty == Penalty::kNoPenalty);
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);

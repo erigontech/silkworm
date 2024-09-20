@@ -19,9 +19,9 @@
 
 #include <silkworm/infra/common/directories.hpp>
 
-#include "bodies/body_snapshot.hpp"
-#include "headers/header_snapshot.hpp"
-#include "snapshots/path.hpp"
+#include "blocks/bodies/body_snapshot.hpp"
+#include "blocks/headers/header_snapshot.hpp"
+#include "snapshots/snapshot_path.hpp"
 #include "transactions/txn_snapshot.hpp"
 
 namespace silkworm::snapshots {

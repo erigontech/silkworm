@@ -38,7 +38,7 @@ namespace silkworm::concurrency {
 //! Asynchronous scheduler running an execution loop.
 class Context {
   public:
-    explicit Context(std::size_t context_id, WaitMode wait_mode = WaitMode::blocking);
+    explicit Context(std::size_t context_id, WaitMode wait_mode = WaitMode::kBlocking);
     virtual ~Context() = default;
 
     [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
@@ -67,7 +67,7 @@ class Context {
   private:
     //! Execute single-threaded loop until stopped.
     template <typename IdleStrategy>
-    void execute_loop_single_threaded(IdleStrategy&& idle_strategy);
+    void execute_loop_single_threaded(IdleStrategy idle_strategy);
 
     //! Execute multi-threaded loop until stopped.
     void execute_loop_multi_threaded();

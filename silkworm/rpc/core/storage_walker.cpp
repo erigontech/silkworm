@@ -79,6 +79,16 @@ Task<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor, BlockNum number, 
     co_return skv;
 }
 
+int StorageWalker::compare_empty_greater(const ByteView& key1, const ByteView& key2) {
+    if (key1.empty() && !key2.empty()) {
+        return 1;
+    }
+    if (!key1.empty() && key2.empty()) {
+        return -1;
+    }
+    return key1.compare(key2);
+}
+
 Task<void> StorageWalker::walk_of_storages(
     BlockNum block_number,
     const evmc::address& address,
@@ -121,12 +131,12 @@ Task<void> StorageWalker::walk_of_storages(
         if (ps_skv.key1.empty() && sh_skv.key1.empty()) {
             break;
         }
-        auto cmp = ps_skv.key1.compare(sh_skv.key1);
+        auto cmp = compare_empty_greater(ps_skv.key1, sh_skv.key1);
         if (cmp == 0) {
             if (ps_skv.key2.empty() && h_loc.empty()) {
                 break;
             }
-            cmp = ps_skv.key2.compare(h_loc);
+            cmp = compare_empty_greater(ps_skv.key2, h_loc);
         }
         if (cmp < 0) {
             const auto ps_address = bytes_to_address(ps_skv.key1);

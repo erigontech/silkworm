@@ -75,9 +75,8 @@ Task<Handshake::HandshakeResult> Handshake::execute(SocketStream& stream) {
         if (reply_message.id == DisconnectMessage::kId) {
             auto disconnect_message = DisconnectMessage::from_message(reply_message);
             throw DisconnectError(disconnect_message.reason);
-        } else {
-            throw std::runtime_error("rlpx::auth::Handshake: unexpected RLPx message");
         }
+        throw std::runtime_error("rlpx::auth::Handshake: unexpected RLPx message");
     }
 
     HelloMessage hello_reply_message = HelloMessage::from_message(reply_message);

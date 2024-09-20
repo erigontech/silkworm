@@ -40,17 +40,12 @@
 
 namespace silkworm::rpc::commands {
 
-using db::chain::ChainStorage;
-using db::chain::RemoteChainStorage;
-using db::kv::api::BaseTransaction;
-using db::kv::api::Cursor;
-using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 using rpc::test::DummyDatabase;
 
-class EngineRpcApi_ForTest : public EngineRpcApi {
+class EngineRpcApiForTest : public EngineRpcApi {
   public:
-    explicit EngineRpcApi_ForTest(boost::asio::io_context& io_context) : EngineRpcApi(io_context) {}
+    explicit EngineRpcApiForTest(boost::asio::io_context& io_context) : EngineRpcApi(io_context) {}
 
     using EngineRpcApi::handle_engine_exchange_capabilities;
     using EngineRpcApi::handle_engine_exchange_transition_configuration_v1;
@@ -63,8 +58,8 @@ class EngineRpcApi_ForTest : public EngineRpcApi {
 using testing::_;
 using testing::InvokeWithoutArgs;
 
-struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApi_ForTest> {
-    EngineRpcApiTest() : test_util::JsonApiTestBase<EngineRpcApi_ForTest>() {
+struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApiForTest> {
+    EngineRpcApiTest() : test_util::JsonApiTestBase<EngineRpcApiForTest>() {
         add_private_service<ethdb::Database>(io_context_, std::make_unique<DummyDatabase>(mock_cursor, mock_cursor_dup_sort));
         add_shared_service<engine::ExecutionEngine>(io_context_, mock_engine);
         add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<test::BackEndMock>());
@@ -109,7 +104,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rp
     nlohmann::json reply;
 
     SECTION("request params is empty: return error") {
-        CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_capabilities>(
+        CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_capabilities>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -124,7 +119,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rp
         })"_json);
     }
     SECTION("no CL capabilities is OK and we must return our EL capabilities") {
-        CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_capabilities>(
+        CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_capabilities>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -164,7 +159,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_getClientVersionV1", "[silkworm][rpc]
             "method":"engine_getClientVersionV1",
             "params":[]
         })"_json;
-        CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_get_client_version_v1>(request, reply));
+        CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_get_client_version_v1>(request, reply));
 
         CHECK(reply == R"({"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"invalid engine_getClientVersionV1 params: []"}})");
     }
@@ -180,7 +175,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_getClientVersionV1", "[silkworm][rpc]
                 "commit":"aa00bb11"
             }]
         })"_json;
-        CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_get_client_version_v1>(request, reply));
+        CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_get_client_version_v1>(request, reply));
 
         CHECK(reply == R"({"jsonrpc":"2.0","id":1,"result":[{"code":"SW","name":"silkworm","version":"","commit":""}]})");
     }
@@ -199,7 +194,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_getPayloadV1 OK: request is expected 
         "params":["0x0000000000000001"]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_get_payload_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_get_payload_v1>(request, reply));
 
     CHECK(reply == R"({
         "id":1,
@@ -232,7 +227,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_getPayloadV1 KO: invalid amount of pa
         "params":[]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_get_payload_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_get_payload_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -275,7 +270,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "handle_engine_new_payload_v1 OK: request is 
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_new_payload_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_new_payload_v1>(request, reply));
 
     CHECK(reply == R"({
         "id":1,
@@ -297,7 +292,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_newPayloadV1 KO: invalid amount of pa
         "params":[]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_new_payload_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_new_payload_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -333,7 +328,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 OK: only forkchoi
         ]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_forkchoice_updated_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_forkchoice_updated_v1>(request, reply));
 
     CHECK(reply == R"({
         "jsonrpc":"2.0",
@@ -377,7 +372,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 OK: both params",
         ]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_forkchoice_updated_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_forkchoice_updated_v1>(request, reply));
 
     CHECK(reply == R"({
         "jsonrpc":"2.0",
@@ -417,7 +412,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 OK: both params a
         ]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_forkchoice_updated_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_forkchoice_updated_v1>(request, reply));
 
     CHECK(reply == R"({
         "jsonrpc":"2.0",
@@ -441,7 +436,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 KO: invalid amoun
         "params":[]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_forkchoice_updated_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_forkchoice_updated_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -468,7 +463,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedV1 KO: empty finaliz
         ]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_forkchoice_updated_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_forkchoice_updated_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -495,7 +490,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedv1 KO: empty safe bl
         ]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_forkchoice_updated_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_forkchoice_updated_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -532,7 +527,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: EL conf
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "id":1,
@@ -570,7 +565,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: termina
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "id":1,
@@ -608,7 +603,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorre
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -645,7 +640,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: EL does
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -682,7 +677,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -719,7 +714,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{
@@ -756,7 +751,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: no matc
         }]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "id":1,
@@ -778,7 +773,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorre
         "params":[]
     })"_json;
 
-    CHECK_NOTHROW(run<&EngineRpcApi_ForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
+    CHECK_NOTHROW(run<&EngineRpcApiForTest::handle_engine_exchange_transition_configuration_v1>(request, reply));
 
     CHECK(reply == R"({
         "error":{

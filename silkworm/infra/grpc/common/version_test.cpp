@@ -25,6 +25,7 @@
 #include <gmock/gmock.h>
 #include <grpcpp/server_builder.h>
 
+#include <silkworm/core/test_util/null_stream.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>

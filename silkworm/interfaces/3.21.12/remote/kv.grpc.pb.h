@@ -118,12 +118,12 @@ class KV final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>>(PrepareAsyncDomainGetRaw(context, request, cq));
     }
     // can return latest value or as of given timestamp
-    virtual ::grpc::Status HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::remote::HistoryGetReply* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>> AsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>>(AsyncHistoryGetRaw(context, request, cq));
+    virtual ::grpc::Status HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::remote::HistorySeekReply* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>> AsyncHistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>>(AsyncHistorySeekRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>> PrepareAsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>>(PrepareAsyncHistoryGetRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>> PrepareAsyncHistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>>(PrepareAsyncHistorySeekRaw(context, request, cq));
     }
     virtual ::grpc::Status IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::remote::IndexRangeReply* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>> AsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
@@ -173,8 +173,8 @@ class KV final {
       virtual void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // can return latest value or as of given timestamp
-      virtual void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) = 0;
@@ -200,8 +200,8 @@ class KV final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* PrepareAsyncRangeRaw(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>* AsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>* PrepareAsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>* AsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>* PrepareAsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>* AsyncHistorySeekRaw(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>* PrepareAsyncHistorySeekRaw(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>* AsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>* PrepareAsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* AsyncHistoryRangeRaw(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
@@ -258,12 +258,12 @@ class KV final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>> PrepareAsyncDomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>>(PrepareAsyncDomainGetRaw(context, request, cq));
     }
-    ::grpc::Status HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::remote::HistoryGetReply* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>> AsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>>(AsyncHistoryGetRaw(context, request, cq));
+    ::grpc::Status HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::remote::HistorySeekReply* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>> AsyncHistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>>(AsyncHistorySeekRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>> PrepareAsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>>(PrepareAsyncHistoryGetRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>> PrepareAsyncHistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>>(PrepareAsyncHistorySeekRaw(context, request, cq));
     }
     ::grpc::Status IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::remote::IndexRangeReply* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>> AsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
@@ -299,8 +299,8 @@ class KV final {
       void Range(::grpc::ClientContext* context, const ::remote::RangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) override;
       void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, std::function<void(::grpc::Status)>) override;
       void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, std::function<void(::grpc::Status)>) override;
-      void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response, std::function<void(::grpc::Status)>) override;
+      void HistorySeek(::grpc::ClientContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, std::function<void(::grpc::Status)>) override;
       void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       void HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) override;
@@ -332,8 +332,8 @@ class KV final {
     ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* PrepareAsyncRangeRaw(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>* AsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>* PrepareAsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>* AsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>* PrepareAsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>* AsyncHistorySeekRaw(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::HistorySeekReply>* PrepareAsyncHistorySeekRaw(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>* AsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>* PrepareAsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* AsyncHistoryRangeRaw(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) override;
@@ -346,7 +346,7 @@ class KV final {
     const ::grpc::internal::RpcMethod rpcmethod_Snapshots_;
     const ::grpc::internal::RpcMethod rpcmethod_Range_;
     const ::grpc::internal::RpcMethod rpcmethod_DomainGet_;
-    const ::grpc::internal::RpcMethod rpcmethod_HistoryGet_;
+    const ::grpc::internal::RpcMethod rpcmethod_HistorySeek_;
     const ::grpc::internal::RpcMethod rpcmethod_IndexRange_;
     const ::grpc::internal::RpcMethod rpcmethod_HistoryRange_;
     const ::grpc::internal::RpcMethod rpcmethod_DomainRange_;
@@ -377,7 +377,7 @@ class KV final {
     // Temporal methods
     virtual ::grpc::Status DomainGet(::grpc::ServerContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response);
     // can return latest value or as of given timestamp
-    virtual ::grpc::Status HistoryGet(::grpc::ServerContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response);
+    virtual ::grpc::Status HistorySeek(::grpc::ServerContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response);
     virtual ::grpc::Status IndexRange(::grpc::ServerContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response);
     virtual ::grpc::Status HistoryRange(::grpc::ServerContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response);
     virtual ::grpc::Status DomainRange(::grpc::ServerContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response);
@@ -503,22 +503,22 @@ class KV final {
     }
   };
   template <class BaseClass>
-  class WithAsyncMethod_HistoryGet : public BaseClass {
+  class WithAsyncMethod_HistorySeek : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithAsyncMethod_HistoryGet() {
+    WithAsyncMethod_HistorySeek() {
       ::grpc::Service::MarkMethodAsync(6);
     }
-    ~WithAsyncMethod_HistoryGet() override {
+    ~WithAsyncMethod_HistorySeek() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HistoryGet(::grpc::ServerContext* /*context*/, const ::remote::HistoryGetReq* /*request*/, ::remote::HistoryGetReply* /*response*/) override {
+    ::grpc::Status HistorySeek(::grpc::ServerContext* /*context*/, const ::remote::HistorySeekReq* /*request*/, ::remote::HistorySeekReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestHistoryGet(::grpc::ServerContext* context, ::remote::HistoryGetReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::HistoryGetReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestHistorySeek(::grpc::ServerContext* context, ::remote::HistorySeekReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::HistorySeekReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
@@ -582,7 +582,7 @@ class KV final {
       ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Version<WithAsyncMethod_Tx<WithAsyncMethod_StateChanges<WithAsyncMethod_Snapshots<WithAsyncMethod_Range<WithAsyncMethod_DomainGet<WithAsyncMethod_HistoryGet<WithAsyncMethod_IndexRange<WithAsyncMethod_HistoryRange<WithAsyncMethod_DomainRange<Service > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_Version<WithAsyncMethod_Tx<WithAsyncMethod_StateChanges<WithAsyncMethod_Snapshots<WithAsyncMethod_Range<WithAsyncMethod_DomainGet<WithAsyncMethod_HistorySeek<WithAsyncMethod_IndexRange<WithAsyncMethod_HistoryRange<WithAsyncMethod_DomainRange<Service > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_Version : public BaseClass {
    private:
@@ -737,31 +737,31 @@ class KV final {
       ::grpc::CallbackServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithCallbackMethod_HistoryGet : public BaseClass {
+  class WithCallbackMethod_HistorySeek : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithCallbackMethod_HistoryGet() {
+    WithCallbackMethod_HistorySeek() {
       ::grpc::Service::MarkMethodCallback(6,
-          new ::grpc::internal::CallbackUnaryHandler< ::remote::HistoryGetReq, ::remote::HistoryGetReply>(
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::HistorySeekReq, ::remote::HistorySeekReply>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response) { return this->HistoryGet(context, request, response); }));}
-    void SetMessageAllocatorFor_HistoryGet(
-        ::grpc::MessageAllocator< ::remote::HistoryGetReq, ::remote::HistoryGetReply>* allocator) {
+                   ::grpc::CallbackServerContext* context, const ::remote::HistorySeekReq* request, ::remote::HistorySeekReply* response) { return this->HistorySeek(context, request, response); }));}
+    void SetMessageAllocatorFor_HistorySeek(
+        ::grpc::MessageAllocator< ::remote::HistorySeekReq, ::remote::HistorySeekReply>* allocator) {
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::HistoryGetReq, ::remote::HistoryGetReply>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::HistorySeekReq, ::remote::HistorySeekReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
-    ~WithCallbackMethod_HistoryGet() override {
+    ~WithCallbackMethod_HistorySeek() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HistoryGet(::grpc::ServerContext* /*context*/, const ::remote::HistoryGetReq* /*request*/, ::remote::HistoryGetReply* /*response*/) override {
+    ::grpc::Status HistorySeek(::grpc::ServerContext* /*context*/, const ::remote::HistorySeekReq* /*request*/, ::remote::HistorySeekReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* HistoryGet(
-      ::grpc::CallbackServerContext* /*context*/, const ::remote::HistoryGetReq* /*request*/, ::remote::HistoryGetReply* /*response*/)  { return nullptr; }
+    virtual ::grpc::ServerUnaryReactor* HistorySeek(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::HistorySeekReq* /*request*/, ::remote::HistorySeekReply* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_IndexRange : public BaseClass {
@@ -844,7 +844,7 @@ class KV final {
     virtual ::grpc::ServerUnaryReactor* DomainRange(
       ::grpc::CallbackServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_Version<WithCallbackMethod_Tx<WithCallbackMethod_StateChanges<WithCallbackMethod_Snapshots<WithCallbackMethod_Range<WithCallbackMethod_DomainGet<WithCallbackMethod_HistoryGet<WithCallbackMethod_IndexRange<WithCallbackMethod_HistoryRange<WithCallbackMethod_DomainRange<Service > > > > > > > > > > CallbackService;
+  typedef WithCallbackMethod_Version<WithCallbackMethod_Tx<WithCallbackMethod_StateChanges<WithCallbackMethod_Snapshots<WithCallbackMethod_Range<WithCallbackMethod_DomainGet<WithCallbackMethod_HistorySeek<WithCallbackMethod_IndexRange<WithCallbackMethod_HistoryRange<WithCallbackMethod_DomainRange<Service > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Version : public BaseClass {
@@ -949,18 +949,18 @@ class KV final {
     }
   };
   template <class BaseClass>
-  class WithGenericMethod_HistoryGet : public BaseClass {
+  class WithGenericMethod_HistorySeek : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_HistoryGet() {
+    WithGenericMethod_HistorySeek() {
       ::grpc::Service::MarkMethodGeneric(6);
     }
-    ~WithGenericMethod_HistoryGet() override {
+    ~WithGenericMethod_HistorySeek() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HistoryGet(::grpc::ServerContext* /*context*/, const ::remote::HistoryGetReq* /*request*/, ::remote::HistoryGetReply* /*response*/) override {
+    ::grpc::Status HistorySeek(::grpc::ServerContext* /*context*/, const ::remote::HistorySeekReq* /*request*/, ::remote::HistorySeekReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1137,22 +1137,22 @@ class KV final {
     }
   };
   template <class BaseClass>
-  class WithRawMethod_HistoryGet : public BaseClass {
+  class WithRawMethod_HistorySeek : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_HistoryGet() {
+    WithRawMethod_HistorySeek() {
       ::grpc::Service::MarkMethodRaw(6);
     }
-    ~WithRawMethod_HistoryGet() override {
+    ~WithRawMethod_HistorySeek() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HistoryGet(::grpc::ServerContext* /*context*/, const ::remote::HistoryGetReq* /*request*/, ::remote::HistoryGetReply* /*response*/) override {
+    ::grpc::Status HistorySeek(::grpc::ServerContext* /*context*/, const ::remote::HistorySeekReq* /*request*/, ::remote::HistorySeekReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestHistoryGet(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestHistorySeek(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
@@ -1350,25 +1350,25 @@ class KV final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithRawCallbackMethod_HistoryGet : public BaseClass {
+  class WithRawCallbackMethod_HistorySeek : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawCallbackMethod_HistoryGet() {
+    WithRawCallbackMethod_HistorySeek() {
       ::grpc::Service::MarkMethodRawCallback(6,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HistoryGet(context, request, response); }));
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HistorySeek(context, request, response); }));
     }
-    ~WithRawCallbackMethod_HistoryGet() override {
+    ~WithRawCallbackMethod_HistorySeek() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HistoryGet(::grpc::ServerContext* /*context*/, const ::remote::HistoryGetReq* /*request*/, ::remote::HistoryGetReply* /*response*/) override {
+    ::grpc::Status HistorySeek(::grpc::ServerContext* /*context*/, const ::remote::HistorySeekReq* /*request*/, ::remote::HistorySeekReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* HistoryGet(
+    virtual ::grpc::ServerUnaryReactor* HistorySeek(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -1546,31 +1546,31 @@ class KV final {
     virtual ::grpc::Status StreamedDomainGet(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::DomainGetReq,::remote::DomainGetReply>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
-  class WithStreamedUnaryMethod_HistoryGet : public BaseClass {
+  class WithStreamedUnaryMethod_HistorySeek : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithStreamedUnaryMethod_HistoryGet() {
+    WithStreamedUnaryMethod_HistorySeek() {
       ::grpc::Service::MarkMethodStreamed(6,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::remote::HistoryGetReq, ::remote::HistoryGetReply>(
+          ::remote::HistorySeekReq, ::remote::HistorySeekReply>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::remote::HistoryGetReq, ::remote::HistoryGetReply>* streamer) {
-                       return this->StreamedHistoryGet(context,
+                     ::remote::HistorySeekReq, ::remote::HistorySeekReply>* streamer) {
+                       return this->StreamedHistorySeek(context,
                          streamer);
                   }));
     }
-    ~WithStreamedUnaryMethod_HistoryGet() override {
+    ~WithStreamedUnaryMethod_HistorySeek() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status HistoryGet(::grpc::ServerContext* /*context*/, const ::remote::HistoryGetReq* /*request*/, ::remote::HistoryGetReply* /*response*/) override {
+    ::grpc::Status HistorySeek(::grpc::ServerContext* /*context*/, const ::remote::HistorySeekReq* /*request*/, ::remote::HistorySeekReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedHistoryGet(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::HistoryGetReq,::remote::HistoryGetReply>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedHistorySeek(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::HistorySeekReq,::remote::HistorySeekReply>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_IndexRange : public BaseClass {
@@ -1653,7 +1653,7 @@ class KV final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedDomainRange(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::DomainRangeReq,::remote::Pairs>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_Range<WithStreamedUnaryMethod_DomainGet<WithStreamedUnaryMethod_HistoryGet<WithStreamedUnaryMethod_IndexRange<WithStreamedUnaryMethod_HistoryRange<WithStreamedUnaryMethod_DomainRange<Service > > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_Range<WithStreamedUnaryMethod_DomainGet<WithStreamedUnaryMethod_HistorySeek<WithStreamedUnaryMethod_IndexRange<WithStreamedUnaryMethod_HistoryRange<WithStreamedUnaryMethod_DomainRange<Service > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_StateChanges : public BaseClass {
    private:
@@ -1682,7 +1682,7 @@ class KV final {
     virtual ::grpc::Status StreamedStateChanges(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::remote::StateChangeRequest,::remote::StateChangeBatch>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_StateChanges<Service > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Version<WithSplitStreamingMethod_StateChanges<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_Range<WithStreamedUnaryMethod_DomainGet<WithStreamedUnaryMethod_HistoryGet<WithStreamedUnaryMethod_IndexRange<WithStreamedUnaryMethod_HistoryRange<WithStreamedUnaryMethod_DomainRange<Service > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_Version<WithSplitStreamingMethod_StateChanges<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_Range<WithStreamedUnaryMethod_DomainGet<WithStreamedUnaryMethod_HistorySeek<WithStreamedUnaryMethod_IndexRange<WithStreamedUnaryMethod_HistoryRange<WithStreamedUnaryMethod_DomainRange<Service > > > > > > > > > StreamedService;
 };
 
 }  // namespace remote

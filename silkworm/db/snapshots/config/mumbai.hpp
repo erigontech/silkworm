@@ -537,4 +537,4 @@ inline constexpr std::array kMumbaiSnapshots{
     Entry{"v1-044800-044900-transactions.seg"sv, "b2c039af47bab0a0f31f6143b273d6b05441b730"sv},
 };
 
-}
+}  // namespace silkworm::snapshots

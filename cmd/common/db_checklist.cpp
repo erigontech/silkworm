@@ -110,42 +110,41 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
 
                     new_members_added = true;
                     continue;
+                }
 
-                } else {
-                    const auto active_value{active_chain_config_json[known_key]};
-                    if (active_value.type_name() != known_value.type_name()) {
-                        throw std::runtime_error("Hard-coded chain config key " + known_key + " has type " +
-                                                 std::string(known_value.type_name()) +
-                                                 " whilst persisted config has type " +
-                                                 std::string(active_value.type_name()));
-                    }
+                const auto active_value{active_chain_config_json[known_key]};
+                if (active_value.type_name() != known_value.type_name()) {
+                    throw std::runtime_error("Hard-coded chain config key " + known_key + " has type " +
+                                             std::string(known_value.type_name()) +
+                                             " whilst persisted config has type " +
+                                             std::string(active_value.type_name()));
+                }
 
-                    if (known_value.is_number()) {
-                        // Check whether activation value has been modified
-                        const auto known_value_activation{known_value.get<uint64_t>()};
-                        const auto active_value_activation{active_value.get<uint64_t>()};
-                        if (known_value_activation != active_value_activation) {
-                            const bool must_throw{
-                                // Can't de-activate an already activated fork block
-                                (!known_value_activation && active_value_activation &&
-                                 active_value_activation <= header_download_progress) ||
-                                // Can't activate a fork block BEFORE current height
-                                (!active_value_activation && known_value_activation &&
-                                 known_value_activation <= header_download_progress) ||
-                                // Can change activation height BEFORE current height
-                                (known_value_activation && active_value_activation &&
-                                 std::min(known_value_activation, active_value_activation) <=
-                                     header_download_progress)};
-                            if (must_throw) {
-                                throw std::runtime_error("Can't apply modified chain config key " +
-                                                         known_key + " from " +
-                                                         std::to_string(active_value_activation) + " to " +
-                                                         std::to_string(known_value_activation) +
-                                                         " as the database has already headers up to " +
-                                                         std::to_string(header_download_progress));
-                            }
-                            old_members_changed = true;
+                if (known_value.is_number()) {
+                    // Check whether activation value has been modified
+                    const auto known_value_activation{known_value.get<uint64_t>()};
+                    const auto active_value_activation{active_value.get<uint64_t>()};
+                    if (known_value_activation != active_value_activation) {
+                        const bool must_throw{
+                            // Can't de-activate an already activated fork block
+                            (!known_value_activation && active_value_activation &&
+                             active_value_activation <= header_download_progress) ||
+                            // Can't activate a fork block BEFORE current height
+                            (!active_value_activation && known_value_activation &&
+                             known_value_activation <= header_download_progress) ||
+                            // Can change activation height BEFORE current height
+                            (known_value_activation && active_value_activation &&
+                             std::min(known_value_activation, active_value_activation) <=
+                                 header_download_progress)};
+                        if (must_throw) {
+                            throw std::runtime_error("Can't apply modified chain config key " +
+                                                     known_key + " from " +
+                                                     std::to_string(active_value_activation) + " to " +
+                                                     std::to_string(known_value_activation) +
+                                                     " as the database has already headers up to " +
+                                                     std::to_string(header_download_progress));
                         }
+                        old_members_changed = true;
                     }
                 }
             }

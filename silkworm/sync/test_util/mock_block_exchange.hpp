@@ -36,11 +36,11 @@ namespace silkworm::chainsync::test_util {
 class MockBlockExchange : public BlockExchange {
   public:
     MockBlockExchange(SentryClient& client, const db::ROAccess& dba, const ChainConfig& config)
-        : BlockExchange(client, dba, config) {}
+        : BlockExchange(client, dba, config, /* use_preverified_hashes = */ false) {}
 
     MOCK_METHOD((void), initial_state, (std::vector<BlockHeader>));
 
-    MOCK_METHOD((void), download_blocks, (BlockNum, Target_Tracking));
+    MOCK_METHOD((void), download_blocks, (BlockNum, TargetTracking));
     MOCK_METHOD((void), new_target_block, (std::shared_ptr<Block>));
     MOCK_METHOD((void), stop_downloading, ());
 

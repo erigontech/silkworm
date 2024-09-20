@@ -41,18 +41,30 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/snapshots/snapshot_settings.hpp>
+#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/active_component.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
+
+#include "../common/common.hpp"
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -254,11 +266,7 @@ bool user_confirmation(const std::string& message = {"Confirm ?"}) {
         std::cout << "Unexpected user input: " << user_input << "\n";
     } while (true);
 
-    if (matches[2].length()) {
-        return false;
-    }
-
-    return true;
+    return matches[2].length() == 0;
 }
 
 void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
@@ -475,9 +483,9 @@ void do_stages(db::EnvConfig& config) {
 
             // Handle "prune_" stages
             size_t offset{0};
-            static constexpr std::string_view prune_prefix{"prune_"};
-            if (std::memcmp(result.key.data(), prune_prefix.data(), prune_prefix.length()) == 0) {
-                offset = prune_prefix.length();
+            static constexpr std::string_view kPrunePrefix{"prune_"};
+            if (std::memcmp(result.key.data(), kPrunePrefix.data(), kPrunePrefix.length()) == 0) {
+                offset = kPrunePrefix.length();
             }
 
             bool Known{db::stages::is_known_stage(result.key.char_ptr() + offset)};
@@ -563,12 +571,26 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     auto chain_config{db::read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
+    boost::asio::io_context io_context;
+
     NodeSettings settings{
         .data_directory = std::make_unique<DataDirectory>(),
         .chaindata_env_config = config,
         .chain_config = chain_config};
 
-    stagedsync::ExecutionPipeline stage_pipeline{&settings};
+    stagedsync::BodiesStageFactory bodies_stage_factory = [&](stagedsync::SyncContext* sync_context) {
+        return std::make_unique<stagedsync::BodiesStage>(sync_context, *settings.chain_config, [] { return 0; });
+    };
+
+    stagedsync::TimerFactory log_timer_factory = [&](std::function<bool()> callback) {
+        return std::make_shared<Timer>(io_context.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
+    };
+
+    stagedsync::ExecutionPipeline stage_pipeline{
+        &settings,
+        std::move(log_timer_factory),
+        std::move(bodies_stage_factory),
+    };
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
 
     ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
@@ -691,18 +713,21 @@ void do_freelist(db::EnvConfig& config, bool detail) {
     env.close(config.shared);
 }
 
-void do_schema(db::EnvConfig& config) {
+void do_schema(db::EnvConfig& config, bool force_update) {
     auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
+    db::RWTxnManaged txn{env};
 
     auto schema_version{db::read_schema_version(txn)};
     if (!schema_version.has_value()) {
         throw std::runtime_error("Not a Silkworm db or no schema version found");
     }
-    std::cout << "\n"
-              << "Database schema version : " << schema_version->to_string() << "\n\n";
+    std::cout << "Database schema version: " << schema_version->to_string() << "\n";
 
-    env.close(config.shared);
+    if (force_update) {
+        db::write_schema_version(txn, db::table::kRequiredSchemaVersion);
+        txn.commit_and_stop();
+        std::cout << "New database schema version: " << db::table::kRequiredSchemaVersion.to_string() << "\n";
+    }
 }
 
 void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
@@ -900,10 +925,14 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 
         auto src_table_crs{src_txn.open_cursor(src_table_map)};
         auto tgt_table_crs{tgt_txn.open_cursor(tgt_table_map)};
-        MDBX_put_flags_t put_flags{populated_on_target
-                                       ? MDBX_put_flags_t::MDBX_UPSERT
-                                       : ((src_table_info.flags & MDBX_DUPSORT) ? MDBX_put_flags_t::MDBX_APPENDDUP
-                                                                                : MDBX_put_flags_t::MDBX_APPEND)};
+        MDBX_put_flags_t put_flags{};
+        if (populated_on_target) {
+            put_flags = MDBX_put_flags_t::MDBX_UPSERT;
+        } else if (src_table_info.flags & MDBX_DUPSORT) {
+            put_flags = MDBX_put_flags_t::MDBX_APPENDDUP;
+        } else {
+            put_flags = MDBX_put_flags_t::MDBX_APPEND;
+        }
 
         auto data{src_table_crs.to_first(/*throw_notfound =*/false)};
         while (data) {
@@ -1124,6 +1153,23 @@ static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo
         .key_mode = table2.info.key_mode(),
         .value_mode = table2.info.value_mode(),
     };
+
+    if (table1.stat.ms_entries == 0 && table2.stat.ms_entries == 0) {
+        std::cout << "Both tables ( " << table1.name << ", " << table2.name << ") have zero entries, skipping deep check"
+                  << "\n";
+        return;
+    }
+
+    if (constexpr std::array kIrrelevantTables = {
+            "FREE_DBI"sv,
+            "MAIN_DBI"sv,
+            "DbInfo"sv,
+        };
+        std::any_of(kIrrelevantTables.begin(), kIrrelevantTables.end(), [&table1](const std::string_view table_name) { return table_name == table1.name; })) {
+        std::cout << "Skipping irrelevant table: " << table1.name << "\n";
+        return;
+    }
+
     if (table1_config.value_mode == ::mdbx::value_mode::single) {
         const auto cursor1{txn1.ro_cursor(table1_config)};
         const auto cursor2{txn2.ro_cursor(table2_config)};
@@ -1175,29 +1221,32 @@ static DbComparisonResult compare_db_schema(const DbInfo& db1_info, const DbInfo
 }
 
 static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& db1_table, const DbTableInfo& db2_table,
-                                                bool check_layout, bool verbose) {
+                                                bool check_layout, bool deep, bool verbose) {
     // Check both databases have the same stats (e.g. number of records) for the specified table
-    if (const auto result{compare(db1_table, db2_table, check_layout)}; !result) {
-        const std::string error_message{"mismatch in table " + db1_table.name + ": " + result.error()};
-        if (verbose) {
-            std::cerr << error_message << "\n";
+    if (const auto result{compare(db1_table, db2_table, check_layout)}; !result || deep) {
+        if (!result) {
+            const std::string error_message{"mismatch in table " + db1_table.name + ": " + result.error()};
+            if (verbose) {
+                std::cerr << error_message << "\n";
+            }
             print_table_diff(txn1, txn2, db1_table, db2_table);
+            return tl::make_unexpected(error_message);
         }
-        return tl::make_unexpected(error_message);
+        print_table_diff(txn1, txn2, db1_table, db2_table);
     }
 
     return {};
 }
 
 static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbInfo& db1_info, const DbInfo& db2_info,
-                                             bool check_layout, bool verbose) {
+                                             bool check_layout, bool deep, bool verbose) {
     const auto& db1_tables{db1_info.tables};
     const auto& db2_tables{db2_info.tables};
     SILKWORM_ASSERT(db1_tables.size() == db2_tables.size());
 
     // Check both databases have the same content for each table
     for (size_t i{0}; i < db1_tables.size(); ++i) {
-        if (auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_layout, verbose)}; !result) {
+        if (auto result{compare_table_content(txn1, txn2, db1_tables[i], db2_tables[i], check_layout, deep, verbose)}; !result) {
             return result;
         }
     }
@@ -1205,7 +1254,7 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
     return {};
 }
 
-void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, std::optional<std::string_view> table) {
+void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, bool deep, std::optional<std::string_view> table) {
     ensure(fs::exists(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " does not exist"; });
     ensure(fs::is_directory(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " must be a folder"; });
 
@@ -1232,7 +1281,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
         }
 
         // Check both databases have the same content in the specified table
-        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, check_layout, verbose)}; !result) {
+        if (const auto result{compare_table_content(source_txn, target_txn, *db1_table, *db2_table, check_layout, deep, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     } else {
@@ -1242,7 +1291,7 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
         }
 
         // Check both databases have the same content in each table
-        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, check_layout, verbose)}; !result) {
+        if (const auto result{compare_db_content(source_txn, target_txn, source_db_info, target_db_info, check_layout, deep, verbose)}; !result) {
             throw std::runtime_error{result.error()};
         }
     }
@@ -1253,10 +1302,10 @@ void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool ch
  *
  * Can parse a custom genesis file in json format or import data from known chain configs
  *
- * \param DataDir data_dir : hold data directory info about db paths
+ * \param data_dir : hold data directory info about db paths
  * \param json_file : a string representing the path where to load custom json from
- * \param uint32_t chain_id : an identifier for a known chain
- * \param bool dry : whether or not commit data or run in simulation
+ * \param chain_id : an identifier for a known chain
+ * \param dry : whether to commit data or run in simulation
  *
  */
 void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uint32_t chain_id, bool dry) {
@@ -1501,7 +1550,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     out_stream << "/* Generated by Silkworm toolbox's extract headers */\n"
                << "#include <cstdint>\n"
                << "#include <cstddef>\n"
-               << "static const uint64_t preverified_hashes_mainnet_internal[] = {\n";
+               << "static const uint64_t kPreverifiedHashesMainnetInternal[] = {\n";
 
     BlockNum block_max{silkworm::db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
     BlockNum max_height{0};
@@ -1526,8 +1575,8 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
 
     out_stream
         << "};\n"
-        << "const uint64_t* preverified_hashes_mainnet_data(){return &preverified_hashes_mainnet_internal[0];}\n"
-        << "size_t sizeof_preverified_hashes_mainnet_data(){return sizeof(preverified_hashes_mainnet_internal);}\n"
+        << "const uint64_t* preverified_hashes_mainnet_data(){return &kPreverifiedHashesMainnetInternal[0];}\n"
+        << "size_t sizeof_preverified_hashes_mainnet_data(){return sizeof(kPreverifiedHashesMainnetInternal);}\n"
         << "uint64_t preverified_hashes_mainnet_height(){return " << max_height << "ull;}\n\n";
     out_stream.close();
 }
@@ -1659,7 +1708,8 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
             if (data1_v.length() < 6) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid value length " +
                                          std::to_string(data1_v.length()) + ". Expected >= 6");
-            } else if ((data1_v.length() - 6) % kHashLength != 0) {
+            }
+            if ((data1_v.length() - 6) % kHashLength != 0) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid hashes count " +
                                          std::to_string(data1_v.length() - 6) + ". Expected multiple of " +
                                          std::to_string(kHashLength));
@@ -1751,15 +1801,13 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                                                  std::bitset<16>(node_tree_mask).to_string() +
                                                  " but there is no child " + std::to_string(i) +
                                                  " in db. LTE found is : null");
-                    } else {
-                        auto data2_k{db::from_slice(data2.key)};
-
-                        if (!data2_k.starts_with(buffer)) {
-                            throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
-                                                     std::bitset<16>(node_tree_mask).to_string() +
-                                                     " but there is no child " + std::to_string(i) +
-                                                     " in db. LTE found is : " + to_hex(data2_k, true));
-                        }
+                    }
+                    auto data2_k{db::from_slice(data2.key)};
+                    if (!data2_k.starts_with(buffer)) {
+                        throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
+                                                 std::bitset<16>(node_tree_mask).to_string() +
+                                                 " but there is no child " + std::to_string(i) +
+                                                 " in db. LTE found is : " + to_hex(data2_k, true));
                     }
                 }
             }
@@ -2152,6 +2200,57 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     SILK_INFO << "All done" << log::Args{"in", StopWatch::format(duration)};
 }
 
+void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir, bool keep_blocks) {
+    using namespace concurrency::awaitable_wait_for_one;
+
+    class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
+      public:
+        explicit StageSchedulerAdapter(db::RWAccess db_access)
+            : db_access_(std::move(db_access)) {}
+        ~StageSchedulerAdapter() override = default;
+
+        void execution_loop() override {
+            auto work_guard = boost::asio::make_work_guard(io_context_.get_executor());
+            io_context_.run();
+        }
+
+        bool stop() override {
+            io_context_.stop();
+            return ActiveComponent::stop();
+        }
+
+        Task<void> schedule(std::function<void(db::RWTxn&)> callback) override {
+            co_await concurrency::spawn_task(io_context_, [this, c = std::move(callback)]() -> Task<void> {
+                auto tx = this->db_access_.start_rw_tx();
+                c(tx);
+                tx.commit_and_stop();
+                co_return;
+            });
+        }
+
+      private:
+        boost::asio::io_context io_context_;
+        db::RWAccess db_access_;
+    };
+
+    auto env = db::open_env(config);
+    StageSchedulerAdapter stage_scheduler{db::RWAccess{env}};
+
+    snapshots::SnapshotSettings settings;
+    settings.repository_dir = data_dir.snapshots().path();
+    settings.no_downloader = true;
+    std::unique_ptr<snapshots::SnapshotBundleFactory> bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
+    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};
+    repository.reopen_folder();
+    db::DataModel::set_snapshot_repository(&repository);
+
+    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
+
+    test_util::TaskRunner runner;
+    runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));
+    stage_scheduler.stop();
+}
+
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
@@ -2180,6 +2279,8 @@ int main(int argc, char* argv[]) {
     auto app_yes_opt = app_main.add_flag("-Y,--yes", "Assume yes to all requests of confirmation");
     auto app_dry_opt = app_main.add_flag("--dry", "Don't commit to db. Only simulate");
 
+    cmd::common::add_logging_options(app_main, log_settings);
+
     /*
      * Subcommands
      */
@@ -2193,6 +2294,10 @@ int main(int argc, char* argv[]) {
 
     // Read db schema
     auto cmd_schema = app_main.add_subcommand("schema", "Reports schema version of Silkworm database");
+    auto cmd_schema_force_version_update_opt = cmd_schema->add_flag("--force_version_update",
+                                                                    "Force schema version update as required by current Silkworm code. "
+                                                                    "Please be aware that this may corrupt or make your database unreadable. "
+                                                                    "Do at your own risk.");
 
     // List stages keys and their heights
     auto cmd_stages = app_main.add_subcommand("stages", "List stages and their actual heights");
@@ -2231,6 +2336,7 @@ int main(int argc, char* argv[]) {
     auto cmd_compare_datadir = cmd_compare->add_option("--other_datadir", "Path to other data directory")->required();
     auto cmd_compare_verbose = cmd_compare->add_flag("--verbose", "Print verbose output");
     auto cmd_compare_check_layout = cmd_compare->add_flag("--check_layout", "Check if B-tree structures match");
+    auto cmd_compare_deep = cmd_compare->add_flag("--deep", "Run a deep comparison between two databases or tables by comparing keys and values");
     std::optional<std::string> cmd_compare_table;
     cmd_compare->add_option("--table", cmd_compare_table, "Name of specific table to compare")
         ->capture_default_str();
@@ -2327,6 +2433,11 @@ int main(int argc, char* argv[]) {
     auto cmd_reset_to_download_keep_senders_opt =
         cmd_reset_to_download->add_flag("--keep-senders", "Keep the recovered transaction senders");
 
+    // Freeze command
+    auto cmd_freeze = app_main.add_subcommand("freeze", "Migrate data to snapshots");
+
+    auto cmd_freeze_keep_blocks_opt = cmd_freeze->add_flag("--snap.keepblocks", "If set, the blocks exported from mdbx to snapshots are kept in mdbx");
+
     /*
      * Parse arguments and validate
      */
@@ -2342,6 +2453,8 @@ int main(int argc, char* argv[]) {
     };
 
     try {
+        log::init(log_settings);
+
         // Set origin data_dir
         DataDirectory data_dir{data_dir_factory()};
 
@@ -2372,7 +2485,7 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_freelist) {
             do_freelist(src_config, static_cast<bool>(*freelist_detail_opt));
         } else if (*cmd_schema) {
-            do_schema(src_config);
+            do_schema(src_config, static_cast<bool>(*cmd_schema_force_version_update_opt));
         } else if (*cmd_stages) {
             do_stages(src_config);
         } else if (*cmd_migrations) {
@@ -2389,7 +2502,7 @@ int main(int argc, char* argv[]) {
                     cmd_copy_names, cmd_copy_xnames);
         } else if (*cmd_compare) {
             compare(src_config, cmd_compare_datadir->as<std::filesystem::path>(), cmd_compare_check_layout->as<bool>(),
-                    cmd_compare_verbose->as<bool>(), cmd_compare_table);
+                    cmd_compare_verbose->as<bool>(), cmd_compare_deep->as<bool>(), cmd_compare_table);
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
                          static_cast<bool>(*app_dry_opt));
@@ -2432,6 +2545,8 @@ int main(int argc, char* argv[]) {
             do_trie_root(src_config);
         } else if (*cmd_reset_to_download) {
             do_reset_to_download(src_config, static_cast<bool>(*cmd_reset_to_download_keep_senders_opt));
+        } else if (*cmd_freeze) {
+            do_freeze(src_config, data_dir, static_cast<bool>(*cmd_freeze_keep_blocks_opt));
         }
 
         return 0;

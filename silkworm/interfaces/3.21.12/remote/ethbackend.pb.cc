@@ -736,8 +736,8 @@ const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECT
   "e.AddPeerReply\022A\n\014PendingBlock\022\026.google."
   "protobuf.Empty\032\031.remote.PendingBlockRepl"
   "y\022:\n\010BorEvent\022\027.remote.BorEventRequest\032\025"
-  ".remote.BorEventReplyB\021Z\017./remote;remote"
-  "b\006proto3"
+  ".remote.BorEventReplyB\026Z\024./remote;remote"
+  "protob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -745,7 +745,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend
 };
 static ::_pbi::once_flag descriptor_table_remote_2fethbackend_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_remote_2fethbackend_2eproto = {
-    false, false, 2688, descriptor_table_protodef_remote_2fethbackend_2eproto,
+    false, false, 2693, descriptor_table_protodef_remote_2fethbackend_2eproto,
     "remote/ethbackend.proto",
     &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_deps, 2, 28,
     schemas, file_default_instances, TableStruct_remote_2fethbackend_2eproto::offsets,

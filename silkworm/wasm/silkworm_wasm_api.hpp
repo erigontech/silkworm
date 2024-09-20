@@ -100,7 +100,7 @@ SILKWORM_EXPORT uint8_t* state_root_hash_new(const silkworm::InMemoryState* stat
 SILKWORM_EXPORT silkworm::Account* state_read_account_new(const silkworm::State* state, const uint8_t* address);
 
 // Result has to be freed with delete_bytes
-SILKWORM_EXPORT silkworm::Bytes* state_read_code_new(const silkworm::State* state, const uint8_t* code_hash);
+SILKWORM_EXPORT silkworm::Bytes* state_read_code_new(const silkworm::State* state, const uint8_t* address, const uint8_t* code_hash);
 
 // Result has to be freed with delete_bytes
 SILKWORM_EXPORT silkworm::Bytes* state_read_storage_new(const silkworm::State* state, const uint8_t* address,

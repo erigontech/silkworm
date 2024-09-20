@@ -17,25 +17,38 @@
 #include "execution_engine.hpp"
 
 #include <future>
-#include <set>
-
-#include <boost/asio/use_future.hpp>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/ensure.hpp>
-#include <silkworm/infra/concurrency/co_spawn_sw.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 
 namespace silkworm::stagedsync {
 
 using namespace boost::asio;
+using execution::api::ValidationError;
+using execution::api::ValidChain;
+using execution::api::VerificationResult;
 
-ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
-    : io_context_{ctx},
+ExecutionEngine::ExecutionEngine(
+    std::optional<boost::asio::any_io_executor> executor,
+    NodeSettings& ns,
+    std::optional<TimerFactory> log_timer_factory,
+    BodiesStageFactory bodies_stage_factory,
+    db::RWAccess dba)
+    : context_pool_{executor ? std::unique_ptr<concurrency::ContextPool<>>{} : std::make_unique<concurrency::ContextPool<>>(concurrency::ContextPoolSettings{1, concurrency::WaitMode::kSleeping})},
+      executor_{executor ? std::move(*executor) : context_pool_->any_executor()},
       node_settings_{ns},
-      main_chain_{ctx, ns, std::move(dba)},
+      main_chain_{
+          executor_,
+          ns,
+          std::move(log_timer_factory),
+          std::move(bodies_stage_factory),
+          std::move(dba),
+      },
       block_cache_{kDefaultCacheSize} {}
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
+    if (context_pool_) context_pool_->start();
     main_chain_.open();
     last_finalized_block_ = main_chain_.last_finalized_head();
     last_fork_choice_ = main_chain_.last_chosen_head();
@@ -44,6 +57,7 @@ void ExecutionEngine::open() {  // needed to circumvent mdbx threading model lim
 
 void ExecutionEngine::close() {
     main_chain_.close();
+    context_pool_.reset();
 }
 
 BlockNum ExecutionEngine::block_progress() const {
@@ -60,6 +74,10 @@ BlockId ExecutionEngine::last_finalized_block() const {
 
 BlockId ExecutionEngine::last_safe_block() const {
     return last_safe_block_;
+}
+
+BlockNum ExecutionEngine::highest_frozen_block_number() const {
+    return db::DataModel::highest_frozen_block_number();
 }
 
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {
@@ -201,15 +219,14 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
             if (main_chain_.is_finalized_canonical(head_block_hash)) {
                 SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already chosen";
                 return true;
-            } else {
-                SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
-                return false;
             }
+            SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
+            return false;
         }
 
         // notify the fork of the update - we need to block here to restore the invariant
         auto fork_choice_aw_future = (*f)->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash);
-        std::future<bool> fork_choice_future = concurrency::co_spawn_sw(io_context_, fork_choice_aw_future.get(), use_future);
+        std::future<bool> fork_choice_future = concurrency::spawn_future(executor_, fork_choice_aw_future.get());
         bool updated = fork_choice_future.get();  // BLOCKING
         if (!updated) return false;
 
@@ -280,9 +297,8 @@ std::optional<TotalDifficulty> ExecutionEngine::get_header_td(Hash h, std::optio
     // is a duty of the sync component
     if (bn) {
         return main_chain_.get_header_td(*bn, h);
-    } else {
-        return main_chain_.get_header_td(h);
     }
+    return main_chain_.get_header_td(h);
 }
 
 std::optional<BlockBody> ExecutionEngine::get_body(Hash header_hash) const {
@@ -316,6 +332,10 @@ std::optional<BlockNum> ExecutionEngine::get_block_number(Hash header_hash) cons
 
 bool ExecutionEngine::is_canonical(Hash header_hash) const {
     return main_chain_.is_finalized_canonical(header_hash);
+}
+
+StageScheduler& ExecutionEngine::stage_scheduler() const {
+    return main_chain_.stage_scheduler();
 }
 
 }  // namespace silkworm::stagedsync

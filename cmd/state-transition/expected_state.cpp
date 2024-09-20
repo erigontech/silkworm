@@ -46,9 +46,9 @@ std::vector<ExpectedSubState> ExpectedState::get_sub_states() {
 
         subState.stateHash = to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
         subState.logsHash = to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
-        subState.dataIndex = tx["indexes"]["data"].get<unsigned long>();
-        subState.gasIndex = tx["indexes"]["gas"].get<unsigned long>();
-        subState.valueIndex = tx["indexes"]["value"].get<unsigned long>();
+        subState.dataIndex = tx["indexes"]["data"].get<uint64_t>();
+        subState.gasIndex = tx["indexes"]["gas"].get<uint64_t>();
+        subState.valueIndex = tx["indexes"]["value"].get<uint64_t>();
         if (tx.contains("expectException")) {
             subState.exceptionExpected = true;
             subState.exceptionMessage = tx["expectException"];

@@ -21,7 +21,7 @@
 namespace silkworm::rpc::core {
 
 Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const db::chain::ChainStorage& storage, BlockNum block_number) {
-    const auto block_hash = co_await storage.read_canonical_hash(block_number);
+    const auto block_hash = co_await storage.read_canonical_header_hash(block_number);
     if (!block_hash) {
         co_return nullptr;
     }

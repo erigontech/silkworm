@@ -54,6 +54,8 @@ Task<std::unique_ptr<Peer>> Client::connect(
         try {
             attempt_num++;
             co_await stream.socket().async_connect(endpoint, use_awaitable);
+            const auto remote_endpoint = stream.socket().remote_endpoint();
+            log::Trace("sentry") << "rlpx::Client connected to " << remote_endpoint;
             is_connected = true;
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled)
@@ -70,9 +72,6 @@ Task<std::unique_ptr<Peer>> Client::connect(
             co_await sleep(10s);
         }
     }
-
-    auto remote_endpoint = stream.socket().remote_endpoint();
-    log::Trace("sentry") << "rlpx::Client connected to " << remote_endpoint;
 
     co_return std::make_unique<Peer>(
         client_context,

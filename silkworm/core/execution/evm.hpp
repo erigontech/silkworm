@@ -114,8 +114,7 @@ class EVM {
     void add_tracer(EvmTracer& tracer) noexcept;
     [[nodiscard]] const EvmTracers& tracers() const noexcept { return tracers_; };
 
-    AnalysisCache* analysis_cache{nullptr};                   // provide one for better performance
-    ObjectPool<evmone::ExecutionState>* state_pool{nullptr};  // ditto
+    AnalysisCache* analysis_cache{nullptr};  // provide one for better performance
 
     evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
 
@@ -136,9 +135,6 @@ class EVM {
 
     evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                   const evmc::bytes32* code_hash) noexcept;
-
-    gsl::owner<evmone::ExecutionState*> acquire_state() const noexcept;
-    void release_state(gsl::owner<evmone::ExecutionState*> state) const noexcept;
 
     const Block& block_;
     IntraBlockState& state_;

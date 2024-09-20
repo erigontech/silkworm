@@ -319,25 +319,6 @@ evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc:
     return execute_with_baseline_interpreter(rev, message, code, code_hash);
 }
 
-gsl::owner<evmone::ExecutionState*> EVM::acquire_state() const noexcept {
-    gsl::owner<evmone::ExecutionState*> state{nullptr};
-    if (state_pool) {
-        state = state_pool->acquire();
-    }
-    if (!state) {
-        state = new evmone::ExecutionState;
-    }
-    return state;
-}
-
-void EVM::release_state(gsl::owner<evmone::ExecutionState*> state) const noexcept {
-    if (state_pool) {
-        state_pool->add(state);
-    } else {
-        delete state;
-    }
-}
-
 evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                    const evmc::bytes32* code_hash) noexcept {
     std::shared_ptr<evmone::baseline::CodeAnalysis> analysis;
@@ -349,19 +330,15 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
         }
     }
     if (!analysis) {
-        analysis = std::make_shared<evmone::baseline::CodeAnalysis>(evmone::baseline::analyze(rev, code));
+        // EOF is disabled although evmone supports it. This will be needed as early as Prague, maybe later.
+        analysis = std::make_shared<evmone::baseline::CodeAnalysis>(evmone::baseline::analyze(code, /*eof_enabled=*/false));
         if (use_cache) {
             analysis_cache->put(*code_hash, analysis);
         }
     }
 
     EvmHost host{*this};
-    gsl::owner<evmone::ExecutionState*> state{acquire_state()};
-    state->reset(message, rev, EvmHost::get_interface(), host.to_context(), code, {});
-
-    evmc_result res{evmone::baseline::execute(*evm1_, message.gas, *state, *analysis)};
-
-    release_state(state);
+    evmc_result res{evmone::baseline::execute(*evm1_, EvmHost::get_interface(), host.to_context(), rev, message, *analysis)};
     return res;
 }
 

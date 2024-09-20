@@ -31,10 +31,9 @@ BlockExecutor::BlockExecutor(const ChainConfig* chain_config, bool write_receipt
       write_call_traces_{write_call_traces},
       write_change_sets_{write_change_sets} {}
 
-ValidationResult BlockExecutor::execute_single(const Block& block, db::Buffer& state_buffer, AnalysisCache& analysis_cache, ObjectPool<evmone::ExecutionState>& state_pool) {
+ValidationResult BlockExecutor::execute_single(const Block& block, db::Buffer& state_buffer, AnalysisCache& analysis_cache) {
     ExecutionProcessor processor{block, *protocol_rule_set_, state_buffer, *chain_config_};
     processor.evm().analysis_cache = &analysis_cache;
-    processor.evm().state_pool = &state_pool;
 
     CallTraces traces;
     CallTracer tracer{traces};

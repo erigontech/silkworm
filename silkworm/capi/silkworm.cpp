@@ -496,7 +496,6 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         db::DataModel da_layer{txn};
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
-        ObjectPool<evmone::ExecutionState> state_pool;
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
         const auto now = std::chrono::steady_clock::now();
         ExecutionProgress execution_progress{.start_time = now, .next_log_time = now + 20s};
@@ -520,7 +519,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
                 const Block& block{prefetched_blocks.front()};
 
                 try {
-                    last_exec_result = block_executor.execute_single(block, state_buffer, analysis_cache, state_pool);
+                    last_exec_result = block_executor.execute_single(block, state_buffer, analysis_cache);
                     update_execution_progress(execution_progress, block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
                     // infinite loop detection, buffer memory limit reached but no progress
@@ -620,7 +619,6 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         BlockNum batch_start_block_number{start_block};
         BlockNum last_block_number = 0;
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
-        ObjectPool<evmone::ExecutionState> state_pool;
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
         const auto now = std::chrono::steady_clock::now();
         ExecutionProgress execution_progress{.start_time = now, .next_log_time = now + 20s};
@@ -635,7 +633,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                 SILKWORM_ASSERT(block->header.number == block_number);
 
                 try {
-                    last_exec_result = block_executor.execute_single(*block, state_buffer, analysis_cache, state_pool);
+                    last_exec_result = block_executor.execute_single(*block, state_buffer, analysis_cache);
                     update_execution_progress(execution_progress, *block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
                     // infinite loop detection, buffer memory limit reached but no progress

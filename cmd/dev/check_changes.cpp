@@ -117,7 +117,6 @@ int main(int argc, char* argv[]) {
         db::DataModel access_layer{txn};
 
         AnalysisCache analysis_cache{/*max_size=*/5'000};
-        ObjectPool<evmone::ExecutionState> state_pool;
         std::vector<Receipt> receipts;
         auto rule_set{protocol::rule_set_factory(*chain_config)};
         Block block;
@@ -133,7 +132,6 @@ int main(int argc, char* argv[]) {
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
             processor.evm().analysis_cache = &analysis_cache;
-            processor.evm().state_pool = &state_pool;
 
             if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
                 log::Error() << "Failed execution for block " << block_num << " result " << magic_enum::enum_name<>(res);

@@ -75,11 +75,9 @@ class AnalysisCacheService : public ServiceBase<AnalysisCacheService> {
         : ServiceBase<AnalysisCacheService>(owner) {}
 
     void shutdown() override {}
-    ObjectPool<evmone::ExecutionState>* get_object_pool() { return &state_pool_; }
     AnalysisCache* get_analysis_cache() { return &analysis_cache_; }
 
   private:
-    ObjectPool<evmone::ExecutionState> state_pool_{true};
     AnalysisCache analysis_cache_{kCacheSize, true};
 };
 

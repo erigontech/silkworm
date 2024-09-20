@@ -94,13 +94,12 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         static constexpr size_t kCacheSize{5'000};
         AnalysisCache analysis_cache{kCacheSize};
-        ObjectPool<evmone::ExecutionState> state_pool;
 
         prefetched_blocks_.clear();
 
         while (block_num_ <= max_block_num) {
             throw_if_stopping();
-            const auto execution_result{execute_batch(txn, max_block_num, analysis_cache, state_pool,
+            const auto execution_result{execute_batch(txn, max_block_num, analysis_cache,
                                                       prune_history, prune_receipts, prune_call_traces)};
 
             // If we return with success we must persist data. Though counterintuitive, we must also persist on
@@ -201,8 +200,8 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 }
 
 Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
-                                       ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
-                                       BlockNum prune_receipts_threshold, BlockNum prune_call_traces_threshold) {
+                                       BlockNum prune_history_threshold, BlockNum prune_receipts_threshold,
+                                       BlockNum prune_call_traces_threshold) {
     Result ret{Result::kSuccess};
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
@@ -240,7 +239,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
 
             execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets};
             try {
-                if (const ValidationResult res = block_executor.execute_single(block, buffer, analysis_cache, state_pool); res != ValidationResult::kOk) {
+                if (const ValidationResult res = block_executor.execute_single(block, buffer, analysis_cache); res != ValidationResult::kOk) {
                     // Flush work done so far not to lose progress up to the previous valid block and to correctly trigger unwind
                     // This requires to commit in Execution::forward also for kInvalidBlock: unwind will remove last invalid block updates
                     if (write_receipts) {

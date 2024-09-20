@@ -21,7 +21,9 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core {

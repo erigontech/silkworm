@@ -21,8 +21,11 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/core/evm_executor.hpp>
+#include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 #include <silkworm/rpc/ethdb/walk.hpp>
+#include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core {
 
@@ -36,7 +39,7 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
     if (!raw_receipts || raw_receipts->empty()) {
         raw_receipts = co_await generate_receipts(tx, block_with_hash.block, chain_storage, workers);
         if (!raw_receipts || raw_receipts->empty()) {
-            co_return raw_receipts;
+            co_return Receipts{};
         }
     }
 
@@ -85,7 +88,7 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
         }
     }
 
-    co_return raw_receipts;
+    co_return *raw_receipts;
 }
 
 Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_number) {

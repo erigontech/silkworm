@@ -457,9 +457,9 @@ std::vector<std::string> CallTraceIndex::get_log_progress() {
         switch (operation_) {
             case OperationType::kForward:
                 if (loading_) {
-                    if (current_target_ == db::table::kCallFromIndex.name) {
+                    if (current_target_ == db::table::kCallFromIndex.name && call_from_collector_) {
                         current_key_ = abridge(call_from_collector_->get_load_key(), kAddressLength);
-                    } else if (current_target_ == db::table::kCallToIndex.name) {
+                    } else if (current_target_ == db::table::kCallToIndex.name && call_to_collector_) {
                         current_key_ = abridge(call_to_collector_->get_load_key(), kAddressLength);
                     } else {
                         current_key_.clear();

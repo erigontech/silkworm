@@ -62,7 +62,7 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
         }
 
         reset_log_progress();
-        collector_ = std::make_unique<Collector>(etl_settings_);
+        collector_ = std::make_unique<db::etl_mdbx::Collector>(etl_settings_);
 
         if (!previous_progress || segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
             // Clear any previous contents

@@ -63,8 +63,8 @@ class CallTraceIndex : public Stage {
     db::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> call_from_collector_;
-    std::unique_ptr<db::etl_mdbx::Collector> call_to_collector_;
+    std::unique_ptr<db::etl_mdbx::Collector> call_from_collector_{nullptr};
+    std::unique_ptr<db::etl_mdbx::Collector> call_to_collector_{nullptr};
     std::unique_ptr<db::bitmap::IndexLoader> index_loader_;
 
     //! Flag indicating if we're in ETL loading phase (for logging purposes)

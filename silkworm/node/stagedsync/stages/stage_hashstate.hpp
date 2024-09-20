@@ -27,9 +27,7 @@ class HashState final : public Stage {
         SyncContext* sync_context,
         const db::etl::CollectorSettings& etl_settings)
         : Stage(sync_context, db::stages::kHashStateKey),
-          etl_settings_(std::move(etl_settings)) {
-        log::Info("JG HashState created");
-    }
+          etl_settings_(std::move(etl_settings)) {}
     HashState(const HashState&) = delete;  // not copyable
     HashState(HashState&&) = delete;       // nor movable
     ~HashState() override = default;

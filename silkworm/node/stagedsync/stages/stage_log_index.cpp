@@ -485,9 +485,9 @@ std::vector<std::string> LogIndex::get_log_progress() {
         switch (operation_) {
             case OperationType::kForward:
                 if (loading_) {
-                    if (current_target_ == db::table::kLogAddressIndex.name) {
+                    if (current_target_ == db::table::kLogAddressIndex.name && addresses_collector_) {
                         current_key_ = abridge(addresses_collector_->get_load_key(), kAddressLength);
-                    } else if (current_target_ == db::table::kLogTopicIndex.name) {
+                    } else if (current_target_ == db::table::kLogTopicIndex.name && topics_collector_) {
                         current_key_ = abridge(topics_collector_->get_load_key(), kAddressLength);
                     } else {
                         current_key_.clear();

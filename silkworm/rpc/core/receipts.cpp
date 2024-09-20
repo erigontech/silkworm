@@ -21,8 +21,8 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
+#include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 #include <silkworm/rpc/ethdb/walk.hpp>
 #include <silkworm/rpc/types/receipt.hpp>

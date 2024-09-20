@@ -791,31 +791,28 @@ constinit const ChainConfig kBorMainnetConfig{
     },
 };
 
-constinit const ChainConfig kMumbaiConfig{
-    .chain_id = 80001,
+constinit const ChainConfig kAmoyConfig{
+    .chain_id = 80002,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
     .byzantium_block = 0,
     .constantinople_block = 0,
     .petersburg_block = 0,
-    .istanbul_block = 2'722'000,
-    .muir_glacier_block = 2'722'000,
-    .berlin_block = 13'996'000,
-    .london_block = 22'640'000,
+    .istanbul_block = 0,
+    .muir_glacier_block = 0,
+    .berlin_block = 0,
+    .london_block = 73100,
     .burnt_contract = {
-        {22'640'000, 0x70bca57f4579f58670ab2d18ef16e02c17553c38_address},
-        {41'874'000, 0x617b94CCCC2511808A3C9478ebb96f455CF167aA_address},
+        {0, 0x000000000000000000000000000000000000dead_address},
+        {73100, 0xeCDD77cE6f146cCf5dab707941d318Bd50eeD2C9_address},
     },
     .rule_set_config = protocol::bor::Config{
         .period = {
             {0, 2},
-            {25'275'000, 5},
-            {29'638'656, 2},
         },
         .sprint = {
-            {0, 64},
-            {29'638'656, 16},
+            {0, 16},
         },
         .validator_contract = 0x0000000000000000000000000000000000001000_address,
         .rewrite_code = {
@@ -1267,8 +1264,8 @@ constinit const ChainConfig kMumbaiConfig{
                 }},
             },
         },
-        .jaipur_block = 22'770'000,
-        .agra_block = 41'874'000,
+        .jaipur_block = 73100,
+        .agra_block = 73100,
     },
 };
 

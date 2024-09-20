@@ -22,9 +22,10 @@
 
 #include <silkworm/core/common/small_map.hpp>
 
+#include "config/amoy.hpp"
 #include "config/bor_mainnet.hpp"
+#include "config/holesky.hpp"
 #include "config/mainnet.hpp"
-#include "config/mumbai.hpp"
 #include "config/sepolia.hpp"
 #include "snapshot_path.hpp"
 #include "snapshot_size.hpp"
@@ -34,8 +35,9 @@ namespace silkworm::snapshots {
 inline constexpr SmallMap<ChainId, std::span<const Entry>> kKnownConfigGeneratedEntries{
     {*kKnownChainNameToId.find("mainnet"sv), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
     {*kKnownChainNameToId.find("sepolia"sv), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
+    {*kKnownChainNameToId.find("holesky"sv), {kHoleskySnapshots.data(), kHoleskySnapshots.size()}},
     {*kKnownChainNameToId.find("bor-mainnet"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
-    {*kKnownChainNameToId.find("mumbai"sv), {kMumbaiSnapshots.data(), kMumbaiSnapshots.size()}},
+    {*kKnownChainNameToId.find("amoy"sv), {kAmoySnapshots.data(), kAmoySnapshots.size()}},
 };
 
 Config Config::lookup_known_config(ChainId chain_id) {

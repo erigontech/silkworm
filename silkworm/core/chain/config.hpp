@@ -146,25 +146,25 @@ constinit extern const ChainConfig kSepoliaConfig;
 inline constexpr evmc::bytes32 kBorMainnetGenesisHash{0xa9c28ce2141b56c474f1dc504bee9b01eb1bd7d1a507580d5519d4437a97de1b_bytes32};
 constinit extern const ChainConfig kBorMainnetConfig;
 
-inline constexpr evmc::bytes32 kMumbaiGenesisHash{0x7b66506a9ebdbf30d32b43c5f15a3b1216269a1ec3a75aa3182b86176a2b1ca7_bytes32};
-constinit extern const ChainConfig kMumbaiConfig;
+inline constexpr evmc::bytes32 kAmoyGenesisHash{0x7202b2b53c5a0836e773e319d18922cc756dd67432f9a1f65352b61f4406c697_bytes32};
+constinit extern const ChainConfig kAmoyConfig;
 
 //! \brief Known chain names mapped to their respective chain IDs
 inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
+    {"amoy"sv, 80002},
     {"bor-mainnet"sv, 137},
     {"holesky"sv, 17000},
     {"mainnet"sv, 1},
-    {"mumbai"sv, 80001},
     {"sepolia"sv, 11155111},
 };
 
 //! \brief Known chain IDs mapped to their respective chain configs
 inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
     {*kKnownChainNameToId.find("mainnet"sv), &kMainnetConfig},
+    {*kKnownChainNameToId.find("amoy"sv), &kAmoyConfig},
+    {*kKnownChainNameToId.find("bor-mainnet"sv), &kBorMainnetConfig},
     {*kKnownChainNameToId.find("holesky"sv), &kHoleskyConfig},
     {*kKnownChainNameToId.find("sepolia"sv), &kSepoliaConfig},
-    {*kKnownChainNameToId.find("bor-mainnet"sv), &kBorMainnetConfig},
-    {*kKnownChainNameToId.find("mumbai"sv), &kMumbaiConfig},
 };
 
 }  // namespace silkworm

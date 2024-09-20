@@ -72,9 +72,9 @@
 #include <silkworm/core/common/math.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/snapshots/common/bitmask_operators.hpp>
-#include <silkworm/db/snapshots/rec_split/common/murmur_hash3.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/elias_fano.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/golomb_rice.hpp>
+#include <silkworm/db/snapshots/common/encoding/elias_fano.hpp>
+#include <silkworm/db/snapshots/common/encoding/golomb_rice.hpp>
+#include <silkworm/db/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -87,6 +87,7 @@
 namespace silkworm::snapshots::rec_split {
 
 using namespace std::chrono;
+using encoding::remap16, encoding::remap128;
 
 //! Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000
 static const int kMaxBucketSize = 3000;

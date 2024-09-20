@@ -26,7 +26,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::snapshots::rec_split::encoding {
+namespace silkworm::snapshots::encoding {
 
 struct EliasFanoList32Test {
     std::vector<uint64_t> offsets;
@@ -168,4 +168,4 @@ TEST_CASE("DoubleEliasFanoList16", "[silkworm][recsplit][elias_fano]") {
                     "0000000000000000010000000000000000000000000000000000000000000000"));
 }
 
-}  // namespace silkworm::snapshots::rec_split::encoding
+}  // namespace silkworm::snapshots::encoding

@@ -63,9 +63,11 @@ class NodeImpl final {
     BlockNum last_pre_validated_block() const { return chain_sync_.last_pre_validated_block(); }
 
   private:
+    Task<void> run_execution_service();
     Task<void> run_execution_server();
     Task<void> run_backend_kv_grpc_server();
     Task<void> embedded_sentry_run_if_needed();
+    Task<void> run_chain_sync();
 
     Settings& settings_;
     ChainConfig& chain_config_;
@@ -94,9 +96,9 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static rpc::ServerSettings make_execution_server_settings() {
+static rpc::ServerSettings make_execution_server_settings(std::optional<std::string> exec_api_address) {
     return rpc::ServerSettings{
-        .address_uri = "localhost:9092",
+        .address_uri = exec_api_address.value_or("localhost:9092"),
         .context_pool_settings = {.num_contexts = 1},  // just one execution context
     };
 }
@@ -161,7 +163,7 @@ NodeImpl::NodeImpl(
           db::RWAccess{chaindata_env_},
       },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
-      execution_server_{make_execution_server_settings(), execution_service_},
+      execution_server_{make_execution_server_settings(settings_.node_settings.exec_api_address), execution_service_},
       execution_direct_client_{execution_service_},
       snapshot_sync_{settings.snapshot_settings, chain_config_.chain_id, chaindata_env_, settings_.node_settings.data_directory->temp().path(), execution_engine_.stage_scheduler()},
       sentry_{
@@ -206,18 +208,22 @@ Task<void> NodeImpl::run_tasks() {
     co_await wait_for_setup();
 
     co_await (
+        run_execution_service() &&
         run_execution_server() &&
         resource_usage_log_.run() &&
-        chain_sync_.async_run() &&
+        run_chain_sync() &&
         run_backend_kv_grpc_server());
+}
+
+Task<void> NodeImpl::run_execution_service() {
+    // Thread running block execution requires custom stack size because of deep EVM call stacks
+    return execution_service_->async_run("exec-engine", /* stack_size = */ kExecutionThreadStackSize);
 }
 
 Task<void> NodeImpl::run_execution_server() {
     // Thread running block execution requires custom stack size because of deep EVM call stacks
-    if (settings_.execution_server_enabled) {
-        co_await execution_server_.async_run(/*stack_size=*/kExecutionThreadStackSize);
-    } else {
-        co_await execution_service_->async_run("exec-engine", /*stack_size=*/kExecutionThreadStackSize);
+    if (settings_.node_settings.exec_api_address) {
+        co_await execution_server_.async_run(/* stack_size = */ kExecutionThreadStackSize);
     }
 }
 
@@ -236,6 +242,12 @@ Task<void> NodeImpl::embedded_sentry_run_if_needed() {
     sentry::SentryClientFactory::SentryServerPtr server = std::get<1>(sentry_);
     if (server) {
         co_await server->run();
+    }
+}
+
+Task<void> NodeImpl::run_chain_sync() {
+    if (!settings_.node_settings.exec_api_address) {
+        co_await chain_sync_.async_run();
     }
 }
 

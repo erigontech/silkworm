@@ -47,6 +47,7 @@ struct NodeSettings {
     uint32_t sync_loop_log_interval_seconds{30};           // Interval for sync loop to emit logs
     bool parallel_fork_tracking_enabled{false};            // Whether to track multiple parallel forks at head
     bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
+    std::optional<std::string> exec_api_address;           // Execution API GRPC server bind address (IP:port)
 
     db::etl::CollectorSettings etl() const {
         return {data_directory->temp().path(), etl_buffer_size};

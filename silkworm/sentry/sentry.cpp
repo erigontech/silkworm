@@ -313,13 +313,6 @@ Task<void> SentryImpl::run_grpc_server() {
     }
 }
 
-std::string Sentry::make_client_id(const buildinfo& info) {
-    return std::string(info.project_name) +
-           "/v" + info.project_version +
-           "/" + info.system_name + "-" + info.system_processor +
-           "/" + info.compiler_id + "-" + info.compiler_version;
-}
-
 std::string SentryImpl::client_id() const {
     return settings_.client_id;
 }

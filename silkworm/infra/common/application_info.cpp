@@ -21,7 +21,8 @@
 namespace silkworm {
 
 std::string get_node_name_from_build_info(const buildinfo* info) {
-    std::string node_name{"silkworm/"};
+    std::string node_name = info->project_name;
+    node_name.append("/");
     node_name.append(info->git_branch);
     node_name.append(info->project_version);
     node_name.append("/");
@@ -35,6 +36,13 @@ std::string get_node_name_from_build_info(const buildinfo* info) {
     node_name.append("-");
     node_name.append(info->compiler_version);
     return node_name;
+}
+
+std::string make_client_id_from_build_info(const buildinfo& info) {
+    return std::string(info.project_name) +
+           "/v" + info.project_version +
+           "/" + info.system_name + "-" + info.system_processor +
+           "/" + info.compiler_id + "-" + info.compiler_version;
 }
 
 std::string get_description_from_build_info(const buildinfo* info) {
@@ -60,6 +68,7 @@ ApplicationInfo make_application_info(const buildinfo* info) {
         .commit_hash = info->git_commit_hash,
         .build_description = get_description_from_build_info(info),
         .node_name = get_node_name_from_build_info(info),
+        .client_id = make_client_id_from_build_info(*info),
     };
 }
 

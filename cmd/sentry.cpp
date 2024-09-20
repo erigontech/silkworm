@@ -23,6 +23,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
@@ -41,7 +42,7 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     CLI::App cli{"Sentry - P2P proxy"};
 
     Settings settings;
-    settings.client_id = Sentry::make_client_id(*silkworm_get_buildinfo());
+    settings.client_id = make_client_id_from_build_info(*silkworm_get_buildinfo());
 
     add_logging_options(cli, settings.log_settings);
     add_option_data_dir(cli, settings.data_dir_path);

@@ -34,7 +34,6 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/node.hpp>
-#include <silkworm/sentry/sentry.hpp>
 
 #include "common/common.hpp"
 #include "common/db_checklist.hpp"
@@ -195,7 +194,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 
     // sentry::Settings
-    settings.sentry_settings.client_id = sentry::Sentry::make_client_id(*build_info);
+    settings.sentry_settings.client_id = node_settings.build_info.client_id;
     settings.sentry_settings.data_dir_path = node_settings.data_directory->path();
     settings.sentry_settings.network_id = node_settings.network_id;
 }

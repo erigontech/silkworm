@@ -2038,8 +2038,8 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         rpc::fee_history::BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
-        rpc::fee_history::ReceiptsProvider receipts_provider = [&tx, &chain_storage, worker = worker_](const BlockWithHash& block_with_hash) {
-            return core::get_receipts(*tx, block_with_hash, *chain_storage, worker);
+        rpc::fee_history::ReceiptsProvider receipts_provider = [&tx, &chain_storage, this](const BlockWithHash& block_with_hash) {
+            return core::get_receipts(*tx, block_with_hash, *chain_storage, this->workers_);
         };
 
         rpc::fee_history::LatestBlockProvider latest_block_provider = [&tx]() {

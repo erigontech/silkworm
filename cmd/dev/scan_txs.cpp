@@ -56,7 +56,6 @@ int main(int argc, char* argv[]) {
     // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
     AnalysisCache analysis_cache{/*max_size=*/5'000};
-    ObjectPool<evmone::ExecutionState> state_pool;
     std::vector<Receipt> receipts;
 
     try {
@@ -94,7 +93,6 @@ int main(int argc, char* argv[]) {
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
             processor.evm().analysis_cache = &analysis_cache;
-            processor.evm().state_pool = &state_pool;
 
             // Execute the block and retrieve the receipts
             if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {

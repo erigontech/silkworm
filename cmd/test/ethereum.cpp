@@ -64,7 +64,9 @@ static const std::vector<fs::path> kFailingTests{};
 
 static constexpr size_t kColumnWidth{80};
 
-ObjectPool<evmone::ExecutionState> execution_state_pool{/*thread_safe=*/true};
+/// External EVMC VM.
+/// It is used in potential multiple test execution threads
+/// so usage may be broken if the VM is not thread-safe.
 evmc_vm* exo_evm{nullptr};
 
 enum class Status {
@@ -223,7 +225,6 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
 
     InMemoryState state{read_genesis_allocation(json_test["pre"])};
     Blockchain blockchain{state, config_it->second, genesis_block};
-    blockchain.state_pool = &execution_state_pool;
     blockchain.exo_evm = exo_evm;
 
     for (const auto& json_block : json_test["blocks"]) {

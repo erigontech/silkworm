@@ -48,8 +48,6 @@ class Blockchain {
 
     ValidationResult insert_block(Block& block, bool check_state_root);
 
-    ObjectPool<evmone::ExecutionState>* state_pool{nullptr};
-
     evmc_vm* exo_evm{nullptr};
 
   private:

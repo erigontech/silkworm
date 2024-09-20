@@ -68,13 +68,10 @@ BTreeIndex::Cursor::Cursor(BTreeIndex* index, ByteView key, ByteView value, Data
 
 std::unique_ptr<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, DataIterator data_it) {
     const auto [found, key, value, data_index] = btree_->seek(seek_key, data_it);
-    if (!found) {
-        return nullptr;
-    }
     if (key.compare(seek_key) >= 0) {
         return new_cursor(key, value, data_index, data_it);
     }
-    return new_cursor(ByteView{}, ByteView{}, 0, data_it);
+    return nullptr;
 }
 
 std::optional<Bytes> BTreeIndex::get(ByteView key, DataIterator data_it) {

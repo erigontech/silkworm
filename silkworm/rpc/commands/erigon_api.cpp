@@ -202,7 +202,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts{co_await core::get_receipts(*tx, *block_with_hash)};
+        auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
         SILK_TRACE << "#receipts: " << receipts.size();
 
         const auto block{block_with_hash->block};
@@ -414,7 +414,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const auto receipts{co_await core::get_receipts(*tx, *block_with_hash)};
+        const auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
         SILK_DEBUG << "receipts.size(): " << receipts.size();
         std::vector<Logs> logs{};
         logs.reserve(receipts.size());

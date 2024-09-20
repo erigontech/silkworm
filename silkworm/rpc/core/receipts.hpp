@@ -26,10 +26,10 @@
 
 namespace silkworm::rpc::core {
 
-Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
+Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers);
 
-Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash);
+Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_number);
 
-Task<std::optional<Receipts>> read_raw_receipts(db::kv::api::Transaction& tx, BlockNum block_number);
+Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, const silkworm::Block& block, const db::chain::ChainStorage& chain_storage, WorkerPool& workers);
 
 }  // namespace silkworm::rpc::core

@@ -321,6 +321,104 @@ ExecutionResult EVMExecutor::call(
     return exec_result;
 }
 
+ExecutionResult EVMExecutor::call_with_receipt(
+    const silkworm::Block& block,
+    const silkworm::Transaction& txn,
+    silkworm::Receipt& receipt,
+    const Tracers& tracers,
+    bool refund,
+    bool gas_bailout) {
+    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
+               << " gas_bailout: " << gas_bailout << " transaction: " << rpc::Transaction{txn};
+
+    auto& svc = use_service<AnalysisCacheService>(workers_);
+    EVM evm{block, ibs_state_, config_, gas_bailout};
+    evm.analysis_cache = svc.get_analysis_cache();
+    evm.state_pool = svc.get_object_pool();
+    evm.beneficiary = rule_set_->get_beneficiary(block.header);
+    evm.transfer = rule_set_->transfer_func();
+
+    for (auto& tracer : tracers) {
+        evm.add_tracer(*tracer);
+    }
+
+    if (!txn.sender()) {
+        return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
+    }
+    ibs_state_.access_account(*txn.sender());
+
+    const evmc_revision rev{evm.revision()};
+    const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
+    const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
+    SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
+
+    if (const auto pre_check_result = pre_check(evm, txn, base_fee_per_gas, g0)) {
+        Bytes data{};
+        return {std::nullopt, txn.gas_limit, data, pre_check_result->pre_check_error, pre_check_result->pre_check_error_code};
+    }
+
+    if (const auto result = evm.deduct_entry_fees(txn); result.status != EVMC_SUCCESS) {
+        return {std::nullopt, txn.gas_limit, {}, result.error_message, PreCheckErrorCode::kInsufficientFunds};
+    }
+    if (txn.to.has_value()) {
+        ibs_state_.access_account(*txn.to);
+        // EVM itself increments the nonce for contract creation
+        ibs_state_.set_nonce(*txn.sender(), ibs_state_.get_nonce(*txn.sender()) + 1);
+    }
+    for (const AccessListEntry& ae : txn.access_list) {
+        ibs_state_.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            ibs_state_.access_storage(ae.account, key);
+        }
+    }
+
+    CallResult result;
+    try {
+        SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start";
+        result = evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
+        SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " gas_left: " << result.gas_left << " end";
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: evm_execute: " << e.what() << "\n";
+        std::string error_msg = "evm.execute: ";
+        error_msg.append(e.what());
+        return {std::nullopt, txn.gas_limit, /* data */ {}, error_msg};
+    } catch (...) {
+        SILK_ERROR << "exception: evm_execute: unexpected exception\n";
+        return {std::nullopt, txn.gas_limit, /* data */ {}, "evm.execute: unknown exception"};
+    }
+
+    uint64_t gas_left{result.gas_left};
+    uint64_t gas_used{txn.gas_limit - result.gas_left};
+
+    if (refund && !gas_bailout) {
+        gas_used = txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund);
+        gas_left = txn.gas_limit - gas_used;
+    }
+
+    // Reward the fee recipient
+    const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)
+                                                                                     : txn.max_priority_fee_per_gas};
+    SILK_DEBUG << "EVMExecutor::call evm.beneficiary: " << evm.beneficiary << " balance: " << priority_fee_per_gas * gas_used;
+    ibs_state_.add_to_balance(evm.beneficiary, priority_fee_per_gas * gas_used);
+
+    for (auto& tracer : evm.tracers()) {
+        tracer.get().on_reward_granted(result, ibs_state_);
+    }
+    ibs_state_.finalize_transaction(rev);
+
+    receipt.success = result.status == EVMC_SUCCESS;
+    receipt.bloom = logs_bloom(ibs_state_.logs());
+    receipt.gas_used = gas_used;
+    receipt.type = txn.type;
+    std::swap(receipt.logs, ibs_state_.logs());
+
+    ExecutionResult exec_result{result.status, gas_left, result.data};
+
+    SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_message() << " #data: " << exec_result.data.size() << " end";
+
+    return exec_result;
+}
+
 Task<ExecutionResult> EVMExecutor::call(
     const silkworm::ChainConfig& config,
     const ChainStorage& chain_storage,

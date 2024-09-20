@@ -27,6 +27,7 @@ namespace silkworm {
 struct Receipt {
     TransactionType type{TransactionType::kLegacy};
     bool success{false};
+    uint64_t gas_used{0};
     uint64_t cumulative_gas_used{0};
     Bloom bloom{};
     std::vector<Log> logs;

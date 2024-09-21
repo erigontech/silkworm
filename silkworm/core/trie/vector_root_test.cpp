@@ -35,8 +35,8 @@ TEST_CASE("Empty root hash") {
 
 TEST_CASE("Hardcoded root hash") {
     std::vector<Receipt> receipts{
-        {TransactionType::kLegacy, true, 0, 21'000, {}, {}},
-        {TransactionType::kLegacy, true, 0, 42'000, {}, {}},
+        {TransactionType::kLegacy, true, 21000, 21'000, {}, {}},
+        {TransactionType::kLegacy, true, 21000, 42'000, {}, {}},
         {TransactionType::kLegacy,
          true,
          0,

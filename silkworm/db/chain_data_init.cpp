@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "db_checklist.hpp"
+#include "chain_data_init.hpp"
 
 #include <regex>
 
@@ -26,7 +26,7 @@
 
 namespace silkworm::db {
 
-ChainConfig run_db_checklist(const DbChecklistSettings& node_settings) {
+ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
     // Output mdbx build info
     log::Debug(
         "libmdbx",

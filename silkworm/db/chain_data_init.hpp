@@ -22,7 +22,7 @@
 
 namespace silkworm::db {
 
-struct DbChecklistSettings {
+struct ChainDataInitSettings {
     db::EnvConfig chaindata_env_config;
     db::PruneMode prune_mode;
     ChainId network_id{0};
@@ -30,6 +30,6 @@ struct DbChecklistSettings {
 };
 
 //! \brief Ensure database is ready to take off and consistent with command line arguments
-ChainConfig run_db_checklist(const DbChecklistSettings& node_settings);
+ChainConfig chain_data_init(const ChainDataInitSettings& node_settings);
 
 }  // namespace silkworm::db

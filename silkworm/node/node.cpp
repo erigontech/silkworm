@@ -20,8 +20,8 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/chain_head.hpp>
-#include <silkworm/db/db_checklist.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/execution/api/active_direct_service.hpp>
 #include <silkworm/execution/api/direct_client.hpp>
@@ -97,9 +97,9 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static mdbx::env_managed init_db(NodeSettings& node_settings) {
+static mdbx::env_managed init_chain_data_db(NodeSettings& node_settings) {
     node_settings.data_directory->deploy();
-    node_settings.chain_config = db::run_db_checklist(db::DbChecklistSettings{
+    node_settings.chain_config = db::chain_data_init(db::ChainDataInitSettings{
         .chaindata_env_config = node_settings.chaindata_env_config,
         .prune_mode = node_settings.prune_mode,
         .network_id = node_settings.network_id,
@@ -164,7 +164,7 @@ NodeImpl::NodeImpl(
     rpc::ClientContextPool& context_pool,
     Settings& settings)
     : settings_{settings},
-      chaindata_env_{init_db(settings.node_settings)},
+      chaindata_env_{init_chain_data_db(settings.node_settings)},
       chain_config_{*settings_.node_settings.chain_config},
       execution_engine_{
           execution_context_.get_executor(),

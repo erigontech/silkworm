@@ -46,7 +46,7 @@ TEST_CASE("Execute two blocks") {
 
     static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
     std::vector<Receipt> receipts{
-        {TransactionType::kDynamicFee, true, block.header.gas_used, {}, {}},
+        {TransactionType::kDynamicFee, true, block.header.gas_used, block.header.gas_used, {}, {}},
     };
     block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 

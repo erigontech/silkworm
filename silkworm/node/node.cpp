@@ -108,7 +108,7 @@ static mdbx::env_managed init_chain_data_db(NodeSettings& node_settings) {
     return db::open_env(node_settings.chaindata_env_config);
 }
 
-static rpc::ServerSettings make_execution_server_settings(std::optional<std::string> exec_api_address) {
+static rpc::ServerSettings make_execution_server_settings(const std::optional<std::string>& exec_api_address) {
     return rpc::ServerSettings{
         .address_uri = exec_api_address.value_or("localhost:9092"),
         .context_pool_settings = {.num_contexts = 1},  // just one execution context

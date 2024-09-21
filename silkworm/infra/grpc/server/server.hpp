@@ -25,6 +25,7 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
@@ -37,8 +38,7 @@ class Server {
   public:
     //! Build a ready-to-start RPC server according to specified configuration.
     explicit Server(ServerSettings settings)
-        : settings_{std::move(settings)},
-          context_pool_{settings_.context_pool_settings, builder_} {}
+        : settings_{std::move(settings)} {}
 
     /**
      * No need to explicitly shut down the server because this destructor takes care.
@@ -62,7 +62,7 @@ class Server {
             return;
         }
 
-        grpc::ServerBuilder& builder = builder_;
+        grpc::ServerBuilder builder;
 
         // Disable SO_REUSEPORT socket option to obtain "address already in use" on Windows.
         builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
@@ -70,6 +70,8 @@ class Server {
         // Add the local endpoint to bind the RPC server to (selected_port will be set *after* BuildAndStart call).
         int selected_port{0};
         builder.AddListeningPort(settings_.address_uri, settings_.credentials, &selected_port);
+
+        context_pool_ = std::make_unique<ServerContextPool>(settings_.context_pool_settings, builder);
 
         // gRPC async model requires the server to register the RPC services first.
         SILK_TRACE << "Server " << this << " registering async services";
@@ -88,7 +90,7 @@ class Server {
 
         // Start the server execution: the context pool will spawn the context threads.
         SILK_TRACE << "Server " << this << " starting execution loop";
-        context_pool_.start();
+        context_pool_->start();
 
         SILK_TRACE << "Server::build_and_start " << this << " END";
     }
@@ -96,7 +98,9 @@ class Server {
     //! Join the RPC server execution loop and block until \ref shutdown() is called on this Server instance.
     void join() {
         SILK_TRACE << "Server::join " << this << " START";
-        context_pool_.join();
+        if (context_pool_) {
+            context_pool_->join();
+        }
         SILK_TRACE << "Server::join " << this << " END";
     }
 
@@ -121,7 +125,9 @@ class Server {
         SILK_TRACE << "Server::shutdown " << this << " stopping context pool";
 
         // Order matters here: 2) shutdown and drain the queues
-        context_pool_.stop();
+        if (context_pool_) {
+            context_pool_->stop();
+        }
 
         SILK_TRACE << "Server::shutdown " << this << " END";
     }
@@ -136,13 +142,21 @@ class Server {
     }
 
     //! Returns the number of server contexts.
-    [[nodiscard]] std::size_t num_contexts() const { return context_pool_.size(); }
+    [[nodiscard]] std::size_t num_contexts() const {
+        return context_pool_ ? context_pool_->size() : 0;
+    }
 
     //! Get the next server context in round-robin scheme.
-    ServerContext const& next_context() { return context_pool_.next_context(); }
+    ServerContext const& next_context() {
+        SILKWORM_ASSERT(context_pool_);
+        return context_pool_->next_context();
+    }
 
     //! Get the next server scheduler in round-robin scheme.
-    boost::asio::io_context& next_io_context() { return context_pool_.next_io_context(); }
+    boost::asio::io_context& next_io_context() {
+        SILKWORM_ASSERT(context_pool_);
+        return context_pool_->next_io_context();
+    }
 
   protected:
     //! Subclasses must override this method to register gRPC RPC services into the server.
@@ -157,13 +171,11 @@ class Server {
     //! The server configuration options.
     ServerSettings settings_;
 
-    grpc::ServerBuilder builder_;
-
     //! The gRPC server instance tied to this Server lifetime.
     std::unique_ptr<grpc::Server> server_;
 
     //! Pool of server schedulers used to run the execution loops.
-    ServerContextPool context_pool_;
+    std::unique_ptr<ServerContextPool> context_pool_;
 
     bool shutdown_{false};
 };

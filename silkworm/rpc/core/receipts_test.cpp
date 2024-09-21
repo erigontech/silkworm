@@ -231,7 +231,6 @@ TEST_CASE("get_receipts") {
 
     SECTION("null receipts without data") {
         const silkworm::BlockWithHash block_with_hash{};
-        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(!receipts.size());
@@ -239,7 +238,6 @@ TEST_CASE("get_receipts") {
 
     SECTION("zero receipts w/ zero transactions") {
         const silkworm::BlockWithHash block_with_hash{};
-        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
         auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.size() == 0);

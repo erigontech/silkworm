@@ -36,7 +36,6 @@
 #include <silkworm/node/node.hpp>
 
 #include "common/common.hpp"
-#include "common/db_checklist.hpp"
 #include "common/node_options.hpp"
 #include "common/rpcdaemon_options.hpp"
 #include "common/sentry_options.hpp"
@@ -167,6 +166,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
     }
 
     node_settings.data_directory = std::make_unique<DataDirectory>(data_dir_path, /*create=*/true);
+    node_settings.chaindata_env_config.path = node_settings.data_directory->chaindata().path().string();
 
     // Parse prune mode
     sw_db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
@@ -232,17 +232,6 @@ int main(int argc, char* argv[]) {
 
         sw_log::Info("Silkworm", build_info_as_log_args(silkworm_get_buildinfo()));
 
-        // Output mdbx build info
-        auto mdbx_ver{mdbx::get_version()};
-        auto mdbx_bld{mdbx::get_build()};
-        sw_log::Debug("libmdbx",
-                      {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
-
-        // Prepare database for takeoff
-        cmd::common::run_db_checklist(settings.node_settings);
-
-        mdbx::env_managed chaindata_env = db::open_env(settings.node_settings.chaindata_env_config);
-
         silkworm::rpc::ClientContextPool context_pool{
             settings.server_settings.context_pool_settings,
         };
@@ -250,7 +239,6 @@ int main(int argc, char* argv[]) {
         silkworm::node::Node execution_node{
             context_pool,
             settings,
-            chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
         };
 
         // Trap OS signals

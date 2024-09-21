@@ -20,6 +20,7 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/chain_head.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/execution/api/active_direct_service.hpp>
@@ -50,8 +51,7 @@ class NodeImpl final {
   public:
     NodeImpl(
         rpc::ClientContextPool& context_pool,
-        Settings& settings,
-        mdbx::env chaindata_env);
+        Settings& settings);
 
     NodeImpl(const NodeImpl&) = delete;
     NodeImpl& operator=(const NodeImpl&) = delete;
@@ -70,9 +70,10 @@ class NodeImpl final {
     Task<void> run_chain_sync();
 
     Settings& settings_;
-    ChainConfig& chain_config_;
 
-    mdbx::env chaindata_env_;
+    mdbx::env_managed chaindata_env_;
+
+    ChainConfig& chain_config_;
 
     //! The execution layer server engine
     boost::asio::io_context execution_context_;
@@ -96,7 +97,18 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static rpc::ServerSettings make_execution_server_settings(std::optional<std::string> exec_api_address) {
+static mdbx::env_managed init_chain_data_db(NodeSettings& node_settings) {
+    node_settings.data_directory->deploy();
+    node_settings.chain_config = db::chain_data_init(db::ChainDataInitSettings{
+        .chaindata_env_config = node_settings.chaindata_env_config,
+        .prune_mode = node_settings.prune_mode,
+        .network_id = node_settings.network_id,
+        .init_if_empty = true,
+    });
+    return db::open_env(node_settings.chaindata_env_config);
+}
+
+static rpc::ServerSettings make_execution_server_settings(const std::optional<std::string>& exec_api_address) {
     return rpc::ServerSettings{
         .address_uri = exec_api_address.value_or("localhost:9092"),
         .context_pool_settings = {.num_contexts = 1},  // just one execution context
@@ -150,11 +162,10 @@ static sentry::SessionSentryClient::StatusDataProvider make_sentry_eth_status_da
 
 NodeImpl::NodeImpl(
     rpc::ClientContextPool& context_pool,
-    Settings& settings,
-    mdbx::env chaindata_env)
+    Settings& settings)
     : settings_{settings},
+      chaindata_env_{init_chain_data_db(settings.node_settings)},
       chain_config_{*settings_.node_settings.chain_config},
-      chaindata_env_{std::move(chaindata_env)},
       execution_engine_{
           execution_context_.get_executor(),
           settings_.node_settings,
@@ -165,7 +176,13 @@ NodeImpl::NodeImpl(
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(settings_.node_settings.exec_api_address), execution_service_},
       execution_direct_client_{execution_service_},
-      snapshot_sync_{settings.snapshot_settings, chain_config_.chain_id, chaindata_env_, settings_.node_settings.data_directory->temp().path(), execution_engine_.stage_scheduler()},
+      snapshot_sync_{
+          settings.snapshot_settings,
+          chain_config_.chain_id,
+          chaindata_env_,  // NOLINT(cppcoreguidelines-slicing)
+          settings_.node_settings.data_directory->temp().path(),
+          execution_engine_.stage_scheduler(),
+      },
       sentry_{
           sentry::SentryClientFactory::make_sentry(
               std::move(settings.sentry_settings),
@@ -175,7 +192,7 @@ NodeImpl::NodeImpl(
               make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, chain_config_))},
       chain_sync_{
           context_pool.any_executor(),
-          chaindata_env_,
+          chaindata_env_,  // NOLINT(cppcoreguidelines-slicing)
           execution_direct_client_,
           std::get<0>(sentry_),
           chain_config_,
@@ -253,12 +270,10 @@ Task<void> NodeImpl::run_chain_sync() {
 
 Node::Node(
     rpc::ClientContextPool& context_pool,
-    Settings& settings,
-    mdbx::env chaindata_env)
+    Settings& settings)
     : p_impl_(std::make_unique<NodeImpl>(
           context_pool,
-          settings,
-          std::move(chaindata_env))) {}
+          settings)) {}
 
 // Must be here (not in header) because NodeImpl size is necessary for std::unique_ptr in PIMPL idiom
 Node::~Node() = default;

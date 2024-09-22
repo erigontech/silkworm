@@ -32,7 +32,7 @@ namespace silkworm::rpc::core {
 using ethdb::walk;
 
 Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers) {
-    if (!block_with_hash.block.transactions.size()) {
+    if (block_with_hash.block.transactions.empty()) {
         co_return Receipts{};
     }
 

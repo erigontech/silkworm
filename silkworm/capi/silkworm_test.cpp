@@ -678,7 +678,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     SilkwormLibrary silkworm_lib{env_path()};
 
     const int chain_id{1};
-    const uint64_t batch_size{170};      // Small batch size to force multiple iterations
+    const uint64_t batch_size{170};       // Small batch size to force multiple iterations
     const bool write_change_sets{false};  // We CANNOT write changesets here, TestDatabaseContext db already has them
     const bool write_receipts{false};     // We CANNOT write receipts here, TestDatabaseContext db already has them
     const bool write_call_traces{false};  // For coherence but don't care

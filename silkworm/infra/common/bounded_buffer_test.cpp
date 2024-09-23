@@ -185,4 +185,25 @@ TEST_CASE("BoundedBuffer can terminate consumer") {
     consume.join();
 }
 
+TEST_CASE("BoundedBuffer peek does not remove item") {
+    BoundedBuffer<std::string> buffer(10);
+    buffer.push_front("Hello1");
+    buffer.push_front("Hello2");
+    buffer.push_front("Hello3");
+    buffer.push_front("Hello4");
+
+    std::string item;
+    buffer.peek_back(&item);
+    CHECK(item == "Hello1");
+    CHECK(buffer.size() == 4);
+
+    buffer.pop_back(&item);
+    CHECK(item == "Hello1");
+    CHECK(buffer.size() == 3);
+
+    buffer.peek_back(&item);
+    CHECK(item == "Hello2");
+    CHECK(buffer.size() == 3);
+}
+
 }  // namespace silkworm

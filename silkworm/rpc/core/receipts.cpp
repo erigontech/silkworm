@@ -32,12 +32,13 @@ namespace silkworm::rpc::core {
 using ethdb::walk;
 
 Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers) {
-    if (!block_with_hash.block.transactions.size()) {
+    if (block_with_hash.block.transactions.empty()) {
         co_return Receipts{};
     }
 
+    // Either read from storage or regenerate transaction receipts for the given block
     const evmc::bytes32 block_hash = block_with_hash.hash;
-    uint64_t block_number = block_with_hash.block.header.number;
+    BlockNum block_number = block_with_hash.block.header.number;
     auto raw_receipts = co_await read_receipts(tx, block_number);
     if (!raw_receipts || raw_receipts->empty()) {
         raw_receipts = co_await generate_receipts(tx, block_with_hash.block, chain_storage, workers);

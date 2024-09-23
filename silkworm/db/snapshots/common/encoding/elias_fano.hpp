@@ -58,16 +58,17 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/db/snapshots/rec_split/common/common.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/sequence.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+
+#include "sequence.hpp"
+#include "util.hpp"
 
 // EliasFano algo overview https://www.antoniomallia.it/sorted-integers-compression-with-elias-fano-encoding.html
 // P. Elias. Efficient storage and retrieval by content and address of static files. J. ACM, 21(2):246–260, 1974.
 // Partitioned Elias-Fano Indexes http://groups.di.unipi.it/~ottavian/files/elias_fano_sigir14.pdf
 
-namespace silkworm::snapshots::rec_split::encoding {
+namespace silkworm::snapshots::encoding {
 
 //! Log2Q = Log2(Quantum)
 static constexpr uint64_t kLog2q = 8;
@@ -569,4 +570,4 @@ class DoubleEliasFanoList16 {
     }
 };
 
-}  // namespace silkworm::snapshots::rec_split::encoding
+}  // namespace silkworm::snapshots::encoding

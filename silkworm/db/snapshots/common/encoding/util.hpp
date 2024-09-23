@@ -58,7 +58,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 
-namespace silkworm::snapshots::rec_split {
+namespace silkworm::snapshots::encoding {
 
 using std::memcpy;
 
@@ -206,4 +206,4 @@ inline uint64_t select64(uint64_t x, uint64_t k) {
 #endif
 }
 
-}  // namespace silkworm::snapshots::rec_split
+}  // namespace silkworm::snapshots::encoding

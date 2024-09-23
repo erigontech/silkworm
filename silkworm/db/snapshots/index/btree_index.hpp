@@ -23,13 +23,13 @@
 
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "../rec_split/encoding/elias_fano.hpp"  // TODO(canepat) move to snapshots/common
+#include "../common/encoding/elias_fano.hpp"
 #include "../seg/decompressor.hpp"
 #include "btree.hpp"
 
 namespace silkworm::snapshots::index {
 
-using rec_split::encoding::EliasFanoList32;  // TODO(canepat) remove after moving
+using encoding::EliasFanoList32;
 
 class BTreeIndex {
   public:

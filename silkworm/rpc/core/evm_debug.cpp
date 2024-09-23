@@ -224,6 +224,8 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
         switch (result.status_code) {
             case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
             case evmc_status_code::EVMC_INVALID_INSTRUCTION:
+                log.gas_cost = 0;
+                break;
             case evmc_status_code::EVMC_STACK_OVERFLOW:
             case evmc_status_code::EVMC_STACK_UNDERFLOW:
                 log.gas_cost = result.gas_cost;

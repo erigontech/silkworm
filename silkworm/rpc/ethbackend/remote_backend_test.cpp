@@ -171,15 +171,40 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_txn_hash", "[si
         CHECK(bn == 5);
     }
 
-    SECTION("call net_peer_count and get zero count") {
+    SECTION("call get_block_number_from_txn_hash and get zero count") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        const auto net_peer_count = run<&ethbackend::RemoteBackEnd::get_block_number_from_txn_hash>(hash.bytes);
-        CHECK(net_peer_count == 0);
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_txn_hash>(hash.bytes);
+        CHECK(bn == 0);
     }
 
-    SECTION("call net_peer_count and get error") {
+    SECTION("call get_block_number_from_txn_hash and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
         CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_number_from_txn_hash>(hash.bytes)), boost::system::system_error);
+    }
+}
+
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_hash", "[silkworm][rpc][ethbackend][backend]") {
+    test::StrictMockAsyncResponseReader<::remote::HeaderNumberReply> reader;
+    const Hash hash;
+    EXPECT_CALL(*stub_, AsyncHeaderNumberRaw).WillOnce(testing::Return(&reader));
+
+    SECTION("call get_block_number_from_hash and get number") {
+        ::remote::HeaderNumberReply response;
+        response.set_number(3);
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
+        CHECK(bn == 3);
+    }
+
+    SECTION("call get_block_number_from_hash and get zero count") {
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
+        CHECK(bn == 0);
+    }
+
+    SECTION("call get_block_number_from_hash and get error") {
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes)), boost::system::system_error);
     }
 }
 

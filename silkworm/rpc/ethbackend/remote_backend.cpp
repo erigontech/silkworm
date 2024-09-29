@@ -189,17 +189,17 @@ Task<BlockNum> RemoteBackEnd::get_block_number_from_hash(const HashAsSpan& hash)
     co_return bn;
 }
 
-Task<HashAsSpan> RemoteBackEnd::get_block_hash_from_block_number(uint64_t number) {
+Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(uint64_t number) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalHash> canonical_hsh_rpc{*stub_, grpc_context_};
     ::remote::CanonicalHashRequest request;
     request.set_block_number(number);
     const auto reply = co_await canonical_hsh_rpc.finish_on(executor_, request);
-    evmc::bytes32 bytes32;
-    span_from_H256(reply.hash(), bytes32.bytes);
+    evmc::bytes32 hash;
+    span_from_H256(reply.hash(), hash.bytes);
     SILK_TRACE << "RemoteBackEnd::get_block_hash_from_block_number bn="
                << " t=" << clock_time::since(start_time);
-    co_return bytes32.bytes;
+    co_return hash;
 }
 
 std::vector<Bytes> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs) {

@@ -27,7 +27,7 @@
 namespace silkworm::snapshots::index {
 
 //! Smallest shard available for scan instead of binary search
-static constexpr auto kDefaultBtreeStartSkip{4};
+static constexpr uint64_t kDefaultBtreeStartSkip{4};
 
 static bool enable_assert_btree_keys() {
     bool enabled{false};

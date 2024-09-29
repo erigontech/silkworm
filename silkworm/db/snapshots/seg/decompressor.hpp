@@ -314,10 +314,6 @@ class Decompressor {
 
     void open();
 
-    void advise_normal() const { compressed_file_->advise_normal(); }
-    void advise_random() const { compressed_file_->advise_random(); }
-    void advise_sequential() const { compressed_file_->advise_sequential(); }
-
     //! Get an iterator to the compressed data
     [[nodiscard]] Iterator make_iterator() const { return Iterator{this, {}}; }
 

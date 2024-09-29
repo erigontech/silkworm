@@ -48,10 +48,6 @@ BTreeIndex::BTreeIndex(seg::Decompressor& kv_decompressor,
     ensure(data_offsets_->sequence_length() > 0, "BTreeIndex: invalid zero-length data offsets");
 
     const auto encoded_nodes = memory_mapped_range.subspan(data_offsets_->encoded_data_size());
-
-    // Let the OS know we're going to read data sequentially now, then restore normal (i.e. unknown) reading behavior
-    kv_decompressor.advise_sequential();
-    [[maybe_unused]] auto _ = gsl::finally([&]() { kv_decompressor.advise_normal(); });
     auto kv_it = kv_decompressor.begin();
 
     btree_ = std::make_unique<BTree>(

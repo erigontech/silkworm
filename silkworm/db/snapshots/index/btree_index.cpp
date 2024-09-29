@@ -76,15 +76,15 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, DataIterat
 
 std::optional<Bytes> BTreeIndex::get(ByteView key, DataIterator data_it) {
     if (empty()) {
-        return {};
+        return std::nullopt;
     }
     const auto [key_found, _, data_index] = btree_->get(key, data_it);
     if (!key_found) {
-        return {};
+        return std::nullopt;
     }
     const auto [kv_found, kv] = lookup_data(data_index, data_it);
     if (!kv_found) {
-        return {};
+        return std::nullopt;
     }
     return kv.second;
 }

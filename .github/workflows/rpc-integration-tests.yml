@@ -57,7 +57,11 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           echo "Silkworm RpcDaemon starting..."
-          ${{runner.workspace}}/silkworm/.github/workflows/e2_run_daemon.sh $ERIGON_DATA_DIR ./jwt.hex &
+          if [ $backend -eq Erigon2 ]; then
+             ${{runner.workspace}}/silkworm/.github/workflows/e2_run_daemon.sh $ERIGON_DATA_DIR ./jwt.hex &
+          else
+             ${{runner.workspace}}/silkworm/.github/workflows/e3_run_daemon.sh $ERIGON_DATA_DIR ./jwt.hex &
+          fi
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
           echo "Silkworm RpcDaemon started"
@@ -71,7 +75,11 @@ jobs:
           rm -rf ./mainnet/results/
           
           # Run RPC integration test runner via http
-          ${{runner.workspace}}/silkworm/.github/workflows/e2_run_tests.sh ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
+          if [ $backend -eq Erigon2 ]; then
+             ${{runner.workspace}}/silkworm/.github/workflows/e2_run_tests.sh ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
+          else
+             ${{runner.workspace}}/silkworm/.github/workflows/e3_run_tests.sh ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
+          fi
 
           # Capture test runner script exit status
           test_exit_status=$?

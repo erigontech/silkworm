@@ -71,7 +71,7 @@ jobs:
           rm -rf ./mainnet/results/
           
           # Run RPC integration test runner via http
-          ./e2_run_tests.sh ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
+          ${{runner.workspace}}/silkworm/.github/workflows/e2_run_tests.sh ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
 
           # Capture test runner script exit status
           test_exit_status=$?

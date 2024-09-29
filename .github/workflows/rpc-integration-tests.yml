@@ -57,7 +57,6 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           echo "Silkworm RpcDaemon starting..."
-          echo ${{ matrix.backend }}
           if [ ${{ matrix.backend }} == 'Erigon2' ]; then
              ${{runner.workspace}}/silkworm/.github/workflows/e2_run_daemon.sh $ERIGON_DATA_DIR ./jwt.hex &
           else
@@ -76,7 +75,6 @@ jobs:
           rm -rf ./mainnet/results/
           
           # Run RPC integration test runner via http
-          echo ${{ matrix.backend }}
           if [ ${{ matrix.backend }} == 'Erigon2' ]; then
              ${{runner.workspace}}/silkworm/.github/workflows/e2_run_tests.sh ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
           else

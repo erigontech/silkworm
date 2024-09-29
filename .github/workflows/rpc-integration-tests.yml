@@ -57,7 +57,7 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           echo "Silkworm RpcDaemon starting..."
-          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --ws &
+          ${{runner.workspace}}/silkworm/.github/workflows/e2_run_daemon.sh $ERIGON_DATA_DIR ./jwt.hex &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
           echo "Silkworm RpcDaemon started"
@@ -71,8 +71,8 @@ jobs:
           rm -rf ./mainnet/results/
           
           # Run RPC integration test runner via http
-          python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json,engine_,net_,web3_,txpool_,eth_submitWork,eth_submitHashrate,eth_protocolVersion,erigon_nodeInfo,trace_rawTransaction/test_02.json --transport_type http,websocket
-         
+          ./e2_run_tests.sh ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
+
           # Capture test runner script exit status
           test_exit_status=$?
           

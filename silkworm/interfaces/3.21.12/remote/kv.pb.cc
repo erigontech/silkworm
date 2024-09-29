@@ -336,20 +336,20 @@ struct PairsDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PairsDefaultTypeInternal _Pairs_default_instance_;
-PROTOBUF_CONSTEXPR ParisPagination::ParisPagination(
+PROTOBUF_CONSTEXPR PairsPagination::PairsPagination(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.next_key_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.limit_)*/int64_t{0}
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct ParisPaginationDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ParisPaginationDefaultTypeInternal()
+struct PairsPaginationDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR PairsPaginationDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~ParisPaginationDefaultTypeInternal() {}
+  ~PairsPaginationDefaultTypeInternal() {}
   union {
-    ParisPagination _instance;
+    PairsPagination _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ParisPaginationDefaultTypeInternal _ParisPagination_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PairsPaginationDefaultTypeInternal _PairsPagination_default_instance_;
 PROTOBUF_CONSTEXPR IndexPagination::IndexPagination(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.next_time_stamp_)*/int64_t{0}
@@ -572,13 +572,13 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::remote::Pairs, _impl_.values_),
   PROTOBUF_FIELD_OFFSET(::remote::Pairs, _impl_.next_page_token_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::remote::ParisPagination, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::remote::PairsPagination, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::ParisPagination, _impl_.next_key_),
-  PROTOBUF_FIELD_OFFSET(::remote::ParisPagination, _impl_.limit_),
+  PROTOBUF_FIELD_OFFSET(::remote::PairsPagination, _impl_.next_key_),
+  PROTOBUF_FIELD_OFFSET(::remote::PairsPagination, _impl_.limit_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::IndexPagination, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -608,7 +608,7 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 162, -1, -1, sizeof(::remote::HistoryRangeReq)},
   { 176, -1, -1, sizeof(::remote::DomainRangeReq)},
   { 192, -1, -1, sizeof(::remote::Pairs)},
-  { 201, -1, -1, sizeof(::remote::ParisPagination)},
+  { 201, -1, -1, sizeof(::remote::PairsPagination)},
   { 209, -1, -1, sizeof(::remote::IndexPagination)},
 };
 
@@ -632,7 +632,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::remote::_HistoryRangeReq_default_instance_._instance,
   &::remote::_DomainRangeReq_default_instance_._instance,
   &::remote::_Pairs_default_instance_._instance,
-  &::remote::_ParisPagination_default_instance_._instance,
+  &::remote::_PairsPagination_default_instance_._instance,
   &::remote::_IndexPagination_default_instance_._instance,
 };
 
@@ -688,7 +688,7 @@ const char descriptor_table_protodef_remote_2fkv_2eproto[] PROTOBUF_SECTION_VARI
   "\024\n\014order_ascend\030\007 \001(\010\022\r\n\005limit\030\010 \001(\022\022\021\n\t"
   "page_size\030\t \001(\005\022\022\n\npage_token\030\n \001(\t\">\n\005P"
   "airs\022\014\n\004keys\030\001 \003(\014\022\016\n\006values\030\002 \003(\014\022\027\n\017ne"
-  "xt_page_token\030\003 \001(\t\"2\n\017ParisPagination\022\020"
+  "xt_page_token\030\003 \001(\t\"2\n\017PairsPagination\022\020"
   "\n\010next_key\030\001 \001(\014\022\r\n\005limit\030\002 \001(\022\"9\n\017Index"
   "Pagination\022\027\n\017next_time_stamp\030\001 \001(\022\022\r\n\005l"
   "imit\030\002 \001(\022*\373\001\n\002Op\022\t\n\005FIRST\020\000\022\r\n\tFIRST_DU"
@@ -6707,19 +6707,19 @@ void Pairs::InternalSwap(Pairs* other) {
 
 // ===================================================================
 
-class ParisPagination::_Internal {
+class PairsPagination::_Internal {
  public:
 };
 
-ParisPagination::ParisPagination(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+PairsPagination::PairsPagination(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:remote.ParisPagination)
+  // @@protoc_insertion_point(arena_constructor:remote.PairsPagination)
 }
-ParisPagination::ParisPagination(const ParisPagination& from)
+PairsPagination::PairsPagination(const PairsPagination& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
-  ParisPagination* const _this = this; (void)_this;
+  PairsPagination* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.next_key_){}
     , decltype(_impl_.limit_){}
@@ -6735,10 +6735,10 @@ ParisPagination::ParisPagination(const ParisPagination& from)
       _this->GetArenaForAllocation());
   }
   _this->_impl_.limit_ = from._impl_.limit_;
-  // @@protoc_insertion_point(copy_constructor:remote.ParisPagination)
+  // @@protoc_insertion_point(copy_constructor:remote.PairsPagination)
 }
 
-inline void ParisPagination::SharedCtor(
+inline void PairsPagination::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -6753,8 +6753,8 @@ inline void ParisPagination::SharedCtor(
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
-ParisPagination::~ParisPagination() {
-  // @@protoc_insertion_point(destructor:remote.ParisPagination)
+PairsPagination::~PairsPagination() {
+  // @@protoc_insertion_point(destructor:remote.PairsPagination)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -6762,17 +6762,17 @@ ParisPagination::~ParisPagination() {
   SharedDtor();
 }
 
-inline void ParisPagination::SharedDtor() {
+inline void PairsPagination::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.next_key_.Destroy();
 }
 
-void ParisPagination::SetCachedSize(int size) const {
+void PairsPagination::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void ParisPagination::Clear() {
-// @@protoc_insertion_point(message_clear_start:remote.ParisPagination)
+void PairsPagination::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.PairsPagination)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -6782,7 +6782,7 @@ void ParisPagination::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* ParisPagination::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* PairsPagination::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -6828,9 +6828,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* ParisPagination::_InternalSerialize(
+uint8_t* PairsPagination::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:remote.ParisPagination)
+  // @@protoc_insertion_point(serialize_to_array_start:remote.PairsPagination)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -6850,12 +6850,12 @@ uint8_t* ParisPagination::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:remote.ParisPagination)
+  // @@protoc_insertion_point(serialize_to_array_end:remote.PairsPagination)
   return target;
 }
 
-size_t ParisPagination::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:remote.ParisPagination)
+size_t PairsPagination::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.PairsPagination)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -6877,17 +6877,17 @@ size_t ParisPagination::ByteSizeLong() const {
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ParisPagination::_class_data_ = {
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData PairsPagination::_class_data_ = {
     ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    ParisPagination::MergeImpl
+    PairsPagination::MergeImpl
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ParisPagination::GetClassData() const { return &_class_data_; }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PairsPagination::GetClassData() const { return &_class_data_; }
 
 
-void ParisPagination::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<ParisPagination*>(&to_msg);
-  auto& from = static_cast<const ParisPagination&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:remote.ParisPagination)
+void PairsPagination::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<PairsPagination*>(&to_msg);
+  auto& from = static_cast<const PairsPagination&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.PairsPagination)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -6901,18 +6901,18 @@ void ParisPagination::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void ParisPagination::CopyFrom(const ParisPagination& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:remote.ParisPagination)
+void PairsPagination::CopyFrom(const PairsPagination& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.PairsPagination)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool ParisPagination::IsInitialized() const {
+bool PairsPagination::IsInitialized() const {
   return true;
 }
 
-void ParisPagination::InternalSwap(ParisPagination* other) {
+void PairsPagination::InternalSwap(PairsPagination* other) {
   using std::swap;
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
@@ -6924,7 +6924,7 @@ void ParisPagination::InternalSwap(ParisPagination* other) {
   swap(_impl_.limit_, other->_impl_.limit_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata ParisPagination::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata PairsPagination::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fkv_2eproto_getter, &descriptor_table_remote_2fkv_2eproto_once,
       file_level_metadata_remote_2fkv_2eproto[19]);
@@ -7220,9 +7220,9 @@ template<> PROTOBUF_NOINLINE ::remote::Pairs*
 Arena::CreateMaybeMessage< ::remote::Pairs >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::Pairs >(arena);
 }
-template<> PROTOBUF_NOINLINE ::remote::ParisPagination*
-Arena::CreateMaybeMessage< ::remote::ParisPagination >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::remote::ParisPagination >(arena);
+template<> PROTOBUF_NOINLINE ::remote::PairsPagination*
+Arena::CreateMaybeMessage< ::remote::PairsPagination >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::PairsPagination >(arena);
 }
 template<> PROTOBUF_NOINLINE ::remote::IndexPagination*
 Arena::CreateMaybeMessage< ::remote::IndexPagination >(Arena* arena) {

@@ -64,7 +64,11 @@
 #include "sequence.hpp"
 #include "util.hpp"
 
-// EliasFano algo overview https://www.antoniomallia.it/sorted-integers-compression-with-elias-fano-encoding.html
+// Elias-Fano encoding is a high bits / low bits representation of a monotonically increasing sequence of N > 0 natural numbers x[i]
+// 0 <= x[0] <= x[1] <= ... <= x[N-2] <= x[N-1] <= U
+// where U > 0 is an upper bound on the last value.
+
+// EliasFano algorithm overview https://www.antoniomallia.it/sorted-integers-compression-with-elias-fano-encoding.html
 // P. Elias. Efficient storage and retrieval by content and address of static files. J. ACM, 21(2):246–260, 1974.
 // Partitioned Elias-Fano Indexes http://groups.di.unipi.it/~ottavian/files/elias_fano_sigir14.pdf
 
@@ -117,23 +121,25 @@ class EliasFanoList32 {
         return std::make_unique<EliasFanoList32>(count, u, remaining_data);
     }
 
-    //! Create an empty new 32-bit EF list prepared for specified sequence length and max offset
-    EliasFanoList32(uint64_t sequence_length, uint64_t max_offset)
+    //! Create an empty new 32-bit EF list prepared for the given data sequence length and max value
+    //! \param sequence_length the length of the data sequence
+    //! \param max_value the max value in the data sequence
+    EliasFanoList32(uint64_t sequence_length, uint64_t max_value)
         : count_(sequence_length - 1),
-          u_(max_offset + 1),
-          max_offset_(max_offset) {
+          u_(max_value + 1),
+          max_value_(max_value) {
         ensure(sequence_length > 0, "sequence length is zero");
         derive_fields();
     }
 
     //! Create a new 32-bit EF list from an existing data sequence
     //! \param count the number of EF data points
-    //! \param u u
+    //! \param u the strict upper bound on the EF data points, i.e. max value plus one
     //! \param data the existing data sequence (portion exceeding the total words will be ignored)
     EliasFanoList32(uint64_t count, uint64_t u, std::span<uint8_t> data)
         : count_(count),
           u_(u),
-          max_offset_(u - 1) {
+          max_value_(u - 1) {
         const auto total_words = derive_fields();
         SILKWORM_ASSERT(total_words * sizeof(uint64_t) <= data.size());
         data = data.subspan(0, total_words * sizeof(uint64_t));
@@ -144,7 +150,7 @@ class EliasFanoList32 {
 
     [[nodiscard]] std::size_t count() const { return count_; }
 
-    [[nodiscard]] std::size_t max() const { return max_offset_; }
+    [[nodiscard]] std::size_t max() const { return max_value_; }
 
     [[nodiscard]] std::size_t min() const { return get(0); }
 
@@ -272,7 +278,7 @@ class EliasFanoList32 {
     uint64_t count_{0};
     uint64_t u_{0};
     uint64_t l_{0};
-    uint64_t max_offset_{0};
+    uint64_t max_value_{0};
     uint64_t i_{0};
     Uint64Sequence data_;
 };

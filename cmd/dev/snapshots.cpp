@@ -44,6 +44,9 @@
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/bittorrent/web_seed_client.hpp>
 #include <silkworm/db/snapshots/index/btree_index.hpp>
+#include <silkworm/db/snapshots/index/existence_index.hpp>
+#include <silkworm/db/snapshots/rec_split/murmur_hash3.hpp>
+#include <silkworm/db/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/snapshot_repository.hpp>
@@ -99,6 +102,7 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
     create_index,
     open_index,
     open_btree_index,
+    open_existence_index,
     decode_segment,
     download,
     lookup_header,
@@ -220,10 +224,12 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
             ->capture_default_str();
     }
 
-    commands[SnapshotTool::open_btree_index]
-        ->add_option("--file", snapshot_settings.input_file_path, ".kv file to open with associated .bt file")
-        ->required()
-        ->check(CLI::ExistingFile);
+    for (auto& cmd : {commands[SnapshotTool::open_btree_index],
+                      commands[SnapshotTool::open_existence_index]}) {
+        cmd->add_option("--file", snapshot_settings.input_file_path, ".kv file to open with associated .bt file")
+            ->required()
+            ->check(CLI::ExistingFile);
+    }
     commands[SnapshotTool::recompress]
         ->add_option("--file", snapshot_settings.input_file_path, ".seg file to decompress and compress again")
         ->required()
@@ -428,6 +434,63 @@ void open_btree_index(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Open btree index matching: " << matching_count << " different: " << (key_count - matching_count);
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Open btree index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+}
+
+void open_existence_index(const SnapshotSubcommandSettings& settings) {
+    ensure(!settings.input_file_path.empty(), "open_existence_index: --file must be specified");
+    ensure(settings.input_file_path.extension() == ".kv", "open_existence_index: --file must be .kv file");
+
+    std::filesystem::path existence_index_file_path = settings.input_file_path;
+    existence_index_file_path.replace_extension(".kvei");
+    SILK_INFO << "KV file: " << settings.input_file_path.string() << " KVEI file: " << existence_index_file_path.string();
+    const auto salt_path = existence_index_file_path.parent_path().parent_path() / "salt-state.txt";
+    std::ifstream salt_stream{salt_path, std::ios::in | std::ios::binary};
+    std::array<char, sizeof(uint32_t)> salt_bytes{};
+    salt_stream.read(salt_bytes.data(), salt_bytes.size());
+    const uint32_t salt = endian::load_big_u32(reinterpret_cast<uint8_t*>(salt_bytes.data()));
+    SILK_INFO << "Snapshot salt: " << salt;
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    seg::Decompressor kv_decompressor{settings.input_file_path};
+    kv_decompressor.open();
+    snapshots::index::ExistenceIndex::Reader existence_index{existence_index_file_path};
+    SILK_INFO << "Starting KV scan and existence index check";
+
+    struct Hash128 {      // TODO(canepat) move recsplit definition and use that
+        uint64_t first;   // The high 64-bit hash half
+        uint64_t second;  // The low 64-bit hash half
+
+        bool operator<(const Hash128& o) const { return first < o.first || second < o.second; }
+    };
+
+    size_t matching_count{0}, key_count{0};
+    bool is_key{true};
+    Bytes key, value;
+    auto kv_iterator = kv_decompressor.begin();
+    while (kv_iterator != kv_decompressor.end()) {
+        if (is_key) {
+            key = *kv_iterator;
+            ++key_count;
+        } else {
+            value = *kv_iterator;
+            Hash128 key_hash;
+            snapshots::rec_split::MurmurHash3_x64_128(key.data(), key.size(), salt, &key_hash);
+            const bool key_found = existence_index.contains_hash(key_hash.first);
+            SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
+            ensure(key_found,
+                   [&]() { return "open_existence_index: value mismatch for key=" + to_hex(key) + " position=" + std::to_string(key_count); });
+            if (key_found) {
+                ++matching_count;
+            }
+            if (key_count % 10'000'000 == 0) {
+                SILK_INFO << "Existence index check progress: " << key_count << " different: " << (key_count - matching_count);
+            }
+        }
+        ++kv_iterator;
+        is_key = !is_key;
+    }
+    SILK_INFO << "Open existence index matching: " << matching_count << " different: " << (key_count - matching_count);
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Open existence index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
@@ -922,6 +985,9 @@ int main(int argc, char* argv[]) {
                 break;
             case SnapshotTool::open_btree_index:
                 open_btree_index(settings.snapshot_settings);
+                break;
+            case SnapshotTool::open_existence_index:
+                open_existence_index(settings.snapshot_settings);
                 break;
             case SnapshotTool::decode_segment:
                 decode_segment(settings.snapshot_settings, settings.repetitions);

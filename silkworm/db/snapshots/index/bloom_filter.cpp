@@ -16,7 +16,6 @@
 
 #include "bloom_filter.hpp"
 
-#include <format>
 #include <numbers>
 #include <random>
 #include <sstream>
@@ -88,7 +87,8 @@ bool BloomFilter::contains_hash(uint64_t hash) {
 
 void BloomFilter::check_bits_count(uint64_t bits_count) {
     if (bits_count < kMinimumBitsCount) {
-        throw std::runtime_error{std::format("number of bits must be >= {} (was {})", kMinimumBitsCount, bits_count)};
+        throw std::runtime_error{"number of bits must be >= " + std::to_string(kMinimumBitsCount) +
+                                 " (was " + std::to_string(bits_count) + ")"};
     }
 }
 

@@ -22,6 +22,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <vector>
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>

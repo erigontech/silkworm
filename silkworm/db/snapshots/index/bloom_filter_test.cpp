@@ -17,6 +17,7 @@
 #include "bloom_filter.hpp"
 
 #include <random>
+#include <sstream>
 #include <stdexcept>
 
 #include <catch2/catch_test_macros.hpp>

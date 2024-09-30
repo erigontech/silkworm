@@ -21,10 +21,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/sequence.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::snapshots::rec_split::encoding {
+namespace silkworm::snapshots::encoding {
 
 static const std::size_t kGolombRiceTestNumKeys{128};
 static const std::size_t kGolombRiceTestNumTrees{1'000};
@@ -86,4 +85,4 @@ TEST_CASE("GolombRiceVector", "[silkworm][recsplit][golomb_rice]") {
     }
 }
 
-}  // namespace silkworm::snapshots::rec_split::encoding
+}  // namespace silkworm::snapshots::encoding

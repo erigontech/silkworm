@@ -35,7 +35,7 @@ BTreeIndex::BTreeIndex(seg::Decompressor& kv_decompressor,
 
     // Gracefully handle the case of empty index file before memory mapping to avoid error
     if (std::filesystem::file_size(file_path_) == 0) {
-        return;
+        throw std::runtime_error("index " + file_path_.filename().string() + " is empty");
     }
 
     // Either use given memory-mapped region or create a new one
@@ -71,9 +71,6 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, DataIterat
 }
 
 std::optional<Bytes> BTreeIndex::get(ByteView key, DataIterator data_it) {
-    if (empty()) {
-        return std::nullopt;
-    }
     const auto [key_found, _, data_index] = btree_->get(key, data_it);
     if (!key_found) {
         return std::nullopt;

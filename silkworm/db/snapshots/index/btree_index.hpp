@@ -67,11 +67,8 @@ class BTreeIndex {
     //! Return the Elias-Fano encoding of the sequence of key offsets or nullptr if not present
     const EliasFanoList32* data_offsets() const { return data_offsets_.get(); }
 
-    //! Is this index empty or not?
-    bool empty() const { return data_offsets_ ? data_offsets_->sequence_length() == 0 : true; }
-
     //! Return the number of keys included into this index
-    size_t key_count() const { return data_offsets_ ? data_offsets_->sequence_length() : 0; };
+    size_t key_count() const { return data_offsets_->sequence_length(); };
 
     //! Seek and return a cursor at position where key >= \p seek_key
     //! \param seek_key the given key at which the cursor must be seeked

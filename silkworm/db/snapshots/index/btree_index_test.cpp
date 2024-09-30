@@ -104,8 +104,7 @@ TEST_CASE("BTreeIndex", "[db]") {
         // Open the KV and BT index files
         seg::Decompressor kv_decompressor{kv_file_path};
         kv_decompressor.open();
-        BTreeIndex bt_index{kv_decompressor, index_file.path()};
-        CHECK(bt_index.empty());
+        CHECK_THROWS_AS(BTreeIndex(kv_decompressor, index_file.path()), std::runtime_error);
     }
 
     // Prepare sample uncompressed KV file containing 3 key-value pairs and its BT index file
@@ -115,7 +114,6 @@ TEST_CASE("BTreeIndex", "[db]") {
     seg::Decompressor kv_decompressor{kv_file_path};
     kv_decompressor.open();
     BTreeIndex bt_index{kv_decompressor, bt_file_path};
-    REQUIRE(!bt_index.empty());
     REQUIRE(bt_index.key_count() == 3);
 
     SECTION("BTreeIndex::get") {

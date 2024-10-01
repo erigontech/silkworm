@@ -1468,7 +1468,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
         std::shared_ptr<EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         std::vector<TraceCallResult> trace_call_result(transactions.size());
         for (size_t index = 0; index < transactions.size(); index++) {
@@ -1531,7 +1531,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         StateAddresses state_addresses(initial_ibs);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number);
-        EVMExecutor executor{chain_config, workers_, state};
+        EVMExecutor executor{block, chain_config, workers_, state};
 
         std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
@@ -1591,7 +1591,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         TraceDeployResult result;
 
@@ -1650,7 +1650,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1676,7 +1676,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1704,7 +1704,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1734,7 +1734,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         for (size_t i = 0; i < block.transactions.size(); i++) {
             auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
@@ -1842,7 +1842,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         tracers.push_back(tracer);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
         for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
             silkworm::Transaction txn{block.transactions[idx]};
             const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);

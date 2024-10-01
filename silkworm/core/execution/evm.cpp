@@ -270,45 +270,6 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
-CallResult EVM::deduct_entry_fees(const Transaction& txn) const {
-    if (!bailout_) {
-        const evmc_revision rev{revision()};
-        const intx::uint256 base_fee_per_gas{block().header.base_fee_per_gas.value_or(0)};
-
-        // EIP-1559 normal gas cost
-        intx::uint256 required_funds;
-        if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
-            // This method should be called after check (max_fee and base_fee) present in pre_check() method
-            const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
-                                                                                            : txn.max_priority_fee_per_gas};
-            required_funds = txn.gas_limit * effective_gas_price;
-        } else {
-            required_funds = 0;
-        }
-
-        // EIP-4844 blob gas cost (calc_data_fee)
-        if (block().header.blob_gas_used && rev >= EVMC_CANCUN) {
-            // compute blob fee for eip-4844 data blobs if any
-            const intx::uint256 blob_gas_price{block().header.blob_gas_price().value_or(0)};
-            required_funds += txn.total_blob_gas() * blob_gas_price;
-        }
-
-        intx::uint512 maximum_cost = required_funds;
-        if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
-            maximum_cost = txn.maximum_gas_cost();
-        }
-
-        const auto owned_funds = state_.get_balance(*txn.sender());
-        if (owned_funds < maximum_cost + txn.value) {
-            std::string from = address_to_hex(*txn.sender());
-            std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
-            return {.status = EVMC_INSUFFICIENT_BALANCE, .error_message = msg};
-        }
-        state_.subtract_from_balance(*txn.sender(), required_funds);
-    }
-    return {.status = EVMC_SUCCESS};
-}
-
 evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {
     const evmc_revision rev{revision()};
     if (exo_evm) {

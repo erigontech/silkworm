@@ -270,6 +270,10 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
+        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+                co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
+            }));
         EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
@@ -277,6 +281,10 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
+            }));
+        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
+                co_return kAccountChangeSetValue1;
             }));
 
         const auto block_number = 5'405'095;  // 0x5279A7

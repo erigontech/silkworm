@@ -44,8 +44,7 @@ namespace silkworm {
     if (!rule_set) {
         return ValidationResult::kUnknownProtocolRuleSet;
     }
-    constexpr auto kBailout = false;
-    ExecutionProcessor processor{block, *rule_set, state, chain_config, kBailout};
+    ExecutionProcessor processor{block, *rule_set, state, chain_config};
 
     if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
         return res;

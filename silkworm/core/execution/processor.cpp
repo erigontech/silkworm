@@ -25,8 +25,8 @@
 namespace silkworm {
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state,
-                                       const ChainConfig& config, bool bailout)
-    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config, bailout} {
+                                       const ChainConfig& config)
+    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
     evm_.transfer = rule_set.transfer_func();
 }
@@ -81,7 +81,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     const CallResult vm_res{evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
 
-    const uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left, vm_res.gas_refund)};
+    const uint64_t gas_used{txn.gas_limit - refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund)};
 
     // award the fee recipient
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
@@ -110,11 +110,70 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     std::swap(receipt.logs, state_.logs());
 }
 
+CallResult ExecutionProcessor::call_with_evm(const Transaction& txn, EVM& call_evm, bool bailout, bool refund) noexcept {
+    const std::optional sender{txn.sender()};
+
+    SILKWORM_ASSERT(protocol::validate_call_precheck(txn, call_evm) == ValidationResult::kOk);
+    SILKWORM_ASSERT(protocol::validate_call_funds(txn, call_evm, state_.get_balance(*txn.sender()), bailout) == ValidationResult::kOk);
+
+    const BlockHeader& header{call_evm.block().header};
+    const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
+
+    const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                    : txn.max_priority_fee_per_gas};
+    state_.access_account(*sender);
+
+    if (txn.to) {
+        state_.access_account(*txn.to);
+        // EVM itself increments the nonce for contract creation
+        state_.set_nonce(*sender, state_.get_nonce(*txn.sender()) + 1);
+    }
+
+    for (const AccessListEntry& ae : txn.access_list) {
+        state_.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            state_.access_storage(ae.account, key);
+        }
+    }
+
+    if (!bailout) {
+        const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, call_evm);
+        state_.subtract_from_balance(*txn.sender(), required_funds);
+    }
+    const intx::uint128 g0{protocol::intrinsic_gas(txn, call_evm.revision())};
+    const auto result = call_evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
+
+    uint64_t gas_left{result.gas_left};
+    uint64_t gas_used{txn.gas_limit - result.gas_left};
+
+    if (refund && !bailout) {
+        gas_used = txn.gas_limit - refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund);
+        gas_left = txn.gas_limit - gas_used;
+    }
+
+    // Reward the fee recipient
+    const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)
+                                                                                     : txn.max_priority_fee_per_gas};
+
+    state_.add_to_balance(call_evm.beneficiary, priority_fee_per_gas * gas_used);
+
+    for (auto& tracer : call_evm.tracers()) {
+        tracer.get().on_reward_granted(result, state_);
+    }
+    state_.finalize_transaction(call_evm.revision());
+
+    return {result.status, gas_left, gas_used, result.data, result.error_message};
+}
+
+void ExecutionProcessor::reset() {
+    state_.clear_journal_and_substate();
+}
+
 uint64_t ExecutionProcessor::available_gas() const noexcept {
     return evm_.block().header.gas_limit - cumulative_gas_used_;
 }
 
-uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) noexcept {
+uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, const intx::uint256& effective_gas_price, uint64_t gas_left, uint64_t gas_refund) noexcept {
     const evmc_revision rev{evm_.revision()};
 
     const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon
@@ -123,8 +182,6 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     uint64_t refund = std::min(gas_refund, max_refund);
     gas_left += refund;
 
-    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
-    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
     state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
 
     return gas_left;
@@ -142,6 +199,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
 
     receipts.resize(block.transactions.size());
     auto receipt_it{receipts.begin()};
+
     for (const auto& txn : block.transactions) {
         const ValidationResult err{protocol::validate_transaction(txn, state_, available_gas())};
         if (err != ValidationResult::kOk) {

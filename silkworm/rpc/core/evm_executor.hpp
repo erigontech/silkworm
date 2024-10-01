@@ -30,6 +30,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/evm.hpp>
+#include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -102,12 +103,12 @@ class EVMExecutor {
         bool gas_bailout = false);
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
-    EVMExecutor(const silkworm::ChainConfig& config, WorkerPool& workers, std::shared_ptr<State> state)
+    EVMExecutor(const silkworm::Block& block, const silkworm::ChainConfig& config, WorkerPool& workers, std::shared_ptr<State> state)
         : config_(config),
           workers_{workers},
           state_{std::move(state)},
-          ibs_state_{*state_},
-          rule_set_{protocol::rule_set_factory(config)} {
+          rule_set_{protocol::rule_set_factory(config)},
+          execution_processor_{block, *rule_set_, *state_, config} {
         SILKWORM_ASSERT(rule_set_);
         if (!has_service<AnalysisCacheService>(workers_)) {
             make_service<AnalysisCacheService>(workers_);
@@ -129,7 +130,7 @@ class EVMExecutor {
 
     void call_first_n(const silkworm::Block& block, uint64_t n, const Tracers& tracers = {}, bool refund = true, bool gas_bailout = false);
 
-    const IntraBlockState& get_ibs_state() { return ibs_state_; }
+    const IntraBlockState& get_ibs_state() { return execution_processor_.get_ibs_state(); }
 
   private:
     struct PreCheckResult {
@@ -138,13 +139,11 @@ class EVMExecutor {
     };
     static std::optional<PreCheckResult> pre_check(const EVM& evm, const silkworm::Transaction& txn,
                                                    const intx::uint256& base_fee_per_gas, const intx::uint128& g0);
-    uint64_t refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund);
-
     const silkworm::ChainConfig& config_;
     WorkerPool& workers_;
     std::shared_ptr<State> state_;
-    IntraBlockState ibs_state_;
     protocol::RuleSetPtr rule_set_;
+    ExecutionProcessor execution_processor_;
 };
 
 }  // namespace silkworm::rpc

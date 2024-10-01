@@ -33,7 +33,6 @@ namespace silkworm {
 
 static constexpr auto kMiner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 static constexpr auto kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
-static constexpr auto kBailout = false;
 
 TEST_CASE("Execute two blocks") {
     // ---------------------------------------
@@ -166,7 +165,7 @@ TEST_CASE("Execute block with tracing") {
     std::vector<Receipt> receipts;
     const auto rule_set{protocol::rule_set_factory(chain_config)};
     REQUIRE(rule_set);
-    ExecutionProcessor processor{block, *rule_set, state, chain_config, kBailout};
+    ExecutionProcessor processor{block, *rule_set, state, chain_config};
 
     BlockTracer block_tracer{};
     processor.evm().add_tracer(block_tracer);

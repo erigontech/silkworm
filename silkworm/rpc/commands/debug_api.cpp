@@ -319,7 +319,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             auto account_opt = state->read_account(address);
             account_opt.value_or(silkworm::Account{});
 
-            EVMExecutor executor{chain_config, workers_, state};
+            EVMExecutor executor{block, chain_config, workers_, state};
 
             uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index);
             for (uint64_t idx{0}; idx < index; idx++) {

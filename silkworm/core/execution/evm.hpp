@@ -123,8 +123,6 @@ class EVM {
 
     gsl::not_null<TransferFunc*> transfer{standard_transfer};
 
-    CallResult deduct_entry_fees(const Transaction& txn) const;
-
   private:
     friend class EvmHost;
 

@@ -33,6 +33,8 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
+#include "silkworm/core/execution/processor.hpp"
+
 namespace silkworm::rpc {
 
 std::string ExecutionResult::error_message(bool full_error) const {
@@ -161,24 +163,6 @@ std::string EVMExecutor::get_error_message(int64_t error_code, const Bytes& erro
     return error_message;
 }
 
-uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund) {
-    const evmc_revision rev{evm.revision()};
-    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon
-                                                          : protocol::kMaxRefundQuotientFrontier};
-    const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
-    const uint64_t refund = std::min(gas_refund, max_refund);
-    gas_left += refund;
-
-    const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
-    SILK_DEBUG << "EVMExecutor::refund_gas txn.max_fee_per_gas: " << txn.max_fee_per_gas << " base_fee_per_gas: " << base_fee_per_gas;
-
-    const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
-                                                                                    : txn.max_priority_fee_per_gas};
-    SILK_DEBUG << "EVMExecutor::refund_gas effective_gas_price: " << effective_gas_price;
-    ibs_state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
-    return gas_left;
-}
-
 void EVMExecutor::call_first_n(const silkworm::Block& block, const uint64_t n, const Tracers& tracers, bool refund, bool gas_bailout) {
     for (size_t idx = 0; idx < block.transactions.size() && idx < n; idx++) {
         const auto& txn = block.transactions.at(idx);
@@ -187,47 +171,55 @@ void EVMExecutor::call_first_n(const silkworm::Block& block, const uint64_t n, c
 }
 
 void EVMExecutor::reset() {
-    ibs_state_.clear_journal_and_substate();
+    execution_processor_.reset();
 }
 
-std::optional<EVMExecutor::PreCheckResult> EVMExecutor::pre_check(const EVM& evm, const silkworm::Transaction& txn,
-                                                                  const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
-    const evmc_revision rev{evm.revision()};
-
-    if (rev >= EVMC_LONDON) {
-        if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
-            if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
-                std::string from = address_to_hex(*txn.sender());
-                std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
-                                    intx::to_string(txn.max_fee_per_gas);
-                return PreCheckResult{error, PreCheckErrorCode::kTipHigherThanFeeCap};
-            }
-
-            if (txn.max_fee_per_gas < base_fee_per_gas) {
-                const std::string from = address_to_hex(*txn.sender());
-                std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
-                                    intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(base_fee_per_gas);
-                return PreCheckResult{error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
-            }
+ExecutionResult convert_validated_precheck(const ValidationResult& result, const Block& block, const silkworm::Transaction& txn, const EVM& evm) {
+    std::string from = address_to_hex(*txn.sender());
+    switch (result) {
+        case ValidationResult::kMaxPriorityFeeGreaterThanMax: {
+            std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
+                                intx::to_string(txn.max_fee_per_gas);
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kTipHigherThanFeeCap};
         }
-    } else {
-        if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
-            return PreCheckResult{"eip-1559 transactions require london", PreCheckErrorCode::kIsNotLondon};
+        case ValidationResult::kMaxFeeLessThanBase: {
+            std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
+                                intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(*block.header.base_fee_per_gas);
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
         }
-    }
-
-    if (rev >= EVMC_CANCUN) {
-        if (!evm.block().header.excess_blob_gas) {
+        case ValidationResult::kIntrinsicGas: {
+            const intx::uint128 g0{protocol::intrinsic_gas(txn, evm.revision())};
+            std::string error = "intrinsic gas too low: have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kIntrinsicGasTooLow};
+        }
+        case ValidationResult::kWrongBlockGas: {
             std::string error = "internal failure: Cancun is active but ExcessBlobGas is nil";
-            return PreCheckResult{error, PreCheckErrorCode::kInternalError};
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInternalError};
+        }
+        case ValidationResult::kUnsupportedTransactionType: {
+            std::string error = "eip-1559 transactions require london";
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kIsNotLondon};
+        }
+        default: {
+            std::string error = "internal failure";
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInternalError};
         }
     }
+}
 
-    if (txn.gas_limit < g0) {
-        std::string error = "intrinsic gas too low: have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
-        return PreCheckResult{error, PreCheckErrorCode::kIntrinsicGasTooLow};
+ExecutionResult convert_validated_funds(const Block& block, const silkworm::Transaction& txn, const EVM& evm, const intx::uint256& owned_funds) {
+    std::string from = address_to_hex(*txn.sender());
+    const intx::uint256 base_fee_per_gas{block.header.base_fee_per_gas.value_or(0)};
+
+    const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                    : txn.max_priority_fee_per_gas};
+    const auto required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm);
+    intx::uint512 maximum_cost = required_funds;
+    if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
+        maximum_cost = txn.maximum_gas_cost();
     }
-    return std::nullopt;
+    std::string error = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
+    return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInsufficientFunds};
 }
 
 ExecutionResult EVMExecutor::call(
@@ -235,12 +227,10 @@ ExecutionResult EVMExecutor::call(
     const silkworm::Transaction& txn,
     const Tracers& tracers,
     bool refund,
-    bool gas_bailout) {
-    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
-               << " gas_bailout: " << gas_bailout << " transaction: " << rpc::Transaction{txn};
-
+    bool bailout) {
     auto& svc = use_service<AnalysisCacheService>(workers_);
-    EVM evm{block, ibs_state_, config_, gas_bailout};
+    EVM evm{block, execution_processor_.get_ibs_state(), config_, bailout};
+
     evm.analysis_cache = svc.get_analysis_cache();
     evm.state_pool = svc.get_object_pool();
     evm.beneficiary = rule_set_->get_beneficiary(block.header);
@@ -253,68 +243,22 @@ ExecutionResult EVMExecutor::call(
     if (!txn.sender()) {
         return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
     }
-    ibs_state_.access_account(*txn.sender());
 
-    const evmc_revision rev{evm.revision()};
-    const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
-    const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
-    SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
-
-    if (const auto pre_check_result = pre_check(evm, txn, base_fee_per_gas, g0)) {
-        Bytes data{};
-        return {std::nullopt, txn.gas_limit, data, pre_check_result->pre_check_error, pre_check_result->pre_check_error_code};
+    if (const auto result = protocol::validate_call_precheck(txn, evm);
+        result != ValidationResult::kOk) {
+        return convert_validated_precheck(result, block, txn, evm);
     }
 
-    if (const auto result = evm.deduct_entry_fees(txn); result.status != EVMC_SUCCESS) {
-        return {std::nullopt, txn.gas_limit, {}, result.error_message, PreCheckErrorCode::kInsufficientFunds};
-    }
-    if (txn.to.has_value()) {
-        ibs_state_.access_account(*txn.to);
-        // EVM itself increments the nonce for contract creation
-        ibs_state_.set_nonce(*txn.sender(), ibs_state_.get_nonce(*txn.sender()) + 1);
-    }
-    for (const AccessListEntry& ae : txn.access_list) {
-        ibs_state_.access_account(ae.account);
-        for (const evmc::bytes32& key : ae.storage_keys) {
-            ibs_state_.access_storage(ae.account, key);
-        }
+    const auto owned_funds = execution_processor_.get_ibs_state().get_balance(*txn.sender());
+
+    if (const auto result = protocol::validate_call_funds(txn, evm, owned_funds, bailout);
+        result != ValidationResult::kOk) {
+        return convert_validated_funds(block, txn, evm, owned_funds);
     }
 
-    CallResult result;
-    try {
-        SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start";
-        result = evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
-        SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " gas_left: " << result.gas_left << " end";
-    } catch (const std::exception& e) {
-        SILK_ERROR << "exception: evm_execute: " << e.what() << "\n";
-        std::string error_msg = "evm.execute: ";
-        error_msg.append(e.what());
-        return {std::nullopt, txn.gas_limit, /* data */ {}, error_msg};
-    } catch (...) {
-        SILK_ERROR << "exception: evm_execute: unexpected exception\n";
-        return {std::nullopt, txn.gas_limit, /* data */ {}, "evm.execute: unknown exception"};
-    }
+    const auto result = execution_processor_.call_with_evm(txn, evm, bailout, refund);
 
-    uint64_t gas_left{result.gas_left};
-    uint64_t gas_used{txn.gas_limit - result.gas_left};
-
-    if (refund && !gas_bailout) {
-        gas_used = txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund);
-        gas_left = txn.gas_limit - gas_used;
-    }
-
-    // Reward the fee recipient
-    const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)
-                                                                                     : txn.max_priority_fee_per_gas};
-    SILK_DEBUG << "EVMExecutor::call evm.beneficiary: " << evm.beneficiary << " balance: " << priority_fee_per_gas * gas_used;
-    ibs_state_.add_to_balance(evm.beneficiary, priority_fee_per_gas * gas_used);
-
-    for (auto& tracer : evm.tracers()) {
-        tracer.get().on_reward_granted(result, ibs_state_);
-    }
-    ibs_state_.finalize_transaction(rev);
-
-    ExecutionResult exec_result{result.status, gas_left, result.data};
+    ExecutionResult exec_result{result.status, result.gas_left, result.data};
 
     SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_message() << " #data: " << exec_result.data.size() << " end";
 
@@ -334,7 +278,7 @@ Task<ExecutionResult> EVMExecutor::call(
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
         auto state = state_factory(this_executor, block.header.number, chain_storage);
-        EVMExecutor executor{config, workers, state};
+        EVMExecutor executor{block, config, workers, state};
         return executor.call(block, txn, tracers, refund, gas_bailout);
     });
     co_return execution_result;

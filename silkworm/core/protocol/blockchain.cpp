@@ -89,8 +89,7 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    constexpr auto kBailout = false;
-    ExecutionProcessor processor{block, *rule_set_, state_, config_, kBailout};
+    ExecutionProcessor processor{block, *rule_set_, state_, config_};
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 

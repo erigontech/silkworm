@@ -33,13 +33,15 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state, const ChainConfig& config, bool bailout);
+    ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state, const ChainConfig& config);
 
     /**
      * Execute a transaction, but do not write to the DB yet.
      * Precondition: transaction must be valid.
      */
     void execute_transaction(const Transaction& txn, Receipt& receipt) noexcept;
+
+    CallResult call_with_evm(const Transaction& txn, EVM& evm, bool bailout, bool refund) noexcept;
 
     //! \brief Execute the block.
     //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.
@@ -53,6 +55,8 @@ class ExecutionProcessor {
 
     EVM& evm() noexcept { return evm_; }
     const EVM& evm() const noexcept { return evm_; }
+    IntraBlockState& get_ibs_state() { return state_; }
+    void reset();
 
   private:
     /**
@@ -68,7 +72,7 @@ class ExecutionProcessor {
     //! \brief Notify the registered tracers at the end of block execution.
     void notify_block_execution_end(const Block& block);
 
-    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) noexcept;
+    uint64_t refund_gas(const Transaction& txn, const intx::uint256& effective_gas_price, uint64_t gas_left, uint64_t gas_refund) noexcept;
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;

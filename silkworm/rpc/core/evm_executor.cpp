@@ -324,7 +324,7 @@ ExecutionResult EVMExecutor::call(
 ExecutionResult EVMExecutor::call_with_receipt(
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
-    silkworm::Receipt& receipt,
+    Receipt& receipt,
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
@@ -409,8 +409,14 @@ ExecutionResult EVMExecutor::call_with_receipt(
     receipt.success = result.status == EVMC_SUCCESS;
     receipt.bloom = logs_bloom(ibs_state_.logs());
     receipt.gas_used = gas_used;
-    receipt.type = txn.type;
-    std::swap(receipt.logs, ibs_state_.logs());
+    receipt.type = static_cast<uint8_t>(txn.type);
+    for (size_t j{0}; j < ibs_state_.logs().size(); j++) {
+        Log rpc_log;
+        rpc_log.address = ibs_state_.logs()[j].address;
+        rpc_log.data = ibs_state_.logs()[j].data;
+        rpc_log.topics = ibs_state_.logs()[j].topics;
+        receipt.logs.push_back(rpc_log);
+    }
 
     ExecutionResult exec_result{result.status, gas_left, result.data};
 

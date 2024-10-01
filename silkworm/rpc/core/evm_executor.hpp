@@ -38,6 +38,7 @@
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
+#include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc {
 
@@ -129,7 +130,7 @@ class EVMExecutor {
     ExecutionResult call_with_receipt(
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
-        silkworm::Receipt& receipt,
+        Receipt& receipt,
         const Tracers& tracers = {},
         bool refund = true,
         bool gas_bailout = false);

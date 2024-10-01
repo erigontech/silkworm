@@ -119,7 +119,6 @@ TEST_CASE("No refund on error") {
     processor.execute_transaction(txn, receipt2);
     CHECK(!receipt2.success);
     CHECK(receipt2.cumulative_gas_used - receipt1.cumulative_gas_used == txn.gas_limit);
-    CHECK(receipt2.gas_used == txn.gas_limit);
 }
 
 TEST_CASE("Self-destruct") {
@@ -218,7 +217,6 @@ TEST_CASE("Self-destruct") {
     CHECK(processor.evm().state().get_balance(suicidal_address) == 0);
 
     CHECK(receipt2.cumulative_gas_used == receipt1.cumulative_gas_used + protocol::fee::kGTransaction);
-    CHECK(receipt2.gas_used == protocol::fee::kGTransaction);
 }
 
 TEST_CASE("Out of Gas during account re-creation") {

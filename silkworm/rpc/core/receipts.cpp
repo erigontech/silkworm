@@ -153,24 +153,13 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, co
         uint64_t cumulative_gas_used{0};
 
         for (size_t index = 0; index < transactions.size(); index++) {
-            silkworm::Receipt evm_receipt{};
-            Receipt receipt{};
+            Receipt receipt;
 
             const silkworm::Transaction& transaction{block.transactions[index]};
-            auto result = executor.call_with_receipt(block, transaction, evm_receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
+            auto result = executor.call_with_receipt(block, transaction, receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
 
-            cumulative_gas_used += evm_receipt.gas_used;
+            cumulative_gas_used += receipt.gas_used;
             receipt.cumulative_gas_used = cumulative_gas_used;
-            receipt.success = result.success();
-            receipt.gas_used = evm_receipt.gas_used;
-            receipt.bloom = evm_receipt.bloom;
-            for (size_t j{0}; j < evm_receipt.logs.size(); j++) {
-                Log rpc_log;
-                rpc_log.address = evm_receipt.logs[j].address;
-                rpc_log.data = evm_receipt.logs[j].data;
-                rpc_log.topics = evm_receipt.logs[j].topics;
-                receipt.logs.push_back(rpc_log);
-            }
             rpc_receipts.push_back(receipt);
 
             executor.reset();

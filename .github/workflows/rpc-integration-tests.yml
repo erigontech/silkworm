@@ -60,12 +60,8 @@ jobs:
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          if [ ${{ matrix.backend }} == 'Erigon2' ]; then
-             ${{runner.workspace}}/silkworm/.github/workflows/e2_run_daemon.sh $ERIGON_DATA_DIR ./jwt.hex &
-          else
-             ${{runner.workspace}}/silkworm/.github/workflows/e3_run_daemon.sh $ERIGON_DATA_DIR ./jwt.hex &
-          fi
-          RPC_DAEMON_PID=$?
+          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_daemon.sh ${{ matrix.backend }} $ERIGON_DATA_DIR ./jwt.hex &
+          RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
       - name: Run RPC Integration Tests

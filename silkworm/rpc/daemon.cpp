@@ -37,7 +37,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
@@ -254,8 +253,8 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
 
-    // Schedule the retrieval of Erigon data storage model as first task on the execution contexts
-    schedule_data_format_retrieval();
+    // Specify if Erigon3 data storage model must be used or not
+    db::state::set_data_format_v3(settings_.use_erigon3_data_format);
 
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();
@@ -325,18 +324,6 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
     db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
     return std::make_unique<db::kv::api::DirectClient>(
         std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
-}
-
-void Daemon::schedule_data_format_retrieval() {
-    // Schedule the retrieval of Erigon data storage model as first task on all the execution contexts
-    // This ensures that the data format is set in any case *before* any API request handling happens
-    for (size_t i = 0; i < context_pool_.size(); ++i) {
-        auto& context = context_pool_.next_context();
-        concurrency::spawn_future(*context.io_context(), [this, &context]() -> Task<void> {
-            const auto kv_client = make_kv_client(context);
-            co_await db::state::set_data_format(*kv_client);
-        });
-    }
 }
 
 void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::ExecutionEngine>>& engines) {

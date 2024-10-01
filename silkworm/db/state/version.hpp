@@ -16,14 +16,9 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/task.hpp>
-
-#include <silkworm/db/kv/api/client.hpp>
-#include <silkworm/db/kv/api/transaction.hpp>
-
 namespace silkworm::db::state {
 
-Task<void> set_data_format(kv::api::Client& kv_client);
+void set_data_format_v3(bool is_data_format_v3);
 
 bool is_data_format_v3();
 

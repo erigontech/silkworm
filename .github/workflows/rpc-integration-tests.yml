@@ -67,17 +67,8 @@ jobs:
       - name: Run RPC Integration Tests
         id: test_step
         run: |
-          set +e # Disable exit on error
-          
-          cd ${{runner.workspace}}/rpc-tests/integration
-          rm -rf ./mainnet/results/
-          
           # Run RPC integration test runner via http
-          if [ ${{ matrix.backend }} == 'Erigon2' ]; then
-             ${{runner.workspace}}/silkworm/.github/workflows/e2_run_tests.sh ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
-          else
-             ${{runner.workspace}}/silkworm/.github/workflows/e3_run_tests.sh ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex 
-          fi
+          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_tests.sh ${{ matrix.backend }} ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/ 
 
           # Capture test runner script exit status
           test_exit_status=$?
@@ -87,9 +78,6 @@ jobs:
             echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
           else
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
-            
-            # Save failed results to a directory with timestamp and commit hash
-            cp -r ${{runner.workspace}}/rpc-tests/integration/mainnet/results/ $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/
           fi
 
       - name: Stop Silkworm RpcDaemon

@@ -100,12 +100,12 @@ TEST_CASE("db access layer addendum") {
     SECTION("header with biggest td") {
         CHECK_NOTHROW(db::write_total_difficulty(tx, header.number, header.hash(), 1234));
 
-        header.number++;
+        ++header.number;
         CHECK_NOTHROW(db::write_total_difficulty(tx, header.number, header.hash(), 100'000'001'000'000));
         auto expected_max_bn = header.number;
         auto expected_max_hash = header.hash();
 
-        header.number++;
+        ++header.number;
         CHECK_NOTHROW(db::write_total_difficulty(tx, header.number, header.hash(), 34'000'000'000));
 
         auto [max_bn, max_hash] = header_with_biggest_td(tx);
@@ -119,11 +119,11 @@ TEST_CASE("db access layer addendum") {
 
         CHECK_NOTHROW(db::write_total_difficulty(tx, header.number, header.hash(), 1234));
 
-        header.number++;
+        ++header.number;
         CHECK_NOTHROW(db::write_total_difficulty(tx, header.number, header.hash(), 100'000'001'000'000));
         bad_headers.insert(header.hash());
 
-        header.number++;
+        ++header.number;
         CHECK_NOTHROW(db::write_total_difficulty(tx, header.number, header.hash(), 34'000'000'000));
         auto expected_max_bn = header.number;
         auto expected_max_hash = header.hash();

@@ -24,7 +24,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::F
     if (addresses.has_value()) {
         const auto& address_vector = addresses.value();
         out << "[";
-        for (std::size_t i{0}; i < address_vector.size(); i++) {
+        for (std::size_t i{0}; i < address_vector.size(); ++i) {
             out << address_vector[i];
             if (i != address_vector.size() - 1) {
                 out << " ";
@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::F
 
 std::ostream& operator<<(std::ostream& out, const silkworm::rpc::FilterSubTopics& subtopics) {
     out << "[";
-    for (std::size_t i{0}; i < subtopics.size(); i++) {
+    for (std::size_t i{0}; i < subtopics.size(); ++i) {
         out << silkworm::to_hex(subtopics[i], true);
         if (i != subtopics.size() - 1) {
             out << " ";
@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::F
     if (topics.has_value()) {
         const auto& topic_vector = topics.value();
         out << "[";
-        for (std::size_t i{0}; i < topic_vector.size(); i++) {
+        for (std::size_t i{0}; i < topic_vector.size(); ++i) {
             out << topic_vector[i];
             if (i != topic_vector.size() - 1) {
                 out << " ";

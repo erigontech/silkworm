@@ -120,7 +120,7 @@ TEST_CASE("PatriciaTreeMatchFinder3") {
     };
 
     REQUIRE(matches.size() == expected_matches.size());
-    for (size_t i = 0; i < matches.size(); i++) {
+    for (size_t i = 0; i < matches.size(); ++i) {
         auto& match = matches[i];
         auto& expected_match = expected_matches[i];
         CHECK(match.value == expected_match.value);

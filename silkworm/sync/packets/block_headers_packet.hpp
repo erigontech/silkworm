@@ -44,7 +44,7 @@ inline std::ostream& operator<<(std::ostream& os, const BlockHeadersPacket66& pa
     os << " headers(bn)=";
 
     const size_t max_display = 3;
-    for (size_t i = 0; i < std::min(packet.request.size(), max_display); i++) {
+    for (size_t i = 0; i < std::min(packet.request.size(), max_display); ++i) {
         os << packet.request[i].number << ",";
     }
     if (packet.request.size() > max_display) os << "...";

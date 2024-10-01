@@ -39,9 +39,9 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
 
             if (send_outcome.empty()) {
                 hc.request_nack(packet_);
-                nack_reqs_++;
+                ++nack_reqs_;
             } else {
-                sent_reqs_++;
+                ++sent_reqs_;
             }
         } catch (const boost::system::system_error& se) {
             SILK_TRACE << "OutboundGetBlockHeaders failed send_packet error: " << se.what();

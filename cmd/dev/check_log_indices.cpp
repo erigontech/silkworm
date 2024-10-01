@@ -133,7 +133,7 @@ void trace(const Log& log) {
     int i{0};
     for (const auto& t : log.topics) {
         log::Trace() << "topic[" << i << "]: " << to_hex(t);
-        i++;
+        ++i;
     }
 }
 
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
             }
             if (reached_block_number != block_number) {
                 reached_block_number = block_number;
-                processed_block_numbers++;
+                ++processed_block_numbers;
             }
 
             std::vector<Log> transaction_logs;
@@ -238,7 +238,7 @@ int main(int argc, char* argv[]) {
                         log::Info() << "block " << block_number << " tx " << tx_id << " generated log for " << log.address;
                     }
                     check_address_index(block_number, log.address, log_address_cursor.get());
-                    processed_addresses_count++;
+                    ++processed_addresses_count;
                 }
 
                 if (settings.index != TargetIndex::kLogAddress) {
@@ -253,7 +253,7 @@ int main(int argc, char* argv[]) {
             }
             processed_logs_count += transaction_logs.size();
 
-            processed_transaction_count++;
+            ++processed_transaction_count;
             if (processed_transaction_count % 100'000 == 0) {
                 log::Info() << "Scanned transactions " << processed_transaction_count << " processed logs " << processed_logs_count;
             }

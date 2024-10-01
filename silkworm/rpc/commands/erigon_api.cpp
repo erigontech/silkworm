@@ -213,7 +213,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
             co_return;
         }
 
-        for (size_t i{0}; i < block.transactions.size(); i++) {
+        for (size_t i{0}; i < block.transactions.size(); ++i) {
             receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
         }
 

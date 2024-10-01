@@ -256,7 +256,7 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
 
     SILK_INFO << "Decode snapshot: " << snap_file->path();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    for (int i = 0; i < repetitions; i++) {
+    for (int i = 0; i < repetitions; ++i) {
         Snapshot snapshot{*snap_file};
         snapshot.reopen_segment();
     }
@@ -283,7 +283,7 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
                 const auto txn_count{settings.skip_system_txs && b.txn_count >= 2 ? b.txn_count - 2 : b.txn_count};
                 SILK_TRACE << "Body number: " << num_bodies << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
                            << " #ommers: " << b.ommers.size();
-                num_bodies++;
+                ++num_bodies;
                 num_txns += txn_count;
             }
         }

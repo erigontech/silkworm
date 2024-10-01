@@ -62,7 +62,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
 
             const auto block{block_with_hash->block};
             if (receipts.size() == block.transactions.size()) {
-                for (size_t i{0}; i < block.transactions.size(); i++) {
+                for (size_t i{0}; i < block.transactions.size(); ++i) {
                     receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
                 }
                 reply = make_json_content(request, receipts);

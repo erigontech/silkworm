@@ -84,7 +84,7 @@ void MurmurHash3_x64_128(const void* key, const uint64_t len,
 
     const auto* blocks = reinterpret_cast<const uint64_t*>(data);
 
-    for (std::size_t i{0}; i < num_blocks; i++) {
+    for (std::size_t i{0}; i < num_blocks; ++i) {
         uint64_t k1 = getblock64(blocks, i * 2 + 0);
         uint64_t k2 = getblock64(blocks, i * 2 + 1);
 

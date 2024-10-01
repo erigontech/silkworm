@@ -85,7 +85,7 @@ class Progress {
         return static_cast<uint32_t>(current_counter_ * 100 / max_counter_);
     }
 
-    void step() { current_counter_++; }
+    void step() { ++current_counter_; }
     void set_current(size_t count) { current_counter_ = std::max(count, current_counter_); }
     [[nodiscard]] size_t get_current() const noexcept { return current_counter_; }
     [[nodiscard]] size_t get_increment_count() const noexcept { return bar_width_ ? (max_counter_ / bar_width_) : 0u; }

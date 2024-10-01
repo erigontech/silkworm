@@ -547,7 +547,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
             height,
             [&count, &height](const Block& block) {
                 REQUIRE(block.header.number == height);
-                count++;
+                ++count;
             });
         REQUIRE(processed == 1);
         REQUIRE(processed == count);
@@ -567,7 +567,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
             height,
             [&count, &height](const Block& block) {
                 REQUIRE(block.header.number == height);
-                count++;
+                ++count;
             });
         REQUIRE(processed == 2);
         REQUIRE(processed == count);
@@ -852,7 +852,7 @@ TEST_CASE("read rlp encoded transactions", "[db][access_layer]") {
     REQUIRE(found);
     REQUIRE(rlp_transactions.size() == body.transactions.size());
 
-    for (size_t i = 0; i < rlp_transactions.size(); i++) {
+    for (size_t i = 0; i < rlp_transactions.size(); ++i) {
         Bytes rlp_tx;
         CHECK_NOTHROW(rlp::encode(rlp_tx, body.transactions[i]));
         CHECK(rlp_transactions[i] == rlp_tx);

@@ -825,7 +825,7 @@ ByteView Decompressor::Iterator::next_pattern() {
 
 uint64_t Decompressor::Iterator::next_position(bool clean) {
     if (clean && bit_position_ > 0) {
-        word_offset_++;
+        ++word_offset_;
         bit_position_ = 0;
     }
     SILK_TRACE << "Iterator::next_position word_offset_=" << word_offset_ << " bit_position_=" << int{bit_position_};

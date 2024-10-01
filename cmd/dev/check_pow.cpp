@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
         StopWatch sw;
         sw.start();
         for (uint32_t block_num{options.block_from}; block_num <= options.block_to && !SignalHandler::signalled();
-             block_num++) {
+             ++block_num) {
             if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
                 log::Info() << "Initializing Light Cache for DAG epoch " << epoch_num;

@@ -30,7 +30,7 @@ void lcp_kasai(const TDataPosComparator& data, const int* sa, const int* inv, in
 
     // Process all suffixes one by one starting from
     // first suffix in txt[]
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         // If the current suffix is at n-1, then we don’t
         // have next substring to consider. So lcp is not
         // defined for this substring, we put zero.
@@ -48,7 +48,7 @@ void lcp_kasai(const TDataPosComparator& data, const int* sa, const int* inv, in
         // Directly start matching from k-th index as
         // at-least k-1 characters will match.
         while ((i + k < n) && (j + k < n) && data.has_same_chars(i + k, j + k)) {
-            k++;
+            ++k;
         }
 
         // lcp for the present suffix.
@@ -56,7 +56,7 @@ void lcp_kasai(const TDataPosComparator& data, const int* sa, const int* inv, in
 
         // Deleting the starting character from the string.
         if (k > 0) {
-            k--;
+            --k;
         }
     }
 }

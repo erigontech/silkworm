@@ -379,7 +379,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     block.transactions.erase(block.transactions.cbegin());
     block.transactions.pop_back();
     block.header.number = 11;
-    block.transactions[0].nonce++;
+    ++block.transactions[0].nonce;
 
     insert_block(env, block);
 
@@ -465,7 +465,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     block.transactions.erase(block.transactions.cbegin());
     block.transactions.pop_back();
     block.header.number = 11;
-    block.transactions[0].nonce++;
+    ++block.transactions[0].nonce;
 
     insert_block(env, block);
 
@@ -537,7 +537,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
         insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
-        block.transactions[0].nonce++;
+        ++block.transactions[0].nonce;
     }
 
     // Execute N blocks using an *external* txn, then commit
@@ -560,7 +560,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
         insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
-        block.transactions[0].nonce++;
+        ++block.transactions[0].nonce;
     }
 
     // Execute N blocks using an *external* txn, then commit
@@ -637,8 +637,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
         insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
-        block.transactions[0].nonce++;
-        block.transactions[0].to->bytes[19]++;  // change recipient address to force batch size growth
+        ++block.transactions[0].nonce;
+        ++block.transactions[0].to->bytes[19];  // change recipient address to force batch size growth
     }
 
     // Execute N blocks using an *internal* txn
@@ -660,8 +660,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
         insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
-        block.transactions[0].nonce++;
-        block.transactions[0].to->bytes[19]++;  // change recipient address to force batch size growth
+        ++block.transactions[0].nonce;
+        ++block.transactions[0].to->bytes[19];  // change recipient address to force batch size growth
     }
 
     // Execute N blocks using an *internal* txn, then commit
@@ -732,7 +732,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
         insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
-        block.transactions[0].nonce++;
+        ++block.transactions[0].nonce;
     }
 
     // Execute N blocks using an *external* txn, then commit
@@ -799,8 +799,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
         insert_block(env, block);
         block.transactions.erase(block.transactions.cbegin());
         block.transactions.pop_back();
-        block.transactions[0].nonce++;
-        block.transactions[0].to->bytes[19]++;  // change recipient address to force batch size growth
+        ++block.transactions[0].nonce;
+        ++block.transactions[0].to->bytes[19];  // change recipient address to force batch size growth
     }
 
     // Execute N blocks using an *internal* txn

@@ -125,7 +125,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
                 ret = execution_result;
                 break;
             }
-            block_num_++;
+            ++block_num_;
         }
 
     } catch (const StageError& ex) {
@@ -279,7 +279,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
         }
 
         // update block_num_ to point to the last successfully executed block
-        block_num_--;
+        --block_num_;
 
         log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
         buffer.write_to_db();

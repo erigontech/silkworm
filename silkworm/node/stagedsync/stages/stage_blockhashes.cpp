@@ -191,7 +191,7 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
             log_time = now + 5s;
         }
 
-        expected_block_number++;
+        ++expected_block_number;
         data = canon_hashes_cursor->to_next(/*throw_notfound=*/false);
     }
 

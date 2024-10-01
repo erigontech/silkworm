@@ -27,7 +27,7 @@ std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum bloc
                                                                    const evmc::bytes32& hash) const noexcept {
     auto [initial_link, final_link] = persisted_link_queue_.equal_range(block_number);
 
-    for (auto link = initial_link; link != final_link; link++) {
+    for (auto link = initial_link; link != final_link; ++link) {
         if (link->second->blockHeight == block_number && link->second->hash == hash) {
             return *link->second->header;
         }

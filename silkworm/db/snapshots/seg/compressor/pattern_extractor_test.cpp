@@ -147,7 +147,7 @@ TEST_CASE("PatternExtractor1") {
         REQUIRE(i < expected_patterns.size());
         CHECK(pattern == from_hex(expected_patterns[i].first));
         CHECK(score == expected_patterns[i].second);
-        i++;
+        ++i;
     });
     CHECK(i == expected_patterns.size());
 }

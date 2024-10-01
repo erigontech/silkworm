@@ -37,7 +37,7 @@ Task<intx::uint256> GasPriceOracle::suggested_price(BlockNum block_number) {
     tx_prices.reserve(kMaxSamples);
     while (tx_prices.size() < kMaxSamples && block_number > 0) {
         co_await load_block_prices(block_number, kSamples, tx_prices);
-        block_number--;
+        --block_number;
     }
     SILK_TRACE << "GasPriceOracle::suggested_price ending block: " << block_number;
 

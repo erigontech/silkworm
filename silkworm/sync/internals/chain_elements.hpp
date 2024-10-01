@@ -94,11 +94,11 @@ struct Anchor {
     void update_timestamp(time_point_t time_point) {
         prev_timestamp = timestamp;
         timestamp = time_point;
-        timeouts++;
+        ++timeouts;
     }
 
     void restore_timestamp() {
-        timeouts--;
+        --timeouts;
         timestamp = prev_timestamp;
     }
 };
@@ -227,7 +227,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 
     std::vector<Header_Ref> to_ref() {
         std::vector<Header_Ref> refs;
-        for (auto i = headers_.begin(); i < headers_.end(); i++) refs.emplace_back(i);
+        for (auto i = headers_.begin(); i < headers_.end(); ++i) refs.emplace_back(i);
         return refs;
     }
 

@@ -77,7 +77,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
         block_count = kDefaultMaxFeeHistory;
     }
 
-    for (size_t idx = 0; idx < reward_percentiles.size(); idx++) {
+    for (size_t idx = 0; idx < reward_percentiles.size(); ++idx) {
         if (reward_percentiles[idx] < 0 || reward_percentiles[idx] > 100) {
             std::ostringstream ss;
             ss << "ErrInvalidPercentile: " << std::dec << reward_percentiles[idx];
@@ -106,7 +106,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
 
     const auto oldest_block_number = block_range.last_block_number + 1 - block_range.num_blocks;
     auto first_missing = block_range.num_blocks;
-    for (auto idx = block_range.num_blocks, next = oldest_block_number; idx > 0; idx--) {
+    for (auto idx = block_range.num_blocks, next = oldest_block_number; idx > 0; --idx) {
         const auto block_number = ++next - 1;
         if (block_number > block_range.last_block_number) {
             continue;
@@ -224,13 +224,13 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     if (block_fees.block->block.transactions.empty()) {
         std::fill(block_fees.rewards.begin(), block_fees.rewards.end(), 0);
         // return an all zero row if there are no transactions to gather data from
-        for (size_t idx = 0; idx < reward_percentiles.size(); idx++) {
+        for (size_t idx = 0; idx < reward_percentiles.size(); ++idx) {
             block_fees.rewards.emplace_back(0);
         }
         co_return;
     }
     std::vector<std::pair<intx::uint256, uint64_t> > rewards_and_gas;
-    for (size_t idx = 0; idx < block_fees.block->block.transactions.size(); idx++) {
+    for (size_t idx = 0; idx < block_fees.block->block.transactions.size(); ++idx) {
         auto& txn = block_fees.block->block.transactions[idx];
         const auto reward{txn.max_fee_per_gas >= block_fees.base_fee ? txn.effective_gas_price(block_fees.base_fee) - block_fees.base_fee
                                                                      : txn.max_priority_fee_per_gas};
@@ -244,7 +244,7 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     for (const auto percentile : reward_percentiles) {
         const uint64_t threshold_gas_used = header.gas_used * static_cast<uint8_t>(percentile) / 100;
         while (sum_gas_used < threshold_gas_used && index != last) {
-            index++;
+            ++index;
             sum_gas_used += index->second;
         }
         block_fees.rewards.push_back(index->first);

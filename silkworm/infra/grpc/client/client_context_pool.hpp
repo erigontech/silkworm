@@ -16,10 +16,8 @@
 
 #pragma once
 
-#include <atomic>
 #include <cstddef>
 #include <functional>
-#include <iostream>
 #include <memory>
 
 #include <agrpc/asio_grpc.hpp>
@@ -37,7 +35,7 @@ using ChannelFactory = std::function<std::shared_ptr<::grpc::Channel>()>;
 //! Asynchronous client scheduler running an execution loop w/ integrated gRPC client.
 class ClientContext : public concurrency::Context {
   public:
-    explicit ClientContext(std::size_t context_id, concurrency::WaitMode wait_mode = concurrency::WaitMode::kBlocking);
+    explicit ClientContext(std::size_t context_id);
 
     [[nodiscard]] agrpc::GrpcContext* grpc_context() const noexcept { return grpc_context_.get(); }
 
@@ -46,16 +44,6 @@ class ClientContext : public concurrency::Context {
 
   private:
     void destroy_grpc_context();
-
-    //! Execute back-off loop until stopped.
-    void execute_loop_backoff();
-
-    //! Execute single-threaded loop until stopped.
-    template <typename IdleStrategy>
-    void execute_loop_single_threaded(IdleStrategy idle_strategy);
-
-    //! Execute multi-threaded loop until stopped.
-    void execute_loop_multi_threaded();
 
     //! The asio-grpc asynchronous event scheduler.
     std::shared_ptr<agrpc::GrpcContext> grpc_context_;
@@ -66,23 +54,17 @@ class ClientContext : public concurrency::Context {
     friend class ClientContextPool;
 };
 
-std::ostream& operator<<(std::ostream& out, const ClientContext& c);
-
 //! Pool of \ref ClientContext instances running as separate reactive schedulers.
 //! \warning currently cannot start/stop more than once because ::grpc::CompletionQueue cannot be used after shutdown
 class ClientContextPool : public concurrency::ContextPool<ClientContext>, public GrpcContextPool {
   public:
-    explicit ClientContextPool(std::size_t pool_size, concurrency::WaitMode wait_mode = concurrency::WaitMode::kBlocking);
-    explicit ClientContextPool(concurrency::ContextPoolSettings settings);
+    using concurrency::ContextPool<ClientContext>::ContextPool;
     ~ClientContextPool() override;
 
     ClientContextPool(const ClientContextPool&) = delete;
     ClientContextPool& operator=(const ClientContextPool&) = delete;
 
     void start() override;
-
-    //! Add a new \ref ClientContext to the pool.
-    void add_context(concurrency::WaitMode wait_mode);
 
     [[nodiscard]] agrpc::GrpcContext& any_grpc_context() override;
 };

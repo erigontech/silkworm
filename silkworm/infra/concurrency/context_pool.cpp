@@ -16,69 +16,26 @@
 
 #include "context_pool.hpp"
 
-#include <thread>
-#include <utility>
-
-#include <boost/asio/post.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <magic_enum.hpp>
-
 namespace silkworm::concurrency {
 
 std::ostream& operator<<(std::ostream& out, const Context& c) {
-    out << "io_context: " << c.io_context() << " wait_mode: " << magic_enum::enum_name(c.wait_mode());
+    out << "io_context: " << c.io_context() << " id: " << c.id();
     return out;
 }
 
-Context::Context(std::size_t context_id, WaitMode wait_mode)
-    : context_id_(context_id),
+Context::Context(std::size_t context_id)
+    : context_id_{context_id},
       io_context_{std::make_shared<boost::asio::io_context>()},
-      work_{boost::asio::make_work_guard(*io_context_)},
-      wait_mode_(wait_mode) {}
+      work_{boost::asio::make_work_guard(*io_context_)} {}
 
 void Context::execute_loop() {
-    switch (wait_mode_) {
-        case WaitMode::kBackoff:
-            execute_loop_single_threaded(YieldingIdleStrategy{});  // TODO(canepat) replace with BackOffIdleStrategy
-            break;
-        case WaitMode::kBlocking:
-            execute_loop_multi_threaded();
-            break;
-        case WaitMode::kYielding:
-            execute_loop_single_threaded(YieldingIdleStrategy{});
-            break;
-        case WaitMode::kSleeping:
-            execute_loop_single_threaded(SleepingIdleStrategy{});
-            break;
-        case WaitMode::kBusySpin:
-            execute_loop_single_threaded(BusySpinIdleStrategy{});
-            break;
-    }
+    SILK_DEBUG << "Context execution loop start [" << std::this_thread::get_id() << "]";
+    io_context_->run();
+    SILK_DEBUG << "Context execution loop end [" << std::this_thread::get_id() << "]";
 }
 
 void Context::stop() {
     io_context_->stop();
-}
-
-template <typename IdleStrategy>
-void Context::execute_loop_single_threaded(IdleStrategy idle_strategy) {
-    SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
-    while (!io_context_->stopped()) {
-        std::size_t work_count = io_context_->poll();
-        idle_strategy.idle(work_count);
-    }
-    SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
-}
-
-void Context::execute_loop_multi_threaded() {
-    SILK_DEBUG << "Multi-thread execution loop start [" << std::this_thread::get_id() << "]";
-    const auto num_threads = std::thread::hardware_concurrency() / 2;
-    boost::asio::thread_pool pool{num_threads};
-    for (std::size_t i{0}; i < num_threads; ++i) {
-        boost::asio::post(pool, [&]() { io_context_->run(); });
-    }
-    pool.join();
-    SILK_DEBUG << "Multi-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
 
 }  // namespace silkworm::concurrency

@@ -41,8 +41,8 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
             },
             .engine_ifc_log_settings = rpc_settings.engine_ifc_log_settings,
             .context_pool_settings{
-                .num_contexts = 1,                              // single-client so just one scheduler is OK
-                .wait_mode = concurrency::WaitMode::kBlocking,  // single-client so no need to play w/ strategies
+                // single-client so just one scheduler is OK
+                .num_contexts = 1,
             },
             .eth_end_point = "",  // no need for Ethereum JSON RPC end-point
             .engine_end_point = rpc_settings.engine_end_point,

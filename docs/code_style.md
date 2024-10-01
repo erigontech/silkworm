@@ -27,6 +27,7 @@ This is a list of project-specific guidelines that take precedence over the rule
 1. `using namespace foo` is allowed inside .cpp files, but not inside headers.
 1. User-defined literals are allowed.
 1. `template <Concept T>` syntax is allowed.
+1. Use `std::size_t` with `std::` prefix instead of `size_t`.  
 
 ### Libraries
 
@@ -139,18 +140,26 @@ An example where it is useful: if a function has a side effect, and returns no r
 
 Default to move by value. Use `T&&` parameters with caution.
 
-Legitimate uses are move-constructors. In some other cases it could be seen as a premature optimization. When copy-prevention is required, consider making a type move-only.
+Legitimate uses are move-constructors. In some other cases it could be seen as a premature optimization.
+
+When copy-prevention is required, consider making a type move-only. If T is an aggregate type (e.g. a basic struct), deleting the copy member functions defeats the aggregate semantics and forces to provide a custom constructor. In this case, if copy-prevention is critical for performance, it might be easier to use `T&&` than providing a custom constructor. 
 
 ### P10 constants definition keywords
+
+For class-level constants in .hpp files or constants in .cpp files:
 
 Use `static constexpr` if possible (inline is implicit):
 
 	static constexpr uint64_t kMinDifficulty{0x20000};
 
-Otherwise use `static const` if `inline` is not required by the compiler.
+Otherwise use `static const`.
 
+For global constants in .hpp files:
+
+Use `static constexpr` if possible (inline is implicit),  
 Otherwise use `inline static const`.
 
+See also: [Constants: Safe Idioms](https://abseil.io/tips/140)
 
 ### P11 CLion code inspections
 

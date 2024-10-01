@@ -18,23 +18,15 @@
 
 #include <exception>
 #include <thread>
-#include <utility>
 
-#include <magic_enum.hpp>
-
-#include <silkworm/infra/concurrency/idle_strategy.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc {
 
 using namespace concurrency;
 
-std::ostream& operator<<(std::ostream& out, const ClientContext& c) {
-    out << "io_context: " << c.io_context() << " wait_mode: " << magic_enum::enum_name(c.wait_mode());
-    return out;
-}
-
-ClientContext::ClientContext(std::size_t context_id, WaitMode wait_mode)
-    : Context(context_id, wait_mode),
+ClientContext::ClientContext(std::size_t context_id)
+    : Context{context_id},
       grpc_context_{std::make_unique<agrpc::GrpcContext>()},
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())} {}
 
@@ -44,48 +36,13 @@ void ClientContext::destroy_grpc_context() {
 }
 
 void ClientContext::execute_loop() {
-    switch (wait_mode_) {
-        case WaitMode::kBackoff:
-            execute_loop_backoff();
-            break;
-        case WaitMode::kBlocking:
-            execute_loop_multi_threaded();
-            break;
-        case WaitMode::kYielding:
-            execute_loop_single_threaded(YieldingIdleStrategy{});
-            break;
-        case WaitMode::kSleeping:
-            execute_loop_single_threaded(SleepingIdleStrategy{});
-            break;
-        case WaitMode::kBusySpin:
-            execute_loop_single_threaded(BusySpinIdleStrategy{});
-            break;
-    }
-}
+    SILK_DEBUG << "ClientContext execution loop start [" << std::this_thread::get_id() << "]";
 
-void ClientContext::execute_loop_backoff() {
-    SILK_DEBUG << "Back-off execution loop start [" << std::this_thread::get_id() << "]";
-    agrpc::run(*grpc_context_, *io_context_, [&] { return io_context_->stopped(); });
-    SILK_DEBUG << "Back-off execution loop end [" << std::this_thread::get_id() << "]";
-}
-
-template <typename IdleStrategy>
-void ClientContext::execute_loop_single_threaded(IdleStrategy idle_strategy) {
-    SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
-    while (!io_context_->stopped()) {
-        std::size_t work_count = grpc_context_->poll_completion_queue();
-        work_count += io_context_->poll();
-        idle_strategy.idle(work_count);
-    }
-    SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
-}
-
-void ClientContext::execute_loop_multi_threaded() {
-    SILK_DEBUG << "Multi-thread execution loop start [" << std::this_thread::get_id() << "]";
     std::thread grpc_context_thread{[context_id = context_id_, grpc_context = grpc_context_]() {
         log::set_thread_name(("grpc_ctx_s" + std::to_string(context_id)).c_str());
         grpc_context->run_completion_queue();
     }};
+
     std::exception_ptr run_exception;
     try {
         io_context_->run();
@@ -100,19 +57,8 @@ void ClientContext::execute_loop_multi_threaded() {
     if (run_exception) {
         std::rethrow_exception(run_exception);
     }
-    SILK_DEBUG << "Multi-thread execution loop end [" << std::this_thread::get_id() << "]";
+    SILK_DEBUG << "ClientContext execution loop end [" << std::this_thread::get_id() << "]";
 }
-
-ClientContextPool::ClientContextPool(std::size_t pool_size, concurrency::WaitMode wait_mode)
-    : ContextPool(pool_size) {
-    // Create as many execution contexts as required by the pool size
-    for (std::size_t i{0}; i < pool_size; ++i) {
-        add_context(wait_mode);
-    }
-}
-
-ClientContextPool::ClientContextPool(concurrency::ContextPoolSettings settings)
-    : ClientContextPool(settings.num_contexts, settings.wait_mode) {}
 
 ClientContextPool::~ClientContextPool() {
     stop();  // must be called to simplify exposed API, no problem because idempotent
@@ -132,12 +78,6 @@ void ClientContextPool::start() {
     }
 
     ContextPool<ClientContext>::start();
-}
-
-void ClientContextPool::add_context(concurrency::WaitMode wait_mode) {
-    const auto context_count = num_contexts();
-    const auto& client_context = ContextPool::add_context(ClientContext{context_count, wait_mode});
-    SILK_TRACE << "ClientContextPool::add_context context[" << context_count << "] " << client_context;
 }
 
 agrpc::GrpcContext& ClientContextPool::any_grpc_context() {

@@ -34,7 +34,6 @@ struct Settings {
     sentry::Settings sentry_settings;               // Configuration for Sentry client + embedded server
     rpc::ServerSettings server_settings;            // Configuration for the gRPC server
     snapshots::SnapshotSettings snapshot_settings;  // Configuration for the database snapshots
-    bool execution_server_enabled{false};
 };
 
 }  // namespace silkworm::node

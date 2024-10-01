@@ -29,6 +29,8 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
+#include "../common/bitmask_operators.hpp"
+
 namespace silkworm::snapshots::seg {
 
 class DecodingTable {
@@ -167,6 +169,16 @@ class PositionTable : public DecodingTable {
     friend std::ostream& operator<<(std::ostream& out, const PositionTable& pt);
 };
 
+enum class CompressionKind : uint8_t {
+    kNone = 0b0,
+    kKeys = 0b1,
+    kValues = 0b10,
+};
+
+consteval void enable_bitmask_operator_and(CompressionKind);
+consteval void enable_bitmask_operator_or(CompressionKind);
+consteval void enable_bitmask_operator_not(CompressionKind);
+
 //! Snapshot decoder using modified Condensed Huffman Table (CHT) algorithm
 class Decompressor {
   public:
@@ -269,11 +281,16 @@ class Decompressor {
         Bytes current_word_;
 
         std::shared_ptr<ReadModeGuard> read_mode_guard_;
+
+        //! Flag indicating if next word is key (false) or value (true)
+        bool is_next_value_{false};
     };
 
     static_assert(std::input_or_output_iterator<Iterator>);
 
-    explicit Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region = {});
+    explicit Decompressor(std::filesystem::path compressed_path,
+                          std::optional<MemoryMappedRegion> compressed_region = {},
+                          CompressionKind compression = CompressionKind::kKeys | CompressionKind::kValues);
     ~Decompressor();
 
     Decompressor(Decompressor&&) = default;
@@ -304,11 +321,10 @@ class Decompressor {
     Iterator begin() const;
     Iterator end() const { return Iterator::make_end(this); }
 
-    /**
-     * Returns an iterator at a given offset.
-     * If the offset is invalid it returns end().
-     * Seek makes sure that the result starts with a given prefix, otherwise returns end().
-     */
+    //! \brief Return an iterator at a given \p offset optionally starting with a given \p prefix.
+    //! \param offset the offset in the data to place iterator at. If the offset is invalid, returns end()
+    //! \param prefix the prefix which the result should start with
+    //! \details Makes sure that the result starts with a given prefix, otherwise returns end()
     Iterator seek(uint64_t offset, ByteView prefix = {}) const;
 
     void close();
@@ -320,7 +336,12 @@ class Decompressor {
 
     //! The path to the compressed file
     std::filesystem::path compressed_path_;
+
+    //! The memory-mapped region of the compressed file (if already mapped)
     std::optional<MemoryMappedRegion> compressed_region_;
+
+    //! The type of compression for this segment
+    CompressionKind compression_;
 
     //! The memory-mapped compressed file
     std::unique_ptr<MemoryMappedFile> compressed_file_;

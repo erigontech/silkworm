@@ -71,9 +71,10 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/math.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/snapshots/rec_split/common/murmur_hash3.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/elias_fano.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/golomb_rice.hpp>
+#include <silkworm/db/snapshots/common/bitmask_operators.hpp>
+#include <silkworm/db/snapshots/common/encoding/elias_fano.hpp>
+#include <silkworm/db/snapshots/common/encoding/golomb_rice.hpp>
+#include <silkworm/db/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -86,6 +87,7 @@
 namespace silkworm::snapshots::rec_split {
 
 using namespace std::chrono;
+using encoding::remap16, encoding::remap128;
 
 //! Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000
 static const int kMaxBucketSize = 3000;
@@ -189,31 +191,6 @@ struct RecSplitSettings {
     bool double_enum_index{true};      // Flag indicating if 2-layer index is required
     bool less_false_positives{false};  // Flag indicating if existence filter to reduce false-positives is required
 };
-
-template <typename T>
-    requires(std::is_enum_v<T> and requires(T e) {
-        enable_bitmask_operator_or(e);
-    })
-constexpr auto operator|(const T lhs, const T rhs) {
-    using underlying = std::underlying_type_t<T>;
-    return static_cast<T>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
-}
-template <typename T>
-    requires(std::is_enum_v<T> and requires(T e) {
-        enable_bitmask_operator_and(e);
-    })
-constexpr auto operator&(const T lhs, const T rhs) {
-    using underlying = std::underlying_type_t<T>;
-    return static_cast<T>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
-}
-template <typename T>
-    requires(std::is_enum_v<T> and requires(T e) {
-        enable_bitmask_operator_not(e);
-    })
-constexpr auto operator~(const T t) {
-    using underlying = std::underlying_type_t<T>;
-    return static_cast<T>(~static_cast<underlying>(t));
-}
 
 enum class RecSplitFeatures : uint8_t {
     kNone = 0b0,                 // no specific feature

@@ -83,14 +83,7 @@ jobs:
       - name: Stop Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          # Clean up rpcdaemon process if it's still running
-          if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
-            echo "Silkworm RpcDaemon stopping..."
-            kill $RPC_DAEMON_PID
-            echo "Silkworm RpcDaemon stopped"
-          else
-            echo "Silkworm RpcDaemon has already terminated"
-          fi
+          ${{runner.workspace}}/silkworm/.github/workflows/kill_integration_daemon.sh $RPC_DAEMON_PID
 
       - name: Resume the Erigon instance dedicated to db maintenance
         run: |

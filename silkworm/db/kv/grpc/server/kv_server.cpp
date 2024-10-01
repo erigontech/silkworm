@@ -88,7 +88,7 @@ void KvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
 //! Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void KvServer::register_request_calls() {
     // Start all server-side RPC requests for each available server context
-    for (std::size_t i = 0; i < num_contexts(); i++) {
+    for (std::size_t i = 0; i < num_contexts(); ++i) {
         const auto& context = next_context();
         auto grpc_context = context.server_grpc_context();
 

@@ -241,7 +241,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
                 page_start = 0;
             }
 
-            for (auto i = page_start; i < page_end; i++) {
+            for (auto i = page_start; i < page_end; ++i) {
                 block_transactions.receipts.push_back(receipts.at(i));
                 block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
             }
@@ -326,7 +326,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         bitmap.toUint64Array(account_block_numbers.data());
 
         uint64_t idx = 0;
-        for (uint64_t i = 0; i < cardinality; i++) {
+        for (uint64_t i = 0; i < cardinality; ++i) {
             auto block_number = account_block_numbers[i];
             auto block_key{db::block_key(block_number)};
             auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
@@ -457,7 +457,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         bitmap.toUint64Array(account_block_numbers.data());
 
         uint64_t idx = 0;
-        for (uint64_t i = 0; i < cardinality; i++) {
+        for (uint64_t i = 0; i < cardinality; ++i) {
             auto block_number = account_block_numbers[i];
             auto block_key{db::block_key(block_number)};
             auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
@@ -684,7 +684,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             is_first_page = true;
         } else {
             // Internal search code considers blockNum [including], so adjust the value
-            block_number--;
+            --block_number;
         }
 
         BackwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
@@ -766,7 +766,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
             is_last_page = true;
         } else {
             // Internal search code considers blockNum [including], so adjust the value
-            block_number++;
+            ++block_number;
         }
 
         ForwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
@@ -831,7 +831,7 @@ Task<bool> OtsRpcApi::trace_blocks(
     results.clear();
     results.reserve(est_blocks_to_trace);
 
-    for (size_t i = 0; i < est_blocks_to_trace; i++) {
+    for (size_t i = 0; i < est_blocks_to_trace; ++i) {
         TransactionsWithReceipts transactions_with_receipts;
 
         auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
@@ -1052,7 +1052,7 @@ bool ForwardBlockProvider::has_next() {
 
 BlockNum ForwardBlockProvider::next() {
     uint64_t result = bitmap_vector_.at(bitmap_index_);
-    bitmap_index_++;
+    ++bitmap_index_;
     return result;
 }
 
@@ -1064,7 +1064,7 @@ void ForwardBlockProvider::iterator(roaring::Roaring64Map& bitmap) {
 
 void ForwardBlockProvider::advance_if_needed(BlockNum min_block) {
     auto found_index = bitmap_vector_.size();
-    for (size_t i = bitmap_index_; i < bitmap_vector_.size(); i++) {
+    for (size_t i = bitmap_index_; i < bitmap_vector_.size(); ++i) {
         if (bitmap_vector_.at(i) >= min_block) {
             found_index = i;
             break;
@@ -1179,7 +1179,7 @@ bool BackwardBlockProvider::has_next() {
 
 uint64_t BackwardBlockProvider::next() {
     uint64_t result = bitmap_vector_.at(bitmap_index_);
-    bitmap_index_++;
+    ++bitmap_index_;
     return result;
 }
 

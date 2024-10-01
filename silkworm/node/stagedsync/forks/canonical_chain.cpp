@@ -154,7 +154,7 @@ void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be 
 }
 
 void CanonicalChain::delete_down_to(BlockNum unwind_point) {
-    for (BlockNum current_height = current_head_.number; current_height > unwind_point; current_height--) {
+    for (BlockNum current_height = current_head_.number; current_height > unwind_point; --current_height) {
         db::delete_canonical_hash(tx_, current_height);  // do not throw if not found
         if (cache_enabled()) canonical_hash_cache_->remove(current_height);
     }

@@ -838,7 +838,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
         }
 
         std::optional<std::size_t> tx_index;
-        for (size_t idx{0}; idx < transactions.size(); idx++) {
+        for (size_t idx{0}; idx < transactions.size(); ++idx) {
             auto ethash_hash = transactions[idx].hash();
 
             SILK_TRACE << "tx " << idx << ") hash: " << silkworm::to_hex(silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength}));
@@ -1404,7 +1404,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
 
         silkworm::Bytes hash_data{};
 
-        for (std::size_t i{0}; i < tx_hash_list.size(); i++) {
+        for (std::size_t i{0}; i < tx_hash_list.size(); ++i) {
             struct CallBundleTxInfo tx_info {};
             const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, tx_hash_list[i]);
             if (!tx_with_block) {

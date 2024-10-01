@@ -109,7 +109,7 @@ std::optional<BlockNum> Fork::find_block(Hash header_hash) const {
         if (canonical_hash == header_hash) {
             return curr_height;
         }
-        curr_height--;
+        --curr_height;
     }
     return std::nullopt;
 }
@@ -293,7 +293,7 @@ std::set<Hash> Fork::collect_bad_headers(InvalidChain& invalid_chain) {
 
     std::set<Hash> bad_headers;
     for (BlockNum current_height = canonical_chain_.current_head().number;
-         current_height > invalid_chain.unwind_point.number; current_height--) {
+         current_height > invalid_chain.unwind_point.number; --current_height) {
         auto current_hash = canonical_chain_.get_hash(current_height);
         bad_headers.insert(*current_hash);
     }

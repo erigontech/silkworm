@@ -95,7 +95,7 @@ Task<NodeInfos> RemoteBackEnd::engine_node_info() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNodeInfo> ni_rpc{*stub_, grpc_context_};
     const auto reply = co_await ni_rpc.finish_on(executor_, ::remote::NodesInfoRequest{});
-    for (int i = 0; i < reply.nodes_info_size(); i++) {
+    for (int i = 0; i < reply.nodes_info_size(); ++i) {
         NodeInfo node_info;
         const auto& backend_node_info = reply.nodes_info(i);
         node_info.id = backend_node_info.id();

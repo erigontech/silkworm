@@ -146,7 +146,7 @@ proto::InboundMessage inbound_message_from_message(const sentry::Message& messag
 
 api::MessageIdSet message_id_set_from_messages_request(const proto::MessagesRequest& request) {
     api::MessageIdSet filter;
-    for (int i = 0; i < request.ids_size(); i++) {
+    for (int i = 0; i < request.ids_size(); ++i) {
         auto id = request.ids(i);
         filter.insert(message_id_from_proto_message_id(id));
     }

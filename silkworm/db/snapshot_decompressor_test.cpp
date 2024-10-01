@@ -488,7 +488,7 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
             CHECK(it.has_prefix(expected_word.substr(0, expected_word.size() / 2)));
             if (!expected_word.empty()) {
                 Bytes modified_word{expected_word};
-                modified_word[expected_word.size() - 1]++;
+                ++modified_word[expected_word.size() - 1];
                 CHECK(!it.has_prefix(modified_word));
             }
             it.skip();

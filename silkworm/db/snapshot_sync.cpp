@@ -212,7 +212,7 @@ Task<void> SnapshotSync::download_snapshots() {
     std::unordered_set<std::filesystem::path, PathHasher> snapshot_set;
 
     // Wait for download completion of all snapshots
-    for (completed = 0; completed < num_snapshots; completed++) {
+    for (completed = 0; completed < num_snapshots; ++completed) {
         std::filesystem::path snapshot_file;
         do {
             snapshot_file = co_await completed_channel.receive();
@@ -247,7 +247,7 @@ Task<void> SnapshotSync::build_missing_indexes() {
             try {
                 SILK_INFO << "SnapshotSync: building index " << index->path().filename() << " ...";
                 index->build();
-                done_tasks++;
+                ++done_tasks;
                 SILK_INFO << "SnapshotSync: built index " << index->path().filename() << ";"
                           << " progress: " << (done_tasks * 100 / total_tasks) << "% "
                           << done_tasks << " of " << total_tasks << " indexes ready";

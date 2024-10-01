@@ -178,7 +178,7 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
 }
 
 static void update_execution_progress(ExecutionProgress& progress, const Block& block, const db::Buffer& state_buffer, size_t max_batch_size) {
-    progress.processed_blocks++;
+    ++progress.processed_blocks;
     progress.processed_transactions += block.transactions.size();
     progress.processed_gas += block.header.gas_used;
 
@@ -253,7 +253,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
     }
 
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> needed_indexes;
-    for (size_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; ++i) {
         struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
         if (!snapshot) {
             return SILKWORM_INVALID_SNAPSHOT;

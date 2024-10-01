@@ -533,7 +533,7 @@ std::vector<std::string> Senders::get_log_progress() {
 
 void Senders::increment_total_processed_blocks() {
     std::unique_lock lock{mutex_};
-    total_processed_blocks_++;
+    ++total_processed_blocks_;
 }
 
 void Senders::increment_total_collected_transactions(std::size_t delta) {

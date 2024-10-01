@@ -42,7 +42,7 @@ std::optional<uint64_t> decode(ByteView& data) {
     size_t i{}, offset{};
     bool found_last = false;
 
-    for (i = 0, offset = 0; (i < data.size()) && (i < kMaxVarintBytes) && !found_last; i++, offset += kByteMaskBits) {
+    for (i = 0, offset = 0; (i < data.size()) && (i < kMaxVarintBytes) && !found_last; ++i, offset += kByteMaskBits) {
         value |= static_cast<uint64_t>(data[i] & kByteMask) << offset;
         if (data[i] <= kByteMask) {
             found_last = true;

@@ -105,7 +105,7 @@ void IndexBuilder::build() {
         for (auto& entry : *query_) {
             auto key = descriptor_.key_factory ? descriptor_.key_factory->make(entry.key_data, i) : Bytes{entry.key_data};
             rec_split.add_key(key, entry.value);
-            i++;
+            ++i;
         }
     });
 

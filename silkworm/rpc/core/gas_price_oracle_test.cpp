@@ -71,7 +71,7 @@ static silkworm::BlockWithHash allocate_block(BlockNum block_number,
 
 static void fill_blocks_vector(std::vector<silkworm::BlockWithHash>& blocks,
                                const evmc::address& beneficiary, const FixedBlockData& block_data) {
-    for (auto idx = 0u; idx < blocks.capacity(); idx++) {
+    for (auto idx = 0u; idx < blocks.capacity(); ++idx) {
         silkworm::BlockWithHash block_with_hash = allocate_block(static_cast<uint64_t>(idx), beneficiary, block_data);
         blocks.push_back(block_with_hash);
     }
@@ -79,7 +79,7 @@ static void fill_blocks_vector(std::vector<silkworm::BlockWithHash>& blocks,
 
 static void fill_blocks_vector(std::vector<silkworm::BlockWithHash>& blocks, const evmc::address& beneficiary,
                                const VariableBlockData& variable_block_data) {
-    for (auto idx = 0; idx < static_cast<int>(blocks.capacity()); idx++) {
+    for (auto idx = 0; idx < static_cast<int>(blocks.capacity()); ++idx) {
         int64_t max_priority = int64_t{variable_block_data.max_priority_fee_per_gas} + variable_block_data.delta_max_priority_fee_per_gas * idx;
         if (max_priority < 0) {
             max_priority = 0;

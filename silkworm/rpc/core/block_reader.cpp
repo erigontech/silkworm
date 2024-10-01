@@ -62,7 +62,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
                 SILK_DEBUG << "Address "
                            << it->first << ": balance changed from " << to_quantity(it->second) << " to " << to_quantity(balance);
                 it->second = balance;
-                it++;
+                ++it;
             }
         }
     }

@@ -53,7 +53,7 @@ void Superstring::add_word(ByteView word, bool skip_copy) {
     size_t start = superstring_.size();
     superstring_.append(word.size() * 2 + 2, 0);
     if (skip_copy) return;
-    for (size_t i = 0, s = start; i < word.size(); i++, s += 2) {
+    for (size_t i = 0, s = start; i < word.size(); ++i, s += 2) {
         superstring_[s] = 1;
         superstring_[s + 1] = word[i];
     }
@@ -62,7 +62,7 @@ void Superstring::add_word(ByteView word, bool skip_copy) {
 void Superstring::substr(Bytes& out, size_t pos, size_t count) const {
     out.resize(count);
     size_t offset = pos * 2;
-    for (size_t i = 0, s = 1; i < count; i++, s += 2) {
+    for (size_t i = 0, s = 1; i < count; ++i, s += 2) {
         out[i] = superstring_[offset + s];
     }
 }
@@ -98,7 +98,7 @@ void PatternExtractor::extract_patterns(const Superstring& superstring, absl::Fu
 
     // Create an inverted array
     inv.resize(n);
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; ++i) {
         inv[static_cast<size_t>(filtered[i])] = static_cast<int>(i);
     }
 
@@ -108,14 +108,14 @@ void PatternExtractor::extract_patterns(const Superstring& superstring, absl::Fu
     // Walk over LCP array and compute the scores of the strings
     auto& b = inv;
     j = 0;
-    for (size_t i = 0; i < n - 1; i++) {
+    for (size_t i = 0; i < n - 1; ++i) {
         if (lcp[i + 1] >= lcp[i]) {
             j = i;
             continue;
         }
 
         bool prev_skipped = false;
-        for (int l = lcp[i]; (l > lcp[i + 1]) && (l >= static_cast<int>(kPatternLenMin)); l--) {
+        for (int l = lcp[i]; (l > lcp[i + 1]) && (l >= static_cast<int>(kPatternLenMin)); --l) {
             if ((l > static_cast<int>(kPatternLenMax)) || ((l > 20) && (l & (l - 1)))) {  // is power of 2
                 prev_skipped = true;
                 continue;
@@ -123,7 +123,7 @@ void PatternExtractor::extract_patterns(const Superstring& superstring, absl::Fu
 
             bool is_new = false;
             while ((j > 0) && (lcp[j - 1] >= l)) {
-                j--;
+                --j;
                 is_new = true;
             }
 
@@ -137,9 +137,9 @@ void PatternExtractor::extract_patterns(const Superstring& superstring, absl::Fu
 
             size_t repeats = 1;
             size_t last_k = 0;
-            for (size_t k = 1; k < window; k++) {
+            for (size_t k = 1; k < window; ++k) {
                 if (b[k] >= b[last_k] + l) {
-                    repeats++;
+                    ++repeats;
                     last_k = k;
                 }
             }

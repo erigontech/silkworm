@@ -169,7 +169,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             }
             logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());
         }
-        block_count++;
+        ++block_count;
         if (options.log_count != 0 && options.log_count <= log_count) {
             break;
         }
@@ -198,7 +198,7 @@ void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresse
                 SILK_DEBUG << "#topics: " << topics.size() << " #log.topics: " << log.topics.size();
                 continue;
             }
-            for (size_t i{0}; i < topics.size(); i++) {
+            for (size_t i{0}; i < topics.size(); ++i) {
                 SILK_DEBUG << "log.topics[i]: " << to_hex(log.topics[i]);
                 auto subtopics = topics[i];
                 auto matches_subtopics = subtopics.empty();  // empty rule set == wildcard

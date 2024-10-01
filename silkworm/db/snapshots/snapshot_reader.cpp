@@ -62,7 +62,7 @@ Snapshot::Iterator& Snapshot::Iterator::operator++() {
 Snapshot::Iterator& Snapshot::Iterator::operator+=(size_t count) {
     while ((count > 1) && it_.has_next()) {
         it_.skip();
-        count--;
+        --count;
     }
     if (count > 0) {
         ++*this;

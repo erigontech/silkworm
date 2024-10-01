@@ -57,7 +57,7 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const 
         throw std::runtime_error{"#transactions and #receipts do not match in read_receipts"};
     }
     uint32_t log_index{0};
-    for (size_t i{0}; i < receipts.size(); i++) {
+    for (size_t i{0}; i < receipts.size(); ++i) {
         // The tx hash can be calculated by the tx content itself
         auto tx_hash{transactions[i].hash()};
         receipts[i].tx_hash = to_bytes32(tx_hash.bytes);
@@ -83,7 +83,7 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, const 
         receipts[i].type = static_cast<uint8_t>(transactions[i].type);
 
         // The derived fields of receipt are taken from block and transaction
-        for (size_t j{0}; j < receipts[i].logs.size(); j++) {
+        for (size_t j{0}; j < receipts[i].logs.size(); ++j) {
             receipts[i].logs[j].block_number = block_number;
             receipts[i].logs[j].block_hash = block_hash;
             receipts[i].logs[j].tx_hash = receipts[i].tx_hash;

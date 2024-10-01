@@ -41,7 +41,7 @@ namespace silkworm::rpc {
 std::optional<std::vector<GlazeJsonWithdrawals>> make_glaze_json_withdrawals(const BlockBody& block) {
     std::vector<GlazeJsonWithdrawals> withdrawals;
     withdrawals.reserve(block.withdrawals->size());
-    for (std::size_t i{0}; i < block.withdrawals->size(); i++) {
+    for (std::size_t i{0}; i < block.withdrawals->size(); ++i) {
         GlazeJsonWithdrawals item;
         to_quantity(std::span(item.index), (*(block.withdrawals))[i].index);
         to_quantity(std::span(item.amount), (*(block.withdrawals))[i].amount);

@@ -138,14 +138,14 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
         if (max_non_canonical == 0) {
             return {Hash{}, 0};
         }
-        max_non_canonical--;
-        ancestor_delta--;
+        --max_non_canonical;
+        --ancestor_delta;
         auto header = data_model_.read_header(block_num, hash);
         if (!header) {
             return {Hash{}, 0};
         }
         hash = header->parent_hash;
-        block_num--;
+        --block_num;
     }
     return {hash, block_num};
 }

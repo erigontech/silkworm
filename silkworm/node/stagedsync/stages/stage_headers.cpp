@@ -133,7 +133,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
 
         // header processing
         while (current_height_ < target_height && !is_stopping()) {
-            current_height_++;
+            ++current_height_;
 
             // process header and ommers at current height
             auto header = header_persistence.get_canonical_header(current_height_);

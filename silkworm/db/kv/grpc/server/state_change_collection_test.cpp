@@ -196,7 +196,7 @@ TEST_CASE("StateChangeCollection::start_new_batch", "[silkworm][rpc][state_chang
             } else {
                 CHECK(false);  // too many notifications
             }
-            notifications++;
+            ++notifications;
         },
                       StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);

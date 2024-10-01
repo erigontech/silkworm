@@ -31,7 +31,7 @@ void TransactionSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command,
     auto out = writer.out();
     auto system_tx = snapshots::empty_system_tx();
 
-    for (BlockNum i = range.start; i < range.end; i++) {
+    for (BlockNum i = range.start; i < range.end; ++i) {
         BlockBody body;
         bool found = read_canonical_body(txn, i, /* read_senders = */ true, body);
         if (!found) throw std::runtime_error{"TransactionSnapshotFreezer::copy missing body for block " + std::to_string(i)};
@@ -45,7 +45,7 @@ void TransactionSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command,
 }
 
 void TransactionSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
-    for (BlockNum i = range.start, count = 1; i < range.end; i++, count++) {
+    for (BlockNum i = range.start, count = 1; i < range.end; ++i, ++count) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
         auto hash = *hash_opt;

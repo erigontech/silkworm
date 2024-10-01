@@ -597,7 +597,7 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
 
     if (headers.empty()) {
         statistics_.received_items += 1;
-        statistics_.reject_causes.invalid++;
+        ++statistics_.reject_causes.invalid;
         return {Penalty::kDuplicateHeaderPenalty, request_more_headers};  // todo: use kUselessPeer message
     }
 
@@ -776,7 +776,7 @@ void HeaderChain::reduce_links_to(size_t limit) {
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
 std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::Start> HeaderChain::find_anchor(const Segment& segment) const {
-    for (size_t i = 0; i < segment.size(); i++) {
+    for (size_t i = 0; i < segment.size(); ++i) {
         auto a = anchors_.find(segment[i]->hash());
         if (a != anchors_.end()) {  // segment[i]->hash() == anchor.parent_hash
             return {a->second, i};
@@ -791,7 +791,7 @@ std::tuple<std::optional<std::shared_ptr<Link>>, HeaderChain::End> HeaderChain::
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {std::nullopt, 0};
 
-    for (size_t i = start; i < segment.size(); i++) {
+    for (size_t i = start; i < segment.size(); ++i) {
         // Check if the header can be attached to any links
         auto attaching_link = get_link(segment[i]->parent_hash);
         if (attaching_link) return {attaching_link, i + 1};  // return the ordinal of the next link
@@ -1067,7 +1067,7 @@ BlockNum HeaderChain::last_pre_validated_block() const {
 }
 
 uint64_t HeaderChain::generate_request_id() {
-    request_count++;
+    ++request_count;
     if (request_count >= 10000) request_count = 0;
     return request_id_prefix * 10000 + request_count;
 }

@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
             processor.flush_state();
 
             // There is one receipt per transaction
-            assert(block.transactions.size() == receipts.size());
+            SILKWORM_ASSERT(block.transactions.size() == receipts.size());
 
             // Erigon returns success in the receipt even for pre-Byzantium txs.
             for (const auto& receipt : receipts) {

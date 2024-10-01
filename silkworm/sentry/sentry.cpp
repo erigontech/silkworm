@@ -16,13 +16,13 @@
 
 #include "sentry.hpp"
 
-#include <cassert>
 #include <optional>
 #include <string>
 
 #include <boost/asio/ip/address.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
@@ -318,8 +318,8 @@ std::string SentryImpl::client_id() const {
 }
 
 EnodeUrl SentryImpl::make_node_url() const {
-    assert(node_key_);
-    assert(public_ip_);
+    SILKWORM_ASSERT(node_key_);
+    SILKWORM_ASSERT(public_ip_);
     return EnodeUrl{
         node_key_.value().public_key(),
         public_ip_.value(),
@@ -367,7 +367,7 @@ std::function<api::NodeInfo()> SentryImpl::node_info_provider() const {
 
 std::function<EccKeyPair()> SentryImpl::node_key_provider() const {
     return [this] {
-        assert(this->node_key_);
+        SILKWORM_ASSERT(this->node_key_);
         return this->node_key_.value();
     };
 }

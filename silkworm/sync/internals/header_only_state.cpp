@@ -37,7 +37,7 @@ std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum bloc
 }
 
 bool CustomHeaderOnlyChainState::read_body(BlockNum, const evmc::bytes32&, BlockBody&) const noexcept {
-    assert(false);  // not implemented
+    SILKWORM_ASSERT(false);  // not implemented
     return false;
 }
 
@@ -66,13 +66,13 @@ std::optional<BlockHeader> SimpleHeaderOnlyChainState::read_header(BlockNum bloc
 }
 
 bool SimpleHeaderOnlyChainState::read_body(BlockNum, const evmc::bytes32&, BlockBody&) const noexcept {
-    assert(false);  // not implemented
+    SILKWORM_ASSERT(false);  // not implemented
     return false;
 }
 
 std::optional<intx::uint256> SimpleHeaderOnlyChainState::total_difficulty(uint64_t,
                                                                           const evmc::bytes32&) const noexcept {
-    assert(false);  // not implemented
+    SILKWORM_ASSERT(false);  // not implemented
     return {};
 }
 

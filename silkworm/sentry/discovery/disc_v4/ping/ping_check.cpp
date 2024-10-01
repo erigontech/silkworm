@@ -16,13 +16,13 @@
 
 #include "ping_check.hpp"
 
-#include <cassert>
 #include <stdexcept>
 
 #include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
@@ -108,7 +108,7 @@ Task<PingCheckResult> ping_check(
     using namespace concurrency::awaitable_wait_for_one;
 
     if (node_id == local_node_url.public_key()) {
-        assert(false);
+        SILKWORM_ASSERT(false);
         co_return PingCheckResult{std::move(node_id)};
     }
 

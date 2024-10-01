@@ -21,7 +21,7 @@
 namespace silkworm::sentry::eth {
 
 MessageId eth_message_id_from_common_id(uint8_t message_id) {
-    assert(message_id >= eth::StatusMessage::kId);
+    SILKWORM_ASSERT(message_id >= eth::StatusMessage::kId);
     if (message_id < eth::StatusMessage::kId)
         return MessageId::kStatus;
 

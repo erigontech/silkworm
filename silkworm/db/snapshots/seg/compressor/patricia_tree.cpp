@@ -20,13 +20,13 @@
 
 #include <algorithm>
 #include <bit>
-#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes.hpp>
 
 #include "lcp_kasai.hpp"
@@ -427,7 +427,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
                 top = top->n1.get();
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::unfold: unexpected condition side > 1");
 #endif
@@ -496,7 +496,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
                 top = top->n1.get();
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::unfold: unexpected condition side > 1");
 #endif
@@ -538,7 +538,7 @@ void PatriciaTreeMatchFinderImpl::fold(size_t bits) {
                 head_len = top->p1 & 0x1f;
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::fold: unexpected condition top prev_top is not a top child");
 #endif
@@ -678,7 +678,7 @@ std::pair<Bytes, size_t> PatriciaTreeMatchFinderImpl::current() {
                 p = n->p1;
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::current: unexpected condition next is not a child of n");
 #endif

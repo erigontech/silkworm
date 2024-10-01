@@ -16,8 +16,7 @@
 
 #include "snapshot_bundle_factory_impl.hpp"
 
-#include <cassert>
-
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/snapshots/snapshot_path.hpp>
@@ -67,7 +66,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
             };
         }
         default:
-            assert(false);
+            SILKWORM_ASSERT(false);
             return {};
     }
 }

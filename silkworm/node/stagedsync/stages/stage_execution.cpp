@@ -156,7 +156,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
-    assert(prefetched_blocks_.empty());
+    SILKWORM_ASSERT(prefetched_blocks_.empty());
 
     const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};

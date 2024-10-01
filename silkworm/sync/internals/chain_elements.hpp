@@ -253,7 +253,7 @@ struct Segment
     explicit Segment(std::shared_ptr<HeaderList> line) : line_(std::move(line)) {}
 
     void push_back(const HeaderList::Header_Ref& val) {
-        assert(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive
+        SILKWORM_ASSERT(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive
         std::vector<HeaderList::Header_Ref>::push_back(val);
     }
 

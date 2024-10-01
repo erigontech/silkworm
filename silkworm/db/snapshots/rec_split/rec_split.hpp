@@ -47,7 +47,6 @@
 #include <algorithm>
 #include <array>
 #include <bit>
-#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <fstream>

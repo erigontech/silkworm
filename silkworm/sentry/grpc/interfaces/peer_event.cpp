@@ -32,7 +32,7 @@ api::PeerEvent peer_event_from_proto_peer_event(const proto::PeerEvent& event) {
             event_id = api::PeerEventId::kRemoved;
             break;
         default:
-            assert(false);
+            SILKWORM_ASSERT(false);
     }
 
     return api::PeerEvent{

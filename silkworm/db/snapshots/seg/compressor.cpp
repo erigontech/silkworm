@@ -16,13 +16,13 @@
 
 #include "compressor.hpp"
 
-#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <limits>
 #include <numeric>
 #include <vector>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 
 #include "compressor/bit_stream.hpp"

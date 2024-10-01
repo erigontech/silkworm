@@ -16,10 +16,9 @@
 
 #include "stage_triggers.hpp"
 
-#include <cassert>
-
 #include <gsl/util>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/concurrency/spawn.hpp>
 
 namespace silkworm::stagedsync {
@@ -43,7 +42,7 @@ Stage::Result TriggersStage::forward(db::RWTxn& tx) {
 Task<void> TriggersStage::schedule(std::function<void(db::RWTxn&)> callback) {
     auto task_caller = [this, c = std::move(callback)]() -> Task<void> {
         db::RWTxn* tx = this->current_tx_;
-        assert(tx);
+        SILKWORM_ASSERT(tx);
         c(*tx);
         co_return;
     };

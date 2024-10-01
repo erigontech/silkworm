@@ -128,7 +128,7 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
 void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    assert(execution_state.msg);
+    SILKWORM_ASSERT(execution_state.msg);
     const evmc::address recipient(execution_state.msg->recipient);
     const evmc::address sender(execution_state.msg->sender);
 

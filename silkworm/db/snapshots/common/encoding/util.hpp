@@ -50,7 +50,6 @@
 
 #include <algorithm>
 #include <bit>
-#include <cassert>
 #include <cinttypes>
 #include <cstdint>
 #include <cstring>

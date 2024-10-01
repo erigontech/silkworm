@@ -17,13 +17,13 @@
 #include "node_db_sqlite.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
 #include <SQLiteCpp/SQLiteCpp.h>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/unix_timestamp.hpp>
 
@@ -156,7 +156,7 @@ class NodeDbSqliteImpl : public NodeDb {
         if (address.ip.is_v6()) {
             sql = sql_ip_v6;
         }
-        assert(sql);
+        SILKWORM_ASSERT(sql);
         if (!sql) {
             throw std::runtime_error("NodeDbSqliteImpl.upsert_node_address: unexpected ip type");
         }

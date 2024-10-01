@@ -161,7 +161,7 @@ class DiscoveryImpl : private MessageHandler {
                     // when a ping check is going to finish, unblock the semaphore
                     [[maybe_unused]] auto _ = gsl::finally([this] {
                         auto finished_task_id = this->ping_checks_semaphore_.try_receive();
-                        assert(finished_task_id.has_value());
+                        SILKWORM_ASSERT(finished_task_id.has_value());
                     });
                     co_await this->ping_check(std::move(node_id));
                 }());

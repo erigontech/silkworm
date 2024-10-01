@@ -38,7 +38,7 @@ inline constexpr auto kTxAccessListAddressGas = 2400;     // per address specifi
 
 void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, int64_t gas,
                                             const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    assert(execution_state.msg);
+    SILKWORM_ASSERT(execution_state.msg);
     evmc::address recipient(execution_state.msg->recipient);
 
     const auto opcode = execution_state.original_code[pc];

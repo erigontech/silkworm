@@ -16,11 +16,11 @@
 
 #include "message_codec.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <stdexcept>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/sentry/common/crypto/ecdsa_signature.hpp>
 
@@ -58,7 +58,7 @@ Bytes MessageCodec::encode(const Message& message, ByteView private_key) {
 }
 
 ByteView MessageCodec::encoded_packet_hash(ByteView packet_data) {
-    assert(packet_data.size() >= sizeof(Packet));
+    SILKWORM_ASSERT(packet_data.size() >= sizeof(Packet));
     return packet_data.substr(0, sizeof(Packet{}.hash));
 }
 

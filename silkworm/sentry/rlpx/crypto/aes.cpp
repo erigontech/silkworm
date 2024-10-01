@@ -31,7 +31,7 @@ static const size_t kKeySize256 = 32;
 extern const size_t kAESBlockSize = AES_BLOCK_SIZE;
 
 AESCipher::AESCipher(ByteView key, std::optional<ByteView> iv, Direction direction) {
-    assert(!iv || (iv->size() == kAESBlockSize));
+    SILKWORM_ASSERT(!iv || (iv->size() == kAESBlockSize));
 
     const EVP_CIPHER* mode{nullptr};
     switch (key.size()) {

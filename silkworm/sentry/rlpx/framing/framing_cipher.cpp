@@ -106,7 +106,7 @@ void FramingCipherImpl::init_mac_hashers(
 }
 
 Bytes FramingCipherImpl::header_mac(MACHasher& hasher, ByteView header_cipher_text) {
-    assert(header_cipher_text.size() >= kAESBlockSize);
+    SILKWORM_ASSERT(header_cipher_text.size() >= kAESBlockSize);
 
     auto hash = hasher.hash();
     auto header_mac_seed = mac_seed_cipher_.encrypt(ByteView(hash.data(), kAESBlockSize));
@@ -185,7 +185,7 @@ size_t FramingCipherImpl::decrypt_header(ByteView header_cipher_text, ByteView h
 }
 
 Bytes FramingCipherImpl::decrypt_frame(ByteView frame_cipher_text, ByteView frame_mac, size_t frame_size) {
-    assert(frame_cipher_text.size() >= frame_size);
+    SILKWORM_ASSERT(frame_cipher_text.size() >= frame_size);
 
     Bytes expected_frame_mac = this->frame_mac(ingress_mac_hasher_, frame_cipher_text);
     if (frame_mac != expected_frame_mac)

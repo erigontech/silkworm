@@ -16,9 +16,9 @@
 
 #include "decode.hpp"
 
-#include <cassert>
 #include <tuple>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::rlp {

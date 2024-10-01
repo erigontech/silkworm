@@ -36,8 +36,6 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 

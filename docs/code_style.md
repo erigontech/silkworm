@@ -146,18 +146,21 @@ When copy-prevention is required, consider making a type move-only. If T is an a
 
 ### P10 constants definition keywords
 
-For class-level constants in .hpp files or constants in .cpp files:
+A) For class-member constants in .hpp files or private constants in .cpp files:
 
-Use `static constexpr` if possible (inline is implicit):
+Use `static constexpr` if possible:
 
 	static constexpr uint64_t kMinDifficulty{0x20000};
 
 Otherwise use `static const`.
 
-For global constants in .hpp files:
+`inline` is implicit for class-member constants, and unnecessary for private constants in .cpp files.
 
-Use `static constexpr` if possible (inline is implicit),  
-Otherwise use `inline static const`.
+B) For global constants in .hpp files:
+
+Use `inline constexpr` if possible,    
+otherwise use `inline const` if possible,  
+otherwise use `extern const`.
 
 See also: [Constants: Safe Idioms](https://abseil.io/tips/140)
 

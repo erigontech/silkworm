@@ -233,14 +233,14 @@ TEST_CASE("get_receipts") {
         const silkworm::BlockWithHash block_with_hash{};
         auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
-        CHECK(!receipts.size());
+        CHECK(receipts.empty());
     }
 
     SECTION("zero receipts w/ zero transactions") {
         const silkworm::BlockWithHash block_with_hash{};
         auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
-        CHECK(receipts.size() == 0);
+        CHECK(receipts.empty());
     }
 
 #ifdef TEST_DELETED

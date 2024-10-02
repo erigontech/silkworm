@@ -59,12 +59,11 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
-EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout) noexcept
+EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},
       block_{block},
       state_{state},
       config_{config},
-      bailout_{bailout},
       evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 {}
 
@@ -101,7 +100,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
     auto value{intx::be::load<intx::uint256>(message.value)};
     const auto owned_funds = state_.get_balance(message.sender);
-    if (!bailout_ && owned_funds < value) {
+    if (!bailout && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
 
         for (auto tracer : tracers_) {
@@ -150,7 +149,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         state_.set_nonce(contract_addr, 1);
     }
 
-    transfer(state_, message.sender, contract_addr, value, bailout_);
+    transfer(state_, message.sender, contract_addr, value, bailout);
 
     const evmc_message deploy_message{
         .kind = message.depth > 0 ? message.kind : EVMC_CALL,
@@ -206,7 +205,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
 
     const auto value{intx::be::load<intx::uint256>(message.value)};
     const auto owned_funds = state_.get_balance(message.sender);
-    if (!bailout_ && message.kind != EVMC_DELEGATECALL && owned_funds < value) {
+    if (!bailout && message.kind != EVMC_DELEGATECALL && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
@@ -219,7 +218,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             state_.touch(message.recipient);
         } else {
-            transfer(state_, message.sender, message.recipient, value, bailout_);
+            transfer(state_, message.sender, message.recipient, value, bailout);
         }
     }
 
@@ -333,6 +332,11 @@ evmc_revision EVM::revision() const noexcept {
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
     evm1_->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
     tracers_.push_back(std::ref(tracer));
+}
+
+void EVM::remove_tracers() noexcept {
+    evm1_->remove_tracers();
+    tracers_.clear();
 }
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {

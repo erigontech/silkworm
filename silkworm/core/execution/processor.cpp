@@ -110,17 +110,21 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     std::swap(receipt.logs, state_.logs());
 }
 
-CallResult ExecutionProcessor::call_with_evm(const Transaction& txn, EVM& call_evm, bool bailout, bool refund) noexcept {
+CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept {
     const std::optional sender{txn.sender()};
 
-    SILKWORM_ASSERT(protocol::validate_call_precheck(txn, call_evm) == ValidationResult::kOk);
-    SILKWORM_ASSERT(protocol::validate_call_funds(txn, call_evm, state_.get_balance(*txn.sender()), bailout) == ValidationResult::kOk);
+    SILKWORM_ASSERT(protocol::validate_call_precheck(txn, evm_) == ValidationResult::kOk);
+    SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender()), bailout) == ValidationResult::kOk);
 
-    const BlockHeader& header{call_evm.block().header};
+    const BlockHeader& header{evm_.block().header};
     const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
 
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                     : txn.max_priority_fee_per_gas};
+    for (auto& tracer : tracers) {
+        evm_.add_tracer(*tracer);
+    }
+
     state_.access_account(*sender);
 
     if (txn.to) {
@@ -137,11 +141,11 @@ CallResult ExecutionProcessor::call_with_evm(const Transaction& txn, EVM& call_e
     }
 
     if (!bailout) {
-        const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, call_evm);
+        const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
         state_.subtract_from_balance(*txn.sender(), required_funds);
     }
-    const intx::uint128 g0{protocol::intrinsic_gas(txn, call_evm.revision())};
-    const auto result = call_evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
+    const intx::uint128 g0{protocol::intrinsic_gas(txn, evm_.revision())};
+    const auto result = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
 
     uint64_t gas_left{result.gas_left};
     uint64_t gas_used{txn.gas_limit - result.gas_left};
@@ -155,12 +159,14 @@ CallResult ExecutionProcessor::call_with_evm(const Transaction& txn, EVM& call_e
     const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)
                                                                                      : txn.max_priority_fee_per_gas};
 
-    state_.add_to_balance(call_evm.beneficiary, priority_fee_per_gas * gas_used);
+    state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 
-    for (auto& tracer : call_evm.tracers()) {
+    for (auto& tracer : evm_.tracers()) {
         tracer.get().on_reward_granted(result, state_);
     }
-    state_.finalize_transaction(call_evm.revision());
+    state_.finalize_transaction(evm_.revision());
+
+    evm_.remove_tracers();
 
     return {result.status, gas_left, gas_used, result.data, result.error_message};
 }

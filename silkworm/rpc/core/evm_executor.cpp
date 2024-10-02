@@ -228,17 +228,15 @@ ExecutionResult EVMExecutor::call(
     const Tracers& tracers,
     bool refund,
     bool bailout) {
+    auto& evm = execution_processor_.evm();
+
     auto& svc = use_service<AnalysisCacheService>(workers_);
-    EVM evm{block, execution_processor_.get_ibs_state(), config_, bailout};
 
     evm.analysis_cache = svc.get_analysis_cache();
     evm.state_pool = svc.get_object_pool();
     evm.beneficiary = rule_set_->get_beneficiary(block.header);
     evm.transfer = rule_set_->transfer_func();
-
-    for (auto& tracer : tracers) {
-        evm.add_tracer(*tracer);
-    }
+    evm.bailout = bailout;
 
     if (!txn.sender()) {
         return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
@@ -256,7 +254,7 @@ ExecutionResult EVMExecutor::call(
         return convert_validated_funds(block, txn, evm, owned_funds);
     }
 
-    const auto result = execution_processor_.call_with_evm(txn, evm, bailout, refund);
+    const auto result = execution_processor_.call(txn, tracers, bailout, refund);
 
     ExecutionResult exec_result{result.status, result.gas_left, result.data};
 

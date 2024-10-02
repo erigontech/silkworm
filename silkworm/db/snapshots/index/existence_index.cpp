@@ -20,7 +20,7 @@
 
 namespace silkworm::snapshots::index {
 
-ExistenceIndex::Reader::Reader(std::filesystem::path index_file_path)
+ExistenceIndex::ExistenceIndex(std::filesystem::path index_file_path)
     : index_file_path_(std::move(index_file_path)) {
     if (std::filesystem::file_size(index_file_path_) == 0) {
         throw std::runtime_error("index " + index_file_path_.filename().string() + " is empty");
@@ -30,11 +30,11 @@ ExistenceIndex::Reader::Reader(std::filesystem::path index_file_path)
     filter_ = BloomFilter::read_from(index_file_stream);
 }
 
-void ExistenceIndex::Reader::add_hash(uint64_t hash) {
+void ExistenceIndex::add_hash(uint64_t hash) {
     filter_->add_hash(hash);
 }
 
-bool ExistenceIndex::Reader::contains_hash(uint64_t hash) {
+bool ExistenceIndex::contains_hash(uint64_t hash) {
     return filter_->contains_hash(hash);
 }
 

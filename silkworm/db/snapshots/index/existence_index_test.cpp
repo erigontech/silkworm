@@ -34,7 +34,7 @@ using silkworm::test_util::TemporaryFile;
 TEST_CASE("ExistenceIndex", "[snapshot][index][existence_index]") {
     SECTION("empty") {
         TemporaryDirectory tmp_dir;
-        CHECK_THROWS_AS(ExistenceIndex::Reader(tmp_dir.get_unique_temporary_path()), std::runtime_error);
+        CHECK_THROWS_AS(ExistenceIndex(tmp_dir.get_unique_temporary_path()), std::runtime_error);
     }
 
     SECTION("item present") {
@@ -47,7 +47,7 @@ TEST_CASE("ExistenceIndex", "[snapshot][index][existence_index]") {
         TemporaryFile sample_ei_file;
         sample_ei_file.write(*from_hex(test_util::kValidBloomFilters[0]));
 
-        ExistenceIndex::Reader existence_index{sample_ei_file.path()};
+        ExistenceIndex existence_index{sample_ei_file.path()};
         CHECK(existence_index.path() == sample_ei_file.path());
         for (size_t i = 0; i < 100; ++i) {
             const uint64_t h = u32_distribution(rnd_generator);

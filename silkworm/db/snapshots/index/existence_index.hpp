@@ -30,28 +30,25 @@ class BloomFilter;
 //! Key existence index based on a Bloom filter implementation
 class ExistenceIndex {
   public:
-    class Reader {
-      public:
-        explicit Reader(std::filesystem::path index_file_path);
+    explicit ExistenceIndex(std::filesystem::path index_file_path);
 
-        std::filesystem::path path() const { return index_file_path_; }
+    std::filesystem::path path() const { return index_file_path_; }
 
-        //! Insert an already hashed item into the index
-        //! \param hash the hash value to add
-        void add_hash(uint64_t hash);
+    //! Insert an already hashed item into the index
+    //! \param hash the hash value to add
+    void add_hash(uint64_t hash);
 
-        //! Checks if index contains the give \p hash value
-        //! \param hash the hash value to check for presence
-        //! \return false means "definitely does not contain value", true means "probably contains value"
-        bool contains_hash(uint64_t hash);
+    //! Checks if index contains the give \p hash value
+    //! \param hash the hash value to check for presence
+    //! \return false means "definitely does not contain value", true means "probably contains value"
+    bool contains_hash(uint64_t hash);
 
-      private:
-        //! The index file path
-        std::filesystem::path index_file_path_;
+  private:
+    //! The index file path
+    std::filesystem::path index_file_path_;
 
-        //! The Bloom filter
-        std::unique_ptr<BloomFilter> filter_;
-    };
+    //! The Bloom filter
+    std::unique_ptr<BloomFilter> filter_;
 };
 
 }  // namespace silkworm::snapshots::index

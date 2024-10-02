@@ -40,6 +40,8 @@ struct RemoteTransactionTest : db::test_util::KVTestBase {
                                  grpc_context_,
                                  &state_cache_,
                                  {},
+                                 {},
+                                 {},
                                  {}};
 };
 

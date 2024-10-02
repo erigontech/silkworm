@@ -75,7 +75,7 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     }
 
     std::shared_ptr<db::chain::ChainStorage> create_storage() override {
-        return std::make_shared<db::chain::RemoteChainStorage>(*this, ethdb::kv::block_provider(&backend_), ethdb::kv::block_number_from_txn_hash_provider(&backend_));
+        return std::make_shared<db::chain::RemoteChainStorage>(*this, ethdb::kv::block_provider(&backend_), ethdb::kv::block_number_from_txn_hash_provider(&backend_), ethdb::kv::block_number_from_block_hash_provider(&backend_), ethdb::kv::block_hash_from_block_number_provider(&backend_));
     }
 
     Task<void> close() override { co_return; }

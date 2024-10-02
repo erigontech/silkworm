@@ -105,8 +105,16 @@ TEST_CASE("estimate gas") {
                                                                         remote_db_test.grpc_context_,
                                                                         &remote_db_test.state_cache_,
                                                                         ethdb::kv::block_provider(&backend),
-                                                                        ethdb::kv::block_number_from_txn_hash_provider(&backend));
-    const db::chain::RemoteChainStorage storage{*tx, ethdb::kv::block_provider(&backend), ethdb::kv::block_number_from_txn_hash_provider(&backend)};
+                                                                        ethdb::kv::block_number_from_txn_hash_provider(&backend),
+                                                                        ethdb::kv::block_number_from_block_hash_provider(&backend),
+                                                                        ethdb::kv::block_hash_from_block_number_provider(&backend));
+    const db::chain::RemoteChainStorage storage{
+        *tx,
+        ethdb::kv::block_provider(&backend),
+        ethdb::kv::block_number_from_txn_hash_provider(&backend),
+        ethdb::kv::block_number_from_block_hash_provider(&backend),
+        ethdb::kv::block_hash_from_block_number_provider(&backend),
+    };
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage};
 
     SECTION("Call empty, always fails but success in last step") {

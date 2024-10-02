@@ -58,7 +58,9 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     test::BackEndMock backend;
     RemoteChainStorage storage{transaction,
                                ethdb::kv::block_provider(&backend),
-                               ethdb::kv::block_number_from_txn_hash_provider(&backend)};
+                               ethdb::kv::block_number_from_txn_hash_provider(&backend),
+                               ethdb::kv::block_number_from_block_hash_provider(&backend),
+                               ethdb::kv::block_hash_from_block_number_provider(&backend)};
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};

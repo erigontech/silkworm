@@ -52,7 +52,9 @@ Task<std::unique_ptr<db::kv::api::Transaction>> RemoteDatabase::begin() {
                                                    grpc_context_,
                                                    state_cache_,
                                                    block_provider(backend_),
-                                                   block_number_from_txn_hash_provider(backend_));
+                                                   block_number_from_txn_hash_provider(backend_),
+                                                   block_number_from_block_hash_provider(backend_),
+                                                   block_hash_from_block_number_provider(backend_));
     co_await txn->open();
     SILK_TRACE << "RemoteDatabase::begin " << this << " txn: " << txn.get() << " end";
     co_return txn;

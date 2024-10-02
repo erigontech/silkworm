@@ -34,10 +34,14 @@ RemoteTransaction::RemoteTransaction(
     agrpc::GrpcContext& grpc_context,
     api::StateCache* state_cache,
     chain::BlockProvider block_provider,
-    chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider)
+    chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+    chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+    chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider)
     : BaseTransaction(state_cache),
       block_provider_{std::move(block_provider)},
       block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
+      block_number_from_block_hash_provider_{std::move(block_number_from_block_hash_provider)},
+      block_hash_from_number_provider_{std::move(block_hash_from_number_provider)},
       stub_{stub},
       grpc_context_{grpc_context},
       tx_rpc_{grpc_context_} {}
@@ -114,7 +118,7 @@ std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::an
 }
 
 std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {
-    return std::make_shared<chain::RemoteChainStorage>(*this, block_provider_, block_number_from_txn_hash_provider_);
+    return std::make_shared<chain::RemoteChainStorage>(*this, block_provider_, block_number_from_txn_hash_provider_, block_number_from_block_hash_provider_, block_hash_from_number_provider_);
 }
 
 Task<api::DomainPointResult> RemoteTransaction::domain_get(api::DomainPointQuery&& query) {  // NOLINT(*-rvalue-reference-param-not-moved)

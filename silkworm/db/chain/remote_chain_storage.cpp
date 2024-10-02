@@ -30,10 +30,14 @@ namespace silkworm::db::chain {
 
 RemoteChainStorage::RemoteChainStorage(kv::api::Transaction& tx,
                                        BlockProvider block_provider,
-                                       BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider)
+                                       BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                                       BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+                                       BlockHashFromBlockNumberProvider block_hash_from_number_provider)
     : tx_{tx},
       block_provider_{std::move(block_provider)},
-      block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)} {}
+      block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
+      block_number_from_block_hash_provider_{std::move(block_number_from_block_hash_provider)},
+      block_hash_from_number_provider_{std::move(block_hash_from_number_provider)} {}
 
 Task<ChainConfig> RemoteChainStorage::read_chain_config() const {
     const auto genesis_block_hash{co_await read_canonical_block_hash(tx_, kEarliestBlockNumber)};

@@ -12,6 +12,7 @@ on:
 jobs:
   integration-test-suite:
     strategy:
+      fail-fast: false
       matrix:
         backend: [ Erigon2, Erigon3 ]
     runs-on: [ self-hosted, "${{ matrix.backend }}" ]

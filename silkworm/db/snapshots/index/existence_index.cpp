@@ -26,6 +26,7 @@ ExistenceIndex::Reader::Reader(std::filesystem::path index_file_path)
         throw std::runtime_error("index " + index_file_path_.filename().string() + " is empty");
     }
     std::ifstream index_file_stream{index_file_path_, std::ios::in | std::ios::binary};
+    index_file_stream.exceptions(std::ios::failbit | std::ios::badbit);
     filter_ = BloomFilter::read_from(index_file_stream);
 }
 

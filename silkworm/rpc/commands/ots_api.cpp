@@ -116,7 +116,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
-            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
@@ -165,7 +165,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
-            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
@@ -214,7 +214,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, false};
-            auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
+            auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             auto block_size = extended_block.get_block_size();
             auto transaction_count = block_with_hash->block.transactions.size();
 
@@ -857,7 +857,7 @@ Task<void> OtsRpcApi::trace_block(db::kv::api::Transaction& tx, BlockNum block_n
 
     const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
     ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
-    const auto receipts = co_await core::get_receipts(tx, *block_with_hash);
+    const auto receipts = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
     const Block extended_block{block_with_hash, *total_difficulty, false};
 
     trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, tx};

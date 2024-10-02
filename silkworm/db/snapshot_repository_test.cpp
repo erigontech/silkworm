@@ -79,7 +79,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
         size_t bundles_count = 0;
         for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
-            bundles_count++;
+            ++bundles_count;
         }
         CHECK(bundles_count == 0);
 
@@ -100,7 +100,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
         size_t bundles_count = 0;
         for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
-            bundles_count++;
+            ++bundles_count;
         }
         // empty snapshots are ignored by repository
         CHECK(bundles_count == 0);
@@ -123,7 +123,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
         size_t bundles_count = 0;
         for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
-            bundles_count++;
+            ++bundles_count;
         }
         CHECK(bundles_count == 1);
 
@@ -133,7 +133,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 
         bundles_count = 0;
         for ([[maybe_unused]] const auto& bundle : repository.view_bundles()) {
-            bundles_count++;
+            ++bundles_count;
         }
         CHECK(bundles_count == 1);
     }

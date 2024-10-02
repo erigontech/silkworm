@@ -56,7 +56,7 @@ std::string uint256_to_hex(const evmone::uint256& x) {
 
     bool leading_zeros = true;
     const uint64_t* px = &x[0];
-    for (int i = 3; i >= 0; i--) {
+    for (int i = 3; i >= 0; --i) {
         if (px[i] == 0 && leading_zeros) {
             continue;
         }
@@ -128,7 +128,7 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
 void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    assert(execution_state.msg);
+    SILKWORM_ASSERT(execution_state.msg);
     const evmc::address recipient(execution_state.msg->recipient);
     const evmc::address sender(execution_state.msg->sender);
 
@@ -226,7 +226,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             case evmc_status_code::EVMC_STACK_OVERFLOW:
             case evmc_status_code::EVMC_STACK_UNDERFLOW:
-                log.gas_cost = result.gas_cost;
+                log.gas_cost = 0;
                 break;
 
             case evmc_status_code::EVMC_OUT_OF_GAS:
@@ -424,7 +424,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
         auto state = tx_.create_state(current_executor, storage, block_number - 1);
         EVMExecutor executor{block, chain_config, workers_, state};
 
-        for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
+        for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
             rpc::Transaction txn{block.transactions[idx]};
             SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
 
@@ -482,7 +482,7 @@ Task<void> DebugExecutor::execute(
         auto state = tx_.create_state(current_executor, storage, block_number);
         EVMExecutor executor{block, chain_config, workers_, state};
 
-        for (auto idx{0}; idx < index; idx++) {
+        for (auto idx{0}; idx < index; ++idx) {
             silkworm::Transaction txn{block.transactions[static_cast<size_t>(idx)]};
             executor.call(block, txn);
         }
@@ -533,7 +533,7 @@ Task<void> DebugExecutor::execute(
         auto state = tx_.create_state(current_executor, storage, block.header.number);
         EVMExecutor executor{block, chain_config, workers_, state};
 
-        for (auto idx{0}; idx < transaction_index; idx++) {
+        for (auto idx{0}; idx < transaction_index; ++idx) {
             silkworm::Transaction txn{block_transactions[static_cast<size_t>(idx)]};
             executor.call(block, txn);
         }

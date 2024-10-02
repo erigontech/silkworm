@@ -20,7 +20,6 @@
 #include <string>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/idle_strategy.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/interface_log.hpp>
 
@@ -31,7 +30,6 @@ struct EngineRpcSettings {
     rpc::InterfaceLogSettings engine_ifc_log_settings{.ifc_name = "engine_rpc_api"};
     std::string private_api_addr{kDefaultPrivateApiAddr};
     log::Level log_verbosity{log::Level::kInfo};
-    concurrency::WaitMode wait_mode{concurrency::WaitMode::kBlocking};
     std::optional<std::string> jwt_secret_file;
 };
 

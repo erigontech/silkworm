@@ -5897,7 +5897,7 @@ TEST_CASE("copy_stack") {
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
     SECTION("PUSHX") {
-        for (std::uint8_t op_code = evmc_opcode::OP_PUSH1; op_code < evmc_opcode::OP_PUSH32 + 1; op_code++) {
+        for (std::uint8_t op_code = evmc_opcode::OP_PUSH1; op_code < evmc_opcode::OP_PUSH32 + 1; ++op_code) {
             std::vector<std::string> trace_stack;
             copy_stack(op_code, top_stack, trace_stack);
 
@@ -5907,33 +5907,33 @@ TEST_CASE("copy_stack") {
     }
 
     SECTION("OP_SWAPX") {
-        for (std::uint8_t op_code = evmc_opcode::OP_SWAP1; op_code < evmc_opcode::OP_SWAP16 + 1; op_code++) {
+        for (std::uint8_t op_code = evmc_opcode::OP_SWAP1; op_code < evmc_opcode::OP_SWAP16 + 1; ++op_code) {
             std::vector<std::string> trace_stack;
             copy_stack(op_code, top_stack, trace_stack);
 
             std::uint8_t size = op_code - evmc_opcode::OP_SWAP1 + 2;
             CHECK(trace_stack.size() == size);
-            for (std::size_t idx = 0; idx < size; idx++) {
+            for (std::size_t idx = 0; idx < size; ++idx) {
                 CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size - size + idx], 16));
             }
         }
     }
 
     SECTION("OP_DUPX") {
-        for (std::uint8_t op_code = evmc_opcode::OP_DUP1; op_code < evmc_opcode::OP_DUP16 + 1; op_code++) {
+        for (std::uint8_t op_code = evmc_opcode::OP_DUP1; op_code < evmc_opcode::OP_DUP16 + 1; ++op_code) {
             std::vector<std::string> trace_stack;
             copy_stack(op_code, top_stack, trace_stack);
 
             std::uint8_t size = op_code - evmc_opcode::OP_DUP1 + 2;
             CHECK(trace_stack.size() == size);
-            for (std::size_t idx = 0; idx < size; idx++) {
+            for (std::size_t idx = 0; idx < size; ++idx) {
                 CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size - size + idx], 16));
             }
         }
     }
 
     SECTION("OP_OTHER") {
-        for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; op_code++) {
+        for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; ++op_code) {
             std::vector<std::string> trace_stack;
             switch (op_code) {
                 case evmc_opcode::OP_PUSH1:
@@ -6078,7 +6078,7 @@ TEST_CASE("copy_memory") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     evmone::Memory memory;
-    for (std::uint8_t idx = 0; idx < 16; idx++) {
+    for (std::uint8_t idx = 0; idx < 16; ++idx) {
         memory[idx] = idx;
     }
 
@@ -6140,7 +6140,7 @@ TEST_CASE("copy_memory_offset_len") {
         {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
-    for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; op_code++) {
+    for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; ++op_code) {
         std::optional<TraceMemory> trace_memory;
         copy_memory_offset_len(op_code, top_stack, trace_memory);
 
@@ -6208,7 +6208,7 @@ TEST_CASE("push_memory_offset_len") {
         {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
-    for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; op_code++) {
+    for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; ++op_code) {
         std::stack<TraceMemory> tms;
         push_memory_offset_len(op_code, top_stack, tms);
 

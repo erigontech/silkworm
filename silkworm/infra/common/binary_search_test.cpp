@@ -17,16 +17,17 @@
 #include "binary_search.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/common/assert.hpp>
+
 namespace silkworm {
 
 static void check_binary_find_if(const std::vector<int>& vec, const int value) {
-    assert(std::is_sorted(vec.begin(), vec.end()));
+    SILKWORM_ASSERT(std::is_sorted(vec.begin(), vec.end()));
     const auto res1{std::upper_bound(vec.begin(), vec.end(), value)};
     const auto res2{std::ranges::find_if(vec, [&](int x) { return x > value; })};
     CHECK(res1 == res2);

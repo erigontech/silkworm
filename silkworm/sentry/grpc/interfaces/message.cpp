@@ -16,9 +16,9 @@
 
 #include "message.hpp"
 
-#include <cassert>
 #include <optional>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/sentry/eth/message_id.hpp>
 #include <silkworm/sentry/eth/status_message.hpp>
@@ -98,14 +98,14 @@ static proto::MessageId proto_message_id_from_eth_id(eth::MessageId eth_id) {
         case eth::MessageId::kPooledTransactions:
             return proto::POOLED_TRANSACTIONS_66;
         default:
-            assert(false);
+            SILKWORM_ASSERT(false);
             return proto::STATUS_66;
     }
 }
 
 uint8_t message_id_from_proto_message_id(proto::MessageId proto_id) {
     auto eth_id = eth_message_id(proto_id);
-    assert(eth_id.has_value());
+    SILKWORM_ASSERT(eth_id.has_value());
     if (!eth_id)
         return eth::StatusMessage::kId;
 
@@ -146,7 +146,7 @@ proto::InboundMessage inbound_message_from_message(const sentry::Message& messag
 
 api::MessageIdSet message_id_set_from_messages_request(const proto::MessagesRequest& request) {
     api::MessageIdSet filter;
-    for (int i = 0; i < request.ids_size(); i++) {
+    for (int i = 0; i < request.ids_size(); ++i) {
         auto id = request.ids(i);
         filter.insert(message_id_from_proto_message_id(id));
     }

@@ -38,7 +38,7 @@ class TransactionHandler {
             if (request_count_ == 0 && !txn_.is_open()) {
                 txn_.reopen(*db_access_);
             }
-            request_count_++;
+            ++request_count_;
         } else {
             if (!txn_.is_open()) {
                 txn_.reopen(*db_access_);
@@ -385,7 +385,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
 
     std::set<Hash> bad_headers;
     for (BlockNum current_height = interim_canonical_chain_.current_head().number;
-         current_height > invalid_chain.unwind_point.number; current_height--) {
+         current_height > invalid_chain.unwind_point.number; --current_height) {
         auto current_hash = db::read_canonical_header_hash(tx, current_height);
         bad_headers.insert(*current_hash);
     }
@@ -514,7 +514,7 @@ bool MainChain::extends(BlockId block, BlockId supposed_parent) const {
         auto header = get_header(block.number, block.hash);
         if (!header) return false;
         if (header->parent_hash == supposed_parent.hash) return true;
-        block.number--;
+        --block.number;
         block.hash = header->parent_hash;
     }
     if (block.number == supposed_parent.number) return block.hash == supposed_parent.hash;

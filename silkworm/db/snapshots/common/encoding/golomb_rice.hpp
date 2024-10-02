@@ -50,11 +50,12 @@
 #include <iostream>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/db/snapshots/rec_split/common/common.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/sequence.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::snapshots::rec_split::encoding {
+#include "sequence.hpp"
+#include "util.hpp"
+
+namespace silkworm::snapshots::encoding {
 
 //! Storage for Golomb-Rice codes of a RecSplit bucket.
 class GolombRiceVector {
@@ -253,4 +254,4 @@ class GolombRiceVector {
     }
 };
 
-}  // namespace silkworm::snapshots::rec_split::encoding
+}  // namespace silkworm::snapshots::encoding

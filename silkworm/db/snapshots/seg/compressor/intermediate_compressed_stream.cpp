@@ -88,7 +88,7 @@ std::optional<IntermediateCompressedStream::CompressedWord> IntermediateCompress
         size_t pattern_pos = read_varint();
         size_t pattern_code = read_varint();
         word.pattern_positions.emplace_back(pattern_pos, pattern_code);
-        pattern_positions_count--;
+        --pattern_positions_count;
     }
 
     return word;

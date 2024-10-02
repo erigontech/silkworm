@@ -25,7 +25,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::snapshots::rec_split::encoding {
+namespace silkworm::snapshots::encoding {
 
 TEST_CASE("Uint64Sequence", "[silkworm][snapshots][recsplit][sequence]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -52,4 +52,4 @@ TEST_CASE("Uint64Sequence: size too big", "[silkworm][snapshots][recsplit][seque
     CHECK_THROWS_AS((ss >> input_sequence), std::logic_error);
 }
 
-}  // namespace silkworm::snapshots::rec_split::encoding
+}  // namespace silkworm::snapshots::encoding

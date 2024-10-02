@@ -825,7 +825,7 @@ class AsyncCallFactory {
           kv_stub_{remote::KV::NewStub(channel, grpc::StubOptions{})} {}
 
     void start_batch(std::atomic_bool& stop, const BatchOptions& batch_options) {
-        for (auto i{0}; i < batch_options.batch_size && !stop; i++) {
+        for (auto i{0}; i < batch_options.batch_size && !stop; ++i) {
             if (batch_options.is_configured(Rpc::kEtherbase)) {
                 auto* etherbase = new AsyncEtherbaseCall(queue_, ethbackend_stub_.get());
                 etherbase->start(remote::EtherbaseRequest{});

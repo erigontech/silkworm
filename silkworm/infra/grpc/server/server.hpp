@@ -25,6 +25,7 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
@@ -37,10 +38,10 @@ class Server {
   public:
     //! Build a ready-to-start RPC server according to specified configuration.
     explicit Server(ServerSettings settings)
-        : settings_{std::move(settings)}, context_pool_{settings_.context_pool_settings.num_contexts} {}
+        : settings_{std::move(settings)} {}
 
     /**
-     * No need to explicitly shutdown the server because this destructor takes care.
+     * No need to explicitly shut down the server because this destructor takes care.
      * Use \ref shutdown() if you want explicit control over termination before destruction.
      */
     virtual ~Server() {
@@ -70,10 +71,7 @@ class Server {
         int selected_port{0};
         builder.AddListeningPort(settings_.address_uri, settings_.credentials, &selected_port);
 
-        // Add one server-side gRPC completion queue for each execution context.
-        for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
-            context_pool_.add_context(builder.AddCompletionQueue(), settings_.context_pool_settings.wait_mode);
-        }
+        context_pool_ = std::make_unique<ServerContextPool>(settings_.context_pool_settings, builder);
 
         // gRPC async model requires the server to register the RPC services first.
         SILK_TRACE << "Server " << this << " registering async services";
@@ -92,7 +90,7 @@ class Server {
 
         // Start the server execution: the context pool will spawn the context threads.
         SILK_TRACE << "Server " << this << " starting execution loop";
-        context_pool_.start();
+        context_pool_->start();
 
         SILK_TRACE << "Server::build_and_start " << this << " END";
     }
@@ -100,11 +98,13 @@ class Server {
     //! Join the RPC server execution loop and block until \ref shutdown() is called on this Server instance.
     void join() {
         SILK_TRACE << "Server::join " << this << " START";
-        context_pool_.join();
+        if (context_pool_) {
+            context_pool_->join();
+        }
         SILK_TRACE << "Server::join " << this << " END";
     }
 
-    //! Stop this Server instance forever. Any subsequent call to \ref build_and_start() has not effect.
+    //! Stop this Server instance forever. Any subsequent call to \ref build_and_start() has no effect.
     void shutdown() {
         SILK_TRACE << "Server::shutdown " << this << " START";
 
@@ -125,7 +125,9 @@ class Server {
         SILK_TRACE << "Server::shutdown " << this << " stopping context pool";
 
         // Order matters here: 2) shutdown and drain the queues
-        context_pool_.stop();
+        if (context_pool_) {
+            context_pool_->stop();
+        }
 
         SILK_TRACE << "Server::shutdown " << this << " END";
     }
@@ -140,13 +142,21 @@ class Server {
     }
 
     //! Returns the number of server contexts.
-    [[nodiscard]] std::size_t num_contexts() const { return context_pool_.num_contexts(); }
+    [[nodiscard]] std::size_t num_contexts() const {
+        return context_pool_ ? context_pool_->size() : 0;
+    }
 
     //! Get the next server context in round-robin scheme.
-    ServerContext const& next_context() { return context_pool_.next_context(); }
+    ServerContext const& next_context() {
+        SILKWORM_ASSERT(context_pool_);
+        return context_pool_->next_context();
+    }
 
     //! Get the next server scheduler in round-robin scheme.
-    boost::asio::io_context& next_io_context() { return context_pool_.next_io_context(); }
+    boost::asio::io_context& next_io_context() {
+        SILKWORM_ASSERT(context_pool_);
+        return context_pool_->next_io_context();
+    }
 
   protected:
     //! Subclasses must override this method to register gRPC RPC services into the server.
@@ -165,7 +175,7 @@ class Server {
     std::unique_ptr<grpc::Server> server_;
 
     //! Pool of server schedulers used to run the execution loops.
-    ServerContextPool context_pool_;
+    std::unique_ptr<ServerContextPool> context_pool_;
 
     bool shutdown_{false};
 };

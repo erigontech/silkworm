@@ -31,6 +31,8 @@ static const char* ETHBACKEND_method_names[] = {
   "/remote.ETHBACKEND/Subscribe",
   "/remote.ETHBACKEND/SubscribeLogs",
   "/remote.ETHBACKEND/Block",
+  "/remote.ETHBACKEND/CanonicalHash",
+  "/remote.ETHBACKEND/HeaderNumber",
   "/remote.ETHBACKEND/TxnLookup",
   "/remote.ETHBACKEND/NodeInfo",
   "/remote.ETHBACKEND/Peers",
@@ -55,12 +57,14 @@ ETHBACKEND::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel
   , rpcmethod_Subscribe_(ETHBACKEND_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   , rpcmethod_SubscribeLogs_(ETHBACKEND_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
   , rpcmethod_Block_(ETHBACKEND_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_TxnLookup_(ETHBACKEND_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_NodeInfo_(ETHBACKEND_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Peers_(ETHBACKEND_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_AddPeer_(ETHBACKEND_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_PendingBlock_(ETHBACKEND_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_BorEvent_(ETHBACKEND_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CanonicalHash_(ETHBACKEND_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HeaderNumber_(ETHBACKEND_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_TxnLookup_(ETHBACKEND_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_NodeInfo_(ETHBACKEND_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Peers_(ETHBACKEND_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_AddPeer_(ETHBACKEND_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_PendingBlock_(ETHBACKEND_method_names[15], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_BorEvent_(ETHBACKEND_method_names[16], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status ETHBACKEND::Stub::Etherbase(::grpc::ClientContext* context, const ::remote::EtherbaseRequest& request, ::remote::EtherbaseReply* response) {
@@ -252,6 +256,52 @@ void ETHBACKEND::Stub::async::Block(::grpc::ClientContext* context, const ::remo
 ::grpc::ClientAsyncResponseReader< ::remote::BlockReply>* ETHBACKEND::Stub::AsyncBlockRaw(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncBlockRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status ETHBACKEND::Stub::CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::remote::CanonicalHashReply* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::CanonicalHashRequest, ::remote::CanonicalHashReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_CanonicalHash_, context, request, response);
+}
+
+void ETHBACKEND::Stub::async::CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::CanonicalHashRequest, ::remote::CanonicalHashReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CanonicalHash_, context, request, response, std::move(f));
+}
+
+void ETHBACKEND::Stub::async::CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CanonicalHash_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::CanonicalHashReply>* ETHBACKEND::Stub::PrepareAsyncCanonicalHashRaw(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::CanonicalHashReply, ::remote::CanonicalHashRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_CanonicalHash_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::CanonicalHashReply>* ETHBACKEND::Stub::AsyncCanonicalHashRaw(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncCanonicalHashRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status ETHBACKEND::Stub::HeaderNumber(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::remote::HeaderNumberReply* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::HeaderNumberRequest, ::remote::HeaderNumberReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HeaderNumber_, context, request, response);
+}
+
+void ETHBACKEND::Stub::async::HeaderNumber(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest* request, ::remote::HeaderNumberReply* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::HeaderNumberRequest, ::remote::HeaderNumberReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HeaderNumber_, context, request, response, std::move(f));
+}
+
+void ETHBACKEND::Stub::async::HeaderNumber(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest* request, ::remote::HeaderNumberReply* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HeaderNumber_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::HeaderNumberReply>* ETHBACKEND::Stub::PrepareAsyncHeaderNumberRaw(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::HeaderNumberReply, ::remote::HeaderNumberRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_HeaderNumber_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::HeaderNumberReply>* ETHBACKEND::Stub::AsyncHeaderNumberRaw(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncHeaderNumberRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -488,6 +538,26 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[9],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::CanonicalHashRequest, ::remote::CanonicalHashReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ETHBACKEND::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::remote::CanonicalHashRequest* req,
+             ::remote::CanonicalHashReply* resp) {
+               return service->CanonicalHash(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ETHBACKEND_method_names[10],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::HeaderNumberRequest, ::remote::HeaderNumberReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ETHBACKEND::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::remote::HeaderNumberRequest* req,
+             ::remote::HeaderNumberReply* resp) {
+               return service->HeaderNumber(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ETHBACKEND_method_names[11],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::TxnLookupRequest, ::remote::TxnLookupReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
              ::grpc::ServerContext* ctx,
@@ -496,7 +566,7 @@ ETHBACKEND::Service::Service() {
                return service->TxnLookup(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[10],
+      ETHBACKEND_method_names[12],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NodesInfoRequest, ::remote::NodesInfoReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -506,7 +576,7 @@ ETHBACKEND::Service::Service() {
                return service->NodeInfo(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[11],
+      ETHBACKEND_method_names[13],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::google::protobuf::Empty, ::remote::PeersReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -516,7 +586,7 @@ ETHBACKEND::Service::Service() {
                return service->Peers(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[12],
+      ETHBACKEND_method_names[14],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::AddPeerRequest, ::remote::AddPeerReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -526,7 +596,7 @@ ETHBACKEND::Service::Service() {
                return service->AddPeer(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[13],
+      ETHBACKEND_method_names[15],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::google::protobuf::Empty, ::remote::PendingBlockReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -536,7 +606,7 @@ ETHBACKEND::Service::Service() {
                return service->PendingBlock(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[14],
+      ETHBACKEND_method_names[16],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::BorEventRequest, ::remote::BorEventReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -606,6 +676,20 @@ ETHBACKEND::Service::~Service() {
 }
 
 ::grpc::Status ETHBACKEND::Service::Block(::grpc::ServerContext* context, const ::remote::BlockRequest* request, ::remote::BlockReply* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ETHBACKEND::Service::CanonicalHash(::grpc::ServerContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ETHBACKEND::Service::HeaderNumber(::grpc::ServerContext* context, const ::remote::HeaderNumberRequest* request, ::remote::HeaderNumberReply* response) {
   (void) context;
   (void) request;
   (void) response;

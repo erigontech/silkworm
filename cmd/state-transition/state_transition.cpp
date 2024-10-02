@@ -233,13 +233,13 @@ void StateTransition::validate_transition(const Receipt& receipt, const Expected
 
     if (state.state_root_hash() != expected_sub_state.stateHash) {
         print_error_message(expected_state, expected_sub_state, "Failed: State root hash does not match");
-        failed_count_++;
+        ++failed_count_;
     } else {
         Bytes encoded;
         rlp::encode(encoded, receipt.logs);
         if (std::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
             print_error_message(expected_state, expected_sub_state, "Failed: Logs hash does not match");
-            failed_count_++;
+            ++failed_count_;
         } else {
             print_diagnostic_message(expected_state, expected_sub_state, "OK");
         }

@@ -17,7 +17,6 @@
 #include "evm.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
 #include <iterator>
 #include <memory>
@@ -27,6 +26,7 @@
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/protocol/param.hpp>
@@ -70,7 +70,7 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
-    assert(txn.sender());  // sender must be valid
+    SILKWORM_ASSERT(txn.sender());  // sender must be valid
 
     txn_ = &txn;
 
@@ -481,10 +481,10 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     intx::be::store(context.tx_gas_price.bytes, effective_gas_price);
     context.tx_origin = *evm_.txn_->sender();
     context.block_coinbase = evm_.beneficiary;
-    assert(header.number <= INT64_MAX);  // EIP-1985
+    SILKWORM_ASSERT(header.number <= INT64_MAX);  // EIP-1985
     context.block_number = static_cast<int64_t>(header.number);
     context.block_timestamp = static_cast<int64_t>(header.timestamp);
-    assert(header.gas_limit <= INT64_MAX);  // EIP-1985
+    SILKWORM_ASSERT(header.gas_limit <= INT64_MAX);  // EIP-1985
     context.block_gas_limit = static_cast<int64_t>(header.gas_limit);
     if (header.difficulty == 0) {
         // EIP-4399: Supplant DIFFICULTY opcode with RANDOM
@@ -503,11 +503,11 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
 }
 
 evmc::bytes32 EvmHost::get_block_hash(int64_t block_number) const noexcept {
-    assert(block_number >= 0);
+    SILKWORM_ASSERT(block_number >= 0);
     const uint64_t current_block_num{evm_.block_.header.number};
-    assert(static_cast<uint64_t>(block_number) < current_block_num);
+    SILKWORM_ASSERT(static_cast<uint64_t>(block_number) < current_block_num);
     const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(block_number)};
-    assert(std::in_range<std::size_t>(new_size_u64));
+    SILKWORM_ASSERT(std::in_range<std::size_t>(new_size_u64));
     const size_t new_size{static_cast<size_t>(new_size_u64)};
 
     std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};

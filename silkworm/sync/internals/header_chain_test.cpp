@@ -366,7 +366,7 @@ TEST_CASE("HeaderChain: (1) simple chain") {
 
     std::array<BlockHeader, 10> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
@@ -658,7 +658,7 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
 
     std::array<BlockHeader, 10> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i * 100;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
@@ -846,7 +846,7 @@ TEST_CASE("HeaderChain: (3) chain with branches") {
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
         auto curr_link = anchor->links[0];
-        for (size_t i = 2; i <= 9; i++) {  // verify canonical chain
+        for (size_t i = 2; i <= 9; ++i) {  // verify canonical chain
             auto next_link = curr_link->find_child(headers[i].hash());
             REQUIRE(next_link != curr_link->next.end());
             curr_link = *next_link;
@@ -877,7 +877,7 @@ TEST_CASE("HeaderChain: (4) pre-verified hashes on canonical chain") {
 
     std::array<BlockHeader, 10> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i * 100;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
@@ -937,7 +937,7 @@ TEST_CASE("HeaderChain: (4) pre-verified hashes on canonical chain") {
     REQUIRE(link1->preverified == true);  // verify propagation
 
     // canonical chain headers must be pre-verified
-    for (size_t i = 1; i < headers.size(); i++) {
+    for (size_t i = 1; i < headers.size(); ++i) {
         auto link = chain.links_[headers[i].hash()];
         REQUIRE(link != nullptr);
         REQUIRE(link->preverified == true);
@@ -968,7 +968,7 @@ TEST_CASE("HeaderChain: (5) pre-verified hashes") {
 
     std::array<BlockHeader, 7> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i * 100;
         headers[i].parent_hash = headers[i - 1].hash();
@@ -1049,7 +1049,7 @@ TEST_CASE("HeaderChain: (5') pre-verified hashes with canonical chain change") {
 
     std::array<BlockHeader, 6> a_headers;
 
-    for (size_t i = 1; i < a_headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < a_headers.size(); ++i) {  // skip first header for simplicity
         a_headers[i].number = i;
         a_headers[i].difficulty = i * 100;
         a_headers[i].parent_hash = a_headers[i - 1].hash();
@@ -1057,7 +1057,7 @@ TEST_CASE("HeaderChain: (5') pre-verified hashes with canonical chain change") {
 
     std::array<BlockHeader, 7> b_headers;
     b_headers[2] = a_headers[2];
-    for (size_t i = 3; i < b_headers.size(); i++) {  // skip first headers for simplicity
+    for (size_t i = 3; i < b_headers.size(); ++i) {  // skip first headers for simplicity
         b_headers[i].number = i;
         b_headers[i].difficulty = i * 100;
         b_headers[i].parent_hash = b_headers[i - 1].hash();
@@ -1078,7 +1078,7 @@ TEST_CASE("HeaderChain: (5') pre-verified hashes with canonical chain change") {
     chain.accept_headers({b_headers[3], b_headers[4], b_headers[5], b_headers[6]}, request_id, peer_id);
 
     // verify
-    for (size_t i = 1; i < a_headers.size(); i++) {
+    for (size_t i = 1; i < a_headers.size(); ++i) {
         auto link = chain.links_[a_headers[i].hash()];
         REQUIRE(link != nullptr);
         if (i == 1 || i == 2)
@@ -1086,7 +1086,7 @@ TEST_CASE("HeaderChain: (5') pre-verified hashes with canonical chain change") {
         else
             REQUIRE(link->preverified == false);
     }
-    for (size_t i = 3; i < b_headers.size(); i++) {
+    for (size_t i = 3; i < b_headers.size(); ++i) {
         auto link = chain.links_[b_headers[i].hash()];
         REQUIRE(link != nullptr);
         REQUIRE(link->preverified == true);
@@ -1111,7 +1111,7 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
 
     headers[0].number = 0;
     headers[0].difficulty = 0;
-    for (size_t i = 1; i < headers.size(); i++) {
+    for (size_t i = 1; i < headers.size(); ++i) {
         headers[i].number = i;
         headers[i].difficulty = i;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
@@ -1252,7 +1252,7 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
 
     std::array<BlockHeader, 10> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
@@ -1353,7 +1353,7 @@ TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction
 
     std::array<BlockHeader, 10> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();

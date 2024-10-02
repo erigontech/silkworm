@@ -16,11 +16,11 @@
 
 #include "freezer.hpp"
 
-#include <cassert>
 #include <filesystem>
 #include <stdexcept>
 #include <vector>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/filesystem.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -76,7 +76,7 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
     uint64_t base_txn_id = [last_frozen]() -> uint64_t {
         if (last_frozen == 0) return 0;
         auto id = get_next_base_txn_id(last_frozen);
-        assert(id.has_value());
+        SILKWORM_ASSERT(id.has_value());
         return *id;
     }();
 
@@ -99,7 +99,7 @@ static const SnapshotFreezer& get_snapshot_freezer(SnapshotType type) {
         case SnapshotType::transactions:
             return txn_snapshot_freezer;
         default:
-            assert(false);
+            SILKWORM_ASSERT(false);
             throw std::runtime_error("invalid type");
     }
 }

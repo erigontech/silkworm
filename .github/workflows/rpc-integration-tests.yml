@@ -11,7 +11,10 @@ on:
 
 jobs:
   integration-test-suite:
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        backend: [ Erigon2 ]
+    runs-on: [ self-hosted, "${{ matrix.backend }}" ]
     env:
       ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
@@ -27,7 +30,7 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          git -c advice.detachedHead=false clone --depth 1 --branch v0.50.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          git -c advice.detachedHead=false clone --depth 1 --branch v0.52.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt
 

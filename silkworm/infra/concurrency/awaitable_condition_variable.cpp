@@ -62,7 +62,7 @@ class AwaitableConditionVariableImpl {
 
     void notify_all() {
         std::scoped_lock lock(mutex_);
-        version_++;
+        ++version_;
         for (auto& waiter : waiters_) {
             waiter->notify();
         }

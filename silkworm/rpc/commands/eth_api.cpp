@@ -831,14 +831,14 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
+        auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
         const auto& transactions = block_with_hash->block.transactions;
         if (receipts.size() != transactions.size()) {
             throw std::invalid_argument{"Unexpected size for receipts in handle_eth_get_transaction_receipt"};
         }
 
         std::optional<std::size_t> tx_index;
-        for (size_t idx{0}; idx < transactions.size(); idx++) {
+        for (size_t idx{0}; idx < transactions.size(); ++idx) {
             auto ethash_hash = transactions[idx].hash();
 
             SILK_TRACE << "tx " << idx << ") hash: " << silkworm::to_hex(silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength}));
@@ -1404,7 +1404,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
 
         silkworm::Bytes hash_data{};
 
-        for (std::size_t i{0}; i < tx_hash_list.size(); i++) {
+        for (std::size_t i{0}; i < tx_hash_list.size(); ++i) {
             struct CallBundleTxInfo tx_info {};
             const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, tx_hash_list[i]);
             if (!tx_with_block) {
@@ -2038,8 +2038,8 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         rpc::fee_history::BlockProvider block_provider = [this, &chain_storage](BlockNum block_number) {
             return core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         };
-        rpc::fee_history::ReceiptsProvider receipts_provider = [&tx](const BlockWithHash& block_with_hash) {
-            return core::get_receipts(*tx, block_with_hash);
+        rpc::fee_history::ReceiptsProvider receipts_provider = [&tx, &chain_storage, this](const BlockWithHash& block_with_hash) {
+            return core::get_receipts(*tx, block_with_hash, *chain_storage, this->workers_);
         };
 
         rpc::fee_history::LatestBlockProvider latest_block_provider = [&tx]() {

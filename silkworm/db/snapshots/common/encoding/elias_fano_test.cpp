@@ -26,7 +26,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::snapshots::rec_split::encoding {
+namespace silkworm::snapshots::encoding {
 
 struct EliasFanoList32Test {
     std::vector<uint64_t> offsets;
@@ -107,7 +107,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
         CHECK(ef_list.count() == ef_test.offsets.size() - 1);
         CHECK(ef_list.sequence_length() == ef_test.offsets.size());
 
-        for (uint64_t i{0}; i < ef_test.offsets.size(); i++) {
+        for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {
             const uint64_t x = ef_list.get(i);
             CHECK(x == ef_test.offsets[i]);
         }
@@ -124,7 +124,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
         constexpr std::size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
         std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
         EliasFanoList32 ef_list_copy{ef_test.offsets.size() - 1, ef_test.expected_u, data};
-        for (uint64_t i{0}; i < ef_test.offsets.size(); i++) {
+        for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {
             const uint64_t x = ef_list_copy.get(i);
             CHECK(x == ef_test.offsets[i]);
         }
@@ -140,7 +140,7 @@ TEST_CASE("DoubleEliasFanoList16", "[silkworm][recsplit][elias_fano]") {
 
     CHECK(double_ef_list.num_buckets() == cum_keys.size() - 1);
 
-    for (uint64_t i{0}; i < double_ef_list.num_buckets(); i++) {
+    for (uint64_t i{0}; i < double_ef_list.num_buckets(); ++i) {
         uint64_t x{0}, x2{0}, y{0};
 
         double_ef_list.get3(i, x, x2, y);
@@ -168,4 +168,4 @@ TEST_CASE("DoubleEliasFanoList16", "[silkworm][recsplit][elias_fano]") {
                     "0000000000000000010000000000000000000000000000000000000000000000"));
 }
 
-}  // namespace silkworm::snapshots::rec_split::encoding
+}  // namespace silkworm::snapshots::encoding

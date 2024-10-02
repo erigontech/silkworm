@@ -17,13 +17,13 @@
 #include "node_db_sqlite.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
 #include <SQLiteCpp/SQLiteCpp.h>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/unix_timestamp.hpp>
 
@@ -156,7 +156,7 @@ class NodeDbSqliteImpl : public NodeDb {
         if (address.ip.is_v6()) {
             sql = sql_ip_v6;
         }
-        assert(sql);
+        SILKWORM_ASSERT(sql);
         if (!sql) {
             throw std::runtime_error("NodeDbSqliteImpl.upsert_node_address: unexpected ip type");
         }
@@ -484,7 +484,7 @@ class NodeDbSqliteImpl : public NodeDb {
 
         SQLite::Statement statement{*db_, sql};
         statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
-        for (size_t i = 0; i < ids.size(); i++) {
+        for (size_t i = 0; i < ids.size(); ++i) {
             statement.bind(static_cast<int>(i + 2), ids[i].hex());
         }
         statement.exec();
@@ -516,7 +516,7 @@ class NodeDbSqliteImpl : public NodeDb {
         query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.min_pong_time)));
         query.bind(2, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_peer_disconnected_time)));
         query.bind(3, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_taken_time)));
-        for (size_t i = 0; i < query_params.exclude_ids.size(); i++) {
+        for (size_t i = 0; i < query_params.exclude_ids.size(); ++i) {
             query.bind(static_cast<int>(i + 4), query_params.exclude_ids[i].hex());
         }
         query.bind(":limit", static_cast<int64_t>(query_params.limit));
@@ -542,7 +542,7 @@ class NodeDbSqliteImpl : public NodeDb {
 
         SQLite::Statement statement{*db_, sql};
         statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
-        for (size_t i = 0; i < ids.size(); i++) {
+        for (size_t i = 0; i < ids.size(); ++i) {
             statement.bind(static_cast<int>(i + 2), ids[i].hex());
         }
         statement.exec();

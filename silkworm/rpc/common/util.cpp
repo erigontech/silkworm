@@ -148,7 +148,7 @@ std::string get_opcode_hex(uint8_t opcode) {
 }
 
 std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
-    assert(names != nullptr);
+    SILKWORM_ASSERT(names != nullptr);
 
     const auto name = names[opcode];
     if (name != nullptr) {

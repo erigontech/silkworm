@@ -258,35 +258,31 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompresso
         Decompressor decoder{tmp_file.path()};
         CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("compressed file is too short: 31"));
     }
-    SECTION("cannot build pattern tree: highest_depth reached zero") {
-        TemporaryFile tmp_file;
-        tmp_file.write(*silkworm::from_hex("0x000000000000000C000000000000000400000000000000150309000000000000"));
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("cannot build pattern tree: highest_depth reached zero"));
+    SECTION("invalid pattern_dict_length for compressed file size: 32") {
+        TemporaryFile tmp_file1;
+        tmp_file1.write(*silkworm::from_hex("0x000000000000000C000000000000000400000000000000150309000000000000"));
+        Decompressor decoder1{tmp_file1.path()};
+        CHECK_THROWS_MATCHES(decoder1.open(), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 32"));
+        TemporaryFile tmp_file2;
+        tmp_file2.write(*silkworm::from_hex("0x0000000000000000000000000000000000000000000000010000000000000000"));
+        Decompressor decoder2{tmp_file2.path()};
+        CHECK_THROWS_MATCHES(decoder2.open(), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 32"));
     }
-    SECTION("pattern dict is invalid: data skip failed at 22") {
+    SECTION("invalid pattern_dict_length for compressed file size: 34") {
         TemporaryFile tmp_file;
         tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000016000000000000000003ff"));
         Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: data skip failed at 11"));
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 34"));
     }
-    SECTION("pattern dict is invalid: length read failed at 1") {
-        TemporaryFile tmp_file;
-        tmp_file.write(*silkworm::from_hex("0x0000000000000000000000000000000000000000000000010000000000000000"));
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: length read failed at 1"));
-    }
-    SECTION("cannot build position tree: highest_depth reached zero") {
-        TemporaryFile tmp_file;
-        tmp_file.write(*silkworm::from_hex("0x000000000000000C0000000000000004000000000000000000000000000000160309"));
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("cannot build position tree: highest_depth reached zero"));
-    }
-    SECTION("position dict is invalid: position read failed at 22") {
-        TemporaryFile tmp_file;
-        tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000000000000000000001603ff"));
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("position dict is invalid: position read failed at 22"));
+    SECTION("invalid position_dict_length for compressed file size: 34") {
+        TemporaryFile tmp_file1;
+        tmp_file1.write(*silkworm::from_hex("0x000000000000000C0000000000000004000000000000000000000000000000160309"));
+        Decompressor decoder1{tmp_file1.path()};
+        CHECK_THROWS_MATCHES(decoder1.open(), std::runtime_error, Message("invalid position_dict_length for compressed file size: 34"));
+        TemporaryFile tmp_file2;
+        tmp_file2.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000000000000000000001603ff"));
+        Decompressor decoder2{tmp_file2.path()};
+        CHECK_THROWS_MATCHES(decoder2.open(), std::runtime_error, Message("invalid position_dict_length for compressed file size: 34"));
     }
 }
 
@@ -492,7 +488,7 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
             CHECK(it.has_prefix(expected_word.substr(0, expected_word.size() / 2)));
             if (!expected_word.empty()) {
                 Bytes modified_word{expected_word};
-                modified_word[expected_word.size() - 1]++;
+                ++modified_word[expected_word.size() - 1];
                 CHECK(!it.has_prefix(modified_word));
             }
             it.skip();

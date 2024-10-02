@@ -27,7 +27,7 @@ std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum bloc
                                                                    const evmc::bytes32& hash) const noexcept {
     auto [initial_link, final_link] = persisted_link_queue_.equal_range(block_number);
 
-    for (auto link = initial_link; link != final_link; link++) {
+    for (auto link = initial_link; link != final_link; ++link) {
         if (link->second->blockHeight == block_number && link->second->hash == hash) {
             return *link->second->header;
         }
@@ -37,7 +37,7 @@ std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum bloc
 }
 
 bool CustomHeaderOnlyChainState::read_body(BlockNum, const evmc::bytes32&, BlockBody&) const noexcept {
-    assert(false);  // not implemented
+    SILKWORM_ASSERT(false);  // not implemented
     return false;
 }
 
@@ -66,13 +66,13 @@ std::optional<BlockHeader> SimpleHeaderOnlyChainState::read_header(BlockNum bloc
 }
 
 bool SimpleHeaderOnlyChainState::read_body(BlockNum, const evmc::bytes32&, BlockBody&) const noexcept {
-    assert(false);  // not implemented
+    SILKWORM_ASSERT(false);  // not implemented
     return false;
 }
 
 std::optional<intx::uint256> SimpleHeaderOnlyChainState::total_difficulty(uint64_t,
                                                                           const evmc::bytes32&) const noexcept {
-    assert(false);  // not implemented
+    SILKWORM_ASSERT(false);  // not implemented
     return {};
 }
 

@@ -20,13 +20,13 @@
 
 #include <algorithm>
 #include <bit>
-#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes.hpp>
 
 #include "lcp_kasai.hpp"
@@ -427,7 +427,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
                 top = top->n1.get();
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::unfold: unexpected condition side > 1");
 #endif
@@ -496,7 +496,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
                 top = top->n1.get();
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::unfold: unexpected condition side > 1");
 #endif
@@ -538,7 +538,7 @@ void PatriciaTreeMatchFinderImpl::fold(size_t bits) {
                 head_len = top->p1 & 0x1f;
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::fold: unexpected condition top prev_top is not a top child");
 #endif
@@ -569,7 +569,7 @@ const std::vector<PatriciaTreeMatchFinder::Match>& PatriciaTreeMatchFinderImpl::
     }
 
     inv.resize(n);
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; ++i) {
         inv[static_cast<size_t>(sa[i])] = static_cast<int>(i);
     }
 
@@ -579,7 +579,7 @@ const std::vector<PatriciaTreeMatchFinder::Match>& PatriciaTreeMatchFinderImpl::
     // depth in bits
     size_t depth = 0;
     PatriciaTreeMatchFinder::Match* last_match = nullptr;
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; ++i) {
         // lcp[i] is the Longest Common Prefix of suffixes starting from sa[i] and sa[i+1]
         if (i > 0) {
             auto lcp1 = static_cast<size_t>(this->lcp[i - 1]);
@@ -605,7 +605,7 @@ const std::vector<PatriciaTreeMatchFinder::Match>& PatriciaTreeMatchFinderImpl::
         }
         auto sa1 = static_cast<size_t>(this->sa[i]);
         size_t start = sa1 + depth / 8;
-        for (size_t end = start + 1; end <= n; end++) {
+        for (size_t end = start + 1; end <= n; ++end) {
             uint32_t d = this->unfold(data[end - 1]);
             depth += 8 - (d & 0x1f);
             // divergence found
@@ -646,14 +646,14 @@ const std::vector<PatriciaTreeMatchFinder::Match>& PatriciaTreeMatchFinderImpl::
 
     size_t last_end = this->matches[0].end;
     size_t j = 1;
-    for (size_t i = 1; i < this->matches.size(); i++) {
+    for (size_t i = 1; i < this->matches.size(); ++i) {
         const PatriciaTreeMatchFinder::Match& m = this->matches[i];
         if (m.end > last_end) {
             if (i != j) {
                 this->matches[j] = m;
             }
             last_end = m.end;
-            j++;
+            ++j;
         }
     }
 
@@ -666,7 +666,7 @@ std::pair<Bytes, size_t> PatriciaTreeMatchFinderImpl::current() {
     size_t depth = 0;
     size_t last = node_stack.size() - 1;
 
-    for (size_t i = 0; i < node_stack.size(); i++) {
+    for (size_t i = 0; i < node_stack.size(); ++i) {
         const Node* n = node_stack[i];
         uint32_t p = 0;
 
@@ -678,7 +678,7 @@ std::pair<Bytes, size_t> PatriciaTreeMatchFinderImpl::current() {
                 p = n->p1;
             } else {
 #ifdef DEBUG
-                assert(false);
+                SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::current: unexpected condition next is not a child of n");
 #endif
@@ -700,7 +700,7 @@ std::pair<Bytes, size_t> PatriciaTreeMatchFinderImpl::current() {
             if (p & 0x80000000) {
                 b[depth / 8] |= uint8_t{1} << (7 - (depth % 8));
             }
-            depth++;
+            ++depth;
             p = ((p & 0xffffffe0) << 1) | ((p & 0x1f) - 1);
         }
     }

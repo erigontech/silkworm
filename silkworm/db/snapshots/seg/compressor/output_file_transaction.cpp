@@ -16,12 +16,13 @@
 
 #include "output_file_transaction.hpp"
 
-#include <cassert>
 #include <cerrno>
 #include <stdexcept>
 
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
+
+#include <silkworm/core/common/assert.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -84,7 +85,7 @@ class OutputFileTransactionImpl {
 #endif
 
     void fsync() {
-        assert(stream_.is_open());
+        SILKWORM_ASSERT(stream_.is_open());
         stream_.flush();
         fsync_native(fd_sink_.handle());
     }

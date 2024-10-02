@@ -29,12 +29,12 @@ size_t PositionsMap::word_length_position(size_t word_length) {
 void PositionsMap::update_with_word(
     size_t raw_word_length,
     const std::vector<std::pair<size_t, size_t>>& pattern_positions) {
-    uses_[kTerminatorPosition]++;  // total word count
-    uses_[word_length_position(raw_word_length)]++;
+    ++uses_[kTerminatorPosition];  // total word count
+    ++uses_[word_length_position(raw_word_length)];
 
     size_t prev_pos = 0;
     for (auto& pattern_position : pattern_positions) {
-        uses_[position(pattern_position.first, prev_pos)]++;
+        ++uses_[position(pattern_position.first, prev_pos)];
         prev_pos = pattern_position.first;
     }
 }

@@ -178,7 +178,7 @@ static log::Args log_args_for_exec_progress(ExecutionProgress& progress, uint64_
 }
 
 static void update_execution_progress(ExecutionProgress& progress, const Block& block, const db::Buffer& state_buffer, size_t max_batch_size) {
-    progress.processed_blocks++;
+    ++progress.processed_blocks;
     progress.processed_transactions += block.transactions.size();
     progress.processed_gas += block.header.gas_used;
 
@@ -253,7 +253,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
     }
 
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> needed_indexes;
-    for (size_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; ++i) {
         struct SilkwormMemoryMappedFile* snapshot = snapshots[i];
         if (!snapshot) {
             return SILKWORM_INVALID_SNAPSHOT;
@@ -491,6 +491,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         auto signal_check_time{std::chrono::steady_clock::now()};
 
         BlockNum block_number{start_block};
+        BlockNum batch_start_block_number{start_block};
         BlockNum last_block_number = 0;
         db::DataModel da_layer{txn};
 
@@ -522,7 +523,14 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
                     last_exec_result = block_executor.execute_single(block, state_buffer, analysis_cache, state_pool);
                     update_execution_progress(execution_progress, block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
+                    // infinite loop detection, buffer memory limit reached but no progress
+                    if (batch_start_block_number == block_number) {
+                        SILK_ERROR << "Buffer memory limit too small to execute a single block (block_number=" << block_number << ")";
+                        return SILKWORM_INTERNAL_ERROR;
+                    }
+
                     // batch done
+                    batch_start_block_number = block_number;
                     break;
                 }
                 if (last_exec_result != ValidationResult::kOk) {
@@ -609,6 +617,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
         std::optional<Block> block;
         BlockNum block_number{start_block};
+        BlockNum batch_start_block_number{start_block};
         BlockNum last_block_number = 0;
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
@@ -619,7 +628,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
         while (block_number <= max_block) {
             while (block_number <= max_block) {
-                block_buffer.pop_back(&block);
+                block_buffer.peek_back(&block);
                 if (!block) {
                     return SILKWORM_BLOCK_NOT_FOUND;
                 }
@@ -629,9 +638,17 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                     last_exec_result = block_executor.execute_single(*block, state_buffer, analysis_cache, state_pool);
                     update_execution_progress(execution_progress, *block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
+                    // infinite loop detection, buffer memory limit reached but no progress
+                    if (batch_start_block_number == block_number) {
+                        SILK_ERROR << "Buffer memory limit too small to execute a single block (block_number=" << block_number << ")";
+                        return SILKWORM_INTERNAL_ERROR;
+                    }
+
                     // batch done
+                    batch_start_block_number = block_number;
                     break;
                 }
+
                 if (last_exec_result != ValidationResult::kOk) {
                     // firstly, persist the work done so far, then return SILKWORM_INVALID_BLOCK
                     break;
@@ -643,6 +660,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
                 last_block_number = block_number;
                 ++block_number;
+                block_buffer.pop_back(&block);
             }
 
             StopWatch sw{/*auto_start=*/true};

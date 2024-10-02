@@ -97,7 +97,7 @@ Node HuffmanTree::build(const vector<uint64_t>& symbol_uses) {
             Leaf leaf{i, 0};
             node.n0 = make_unique<variant<Node, Leaf>>(leaf);
             node.uses += symbol_uses[i];
-            i++;
+            ++i;
         }
 
         // Take n1 from the heap
@@ -114,13 +114,13 @@ Node HuffmanTree::build(const vector<uint64_t>& symbol_uses) {
             Leaf leaf{i, 1};
             node.n1 = make_unique<variant<Node, Leaf>>(leaf);
             node.uses += symbol_uses[i];
-            i++;
+            ++i;
         }
 
         queue.push_back(std::move(node));
         ranges::push_heap(queue, comparator);
 
-        tie_breaker++;
+        ++tie_breaker;
     }
 
     Node root;
@@ -134,7 +134,7 @@ void HuffmanTree::bump_leaves_code(Node& node, bool inc) {
     dfs_visit_leaves(node, [inc](Leaf& leaf) {
         leaf.code <<= 1;
         leaf.code += inc ? 1 : 0;
-        leaf.code_bits++;
+        ++leaf.code_bits;
     });
 }
 

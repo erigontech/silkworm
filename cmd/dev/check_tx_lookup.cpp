@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
                 uint64_t i{0};
                 auto transaction_data{transactions_table.find(db::to_slice(transaction_key), false)};
                 for (; i < body.txn_count && transaction_data.done;
-                     i++, transaction_data = transactions_table.to_next(false)) {
+                     ++i, transaction_data = transactions_table.to_next(false)) {
                     if (!transaction_data) {
                         log::Error() << "Block " << block_number << " transaction " << i << " not found in "
                                      << db::table::kBlockTransactions.name << " table";
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            expected_block_number++;
+            ++expected_block_number;
             bodies_data = bodies_table.to_next(false);
         }
 

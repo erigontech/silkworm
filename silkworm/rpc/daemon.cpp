@@ -295,7 +295,7 @@ void Daemon::add_shared_services() {
     // Create the unique state cache to be shared among the execution contexts
     auto state_cache = std::make_shared<db::kv::api::CoherentStateCache>();
     // Create the unique filter storage to be shared among the execution contexts
-    auto filter_storage = std::make_shared<FilterStorage>(context_pool_.num_contexts() * kDefaultFilterStorageSize);
+    auto filter_storage = std::make_shared<FilterStorage>(context_pool_.size() * kDefaultFilterStorageSize);
 
     // Add the shared state to the execution contexts
     for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
@@ -330,7 +330,7 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
 void Daemon::schedule_data_format_retrieval() {
     // Schedule the retrieval of Erigon data storage model as first task on all the execution contexts
     // This ensures that the data format is set in any case *before* any API request handling happens
-    for (size_t i{0}; i < context_pool_.num_contexts(); ++i) {
+    for (size_t i = 0; i < context_pool_.size(); ++i) {
         auto& context = context_pool_.next_context();
         concurrency::spawn_future(*context.io_context(), [this, &context]() -> Task<void> {
             const auto kv_client = make_kv_client(context);

@@ -25,7 +25,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
-namespace silkworm::snapshots::rec_split::encoding {
+namespace silkworm::snapshots::encoding {
 
 template <UnsignedIntegral T>
 using UnsignedIntegralSequence = std::vector<T>;
@@ -64,4 +64,4 @@ std::istream& operator>>(std::istream& is, UnsignedIntegralSequence<T>& s) {
     return is;
 }
 
-}  // namespace silkworm::snapshots::rec_split::encoding
+}  // namespace silkworm::snapshots::encoding

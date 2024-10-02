@@ -86,7 +86,7 @@ Task<ip::address> stun_ip_resolver() {
             co_await (socket.async_receive(buffer(response_data), use_awaitable) || concurrency::timeout(1s));
             break;
         } catch (const concurrency::TimeoutExpiredError&) {
-            retry_count--;
+            --retry_count;
         }
     }
 

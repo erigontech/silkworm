@@ -34,13 +34,13 @@ void print_stack_trace() {
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     [[maybe_unused]] auto _ = gsl::finally([&messages] { free(reinterpret_cast<void*>(messages)); });
     std::cout << "Stack Trace:\n";
-    for (int i = 0; i < trace_size; i++) {
+    for (int i = 0; i < trace_size; ++i) {
         std::cout << messages[i] << "\n";
 
         // extract the address from the message
         char* address = strchr(messages[i], '[');
         if (address) {
-            address++;
+            ++address;
             char* end = strchr(address, ']');
             if (end) {
                 *end = '\0';

@@ -141,7 +141,7 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
         while (data) {
             auto key = db::from_slice(data.key);
             auto value = db::from_slice(data.value);
-            found_items++;
+            ++found_items;
 
             // find key in set and compare value
             auto it = std::find_if(set.begin(), set.end(), [&key](const Entry& entry) {

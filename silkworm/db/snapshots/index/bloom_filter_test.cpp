@@ -17,6 +17,7 @@
 #include "bloom_filter.hpp"
 
 #include <random>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 
@@ -40,10 +41,22 @@ TEST_CASE("BloomFilter", "[snapshot][index][bloom_filter]") {
         BloomFilter filter{BloomFilter::optimal_bits_count(10'000'000, 0.01)};
         CHECK(filter.key_count() == BloomFilter::kHardCodedK);
         CHECK(filter.bits_count() == BloomFilter::optimal_bits_count(10'000'000, 0.01));
-        for (size_t i = 0; i < 1'000'000; ++i) {
+
+        // Generate pseudo-random hash values and add them to the filter
+        std::set<uint64_t> added_hashes;
+        for (size_t i = 0; i < 100'000; ++i) {
             const uint64_t h = u32_distribution(rnd_generator);
             filter.add_hash(h);
-            CHECK(filter.contains_hash(h));
+            added_hashes.insert(h);
+            CHECK(filter.contains_hash(h));  // maybe false positive but never incorrect
+        }
+
+        // Generate more pseudo-random hash values and if absent from filter assert not added
+        for (size_t i = 0; i < 1'000'000; ++i) {
+            const uint64_t h = u32_distribution(rnd_generator);
+            if (!filter.contains_hash(h)) {  // definitely not present
+                CHECK(!added_hashes.contains(h));
+            }
         }
     }
 }

@@ -36,11 +36,11 @@ class ExistenceIndex {
 
         std::filesystem::path path() const { return index_file_path_; }
 
-        //! Insert an already hashed item into the filter
+        //! Insert an already hashed item into the index
         //! \param hash the hash value to add
         void add_hash(uint64_t hash);
 
-        //! Checks if filter contains the give \p hash value
+        //! Checks if index contains the give \p hash value
         //! \param hash the hash value to check for presence
         //! \return false means "definitely does not contain value", true means "probably contains value"
         bool contains_hash(uint64_t hash);

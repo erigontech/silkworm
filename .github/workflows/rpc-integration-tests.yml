@@ -57,6 +57,7 @@ jobs:
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
       - name: Pause the Erigon instance dedicated to db maintenance
+        if: matrix.backend == 'Erigon2'
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
 
@@ -89,6 +90,7 @@ jobs:
           ${{runner.workspace}}/silkworm/.github/workflows/kill_integration_daemon.sh $RPC_DAEMON_PID
 
       - name: Resume the Erigon instance dedicated to db maintenance
+        if: matrix.backend == 'Erigon2'
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 

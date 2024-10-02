@@ -16,6 +16,8 @@ jobs:
       matrix:
         backend: [ Erigon2, Erigon3 ]
     runs-on: [ self-hosted, "${{ matrix.backend }}" ]
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.backend }}
     env:
       ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests

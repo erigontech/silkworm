@@ -61,7 +61,7 @@ class BloomFilter {
     friend std::istream& operator>>(std::istream& is, BloomFilter& filter);
 
   private:
-    static void check_bits_count(uint64_t bits_count);
+    static void ensure_min_bits_count(uint64_t bits_count);
     static KeyArray new_random_keys();
 
     BloomFilter(uint64_t bits_count, KeyArray keys);

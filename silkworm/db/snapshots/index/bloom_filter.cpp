@@ -51,7 +51,7 @@ BloomFilter::BloomFilter(uint64_t bits_count, KeyArray keys)
     : bits_count_(bits_count),
       keys_(keys),
       bits_((bits_count + 63) / 64, 0) {
-    check_bits_count(bits_count);
+    ensure_min_bits_count(bits_count);
 }
 
 BloomFilter::BloomFilter(uint64_t max_key_count, double p)
@@ -76,7 +76,7 @@ bool BloomFilter::contains_hash(uint64_t hash) {
     return r != 0;
 }
 
-void BloomFilter::check_bits_count(uint64_t bits_count) {
+void BloomFilter::ensure_min_bits_count(uint64_t bits_count) {
     if (bits_count < kMinimumBitsCount) {
         throw std::runtime_error{"number of bits must be >= " + std::to_string(kMinimumBitsCount) +
                                  " (was " + std::to_string(bits_count) + ")"};
@@ -164,7 +164,7 @@ std::istream& operator>>(std::istream& is, BloomFilter& filter) {
 
     hashing_istream.read(uint64_buffer);
     const auto bits_count = endian::load_little_u64(uint64_buffer.data());
-    BloomFilter::check_bits_count(bits_count);
+    BloomFilter::ensure_min_bits_count(bits_count);
     filter.bits_count_ = bits_count;
 
     // Read the filter keys as Little-Endian 64-bit unsigned integers

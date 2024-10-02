@@ -61,13 +61,15 @@ TEST_CASE("BloomFilter", "[snapshot][index][bloom_filter]") {
     }
 }
 
-TEST_CASE("BloomFilter::read_from", "[snapshot][index][bloom_filter]") {
+TEST_CASE("BloomFilter: operator>>", "[snapshot][index][bloom_filter]") {
+    BloomFilter filter;
+
     for (const auto& [hex_stream, description] : test_util::kInvalidBloomFilters) {
         SECTION("too short: " + std::string{description}) {
             const Bytes byte_stream = *from_hex(hex_stream);
             const std::string byte_stream_as_string{byte_stream.begin(), byte_stream.end()};
             std::istringstream input_stream{byte_stream_as_string};
-            CHECK_THROWS_AS(BloomFilter::read_from(input_stream), std::runtime_error);
+            CHECK_THROWS_AS((input_stream >> filter), std::runtime_error);
         }
     }
 
@@ -76,9 +78,8 @@ TEST_CASE("BloomFilter::read_from", "[snapshot][index][bloom_filter]") {
             const Bytes byte_stream = *from_hex(hex_stream);
             const std::string byte_stream_as_string{byte_stream.begin(), byte_stream.end()};
             std::istringstream input_stream{byte_stream_as_string};
-            auto bf = std::make_unique<BloomFilter>(100, 0.01);  // parameters don't matter
-            CHECK_NOTHROW((bf = BloomFilter::read_from(input_stream)));
-            CHECK(bf->bits_count() == 2);
+            CHECK_NOTHROW((input_stream >> filter));
+            CHECK(filter.bits_count() == 2);
         }
     }
 }

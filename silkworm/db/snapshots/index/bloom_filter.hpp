@@ -33,6 +33,9 @@ namespace silkworm::snapshots::index {
 //! \remark Serialized binary format compatible with: https://github.com/holiman/bloomfilter
 class BloomFilter {
   public:
+    //! The minimum Bloom filter bits count
+    static constexpr size_t kMinimumBitsCount = 2;
+
     //! The fixed number of keys
     static constexpr size_t kHardCodedK = 3;
 
@@ -40,9 +43,7 @@ class BloomFilter {
 
     static uint64_t optimal_bits_count(uint64_t max_key_count, double p);
 
-    static std::unique_ptr<BloomFilter> read_from(std::istream& index_input_stream);
-
-    explicit BloomFilter(uint64_t bits_count);
+    explicit BloomFilter(uint64_t bits_count = kMinimumBitsCount);
     BloomFilter(uint64_t max_key_count, double p);
 
     uint64_t bits_count() const { return bits_count_; }

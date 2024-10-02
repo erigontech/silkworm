@@ -27,7 +27,8 @@ ExistenceIndex::ExistenceIndex(std::filesystem::path index_file_path)
     }
     std::ifstream index_file_stream{index_file_path_, std::ios::in | std::ios::binary};
     index_file_stream.exceptions(std::ios::failbit | std::ios::badbit);
-    filter_ = BloomFilter::read_from(index_file_stream);
+    filter_ = std::make_unique<BloomFilter>();
+    index_file_stream >> *filter_;
 }
 
 void ExistenceIndex::add_hash(uint64_t hash) {

@@ -34,7 +34,7 @@ namespace silkworm::snapshots::index {
 class BloomFilter {
   public:
     //! The fixed number of keys
-    static constexpr size_t kHardCodedK{3};
+    static constexpr size_t kHardCodedK = 3;
 
     using KeyArray = std::array<uint64_t, kHardCodedK>;
 

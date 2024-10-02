@@ -32,16 +32,16 @@ namespace silkworm::snapshots::index {
 using namespace std::numbers;
 
 //! The minimum Bloom filter bits count
-static constexpr size_t kMinimumBitsCount{2};
+static constexpr size_t kMinimumBitsCount = 2;
 
 //! kRotation sets how much to rotate the hash on each filter iteration.
 //! This is somewhat randomly set to a prime on the lower segment of 64.
-constexpr size_t kRotation{17};
+static constexpr size_t kRotation = 17;
 
-constexpr size_t kRotationOf64{64 - kRotation};
+static constexpr size_t kRotationOf64 = 64 - kRotation;
 
 //! The magic header used in serialization format for version v2
-static const ByteView kMagicHeader{string_view_to_byte_view("\0\0\0\0\0\0\0\0v02\n"sv)};
+static const ByteView kMagicHeader = string_view_to_byte_view("\0\0\0\0\0\0\0\0v02\n"sv);
 
 uint64_t BloomFilter::optimal_bits_count(uint64_t max_key_count, double p) {
     return static_cast<uint64_t>(std::ceil(-static_cast<double>(max_key_count) * std::log(p) / (ln2 * ln2)));

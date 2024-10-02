@@ -24,16 +24,30 @@ find_package(GTest REQUIRED)
 find_package(LibtorrentRasterbar REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+set(LIBS_PRIVATE
+    absl::strings
+    Boost::headers
+    Boost::url
+    LibtorrentRasterbar::torrent-rasterbar
+    magic_enum::magic_enum
+    OpenSSL::Crypto
+    silkworm_snapshots_seg
+)
+
+# cmake-format: off
+set(LIBS_PUBLIC
+    Microsoft.GSL::GSL
+    silkworm_core
+    silkworm_infra
+)
+# cmake-format: on
 
 silkworm_library(
   silkworm_snapshots
-  PUBLIC Microsoft.GSL::GSL silkworm_core silkworm_infra
-  PRIVATE absl::strings
-          Boost::headers
-          Boost::url
-          LibtorrentRasterbar::torrent-rasterbar
-          magic_enum::magic_enum
-          silkworm_snapshots_seg
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
 )
 
 target_link_libraries(silkworm_snapshots_test PRIVATE GTest::gmock silkworm_infra_test_util)

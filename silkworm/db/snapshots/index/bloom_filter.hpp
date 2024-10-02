@@ -43,7 +43,6 @@ class BloomFilter {
     static std::unique_ptr<BloomFilter> read_from(std::istream& index_input_stream);
 
     explicit BloomFilter(uint64_t bits_count);
-    BloomFilter(uint64_t bits_count, KeyArray keys);
     BloomFilter(uint64_t max_key_count, double p);
 
     uint64_t bits_count() const { return bits_count_; }
@@ -63,6 +62,8 @@ class BloomFilter {
   private:
     static void check_bits_count(uint64_t bits_count);
     static KeyArray new_random_keys();
+
+    BloomFilter(uint64_t bits_count, KeyArray keys);
 
     //! The number of bits that the bitmap should be able to track
     uint64_t bits_count_;

@@ -84,6 +84,7 @@ void BloomFilter::ensure_min_bits_count(uint64_t bits_count) {
 }
 
 BloomFilter::KeyArray BloomFilter::new_random_keys() {
+    // Reference Go implementation uses a CS-PRNG here for robustness (thus relying on OS-provided sources of randomness)
     // TODO(canepat) std::random_device is not guaranteed to be a CS-PRNG
     static std::mt19937_64 generator{std::random_device{}()};
     std::uniform_int_distribution<uint64_t> distribution;

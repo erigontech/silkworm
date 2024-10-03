@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <absl/strings/match.h>
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
@@ -441,7 +442,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     ensure(!settings.input_file_path.empty(), "open_existence_index: --file must be specified");
     ensure(settings.input_file_path.extension() == ".kv", "open_existence_index: --file must be .kv file");
     const auto is_file_for_domain = [](const auto& file_path, auto domain_name) -> bool {
-        return file_path.filename().string().find(domain_name) != std::string::npos;
+        return absl::StrContains(file_path.filename().string(), domain_name);
     };
     const bool is_account_file = is_file_for_domain(settings.input_file_path, db::table::kAccountDomain);
     ensure(is_account_file, "open_existence_index: --file must be an accounts .kv file (e.g. v1-accounts.0-1024.kv)");

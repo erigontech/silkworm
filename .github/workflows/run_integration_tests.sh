@@ -22,15 +22,12 @@ parity_listStorageKeys,\
 ots_getContractCreator,\
 erigon_getLatestLogs,\
 eth_getLogs,\
-erigon_getBlockReceiptsByBlockHash,\
-parity_getBlockReceipts,\
-eth_getTransactionReceipt,\
-ots_getBlockDetails,\
-ots_getBlockDetailsByHash,\
-ots_getBlockTransactions,\
-erigon_getLogsByHash,\
-eth_feeHistory,\
-eth_getBlockReceipts,\
+erigon_getBlockReceiptsByBlockHash/test_05.json,\
+eth_getBlockReceipts/test_04.json,\
+ots_getBlockDetails/test_05.json,\
+ots_getBlockDetailsByHash/test_03.json,\
+ots_getBlockTransactions/test_04.json,\
+ots_getBlockTransactions/test_07.json,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore --transport_type http,websocket
 fi

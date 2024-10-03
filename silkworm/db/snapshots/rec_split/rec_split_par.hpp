@@ -131,7 +131,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         // Prepare buckets
         buckets_.reserve(bucket_count);
         for (int i = 0; i < bucket_count; ++i) {
-            buckets_.emplace_back(i, settings.bucket_size);
+            buckets_.emplace_back(settings.bucket_size);
         }
         if (double_enum_index_) {
             offsets_.reserve(settings.keys_count);

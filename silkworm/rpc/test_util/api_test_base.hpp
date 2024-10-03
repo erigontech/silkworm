@@ -34,6 +34,21 @@ class JsonApiTestBase : public ServiceContextTestBase {
     }
 };
 
+template <typename JsonApi>
+class JsonApiWithWorkersTestBase : public ServiceContextTestBase {
+  public:
+    explicit JsonApiWithWorkersTestBase() : ServiceContextTestBase(), workers_{1} {}
+
+    template <auto method, typename... Args>
+    auto run(Args&&... args) {
+        JsonApi api{io_context_, workers_};
+        return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
+    }
+
+  protected:
+    WorkerPool workers_;
+};
+
 template <typename GrpcApi, typename Stub>
 class GrpcApiTestBase : public ServiceContextTestBase {
   public:

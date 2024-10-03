@@ -70,7 +70,7 @@ class DummyCursor : public CursorDupSort {
         const auto key_ = silkworm::to_hex(key);
 
         KeyValue out;
-        for (itr_ = table_.begin(); itr_ != table_.end(); itr_++) {
+        for (itr_ = table_.begin(); itr_ != table_.end(); ++itr_) {
             auto actual = key_;
             auto delta = itr_.key().size() - actual.size();
             if (delta > 0) {

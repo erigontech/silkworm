@@ -49,7 +49,7 @@ size_t BodySequence::outstanding_requests(time_point_t tp) const {
         if (past_request.request_id == 0) break;  // not yet requested, so the following
         if (!past_request.ready &&
             (tp - past_request.request_time < SentryClient::kRequestDeadline))
-            requested_bodies++;
+            ++requested_bodies;
     }
 
     // return requested_bodies / kMaxBlocksPerMessage rounded up
@@ -197,7 +197,7 @@ std::vector<PeerPenalization> BodySequence::renew_stale_requests(
             // penalizations.emplace_back({Penalty::kBadBlockPenalty, });
 
             start_block = std::min(start_block, past_request.block_height);
-            count++;
+            ++count;
             // SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
             //            << ", hash= " << past_request.block_hash;
         }
@@ -231,7 +231,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
             min_block = std::max(min_block, new_request.block_height);  // the min block the peer must have (so it is our max)
 
             start_block = std::min(start_block, new_request.block_height);
-            count++;
+            ++count;
             // SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
             //            << ", hash= " << new_request.block_hash;
         }
@@ -351,7 +351,7 @@ size_t BodySequence::AnnouncedBlocks::size() {
 
 std::list<BodySequence::IncreasingHeightOrderedRequestContainer::Iter> BodySequence::IncreasingHeightOrderedRequestContainer::find_by_request_id(uint64_t request_id) {
     std::list<Impl::iterator> matching_requests;
-    for (auto elem = begin(); elem != end(); elem++) {
+    for (auto elem = begin(); elem != end(); ++elem) {
         const BodyRequest& request = elem->second;
         if (request.request_id == request_id) matching_requests.push_back(elem);
     }

@@ -3,40 +3,8 @@
 We use the [ISO Standard C++][cpp-standard-iso] programming language, specifically C++20.
 If you contribute to this project, your contributions will be made under [our license][silkworm-license].
 
-## C++ Core Guidelines
-
-We follow the [C++ Core Guidelines][cpp-core-guidelines] as much as possible.
-
-
-## Style Guide
-
-Every file should contain the Apache license boilerplate. Use `make lint` to check the proper license formatting.
-
-We adhere to [Google's C++ Style Guide][cpp-google-style-guide] with the following differences:
-
-* `snake_case()` for function names.
-* .cpp & .hpp file extensions for C++; .c & .h are reserved for C.
-* `using namespace foo` is allowed inside .cpp files, but not inside headers.
-* Exceptions are allowed outside the `core` library.
-* User-defined literals are allowed.
-* Maximum line length is 120, indentation is 4 spaces. Use `make fmt` to reformat according to the code style.
-* Use `#pragma once` in the headers instead of the classic `#ifndef` guards.
-* `template <Concept T>` syntax is allowed.
-* `<filesystem>` is allowed.
-
-In addition to the [Boost libraries permitted in the style guide](https://google.github.io/styleguide/cppguide.html#Boost), we allow:
-* Algorithm
-* Asio
-* Circular Buffer
-* DLL
-* Process
-* Signals2
-* System
-* Thread
-* Url
-
-[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) runs on CI. The report is attached to the "ARTIFACTS" section of the linux-clang-tidy job that can be found [here](https://app.circleci.com/pipelines/github/erigontech/silkworm?branch=master).
-
+The contributions must follow [Silkworm code style](code_style.md).
+Use `make fmt lint` to format the code and perform basic checks locally before submitting a PR.
 
 ## Code Structure
 
@@ -218,8 +186,6 @@ Updating the version of Silkworm included in Erigon requires the following steps
 [silkworm-capi-header]: https://github.com/erigontech/silkworm/tree/master/silkworm/capi/silkworm.h
 [silkworm-go]: https://github.com/erigontech/silkworm-go
 [cpp-standard-iso]: https://isocpp.org
-[cpp-core-guidelines]: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
-[cpp-google-style-guide]: https://google.github.io/styleguide/cppguide.html
 [ethereum-yellow-paper]: https://ethereum.github.io/yellowpaper/paper.pdf
 [conan]: https://conan.io
 [grpc]: https://grpc.io

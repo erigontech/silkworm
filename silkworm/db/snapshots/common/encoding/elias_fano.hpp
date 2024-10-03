@@ -184,7 +184,7 @@ class EliasFanoList32 {
         uint64_t d = i & kQMask;
 
         for (auto bit_count{std::popcount(window)}; static_cast<uint64_t>(bit_count) <= d; bit_count = std::popcount(window)) {
-            current_word++;
+            ++current_word;
             SILKWORM_ASSERT(current_word < upper_bits_.size());
             window = upper_bits_[current_word];
             d -= static_cast<uint64_t>(bit_count);
@@ -200,7 +200,7 @@ class EliasFanoList32 {
             set_bits(lower_bits_, i_ * l_, l_, offset & lower_bits_mask_);
         }
         set(upper_bits_, (offset >> l_) + i_);
-        i_++;
+        ++i_;
     }
 
     void build() {
@@ -225,7 +225,7 @@ class EliasFanoList32 {
                         const uint64_t mask = uint64_t{0xffffffff} << shift;
                         jump_[idx64] = (jump_[idx64] & ~mask) | (offset << shift);
                     }
-                    c++;
+                    ++c;
                 }
             }
         }
@@ -311,7 +311,7 @@ class DoubleEliasFanoList16 {
         u_cum_keys_ = cum_keys[num_buckets_] - num_buckets_ * cum_keys_min_delta_ + 1;  // Largest possible encoding of the cumulated keys
 
         const auto [words_cum_keys, words_position] = derive_fields();
-        for (uint64_t i{0}, cum_delta{0}, bit_delta{0}; i <= num_buckets_; i++, cum_delta += cum_keys_min_delta_, bit_delta += position_min_delta_) {
+        for (uint64_t i{0}, cum_delta{0}, bit_delta{0}; i <= num_buckets_; ++i, cum_delta += cum_keys_min_delta_, bit_delta += position_min_delta_) {
             if (l_cum_keys_ != 0) {
                 set_bits(lower_bits_, i * (l_cum_keys_ + l_position_), l_cum_keys_, (cum_keys[i] - cum_delta) & lower_bits_mask_cum_keys_);
             }
@@ -327,8 +327,8 @@ class DoubleEliasFanoList16 {
         // last_super_q is the largest multiple of 2^14 (4096) which is no larger than c
         // (c / kSuperQ) is the index of the current 4096 block of bits
         // super_q_size is how many words is required to encode one block of 4096 bits. It is 17 words which is 1088 bits
-        for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_cum_keys; i++) {
-            for (uint64_t b{0}; b < 64; b++) {
+        for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_cum_keys; ++i) {
+            for (uint64_t b{0}; b < 64; ++b) {
                 if (upper_bits_cum_keys_[i] & uint64_t{1} << b) {
                     if ((c & kSuperQMask) == 0) {
                         /* When c is multiple of 2^14 (4096) */
@@ -348,13 +348,13 @@ class DoubleEliasFanoList16 {
                         const uint64_t mask = uint64_t{0xffff} << shift;
                         jump_[idx64] = (jump_[idx64] & ~mask) | (offset << shift);
                     }
-                    c++;
+                    ++c;
                 }
             }
         }
 
-        for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_position; i++) {
-            for (uint64_t b = 0; b < 64; b++) {
+        for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_position; ++i) {
+            for (uint64_t b = 0; b < 64; ++b) {
                 if (upper_bits_position_[i] & uint64_t{1} << b) {
                     if ((c & kSuperQMask) == 0) {
                         jump_[(c / kSuperQ) * (kSuperQSize16 * 2) + 1] = last_super_q = i * 64 + b;
@@ -369,7 +369,7 @@ class DoubleEliasFanoList16 {
                         const uint64_t mask = uint64_t{0xffff} << shift;
                         jump_[idx64] = (jump_[idx64] & ~mask) | (offset << shift);
                     }
-                    c++;
+                    ++c;
                 }
             }
         }
@@ -385,7 +385,7 @@ class DoubleEliasFanoList16 {
         get(i, cum_keys, position, window_cum_keys, select_cum_keys, curr_word_cum_keys, lower, cum_delta);
         window_cum_keys &= (uint64_t{0xffffffffffffffff} << select_cum_keys) << 1;
         while (window_cum_keys == 0) {
-            curr_word_cum_keys++;
+            ++curr_word_cum_keys;
             window_cum_keys = upper_bits_cum_keys_[curr_word_cum_keys];
         }
         lower >>= l_position_;
@@ -436,7 +436,7 @@ class DoubleEliasFanoList16 {
         shift = 16 * (idx16 % 4);
         uint64_t mask = uint64_t{0xffff} << shift;
         const uint64_t jump_cum_keys = jump_[jump_super_q] + ((jump_[idx64] & mask) >> shift);
-        idx16++;
+        ++idx16;
         idx64 = idx16 / 4;
         shift = 16 * (idx16 % 4);
         mask = uint64_t{0xffff} << shift;
@@ -450,12 +450,12 @@ class DoubleEliasFanoList16 {
         uint64_t delta_position = i & kQMask;
 
         for (auto bit_count{std::popcount(window_cum_keys)}; static_cast<uint64_t>(bit_count) <= delta_cum_keys; bit_count = std::popcount(window_cum_keys)) {
-            curr_word_cum_keys++;
+            ++curr_word_cum_keys;
             window_cum_keys = upper_bits_cum_keys_[curr_word_cum_keys];
             delta_cum_keys -= static_cast<uint64_t>(bit_count);
         }
         for (auto bit_count{std::popcount(window_position)}; static_cast<uint64_t>(bit_count) <= delta_position; bit_count = std::popcount(window_position)) {
-            curr_word_position++;
+            ++curr_word_position;
             window_position = upper_bits_position_[curr_word_position];
             delta_position -= static_cast<uint64_t>(bit_count);
         }

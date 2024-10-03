@@ -54,12 +54,12 @@ SentryClient& BlockExchange::sentry() const { return sentry_; }
 BlockNum BlockExchange::last_pre_validated_block() const { return header_chain_.last_pre_validated_block(); }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) {
-    statistics_.internal_msgs++;
+    ++statistics_.internal_msgs;
     messages_.push(std::move(message));
 }
 
 void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
-    statistics_.received_msgs++;
+    ++statistics_.received_msgs;
 
     // SILK_TRACE << "BlockExchange received message " << *message;
 
@@ -71,7 +71,7 @@ void BlockExchange::execution_loop() {
     using namespace std::chrono_literals;
 
     auto announcement_receiving_callback = [this](std::shared_ptr<InboundMessage> msg) {
-        statistics_.nonsolic_msgs++;
+        ++statistics_.nonsolic_msgs;
         receive_message(std::move(msg));
     };
     auto response_receiving_callback = [this](std::shared_ptr<InboundMessage> msg) {
@@ -81,7 +81,7 @@ void BlockExchange::execution_loop() {
         statistics_.received_bytes += message_size;
     };
     auto sentry_malformed_message_callback = [this]() {
-        statistics_.malformed_msgs++;
+        ++statistics_.malformed_msgs;
     };
 
     try {
@@ -100,7 +100,7 @@ void BlockExchange::execution_loop() {
             // process an external message (replay to remote peers) or an internal message
             if (present) {
                 message->execute(db_access_, header_chain_, body_sequence_, sentry_);
-                statistics_.processed_msgs++;
+                ++statistics_.processed_msgs;
             }
 
             // if we have too many messages in the queue, let's process them
@@ -169,7 +169,7 @@ size_t BlockExchange::request_headers(time_point_t tp, size_t max_requests) {
 
         if (request_message->nack_requests() > 0) break;
 
-        sent_requests++;
+        ++sent_requests;
     } while (sent_requests < max_requests);
 
     return sent_requests;
@@ -194,7 +194,7 @@ size_t BlockExchange::request_bodies(time_point_t tp, size_t max_requests) {
 
         if (request_message->nack_requests() > 0) break;
 
-        sent_requests++;
+        ++sent_requests;
     } while (sent_requests < max_requests);
 
     return sent_requests;

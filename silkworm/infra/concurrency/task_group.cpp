@@ -16,7 +16,6 @@
 
 #include "task_group.hpp"
 
-#include <cassert>
 #include <tuple>
 #include <utility>
 
@@ -26,6 +25,7 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::concurrency {
@@ -45,7 +45,7 @@ void TaskGroup::spawn(const any_io_executor& executor, Task<void> task) {
         std::piecewise_construct,
         std::forward_as_tuple(task_id),
         std::forward_as_tuple());
-    assert(ok);
+    SILKWORM_ASSERT(ok);
     auto cancellation_slot = it->second.slot();
 
     auto completion = [this, task_id](const std::exception_ptr& ex_ptr) {

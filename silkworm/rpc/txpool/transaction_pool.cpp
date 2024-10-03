@@ -137,7 +137,7 @@ Task<TransactionsInPool> TransactionPool::get_transactions() {
     const auto reply = co_await all_rpc.finish_on(executor_, request);
     TransactionsInPool transactions_in_pool;
     const auto txs_size = reply.txs_size();
-    for (int i = 0; i < txs_size; i++) {
+    for (int i = 0; i < txs_size; ++i) {
         const auto& tx = reply.txs(i);
         TransactionInfo element{};
         element.sender = address_from_H160(tx.sender());

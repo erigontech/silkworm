@@ -69,7 +69,7 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
             block_count = bundle.block_count();
             batch_size = 0;
         }
-        batch_size++;
+        ++batch_size;
         if (batch_size == kBatchSize) {
             return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle.block_to()});
         }

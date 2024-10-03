@@ -50,7 +50,7 @@ void to_json(nlohmann::json& json, const Block& b) {
     json["timestamp"] = to_quantity(header.timestamp);
     if (b.full_tx) {
         json["transactions"] = b.block_with_hash->block.transactions;
-        for (std::size_t i{0}; i < json["transactions"].size(); i++) {
+        for (std::size_t i{0}; i < json["transactions"].size(); ++i) {
             auto& json_txn = json["transactions"][i];
             json_txn["transactionIndex"] = to_quantity(i);
             json_txn["blockHash"] = b.block_with_hash->hash;
@@ -60,7 +60,7 @@ void to_json(nlohmann::json& json, const Block& b) {
     } else {
         std::vector<evmc::bytes32> transaction_hashes;
         transaction_hashes.reserve(b.block_with_hash->block.transactions.size());
-        for (std::size_t i{0}; i < b.block_with_hash->block.transactions.size(); i++) {
+        for (std::size_t i{0}; i < b.block_with_hash->block.transactions.size(); ++i) {
             transaction_hashes.emplace(transaction_hashes.end(), b.block_with_hash->block.transactions[i].hash());
             SILK_DEBUG << "transaction_hashes[" << i << "]: " << silkworm::to_hex({transaction_hashes[i].bytes, silkworm::kHashLength});
         }
@@ -68,7 +68,7 @@ void to_json(nlohmann::json& json, const Block& b) {
     }
     std::vector<evmc::bytes32> ommer_hashes;
     ommer_hashes.reserve(b.block_with_hash->block.ommers.size());
-    for (std::size_t i{0}; i < b.block_with_hash->block.ommers.size(); i++) {
+    for (std::size_t i{0}; i < b.block_with_hash->block.ommers.size(); ++i) {
         ommer_hashes.emplace(ommer_hashes.end(), b.block_with_hash->block.ommers[i].hash());
         SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
@@ -226,7 +226,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
     if (b.full_tx) {
         std::vector<GlazeJsonTransaction> transaction_data_list;
         transaction_data_list.reserve(block.transactions.size());
-        for (std::size_t i{0}; i < block.transactions.size(); i++) {
+        for (std::size_t i{0}; i < block.transactions.size(); ++i) {
             const silkworm::Transaction& transaction = block.transactions[i];
             GlazeJsonTransaction item{};
             to_quantity(std::span(item.transaction_index), i);

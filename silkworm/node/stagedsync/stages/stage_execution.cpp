@@ -125,7 +125,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
                 ret = execution_result;
                 break;
             }
-            block_num_++;
+            ++block_num_;
         }
 
     } catch (const StageError& ex) {
@@ -156,7 +156,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
-    assert(prefetched_blocks_.empty());
+    SILKWORM_ASSERT(prefetched_blocks_.empty());
 
     const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};
@@ -279,7 +279,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
         }
 
         // update block_num_ to point to the last successfully executed block
-        block_num_--;
+        --block_num_;
 
         log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
         buffer.write_to_db();

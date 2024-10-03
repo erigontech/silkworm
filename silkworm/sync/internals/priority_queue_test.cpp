@@ -409,7 +409,7 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(a->first == 1);
         REQUIRE(a->second->block_height == 1);
         auto b = a;
-        b++;
+        ++b;
         REQUIRE(a != b);    // different iterator
         REQUIRE(*a == *b);  // same identity
         REQUIRE(b->first == 1);
@@ -439,7 +439,7 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(a->first == 1);
         REQUIRE(a->second->block_height == 1);
         auto b = a;
-        b++;
+        ++b;
         REQUIRE(a != b);    // different iterator
         REQUIRE(*a != *b);  // different identity
         REQUIRE(b->first == 1);

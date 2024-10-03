@@ -46,6 +46,8 @@ class BackEndMock : public ethbackend::BackEnd {  // NOLINT
     MOCK_METHOD((Task<PeerInfos>), peers, ());
     MOCK_METHOD((Task<bool>), get_block, (BlockNum block_number, const HashAsSpan& hash, bool, silkworm::Block&));
     MOCK_METHOD((Task<BlockNum>), get_block_number_from_txn_hash, (const HashAsSpan& hash));
+    MOCK_METHOD((Task<BlockNum>), get_block_number_from_hash, (const HashAsSpan& hash));
+    MOCK_METHOD((Task<evmc::bytes32>), get_block_hash_from_block_number, (uint64_t number));
 };
 
 }  // namespace silkworm::rpc::test

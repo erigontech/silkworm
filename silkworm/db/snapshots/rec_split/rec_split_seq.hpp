@@ -102,7 +102,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             bucket_collector_->collect(collector_key, offset_key);
         }
 
-        keys_added_++;
+        ++keys_added_;
     }
 
     bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,

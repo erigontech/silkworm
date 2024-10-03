@@ -54,7 +54,7 @@ std::vector<PeerId> OutboundNewBlock::send_packet(SentryClient& sentry, NewBlock
 
     packet_ = std::move(packet);
     auto peers = sentry.send_message_to_random_peers(*this, kMaxPeers);
-    sent_packets_++;
+    ++sent_packets_;
 
     SILK_TRACE << "Received sentry result of OutboundNewBlock: " << std::to_string(peers.size()) + " peer(s)";
 

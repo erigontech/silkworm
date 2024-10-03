@@ -141,6 +141,59 @@ struct ClientVersionReplyDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ClientVersionReplyDefaultTypeInternal _ClientVersionReply_default_instance_;
+PROTOBUF_CONSTEXPR CanonicalHashRequest::CanonicalHashRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.block_number_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct CanonicalHashRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR CanonicalHashRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~CanonicalHashRequestDefaultTypeInternal() {}
+  union {
+    CanonicalHashRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CanonicalHashRequestDefaultTypeInternal _CanonicalHashRequest_default_instance_;
+PROTOBUF_CONSTEXPR CanonicalHashReply::CanonicalHashReply(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.hash_)*/nullptr
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct CanonicalHashReplyDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR CanonicalHashReplyDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~CanonicalHashReplyDefaultTypeInternal() {}
+  union {
+    CanonicalHashReply _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CanonicalHashReplyDefaultTypeInternal _CanonicalHashReply_default_instance_;
+PROTOBUF_CONSTEXPR HeaderNumberRequest::HeaderNumberRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.hash_)*/nullptr
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct HeaderNumberRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HeaderNumberRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~HeaderNumberRequestDefaultTypeInternal() {}
+  union {
+    HeaderNumberRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HeaderNumberRequestDefaultTypeInternal _HeaderNumberRequest_default_instance_;
+PROTOBUF_CONSTEXPR HeaderNumberReply::HeaderNumberReply(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.number_)*/uint64_t{0u}} {}
+struct HeaderNumberReplyDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HeaderNumberReplyDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~HeaderNumberReplyDefaultTypeInternal() {}
+  union {
+    HeaderNumberReply _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HeaderNumberReplyDefaultTypeInternal _HeaderNumberReply_default_instance_;
 PROTOBUF_CONSTEXPR SubscribeRequest::SubscribeRequest(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.type_)*/0
@@ -393,7 +446,7 @@ struct BorEventReplyDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 BorEventReplyDefaultTypeInternal _BorEventReply_default_instance_;
 }  // namespace remote
-static ::_pb::Metadata file_level_metadata_remote_2fethbackend_2eproto[28];
+static ::_pb::Metadata file_level_metadata_remote_2fethbackend_2eproto[32];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_remote_2fethbackend_2eproto[1];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_remote_2fethbackend_2eproto = nullptr;
 
@@ -463,6 +516,35 @@ const uint32_t TableStruct_remote_2fethbackend_2eproto::offsets[] PROTOBUF_SECTI
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::remote::ClientVersionReply, _impl_.node_name_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::CanonicalHashRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::CanonicalHashRequest, _impl_.block_number_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::CanonicalHashReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::CanonicalHashReply, _impl_.hash_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::HeaderNumberRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::HeaderNumberRequest, _impl_.hash_),
+  PROTOBUF_FIELD_OFFSET(::remote::HeaderNumberReply, _impl_._has_bits_),
+  PROTOBUF_FIELD_OFFSET(::remote::HeaderNumberReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::HeaderNumberReply, _impl_.number_),
+  0,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::SubscribeRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -618,24 +700,28 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 45, -1, -1, sizeof(::remote::ProtocolVersionReply)},
   { 52, -1, -1, sizeof(::remote::ClientVersionRequest)},
   { 58, -1, -1, sizeof(::remote::ClientVersionReply)},
-  { 65, -1, -1, sizeof(::remote::SubscribeRequest)},
-  { 72, -1, -1, sizeof(::remote::SubscribeReply)},
-  { 80, -1, -1, sizeof(::remote::LogsFilterRequest)},
-  { 90, -1, -1, sizeof(::remote::SubscribeLogsReply)},
-  { 105, -1, -1, sizeof(::remote::BlockRequest)},
-  { 113, -1, -1, sizeof(::remote::BlockReply)},
-  { 121, -1, -1, sizeof(::remote::TxnLookupRequest)},
-  { 128, -1, -1, sizeof(::remote::TxnLookupReply)},
-  { 135, -1, -1, sizeof(::remote::NodesInfoRequest)},
-  { 142, -1, -1, sizeof(::remote::AddPeerRequest)},
-  { 149, -1, -1, sizeof(::remote::NodesInfoReply)},
-  { 156, -1, -1, sizeof(::remote::PeersReply)},
-  { 163, -1, -1, sizeof(::remote::AddPeerReply)},
-  { 170, -1, -1, sizeof(::remote::PendingBlockReply)},
-  { 177, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByHashV1Request)},
-  { 184, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByRangeV1Request)},
-  { 192, -1, -1, sizeof(::remote::BorEventRequest)},
-  { 199, -1, -1, sizeof(::remote::BorEventReply)},
+  { 65, -1, -1, sizeof(::remote::CanonicalHashRequest)},
+  { 72, -1, -1, sizeof(::remote::CanonicalHashReply)},
+  { 79, -1, -1, sizeof(::remote::HeaderNumberRequest)},
+  { 86, 93, -1, sizeof(::remote::HeaderNumberReply)},
+  { 94, -1, -1, sizeof(::remote::SubscribeRequest)},
+  { 101, -1, -1, sizeof(::remote::SubscribeReply)},
+  { 109, -1, -1, sizeof(::remote::LogsFilterRequest)},
+  { 119, -1, -1, sizeof(::remote::SubscribeLogsReply)},
+  { 134, -1, -1, sizeof(::remote::BlockRequest)},
+  { 142, -1, -1, sizeof(::remote::BlockReply)},
+  { 150, -1, -1, sizeof(::remote::TxnLookupRequest)},
+  { 157, -1, -1, sizeof(::remote::TxnLookupReply)},
+  { 164, -1, -1, sizeof(::remote::NodesInfoRequest)},
+  { 171, -1, -1, sizeof(::remote::AddPeerRequest)},
+  { 178, -1, -1, sizeof(::remote::NodesInfoReply)},
+  { 185, -1, -1, sizeof(::remote::PeersReply)},
+  { 192, -1, -1, sizeof(::remote::AddPeerReply)},
+  { 199, -1, -1, sizeof(::remote::PendingBlockReply)},
+  { 206, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByHashV1Request)},
+  { 213, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByRangeV1Request)},
+  { 221, -1, -1, sizeof(::remote::BorEventRequest)},
+  { 228, -1, -1, sizeof(::remote::BorEventReply)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -649,6 +735,10 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::remote::_ProtocolVersionReply_default_instance_._instance,
   &::remote::_ClientVersionRequest_default_instance_._instance,
   &::remote::_ClientVersionReply_default_instance_._instance,
+  &::remote::_CanonicalHashRequest_default_instance_._instance,
+  &::remote::_CanonicalHashReply_default_instance_._instance,
+  &::remote::_HeaderNumberRequest_default_instance_._instance,
+  &::remote::_HeaderNumberReply_default_instance_._instance,
   &::remote::_SubscribeRequest_default_instance_._instance,
   &::remote::_SubscribeReply_default_instance_._instance,
   &::remote::_LogsFilterRequest_default_instance_._instance,
@@ -679,65 +769,73 @@ const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECT
   "Reply\022\r\n\005count\030\001 \001(\004\"\030\n\026ProtocolVersionR"
   "equest\"\"\n\024ProtocolVersionReply\022\n\n\002id\030\001 \001"
   "(\004\"\026\n\024ClientVersionRequest\"\'\n\022ClientVers"
-  "ionReply\022\021\n\tnode_name\030\001 \001(\t\"/\n\020Subscribe"
-  "Request\022\033\n\004type\030\001 \001(\0162\r.remote.Event\";\n\016"
-  "SubscribeReply\022\033\n\004type\030\001 \001(\0162\r.remote.Ev"
-  "ent\022\014\n\004data\030\002 \001(\014\"{\n\021LogsFilterRequest\022\025"
-  "\n\rall_addresses\030\001 \001(\010\022\036\n\taddresses\030\002 \003(\013"
-  "2\013.types.H160\022\022\n\nall_topics\030\003 \001(\010\022\033\n\006top"
-  "ics\030\004 \003(\0132\013.types.H256\"\372\001\n\022SubscribeLogs"
-  "Reply\022\034\n\007address\030\001 \001(\0132\013.types.H160\022\037\n\nb"
-  "lock_hash\030\002 \001(\0132\013.types.H256\022\024\n\014block_nu"
-  "mber\030\003 \001(\004\022\014\n\004data\030\004 \001(\014\022\021\n\tlog_index\030\005 "
-  "\001(\004\022\033\n\006topics\030\006 \003(\0132\013.types.H256\022%\n\020tran"
-  "saction_hash\030\007 \001(\0132\013.types.H256\022\031\n\021trans"
-  "action_index\030\010 \001(\004\022\017\n\007removed\030\t \001(\010\"E\n\014B"
-  "lockRequest\022\024\n\014block_height\030\002 \001(\004\022\037\n\nblo"
-  "ck_hash\030\003 \001(\0132\013.types.H256\"0\n\nBlockReply"
-  "\022\021\n\tblock_rlp\030\001 \001(\014\022\017\n\007senders\030\002 \001(\014\"1\n\020"
-  "TxnLookupRequest\022\035\n\010txn_hash\030\001 \001(\0132\013.typ"
-  "es.H256\"&\n\016TxnLookupReply\022\024\n\014block_numbe"
-  "r\030\001 \001(\004\"!\n\020NodesInfoRequest\022\r\n\005limit\030\001 \001"
-  "(\r\"\035\n\016AddPeerRequest\022\013\n\003url\030\001 \001(\t\":\n\016Nod"
-  "esInfoReply\022(\n\nnodes_info\030\001 \003(\0132\024.types."
-  "NodeInfoReply\",\n\nPeersReply\022\036\n\005peers\030\001 \003"
-  "(\0132\017.types.PeerInfo\"\037\n\014AddPeerReply\022\017\n\007s"
-  "uccess\030\001 \001(\010\"&\n\021PendingBlockReply\022\021\n\tblo"
-  "ck_rlp\030\001 \001(\014\"D\n%EngineGetPayloadBodiesBy"
-  "HashV1Request\022\033\n\006hashes\030\001 \003(\0132\013.types.H2"
-  "56\"F\n&EngineGetPayloadBodiesByRangeV1Req"
-  "uest\022\r\n\005start\030\001 \001(\004\022\r\n\005count\030\002 \001(\004\"3\n\017Bo"
-  "rEventRequest\022 \n\013bor_tx_hash\030\001 \001(\0132\013.typ"
-  "es.H256\"J\n\rBorEventReply\022\017\n\007present\030\001 \001("
-  "\010\022\024\n\014block_number\030\002 \001(\004\022\022\n\nevent_rlps\030\003 "
-  "\003(\014*J\n\005Event\022\n\n\006HEADER\020\000\022\020\n\014PENDING_LOGS"
-  "\020\001\022\021\n\rPENDING_BLOCK\020\002\022\020\n\014NEW_SNAPSHOT\020\0032"
-  "\323\007\n\nETHBACKEND\022=\n\tEtherbase\022\030.remote.Eth"
-  "erbaseRequest\032\026.remote.EtherbaseReply\022@\n"
-  "\nNetVersion\022\031.remote.NetVersionRequest\032\027"
-  ".remote.NetVersionReply\022F\n\014NetPeerCount\022"
-  "\033.remote.NetPeerCountRequest\032\031.remote.Ne"
-  "tPeerCountReply\0226\n\007Version\022\026.google.prot"
-  "obuf.Empty\032\023.types.VersionReply\022O\n\017Proto"
-  "colVersion\022\036.remote.ProtocolVersionReque"
-  "st\032\034.remote.ProtocolVersionReply\022I\n\rClie"
-  "ntVersion\022\034.remote.ClientVersionRequest\032"
-  "\032.remote.ClientVersionReply\022\?\n\tSubscribe"
-  "\022\030.remote.SubscribeRequest\032\026.remote.Subs"
-  "cribeReply0\001\022J\n\rSubscribeLogs\022\031.remote.L"
-  "ogsFilterRequest\032\032.remote.SubscribeLogsR"
-  "eply(\0010\001\0221\n\005Block\022\024.remote.BlockRequest\032"
-  "\022.remote.BlockReply\022=\n\tTxnLookup\022\030.remot"
-  "e.TxnLookupRequest\032\026.remote.TxnLookupRep"
-  "ly\022<\n\010NodeInfo\022\030.remote.NodesInfoRequest"
-  "\032\026.remote.NodesInfoReply\0223\n\005Peers\022\026.goog"
-  "le.protobuf.Empty\032\022.remote.PeersReply\0227\n"
-  "\007AddPeer\022\026.remote.AddPeerRequest\032\024.remot"
-  "e.AddPeerReply\022A\n\014PendingBlock\022\026.google."
-  "protobuf.Empty\032\031.remote.PendingBlockRepl"
-  "y\022:\n\010BorEvent\022\027.remote.BorEventRequest\032\025"
-  ".remote.BorEventReplyB\026Z\024./remote;remote"
-  "protob\006proto3"
+  "ionReply\022\021\n\tnode_name\030\001 \001(\t\",\n\024Canonical"
+  "HashRequest\022\024\n\014block_number\030\001 \001(\004\"/\n\022Can"
+  "onicalHashReply\022\031\n\004hash\030\001 \001(\0132\013.types.H2"
+  "56\"0\n\023HeaderNumberRequest\022\031\n\004hash\030\001 \001(\0132"
+  "\013.types.H256\"3\n\021HeaderNumberReply\022\023\n\006num"
+  "ber\030\001 \001(\004H\000\210\001\001B\t\n\007_number\"/\n\020SubscribeRe"
+  "quest\022\033\n\004type\030\001 \001(\0162\r.remote.Event\";\n\016Su"
+  "bscribeReply\022\033\n\004type\030\001 \001(\0162\r.remote.Even"
+  "t\022\014\n\004data\030\002 \001(\014\"{\n\021LogsFilterRequest\022\025\n\r"
+  "all_addresses\030\001 \001(\010\022\036\n\taddresses\030\002 \003(\0132\013"
+  ".types.H160\022\022\n\nall_topics\030\003 \001(\010\022\033\n\006topic"
+  "s\030\004 \003(\0132\013.types.H256\"\372\001\n\022SubscribeLogsRe"
+  "ply\022\034\n\007address\030\001 \001(\0132\013.types.H160\022\037\n\nblo"
+  "ck_hash\030\002 \001(\0132\013.types.H256\022\024\n\014block_numb"
+  "er\030\003 \001(\004\022\014\n\004data\030\004 \001(\014\022\021\n\tlog_index\030\005 \001("
+  "\004\022\033\n\006topics\030\006 \003(\0132\013.types.H256\022%\n\020transa"
+  "ction_hash\030\007 \001(\0132\013.types.H256\022\031\n\021transac"
+  "tion_index\030\010 \001(\004\022\017\n\007removed\030\t \001(\010\"E\n\014Blo"
+  "ckRequest\022\024\n\014block_height\030\002 \001(\004\022\037\n\nblock"
+  "_hash\030\003 \001(\0132\013.types.H256\"0\n\nBlockReply\022\021"
+  "\n\tblock_rlp\030\001 \001(\014\022\017\n\007senders\030\002 \001(\014\"1\n\020Tx"
+  "nLookupRequest\022\035\n\010txn_hash\030\001 \001(\0132\013.types"
+  ".H256\"&\n\016TxnLookupReply\022\024\n\014block_number\030"
+  "\001 \001(\004\"!\n\020NodesInfoRequest\022\r\n\005limit\030\001 \001(\r"
+  "\"\035\n\016AddPeerRequest\022\013\n\003url\030\001 \001(\t\":\n\016Nodes"
+  "InfoReply\022(\n\nnodes_info\030\001 \003(\0132\024.types.No"
+  "deInfoReply\",\n\nPeersReply\022\036\n\005peers\030\001 \003(\013"
+  "2\017.types.PeerInfo\"\037\n\014AddPeerReply\022\017\n\007suc"
+  "cess\030\001 \001(\010\"&\n\021PendingBlockReply\022\021\n\tblock"
+  "_rlp\030\001 \001(\014\"D\n%EngineGetPayloadBodiesByHa"
+  "shV1Request\022\033\n\006hashes\030\001 \003(\0132\013.types.H256"
+  "\"F\n&EngineGetPayloadBodiesByRangeV1Reque"
+  "st\022\r\n\005start\030\001 \001(\004\022\r\n\005count\030\002 \001(\004\"3\n\017BorE"
+  "ventRequest\022 \n\013bor_tx_hash\030\001 \001(\0132\013.types"
+  ".H256\"J\n\rBorEventReply\022\017\n\007present\030\001 \001(\010\022"
+  "\024\n\014block_number\030\002 \001(\004\022\022\n\nevent_rlps\030\003 \003("
+  "\014*J\n\005Event\022\n\n\006HEADER\020\000\022\020\n\014PENDING_LOGS\020\001"
+  "\022\021\n\rPENDING_BLOCK\020\002\022\020\n\014NEW_SNAPSHOT\020\0032\346\010"
+  "\n\nETHBACKEND\022=\n\tEtherbase\022\030.remote.Ether"
+  "baseRequest\032\026.remote.EtherbaseReply\022@\n\nN"
+  "etVersion\022\031.remote.NetVersionRequest\032\027.r"
+  "emote.NetVersionReply\022F\n\014NetPeerCount\022\033."
+  "remote.NetPeerCountRequest\032\031.remote.NetP"
+  "eerCountReply\0226\n\007Version\022\026.google.protob"
+  "uf.Empty\032\023.types.VersionReply\022O\n\017Protoco"
+  "lVersion\022\036.remote.ProtocolVersionRequest"
+  "\032\034.remote.ProtocolVersionReply\022I\n\rClient"
+  "Version\022\034.remote.ClientVersionRequest\032\032."
+  "remote.ClientVersionReply\022\?\n\tSubscribe\022\030"
+  ".remote.SubscribeRequest\032\026.remote.Subscr"
+  "ibeReply0\001\022J\n\rSubscribeLogs\022\031.remote.Log"
+  "sFilterRequest\032\032.remote.SubscribeLogsRep"
+  "ly(\0010\001\0221\n\005Block\022\024.remote.BlockRequest\032\022."
+  "remote.BlockReply\022I\n\rCanonicalHash\022\034.rem"
+  "ote.CanonicalHashRequest\032\032.remote.Canoni"
+  "calHashReply\022F\n\014HeaderNumber\022\033.remote.He"
+  "aderNumberRequest\032\031.remote.HeaderNumberR"
+  "eply\022=\n\tTxnLookup\022\030.remote.TxnLookupRequ"
+  "est\032\026.remote.TxnLookupReply\022<\n\010NodeInfo\022"
+  "\030.remote.NodesInfoRequest\032\026.remote.Nodes"
+  "InfoReply\0223\n\005Peers\022\026.google.protobuf.Emp"
+  "ty\032\022.remote.PeersReply\0227\n\007AddPeer\022\026.remo"
+  "te.AddPeerRequest\032\024.remote.AddPeerReply\022"
+  "A\n\014PendingBlock\022\026.google.protobuf.Empty\032"
+  "\031.remote.PendingBlockReply\022:\n\010BorEvent\022\027"
+  ".remote.BorEventRequest\032\025.remote.BorEven"
+  "tReplyB\026Z\024./remote;remoteprotob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -745,9 +843,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend
 };
 static ::_pbi::once_flag descriptor_table_remote_2fethbackend_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_remote_2fethbackend_2eproto = {
-    false, false, 2693, descriptor_table_protodef_remote_2fethbackend_2eproto,
+    false, false, 3038, descriptor_table_protodef_remote_2fethbackend_2eproto,
     "remote/ethbackend.proto",
-    &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_deps, 2, 28,
+    &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_deps, 2, 32,
     schemas, file_default_instances, TableStruct_remote_2fethbackend_2eproto::offsets,
     file_level_metadata_remote_2fethbackend_2eproto, file_level_enum_descriptors_remote_2fethbackend_2eproto,
     file_level_service_descriptors_remote_2fethbackend_2eproto,
@@ -1914,6 +2012,772 @@ void ClientVersionReply::InternalSwap(ClientVersionReply* other) {
 
 // ===================================================================
 
+class CanonicalHashRequest::_Internal {
+ public:
+};
+
+CanonicalHashRequest::CanonicalHashRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.CanonicalHashRequest)
+}
+CanonicalHashRequest::CanonicalHashRequest(const CanonicalHashRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  CanonicalHashRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.block_number_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.block_number_ = from._impl_.block_number_;
+  // @@protoc_insertion_point(copy_constructor:remote.CanonicalHashRequest)
+}
+
+inline void CanonicalHashRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.block_number_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+CanonicalHashRequest::~CanonicalHashRequest() {
+  // @@protoc_insertion_point(destructor:remote.CanonicalHashRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void CanonicalHashRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void CanonicalHashRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void CanonicalHashRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.CanonicalHashRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.block_number_ = uint64_t{0u};
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* CanonicalHashRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint64 block_number = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.block_number_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* CanonicalHashRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.CanonicalHashRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 block_number = 1;
+  if (this->_internal_block_number() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_block_number(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.CanonicalHashRequest)
+  return target;
+}
+
+size_t CanonicalHashRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.CanonicalHashRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint64 block_number = 1;
+  if (this->_internal_block_number() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_block_number());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData CanonicalHashRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    CanonicalHashRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CanonicalHashRequest::GetClassData() const { return &_class_data_; }
+
+
+void CanonicalHashRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<CanonicalHashRequest*>(&to_msg);
+  auto& from = static_cast<const CanonicalHashRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.CanonicalHashRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_block_number() != 0) {
+    _this->_internal_set_block_number(from._internal_block_number());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void CanonicalHashRequest::CopyFrom(const CanonicalHashRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.CanonicalHashRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CanonicalHashRequest::IsInitialized() const {
+  return true;
+}
+
+void CanonicalHashRequest::InternalSwap(CanonicalHashRequest* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.block_number_, other->_impl_.block_number_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata CanonicalHashRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[10]);
+}
+
+// ===================================================================
+
+class CanonicalHashReply::_Internal {
+ public:
+  static const ::types::H256& hash(const CanonicalHashReply* msg);
+};
+
+const ::types::H256&
+CanonicalHashReply::_Internal::hash(const CanonicalHashReply* msg) {
+  return *msg->_impl_.hash_;
+}
+void CanonicalHashReply::clear_hash() {
+  if (GetArenaForAllocation() == nullptr && _impl_.hash_ != nullptr) {
+    delete _impl_.hash_;
+  }
+  _impl_.hash_ = nullptr;
+}
+CanonicalHashReply::CanonicalHashReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.CanonicalHashReply)
+}
+CanonicalHashReply::CanonicalHashReply(const CanonicalHashReply& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  CanonicalHashReply* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hash_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_hash()) {
+    _this->_impl_.hash_ = new ::types::H256(*from._impl_.hash_);
+  }
+  // @@protoc_insertion_point(copy_constructor:remote.CanonicalHashReply)
+}
+
+inline void CanonicalHashReply::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hash_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+CanonicalHashReply::~CanonicalHashReply() {
+  // @@protoc_insertion_point(destructor:remote.CanonicalHashReply)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void CanonicalHashReply::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.hash_;
+}
+
+void CanonicalHashReply::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void CanonicalHashReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.CanonicalHashReply)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && _impl_.hash_ != nullptr) {
+    delete _impl_.hash_;
+  }
+  _impl_.hash_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* CanonicalHashReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .types.H256 hash = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_hash(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* CanonicalHashReply::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.CanonicalHashReply)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .types.H256 hash = 1;
+  if (this->_internal_has_hash()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::hash(this),
+        _Internal::hash(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.CanonicalHashReply)
+  return target;
+}
+
+size_t CanonicalHashReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.CanonicalHashReply)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .types.H256 hash = 1;
+  if (this->_internal_has_hash()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.hash_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData CanonicalHashReply::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    CanonicalHashReply::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CanonicalHashReply::GetClassData() const { return &_class_data_; }
+
+
+void CanonicalHashReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<CanonicalHashReply*>(&to_msg);
+  auto& from = static_cast<const CanonicalHashReply&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.CanonicalHashReply)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_hash()) {
+    _this->_internal_mutable_hash()->::types::H256::MergeFrom(
+        from._internal_hash());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void CanonicalHashReply::CopyFrom(const CanonicalHashReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.CanonicalHashReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CanonicalHashReply::IsInitialized() const {
+  return true;
+}
+
+void CanonicalHashReply::InternalSwap(CanonicalHashReply* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.hash_, other->_impl_.hash_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata CanonicalHashReply::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[11]);
+}
+
+// ===================================================================
+
+class HeaderNumberRequest::_Internal {
+ public:
+  static const ::types::H256& hash(const HeaderNumberRequest* msg);
+};
+
+const ::types::H256&
+HeaderNumberRequest::_Internal::hash(const HeaderNumberRequest* msg) {
+  return *msg->_impl_.hash_;
+}
+void HeaderNumberRequest::clear_hash() {
+  if (GetArenaForAllocation() == nullptr && _impl_.hash_ != nullptr) {
+    delete _impl_.hash_;
+  }
+  _impl_.hash_ = nullptr;
+}
+HeaderNumberRequest::HeaderNumberRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.HeaderNumberRequest)
+}
+HeaderNumberRequest::HeaderNumberRequest(const HeaderNumberRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  HeaderNumberRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hash_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_hash()) {
+    _this->_impl_.hash_ = new ::types::H256(*from._impl_.hash_);
+  }
+  // @@protoc_insertion_point(copy_constructor:remote.HeaderNumberRequest)
+}
+
+inline void HeaderNumberRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hash_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+HeaderNumberRequest::~HeaderNumberRequest() {
+  // @@protoc_insertion_point(destructor:remote.HeaderNumberRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void HeaderNumberRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.hash_;
+}
+
+void HeaderNumberRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void HeaderNumberRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.HeaderNumberRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && _impl_.hash_ != nullptr) {
+    delete _impl_.hash_;
+  }
+  _impl_.hash_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* HeaderNumberRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .types.H256 hash = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_hash(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* HeaderNumberRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.HeaderNumberRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .types.H256 hash = 1;
+  if (this->_internal_has_hash()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::hash(this),
+        _Internal::hash(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.HeaderNumberRequest)
+  return target;
+}
+
+size_t HeaderNumberRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.HeaderNumberRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .types.H256 hash = 1;
+  if (this->_internal_has_hash()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.hash_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HeaderNumberRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    HeaderNumberRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HeaderNumberRequest::GetClassData() const { return &_class_data_; }
+
+
+void HeaderNumberRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<HeaderNumberRequest*>(&to_msg);
+  auto& from = static_cast<const HeaderNumberRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.HeaderNumberRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_hash()) {
+    _this->_internal_mutable_hash()->::types::H256::MergeFrom(
+        from._internal_hash());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void HeaderNumberRequest::CopyFrom(const HeaderNumberRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.HeaderNumberRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool HeaderNumberRequest::IsInitialized() const {
+  return true;
+}
+
+void HeaderNumberRequest::InternalSwap(HeaderNumberRequest* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.hash_, other->_impl_.hash_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata HeaderNumberRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[12]);
+}
+
+// ===================================================================
+
+class HeaderNumberReply::_Internal {
+ public:
+  using HasBits = decltype(std::declval<HeaderNumberReply>()._impl_._has_bits_);
+  static void set_has_number(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+};
+
+HeaderNumberReply::HeaderNumberReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.HeaderNumberReply)
+}
+HeaderNumberReply::HeaderNumberReply(const HeaderNumberReply& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  HeaderNumberReply* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.number_){}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.number_ = from._impl_.number_;
+  // @@protoc_insertion_point(copy_constructor:remote.HeaderNumberReply)
+}
+
+inline void HeaderNumberReply::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.number_){uint64_t{0u}}
+  };
+}
+
+HeaderNumberReply::~HeaderNumberReply() {
+  // @@protoc_insertion_point(destructor:remote.HeaderNumberReply)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void HeaderNumberReply::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void HeaderNumberReply::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void HeaderNumberReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.HeaderNumberReply)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.number_ = uint64_t{0u};
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* HeaderNumberReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // optional uint64 number = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _Internal::set_has_number(&has_bits);
+          _impl_.number_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* HeaderNumberReply::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.HeaderNumberReply)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // optional uint64 number = 1;
+  if (_internal_has_number()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_number(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.HeaderNumberReply)
+  return target;
+}
+
+size_t HeaderNumberReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.HeaderNumberReply)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // optional uint64 number = 1;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_number());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HeaderNumberReply::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    HeaderNumberReply::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HeaderNumberReply::GetClassData() const { return &_class_data_; }
+
+
+void HeaderNumberReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<HeaderNumberReply*>(&to_msg);
+  auto& from = static_cast<const HeaderNumberReply&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.HeaderNumberReply)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_number()) {
+    _this->_internal_set_number(from._internal_number());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void HeaderNumberReply::CopyFrom(const HeaderNumberReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.HeaderNumberReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool HeaderNumberReply::IsInitialized() const {
+  return true;
+}
+
+void HeaderNumberReply::InternalSwap(HeaderNumberReply* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.number_, other->_impl_.number_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata HeaderNumberReply::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[13]);
+}
+
+// ===================================================================
+
 class SubscribeRequest::_Internal {
  public:
 };
@@ -2090,7 +2954,7 @@ void SubscribeRequest::InternalSwap(SubscribeRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SubscribeRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[10]);
+      file_level_metadata_remote_2fethbackend_2eproto[14]);
 }
 
 // ===================================================================
@@ -2318,7 +3182,7 @@ void SubscribeReply::InternalSwap(SubscribeReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SubscribeReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[11]);
+      file_level_metadata_remote_2fethbackend_2eproto[15]);
 }
 
 // ===================================================================
@@ -2603,7 +3467,7 @@ void LogsFilterRequest::InternalSwap(LogsFilterRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata LogsFilterRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[12]);
+      file_level_metadata_remote_2fethbackend_2eproto[16]);
 }
 
 // ===================================================================
@@ -3087,7 +3951,7 @@ void SubscribeLogsReply::InternalSwap(SubscribeLogsReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SubscribeLogsReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[13]);
+      file_level_metadata_remote_2fethbackend_2eproto[17]);
 }
 
 // ===================================================================
@@ -3317,7 +4181,7 @@ void BlockRequest::InternalSwap(BlockRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BlockRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[14]);
+      file_level_metadata_remote_2fethbackend_2eproto[18]);
 }
 
 // ===================================================================
@@ -3560,7 +4424,7 @@ void BlockReply::InternalSwap(BlockReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BlockReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[15]);
+      file_level_metadata_remote_2fethbackend_2eproto[19]);
 }
 
 // ===================================================================
@@ -3759,7 +4623,7 @@ void TxnLookupRequest::InternalSwap(TxnLookupRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata TxnLookupRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[16]);
+      file_level_metadata_remote_2fethbackend_2eproto[20]);
 }
 
 // ===================================================================
@@ -3937,7 +4801,7 @@ void TxnLookupReply::InternalSwap(TxnLookupReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata TxnLookupReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[17]);
+      file_level_metadata_remote_2fethbackend_2eproto[21]);
 }
 
 // ===================================================================
@@ -4115,7 +4979,7 @@ void NodesInfoRequest::InternalSwap(NodesInfoRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NodesInfoRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[18]);
+      file_level_metadata_remote_2fethbackend_2eproto[22]);
 }
 
 // ===================================================================
@@ -4318,7 +5182,7 @@ void AddPeerRequest::InternalSwap(AddPeerRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AddPeerRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[19]);
+      file_level_metadata_remote_2fethbackend_2eproto[23]);
 }
 
 // ===================================================================
@@ -4506,7 +5370,7 @@ void NodesInfoReply::InternalSwap(NodesInfoReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NodesInfoReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[20]);
+      file_level_metadata_remote_2fethbackend_2eproto[24]);
 }
 
 // ===================================================================
@@ -4694,7 +5558,7 @@ void PeersReply::InternalSwap(PeersReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PeersReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[21]);
+      file_level_metadata_remote_2fethbackend_2eproto[25]);
 }
 
 // ===================================================================
@@ -4872,7 +5736,7 @@ void AddPeerReply::InternalSwap(AddPeerReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AddPeerReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[22]);
+      file_level_metadata_remote_2fethbackend_2eproto[26]);
 }
 
 // ===================================================================
@@ -5070,7 +5934,7 @@ void PendingBlockReply::InternalSwap(PendingBlockReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PendingBlockReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[23]);
+      file_level_metadata_remote_2fethbackend_2eproto[27]);
 }
 
 // ===================================================================
@@ -5258,7 +6122,7 @@ void EngineGetPayloadBodiesByHashV1Request::InternalSwap(EngineGetPayloadBodiesB
 ::PROTOBUF_NAMESPACE_ID::Metadata EngineGetPayloadBodiesByHashV1Request::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[24]);
+      file_level_metadata_remote_2fethbackend_2eproto[28]);
 }
 
 // ===================================================================
@@ -5469,7 +6333,7 @@ void EngineGetPayloadBodiesByRangeV1Request::InternalSwap(EngineGetPayloadBodies
 ::PROTOBUF_NAMESPACE_ID::Metadata EngineGetPayloadBodiesByRangeV1Request::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[25]);
+      file_level_metadata_remote_2fethbackend_2eproto[29]);
 }
 
 // ===================================================================
@@ -5668,7 +6532,7 @@ void BorEventRequest::InternalSwap(BorEventRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BorEventRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[26]);
+      file_level_metadata_remote_2fethbackend_2eproto[30]);
 }
 
 // ===================================================================
@@ -5913,7 +6777,7 @@ void BorEventReply::InternalSwap(BorEventReply* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BorEventReply::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[27]);
+      file_level_metadata_remote_2fethbackend_2eproto[31]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -5958,6 +6822,22 @@ Arena::CreateMaybeMessage< ::remote::ClientVersionRequest >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::remote::ClientVersionReply*
 Arena::CreateMaybeMessage< ::remote::ClientVersionReply >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::ClientVersionReply >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::CanonicalHashRequest*
+Arena::CreateMaybeMessage< ::remote::CanonicalHashRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::CanonicalHashRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::CanonicalHashReply*
+Arena::CreateMaybeMessage< ::remote::CanonicalHashReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::CanonicalHashReply >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::HeaderNumberRequest*
+Arena::CreateMaybeMessage< ::remote::HeaderNumberRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::HeaderNumberRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::HeaderNumberReply*
+Arena::CreateMaybeMessage< ::remote::HeaderNumberReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::HeaderNumberReply >(arena);
 }
 template<> PROTOBUF_NOINLINE ::remote::SubscribeRequest*
 Arena::CreateMaybeMessage< ::remote::SubscribeRequest >(Arena* arena) {

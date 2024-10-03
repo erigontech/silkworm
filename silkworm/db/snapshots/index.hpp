@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <optional>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/types/hash.hpp>
 
 #include "rec_split/rec_split.hpp"
@@ -55,7 +55,7 @@ class Index {
     }
 
     uint64_t base_data_id() const {
-        assert(index_);
+        SILKWORM_ASSERT(index_);
         return index_->base_data_id();
     }
 

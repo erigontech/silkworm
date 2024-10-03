@@ -130,8 +130,8 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
 
         // Prepare buckets
         buckets_.reserve(bucket_count);
-        for (int i = 0; i < bucket_count; i++) {
-            buckets_.emplace_back(settings.bucket_size);
+        for (int i = 0; i < bucket_count; ++i) {
+            buckets_.emplace_back(i, settings.bucket_size);
         }
         if (double_enum_index_) {
             offsets_.reserve(settings.keys_count);
@@ -163,7 +163,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
             bucket.values_.emplace_back(offset);
         }
 
-        keys_added_++;
+        ++keys_added_;
     }
 
     bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
@@ -188,7 +188,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         std::vector<int64_t> bucket_position_accumulator_(this->bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
 
         bucket_size_accumulator_[0] = bucket_position_accumulator_[0] = 0;
-        for (size_t i = 0; i < bucket_count_; i++) {
+        for (size_t i = 0; i < bucket_count_; ++i) {
             bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
 
             // auto* underlying_buffer = buckets_[i].index_ofs_.rdbuf();

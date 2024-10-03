@@ -81,7 +81,7 @@ const Result& PatternCoveringSearchImpl::cover_word(ByteView word) {
     patterns.push_back(0);
 
     const auto& last_match = matches.back();
-    for (size_t i = last_match.start; i < last_match.end; i++) {
+    for (size_t i = last_match.start; i < last_match.end; ++i) {
         DynamicCell cell{
             .optim_start = i + 1,
             .cover_start = word.size(),
@@ -90,7 +90,7 @@ const Result& PatternCoveringSearchImpl::cover_word(ByteView word) {
     }
 
     // Starting from the last match
-    for (size_t i = matches.size(); i > 0; i--) {
+    for (size_t i = matches.size(); i > 0; --i) {
         const auto& match = matches[i - 1];
         uint64_t pattern_score = pattern_score_getter_(match.value);
         auto& first_cell = cell_ring_[0];
@@ -99,7 +99,7 @@ const Result& PatternCoveringSearchImpl::cover_word(ByteView word) {
         DynamicCell max_cell = first_cell;
         bool max_include = false;
 
-        for (size_t e = 0; e < cell_ring_.size(); e++) {
+        for (size_t e = 0; e < cell_ring_.size(); ++e) {
             auto& cell = cell_ring_[e];
             int comp = cell.compression - 4;
 

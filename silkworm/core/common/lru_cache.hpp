@@ -80,7 +80,7 @@ class LruCache {
 
         if (cache_items_map_.size() > max_size_) {
             auto last = cache_items_list_.end();
-            last--;
+            --last;
             cache_items_map_.erase(last->first);
             cache_items_list_.pop_back();
         }

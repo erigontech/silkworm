@@ -701,7 +701,7 @@ TEST_CASE("KvServer E2E: trigger server-side write error", "[silkworm][node][rpc
         auto kv_client = *test.kv_client;
 
         // Start many Tx calls w/o reading responses after writing requests.
-        for (uint32_t i{0}; i < kNumTxs; i++) {
+        for (uint32_t i{0}; i < kNumTxs; ++i) {
             ::grpc::ClientContext context;
             auto tx_stream = kv_client.tx_start(&context);
             remote::Pair response;
@@ -733,7 +733,7 @@ TEST_CASE("KvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node
     // Start and keep open as many Tx calls as the maximum number of readers.
     std::vector<std::unique_ptr<::grpc::ClientContext>> client_contexts;
     std::vector<TxStreamPtr> tx_streams;
-    for (uint32_t i{0}; i < test.database_env.max_readers(); i++) {
+    for (uint32_t i{0}; i < test.database_env.max_readers(); ++i) {
         auto& context = client_contexts.emplace_back(std::make_unique<::grpc::ClientContext>());
         auto tx_stream = kv_client.tx_start(context.get());
         // You must read at least the first unsolicited incoming message (TxID announcement).
@@ -774,7 +774,7 @@ TEST_CASE("KvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]
     REQUIRE(response.tx_id() != 0);
     response.clear_tx_id();
     // Open as many cursors as possible expecting successful result.
-    for (uint32_t i{0}; i < kMaxTxCursors; i++) {
+    for (uint32_t i{0}; i < kMaxTxCursors; ++i) {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucket_name(kTestMap.name);

@@ -94,11 +94,11 @@ struct Anchor {
     void update_timestamp(time_point_t time_point) {
         prev_timestamp = timestamp;
         timestamp = time_point;
-        timeouts++;
+        ++timeouts;
     }
 
     void restore_timestamp() {
-        timeouts--;
+        --timeouts;
         timestamp = prev_timestamp;
     }
 };
@@ -227,7 +227,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 
     std::vector<Header_Ref> to_ref() {
         std::vector<Header_Ref> refs;
-        for (auto i = headers_.begin(); i < headers_.end(); i++) refs.emplace_back(i);
+        for (auto i = headers_.begin(); i < headers_.end(); ++i) refs.emplace_back(i);
         return refs;
     }
 
@@ -253,7 +253,7 @@ struct Segment
     explicit Segment(std::shared_ptr<HeaderList> line) : line_(std::move(line)) {}
 
     void push_back(const HeaderList::Header_Ref& val) {
-        assert(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive
+        SILKWORM_ASSERT(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive
         std::vector<HeaderList::Header_Ref>::push_back(val);
     }
 

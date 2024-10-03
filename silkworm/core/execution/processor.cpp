@@ -16,8 +16,7 @@
 
 #include "processor.hpp"
 
-#include <cassert>
-
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
@@ -32,7 +31,7 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
-    assert(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
+    SILKWORM_ASSERT(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());
@@ -40,7 +39,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     state_.clear_journal_and_substate();
 
     const std::optional<evmc::address> sender{txn.sender()};
-    assert(sender);
+    SILKWORM_ASSERT(sender);
     state_.access_account(*sender);
 
     if (txn.to) {
@@ -77,7 +76,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
 
     const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
-    assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
+    SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
 
     const CallResult vm_res{evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
 

@@ -17,11 +17,11 @@
 #pragma once
 
 #include <array>
-#include <cassert>
 #include <filesystem>
 #include <functional>
 #include <vector>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 
 #include "index.hpp"
@@ -101,7 +101,7 @@ struct SnapshotBundle : public SnapshotBundleData {
             case transactions_to_block:
                 return txn_snapshot;
         }
-        assert(false);
+        SILKWORM_ASSERT(false);
         return header_snapshot;
     }
 
@@ -116,7 +116,7 @@ struct SnapshotBundle : public SnapshotBundleData {
             case transactions_to_block:
                 return idx_txn_hash_2_block;
         }
-        assert(false);
+        SILKWORM_ASSERT(false);
         return idx_header_hash;
     }
 

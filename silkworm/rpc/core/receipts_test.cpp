@@ -32,6 +32,8 @@
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
+#include <silkworm/rpc/test_util/mock_back_end.hpp>
 
 namespace silkworm::rpc::core {
 
@@ -58,7 +60,7 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
     "00000000000000000000000000000000000000000000880000000000000000")};
 static silkworm::Bytes kBody{*silkworm::from_hex("c68369e45a03c0")};
 
-TEST_CASE("read_raw_receipts") {
+TEST_CASE("read_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
     db::test_util::MockTransaction transaction;
@@ -66,14 +68,14 @@ TEST_CASE("read_raw_receipts") {
     SECTION("null receipts") {
         const uint64_t block_number{0};
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
         CHECK(!result.get().has_value());
     }
 
     SECTION("zero receipts") {
         const uint64_t block_number{0};
         EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.has_value());
         if (receipts) {
@@ -116,7 +118,7 @@ TEST_CASE("read_raw_receipts") {
             co_return KeyValue{std::move(key), std::move(value)};
         }));
         EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}}.size());
     }
@@ -173,7 +175,7 @@ TEST_CASE("read_raw_receipts") {
             co_return KeyValue{std::move(key2), std::move(value2)};
         }));
         EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}, Receipt{}}.size());
     }
@@ -212,7 +214,7 @@ TEST_CASE("read_raw_receipts") {
                 "000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c363318f6")};
             co_return KeyValue{std::move(key), std::move(value)};
         }));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs
         const Receipts receipts = result.get().value();
         CHECK(receipts.size() == 1);
@@ -220,28 +222,25 @@ TEST_CASE("read_raw_receipts") {
     }
 }
 
-TEST_CASE("read_receipts") {
+TEST_CASE("get_receipts") {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
     db::test_util::MockTransaction transaction;
+    std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();
+    silkworm::db::chain::RemoteChainStorage chain_storage{transaction, ethdb::kv::block_provider(backend.get()), ethdb::kv::block_number_from_txn_hash_provider(backend.get())};
 
     SECTION("null receipts without data") {
         const silkworm::BlockWithHash block_with_hash{};
-        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_with_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
-        CHECK(!receipts.has_value());
+        CHECK(receipts.empty());
     }
 
     SECTION("zero receipts w/ zero transactions") {
         const silkworm::BlockWithHash block_with_hash{};
-        EXPECT_CALL(transaction, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_with_hash), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
-        CHECK(receipts.has_value());
-        if (receipts) {
-            CHECK(receipts.value().empty());
-        }
+        CHECK(receipts.empty());
     }
 
 #ifdef TEST_DELETED

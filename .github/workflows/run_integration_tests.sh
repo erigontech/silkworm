@@ -29,7 +29,7 @@ ots_getBlockDetailsByHash/test_03.json,\
 ots_getBlockTransactions/test_04.json,\
 ots_getBlockTransactions/test_07.json,\
 ots_searchTransactionsAfter,\
-tx_pool_content,\
+txpool_content,\
 ots_searchTransactionsBefore --transport_type http,websocket
 fi
 

@@ -95,7 +95,7 @@ class HeaderChain {
     // core functionalities: process receiving headers
     // when a remote peer satisfy our request we receive one or more headers that will be processed
     using RequestMoreHeaders = bool;
-    std::tuple<Penalty, RequestMoreHeaders> accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&);
+    std::tuple<Penalty, RequestMoreHeaders> accept_headers(const std::vector<BlockHeader>&, uint64_t request_id, const PeerId&);
 
     // core functionalities: process header announcement
     std::optional<GetBlockHeadersPacket66> save_external_announce(Hash hash);
@@ -168,7 +168,7 @@ class HeaderChain {
 
     OldestFirstAnchorQueue anchor_queue_;      // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                            // Links by header hash
-    AnchorMap anchors_;                        // Mapping from parentHash to collection of anchors
+    AnchorMap anchors_;                        // Mapping from parent hash to collection of anchors
     OldestFirstLinkMap persisted_link_queue_;  // Priority queue of persisted links used to limit their number
     OldestFirstLinkQueue insert_list_;         // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;
@@ -189,8 +189,8 @@ class HeaderChain {
     uint64_t generate_request_id();
     uint64_t is_valid_request_id(uint64_t request_id) const;
 
-    uint64_t request_id_prefix;
-    uint64_t request_count = 0;
+    uint64_t request_id_prefix_;
+    uint64_t request_count_ = 0;
 
     DownloadStatistics statistics_;
     std::string skeleton_condition_;

@@ -23,7 +23,7 @@ namespace silkworm {
 using BlockBodiesPacket = std::vector<BlockBody>;
 
 struct BlockBodiesPacket66 {  // eth/66 version
-    uint64_t requestId{0};
+    uint64_t request_id{0};
     BlockBodiesPacket request;
 };
 
@@ -38,7 +38,7 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const BlockBodiesPacket66& packet) {
-    os << "reqId=" << packet.requestId;
+    os << "reqId=" << packet.request_id;
     os << " bodies=" << packet.request.size();
     return os;
 }

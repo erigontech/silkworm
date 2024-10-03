@@ -60,7 +60,7 @@ static BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_con
 };
 
 TEST_CASE("MainChain transaction handling") {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
         auto keep_db_txn_open = i == 1;
 
         SECTION("keep_db_txn_open = " + std::to_string(keep_db_txn_open)) {

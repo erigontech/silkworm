@@ -88,9 +88,9 @@ extern PairDefaultTypeInternal _Pair_default_instance_;
 class Pairs;
 struct PairsDefaultTypeInternal;
 extern PairsDefaultTypeInternal _Pairs_default_instance_;
-class ParisPagination;
-struct ParisPaginationDefaultTypeInternal;
-extern ParisPaginationDefaultTypeInternal _ParisPagination_default_instance_;
+class PairsPagination;
+struct PairsPaginationDefaultTypeInternal;
+extern PairsPaginationDefaultTypeInternal _PairsPagination_default_instance_;
 class RangeReq;
 struct RangeReqDefaultTypeInternal;
 extern RangeReqDefaultTypeInternal _RangeReq_default_instance_;
@@ -127,7 +127,7 @@ template<> ::remote::IndexRangeReply* Arena::CreateMaybeMessage<::remote::IndexR
 template<> ::remote::IndexRangeReq* Arena::CreateMaybeMessage<::remote::IndexRangeReq>(Arena*);
 template<> ::remote::Pair* Arena::CreateMaybeMessage<::remote::Pair>(Arena*);
 template<> ::remote::Pairs* Arena::CreateMaybeMessage<::remote::Pairs>(Arena*);
-template<> ::remote::ParisPagination* Arena::CreateMaybeMessage<::remote::ParisPagination>(Arena*);
+template<> ::remote::PairsPagination* Arena::CreateMaybeMessage<::remote::PairsPagination>(Arena*);
 template<> ::remote::RangeReq* Arena::CreateMaybeMessage<::remote::RangeReq>(Arena*);
 template<> ::remote::SnapshotsReply* Arena::CreateMaybeMessage<::remote::SnapshotsReply>(Arena*);
 template<> ::remote::SnapshotsRequest* Arena::CreateMaybeMessage<::remote::SnapshotsRequest>(Arena*);
@@ -4068,24 +4068,24 @@ class Pairs final :
 };
 // -------------------------------------------------------------------
 
-class ParisPagination final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.ParisPagination) */ {
+class PairsPagination final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.PairsPagination) */ {
  public:
-  inline ParisPagination() : ParisPagination(nullptr) {}
-  ~ParisPagination() override;
-  explicit PROTOBUF_CONSTEXPR ParisPagination(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline PairsPagination() : PairsPagination(nullptr) {}
+  ~PairsPagination() override;
+  explicit PROTOBUF_CONSTEXPR PairsPagination(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  ParisPagination(const ParisPagination& from);
-  ParisPagination(ParisPagination&& from) noexcept
-    : ParisPagination() {
+  PairsPagination(const PairsPagination& from);
+  PairsPagination(PairsPagination&& from) noexcept
+    : PairsPagination() {
     *this = ::std::move(from);
   }
 
-  inline ParisPagination& operator=(const ParisPagination& from) {
+  inline PairsPagination& operator=(const PairsPagination& from) {
     CopyFrom(from);
     return *this;
   }
-  inline ParisPagination& operator=(ParisPagination&& from) noexcept {
+  inline PairsPagination& operator=(PairsPagination&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -4108,20 +4108,20 @@ class ParisPagination final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const ParisPagination& default_instance() {
+  static const PairsPagination& default_instance() {
     return *internal_default_instance();
   }
-  static inline const ParisPagination* internal_default_instance() {
-    return reinterpret_cast<const ParisPagination*>(
-               &_ParisPagination_default_instance_);
+  static inline const PairsPagination* internal_default_instance() {
+    return reinterpret_cast<const PairsPagination*>(
+               &_PairsPagination_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     19;
 
-  friend void swap(ParisPagination& a, ParisPagination& b) {
+  friend void swap(PairsPagination& a, PairsPagination& b) {
     a.Swap(&b);
   }
-  inline void Swap(ParisPagination* other) {
+  inline void Swap(PairsPagination* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -4134,7 +4134,7 @@ class ParisPagination final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(ParisPagination* other) {
+  void UnsafeArenaSwap(PairsPagination* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -4142,14 +4142,14 @@ class ParisPagination final :
 
   // implements Message ----------------------------------------------
 
-  ParisPagination* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<ParisPagination>(arena);
+  PairsPagination* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<PairsPagination>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const ParisPagination& from);
+  void CopyFrom(const PairsPagination& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const ParisPagination& from) {
-    ParisPagination::MergeImpl(*this, from);
+  void MergeFrom( const PairsPagination& from) {
+    PairsPagination::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -4167,15 +4167,15 @@ class ParisPagination final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(ParisPagination* other);
+  void InternalSwap(PairsPagination* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.ParisPagination";
+    return "remote.PairsPagination";
   }
   protected:
-  explicit ParisPagination(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit PairsPagination(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -4215,7 +4215,7 @@ class ParisPagination final :
   void _internal_set_limit(int64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:remote.ParisPagination)
+  // @@protoc_insertion_point(class_scope:remote.PairsPagination)
  private:
   class _Internal;
 
@@ -7671,44 +7671,44 @@ inline void Pairs::set_allocated_next_page_token(std::string* next_page_token) {
 
 // -------------------------------------------------------------------
 
-// ParisPagination
+// PairsPagination
 
 // bytes next_key = 1;
-inline void ParisPagination::clear_next_key() {
+inline void PairsPagination::clear_next_key() {
   _impl_.next_key_.ClearToEmpty();
 }
-inline const std::string& ParisPagination::next_key() const {
-  // @@protoc_insertion_point(field_get:remote.ParisPagination.next_key)
+inline const std::string& PairsPagination::next_key() const {
+  // @@protoc_insertion_point(field_get:remote.PairsPagination.next_key)
   return _internal_next_key();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void ParisPagination::set_next_key(ArgT0&& arg0, ArgT... args) {
+void PairsPagination::set_next_key(ArgT0&& arg0, ArgT... args) {
  
  _impl_.next_key_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.ParisPagination.next_key)
+  // @@protoc_insertion_point(field_set:remote.PairsPagination.next_key)
 }
-inline std::string* ParisPagination::mutable_next_key() {
+inline std::string* PairsPagination::mutable_next_key() {
   std::string* _s = _internal_mutable_next_key();
-  // @@protoc_insertion_point(field_mutable:remote.ParisPagination.next_key)
+  // @@protoc_insertion_point(field_mutable:remote.PairsPagination.next_key)
   return _s;
 }
-inline const std::string& ParisPagination::_internal_next_key() const {
+inline const std::string& PairsPagination::_internal_next_key() const {
   return _impl_.next_key_.Get();
 }
-inline void ParisPagination::_internal_set_next_key(const std::string& value) {
+inline void PairsPagination::_internal_set_next_key(const std::string& value) {
   
   _impl_.next_key_.Set(value, GetArenaForAllocation());
 }
-inline std::string* ParisPagination::_internal_mutable_next_key() {
+inline std::string* PairsPagination::_internal_mutable_next_key() {
   
   return _impl_.next_key_.Mutable(GetArenaForAllocation());
 }
-inline std::string* ParisPagination::release_next_key() {
-  // @@protoc_insertion_point(field_release:remote.ParisPagination.next_key)
+inline std::string* PairsPagination::release_next_key() {
+  // @@protoc_insertion_point(field_release:remote.PairsPagination.next_key)
   return _impl_.next_key_.Release();
 }
-inline void ParisPagination::set_allocated_next_key(std::string* next_key) {
+inline void PairsPagination::set_allocated_next_key(std::string* next_key) {
   if (next_key != nullptr) {
     
   } else {
@@ -7720,27 +7720,27 @@ inline void ParisPagination::set_allocated_next_key(std::string* next_key) {
     _impl_.next_key_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.ParisPagination.next_key)
+  // @@protoc_insertion_point(field_set_allocated:remote.PairsPagination.next_key)
 }
 
 // sint64 limit = 2;
-inline void ParisPagination::clear_limit() {
+inline void PairsPagination::clear_limit() {
   _impl_.limit_ = int64_t{0};
 }
-inline int64_t ParisPagination::_internal_limit() const {
+inline int64_t PairsPagination::_internal_limit() const {
   return _impl_.limit_;
 }
-inline int64_t ParisPagination::limit() const {
-  // @@protoc_insertion_point(field_get:remote.ParisPagination.limit)
+inline int64_t PairsPagination::limit() const {
+  // @@protoc_insertion_point(field_get:remote.PairsPagination.limit)
   return _internal_limit();
 }
-inline void ParisPagination::_internal_set_limit(int64_t value) {
+inline void PairsPagination::_internal_set_limit(int64_t value) {
   
   _impl_.limit_ = value;
 }
-inline void ParisPagination::set_limit(int64_t value) {
+inline void PairsPagination::set_limit(int64_t value) {
   _internal_set_limit(value);
-  // @@protoc_insertion_point(field_set:remote.ParisPagination.limit)
+  // @@protoc_insertion_point(field_set:remote.PairsPagination.limit)
 }
 
 // -------------------------------------------------------------------

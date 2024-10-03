@@ -16,10 +16,10 @@
 
 #include "ecies_cipher.hpp"
 
-#include <cassert>
 #include <memory>
 #include <stdexcept>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/secp256k1_context.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
@@ -39,7 +39,7 @@ using namespace crypto;
 
 Bytes EciesCipher::compute_shared_secret(PublicKeyView public_key_view, PrivateKeyView private_key) {
     secp256k1_pubkey public_key;
-    assert(public_key_view.size() == sizeof(public_key.data));
+    SILKWORM_ASSERT(public_key_view.size() == sizeof(public_key.data));
     memcpy(public_key.data, public_key_view.data().data(), sizeof(public_key.data));
 
     Bytes shared_secret(kKeySize * 2, 0);
@@ -102,7 +102,7 @@ size_t EciesCipher::estimate_encrypted_size(size_t size) {
 // NIST SP 800-56 Concatenation Key Derivation Function (see section 5.8.1).
 // Since sha256 produces the right size, one iteration is enough.
 static Bytes kdf(ByteView secret) {
-    assert(secret.size() == kKeySize * 2);
+    SILKWORM_ASSERT(secret.size() == kKeySize * 2);
     Bytes data(sizeof(uint32_t), 0);
     endian::store_big_u32(data.data(), 1);
     data += secret;
@@ -111,7 +111,7 @@ static Bytes kdf(ByteView secret) {
 
 Bytes EciesCipher::serialize_message(const Message& message) {
     secp256k1_pubkey public_key;
-    assert(message.ephemeral_public_key.size() == sizeof(public_key.data));
+    SILKWORM_ASSERT(message.ephemeral_public_key.size() == sizeof(public_key.data));
     memcpy(public_key.data, message.ephemeral_public_key.data().data(), sizeof(public_key.data));
 
     SecP256K1Context ctx;

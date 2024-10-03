@@ -21,6 +21,7 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <absl/strings/match.h>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
@@ -43,9 +44,14 @@
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/snapshots/bittorrent/web_seed_client.hpp>
+#include <silkworm/db/snapshots/index/btree_index.hpp>
+#include <silkworm/db/snapshots/index/existence_index.hpp>
+#include <silkworm/db/snapshots/rec_split/murmur_hash3.hpp>
+#include <silkworm/db/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
 #include <silkworm/db/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_queries.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
@@ -97,6 +103,8 @@ enum class SnapshotTool {  // NOLINT(performance-enum-size)
     count_headers,
     create_index,
     open_index,
+    open_btree_index,
+    open_existence_index,
     decode_segment,
     download,
     lookup_header,
@@ -218,6 +226,12 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
             ->capture_default_str();
     }
 
+    for (auto& cmd : {commands[SnapshotTool::open_btree_index],
+                      commands[SnapshotTool::open_existence_index]}) {
+        cmd->add_option("--file", snapshot_settings.input_file_path, ".kv file to open with associated .bt file")
+            ->required()
+            ->check(CLI::ExistingFile);
+    }
     commands[SnapshotTool::recompress]
         ->add_option("--file", snapshot_settings.input_file_path, ".seg file to decompress and compress again")
         ->required()
@@ -250,7 +264,7 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
 
     SILK_INFO << "Decode snapshot: " << snap_file->path();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    for (int i = 0; i < repetitions; i++) {
+    for (int i = 0; i < repetitions; ++i) {
         Snapshot snapshot{*snap_file};
         snapshot.reopen_segment();
     }
@@ -277,7 +291,7 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
                 const auto txn_count{settings.skip_system_txs && b.txn_count >= 2 ? b.txn_count - 2 : b.txn_count};
                 SILK_TRACE << "Body number: " << num_bodies << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
                            << " #ommers: " << b.ommers.size();
-                num_bodies++;
+                ++num_bodies;
                 num_txns += txn_count;
             }
         }
@@ -380,6 +394,130 @@ void open_index(const SnapshotSubcommandSettings& settings) {
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+}
+
+void open_btree_index(const SnapshotSubcommandSettings& settings) {
+    ensure(!settings.input_file_path.empty(), "open_btree_index: --file must be specified");
+    ensure(settings.input_file_path.extension() == ".kv", "open_btree_index: --file must be .kv file");
+
+    std::filesystem::path bt_index_file_path = settings.input_file_path;
+    bt_index_file_path.replace_extension(".bt");
+    SILK_INFO << "KV file: " << settings.input_file_path.string() << " BT file: " << bt_index_file_path.string();
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    seg::Decompressor kv_decompressor{settings.input_file_path};
+    kv_decompressor.open();
+    snapshots::index::BTreeIndex bt_index{kv_decompressor, bt_index_file_path};
+    SILK_INFO << "Starting KV scan and BTreeIndex check, total keys: " << bt_index.key_count();
+    size_t matching_count{0}, key_count{0};
+    bool is_key{true};
+    Bytes key, value;
+    auto kv_iterator = kv_decompressor.begin();
+    while (kv_iterator != kv_decompressor.end()) {
+        if (is_key) {
+            key = *kv_iterator;
+            ++key_count;
+        } else {
+            value = *kv_iterator;
+            const auto v = bt_index.get(key, kv_iterator);
+            SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value) << " v=" << (v ? to_hex(*v) : "");
+            ensure(v == value,
+                   [&]() { return "open_btree_index: value mismatch for key=" + to_hex(key) + " position=" + std::to_string(key_count); });
+            if (v == value) {
+                ++matching_count;
+            }
+            if (key_count % 10'000'000 == 0) {
+                SILK_INFO << "BTreeIndex check progress: " << key_count << " different: " << (key_count - matching_count);
+            }
+        }
+        ++kv_iterator;
+        is_key = !is_key;
+    }
+    ensure(key_count == bt_index.key_count(), "open_btree_index: total key count does not match");
+    SILK_INFO << "Open btree index matching: " << matching_count << " different: " << (key_count - matching_count);
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Open btree index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+}
+
+void open_existence_index(const SnapshotSubcommandSettings& settings) {
+    ensure(!settings.input_file_path.empty(), "open_existence_index: --file must be specified");
+    ensure(settings.input_file_path.extension() == ".kv", "open_existence_index: --file must be .kv file");
+    const auto is_file_for_domain = [](const auto& file_path, auto domain_name) -> bool {
+        return absl::StrContains(file_path.filename().string(), domain_name);
+    };
+    const bool is_account_file = is_file_for_domain(settings.input_file_path, db::table::kAccountDomain);
+    ensure(is_account_file, "open_existence_index: --file must be an accounts .kv file (e.g. v1-accounts.0-1024.kv)");
+
+    std::filesystem::path existence_index_file_path = settings.input_file_path;
+    existence_index_file_path.replace_extension(".kvei");
+    SILK_INFO << "KV file: " << settings.input_file_path.string() << " KVEI file: " << existence_index_file_path.string();
+    const auto salt_path = existence_index_file_path.parent_path().parent_path() / "salt-state.txt";
+    std::ifstream salt_stream{salt_path, std::ios::in | std::ios::binary};
+    std::array<char, sizeof(uint32_t)> salt_bytes{};
+    salt_stream.read(salt_bytes.data(), salt_bytes.size());
+    const uint32_t salt = endian::load_big_u32(reinterpret_cast<uint8_t*>(salt_bytes.data()));
+    SILK_INFO << "Snapshot salt " << salt << " from " << salt_path.filename().string();
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    seg::Decompressor kv_decompressor{settings.input_file_path};
+    kv_decompressor.open();
+    snapshots::index::ExistenceIndex existence_index{existence_index_file_path};
+
+    SILK_INFO << "Starting KV scan and existence index check";
+    size_t key_count{0}, found_count{0}, nonexistent_count{0}, nonexistent_found_count{0};
+    bool is_key{true};
+    Bytes previous_key, key, value;
+    auto kv_iterator = kv_decompressor.begin();
+    while (kv_iterator != kv_decompressor.end()) {
+        // KV files contain alternated keys and values: k1|v1|...|kN|vN
+        if (is_key) {
+            previous_key = key;
+            key = *kv_iterator;
+            // Check if there's any gap between adjacent keys in KV file: if so, we have nonexistent keys to check
+            const auto previous = intx::from_string<intx::uint256>(to_hex(previous_key, /*with_prefix=*/true));
+            const auto current = intx::from_string<intx::uint256>(to_hex(key, /*with_prefix=*/true));
+            if (key_count > 0 && current > previous + 1) {
+                // We pick just one nonexistent key for each gap
+                ++nonexistent_count;
+                const intx::uint256 nonexistent = previous + 1;
+                // Prepare the nonexistent key
+                uint8_t full_be[sizeof(intx::uint256)];
+                intx::be::store(full_be, nonexistent);
+                constexpr ptrdiff_t kSizeDiff = sizeof(intx::uint256) - sizeof(evmc::address);
+                ByteView nonexistent_key = {full_be + kSizeDiff, sizeof(intx::uint256) - kSizeDiff};
+                SILK_TRACE << "KV: previous_key=" << to_hex(previous_key) << " key=" << to_hex(key)
+                           << " nonexistent_key=" << to_hex(nonexistent_key);
+                // Hash the nonexistent key using murmur3 and check its presence in existence filter
+                rec_split::Hash128 key_hash{};
+                snapshots::rec_split::MurmurHash3_x64_128(nonexistent_key.data(), nonexistent_key.size(), salt, &key_hash);
+                if (const bool key_found = existence_index.contains_hash(key_hash.first); key_found) {
+                    ++nonexistent_found_count;
+                }
+            }
+            ++key_count;
+        } else {
+            value = *kv_iterator;
+            rec_split::Hash128 key_hash{};
+            snapshots::rec_split::MurmurHash3_x64_128(key.data(), key.size(), salt, &key_hash);
+            const bool key_found = existence_index.contains_hash(key_hash.first);
+            SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
+            ensure(key_found,
+                   [&]() { return "open_existence_index: unexpected not found key=" + to_hex(key) +
+                                  " position=" + std::to_string(key_count); });
+            ++found_count;
+            if (key_count % 10'000'000 == 0) {
+                const float false_pos_rate = static_cast<float>(nonexistent_found_count) / static_cast<float>(nonexistent_count);
+                SILK_INFO << "Existence index check progress: " << key_count << " non-existent: " << nonexistent_count
+                          << " false positive rate: " << false_pos_rate;
+            }
+        }
+        ++kv_iterator;
+        is_key = !is_key;
+    }
+    ensure(found_count == key_count,
+           [&]() { return "open_existence_index: found count " + std::to_string(found_count) + ", key count " + std::to_string(key_count); });
+    const float false_pos_rate = static_cast<float>(nonexistent_found_count) / static_cast<float>(nonexistent_count);
+    SILK_INFO << "Open existence index keys: " << key_count << " non-existent: " << nonexistent_count << " false positives: " << false_pos_rate;
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Open existence index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
@@ -871,6 +1009,12 @@ int main(int argc, char* argv[]) {
                 break;
             case SnapshotTool::open_index:
                 open_index(settings.snapshot_settings);
+                break;
+            case SnapshotTool::open_btree_index:
+                open_btree_index(settings.snapshot_settings);
+                break;
+            case SnapshotTool::open_existence_index:
+                open_existence_index(settings.snapshot_settings);
                 break;
             case SnapshotTool::decode_segment:
                 decode_segment(settings.snapshot_settings, settings.repetitions);

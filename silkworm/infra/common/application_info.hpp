@@ -30,10 +30,14 @@ struct ApplicationInfo {
     std::string commit_hash;        // Extracted from version control system
     std::string build_description;  // Containing compiler and platform
     std::string node_name;          // Complete node name with identifier and build info
+    std::string client_id;          // P2P RLPx clientId
 };
 
 //! Assemble the complete node name using the Cable build information
 std::string get_node_name_from_build_info(const buildinfo* info);
+
+//! P2P RLPx clientId from the Cable build information
+std::string make_client_id_from_build_info(const buildinfo& info);
 
 //! Assemble the build description using the Cable build information
 std::string get_description_from_build_info(const buildinfo* info);

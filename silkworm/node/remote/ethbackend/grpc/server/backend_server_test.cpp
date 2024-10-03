@@ -188,7 +188,8 @@ using namespace silkworm;
 
 using StateChangeTokenObserver = std::function<void(std::optional<StateChangeToken>)>;
 
-struct TestableStateChangeCollection : public StateChangeCollection {
+class TestableStateChangeCollection : public StateChangeCollection {
+  public:
     std::optional<StateChangeToken> subscribe(StateChangeConsumer consumer, StateChangeFilter filter) override {
         const auto token = StateChangeCollection::subscribe(consumer, filter);
         if (token_observer_) {
@@ -201,6 +202,7 @@ struct TestableStateChangeCollection : public StateChangeCollection {
 
     void register_token_observer(StateChangeTokenObserver token_observer) { token_observer_ = std::move(token_observer); }
 
+  private:
     StateChangeTokenObserver token_observer_;
 };
 

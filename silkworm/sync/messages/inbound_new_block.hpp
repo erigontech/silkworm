@@ -34,9 +34,9 @@ class InboundNewBlock : public InboundMessage {
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
-    PeerId peerId_;
+    PeerId peer_id_;
     NewBlockPacket packet_;
-    uint64_t reqId_;
+    uint64_t req_id_;
 };
 
 }  // namespace silkworm

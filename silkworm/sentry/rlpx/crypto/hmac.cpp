@@ -27,7 +27,7 @@ namespace silkworm::sentry::rlpx::crypto {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
-    assert(key.size() == 32);
+    SILKWORM_ASSERT(key.size() == 32);
 
     HMAC_CTX* ctx = HMAC_CTX_new();
     [[maybe_unused]] auto _ = gsl::finally([ctx] { HMAC_CTX_free(ctx); });

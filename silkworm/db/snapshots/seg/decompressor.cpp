@@ -335,8 +335,10 @@ class Decompressor::ReadModeGuard {
     Decompressor::ReadMode old_mode_;
 };
 
-Decompressor::Decompressor(std::filesystem::path compressed_path, std::optional<MemoryMappedRegion> compressed_region)
-    : compressed_path_(std::move(compressed_path)), compressed_region_{compressed_region} {}
+Decompressor::Decompressor(std::filesystem::path compressed_path,
+                           std::optional<MemoryMappedRegion> compressed_region,
+                           CompressionKind compression)
+    : compressed_path_(std::move(compressed_path)), compressed_region_{compressed_region}, compression_(compression) {}
 
 Decompressor::~Decompressor() {
     close();
@@ -344,7 +346,7 @@ Decompressor::~Decompressor() {
 
 void Decompressor::open() {
     compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_, compressed_region_);
-    auto compressed_file_size = compressed_file_->size();
+    const auto compressed_file_size = compressed_file_->size();
     if (compressed_file_size < kMinimumFileSize) {
         throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_size));
     }
@@ -361,6 +363,9 @@ void Decompressor::open() {
     // Read patterns from compressed file
     const auto pattern_dict_length = endian::load_big_u64(address + kWordsCountSize + kEmptyWordsCountSize);
     SILK_TRACE << "Decompress pattern dictionary length: " << pattern_dict_length;
+    if (pattern_dict_length > compressed_file_size - kMinimumFileSize) {
+        throw std::runtime_error("invalid pattern_dict_length for compressed file size: " + std::to_string(compressed_file_size));
+    }
 
     const std::size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
     read_patterns(ByteView{address + patterns_dict_offset, pattern_dict_length});
@@ -368,6 +373,9 @@ void Decompressor::open() {
     // Read positions from compressed file
     const auto position_dict_length = endian::load_big_u64(address + patterns_dict_offset + pattern_dict_length);
     SILK_TRACE << "Decompress position dictionary length: " << position_dict_length;
+    if (position_dict_length > compressed_file_size - pattern_dict_length - kMinimumFileSize) {
+        throw std::runtime_error("invalid position_dict_length for compressed file size: " + std::to_string(compressed_file_size));
+    }
 
     const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
     read_positions(ByteView{address + positions_dict_offset, position_dict_length});
@@ -776,6 +784,7 @@ uint64_t Decompressor::Iterator::skip_uncompressed() {
 }
 
 void Decompressor::Iterator::reset(uint64_t data_offset) {
+    is_next_value_ = false;
     word_offset_ = data_offset;
     bit_position_ = 0;
 }
@@ -816,7 +825,7 @@ ByteView Decompressor::Iterator::next_pattern() {
 
 uint64_t Decompressor::Iterator::next_position(bool clean) {
     if (clean && bit_position_ > 0) {
-        word_offset_++;
+        ++word_offset_;
         bit_position_ = 0;
     }
     SILK_TRACE << "Iterator::next_position word_offset_=" << word_offset_ << " bit_position_=" << int{bit_position_};
@@ -857,7 +866,14 @@ Decompressor::Iterator& Decompressor::Iterator::operator++() {
     if (has_next()) {
         current_word_offset_ = word_offset_;
         current_word_.clear();
-        next(current_word_);
+
+        const auto compression = is_next_value_ ? CompressionKind::kValues : CompressionKind::kKeys;
+        is_next_value_ = !is_next_value_;
+        if ((decoder_->compression_ & compression) != CompressionKind::kNone) {
+            next(current_word_);
+        } else {
+            next_uncompressed(current_word_);
+        }
     } else {
         *this = make_end(decoder_);
     }

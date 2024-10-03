@@ -16,8 +16,6 @@
 
 #include "state_reader.hpp"
 
-#include <silkworm/infra/concurrency/task.hpp>
-
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
@@ -56,7 +54,8 @@ static const Bytes kEncodedStorageHistory{*from_hex(
 static const Bytes kBinaryCode{*from_hex("0x60045e005c60016000555d")};
 static const evmc::bytes32 kCodeHash{0xef722d9baf50b9983c2fce6329c5a43a15b8d5ba79cd792e7199d615be88284d_bytes32};
 
-struct StateReaderTest : public silkworm::test_util::ContextTestBase {
+class StateReaderTest : public silkworm::test_util::ContextTestBase {
+  protected:
     db::test_util::MockTransaction transaction_;
     StateReader state_reader_{transaction_, kEarliestBlockNumber};
 };

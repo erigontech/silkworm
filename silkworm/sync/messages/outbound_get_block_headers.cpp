@@ -39,9 +39,9 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
 
             if (send_outcome.empty()) {
                 hc.request_nack(packet_);
-                nack_reqs_++;
+                ++nack_reqs_;
             } else {
-                sent_reqs_++;
+                ++sent_reqs_;
             }
         } catch (const boost::system::system_error& se) {
             SILK_TRACE << "OutboundGetBlockHeaders failed send_packet error: " << se.what();
@@ -52,7 +52,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     for (auto& penalization : penalizations_) {
         try {
             SILK_TRACE << "Penalizing " << penalization;
-            sentry.penalize_peer(penalization.peerId, penalization.penalty);
+            sentry.penalize_peer(penalization.peer_id, penalization.penalty);
         } catch (const boost::system::system_error& se) {
             SILK_TRACE << "OutboundGetBlockHeaders failed penalizing " << penalization << " error: " << se.what();
         }
@@ -79,7 +79,7 @@ std::vector<PeerId> OutboundGetBlockHeaders::send_packet(SentryClient& sentry) {
 
     auto peers = sentry.send_message_by_min_block(*this, min_block, 0);
 
-    // SILK_TRACE << "Received sentry result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
+    // SILK_TRACE << "Received sentry result of OutboundGetBlockHeaders reqId=" << packet_.request_id << ": "
     //            << std::to_string(peers.size()) + " peer(s)";
 
     return peers;

@@ -47,7 +47,6 @@
 #include <algorithm>
 #include <array>
 #include <bit>
-#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -71,9 +70,10 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/math.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/snapshots/rec_split/common/murmur_hash3.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/elias_fano.hpp>
-#include <silkworm/db/snapshots/rec_split/encoding/golomb_rice.hpp>
+#include <silkworm/db/snapshots/common/bitmask_operators.hpp>
+#include <silkworm/db/snapshots/common/encoding/elias_fano.hpp>
+#include <silkworm/db/snapshots/common/encoding/golomb_rice.hpp>
+#include <silkworm/db/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -86,6 +86,7 @@
 namespace silkworm::snapshots::rec_split {
 
 using namespace std::chrono;
+using encoding::remap16, encoding::remap128;
 
 //! Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000
 static const int kMaxBucketSize = 3000;
@@ -189,31 +190,6 @@ struct RecSplitSettings {
     bool double_enum_index{true};      // Flag indicating if 2-layer index is required
     bool less_false_positives{false};  // Flag indicating if existence filter to reduce false-positives is required
 };
-
-template <typename T>
-    requires(std::is_enum_v<T> and requires(T e) {
-        enable_bitmask_operator_or(e);
-    })
-constexpr auto operator|(const T lhs, const T rhs) {
-    using underlying = std::underlying_type_t<T>;
-    return static_cast<T>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
-}
-template <typename T>
-    requires(std::is_enum_v<T> and requires(T e) {
-        enable_bitmask_operator_and(e);
-    })
-constexpr auto operator&(const T lhs, const T rhs) {
-    using underlying = std::underlying_type_t<T>;
-    return static_cast<T>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
-}
-template <typename T>
-    requires(std::is_enum_v<T> and requires(T e) {
-        enable_bitmask_operator_not(e);
-    })
-constexpr auto operator~(const T t) {
-    using underlying = std::underlying_type_t<T>;
-    return static_cast<T>(~static_cast<underlying>(t));
-}
 
 enum class RecSplitFeatures : uint8_t {
     kNone = 0b0,                 // no specific feature
@@ -553,7 +529,7 @@ class RecSplit {
     }
 
     void build_without_collisions(std::function<void(RecSplit<LEAF_SIZE>&)> populate) {
-        for (uint64_t iteration = 0; iteration < 10; iteration++) {
+        for (uint64_t iteration = 0; iteration < 10; ++iteration) {
             populate(*this);
 
             SILK_TRACE << "RecSplit::build..."
@@ -575,7 +551,7 @@ class RecSplit {
     void reset_new_salt() {
         built_ = false;
         building_strategy_->clear();
-        salt_++;
+        ++salt_;
         hasher_->reset_seed(salt_);
     }
 
@@ -622,7 +598,7 @@ class RecSplit {
                 m -= split;
                 cum_keys += split;
             }
-            level++;
+            ++level;
         }
         if (m > kLowerAggregationBound) {
             const auto d = reader.read_next(golomb_param(m, kMemo));
@@ -632,7 +608,7 @@ class RecSplit {
             m = std::min(kLowerAggregationBound, m - part * kLowerAggregationBound);
             cum_keys += kLowerAggregationBound * part;
             if (part) reader.skip_subtree(skip_nodes(kLowerAggregationBound) * part, skip_bits(kLowerAggregationBound) * part);
-            level++;
+            ++level;
         }
 
         if (m > LEAF_SIZE) {
@@ -643,7 +619,7 @@ class RecSplit {
             m = std::min(LEAF_SIZE, m - part * LEAF_SIZE);
             cum_keys += LEAF_SIZE * part;
             if (part) reader.skip_subtree(part, skip_bits(LEAF_SIZE) * part);
-            level++;
+            ++level;
         }
 
         const auto b = reader.read_next(golomb_param(m, kMemo));
@@ -824,14 +800,14 @@ class RecSplit {
             SILK_TRACE << "[index] recsplit level " << level << ", m=" << m << " < leaf size, just find bijection";
             if (level == 7) {
                 SILK_TRACE << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << keys[start];
-                for (std::size_t j = 0; j < m; j++) {
+                for (std::size_t j = 0; j < m; ++j) {
                     SILK_TRACE << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << keys[start + j];
                 }
             }
             while (true) {
                 uint32_t mask{0};
                 bool fail{false};
-                for (uint16_t i{0}; !fail && i < m; i++) {
+                for (uint16_t i{0}; !fail && i < m; ++i) {
                     uint32_t bit = uint32_t{1} << remap16(remix(keys[start + i] + salt), m);
                     if ((mask & bit) != 0) {
                         fail = true;
@@ -840,14 +816,14 @@ class RecSplit {
                     }
                 }
                 if (!fail) break;
-                salt++;
+                ++salt;
             }
-            for (std::size_t i{0}; i < m; i++) {
+            for (std::size_t i{0}; i < m; ++i) {
                 std::size_t j = remap16(remix(keys[start + i] + salt), m);
                 buffer_offsets[j] = offsets[start + i];
             }
             Bytes uint64_buffer(8, '\0');
-            for (std::size_t i{0}; i < m; i++) {
+            for (std::size_t i{0}; i < m; ++i) {
                 endian::store_big_u64(uint64_buffer.data(), buffer_offsets[i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record)), bytes_per_record);
                 if (level == 0) {
@@ -867,24 +843,24 @@ class RecSplit {
             std::vector<std::size_t> count(fanout, 0);  // temporary counters of key remapped occurrences
             while (true) {
                 std::fill(count.begin(), count.end(), 0);
-                for (std::size_t i{0}; i < m; i++) {
-                    count[static_cast<uint16_t>(remap16(remix(keys[start + i] + salt), m)) / unit]++;
+                for (std::size_t i{0}; i < m; ++i) {
+                    ++count[static_cast<uint16_t>(remap16(remix(keys[start + i] + salt), m)) / unit];
                 }
                 bool broken{false};
-                for (std::size_t i = 0; i < fanout - 1; i++) {
+                for (std::size_t i = 0; i < fanout - 1; ++i) {
                     broken = broken || (count[i] != unit);
                 }
                 if (!broken) break;
-                salt++;
+                ++salt;
             }
-            for (std::size_t i{0}, c{0}; i < fanout; i++, c += unit) {
+            for (std::size_t i{0}, c{0}; i < fanout; ++i, c += unit) {
                 count[i] = c;
             }
-            for (std::size_t i{0}; i < m; i++) {
+            for (std::size_t i{0}; i < m; ++i) {
                 auto j = static_cast<uint16_t>(remap16(remix(keys[start + i] + salt), m)) / unit;
                 buffer_keys[count[j]] = keys[start + i];
                 buffer_offsets[count[j]] = offsets[start + i];
-                count[j]++;
+                ++count[j];
             }
             std::copy(buffer_keys.data(), buffer_keys.data() + m, keys.data() + start);
             std::copy(buffer_offsets.data(), buffer_offsets.data() + m, offsets.data() + start);

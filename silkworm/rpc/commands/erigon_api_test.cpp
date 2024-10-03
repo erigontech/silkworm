@@ -26,7 +26,7 @@ namespace silkworm::rpc::commands {
 //! Utility class to expose handle hooks publicly just for tests
 class ErigonRpcApiForTest : public ErigonRpcApi {
   public:
-    explicit ErigonRpcApiForTest(boost::asio::io_context& io_context) : ErigonRpcApi{io_context} {}
+    explicit ErigonRpcApiForTest(boost::asio::io_context& io_context, WorkerPool& workers) : ErigonRpcApi{io_context, workers} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
     Task<void> erigon_get_block_by_timestamp(const nlohmann::json& request, std::string& reply) {
@@ -52,7 +52,7 @@ class ErigonRpcApiForTest : public ErigonRpcApi {
     }
 };
 
-using ErigonRpcApiTest = test_util::JsonApiTestBase<ErigonRpcApiForTest>;
+using ErigonRpcApiTest = test_util::JsonApiWithWorkersTestBase<ErigonRpcApiForTest>;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_timestamp", "[rpc][erigon_api]") {

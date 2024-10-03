@@ -37,15 +37,15 @@
 namespace silkworm::rpc::debug {
 
 void from_json(const nlohmann::json& json, DebugConfig& tc) {
-    json.at("disableStorage").get_to(tc.disableStorage);
-    json.at("disableMemory").get_to(tc.disableMemory);
-    json.at("disableStack").get_to(tc.disableStack);
+    json.at("disableStorage").get_to(tc.disable_storage);
+    json.at("disableMemory").get_to(tc.disable_memory);
+    json.at("disableStack").get_to(tc.disable_stack);
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
-    out << "disableStorage: " << std::boolalpha << tc.disableStorage;
-    out << " disableMemory: " << std::boolalpha << tc.disableMemory;
-    out << " disableStack: " << std::boolalpha << tc.disableStack;
+    out << "disableStorage: " << std::boolalpha << tc.disable_storage;
+    out << " disableMemory: " << std::boolalpha << tc.disable_memory;
+    out << " disableStack: " << std::boolalpha << tc.disable_stack;
 
     return out;
 }
@@ -56,7 +56,7 @@ std::string uint256_to_hex(const evmone::uint256& x) {
 
     bool leading_zeros = true;
     const uint64_t* px = &x[0];
-    for (int i = 3; i >= 0; i--) {
+    for (int i = 3; i >= 0; --i) {
         if (px[i] == 0 && leading_zeros) {
             continue;
         }
@@ -128,7 +128,7 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
 void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    assert(execution_state.msg);
+    SILKWORM_ASSERT(execution_state.msg);
     const evmc::address recipient(execution_state.msg->recipient);
     const evmc::address sender(execution_state.msg->sender);
 
@@ -150,7 +150,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
                << "}";
 
     bool output_storage = false;
-    if (!config_.disableStorage) {
+    if (!config_.disable_storage) {
         if (opcode == OP_SLOAD && stack_height >= 1) {
             const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
             const auto value = intra_block_state.get_current_storage(recipient, address);
@@ -188,10 +188,10 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     log.gas_cost = metrics_[opcode].gas_cost;
     log.depth = execution_state.msg->depth + 1;
 
-    if (!config_.disableStack) {
+    if (!config_.disable_stack) {
         output_stack(log.stack, stack_top, stack_height);
     }
-    if (!config_.disableMemory) {
+    if (!config_.disable_memory) {
         output_memory(log.memory, execution_state.memory);
     }
     if (output_storage) {
@@ -226,7 +226,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             case evmc_status_code::EVMC_STACK_OVERFLOW:
             case evmc_status_code::EVMC_STACK_UNDERFLOW:
-                log.gas_cost = result.gas_cost;
+                log.gas_cost = 0;
                 break;
 
             case evmc_status_code::EVMC_OUT_OF_GAS:
@@ -276,10 +276,10 @@ void DebugTracer::flush_logs() {
 }
 
 void AccountTracer::on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    nonce = intra_block_state.get_nonce(address_);
-    balance = intra_block_state.get_balance(address_);
-    code_hash = intra_block_state.get_code_hash(address_);
-    code = intra_block_state.get_code(address_);
+    nonce_ = intra_block_state.get_nonce(address_);
+    balance_ = intra_block_state.get_balance(address_);
+    code_hash_ = intra_block_state.get_code_hash(address_);
+    code_ = intra_block_state.get_code(address_);
 }
 
 void DebugTracer::write_log(const DebugLog& log) {
@@ -290,7 +290,7 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.write_field("op", log.op);
     stream_.write_field("pc", log.pc);
 
-    if (!config_.disableStack) {
+    if (!config_.disable_stack) {
         stream_.write_field("stack");
         stream_.open_array();
         for (const auto& item : log.stack) {
@@ -298,7 +298,7 @@ void DebugTracer::write_log(const DebugLog& log) {
         }
         stream_.close_array();
     }
-    if (!config_.disableMemory) {
+    if (!config_.disable_memory) {
         stream_.write_field("memory");
         stream_.open_array();
         for (const auto& item : log.memory) {
@@ -310,7 +310,7 @@ void DebugTracer::write_log(const DebugLog& log) {
         }
         stream_.close_array();
     }
-    if (!config_.disableStorage && !log.storage.empty()) {
+    if (!config_.disable_storage && !log.storage.empty()) {
         stream_.write_field("storage");
         stream_.open_object();
         for (const auto& entry : log.storage) {
@@ -424,7 +424,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
         auto state = tx_.create_state(current_executor, storage, block_number - 1);
         EVMExecutor executor{chain_config, workers_, state};
 
-        for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
+        for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
             rpc::Transaction txn{block.transactions[idx]};
             SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
 
@@ -482,7 +482,7 @@ Task<void> DebugExecutor::execute(
         auto state = tx_.create_state(current_executor, storage, block_number);
         EVMExecutor executor{chain_config, workers_, state};
 
-        for (auto idx{0}; idx < index; idx++) {
+        for (auto idx{0}; idx < index; ++idx) {
             silkworm::Transaction txn{block.transactions[static_cast<size_t>(idx)]};
             executor.call(block, txn);
         }
@@ -533,7 +533,7 @@ Task<void> DebugExecutor::execute(
         auto state = tx_.create_state(current_executor, storage, block.header.number);
         EVMExecutor executor{chain_config, workers_, state};
 
-        for (auto idx{0}; idx < transaction_index; idx++) {
+        for (auto idx{0}; idx < transaction_index; ++idx) {
             silkworm::Transaction txn{block_transactions[static_cast<size_t>(idx)]};
             executor.call(block, txn);
         }

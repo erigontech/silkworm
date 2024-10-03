@@ -54,15 +54,12 @@ enum Penalty : int {
     kWrongChildDifficultyPenalty,
     kInvalidSealPenalty,
     kTooFarFuturePenalty,
-    kTooFarPastPenalty,
     kAbandonedAnchorPenalty
 };
 
 struct PeerPenalization {
     Penalty penalty;
-    PeerId peerId;
-
-    PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(std::move(id)) {}  // unnecessary with c++20
+    PeerId peer_id;
 };
 
 std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization);

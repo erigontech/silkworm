@@ -45,8 +45,6 @@ if(NOT SILKWORM_CORE_ONLY)
   # [=] "all-in-one" Silkworm component
   set(SILKWORM_CMD_SRC
       silkworm.cpp
-      common/db_checklist.cpp
-      common/db_checklist.hpp
       common/db_max_readers_option.cpp
       common/db_max_readers_option.hpp
       common/node_options.cpp

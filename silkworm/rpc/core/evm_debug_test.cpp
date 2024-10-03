@@ -1230,7 +1230,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
             {
                 "depth": 1,
                 "gas": 156080,
-                "gasCost": 2,
+                "gasCost": 0,
                 "memory": [],
                 "op": "opcode 0x4b not defined",
                 "pc": 1,
@@ -1253,9 +1253,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {
         DebugConfig config;
         from_json(json, config);
 
-        CHECK(config.disableStorage == true);
-        CHECK(config.disableMemory == false);
-        CHECK(config.disableStack == true);
+        CHECK(config.disable_storage == true);
+        CHECK(config.disable_memory == false);
+        CHECK(config.disable_stack == true);
     }
     SECTION("dump on stream") {
         DebugConfig config{true, false, true};

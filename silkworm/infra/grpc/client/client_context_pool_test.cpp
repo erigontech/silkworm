@@ -36,27 +36,19 @@
 
 namespace silkworm::rpc {
 
-using Catch::Matchers::Message;
-
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 
 TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
-    concurrency::WaitMode all_wait_modes[] = {
-        concurrency::WaitMode::kBackoff,
-        concurrency::WaitMode::kBlocking,
-        concurrency::WaitMode::kSleeping,
-        concurrency::WaitMode::kYielding,
-        concurrency::WaitMode::kBusySpin};
-    for (auto wait_mode : all_wait_modes) {
-        ClientContext context{0, wait_mode};
+    {
+        ClientContext context{0};
 
-        SECTION(std::string("Context::Context wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
+        SECTION("Context::Context") {
             CHECK_NOTHROW(context.io_context() != nullptr);
             CHECK_NOTHROW(context.grpc_context() != nullptr);
         }
 
-        SECTION(std::string("Context::execute_loop wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
+        SECTION("Context::execute_loop") {
             std::atomic_bool processed{false};
             auto* io_context = context.io_context();
             boost::asio::post(*io_context, [&]() {
@@ -68,7 +60,7 @@ TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
             CHECK(processed);
         }
 
-        SECTION(std::string("Context::stop wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
+        SECTION("Context::stop") {
             std::atomic_bool processed{false};
             auto* io_context = context.io_context();
             boost::asio::post(*io_context, [&]() {
@@ -89,8 +81,7 @@ TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][cli
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("reject size 0") {
-        CHECK_THROWS_MATCHES((ClientContextPool{0}), std::logic_error,
-                             Message("ContextPool::ContextPool pool_size is 0"));
+        CHECK_THROWS_AS((ClientContextPool{0}), std::logic_error);
     }
 
     SECTION("accept size 1") {
@@ -243,7 +234,7 @@ TEST_CASE("ClientContextPool: start/stop/join w/ tasks enqueued") {
     std::unique_ptr<StubInterface> stub = ::remote::KV::NewStub(channel);
     ClientContextPool context_pool{5};
     SECTION("no dispatch interleaving: i-th GrpcContext notifies i-th asio::io_context") {
-        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+        for (size_t i = 0; i < context_pool.size(); ++i) {
             const auto& context = context_pool.next_context();
             concurrency::spawn_future(*context.io_context(), [&]() -> Task<void> {
                 co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, *context.grpc_context());
@@ -254,7 +245,7 @@ TEST_CASE("ClientContextPool: start/stop/join w/ tasks enqueued") {
         // Check that dispatching calls from i-th agrpc::GrpcContext to j-th boost::asio::io_context w/ i != j works
         // This test executed in tight loop of 10'000 iterations triggered a segmentation fault in ~ClientContextPool
         // https://github.com/boostorg/asio/blob/boost-1.83.0/include/boost/asio/detail/impl/scheduler.ipp#L373
-        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+        for (size_t i = 0; i < context_pool.size(); ++i) {
             concurrency::spawn_future(context_pool.any_executor(), [&]() -> Task<void> {
                 auto& grpc_context = context_pool.any_grpc_context();
                 co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, grpc_context);
@@ -272,7 +263,7 @@ TEST_CASE("ClientContextPool: start/destroy w/ tasks enqueued") {
     std::unique_ptr<StubInterface> stub = ::remote::KV::NewStub(channel);
     ClientContextPool context_pool{5};
     SECTION("no dispatch interleaving: i-th GrpcContext notifies i-th asio::io_context") {
-        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+        for (size_t i = 0; i < context_pool.size(); ++i) {
             const auto& context = context_pool.next_context();
             concurrency::spawn_future(*context.io_context(), [&]() -> Task<void> {
                 co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, *context.grpc_context());
@@ -283,7 +274,7 @@ TEST_CASE("ClientContextPool: start/destroy w/ tasks enqueued") {
         // Check that dispatching calls from i-th agrpc::GrpcContext to j-th boost::asio::io_context w/ i != j works
         // This test executed in tight loop of 10'000 iterations triggered a segmentation fault in ~ClientContextPool
         // https://github.com/boostorg/asio/blob/boost-1.83.0/include/boost/asio/detail/impl/scheduler.ipp#L373
-        for (size_t i{0}; i < context_pool.num_contexts(); ++i) {
+        for (size_t i = 0; i < context_pool.size(); ++i) {
             concurrency::spawn_future(context_pool.any_executor(), [&]() -> Task<void> {
                 auto& grpc_context = context_pool.any_grpc_context();
                 co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, grpc_context);

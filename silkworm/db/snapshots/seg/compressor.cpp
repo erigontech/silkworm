@@ -16,13 +16,13 @@
 
 #include "compressor.hpp"
 
-#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <limits>
 #include <numeric>
 #include <vector>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 
 #include "compressor/bit_stream.hpp"
@@ -116,14 +116,14 @@ void CompressorImpl::consume_superstring(const Superstring& superstring) {
 template <typename T>
 static std::vector<T> vector_reorder(const std::vector<T>& items, const std::vector<size_t>& order) {
     std::vector<T> result(items.size());
-    for (size_t i = 0; i < result.size(); i++)
+    for (size_t i = 0; i < result.size(); ++i)
         result[i] = items[order[i]];
     return result;
 }
 
 static std::vector<size_t> invert_order(const std::vector<size_t>& order) {
     std::vector<size_t> result(order.size(), 0);
-    for (size_t i = 0; i < result.size(); i++)
+    for (size_t i = 0; i < result.size(); ++i)
         result[order[i]] = i;
     return result;
 }
@@ -167,8 +167,8 @@ void CompressorImpl::compress() {
     while (auto entry = raw_words_.read_word()) {
         auto& [word, is_compressed] = entry.value();
 
-        words_count++;
-        if (word.empty()) empty_words_count++;
+        ++words_count;
+        if (word.empty()) ++empty_words_count;
 
         compressed_word.raw_length = word.size();
         compressed_word.pattern_positions.clear();
@@ -180,7 +180,7 @@ void CompressorImpl::compress() {
                 auto pattern = reinterpret_cast<Pattern*>(pattern_ptr);
                 auto pattern_index = static_cast<size_t>(std::distance(&candidate_patterns[0], pattern));
 
-                pattern_uses[pattern_index]++;
+                ++pattern_uses[pattern_index];
 
                 size_t pattern_code = intermediate_pattern_codes[pattern_index];
                 compressed_word.pattern_positions.emplace_back(pattern_pos, pattern_code);
@@ -210,13 +210,13 @@ void CompressorImpl::compress() {
     size_t used_patterns_count = 0;
     // candidate2pattern_index maps candidate patterns indexes to the used patterns indexes
     std::vector<size_t> candidate2pattern_index(candidate_patterns.size(), std::numeric_limits<size_t>::max());
-    for (size_t i = 0; i < candidate_patterns.size(); i++) {
+    for (size_t i = 0; i < candidate_patterns.size(); ++i) {
         if (pattern_uses[i] == 0) continue;
         patterns.emplace_back(std::move(candidate_patterns[i].data));
         intermediate_pattern_codes[used_patterns_count] = intermediate_pattern_codes[i];
         pattern_uses[used_patterns_count] = pattern_uses[i];
         candidate2pattern_index[i] = used_patterns_count;
-        used_patterns_count++;
+        ++used_patterns_count;
     }
     intermediate_pattern_codes.resize(used_patterns_count);
     pattern_uses.resize(used_patterns_count);

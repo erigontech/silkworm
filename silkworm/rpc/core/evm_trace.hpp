@@ -132,7 +132,7 @@ struct FixCallGasInfo {
     int32_t depth{0};
     int64_t stipend{0};
     int16_t code_cost{0};
-    TraceOp& trace_op_;
+    TraceOp& trace_op;
     int64_t gas_cost{0};
     bool precompiled{false};
 };

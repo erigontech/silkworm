@@ -54,7 +54,7 @@ void TxsAndBodiesQuery::Iterator::skip_bodies_until_tx_id(uint64_t tx_id) {
         if (body_it_ == bodies_decoder_->end()) {
             throw std::runtime_error{log_title_ + " not enough bodies"};
         }
-        value_.block_number++;
+        ++value_.block_number;
         value_.body_rlp = *body_it_;
         decode_body_rlp(value_.body_rlp, value_.body);
     }

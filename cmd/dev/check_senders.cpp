@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
                 std::vector<Transaction> transactions;
                 uint64_t i{0};
                 auto tx_data{tx_cursor->find(db::to_slice(tx_key), false)};
-                for (; i < body.txn_count && tx_data.done; i++, tx_data = tx_cursor->to_next(false)) {
+                for (; i < body.txn_count && tx_data.done; ++i, tx_data = tx_cursor->to_next(false)) {
                     if (!tx_data) {
                         log::Error() << "Block " << block_number << " tx " << i << " not found in " << db::table::kBlockTransactions.name << " table";
                         continue;
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
                         log::Error() << "Block " << block_number << " tx " << i << " recovered sender " << senders[i]
                                      << " does not match computed sender " << *tx.sender();
                     }
-                    processed_senders_count++;
+                    ++processed_senders_count;
 
                     const auto transaction_hash{keccak256(transaction_rlp)};
                     log::Debug() << "Tx hash: " << to_hex(transaction_hash.bytes) << " has sender: " << to_hex(senders[i].bytes);
@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
             }
 
             // Move to next block body
-            expected_block_number++;
+            ++expected_block_number;
             bodies_data = bodies_cursor->to_next(false);
         }
 

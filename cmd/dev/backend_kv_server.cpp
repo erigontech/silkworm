@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <cassert>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -29,6 +28,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -120,7 +120,7 @@ std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
     silkworm::sentry::eth::StatusDataProvider eth_status_data_provider{std::move(chain_head_provider), node_settings.chain_config.value()};
 
     if (node_settings.remote_sentry_addresses.empty()) {
-        assert(false);
+        SILKWORM_ASSERT(false);
     } else if (node_settings.remote_sentry_addresses.size() == 1) {
         // remote client
         auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(

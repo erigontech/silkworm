@@ -17,13 +17,13 @@
 #include "multi_sentry_client.hpp"
 
 #include <atomic>
-#include <cassert>
 #include <chrono>
 #include <functional>
 #include <mutex>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/parallel_group_utils.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
@@ -87,7 +87,7 @@ class MultiSentryClientImpl : public api::Service {
     // rpc HandShake(google.protobuf.Empty) returns (HandShakeReply);
     Task<uint8_t> handshake() override {
         // handshake is not performed on the multi-client level
-        assert(false);
+        SILKWORM_ASSERT(false);
         co_return 0;
     }
 

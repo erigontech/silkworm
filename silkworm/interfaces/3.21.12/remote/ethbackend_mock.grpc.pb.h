@@ -42,6 +42,12 @@ class MockETHBACKENDStub : public ETHBACKEND::StubInterface {
   MOCK_METHOD3(Block, ::grpc::Status(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::remote::BlockReply* response));
   MOCK_METHOD3(AsyncBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>*(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>*(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(CanonicalHash, ::grpc::Status(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::remote::CanonicalHashReply* response));
+  MOCK_METHOD3(AsyncCanonicalHashRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalHashReply>*(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncCanonicalHashRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalHashReply>*(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(HeaderNumber, ::grpc::Status(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::remote::HeaderNumberReply* response));
+  MOCK_METHOD3(AsyncHeaderNumberRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HeaderNumberReply>*(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncHeaderNumberRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HeaderNumberReply>*(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(TxnLookup, ::grpc::Status(::grpc::ClientContext* context, const ::remote::TxnLookupRequest& request, ::remote::TxnLookupReply* response));
   MOCK_METHOD3(AsyncTxnLookupRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::TxnLookupReply>*(::grpc::ClientContext* context, const ::remote::TxnLookupRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncTxnLookupRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::TxnLookupReply>*(::grpc::ClientContext* context, const ::remote::TxnLookupRequest& request, ::grpc::CompletionQueue* cq));

@@ -33,10 +33,12 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
+#include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc {
 
@@ -121,6 +123,14 @@ class EVMExecutor {
     ExecutionResult call(
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
+        const Tracers& tracers = {},
+        bool refund = true,
+        bool gas_bailout = false);
+
+    ExecutionResult call_with_receipt(
+        const silkworm::Block& block,
+        const silkworm::Transaction& txn,
+        Receipt& receipt,
         const Tracers& tracers = {},
         bool refund = true,
         bool gas_bailout = false);

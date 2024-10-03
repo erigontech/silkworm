@@ -30,7 +30,8 @@ namespace silkworm::db::test_util {
 using testing::Expectation;
 using testing::Return;
 
-struct KVTestBase : public silkworm::test_util::ContextTestBase {
+class KVTestBase : public silkworm::test_util::ContextTestBase {
+  public:
     testing::Expectation expect_request_async_tx(bool ok) {
         return expect_request_async_tx(*stub_, ok);
     }
@@ -57,6 +58,9 @@ struct KVTestBase : public silkworm::test_util::ContextTestBase {
     using StrictMockKVTxAsyncReaderWriter = rpc::test::StrictMockAsyncReaderWriter<remote::Cursor, remote::Pair>;
     using StrictMockKVStateChangesAsyncReader = rpc::test::StrictMockAsyncReader<remote::StateChangeBatch>;
 
+    StrictMockKVStub& stub() { return *stub_; }
+
+  protected:
     //! Mocked stub of gRPC KV interface
     std::unique_ptr<StrictMockKVStub> stub_{std::make_unique<StrictMockKVStub>()};
 

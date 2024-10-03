@@ -35,7 +35,7 @@ ExecutionEngine::ExecutionEngine(
     std::optional<TimerFactory> log_timer_factory,
     BodiesStageFactory bodies_stage_factory,
     db::RWAccess dba)
-    : context_pool_{executor ? std::unique_ptr<concurrency::ContextPool<>>{} : std::make_unique<concurrency::ContextPool<>>(concurrency::ContextPoolSettings{1, concurrency::WaitMode::kSleeping})},
+    : context_pool_{executor ? std::unique_ptr<concurrency::ContextPool<>>{} : std::make_unique<concurrency::ContextPool<>>(1)},
       executor_{executor ? std::move(*executor) : context_pool_->any_executor()},
       node_settings_{ns},
       main_chain_{

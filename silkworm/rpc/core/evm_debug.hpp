@@ -46,9 +46,9 @@ namespace silkworm::rpc::debug {
 using namespace db::chain;
 
 struct DebugConfig {
-    bool disableStorage{false};
-    bool disableMemory{false};
-    bool disableStack{false};
+    bool disable_storage{false};
+    bool disable_memory{false};
+    bool disable_stack{false};
 };
 
 std::string uint256_to_hex(const evmone::uint256& x);
@@ -113,10 +113,10 @@ class AccountTracer : public EvmTracer {
 
   private:
     const evmc::address& address_;
-    uint64_t nonce{0};
-    intx::uint256 balance;
-    evmc::bytes32 code_hash{kEmptyHash};
-    silkworm::Bytes code;
+    uint64_t nonce_{0};
+    intx::uint256 balance_;
+    evmc::bytes32 code_hash_{kEmptyHash};
+    silkworm::Bytes code_;
 };
 
 class DebugExecutor {

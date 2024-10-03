@@ -16,6 +16,7 @@
 
 #include "timer.hpp"
 
+#include <array>
 #include <string>
 #include <thread>
 
@@ -25,7 +26,7 @@
 namespace silkworm {
 
 struct TimerTest {
-    const std::vector<uint32_t> kIntervals{100, 10, 1};  // milliseconds
+    static constexpr std::array<uint32_t, 3> kIntervals{100, 10, 1};  // milliseconds
     boost::asio::io_context io_context;
 };
 

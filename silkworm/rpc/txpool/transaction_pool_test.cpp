@@ -54,11 +54,11 @@ namespace txpool {
 
 inline bool operator==(const AddReply& lhs, const AddReply& rhs) {
     if (lhs.imported_size() != rhs.imported_size()) return false;
-    for (auto i{0}; i < lhs.imported_size(); i++) {
+    for (auto i{0}; i < lhs.imported_size(); ++i) {
         if (lhs.imported(i) != rhs.imported(i)) return false;
     }
     if (lhs.errors_size() != rhs.errors_size()) return false;
-    for (auto i{0}; i < lhs.errors_size(); i++) {
+    for (auto i{0}; i < lhs.errors_size(); ++i) {
         if (lhs.errors(i) != rhs.errors(i)) return false;
     }
     return true;

@@ -1,0 +1,71 @@
+/*
+   Copyright 2024 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#pragma once
+
+#include <string_view>
+#include <tuple>
+#include <vector>
+
+namespace silkworm::snapshots::test_util {
+
+// Legend: MH = magic header, K = key count, N = inserted count, M = bits count
+const std::vector<std::pair<std::string_view, std::string_view>> kInvalidBloomFilters{
+    {"", "empty"},
+    {"0000000000000000763032", "MH too short"},
+    {"00000000000000007630320c", "invalid MH"},
+    {"00000000000000007630320a", "valid MH but nothing else"},
+    {"00000000000000007630320a11", "K too short"},
+    {"00000000000000007630320a0000000000000003", "invalid K"},
+    {"00000000000000007630320a0300000000000000", "valid MH+K but nothing else"},
+    {"00000000000000007630320a0300000000000000FF", "invalid N"},
+    {"00000000000000007630320a030000000000000001000000000000", "valid MH+K+N but nothing else"},
+    {"00000000000000007630320a030000000000000001000000000000000100000000000000", "invalid M"},
+    {"00000000000000007630320a030000000000000001000000000000000200000000000000", "valid MH+K+N+M but nothing else"},
+    {"00000000000000007630320a030000000000000001000000000000000200000000000000"
+     "1F000000000000002F000000000000003F000000000000",
+     "invalid keys"},
+    {"00000000000000007630320a030000000000000001000000000000000200000000000000"
+     "1F000000000000002F000000000000003F00000000000000",
+     "valid MH+K+N+M+keys but nothing else"},
+    {"00000000000000007630320a030000000000000001000000000000000200000000000000"
+     "1F000000000000002F000000000000003F00000000000000"
+     "AA0000000000000000",
+     "too few bits"},
+    {"00000000000000007630320a030000000000000001000000000000000200000000000000"
+     "1F000000000000002F000000000000003F00000000000000"
+     "AA0000000000000000AA0000000000000000AA0000000000000000",
+     "too many bits"},
+    {"00000000000000007630320a030000000000000001000000000000000200000000000000"
+     "1F000000000000002F000000000000003F00000000000000"
+     "AA00000000000000",
+     "valid MH+K+N+M+keys+bits but nothing else"},
+    {"00000000000000007630320a030000000000000001000000000000000200000000000000"
+     "1F000000000000002F000000000000003F00000000000000"
+     "AA00000000000000"
+     "110000000000000022000000000000003300000000000000"
+     "440000000000000055000000000000006600000000000000",
+     "invalid hash checksum"},
+};
+
+const std::vector<std::string_view> kValidBloomFilters{
+    "00000000000000007630320a030000000000000001000000000000000200000000000000"
+    "1F000000000000002F000000000000003F00000000000000"
+    "AA00000000000000"
+    "40c49f795f823d0f20891491ad866e99e3317f5e3876339a5ec76a70b966fe1645f70a67ef21a1243513b7a3f6b1beb4",
+};
+
+}  // namespace silkworm::snapshots::test_util

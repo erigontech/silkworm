@@ -70,7 +70,7 @@ class SessionSentryClientImpl : public api::SentryClient {
     }
 
     void on_disconnect(std::function<Task<void>()> /*callback*/) override {
-        assert(false);
+        SILKWORM_ASSERT(false);
     }
 
     Task<void> reconnect() override {
@@ -96,7 +96,7 @@ class SessionSentryClientImpl : public api::SentryClient {
             case State::kReady:
                 return State::kReady;
         }
-        assert(false);
+        SILKWORM_ASSERT(false);
         return state;
     }
 
@@ -120,7 +120,7 @@ class SessionSentryClientImpl : public api::SentryClient {
 
         switch (new_state) {
             case State::kInit:
-                assert(false);
+                SILKWORM_ASSERT(false);
                 break;
             case State::kReconnect: {
                 // Delay reconnection to make these corner cases less likely:

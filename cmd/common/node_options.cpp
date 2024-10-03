@@ -70,6 +70,9 @@ void add_node_options(CLI::App& cli, NodeSettings& settings) {
 
     add_option_remote_sentry_addresses(cli, settings.remote_sentry_addresses, /*is_required=*/false);
 
+    cli.add_option("--exec.api.addr", settings.exec_api_address)
+        ->description("Execution API GRPC server bind address (IP:port) for connecting an external chain sync client");
+
     // Chain options
     add_option_chain(cli, settings.network_id);
 }

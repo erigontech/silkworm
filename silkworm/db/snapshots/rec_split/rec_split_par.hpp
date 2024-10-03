@@ -89,16 +89,24 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     }
 
   protected:
-    struct Bucket {
-        Bucket(uint64_t bucket_id, std::size_t bucket_size) : bucket_id_{bucket_id} {
+    class Bucket {
+      public:
+        explicit Bucket(std::size_t bucket_size) {
             keys_.reserve(bucket_size);
             values_.reserve(bucket_size);
         }
         Bucket(const Bucket&) = delete;
         Bucket(Bucket&&) noexcept = default;
 
-        //! Identifier of the current bucket being accumulated
-        uint64_t bucket_id_{0};
+        void clear() {
+            keys_.clear();
+            values_.clear();
+            gr_builder_.clear();
+            index_ofs_.clear();
+        }
+
+      private:
+        friend class RecSplit;
 
         //! 64-bit fingerprints of keys in the current bucket accumulated before the recsplit is performed for that bucket
         std::vector<uint64_t> keys_;  // mike: current_bucket_;  -> keys_
@@ -113,15 +121,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         uint16_t golomb_param_max_index_{0};
 
         //! Helper index output stream
-        std::stringstream index_ofs{std::ios::in | std::ios::out | std::ios::binary};
-
-        void clear() {
-            // bucket_id_ = 0;
-            keys_.clear();
-            values_.clear();
-            gr_builder_.clear();
-            index_ofs.clear();
-        }
+        std::stringstream index_ofs_{std::ios::in | std::ios::out | std::ios::binary};
     };
 
     void setup(const RecSplitSettings& settings, std::size_t bucket_count) override {
@@ -130,8 +130,8 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
 
         // Prepare buckets
         buckets_.reserve(bucket_count);
-        for (int i = 0; i < bucket_count; i++) {
-            buckets_.emplace_back(i, settings.bucket_size);
+        for (int i = 0; i < bucket_count; ++i) {
+            buckets_.emplace_back(settings.bucket_size);
         }
         if (double_enum_index_) {
             offsets_.reserve(settings.keys_count);
@@ -163,7 +163,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
             bucket.values_.emplace_back(offset);
         }
 
-        keys_added_++;
+        ++keys_added_;
     }
 
     bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
@@ -188,17 +188,17 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         std::vector<int64_t> bucket_position_accumulator_(this->bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
 
         bucket_size_accumulator_[0] = bucket_position_accumulator_[0] = 0;
-        for (size_t i = 0; i < bucket_count_; i++) {
+        for (size_t i = 0; i < bucket_count_; ++i) {
             bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
 
-            // auto* underlying_buffer = buckets_[i].index_ofs.rdbuf();
+            // auto* underlying_buffer = buckets_[i].index_ofs_.rdbuf();
             // if (!is_empty(underlying_buffer))
             //     index_output_stream << underlying_buffer;
             char byte{0};
-            while (buckets_[i].index_ofs.get(byte)) {  // maybe it is better to avoid this and use a buffer in place of index_ofs
+            while (buckets_[i].index_ofs_.get(byte)) {  // maybe it is better to avoid this and use a buffer in place of index_ofs_
                 index_output_stream.put(byte);
             }
-            // index_output_stream << buckets_[i].index_ofs.rdbuf();  // better but fails when rdbuf() is empty
+            // index_output_stream << buckets_[i].index_ofs_.rdbuf();  // better but fails when rdbuf() is empty
 
             if (buckets_[i].keys_.size() > 1) {
                 buckets_[i].gr_builder_.append_to(gr_builder_);
@@ -252,12 +252,12 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
 
             RecSplit<LEAF_SIZE>::recsplit(
                 bucket.keys_, bucket.values_, buffer_keys, buffer_offsets, bucket.gr_builder_,
-                bucket.index_ofs, bucket.golomb_param_max_index_, bytes_per_record);
+                bucket.index_ofs_, bucket.golomb_param_max_index_, bytes_per_record);
         } else {
             for (const auto offset : bucket.values_) {
                 Bytes uint64_buffer(8, '\0');
                 endian::store_big_u64(uint64_buffer.data(), offset);
-                bucket.index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
+                bucket.index_ofs_.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
                 SILK_TRACE << "[index] written offset: " << offset;
             }
         }

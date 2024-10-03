@@ -126,7 +126,7 @@ DataDirectory DataDirectory::from_chaindata(const std::filesystem::path& chainda
     }
 
     std::string base_path_str{};
-    for (size_t i = 0; i < tokens.size() - 1; i++) {
+    for (size_t i = 0; i < tokens.size() - 1; ++i) {
         base_path_str += tokens.at(i) + delimiter;
     }
 

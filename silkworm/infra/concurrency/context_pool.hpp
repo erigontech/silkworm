@@ -22,27 +22,23 @@
 #include <functional>
 #include <memory>
 #include <ostream>
-#include <utility>
 #include <vector>
 
 #include <boost/asio/io_context.hpp>
 
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/executor_pool.hpp>
-#include <silkworm/infra/concurrency/idle_strategy.hpp>
 
 namespace silkworm::concurrency {
 
 //! Asynchronous scheduler running an execution loop.
 class Context {
   public:
-    explicit Context(std::size_t context_id, WaitMode wait_mode = WaitMode::kBlocking);
+    explicit Context(std::size_t context_id);
     virtual ~Context() = default;
 
     [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
-    [[nodiscard]] WaitMode wait_mode() const noexcept { return wait_mode_; }
     [[nodiscard]] std::size_t id() const noexcept { return context_id_; }
 
     //! Execute the scheduler loop until stopped.
@@ -60,17 +56,6 @@ class Context {
 
     //! The work-tracking executor that keep the asio scheduler running.
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
-
-    //! The waiting mode used by execution loops during idle cycles.
-    WaitMode wait_mode_;
-
-  private:
-    //! Execute single-threaded loop until stopped.
-    template <typename IdleStrategy>
-    void execute_loop_single_threaded(IdleStrategy idle_strategy);
-
-    //! Execute multi-threaded loop until stopped.
-    void execute_loop_multi_threaded();
 };
 
 std::ostream& operator<<(std::ostream& out, const Context& c);
@@ -81,17 +66,19 @@ class ContextPool : public ExecutorPool {
     using ExceptionHandler = std::function<void(std::exception_ptr)>;
 
   public:
-    explicit ContextPool(std::size_t pool_size) : next_index_{0}, exception_handler_{termination_handler} {
-        if (pool_size == 0) {
-            throw std::logic_error("ContextPool::ContextPool pool_size is 0");
+    explicit ContextPool(uint32_t num_contexts)
+        : ContextPool{ContextPoolSettings{.num_contexts = num_contexts}} {}
+
+    explicit ContextPool(ContextPoolSettings settings) {
+        if (settings.num_contexts == 0) {
+            throw std::logic_error("ContextPool size is 0");
         }
-        contexts_.reserve(pool_size);
-    }
-    explicit ContextPool(ContextPoolSettings settings) : ContextPool(settings.num_contexts) {
+
         for (size_t i{0}; i < settings.num_contexts; ++i) {
-            add_context(T{contexts_.size(), settings.wait_mode});
+            add_context(T{i});
         }
     }
+
     ~ContextPool() override {
         SILK_TRACE << "ContextPool::~ContextPool START " << this;
         stop();
@@ -101,14 +88,6 @@ class ContextPool : public ExecutorPool {
 
     ContextPool(const ContextPool&) = delete;
     ContextPool& operator=(const ContextPool&) = delete;
-
-    //! Add a new \ref T to the pool.
-    const T& add_context(T&& context) {
-        const auto num_contexts = contexts_.size();
-        contexts_.emplace_back(std::move(context));
-        SILK_TRACE << "ContextPool::add_context context[" << num_contexts << "] " << contexts_[num_contexts];
-        return contexts_[num_contexts];
-    }
 
     //! Start one execution thread for each context.
     virtual void start() {
@@ -171,11 +150,10 @@ class ContextPool : public ExecutorPool {
         join();
     }
 
-    [[nodiscard]] std::size_t num_contexts() const { return contexts_.size(); }
+    std::size_t size() const { return contexts_.size(); }
 
     //! Use a round-robin scheme to choose the next context to use
     T& next_context() {
-        ensure(contexts_.size() > 0, "ContextPool: no context in pool");
         // Increment the next index first to make sure that different calling threads get different contexts.
         size_t index = next_index_.fetch_add(1) % contexts_.size();
         return contexts_[index];
@@ -200,6 +178,16 @@ class ContextPool : public ExecutorPool {
     }
 
   protected:
+    ContextPool() = default;
+
+    //! Add a new \ref T to the pool.
+    const T& add_context(T&& context) {
+        const auto num_contexts = contexts_.size();
+        contexts_.emplace_back(std::move(context));
+        SILK_TRACE << "ContextPool::add_context context[" << num_contexts << "] " << contexts_[num_contexts];
+        return contexts_[num_contexts];
+    }
+
     static void termination_handler(std::exception_ptr) {  // NOLINT(performance-unnecessary-value-param)
         std::terminate();
     }
@@ -211,13 +199,13 @@ class ContextPool : public ExecutorPool {
     boost::asio::detail::thread_group context_threads_;
 
     //! The index for obtaining next context to use (round-robin).
-    std::atomic_size_t next_index_;
+    std::atomic_size_t next_index_{0};
 
     //! Flag indicating if pool has been stopped.
     std::atomic_bool stopped_{false};
 
     //! Exception handler invoked on execution loop abnormal termination
-    ExceptionHandler exception_handler_;
+    ExceptionHandler exception_handler_{termination_handler};
 };
 
 }  // namespace silkworm::concurrency

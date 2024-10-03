@@ -30,7 +30,7 @@ TEST_CASE("links") {
 
     std::array<BlockHeader, 5> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i * 100;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
@@ -43,15 +43,15 @@ TEST_CASE("links") {
 
     SECTION("construction") {
         REQUIRE(*(link1.header) == headers[1]);
-        REQUIRE(link1.blockHeight == headers[1].number);
+        REQUIRE(link1.block_height == headers[1].number);
         REQUIRE(link1.hash == headers[1].hash());
         REQUIRE(link1.persisted == persisted);
         REQUIRE(link1.preverified == false);
         REQUIRE(link1.next.empty());
 
-        headers[1].number = 100;          // only for the following test
-        REQUIRE(link1.blockHeight == 1);  // link1 has a copy of headers[1]
-        headers[1].number = 1;            // ok
+        headers[1].number = 100;           // only for the following test
+        REQUIRE(link1.block_height == 1);  // link1 has a copy of headers[1]
+        headers[1].number = 1;             // ok
     }
 
     SECTION("children") {
@@ -89,7 +89,7 @@ TEST_CASE("anchors") {
 
     std::array<BlockHeader, 5> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i * 100;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
@@ -99,15 +99,15 @@ TEST_CASE("anchors") {
 
     std::array<std::shared_ptr<Link>, 5> links;
 
-    for (size_t i = 1; i < links.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 1; i < links.size(); ++i) {  // skip first header for simplicity
         links[i] = std::make_shared<Link>(headers[i], persisted);
     }
 
     SECTION("construction") {
-        REQUIRE(anchor.parentHash == headers[1].parent_hash);
-        REQUIRE(anchor.blockHeight == headers[1].number);
-        REQUIRE(anchor.lastLinkHeight == headers[1].number);
-        REQUIRE(anchor.peerId == peer_id);
+        REQUIRE(anchor.parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor.block_height == headers[1].number);
+        REQUIRE(anchor.last_link_height == headers[1].number);
+        REQUIRE(anchor.peer_id == peer_id);
         REQUIRE(anchor.links.empty());
         REQUIRE(anchor.chainLength() == 1);
     }
@@ -116,7 +116,7 @@ TEST_CASE("anchors") {
         REQUIRE(anchor.find_child(headers[1].hash()) == anchor.links.end());
         REQUIRE(anchor.has_child(headers[1].hash()) == false);
 
-        for (size_t i = 1; i <= 3; i++) {
+        for (size_t i = 1; i <= 3; ++i) {
             anchor.links.push_back(links[i]);
         }
 
@@ -141,7 +141,7 @@ TEST_CASE("anchors") {
 
 TEST_CASE("segments") {
     std::vector<BlockHeader> headers(10);
-    for (size_t i = 0; i < headers.size(); i++) {  // skip first header for simplicity
+    for (size_t i = 0; i < headers.size(); ++i) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i * 100;  // improve!
         headers[i].parent_hash = (i != 0) ? headers[i - 1].hash() : evmc::bytes32{0};

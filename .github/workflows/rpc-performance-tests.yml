@@ -7,7 +7,10 @@ on:
 
 jobs:
   performance-test-suite:
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        backend: [ Erigon2 ]
+    runs-on: [ self-hosted, "${{ matrix.backend }}" ]
     env:
       ERIGON_DIR: /opt/erigon-versions/reference-version
       ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir

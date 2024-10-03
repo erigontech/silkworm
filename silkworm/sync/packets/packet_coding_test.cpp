@@ -957,7 +957,7 @@ TEST_CASE("GetBlockHeadersPacket (eth/66) decoding") {
     ByteView encoded_view = encoded.value();
     REQUIRE(rlp::decode(encoded_view, packet));
 
-    REQUIRE(packet.requestId == 0x6b1a456ba6e2f81d);
+    REQUIRE(packet.request_id == 0x6b1a456ba6e2f81d);
     REQUIRE(std::holds_alternative<BlockNum>(packet.request.origin) == true);
     REQUIRE(std::get<BlockNum>(packet.request.origin) == 0xb9ffff);  // 12189695
     REQUIRE(packet.request.amount == 1);
@@ -970,7 +970,7 @@ TEST_CASE("GetBlockHeadersPacket (eth/66) encoding") {
 
     GetBlockHeadersPacket66 packet;
 
-    packet.requestId = 0x6b1a456ba6e2f81d;
+    packet.request_id = 0x6b1a456ba6e2f81d;
     packet.request.origin = {BlockNum{0xb9ffff}};
     packet.request.amount = 1;
     packet.request.skip = 0;
@@ -1014,7 +1014,7 @@ TEST_CASE("GetBlockBodiesPacket (eth/66) decoding") {
     ByteView encoded_view = encoded.value();
     REQUIRE(rlp::decode(encoded_view, packet));
 
-    REQUIRE(packet.requestId == 0xae9405dbeebf3f01);
+    REQUIRE(packet.request_id == 0xae9405dbeebf3f01);
     REQUIRE(packet.request.size() == 2);
     REQUIRE(packet.request[0] == Hash::from_hex("a36b1595c5acd878b63f83d3b62f6882edd27b757582f5319aebc17bc3e98246"));
     REQUIRE(packet.request[1] == Hash::from_hex("9f20a871bf5151959fff4c88783bf4ef27b170a4cbe92b8f63ca1fe7d6ab829c"));
@@ -1025,7 +1025,7 @@ TEST_CASE("GetBlockBodiesPacket (eth/66) encoding") {
 
     GetBlockBodiesPacket66 packet;
 
-    packet.requestId = 0xae9405dbeebf3f01;
+    packet.request_id = 0xae9405dbeebf3f01;
     packet.request.push_back(*Hash::from_hex("a36b1595c5acd878b63f83d3b62f6882edd27b757582f5319aebc17bc3e98246"));
     packet.request.push_back(*Hash::from_hex("9f20a871bf5151959fff4c88783bf4ef27b170a4cbe92b8f63ca1fe7d6ab829c"));
 
@@ -1080,7 +1080,7 @@ TEST_CASE("BlockHeadersPacket (eth/66) decoding/encoding") {
     REQUIRE(rlp::decode(encoded_view, packet));
 
     // packet values from etherscan
-    REQUIRE(packet.requestId == 0x81fb'063b'42d7'd3a1);
+    REQUIRE(packet.request_id == 0x81fb'063b'42d7'd3a1);
     REQUIRE(packet.request.size() == 1);
     REQUIRE(packet.request[0].number == 12593053);
     REQUIRE(packet.request[0].gas_limit == 14'926'879);
@@ -1110,7 +1110,7 @@ TEST_CASE("BlockBodiesPacket (eth/66) decoding/encoding") {
         ByteView view{rlp_bytes};
         BlockBodiesPacket66 packet;
         CHECK(rlp::decode(view, packet));
-        CHECK(packet.requestId == 0x0d2c08e12ca20890);
+        CHECK(packet.request_id == 0x0d2c08e12ca20890);
         CHECK(packet.request.empty());
     }
     SECTION("non-empty list of empty bodies: INVALID") {

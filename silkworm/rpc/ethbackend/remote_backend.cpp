@@ -95,7 +95,7 @@ Task<NodeInfos> RemoteBackEnd::engine_node_info() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNodeInfo> ni_rpc{*stub_, grpc_context_};
     const auto reply = co_await ni_rpc.finish_on(executor_, ::remote::NodesInfoRequest{});
-    for (int i = 0; i < reply.nodes_info_size(); i++) {
+    for (int i = 0; i < reply.nodes_info_size(); ++i) {
         NodeInfo node_info;
         const auto& backend_node_info = reply.nodes_info(i);
         node_info.id = backend_node_info.id();
@@ -176,6 +176,30 @@ Task<BlockNum> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& h
     auto bn = reply.block_number();
     SILK_TRACE << "RemoteBackEnd::get_block_number_from_txn_hash bn=" << bn << " t=" << clock_time::since(start_time);
     co_return bn;
+}
+
+Task<BlockNum> RemoteBackEnd::get_block_number_from_hash(const HashAsSpan& hash) {
+    const auto start_time = clock_time::now();
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncHeaderNumber> header_number_rpc{*stub_, grpc_context_};
+    ::remote::HeaderNumberRequest request;
+    request.set_allocated_hash(H256_from_bytes(hash).release());
+    const auto reply = co_await header_number_rpc.finish_on(executor_, request);
+    auto bn = reply.number();
+    SILK_TRACE << "RemoteBackEnd::get_block_number_from_hash bn=" << bn << " t=" << clock_time::since(start_time);
+    co_return bn;
+}
+
+Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(uint64_t number) {
+    const auto start_time = clock_time::now();
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalHash> canonical_hsh_rpc{*stub_, grpc_context_};
+    ::remote::CanonicalHashRequest request;
+    request.set_block_number(number);
+    const auto reply = co_await canonical_hsh_rpc.finish_on(executor_, request);
+    evmc::bytes32 hash;
+    span_from_H256(reply.hash(), hash.bytes);
+    SILK_TRACE << "RemoteBackEnd::get_block_hash_from_block_number bn="
+               << " t=" << clock_time::since(start_time);
+    co_return hash;
 }
 
 std::vector<Bytes> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs) {

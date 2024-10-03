@@ -34,7 +34,8 @@ using testing::Return;
 using namespace silkworm::grpc::test_util;
 namespace proto = ::remote;
 
-struct CallTest : public silkworm::test_util::ContextTestBase {
+class CallTest : public silkworm::test_util::ContextTestBase {
+  public:
     //! Check that before *and* after calling unary_rpc utility function we're executing on the same asio::io_context thread.
     //! This is a widespread threading assumption for our production code (e.g. rpcdaemon) but needs special handling because
     //! asio-grpc library functions currently used in unary_rpc do complete handlers on GrpcContext service thread
@@ -80,6 +81,7 @@ struct CallTest : public silkworm::test_util::ContextTestBase {
     using StrictMockKVStub = testing::StrictMock<proto::MockKVStub>;
     using StrictMockKVVersionAsyncResponseReader = rpc::test::StrictMockAsyncResponseReader<::types::VersionReply>;
 
+  protected:
     //! Mocked stub of gRPC KV interface
     std::unique_ptr<StrictMockKVStub> stub_{std::make_unique<StrictMockKVStub>()};
 

@@ -84,73 +84,40 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
     grpc::ServerBuilder builder;
 
     SECTION("ServerContextPool OK") {
-        ServerContextPool server_context_pool{2};
-        CHECK(server_context_pool.num_contexts() == 0);
+        ServerContextPool server_context_pool{{2}, builder};
+        CHECK(server_context_pool.size() == 2);
     }
 
     SECTION("ServerContextPool KO") {
-        CHECK_THROWS_AS(ServerContextPool{0}, std::logic_error);
-    }
-
-    SECTION("add_context") {
-        ServerContextPool server_context_pool{2};
-        REQUIRE(server_context_pool.num_contexts() == 0);
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-        CHECK(server_context_pool.num_contexts() == 2);
+        CHECK_THROWS_AS((ServerContextPool{concurrency::ContextPoolSettings{0}, builder}), std::logic_error);
     }
 
     SECTION("next_context") {
-        ServerContextPool server_context_pool{2};
-        REQUIRE(server_context_pool.num_contexts() == 0);
-        CHECK_THROWS_AS(server_context_pool.next_context(), std::logic_error);
-        auto queue_ptr1 = builder.AddCompletionQueue();
-        auto queue_raw_ptr1 = queue_ptr1.get();
-        auto queue_ptr2 = builder.AddCompletionQueue();
-        auto queue_raw_ptr2 = queue_ptr2.get();
-        server_context_pool.add_context(std::move(queue_ptr1), WaitMode::kBlocking);
-        server_context_pool.add_context(std::move(queue_ptr2), WaitMode::kBlocking);
-        CHECK(server_context_pool.num_contexts() == 2);
+        ServerContextPool server_context_pool{{2}, builder};
         auto& context1 = server_context_pool.next_context();
-        CHECK(context1.server_grpc_context()->get_completion_queue() == queue_raw_ptr1);
-        CHECK(context1.io_context() != nullptr);
         auto& context2 = server_context_pool.next_context();
-        CHECK(context2.server_grpc_context()->get_completion_queue() == queue_raw_ptr2);
-        CHECK(context2.io_context() != nullptr);
+        CHECK(&server_context_pool.next_context() == &context1);
+        CHECK(&server_context_pool.next_context() == &context2);
     }
 
     SECTION("next_io_context") {
-        ServerContextPool server_context_pool{2};
-        REQUIRE(server_context_pool.num_contexts() == 0);
-        CHECK_THROWS_AS(server_context_pool.next_io_context(), std::logic_error);
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-        CHECK(server_context_pool.num_contexts() == 2);
+        ServerContextPool server_context_pool{{2}, builder};
         auto& context1 = server_context_pool.next_context();
+        CHECK(context1.io_context() != nullptr);
         auto& context2 = server_context_pool.next_context();
+        CHECK(context2.io_context() != nullptr);
         CHECK(&server_context_pool.next_io_context() == context1.io_context());
         CHECK(&server_context_pool.next_io_context() == context2.io_context());
     }
 
-    SECTION("start/stop w/o contexts") {
-        ServerContextPool server_context_pool{2};
-        REQUIRE(server_context_pool.num_contexts() == 0);
-        CHECK_NOTHROW(server_context_pool.start());
-        CHECK_NOTHROW(server_context_pool.stop());
-    }
-
     SECTION("start/stop w/ contexts") {
-        ServerContextPool server_context_pool{2};
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
+        ServerContextPool server_context_pool{{2}, builder};
         CHECK_NOTHROW(server_context_pool.start());
         CHECK_NOTHROW(server_context_pool.stop());
     }
 
     SECTION("join") {
-        ServerContextPool server_context_pool{2};
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
+        ServerContextPool server_context_pool{{2}, builder};
         server_context_pool.start();
         std::thread joining_thread{[&]() { server_context_pool.join(); }};
         server_context_pool.stop();
@@ -158,9 +125,7 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
     }
 
     SECTION("join after stop") {
-        ServerContextPool server_context_pool{2};
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
+        ServerContextPool server_context_pool{{2}, builder};
         server_context_pool.start();
         server_context_pool.stop();
         CHECK_NOTHROW(server_context_pool.join());
@@ -171,10 +136,7 @@ TEST_CASE("ServerContextPool: handle loop exception", "[silkworm][infra][grpc][c
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
 
-    ServerContextPool cp{3};
-    cp.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-    cp.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
-    cp.add_context(builder.AddCompletionQueue(), WaitMode::kBlocking);
+    ServerContextPool cp{{3}, builder};
     std::exception_ptr run_exception;
     cp.set_exception_handler([&](std::exception_ptr eptr) {  // NOLINT(performance-unnecessary-value-param)
         run_exception = eptr;

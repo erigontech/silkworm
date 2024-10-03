@@ -116,7 +116,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
-            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
@@ -165,7 +165,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
-            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
+            const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
             const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
@@ -214,7 +214,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
             const Block extended_block{block_with_hash, *total_difficulty, false};
-            auto receipts = co_await core::get_receipts(*tx, *block_with_hash);
+            auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             auto block_size = extended_block.get_block_size();
             auto transaction_count = block_with_hash->block.transactions.size();
 
@@ -241,7 +241,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
                 page_start = 0;
             }
 
-            for (auto i = page_start; i < page_end; i++) {
+            for (auto i = page_start; i < page_end; ++i) {
                 block_transactions.receipts.push_back(receipts.at(i));
                 block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
             }
@@ -326,7 +326,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         bitmap.toUint64Array(account_block_numbers.data());
 
         uint64_t idx = 0;
-        for (uint64_t i = 0; i < cardinality; i++) {
+        for (uint64_t i = 0; i < cardinality; ++i) {
             auto block_number = account_block_numbers[i];
             auto block_key{db::block_key(block_number)};
             auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
@@ -457,7 +457,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         bitmap.toUint64Array(account_block_numbers.data());
 
         uint64_t idx = 0;
-        for (uint64_t i = 0; i < cardinality; i++) {
+        for (uint64_t i = 0; i < cardinality; ++i) {
             auto block_number = account_block_numbers[i];
             auto block_key{db::block_key(block_number)};
             auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
@@ -684,7 +684,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             is_first_page = true;
         } else {
             // Internal search code considers blockNum [including], so adjust the value
-            block_number--;
+            --block_number;
         }
 
         BackwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
@@ -766,7 +766,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
             is_last_page = true;
         } else {
             // Internal search code considers blockNum [including], so adjust the value
-            block_number++;
+            ++block_number;
         }
 
         ForwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
@@ -831,7 +831,7 @@ Task<bool> OtsRpcApi::trace_blocks(
     results.clear();
     results.reserve(est_blocks_to_trace);
 
-    for (size_t i = 0; i < est_blocks_to_trace; i++) {
+    for (size_t i = 0; i < est_blocks_to_trace; ++i) {
         TransactionsWithReceipts transactions_with_receipts;
 
         auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
@@ -857,7 +857,7 @@ Task<void> OtsRpcApi::trace_block(db::kv::api::Transaction& tx, BlockNum block_n
 
     const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
     ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
-    const auto receipts = co_await core::get_receipts(tx, *block_with_hash);
+    const auto receipts = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
     const Block extended_block{block_with_hash, *total_difficulty, false};
 
     trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, tx};
@@ -1052,7 +1052,7 @@ bool ForwardBlockProvider::has_next() {
 
 BlockNum ForwardBlockProvider::next() {
     uint64_t result = bitmap_vector_.at(bitmap_index_);
-    bitmap_index_++;
+    ++bitmap_index_;
     return result;
 }
 
@@ -1064,7 +1064,7 @@ void ForwardBlockProvider::iterator(roaring::Roaring64Map& bitmap) {
 
 void ForwardBlockProvider::advance_if_needed(BlockNum min_block) {
     auto found_index = bitmap_vector_.size();
-    for (size_t i = bitmap_index_; i < bitmap_vector_.size(); i++) {
+    for (size_t i = bitmap_index_; i < bitmap_vector_.size(); ++i) {
         if (bitmap_vector_.at(i) >= min_block) {
             found_index = i;
             break;
@@ -1179,7 +1179,7 @@ bool BackwardBlockProvider::has_next() {
 
 uint64_t BackwardBlockProvider::next() {
     uint64_t result = bitmap_vector_.at(bitmap_index_);
-    bitmap_index_++;
+    ++bitmap_index_;
     return result;
 }
 
@@ -1194,14 +1194,14 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
     if (!initialized_) {
         initialized_ = true;
 
-        auto from_prov_res = co_await callFromProvider_->get();
+        auto from_prov_res = co_await call_from_provider_->get();
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
         next_from_ = from_prov_res.block_number;
         has_more_from_ = from_prov_res.has_more || next_from_ != 0;
 
-        auto to_prov_res = co_await callToProvider_->get();
+        auto to_prov_res = co_await call_to_provider_->get();
         if (to_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1234,7 +1234,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
 
     // Pull next; it may be that from AND to contains the same blockNum
     if (has_more_from_ && block_num == next_from_) {
-        auto from_prov_res = co_await callFromProvider_->get();
+        auto from_prov_res = co_await call_from_provider_->get();
 
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
@@ -1244,7 +1244,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
     }
 
     if (has_more_to_ && block_num == next_to_) {
-        auto to_prov_res = co_await callToProvider_->get();
+        auto to_prov_res = co_await call_to_provider_->get();
 
         if (to_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
@@ -1259,8 +1259,8 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
 
 FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider)
     : is_backwards_{is_backwards},
-      callFromProvider_{callFromProvider},
-      callToProvider_{callToProvider} {
+      call_from_provider_{callFromProvider},
+      call_to_provider_{callToProvider} {
 }
 
 }  // namespace silkworm::rpc::commands

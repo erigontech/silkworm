@@ -25,7 +25,7 @@ namespace silkworm {
 using BlockHeadersPacket = std::vector<BlockHeader>;
 
 struct BlockHeadersPacket66 {  // eth/66 version
-    uint64_t requestId{0};
+    uint64_t request_id{0};
     BlockHeadersPacket request;
 };
 
@@ -40,11 +40,11 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const BlockHeadersPacket66& packet) {
-    os << "reqId=" << packet.requestId;
+    os << "reqId=" << packet.request_id;
     os << " headers(bn)=";
 
     const size_t max_display = 3;
-    for (size_t i = 0; i < std::min(packet.request.size(), max_display); i++) {
+    for (size_t i = 0; i < std::min(packet.request.size(), max_display); ++i) {
         os << packet.request[i].number << ",";
     }
     if (packet.request.size() > max_display) os << "...";

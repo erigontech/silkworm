@@ -55,7 +55,7 @@ namespace silkworm::concurrency {
  * Task<void> accept_connections() {
  *     auto connection = accept();
  *     if (num_clients < 10) {
- *         num_clients++;
+ *         ++num_clients;
  *         task_group.spawn(executor, handle_connection(std::move(connection)));
  *     }
  * }

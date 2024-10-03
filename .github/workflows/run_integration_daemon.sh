@@ -10,7 +10,7 @@ echo "Silkworm RpcDaemon starting..."
 if [ $1 == 'Erigon2' ]; then
 ./rpcdaemon --datadir $2 --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt $3 --skip_protocol_check --ws &
 else
-./rpcdaemon --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt $3 --skip_protocol_check --ws &
+./rpcdaemon --port 51515 --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt $3 --skip_protocol_check --ws &
 fi
 
 PID=$!

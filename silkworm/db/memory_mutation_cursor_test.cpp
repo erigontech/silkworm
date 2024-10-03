@@ -53,7 +53,8 @@ static void alter_tables(RWTxn& rw_txn) {
     rw_txn.commit_and_renew();
 }
 
-struct MemoryMutationCursorTest {
+class MemoryMutationCursorTest {
+  public:
     explicit MemoryMutationCursorTest() {
         open_map(mutation, db::table::kCode);
         open_map(mutation, db::table::kAccountChangeSet);
@@ -87,6 +88,8 @@ struct MemoryMutationCursorTest {
     RWTxnManaged main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_txn, table::get_map_config, table::kSequenceName};
     MemoryMutation mutation{overlay};
+
+  private:
     silkworm::test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };
 

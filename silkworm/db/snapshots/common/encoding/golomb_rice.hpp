@@ -66,17 +66,17 @@ class GolombRiceVector {
 
         Builder() : Builder(kDefaultAllocatedWords) {}
 
-        explicit Builder(const std::size_t allocated_words) : data(allocated_words) {}
+        explicit Builder(const std::size_t allocated_words) : data_(allocated_words) {}
 
         void append_fixed(const uint64_t v, const uint64_t log2golomb) {
             if (log2golomb == 0) return;
 
             const uint64_t lower_bits = v & ((uint64_t{1} << log2golomb) - 1);
-            std::size_t used_bits = bit_count & 63;
+            std::size_t used_bits = bit_count_ & 63;
 
-            data.resize((bit_count + log2golomb + 63) / 64);
+            data_.resize((bit_count_ + log2golomb + 63) / 64);
 
-            uint64_t* append_ptr = data.data() + bit_count / 64;
+            uint64_t* append_ptr = data_.data() + bit_count_ / 64;
             uint64_t cur_word = *append_ptr;
 
             cur_word |= lower_bits << used_bits;
@@ -85,7 +85,7 @@ class GolombRiceVector {
                 cur_word = lower_bits >> (64 - used_bits);
             }
             *append_ptr = cur_word;
-            bit_count += log2golomb;
+            bit_count_ += log2golomb;
         }
 
         void append_unary_all(const Uint32Sequence& unary) {
@@ -95,37 +95,37 @@ class GolombRiceVector {
                 bit_inc += u + 1;
             }
 
-            data.resize((bit_count + bit_inc + 63) / 64);
+            data_.resize((bit_count_ + bit_inc + 63) / 64);
 
             for (const auto u : unary) {
-                bit_count += u;
-                uint64_t* append_ptr = data.data() + bit_count / 64;
-                *append_ptr |= uint64_t{1} << (bit_count & 63);
-                ++bit_count;
+                bit_count_ += u;
+                uint64_t* append_ptr = data_.data() + bit_count_ / 64;
+                *append_ptr |= uint64_t{1} << (bit_count_ & 63);
+                ++bit_count_;
             }
         }
 
-        [[nodiscard]] uint64_t get_bits() const { return bit_count; }
+        [[nodiscard]] uint64_t get_bits() const { return bit_count_; }
 
         GolombRiceVector build() {
-            data.resize(data.size());
-            return GolombRiceVector{std::move(data)};
+            data_.resize(data_.size());
+            return GolombRiceVector{std::move(data_)};
         }
 
         void append_unary(uint32_t unary) {
-            unaries.push_back(unary);
+            unaries_.push_back(unary);
         }
 
         void append_collected_unaries() {
-            append_unary_all(unaries);
-            unaries.clear();
+            append_unary_all(unaries_);
+            unaries_.clear();
         }
 
       private:
-        Uint64Sequence data;
-        std::size_t bit_count{0};
+        Uint64Sequence data_;
+        std::size_t bit_count_{0};
 
-        Uint32Sequence unaries;
+        Uint32Sequence unaries_;
     };
 
     class LazyBuilder {
@@ -135,121 +135,121 @@ class GolombRiceVector {
         LazyBuilder() : LazyBuilder(kDefaultAllocatedWords) {}
 
         explicit LazyBuilder(const std::size_t allocated_words) {
-            fixeds.reserve(allocated_words);
-            unaries.reserve(allocated_words);
+            fixeds_.reserve(allocated_words);
+            unaries_.reserve(allocated_words);
         }
 
         void append_fixed(const uint64_t v, const uint64_t log2golomb) {
-            fixeds.emplace_back(v, log2golomb);
+            fixeds_.emplace_back(v, log2golomb);
         }
 
         void append_unary(uint32_t unary) {
-            unaries.push_back(unary);
+            unaries_.push_back(unary);
         }
 
         void append_to(Builder& real_builder) {
-            for (const auto& [v, log2golomb] : fixeds) {
+            for (const auto& [v, log2golomb] : fixeds_) {
                 real_builder.append_fixed(v, log2golomb);
             }
-            real_builder.append_unary_all(unaries);
+            real_builder.append_unary_all(unaries_);
         }
 
         void clear() {
-            fixeds.clear();
-            unaries.clear();
+            fixeds_.clear();
+            unaries_.clear();
         }
 
       private:
-        std::vector<std::pair<uint64_t, uint64_t>> fixeds;
-        Uint32Sequence unaries;
+        std::vector<std::pair<uint64_t, uint64_t>> fixeds_;
+        Uint32Sequence unaries_;
     };
 
     GolombRiceVector() = default;
-    explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
+    explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data_(std::move(input_data)) {}
 
-    [[nodiscard]] std::size_t size() const { return data.size(); }
+    [[nodiscard]] std::size_t size() const { return data_.size(); }
 
     class Reader {
       public:
-        explicit Reader(const Uint64Sequence& input_data) : data(input_data) {}
+        explicit Reader(const Uint64Sequence& input_data) : data_(input_data) {}
 
         uint64_t read_next(const uint64_t log2golomb) {
             uint64_t result = 0;
 
-            if (curr_window_unary == 0) {
-                result += valid_lower_bits_unary;
-                curr_window_unary = *(curr_ptr_unary++);
-                valid_lower_bits_unary = 64;
-                while (curr_window_unary == 0) {
+            if (curr_window_unary_ == 0) {
+                result += valid_lower_bits_unary_;
+                curr_window_unary_ = *(curr_ptr_unary_++);
+                valid_lower_bits_unary_ = 64;
+                while (curr_window_unary_ == 0) {
                     [[unlikely]] result += 64;
-                    curr_window_unary = *(curr_ptr_unary++);
+                    curr_window_unary_ = *(curr_ptr_unary_++);
                 }
             }
 
-            const auto pos = static_cast<std::size_t>(rho(curr_window_unary));
+            const auto pos = static_cast<std::size_t>(rho(curr_window_unary_));
 
-            curr_window_unary >>= pos;
-            curr_window_unary >>= 1;
-            valid_lower_bits_unary -= pos + 1;
+            curr_window_unary_ >>= pos;
+            curr_window_unary_ >>= 1;
+            valid_lower_bits_unary_ -= pos + 1;
 
             result += pos;
             result <<= log2golomb;
 
-            std::size_t idx64 = curr_fixed_offset >> 6;
-            uint64_t shift = curr_fixed_offset & 63;
-            uint64_t fixed = data[idx64] >> shift;
+            std::size_t idx64 = curr_fixed_offset_ >> 6;
+            uint64_t shift = curr_fixed_offset_ & 63;
+            uint64_t fixed = data_[idx64] >> shift;
             if (shift + log2golomb > 64) {
-                fixed |= data[idx64 + 1] << (64 - shift);
+                fixed |= data_[idx64 + 1] << (64 - shift);
             }
             result |= fixed & ((uint64_t{1} << log2golomb) - 1);
-            curr_fixed_offset += log2golomb;
+            curr_fixed_offset_ += log2golomb;
             return result;
         }
 
         void skip_subtree(const std::size_t nodes, const std::size_t fixed_len) {
             SILKWORM_ASSERT(nodes > 0);
             std::size_t missing = nodes, cnt = 0;
-            while ((cnt = static_cast<std::size_t>(nu(curr_window_unary))) < missing) {
-                curr_window_unary = *(curr_ptr_unary++);
+            while ((cnt = static_cast<std::size_t>(nu(curr_window_unary_))) < missing) {
+                curr_window_unary_ = *(curr_ptr_unary_++);
                 missing -= cnt;
-                valid_lower_bits_unary = 64;
+                valid_lower_bits_unary_ = 64;
             }
-            cnt = select64(curr_window_unary, missing - 1);
-            curr_window_unary >>= cnt;
-            curr_window_unary >>= 1;
-            valid_lower_bits_unary -= cnt + 1;
+            cnt = select64(curr_window_unary_, missing - 1);
+            curr_window_unary_ >>= cnt;
+            curr_window_unary_ >>= 1;
+            valid_lower_bits_unary_ -= cnt + 1;
 
-            curr_fixed_offset += fixed_len;
+            curr_fixed_offset_ += fixed_len;
         }
 
         void read_reset(const std::size_t bit_pos, const std::size_t unary_offset) {
-            curr_fixed_offset = bit_pos;
+            curr_fixed_offset_ = bit_pos;
             std::size_t unary_pos = bit_pos + unary_offset;
-            curr_ptr_unary = data.data() + unary_pos / 64;
-            curr_window_unary = *(curr_ptr_unary++) >> (unary_pos & 63);
-            valid_lower_bits_unary = 64 - (unary_pos & 63);
+            curr_ptr_unary_ = data_.data() + unary_pos / 64;
+            curr_window_unary_ = *(curr_ptr_unary_++) >> (unary_pos & 63);
+            valid_lower_bits_unary_ = 64 - (unary_pos & 63);
         }
 
       private:
-        const Uint64Sequence& data;
-        std::size_t curr_fixed_offset{0};
-        uint64_t curr_window_unary{0};
-        uint64_t const* curr_ptr_unary{nullptr};
-        std::size_t valid_lower_bits_unary{0};
+        const Uint64Sequence& data_;
+        std::size_t curr_fixed_offset_{0};
+        uint64_t curr_window_unary_{0};
+        uint64_t const* curr_ptr_unary_{nullptr};
+        std::size_t valid_lower_bits_unary_{0};
     };
 
-    [[nodiscard]] Reader reader() const { return Reader{data}; }
+    [[nodiscard]] Reader reader() const { return Reader{data_}; }
 
   private:
-    Uint64Sequence data;
+    Uint64Sequence data_;
 
     friend std::ostream& operator<<(std::ostream& os, const GolombRiceVector& rbv) {
-        os << rbv.data;
+        os << rbv.data_;
         return os;
     }
 
     friend std::istream& operator>>(std::istream& is, GolombRiceVector& rbv) {
-        is >> rbv.data;
+        is >> rbv.data_;
         return is;
     }
 };

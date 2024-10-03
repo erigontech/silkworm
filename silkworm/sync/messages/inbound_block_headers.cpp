@@ -24,7 +24,7 @@
 namespace silkworm {
 
 InboundBlockHeaders::InboundBlockHeaders(ByteView data, PeerId peer_id)
-    : peerId_(std::move(peer_id)) {
+    : peer_id_(std::move(peer_id)) {
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;
 }
@@ -40,14 +40,14 @@ void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, 
     }
 
     // Save the headers
-    auto [penalty, requestMoreHeaders] = hc.accept_headers(packet_.request, packet_.requestId, peerId_);
+    auto [penalty, requestMoreHeaders] = hc.accept_headers(packet_.request, packet_.request_id, peer_id_);
 
     // Reply
     if (penalty != Penalty::kNoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
-        SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
+        SILK_TRACE << "Penalizing " << PeerPenalization{penalty, peer_id_};
         try {
-            sentry.penalize_peer(peerId_, penalty);
+            sentry.penalize_peer(peer_id_, penalty);
         } catch (const boost::system::system_error& se) {
             SILK_TRACE << "InboundBlockHeaders failed penalize_peer error: " << se.what();
         }
@@ -55,13 +55,13 @@ void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, 
 
     try {
         SILK_TRACE << "Replying to " << identify(*this) << " with peer_min_block";
-        sentry.peer_min_block(peerId_, highestBlock);
+        sentry.peer_min_block(peer_id_, highestBlock);
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "InboundBlockHeaders failed peer_min_block error: " << se.what();
     }
 }
 
-uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }
+uint64_t InboundBlockHeaders::reqId() const { return packet_.request_id; }
 
 std::string InboundBlockHeaders::content() const {
     std::stringstream content;

@@ -27,7 +27,7 @@
 namespace silkworm {
 
 InboundGetBlockBodies::InboundGetBlockBodies(ByteView data, PeerId peer_id)
-    : peerId_(std::move(peer_id)) {
+    : peer_id_(std::move(peer_id)) {
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;
 }
@@ -43,7 +43,7 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     BodyRetrieval body_retrieval(db);
 
     BlockBodiesPacket66 reply;
-    reply.requestId = packet_.requestId;
+    reply.request_id = packet_.request_id;
     reply.request = body_retrieval.recover(packet_.request);
 
     if (reply.request.empty()) {
@@ -56,7 +56,7 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
 
     try {
         OutboundBlockBodies reply_message{std::move(reply)};
-        [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peerId_);
+        [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peer_id_);
 
         SILK_TRACE << "Received sentry result of " << identify(*this) << ": " << std::to_string(peers.size()) + " peer(s)";
     } catch (const boost::system::system_error& se) {
@@ -64,7 +64,7 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     }
 }
 
-uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }
+uint64_t InboundGetBlockBodies::reqId() const { return packet_.request_id; }
 
 std::string InboundGetBlockBodies::content() const {
     std::stringstream content;

@@ -83,7 +83,7 @@ struct GlazeJsonBlock {
     char hash[kHashHexSize];
     char parent_hash[kHashHexSize];
     char nonce[kInt64HexSize];
-    char sha3Uncles[kHashHexSize];
+    char sha3_uncles[kHashHexSize];
     char logs_bloom[kBloomSize];
     char transactions_root[kHashHexSize];
     char state_root[kHashHexSize];
@@ -116,7 +116,7 @@ struct GlazeJsonBlock {
             "hash", &T::hash,
             "parentHash", &T::parent_hash,
             "nonce", &T::nonce,
-            "sha3Uncles", &T::sha3Uncles,
+            "sha3Uncles", &T::sha3_uncles,
             "logsBloom", &T::logs_bloom,
             "transactionsRoot", &T::transactions_root,
             "withdrawalsRoot", &T::withdrawals_root,
@@ -191,7 +191,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
     to_hex(std::span(result.hash), b.block_with_hash->hash.bytes);
     to_hex(std::span(result.parent_hash), header.parent_hash.bytes);
     to_hex(std::span(result.nonce), header.nonce);
-    to_hex(std::span(result.sha3Uncles), header.ommers_hash.bytes);
+    to_hex(std::span(result.sha3_uncles), header.ommers_hash.bytes);
     to_hex(std::span(result.transactions_root), header.transactions_root.bytes);
     to_hex(std::span(result.logs_bloom), header.logs_bloom);
     if (header.withdrawals_root) {

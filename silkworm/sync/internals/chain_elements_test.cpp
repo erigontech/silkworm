@@ -43,15 +43,15 @@ TEST_CASE("links") {
 
     SECTION("construction") {
         REQUIRE(*(link1.header) == headers[1]);
-        REQUIRE(link1.blockHeight == headers[1].number);
+        REQUIRE(link1.block_height == headers[1].number);
         REQUIRE(link1.hash == headers[1].hash());
         REQUIRE(link1.persisted == persisted);
         REQUIRE(link1.preverified == false);
         REQUIRE(link1.next.empty());
 
-        headers[1].number = 100;          // only for the following test
-        REQUIRE(link1.blockHeight == 1);  // link1 has a copy of headers[1]
-        headers[1].number = 1;            // ok
+        headers[1].number = 100;           // only for the following test
+        REQUIRE(link1.block_height == 1);  // link1 has a copy of headers[1]
+        headers[1].number = 1;             // ok
     }
 
     SECTION("children") {
@@ -104,10 +104,10 @@ TEST_CASE("anchors") {
     }
 
     SECTION("construction") {
-        REQUIRE(anchor.parentHash == headers[1].parent_hash);
-        REQUIRE(anchor.blockHeight == headers[1].number);
-        REQUIRE(anchor.lastLinkHeight == headers[1].number);
-        REQUIRE(anchor.peerId == peer_id);
+        REQUIRE(anchor.parent_hash == headers[1].parent_hash);
+        REQUIRE(anchor.block_height == headers[1].number);
+        REQUIRE(anchor.last_link_height == headers[1].number);
+        REQUIRE(anchor.peer_id == peer_id);
         REQUIRE(anchor.links.empty());
         REQUIRE(anchor.chainLength() == 1);
     }

@@ -21,7 +21,7 @@
 namespace silkworm {
 
 std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {
-    os << "peerId=" << penalization.peerId << " cause=" << magic_enum::enum_name(penalization.penalty);
+    os << "peer_id=" << penalization.peer_id << " cause=" << magic_enum::enum_name(penalization.penalty);
     return os;
 }
 

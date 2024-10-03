@@ -25,8 +25,8 @@
 namespace silkworm {
 
 InboundNewBlock::InboundNewBlock(ByteView data, PeerId peer_id)
-    : peerId_(std::move(peer_id)),
-      reqId_(Singleton<RandomNumber>::instance().generate_one())  // for trace purposes
+    : peer_id_(std::move(peer_id)),
+      req_id_(Singleton<RandomNumber>::instance().generate_one())  // for trace purposes
 {
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;
@@ -40,10 +40,10 @@ void InboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, Sent
     // use packet_.td ?
     hc.accept_header(packet_.block.header); // process as single header segment
     */
-    bs.accept_new_block(packet_.block, peerId_);  // add to prefetched bodies
+    bs.accept_new_block(packet_.block, peer_id_);  // add to prefetched bodies
 }
 
-uint64_t InboundNewBlock::reqId() const { return reqId_; }
+uint64_t InboundNewBlock::reqId() const { return req_id_; }
 
 std::string InboundNewBlock::content() const {
     std::stringstream content;

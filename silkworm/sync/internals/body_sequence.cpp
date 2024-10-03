@@ -64,7 +64,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
     statistics_.received_items += packet.request.size();
 
     // Find matching requests and completing BodyRequest
-    auto matching_requests = body_requests_.find_by_request_id(packet.requestId);
+    auto matching_requests = body_requests_.find_by_request_id(packet.request_id);
 
     for (auto& body : packet.request) {
         Hash oh = protocol::compute_ommers_hash(body);
@@ -144,7 +144,7 @@ std::shared_ptr<OutboundMessage> BodySequence::request_bodies(time_point_t tp) {
 
     auto body_request = std::make_shared<OutboundGetBlockBodies>();
     auto& packet = body_request->packet();
-    packet.requestId = Singleton<RandomNumber>::instance().generate_one();
+    packet.request_id = Singleton<RandomNumber>::instance().generate_one();
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
@@ -189,7 +189,7 @@ std::vector<PeerPenalization> BodySequence::renew_stale_requests(
         if (!fulfill_from_announcements(past_request)) {
             packet.request.push_back(past_request.block_hash);
             past_request.request_time = tp;
-            past_request.request_id = packet.requestId;
+            past_request.request_id = packet.request_id;
 
             min_block = std::max(min_block, past_request.block_height);
 
@@ -226,7 +226,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
         if (!fulfill_from_announcements(new_request)) {
             packet.request.push_back(new_request.block_hash);
             new_request.request_time = tp;
-            new_request.request_id = packet.requestId;
+            new_request.request_id = packet.request_id;
 
             min_block = std::max(min_block, new_request.block_height);  // the min block the peer must have (so it is our max)
 
@@ -236,7 +236,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
             //            << ", hash= " << new_request.block_hash;
         }
 
-        new_request.request_id = packet.requestId;
+        new_request.request_id = packet.request_id;
 
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
@@ -287,7 +287,7 @@ void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
     seconds_t timeout = SentryClient::kRequestDeadline;
     for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
-        if (past_request.request_id == packet.requestId)
+        if (past_request.request_id == packet.request_id)
             past_request.request_time -= timeout;
     }
     last_nack_ = std::chrono::system_clock::now();

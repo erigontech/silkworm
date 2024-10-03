@@ -42,11 +42,11 @@ class TestRunner : public TaskRunner {
         return run((service.get()->*method)(std::forward<Args>(args)...));
     }
 
+  protected:
     agrpc::GrpcContext grpc_context_;
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> grpc_context_work_;
     std::unique_ptr<Stub> stub_{std::make_unique<Stub>()};
 
-  protected:
     void restart_context() override {
         TaskRunner::restart_context();
         grpc_context_.reset();

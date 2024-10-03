@@ -62,7 +62,7 @@ class SetBasedPriorityQueue {  // use boost::priority_queue instead?
  *   template <>
  *   struct key<Link> {
  *        using type = BlockNum;
- *        static BlockNum value(const Link& l) {return l.blockHeight;}
+ *        static BlockNum value(const Link& l) {return l.block_height;}
  *   };
  *
  *   MapBasedPriorityQueue<Link, BlockOlderThan> queue;

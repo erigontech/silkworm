@@ -41,13 +41,9 @@
 
 namespace silkworm::rpc {
 
-struct RemoteDatabaseTest : db::test_util::KVTestBase {
+class RemoteDatabaseTest : public db::test_util::KVTestBase {
   public:
-    // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
-    StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
-    db::kv::api::CoherentStateCache state_cache_;
-    test::BackEndMock backend;
-    ethdb::kv::RemoteDatabase remote_db_{&backend, &state_cache_, grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
+    db::kv::api::CoherentStateCache state_cache;
 };
 
 using testing::_;
@@ -101,9 +97,9 @@ TEST_CASE("estimate gas") {
     const silkworm::ChainConfig& config{kMainnetConfig};
     RemoteDatabaseTest remote_db_test;
     test::BackEndMock backend;
-    auto tx = std::make_unique<db::kv::grpc::client::RemoteTransaction>(*remote_db_test.stub_,
-                                                                        remote_db_test.grpc_context_,
-                                                                        &remote_db_test.state_cache_,
+    auto tx = std::make_unique<db::kv::grpc::client::RemoteTransaction>(remote_db_test.stub(),
+                                                                        remote_db_test.grpc_context(),
+                                                                        &remote_db_test.state_cache,
                                                                         ethdb::kv::block_provider(&backend),
                                                                         ethdb::kv::block_number_from_txn_hash_provider(&backend));
     const db::chain::RemoteChainStorage storage{*tx, ethdb::kv::block_provider(&backend), ethdb::kv::block_number_from_txn_hash_provider(&backend)};

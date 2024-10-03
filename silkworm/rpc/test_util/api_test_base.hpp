@@ -45,6 +45,7 @@ class JsonApiWithWorkersTestBase : public ServiceContextTestBase {
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 
+  protected:
     WorkerPool workers_;
 };
 
@@ -57,6 +58,7 @@ class GrpcApiTestBase : public ServiceContextTestBase {
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 
+  protected:
     std::unique_ptr<Stub> stub_{std::make_unique<Stub>()};
 };
 

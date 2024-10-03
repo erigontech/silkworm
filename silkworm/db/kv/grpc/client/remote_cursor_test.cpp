@@ -51,7 +51,8 @@ static const silkworm::Bytes kAccountChangeSetKeyBytes{string_to_bytes(kAccountC
 static const silkworm::Bytes kAccountChangeSetSubkeyBytes{string_to_bytes(kAccountChangeSetSubkey)};
 static const silkworm::Bytes kAccountChangeSetValueBytes{string_to_bytes(kAccountChangeSetValue)};
 
-struct RemoteCursorTest : test_util::KVTestBase {
+class RemoteCursorTest : public test_util::KVTestBase {
+  public:
     RemoteCursorTest() {
         // Set the call expectations common to all RemoteCursor tests:
         // remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
@@ -74,8 +75,11 @@ struct RemoteCursorTest : test_util::KVTestBase {
         co_return tx_id_pair;
     }
 
-    TxRpc tx_rpc_{grpc_context_};
+  protected:
     RemoteCursor remote_cursor_{tx_rpc_};
+
+  private:
+    TxRpc tx_rpc_{grpc_context_};
 };
 
 #ifndef SILKWORM_SANITIZE

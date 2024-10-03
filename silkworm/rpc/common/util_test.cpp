@@ -257,7 +257,7 @@ TEST_CASE("get_opcode_name") {
     }
     SECTION("not existent op_code") {
         auto op_code_name = get_opcode_name(names, 0x0d);
-        CHECK(op_code_name == "opcode 0xd not defined");
+        CHECK(!op_code_name.has_value());
     }
 }
 

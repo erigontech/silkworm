@@ -21,6 +21,7 @@ Copyright 2024 The Silkworm Authors
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm {
 
@@ -29,6 +30,11 @@ static auto constexpr kBLSSignatureLen = 96;
 
 using BLSKey = std::array<uint8_t, kBLSKeyLen>;
 using BLSSignature = std::array<uint8_t, kBLSSignatureLen>;
+
+struct Request;
+using RequestPtr = std::unique_ptr<Request>;
+
+std::vector<RequestPtr> extract_deposit_requests_from_logs(const std::vector<Log>& logs);
 
 struct Request {
     enum class RequestType : uint8_t {

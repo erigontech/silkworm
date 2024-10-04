@@ -18,11 +18,23 @@ Copyright 2022 The Silkworm Authors
 
 #include <type_traits>
 
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>
 
 namespace silkworm {
+
+std::vector<RequestPtr> extract_deposit_requests_from_logs(const std::vector<Log>& logs) {
+    for (const auto& log : logs) {
+        if (log.address != protocol::kDepositContractAddress) {
+            continue;
+        }
+    }
+    std::vector<RequestPtr> requests;
+
+    return requests;
+}
 
 static rlp::Header compute_header(const DepositRequest& request) {
     rlp::Header header{.list = true};
@@ -31,6 +43,14 @@ static rlp::Header compute_header(const DepositRequest& request) {
     header.payload_length += rlp::length(request.amount);
     header.payload_length += rlp::length(request.signature);
     header.payload_length += rlp::length(request.index);
+    return header;
+}
+
+static rlp::Header compute_header(const WithdrawalRequest& request) {
+    rlp::Header header{.list = true};
+    header.payload_length += rlp::length(request.source_address);
+    header.payload_length += rlp::length(request.validator_pub_key);
+    header.payload_length += rlp::length(request.amount);
     return header;
 }
 
@@ -57,13 +77,24 @@ size_t DepositRequest::length() const {
 }
 
 void WithdrawalRequest::encode(Bytes& to) const {
+    const auto header = compute_header(*this);
+    using underlying = std::underlying_type_t<Request::RequestType>;
+    rlp::encode(to, static_cast<underlying>(Request::RequestType::WithdrawalRequestType));
+    rlp::encode_header(to, header);
+    rlp::encode(to, source_address);
+    rlp::encode(to, validator_pub_key);
+    rlp::encode(to, amount);
 }
 
 size_t WithdrawalRequest::length() const {
-    return 0;
+    rlp::Header header{.list = true};
+    header.payload_length += rlp::length(source_address);
+    header.payload_length += rlp::length(validator_pub_key);
+    header.payload_length += rlp::length(amount);
+    return rlp::length_of_length(header.payload_length) + header.payload_length;
 }
 
-void ConsolidationRequest::encode(Bytes& to) const {
+void ConsolidationRequest::encode(Bytes& /*to*/) const {
 }
 
 size_t ConsolidationRequest::length() const {
@@ -80,7 +111,7 @@ namespace rlp {
         request.encode(to);
     }
 
-    DecodingResult decode(ByteView& from, Request& to, Leftover mode) noexcept {
+    DecodingResult decode(ByteView& /*from*/, Request& /*to*/, Leftover /*mode*/) noexcept {
         return {};
     }
 

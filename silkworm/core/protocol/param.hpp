@@ -80,6 +80,12 @@ inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
 inline constexpr auto kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
 inline constexpr auto kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02_address};
 
+// EIP-6110
+inline constexpr auto kDepositContractAddress{0x00000000219ab540356cbb839cbe05303d7705fa_address};
+
+// EIP-7002
+inline constexpr auto kWithdrawalRequestPredeployAddress{0x00A3ca265EBcb825B45F985A16CEFB49958cE017_address};
+
 // Used in Bor
 inline constexpr size_t kExtraSealSize{65};
 

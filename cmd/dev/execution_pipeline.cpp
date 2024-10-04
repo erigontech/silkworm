@@ -243,6 +243,55 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, const bool remove_bloc
     }
 }
 
+void forward(db::EnvConfig& config, BlockNum forward_point, const bool dry,
+             const std::string& start_at_stage, const std::string& stop_before_stage) {
+    ensure(config.exclusive, "Function requires exclusive access to database");
+
+    config.readonly = false;
+
+    Environment::set_start_at_stage(start_at_stage);
+    Environment::set_stop_before_stage(stop_before_stage);
+
+    auto env = silkworm::db::open_env(config);
+    db::RWTxnManaged txn{env};
+
+    // Commit is enabled by default in RWTxn(Managed), so we need to check here
+    if (dry) {
+        txn.disable_commit();
+    } else {
+        if (!user_confirmation("Are you sure? This will apply the changes to the database!")) {
+            return;
+        }
+        txn.enable_commit();  // this doesn't harm and works even if default changes
+    }
+
+    const auto chain_config{db::read_chain_config(txn)};
+    ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
+
+    const auto datadir_path = std::filesystem::path{config.path}.parent_path();
+    SILK_INFO << "Forward: datadir=" << datadir_path.string();
+
+    NodeSettings settings{
+        .data_directory = std::make_unique<DataDirectory>(datadir_path),
+        .chaindata_env_config = config,
+        .chain_config = chain_config};
+
+    // Start timer scheduler thread to observe stage progress during processing
+    std::thread ioc_thread{[&]() {
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{settings.asio_context.get_executor()};
+        settings.asio_context.run();
+    }};
+    auto _ = gsl::finally([&]() { settings.asio_context.stop(); });
+
+    stagedsync::ExecutionPipeline stage_pipeline{&settings};
+
+    const auto forward_result = stage_pipeline.forward(txn, forward_point);
+    ensure(forward_result == stagedsync::Stage::Result::kSuccess,
+           [&]() { return "forward failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(forward_result)}; });
+
+    std::cout << "\n Staged pipeline forward up to block: " << forward_point << " completed\n";
+}
+
 void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const bool dry,
                      const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
@@ -325,7 +374,6 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
     } else {
         SILK_INFO << "Bisect: failed at block=" << right_point;
     }
-
 }
 
 void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
@@ -513,6 +561,17 @@ int main(int argc, char* argv[]) {
     auto cmd_stageset_height_opt =
         cmd_stageset->add_option("--height", "Block height to set the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
 
+    // Forward tool
+    auto cmd_staged_forward = app.add_subcommand("forward", "Forward staged sync to a given height");
+    auto cmd_staged_forward_height =
+        cmd_staged_forward->add_option("--height", "Block height to forward the staged sync to")
+            ->required()
+            ->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_staged_forward_start_at_stage_opt =
+        cmd_staged_forward->add_option("--start_at_stage", "The name of the pipeline stage to start from");
+    auto cmd_staged_forward_stop_before_stage_opt =
+        cmd_staged_forward->add_option("--stop_before_stage", "The name of the pipeline stage to stop to");
+
     // Unwind tool
     auto cmd_staged_unwind = app.add_subcommand("unwind", "Unwind staged sync to a previous height");
     auto cmd_staged_unwind_height =
@@ -585,6 +644,12 @@ int main(int argc, char* argv[]) {
                                cmd_stageset_name_opt->as<std::string>(),
                                cmd_stageset_height_opt->as<uint32_t>(),
                                app_dry_opt->as<bool>());
+        } else if (*cmd_staged_forward) {
+            forward(chaindata_env_config,
+                    cmd_staged_forward_height->as<uint32_t>(),
+                    app_dry_opt->as<bool>(),
+                    cmd_staged_forward_start_at_stage_opt->as<std::string>(),
+                    cmd_staged_forward_stop_before_stage_opt->as<std::string>());
         } else if (*cmd_staged_unwind) {
             unwind(chaindata_env_config,
                    cmd_staged_unwind_height->as<uint32_t>(),

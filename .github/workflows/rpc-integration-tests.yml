@@ -12,9 +12,12 @@ on:
 jobs:
   integration-test-suite:
     strategy:
+      fail-fast: false
       matrix:
-        backend: [ Erigon2 ]
+        backend: [ Erigon2, Erigon3 ]
     runs-on: [ self-hosted, "${{ matrix.backend }}" ]
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.backend }}
     env:
       ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
@@ -30,7 +33,11 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          git -c advice.detachedHead=false clone --depth 1 --branch v0.52.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          if [ ${{ matrix.backend }} == 'Erigon2' ]; then
+             git -c advice.detachedHead=false clone --depth 1 --branch v0.52.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          else
+             git -c advice.detachedHead=false clone --depth 1 --branch v0.52.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          fi
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt
 
@@ -50,58 +57,40 @@ jobs:
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
       - name: Pause the Erigon instance dedicated to db maintenance
+        if: matrix.backend == 'Erigon2'
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
 
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          echo "Silkworm RpcDaemon starting..."
-          ./rpcdaemon --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --ws &
+          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh ${{ matrix.backend }} $ERIGON_DATA_DIR ./jwt.hex &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
-          echo "Silkworm RpcDaemon started"
 
       - name: Run RPC Integration Tests
         id: test_step
         run: |
-          set +e # Disable exit on error
-          
-          cd ${{runner.workspace}}/rpc-tests/integration
-          rm -rf ./mainnet/results/
-          
           # Run RPC integration test runner via http
-          python3 ./run_tests.py --continue --blockchain mainnet --jwt ${{runner.workspace}}/silkworm/build/cmd/jwt.hex --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json,engine_,net_,web3_,txpool_,eth_submitWork,eth_submitHashrate,eth_protocolVersion,erigon_nodeInfo,trace_rawTransaction/test_02.json --transport_type http,websocket
-         
+          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_tests.sh ${{ matrix.backend }} ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/ 
+
           # Capture test runner script exit status
           test_exit_status=$?
           
           # Check test runner exit status
           if [ $test_exit_status -eq 0 ]; then
-            echo "tests completed successfully"
-            echo
             echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
           else
-            echo "error detected during tests"
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
-            
-            # Save failed results to a directory with timestamp and commit hash
-            cp -r ${{runner.workspace}}/rpc-tests/integration/mainnet/results/ $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/
           fi
 
       - name: Stop Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          # Clean up rpcdaemon process if it's still running
-          if kill -0 $RPC_DAEMON_PID 2> /dev/null; then
-            echo "Silkworm RpcDaemon stopping..."
-            kill $RPC_DAEMON_PID
-            echo "Silkworm RpcDaemon stopped"
-          else
-            echo "Silkworm RpcDaemon has already terminated"
-          fi
+          ${{runner.workspace}}/silkworm/.github/workflows/stop_integration_rpcdaemon.sh $RPC_DAEMON_PID
 
       - name: Resume the Erigon instance dedicated to db maintenance
+        if: matrix.backend == 'Erigon2'
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 

@@ -40,6 +40,8 @@ struct RemoteClient : public api::Client {
         api::StateCache* state_cache,
         chain::BlockProvider block_provider,
         chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+        chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+        chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider,
         std::function<Task<void>()> on_disconnect = []() -> Task<void> { co_return; });
     RemoteClient(
         std::unique_ptr<::remote::KV::StubInterface> stub,
@@ -47,6 +49,8 @@ struct RemoteClient : public api::Client {
         api::StateCache* state_cache,
         chain::BlockProvider block_provider,
         chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+        chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+        chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider,
         std::function<Task<void>()> on_disconnect = []() -> Task<void> { co_return; });
     ~RemoteClient() override;
 

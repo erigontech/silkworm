@@ -991,7 +991,9 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
                                                   *grpc_context,
                                                   &state_cache,
                                                   rpc::ethdb::kv::block_provider(&eth_backend),
-                                                  rpc::ethdb::kv::block_number_from_txn_hash_provider(&eth_backend)};
+                                                  rpc::ethdb::kv::block_number_from_txn_hash_provider(&eth_backend),
+                                                  rpc::ethdb::kv::block_number_from_block_hash_provider(&eth_backend),
+                                                  rpc::ethdb::kv::block_hash_from_block_number_provider(&eth_backend)};
         auto kv_service = client.service();
 
         // NOLINTNEXTLINE(performance-unnecessary-value-param)

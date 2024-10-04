@@ -43,6 +43,8 @@ class RemoteClientImpl final : public api::Service {
                      api::StateCache* state_cache,
                      chain::BlockProvider block_provider,
                      chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                     chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+                     chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider,
                      rpc::DisconnectHook on_disconnect)
         : channel_{create_channel()},
           stub_{proto::KV::NewStub(channel_)},
@@ -50,18 +52,24 @@ class RemoteClientImpl final : public api::Service {
           state_cache_{state_cache},
           block_provider_{std::move(block_provider)},
           block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
+          block_number_from_block_hash_provider_{std::move(block_number_from_block_hash_provider)},
+          block_hash_from_number_provider_{std::move(block_hash_from_number_provider)},
           on_disconnect_{std::move(on_disconnect)} {}
     RemoteClientImpl(std::unique_ptr<Stub> stub,
                      agrpc::GrpcContext& grpc_context,
                      api::StateCache* state_cache,
                      chain::BlockProvider block_provider,
                      chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                     chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+                     chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider,
                      rpc::DisconnectHook on_disconnect)
         : stub_{std::move(stub)},
           grpc_context_{grpc_context},
           state_cache_{state_cache},
           block_provider_{std::move(block_provider)},
           block_number_from_txn_hash_provider_{std::move(block_number_from_txn_hash_provider)},
+          block_number_from_block_hash_provider_{std::move(block_number_from_block_hash_provider)},
+          block_hash_from_number_provider_{std::move(block_hash_from_number_provider)},
           on_disconnect_{std::move(on_disconnect)} {}
 
     ~RemoteClientImpl() override = default;
@@ -80,7 +88,9 @@ class RemoteClientImpl final : public api::Service {
                                                       grpc_context_,
                                                       state_cache_,
                                                       block_provider_,
-                                                      block_number_from_txn_hash_provider_);
+                                                      block_number_from_txn_hash_provider_,
+                                                      block_number_from_block_hash_provider_,
+                                                      block_hash_from_number_provider_);
         co_await tx->open();
         co_return tx;
     }
@@ -151,6 +161,8 @@ class RemoteClientImpl final : public api::Service {
     api::StateCache* state_cache_;
     chain::BlockProvider block_provider_;
     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider_;
+    chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider_;
+    chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider_;
     rpc::DisconnectHook on_disconnect_;
     std::chrono::milliseconds min_backoff_timeout_{rpc::kDefaultMinBackoffReconnectTimeout};
     std::chrono::milliseconds max_backoff_timeout_{rpc::kDefaultMaxBackoffReconnectTimeout};
@@ -161,12 +173,16 @@ RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel,
                            api::StateCache* state_cache,
                            chain::BlockProvider block_provider,
                            chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                           chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+                           chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider,
                            rpc::DisconnectHook on_disconnect)
     : p_impl_{std::make_shared<RemoteClientImpl>(create_channel,
                                                  grpc_context,
                                                  state_cache,
                                                  std::move(block_provider),
                                                  std::move(block_number_from_txn_hash_provider),
+                                                 std::move(block_number_from_block_hash_provider),
+                                                 std::move(block_hash_from_number_provider),
                                                  std::move(on_disconnect))} {}
 
 RemoteClient::RemoteClient(std::unique_ptr<Stub> stub,
@@ -174,12 +190,16 @@ RemoteClient::RemoteClient(std::unique_ptr<Stub> stub,
                            api::StateCache* state_cache,
                            chain::BlockProvider block_provider,
                            chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+                           chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
+                           chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider,
                            rpc::DisconnectHook on_disconnect)
     : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub),
                                                  grpc_context,
                                                  state_cache,
                                                  std::move(block_provider),
                                                  std::move(block_number_from_txn_hash_provider),
+                                                 std::move(block_number_from_block_hash_provider),
+                                                 std::move(block_hash_from_number_provider),
                                                  std::move(on_disconnect))} {}
 
 // Must be here (not in header) because RemoteClientImpl size is necessary for std::unique_ptr in PIMPL idiom

@@ -422,7 +422,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() -> void {
         auto state = tx_.create_state(current_executor, storage, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, state};
+        EVMExecutor executor{block, chain_config, workers_, state};
 
         for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
             rpc::Transaction txn{block.transactions[idx]};
@@ -480,7 +480,7 @@ Task<void> DebugExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
         auto state = tx_.create_state(current_executor, storage, block_number);
-        EVMExecutor executor{chain_config, workers_, state};
+        EVMExecutor executor{block, chain_config, workers_, state};
 
         for (auto idx{0}; idx < index; ++idx) {
             silkworm::Transaction txn{block.transactions[static_cast<size_t>(idx)]};
@@ -531,7 +531,7 @@ Task<void> DebugExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
         auto state = tx_.create_state(current_executor, storage, block.header.number);
-        EVMExecutor executor{chain_config, workers_, state};
+        EVMExecutor executor{block, chain_config, workers_, state};
 
         for (auto idx{0}; idx < transaction_index; ++idx) {
             silkworm::Transaction txn{block_transactions[static_cast<size_t>(idx)]};

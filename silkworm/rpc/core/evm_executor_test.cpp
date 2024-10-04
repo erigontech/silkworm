@@ -74,7 +74,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        EVMExecutor executor{*chain_config_ptr, workers, state};
+        EVMExecutor executor{block, *chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "intrinsic gas too low: have 0, want 53000");
@@ -88,7 +88,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.max_fee_per_gas = 0x2;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
-        EVMExecutor executor{*chain_config_ptr, workers, state};
+        EVMExecutor executor{block, *chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "fee cap less than block base fee: address 0xa872626373628737383927236382161739290870, gasFeeCap: 2 baseFee: 7");
@@ -103,7 +103,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
         txn.max_priority_fee_per_gas = 0x18;
 
-        EVMExecutor executor{*chain_config_ptr, workers, state};
+        EVMExecutor executor{block, *chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "tip higher than fee cap: address 0xa872626373628737383927236382161739290870, tip: 24 gasFeeCap: 2");
@@ -121,15 +121,15 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.gas_limit = 60000;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
-        EVMExecutor executor{*chain_config_ptr, workers, state};
+        EVMExecutor executor{block, *chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "insufficient funds for gas * price + value: address 0xa872626373628737383927236382161739290870 have 0 want 60000");
     }
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {
-        EXPECT_CALL(transaction, get(_, _)).Times(7).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        EXPECT_CALL(transaction, get_one(_, _)).Times(7).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
+        EXPECT_CALL(transaction, get(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction, get_one(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
 
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x1;
@@ -139,7 +139,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.gas_limit = 60000;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
-        EVMExecutor executor{*chain_config_ptr, workers, state};
+        EVMExecutor executor{block, *chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {}, false, /* gasBailout */ true);
         executor.reset();
         CHECK(result.error_code == 0);
@@ -155,8 +155,8 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     };
 
     SECTION("call returns SUCCESS") {
-        EXPECT_CALL(transaction, get(_, _)).Times(7).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        EXPECT_CALL(transaction, get_one(_, _)).Times(7).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
+        EXPECT_CALL(transaction, get(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
+        EXPECT_CALL(transaction, get_one(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
 
         silkworm::Block block{};
         block.header.number = block_number;
@@ -165,7 +165,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
         txn.access_list = access_list;
 
-        EVMExecutor executor{*chain_config_ptr, workers, state};
+        EVMExecutor executor{block, *chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {}, true, /* gasBailout */ true);
         CHECK(result.error_code == 0);
     }

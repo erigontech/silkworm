@@ -147,7 +147,7 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, co
         auto state = tx.create_state(current_executor, chain_storage, block_number - 1);
 
         auto curr_state = tx.create_state(current_executor, chain_storage, block_number - 1);
-        EVMExecutor executor{chain_config, workers, state};
+        EVMExecutor executor{block, chain_config, workers, state};
 
         Receipts rpc_receipts;
         uint64_t cumulative_gas_used{0};

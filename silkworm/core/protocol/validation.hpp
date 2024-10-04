@@ -20,6 +20,7 @@
 
 #include <evmc/evmc.h>
 
+#include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
@@ -129,6 +130,12 @@ namespace protocol {
     //! pre_validate_transaction(txn) must return kOk
     ValidationResult validate_transaction(const Transaction& txn, const IntraBlockState& state,
                                           uint64_t available_gas) noexcept;
+
+    ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) noexcept;
+
+    ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, const intx::uint256& owned_funds, bool bailout) noexcept;
+
+    intx::uint256 compute_call_cost(const Transaction& txn, const intx::uint256& effective_gas_price, const EVM& evm);
 
     //! \see EIP-1559: Fee market change for ETH 1.0 chain
     intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent);

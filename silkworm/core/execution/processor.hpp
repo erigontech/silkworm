@@ -41,6 +41,8 @@ class ExecutionProcessor {
      */
     void execute_transaction(const Transaction& txn, Receipt& receipt) noexcept;
 
+    CallResult call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept;
+
     //! \brief Execute the block.
     //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.
     //! \pre RuleSet's validate_block_header & pre_validate_block_body must return kOk.
@@ -53,6 +55,8 @@ class ExecutionProcessor {
 
     EVM& evm() noexcept { return evm_; }
     const EVM& evm() const noexcept { return evm_; }
+    IntraBlockState& get_ibs_state() { return state_; }
+    void reset();
 
   private:
     /**
@@ -68,7 +72,7 @@ class ExecutionProcessor {
     //! \brief Notify the registered tracers at the end of block execution.
     void notify_block_execution_end(const Block& block);
 
-    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) noexcept;
+    uint64_t refund_gas(const Transaction& txn, const intx::uint256& effective_gas_price, uint64_t gas_left, uint64_t gas_refund) noexcept;
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;

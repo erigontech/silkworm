@@ -152,7 +152,6 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
-        // Retrieve header's state_root at target block to be compared with the one computed here
         auto header_hash{db::read_canonical_header_hash(txn, to)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find hash for canonical header " +

@@ -34,6 +34,8 @@ class HistoryIndex : public Stage {
           batch_size_(batch_size),
           etl_settings_(std::move(etl_settings)),
           prune_mode_history_(prune_mode_history) {}
+    HistoryIndex(const HistoryIndex&) = delete;  // not copyable
+    HistoryIndex(HistoryIndex&&) = delete;       // nor movable
     ~HistoryIndex() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
@@ -46,8 +48,8 @@ class HistoryIndex : public Stage {
     db::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_history_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> collector_{nullptr};
-    std::unique_ptr<db::bitmap::IndexLoader> index_loader_{nullptr};
+    std::unique_ptr<db::etl_mdbx::Collector> collector_;
+    std::unique_ptr<db::bitmap::IndexLoader> index_loader_;
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

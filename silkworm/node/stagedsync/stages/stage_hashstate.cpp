@@ -62,6 +62,7 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
         }
 
         reset_log_progress();
+        collector_ = std::make_unique<db::etl_mdbx::Collector>(etl_settings_);
 
         if (!previous_progress || segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
             // Clear any previous contents
@@ -719,7 +720,13 @@ Stage::Result HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum 
 
         auto changeset_cursor = txn.ro_cursor_dup_sort(db::table::kStorageChangeSet);
         auto initial_key_prefix{db::block_key(to + 1)};
-        auto changeset_data{changeset_cursor->lower_bound(db::to_slice(initial_key_prefix), /*throw_notfound=*/true)};
+        auto changeset_data{changeset_cursor->lower_bound(db::to_slice(initial_key_prefix), /*throw_notfound=*/false)};
+
+        if (!changeset_data.done) {
+            log::Warning(log_prefix_,
+                         {"function", std::string(__FUNCTION__), "warning", "no storage changeset found", "description", "this should only happen during integration tests"});
+            return ret;
+        }
 
         while (changeset_data.done) {
             auto changeset_key_view{db::from_slice(changeset_data.key)};
@@ -882,13 +889,16 @@ Stage::Result HashState::write_changes_from_changed_storage(
 
 std::vector<std::string> HashState::get_log_progress() {
     std::unique_lock log_lck(log_mtx_);
+    if (is_stopping()) {
+        return {};
+    }
     std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                                  "mode", (incremental_ ? "incr" : "full")};
     if (operation_ == OperationType::kNone) {
         return ret;
     }
     if (loading_) {
-        if (!incremental_ && !collector_->get_load_key().empty()) {
+        if (!incremental_ && collector_ && !collector_->get_load_key().empty()) {
             current_key_ = abridge(collector_->get_load_key(), kAddressLength * 2 + 2);
         }
         ret.insert(ret.end(), {"to", current_target_, "key", current_key_});

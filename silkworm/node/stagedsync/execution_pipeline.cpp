@@ -46,6 +46,44 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
+static const ExecutionPipeline::StageNames kStagesForwardOrder{
+    db::stages::kHeadersKey,
+    db::stages::kBlockHashesKey,
+    db::stages::kBlockBodiesKey,
+    db::stages::kSendersKey,
+    db::stages::kExecutionKey,
+    db::stages::kHashStateKey,
+    db::stages::kIntermediateHashesKey,
+    db::stages::kHistoryIndexKey,
+    db::stages::kLogIndexKey,
+    db::stages::kCallTracesKey,
+    db::stages::kTxLookupKey,
+    db::stages::kFinishKey,
+};
+
+static const ExecutionPipeline::StageNames kStagesUnwindOrder{
+    db::stages::kFinishKey,
+    db::stages::kTxLookupKey,
+    db::stages::kCallTracesKey,
+    db::stages::kLogIndexKey,
+    db::stages::kHistoryIndexKey,
+    db::stages::kHashStateKey,
+    db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
+    db::stages::kExecutionKey,
+    db::stages::kSendersKey,
+    db::stages::kBlockBodiesKey,
+    db::stages::kBlockHashesKey,  // De-canonify block hashes
+    db::stages::kHeadersKey,
+};
+
+ExecutionPipeline::StageNames ExecutionPipeline::stages_forward_order() {
+    return kStagesForwardOrder;
+}
+
+ExecutionPipeline::StageNames ExecutionPipeline::stages_unwind_order() {
+    return kStagesUnwindOrder;
+}
+
 ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
       sync_context_{std::make_unique<SyncContext>()} {
@@ -112,38 +150,6 @@ void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kFinishKey,
                     std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info.build_description));
     current_stage_ = stages_.begin();
-
-    stages_forward_order_.insert(stages_forward_order_.begin(),
-                                 {
-                                     db::stages::kHeadersKey,
-                                     db::stages::kBlockHashesKey,
-                                     db::stages::kBlockBodiesKey,
-                                     db::stages::kSendersKey,
-                                     db::stages::kExecutionKey,
-                                     db::stages::kHashStateKey,
-                                     db::stages::kIntermediateHashesKey,
-                                     db::stages::kHistoryIndexKey,
-                                     db::stages::kLogIndexKey,
-                                     db::stages::kCallTracesKey,
-                                     db::stages::kTxLookupKey,
-                                     db::stages::kFinishKey,
-                                 });
-
-    stages_unwind_order_.insert(stages_unwind_order_.begin(),
-                                {
-                                    db::stages::kFinishKey,
-                                    db::stages::kTxLookupKey,
-                                    db::stages::kCallTracesKey,
-                                    db::stages::kLogIndexKey,
-                                    db::stages::kHistoryIndexKey,
-                                    db::stages::kHashStateKey,
-                                    db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
-                                    db::stages::kExecutionKey,
-                                    db::stages::kSendersKey,
-                                    db::stages::kBlockBodiesKey,
-                                    db::stages::kBlockHashesKey,  // De-canonify block hashes
-                                    db::stages::kHeadersKey,
-                                });
 }
 
 bool ExecutionPipeline::stop() {
@@ -176,9 +182,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
         const auto stop_stage_name{Environment::get_stop_before_stage()};
         const auto stop_at_block = Environment::get_stop_at_block();
 
-        current_stages_count_ = stages_forward_order_.size();
+        current_stages_count_ = kStagesForwardOrder.size();
         current_stage_number_ = 0;
-        for (auto& stage_id : stages_forward_order_) {
+        for (auto& stage_id : kStagesForwardOrder) {
             // retrieve current stage
             current_stage_ = stages_.find(stage_id);
             if (current_stage_ == stages_.end()) {
@@ -263,9 +269,9 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         sync_context_->unwind_point = unwind_point;
 
         // Loop at stages in unwind order
-        current_stages_count_ = stages_unwind_order_.size();
+        current_stages_count_ = kStagesUnwindOrder.size();
         current_stage_number_ = 0;
-        for (auto& stage_id : stages_unwind_order_) {
+        for (auto& stage_id : kStagesUnwindOrder) {
             current_stage_ = stages_.find(stage_id);
             if (current_stage_ == stages_.end()) {
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
@@ -320,9 +326,9 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
     log::Info("ExecutionPipeline") << "Prune start";
 
     try {
-        current_stages_count_ = stages_forward_order_.size();
+        current_stages_count_ = kStagesUnwindOrder.size();
         current_stage_number_ = 0;
-        for (auto& stage_id : stages_unwind_order_) {
+        for (auto& stage_id : kStagesUnwindOrder) {
             current_stage_ = stages_.find(stage_id);
             if (current_stage_ == stages_.end()) {
                 // Should not happen

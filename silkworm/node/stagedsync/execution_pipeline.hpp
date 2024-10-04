@@ -31,6 +31,10 @@ namespace silkworm::stagedsync {
 
 class ExecutionPipeline : public Stoppable {
   public:
+    using StageNames = std::vector<const char*>;
+    static StageNames stages_forward_order();
+    static StageNames stages_unwind_order();
+
     explicit ExecutionPipeline(NodeSettings*);
     ~ExecutionPipeline() override = default;
 
@@ -55,9 +59,6 @@ class ExecutionPipeline : public Stoppable {
     StageContainer stages_;
     StageContainer::iterator current_stage_;
 
-    using StageNames = std::vector<const char*>;
-    StageNames stages_forward_order_;
-    StageNames stages_unwind_order_;
     std::atomic<size_t> current_stages_count_{0};
     std::atomic<size_t> current_stage_number_{0};
 

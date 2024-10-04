@@ -1,18 +1,19 @@
 #!/bin/bash
 
 if [ "$#" -ne 4 ]; then
-  echo "Usage: $0 Erigon2/Erigon3 <integration-dir> <jwt-file> <saved failed tests>"
+  echo "Usage: $0 Erigon2/Erigon3 <integration_dir> <jwt_file> <failed_tests_dir>"
   exit 1
 fi
 
 set +e # Disable exit on error
-cd $2
+
+cd "$2" || exit 1
 rm -rf ./mainnet/results/
  
-if [ $1 == 'Erigon2' ]; then
-   python3 ./run_tests.py --continue --blockchain mainnet --jwt $3 --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json,engine_,net_,web3_,txpool_,eth_submitWork,eth_submitHashrate,eth_protocolVersion,erigon_nodeInfo --transport_type http,websocket
+if [ "$1" == 'Erigon2' ]; then
+   python3 ./run_tests.py --continue --blockchain mainnet --jwt "$3" --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json,engine_,net_,web3_,txpool_,eth_submitWork,eth_submitHashrate,eth_protocolVersion,erigon_nodeInfo --transport_type http,websocket
 else
-   python3 ./run_tests.py --continue --blockchain mainnet --jwt $3 --display-only-fail --port 51515 -x engine_,\
+   python3 ./run_tests.py --continue --blockchain mainnet --jwt "$3" --display-only-fail --port 51515 -x engine_,\
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
@@ -42,7 +43,7 @@ else
     echo "error detected during tests"
 
     # Save failed results to a directory with timestamp and commit hash
-    cp -r $2/mainnet/results/ $4
+    cp -r "$2"/mainnet/results/ "$4"
 fi
-exit $failed_test
 
+exit $failed_test

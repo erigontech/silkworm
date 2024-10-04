@@ -64,7 +64,7 @@ jobs:
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_daemon.sh ${{ matrix.backend }} $ERIGON_DATA_DIR ./jwt.hex &
+          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh ${{ matrix.backend }} $ERIGON_DATA_DIR ./jwt.hex &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
@@ -87,7 +87,7 @@ jobs:
       - name: Stop Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ${{runner.workspace}}/silkworm/.github/workflows/kill_integration_daemon.sh $RPC_DAEMON_PID
+          ${{runner.workspace}}/silkworm/.github/workflows/stop_integration_rpcdaemon.sh $RPC_DAEMON_PID
 
       - name: Resume the Erigon instance dedicated to db maintenance
         if: matrix.backend == 'Erigon2'

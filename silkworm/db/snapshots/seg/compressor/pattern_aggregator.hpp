@@ -44,7 +44,7 @@ class PatternAggregator {
 
     struct Pattern {
         Bytes data;
-        uint64_t score;
+        uint64_t score{0};
 
         friend bool operator==(const Pattern&, const Pattern&) = default;
     };

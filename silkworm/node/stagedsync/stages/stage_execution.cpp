@@ -248,7 +248,6 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                     buffer.insert_receipts(block_num_, receipts);
                 }
                 buffer.write_to_db();
-                prefetched_blocks_.clear();
 
                 // Notify sync_loop we need to unwind
                 sync_context_->unwind_point.emplace(block_num_ - 1u);
@@ -259,6 +258,8 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, A
                              {"block", std::to_string(block_num_),
                               "hash", to_hex(block.header.hash().bytes, true),
                               "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
+
+                prefetched_blocks_.clear();  // Must stay here to keep `block` reference valid
                 return Stage::Result::kInvalidBlock;
             }
 

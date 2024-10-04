@@ -45,7 +45,7 @@ class TxLookup : public Stage {
     db::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_tx_index_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> collector_{nullptr};
+    std::unique_ptr<db::etl_mdbx::Collector> collector_;
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

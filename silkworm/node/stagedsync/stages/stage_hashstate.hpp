@@ -93,7 +93,7 @@ class HashState final : public Stage {
 
     // Collector (used only in !incremental_)
     db::etl::CollectorSettings etl_settings_;
-    std::unique_ptr<db::etl_mdbx::Collector> collector_{nullptr};
+    std::unique_ptr<db::etl_mdbx::Collector> collector_;
 };
 
 }  // namespace silkworm::stagedsync

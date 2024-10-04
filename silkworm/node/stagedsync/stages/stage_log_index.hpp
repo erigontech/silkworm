@@ -50,9 +50,9 @@ class LogIndex : public Stage {
     db::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_history_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> topics_collector_{nullptr};
-    std::unique_ptr<db::etl_mdbx::Collector> addresses_collector_{nullptr};
-    std::unique_ptr<db::bitmap::IndexLoader> index_loader_{nullptr};
+    std::unique_ptr<db::etl_mdbx::Collector> topics_collector_;
+    std::unique_ptr<db::etl_mdbx::Collector> addresses_collector_;
+    std::unique_ptr<db::bitmap::IndexLoader> index_loader_;
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

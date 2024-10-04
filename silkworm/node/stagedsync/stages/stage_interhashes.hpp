@@ -110,9 +110,9 @@ class InterHashes final : public Stage {
 
     db::etl::CollectorSettings etl_settings_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> account_collector_{nullptr};  // To accumulate new records for kTrieOfAccounts
-    std::unique_ptr<db::etl_mdbx::Collector> storage_collector_{nullptr};  // To accumulate new records for kTrieOfStorage
-    std::unique_ptr<db::etl_mdbx::Collector> loading_collector_{nullptr};  // Effectively the current collector undergoing load (for log)
+    std::unique_ptr<db::etl_mdbx::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
+    std::unique_ptr<db::etl_mdbx::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage
+    std::unique_ptr<db::etl_mdbx::Collector> loading_collector_;  // Effectively the current collector undergoing load (for log)
 
     // Logger info
     std::mutex log_mtx_{};                 // Guards async logging

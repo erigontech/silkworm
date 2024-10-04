@@ -19,10 +19,10 @@
 #include <bit>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/chain/genesis_amoy.hpp>
 #include <silkworm/core/chain/genesis_bor_mainnet.hpp>
 #include <silkworm/core/chain/genesis_holesky.hpp>
 #include <silkworm/core/chain/genesis_mainnet.hpp>
-#include <silkworm/core/chain/genesis_mumbai.hpp>
 #include <silkworm/core/chain/genesis_sepolia.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -43,8 +43,8 @@ std::string_view read_genesis_data(ChainId chain_id) {
             return kGenesisSepoliaJson;
         case *kKnownChainNameToId.find("bor-mainnet"sv):
             return kGenesisBorMainnetJson;
-        case *kKnownChainNameToId.find("mumbai"sv):
-            return kGenesisMumbaiJson;
+        case *kKnownChainNameToId.find("amoy"sv):
+            return kGenesisAmoyJson;
         default:
             return "{";  // <- Won't be lately parsed as valid json value
     }

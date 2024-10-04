@@ -28,7 +28,7 @@ namespace silkworm {
 void test_genesis_config(const ChainConfig& x) {
     const std::string_view genesis_data{read_genesis_data(x.chain_id)};
     const nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    CHECK_FALSE(genesis_json.is_discarded());
+    REQUIRE(!genesis_json.is_discarded());
 
     REQUIRE(genesis_json.contains("config"));
     REQUIRE(genesis_json["config"].is_object());
@@ -121,17 +121,17 @@ TEST_CASE("Polygon PoS genesis") {
     CHECK(to_hex(computed_hash) == to_hex(kBorMainnetGenesisHash));
 }
 
-TEST_CASE("Mumbai genesis") {
-    test_genesis_config(kMumbaiConfig);
-    nlohmann::json genesis_json = sanity_checked_json(kMumbaiConfig.chain_id);
+TEST_CASE("Amoy genesis") {
+    test_genesis_config(kAmoyConfig);
+    nlohmann::json genesis_json = sanity_checked_json(kAmoyConfig.chain_id);
 
-    auto expected_state_root{0x1784d1c465e9a4c39cc58b1df8d42f2669b00b1badd231a7c4679378b9d91330_bytes32};
+    auto expected_state_root{0x3cfe247720ff1d26dfc97de26f6be0047b93d6fe47f77f4f36beff9fabe68cce_bytes32};
     auto actual_state_root{state_root(genesis_json)};
     CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
 
     BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kMumbaiGenesisHash));
+    CHECK(to_hex(computed_hash) == to_hex(kAmoyGenesisHash));
 }
 
 }  // namespace silkworm

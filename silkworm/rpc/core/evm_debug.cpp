@@ -21,7 +21,6 @@
 
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
-#include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -105,6 +104,7 @@ void insert_error(DebugLog& log, evmc_status_code status_code) {
 void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     last_opcode_ = std::nullopt;
     if (opcode_names_ == nullptr) {
+        latest_opcode_names_ = evmc_get_instruction_names_table(EVMC_LATEST_STABLE_REVISION);
         opcode_names_ = evmc_get_instruction_names_table(rev);
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
@@ -133,13 +133,16 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     const evmc::address sender(execution_state.msg->sender);
 
     const auto opcode = execution_state.original_code[pc];
-    const auto opcode_name = get_opcode_name(opcode_names_, opcode);
+    auto opcode_name = get_opcode_name(opcode_names_, opcode);
+    if (!opcode_name) {
+        opcode_name = get_opcode_name(latest_opcode_names_, opcode);
+    }
     last_opcode_ = opcode;
 
     SILK_DEBUG << "on_instruction_start:"
                << " pc: " << std::dec << pc
                << " opcode: 0x" << std::hex << evmc::hex(opcode)
-               << " opcode_name: " << opcode_name
+               << " opcode_name: " << opcode_name.value_or("UNDEFINED")
                << " recipient: " << recipient
                << " sender: " << sender
                << " execution_state: {"
@@ -167,7 +170,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
 
-        if (log.opcode == OP_RETURN || log.opcode == OP_STOP || log.opcode == OP_REVERT) {
+        if (log.op_code == OP_RETURN || log.op_code == OP_STOP || log.op_code == OP_REVERT) {
             log.gas_cost = 0;
         } else if (log.depth == execution_state.msg->depth + 1) {
             log.gas_cost = execution_state.last_opcode_gas_cost;
@@ -182,8 +185,8 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 
     DebugLog log;
     log.pc = pc;
-    log.opcode = opcode;
-    log.op = opcode_name;
+    log.op_code = opcode;
+    log.op_name = opcode_name;
     log.gas = gas;
     log.gas_cost = metrics_[opcode].gas_cost;
     log.depth = execution_state.msg->depth + 1;
@@ -226,17 +229,21 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
             case evmc_status_code::EVMC_INVALID_INSTRUCTION:
             case evmc_status_code::EVMC_STACK_OVERFLOW:
             case evmc_status_code::EVMC_STACK_UNDERFLOW:
-                log.gas_cost = 0;
+                if (log.op_name) {
+                    log.gas_cost = result.gas_cost;
+                } else {
+                    log.gas_cost = 0;
+                }
                 break;
 
             case evmc_status_code::EVMC_OUT_OF_GAS:
-                if (log.opcode != OP_CALLCODE) {
+                if (log.op_code != OP_CALLCODE) {
                     log.gas_cost = result.gas_cost;
                 }
                 break;
 
             default:
-                if (log.opcode == OP_CALL || log.opcode == OP_CALLCODE || log.opcode == OP_STATICCALL || log.opcode == OP_DELEGATECALL || log.opcode == OP_CREATE || log.opcode == OP_CREATE2) {
+                if (log.op_code == OP_CALL || log.op_code == OP_CALLCODE || log.op_code == OP_STATICCALL || log.op_code == OP_DELEGATECALL || log.op_code == OP_CREATE || log.op_code == OP_CREATE2) {
                     log.gas_cost += result.gas_cost;
                 } else {
                     log.gas_cost = log.gas_cost;
@@ -248,8 +255,8 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
         if (result.status_code == EVMC_SUCCESS && last_opcode_ && last_opcode_ != OP_SELFDESTRUCT && last_opcode_ != OP_RETURN && last_opcode_ != OP_STOP) {
             DebugLog newlog;
             newlog.pc = log.pc + 1;
-            newlog.op = get_opcode_name(opcode_names_, OP_STOP);
-            newlog.opcode = OP_STOP;
+            newlog.op_name = get_opcode_name(opcode_names_, OP_STOP);
+            newlog.op_code = OP_STOP;
             newlog.gas = log.gas - log.gas_cost;
             newlog.gas_cost = 0;
             newlog.depth = log.depth;
@@ -287,7 +294,11 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.write_field("depth", log.depth);
     stream_.write_field("gas", log.gas);
     stream_.write_field("gasCost", log.gas_cost);
-    stream_.write_field("op", log.op);
+    if (log.op_name) {
+        stream_.write_field("op", log.op_name.value());
+    } else {
+        stream_.write_field("op", "opcode " + get_opcode_hex(log.op_code) + " not defined");
+    }
     stream_.write_field("pc", log.pc);
 
     if (!config_.disable_stack) {

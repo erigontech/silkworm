@@ -644,6 +644,7 @@ int main(int argc, char* argv[]) {
         };
         snapshots::SnapshotRepository snapshot_repository{
             snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>()};
+        snapshot_repository.reopen_folder();
         db::DataModel::set_snapshot_repository(&snapshot_repository);
 
         // Execute subcommand actions

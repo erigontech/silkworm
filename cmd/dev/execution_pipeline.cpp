@@ -97,6 +97,18 @@ struct StageOrderCompare {
     }
 };
 
+static std::unique_ptr<snapshots::SnapshotRepository> setup_data_storage(const DataDirectory& data_dir) {
+    // Set up the data storage snapshot repository
+    snapshots::SnapshotSettings snapshot_settings{
+        .repository_dir = data_dir.snapshots().path(),
+    };
+    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
+        snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>());
+    snapshot_repository->reopen_folder();
+    db::DataModel::set_snapshot_repository(snapshot_repository.get());
+    return snapshot_repository;
+}
+
 void list_stages(db::EnvConfig& config) {
     static std::string kTableHeaderFormat{" %-24s %10s "};
     static std::string kTableRowFormat{" %-24s %10u %-8s"};
@@ -168,10 +180,13 @@ void set_stage_progress(db::EnvConfig& config, const std::string& stage_name, ui
     std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n\n";
 }
 
-void unwind(db::EnvConfig& config, BlockNum unwind_point, const bool remove_blocks, const bool dry) {
+void unwind(const DataDirectory& data_dir, db::EnvConfig& config, BlockNum unwind_point, const bool remove_blocks, const bool dry) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
     config.readonly = false;
+
+    // Set up the data storage snapshot repository
+    const auto snapshot_repository = setup_data_storage(data_dir);
 
     auto env{silkworm::db::open_env(config)};
     db::RWTxnManaged txn{env};
@@ -245,11 +260,14 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, const bool remove_bloc
     }
 }
 
-void forward(db::EnvConfig& config, BlockNum forward_point, const bool dry,
+void forward(const DataDirectory& data_dir, db::EnvConfig& config, BlockNum forward_point, const bool dry,
              const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
     config.readonly = false;
+
+    // Set up the data storage snapshot repository
+    const auto snapshot_repository = setup_data_storage(data_dir);
 
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
@@ -283,7 +301,10 @@ void forward(db::EnvConfig& config, BlockNum forward_point, const bool dry,
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{settings.asio_context.get_executor()};
         settings.asio_context.run();
     }};
-    auto _ = gsl::finally([&]() { settings.asio_context.stop(); });
+    auto _ = gsl::finally([&]() {
+        settings.asio_context.stop();
+        ioc_thread.join();
+    });
 
     stagedsync::ExecutionPipeline stage_pipeline{&settings};
 
@@ -294,12 +315,15 @@ void forward(db::EnvConfig& config, BlockNum forward_point, const bool dry,
     std::cout << "\n Staged pipeline forward up to block: " << forward_point << " completed\n";
 }
 
-void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const bool dry,
+void bisect_pipeline(const DataDirectory& data_dir, db::EnvConfig& config, BlockNum start, BlockNum end, const bool dry,
                      const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
     ensure(end >= start, "Function requires valid block interval: end must be greater than or equal to start");
 
     config.readonly = false;
+
+    // Set up the data storage snapshot repository
+    const auto snapshot_repository = setup_data_storage(data_dir);
 
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
@@ -347,9 +371,9 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
     // Unwind staged pipeline down to the previous block wrt start
     const auto unwind_point = start - 1;
     SILK_INFO << "Bisect: unwind down to block=" << unwind_point << " START";
-    const auto unwind_result = stage_pipeline.unwind(txn, unwind_point);
-    ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
-           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
+    const auto first_unwind_result = stage_pipeline.unwind(txn, unwind_point);
+    ensure(first_unwind_result == stagedsync::Stage::Result::kSuccess,
+           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(first_unwind_result)}; });
     SILK_INFO << "Bisect: unwind down to block=" << unwind_point << " END";
 
     uint64_t left_point = start, right_point = end;
@@ -366,7 +390,9 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
         } else {
             right_point = median_point;
             SILK_INFO << "Bisect: unwind down to block=" << start << " START";
-            unwind(config, start, false, dry);  // remove_blocks=
+            const auto unwind_result = stage_pipeline.unwind(txn, start);
+            ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
+                   [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
             SILK_INFO << "Bisect: unwind down to block=" << start << " END";
         }
     }
@@ -638,15 +664,6 @@ int main(int argc, char* argv[]) {
         chaindata_env_config.shared = shared_opt->as<bool>();
         chaindata_env_config.exclusive = exclusive_opt->as<bool>();
 
-        // Set up the data storage snapshot repository
-        snapshots::SnapshotSettings snapshot_settings{
-            .repository_dir = data_dir.snapshots().path(),
-        };
-        snapshots::SnapshotRepository snapshot_repository{
-            snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>()};
-        snapshot_repository.reopen_folder();
-        db::DataModel::set_snapshot_repository(&snapshot_repository);
-
         // Execute subcommand actions
         if (*cmd_stages) {
             list_stages(chaindata_env_config);
@@ -656,18 +673,21 @@ int main(int argc, char* argv[]) {
                                cmd_stageset_height_opt->as<uint32_t>(),
                                app_dry_opt->as<bool>());
         } else if (*cmd_staged_forward) {
-            forward(chaindata_env_config,
+            forward(data_dir,
+                    chaindata_env_config,
                     cmd_staged_forward_height->as<uint32_t>(),
                     app_dry_opt->as<bool>(),
                     cmd_staged_forward_start_at_stage_opt->as<std::string>(),
                     cmd_staged_forward_stop_before_stage_opt->as<std::string>());
         } else if (*cmd_staged_unwind) {
-            unwind(chaindata_env_config,
+            unwind(data_dir,
+                   chaindata_env_config,
                    cmd_staged_unwind_height->as<uint32_t>(),
                    cmd_staged_unwind_remove_blocks->as<bool>(),
                    app_dry_opt->as<bool>());
         } else if (*cmd_bisect) {
-            bisect_pipeline(chaindata_env_config,
+            bisect_pipeline(data_dir,
+                            chaindata_env_config,
                             cmd_bisect_from_block_opt->as<BlockNum>(),
                             cmd_bisect_to_block_opt->as<BlockNum>(),
                             app_dry_opt->as<bool>(),

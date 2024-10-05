@@ -147,14 +147,15 @@ std::string get_opcode_hex(uint8_t opcode) {
     return {'0', 'x', kHexDigits[opcode >> 4], kHexDigits[opcode & 0xf]};
 }
 
-std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
+std::optional<std::string> get_opcode_name(const char* const* names, std::uint8_t opcode) {
     SILKWORM_ASSERT(names != nullptr);
 
+    std::optional<std::string> op_name;
     const auto name = names[opcode];
     if (name != nullptr) {
-        return name;
+        op_name = name;
     }
-    return "opcode " + get_opcode_hex(opcode) + " not defined";
+    return op_name;
 }
 
 }  // namespace silkworm

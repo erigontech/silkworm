@@ -31,9 +31,11 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -619,7 +621,7 @@ int main(int argc, char* argv[]) {
 
         log::init(log_settings);
 
-        // Set origin data_dir
+        // Set origin data directory
         DataDirectory data_dir{data_dir_factory()};
         if (!data_dir.chaindata().exists() || data_dir.chaindata().is_empty()) {
             std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not exist or is empty\n";
@@ -635,6 +637,14 @@ int main(int argc, char* argv[]) {
         db::EnvConfig chaindata_env_config{data_dir.chaindata().path().string()};
         chaindata_env_config.shared = shared_opt->as<bool>();
         chaindata_env_config.exclusive = exclusive_opt->as<bool>();
+
+        // Set up the data storage snapshot repository
+        snapshots::SnapshotSettings snapshot_settings{
+            .repository_dir = data_dir.snapshots().path(),
+        };
+        snapshots::SnapshotRepository snapshot_repository{
+            snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>()};
+        db::DataModel::set_snapshot_repository(&snapshot_repository);
 
         // Execute subcommand actions
         if (*cmd_stages) {

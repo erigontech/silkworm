@@ -30,6 +30,26 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
     evm_.transfer = rule_set.transfer_func();
 }
 
+void ExecutionProcessor::setup_access_list(const evmc::address& sender, const Transaction& txn, evmc_revision rev) noexcept {
+    state_.access_account(sender);
+
+    if (txn.to) {
+        state_.access_account(*txn.to);
+    }
+
+    for (const AccessListEntry& ae : txn.access_list) {
+        state_.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            state_.access_storage(ae.account, key);
+        }
+    }
+
+    if (rev >= EVMC_SHANGHAI) {
+        // EIP-3651: Warm COINBASE
+        state_.access_account(evm_.beneficiary);
+    }
+}
+
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
     SILKWORM_ASSERT(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
@@ -40,25 +60,13 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
-    state_.access_account(*sender);
-
-    if (txn.to) {
-        state_.access_account(*txn.to);
-        // EVM itself increments the nonce for contract creation
-        state_.set_nonce(*sender, txn.nonce + 1);
-    }
-
-    for (const AccessListEntry& ae : txn.access_list) {
-        state_.access_account(ae.account);
-        for (const evmc::bytes32& key : ae.storage_keys) {
-            state_.access_storage(ae.account, key);
-        }
-    }
 
     const evmc_revision rev{evm_.revision()};
-    if (rev >= EVMC_SHANGHAI) {
-        // EIP-3651: Warm COINBASE
-        state_.access_account(evm_.beneficiary);
+    setup_access_list(*sender, txn, rev);
+
+    if (txn.to) {
+        // EVM itself increments the nonce for contract creation
+        state_.set_nonce(*sender, txn.nonce + 1);
     }
 
     const BlockHeader& header{evm_.block().header};
@@ -124,19 +132,11 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
         evm_.add_tracer(*tracer);
     }
 
-    state_.access_account(*sender);
+    const evmc_revision rev{evm_.revision()};
+    setup_access_list(*sender, txn, rev);
 
     if (txn.to) {
-        state_.access_account(*txn.to);
-        // EVM itself increments the nonce for contract creation
         state_.set_nonce(*sender, state_.get_nonce(*txn.sender()) + 1);
-    }
-
-    for (const AccessListEntry& ae : txn.access_list) {
-        state_.access_account(ae.account);
-        for (const evmc::bytes32& key : ae.storage_keys) {
-            state_.access_storage(ae.account, key);
-        }
     }
 
     if (!bailout) {

@@ -59,6 +59,8 @@ class ExecutionProcessor {
     void reset();
 
   private:
+    void setup_access_list(const evmc::address& address, const Transaction& txn, evmc_revision rev) noexcept;
+
     /**
      * Execute the block, but do not write to the DB yet.
      * Does not perform any post-execution validation (for example, receipt root is not checked).

@@ -59,7 +59,7 @@ class ExecutionProcessor {
     void reset();
 
   private:
-    void setup_access_list(const evmc::address& address, const Transaction& txn, evmc_revision rev) noexcept;
+    void setup_access_list(const evmc::address& sender, const Transaction& txn, evmc_revision rev) noexcept;
 
     /**
      * Execute the block, but do not write to the DB yet.

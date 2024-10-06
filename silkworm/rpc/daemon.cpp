@@ -318,8 +318,8 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
     auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
     auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(io_context)};
     if (settings_.standalone) {
-        return std::make_unique<db::kv::grpc::client::RemoteClient>(
-            create_channel_, grpc_context, state_cache, block_provider(backend), block_number_from_txn_hash_provider(backend), block_number_from_block_hash_provider(backend), block_hash_from_block_number_provider(backend));
+        silkworm::db::chain::Providers providers{block_provider(backend), block_number_from_txn_hash_provider(backend), block_number_from_block_hash_provider(backend), block_hash_from_block_number_provider(backend)};
+        return std::make_unique<db::kv::grpc::client::RemoteClient>(create_channel_, grpc_context, state_cache, providers);
     }
     // TODO(canepat) finish implementation and clean-up composition of objects here
     db::kv::api::StateChangeRunner runner{io_context.get_executor()};

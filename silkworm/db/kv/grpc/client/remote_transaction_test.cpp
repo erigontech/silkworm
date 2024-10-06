@@ -34,15 +34,12 @@ using testing::_;
 namespace proto = ::remote;
 namespace test = rpc::test;
 
+static chain::Providers dummy_providers{{}, {}, {}, {}};
 class RemoteTransactionTest : public db::test_util::KVTestBase {
   protected:
     RemoteTransaction remote_tx_{*stub_,
                                  grpc_context_,
-                                 &state_cache_,
-                                 {},
-                                 {},
-                                 {},
-                                 {}};
+                                 &state_cache_, dummy_providers};
 
   private:
     api::CoherentStateCache state_cache_;

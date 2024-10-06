@@ -48,7 +48,8 @@ static Bytes kChainConfig{*from_hex(
 
 struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     test_util::MockTransaction transaction;
-    RemoteChainStorage storage{transaction, {}, {}, {}, {}};
+    Providers providers{{}, {}, {}, {}};
+    RemoteChainStorage storage{transaction, providers};
 };
 
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {

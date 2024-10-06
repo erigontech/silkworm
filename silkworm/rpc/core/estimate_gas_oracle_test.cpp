@@ -97,20 +97,13 @@ TEST_CASE("estimate gas") {
     const silkworm::ChainConfig& config{kMainnetConfig};
     RemoteDatabaseTest remote_db_test;
     test::BackEndMock backend;
+    db::chain::Providers providers{ethdb::kv::block_provider(&backend), ethdb::kv::block_number_from_txn_hash_provider(&backend),
+                                   ethdb::kv::block_number_from_block_hash_provider(&backend), ethdb::kv::block_hash_from_block_number_provider(&backend)};
     auto tx = std::make_unique<db::kv::grpc::client::RemoteTransaction>(remote_db_test.stub(),
                                                                         remote_db_test.grpc_context(),
                                                                         &remote_db_test.state_cache,
-                                                                        ethdb::kv::block_provider(&backend),
-                                                                        ethdb::kv::block_number_from_txn_hash_provider(&backend),
-                                                                        ethdb::kv::block_number_from_block_hash_provider(&backend),
-                                                                        ethdb::kv::block_hash_from_block_number_provider(&backend));
-    const db::chain::RemoteChainStorage storage{
-        *tx,
-        ethdb::kv::block_provider(&backend),
-        ethdb::kv::block_number_from_txn_hash_provider(&backend),
-        ethdb::kv::block_number_from_block_hash_provider(&backend),
-        ethdb::kv::block_hash_from_block_number_provider(&backend),
-    };
+                                                                        providers);
+    const db::chain::RemoteChainStorage storage{*tx, providers};
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage};
 
     SECTION("Call empty, always fails but success in last step") {

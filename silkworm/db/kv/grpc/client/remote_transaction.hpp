@@ -42,10 +42,7 @@ class RemoteTransaction : public api::BaseTransaction {
     RemoteTransaction(::remote::KV::StubInterface& stub,
                       agrpc::GrpcContext& grpc_context,
                       api::StateCache* state_cache,
-                      chain::BlockProvider block_provider,
-                      chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
-                      chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider,
-                      chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider);
+                      chain::Providers& providers);
     ~RemoteTransaction() override = default;
 
     uint64_t tx_id() const override { return tx_id_; }
@@ -81,10 +78,7 @@ class RemoteTransaction : public api::BaseTransaction {
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
-    chain::BlockProvider block_provider_;
-    chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider_;
-    chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider_;
-    chain::BlockHashFromBlockNumberProvider block_hash_from_number_provider_;
+    chain::Providers providers_;
     std::map<std::string, std::shared_ptr<api::CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<api::CursorDupSort>> dup_cursors_;
     ::remote::KV::StubInterface& stub_;

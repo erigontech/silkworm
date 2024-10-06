@@ -52,13 +52,14 @@ struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub
 
   protected:
     RemoteClient make_api_client() override {
+        chain::Providers providers{block_provider,
+                                   block_number_from_txn_hash_provider,
+                                   block_number_from_block_hash_provider,
+                                   block_hash_from_block_number_provider};
         return RemoteClient{std::move(stub_),
                             grpc_context_,
                             state_cache.get(),
-                            block_provider,
-                            block_number_from_txn_hash_provider,
-                            block_number_from_block_hash_provider,
-                            block_hash_from_block_number_provider};
+                            providers};
     }
 };
 

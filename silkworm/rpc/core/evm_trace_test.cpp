@@ -60,7 +60,8 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     StringWriter writer{4096};
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
     std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();
-    RemoteChainStorage chain_storage{transaction, ethdb::kv::block_provider(backend.get()), ethdb::kv::block_number_from_txn_hash_provider(backend.get()), ethdb::kv::block_number_from_block_hash_provider(backend.get()), ethdb::kv::block_hash_from_block_number_provider(backend.get())};
+    db::chain::Providers providers{ethdb::kv::block_provider(backend.get()), ethdb::kv::block_number_from_txn_hash_provider(backend.get()), ethdb::kv::block_number_from_block_hash_provider(backend.get()), ethdb::kv::block_hash_from_block_number_provider(backend.get())};
+    RemoteChainStorage chain_storage{transaction, providers};
 };
 
 #ifndef SILKWORM_SANITIZE

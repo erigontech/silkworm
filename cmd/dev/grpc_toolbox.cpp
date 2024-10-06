@@ -990,7 +990,7 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
         db::chain::Providers providers{rpc::ethdb::kv::block_provider(&eth_backend),
                                        rpc::ethdb::kv::block_number_from_txn_hash_provider(&eth_backend),
                                        rpc::ethdb::kv::block_number_from_block_hash_provider(&eth_backend),
-                                       rpc::ethdb::kv::block_hash_from_block_number_provider(&eth_backend)};
+                                       rpc::ethdb::kv::canonical_block_hash_from_number_provider(&eth_backend)};
         db::kv::grpc::client::RemoteClient client{channel_factory,
                                                   *grpc_context,
                                                   &state_cache,

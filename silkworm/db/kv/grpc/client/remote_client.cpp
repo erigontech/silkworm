@@ -41,7 +41,7 @@ class RemoteClientImpl final : public api::Service {
     RemoteClientImpl(const rpc::ChannelFactory& create_channel,
                      agrpc::GrpcContext& grpc_context,
                      api::StateCache* state_cache,
-                     chain::Providers providers,
+                     chain::Providers& providers,
                      rpc::DisconnectHook on_disconnect)
         : channel_{create_channel()},
           stub_{proto::KV::NewStub(channel_)},
@@ -52,7 +52,7 @@ class RemoteClientImpl final : public api::Service {
     RemoteClientImpl(std::unique_ptr<Stub> stub,
                      agrpc::GrpcContext& grpc_context,
                      api::StateCache* state_cache,
-                     chain::Providers providers,
+                     chain::Providers& providers,
                      rpc::DisconnectHook on_disconnect)
         : stub_{std::move(stub)},
           grpc_context_{grpc_context},
@@ -153,23 +153,23 @@ class RemoteClientImpl final : public api::Service {
 RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel,
                            agrpc::GrpcContext& grpc_context,
                            api::StateCache* state_cache,
-                           chain::Providers providers,
+                           chain::Providers& providers,
                            rpc::DisconnectHook on_disconnect)
     : p_impl_{std::make_shared<RemoteClientImpl>(create_channel,
                                                  grpc_context,
                                                  state_cache,
-                                                 std::move(providers),
+                                                 providers,
                                                  std::move(on_disconnect))} {}
 
 RemoteClient::RemoteClient(std::unique_ptr<Stub> stub,
                            agrpc::GrpcContext& grpc_context,
                            api::StateCache* state_cache,
-                           chain::Providers providers,
+                           chain::Providers& providers,
                            rpc::DisconnectHook on_disconnect)
     : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub),
                                                  grpc_context,
                                                  state_cache,
-                                                 std::move(providers),
+                                                 providers,
                                                  std::move(on_disconnect))} {}
 
 // Must be here (not in header) because RemoteClientImpl size is necessary for std::unique_ptr in PIMPL idiom

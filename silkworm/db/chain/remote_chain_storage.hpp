@@ -29,13 +29,13 @@ namespace silkworm::db::chain {
 using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, Block&)>;
 using BlockNumberFromTxnHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
 using BlockNumberFromBlockHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
-using BlockHashFromBlockNumberProvider = std::function<Task<evmc::bytes32>(BlockNum)>;
+using CanonicalBlockHashFromNumberProvider = std::function<Task<evmc::bytes32>(BlockNum)>;
 
 struct Providers {
     BlockProvider block;
     BlockNumberFromTxnHashProvider block_number_from_txn_hash;
     BlockNumberFromBlockHashProvider block_number_from_hash;
-    BlockHashFromBlockNumberProvider canonical_block_hash_from_number;
+    CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number;
 };
 
 //! RemoteChainStorage must be used when blockchain data is remote with respect to the running component, i.e. it is

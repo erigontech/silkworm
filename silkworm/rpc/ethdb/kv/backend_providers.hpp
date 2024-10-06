@@ -39,7 +39,7 @@ inline db::chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_
     };
 }
 
-inline db::chain::BlockHashFromBlockNumberProvider block_hash_from_block_number_provider(ethbackend::BackEnd* backend) {
+inline db::chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider(ethbackend::BackEnd* backend) {
     return [backend](BlockNum number) -> Task<evmc::bytes32> {
         co_return co_await backend->get_block_hash_from_block_number(number);
     };

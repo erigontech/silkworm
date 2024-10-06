@@ -59,7 +59,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     db::chain::Providers providers{ethdb::kv::block_provider(&backend),
                                    ethdb::kv::block_number_from_txn_hash_provider(&backend),
                                    ethdb::kv::block_number_from_block_hash_provider(&backend),
-                                   ethdb::kv::block_hash_from_block_number_provider(&backend)};
+                                   ethdb::kv::canonical_block_hash_from_number_provider(&backend)};
     RemoteChainStorage storage{transaction, providers};
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};

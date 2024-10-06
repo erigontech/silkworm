@@ -227,7 +227,7 @@ TEST_CASE("get_receipts") {
     WorkerPool pool{1};
     db::test_util::MockTransaction transaction;
     std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();
-    static db::chain::Providers providers{ethdb::kv::block_provider(backend.get()), ethdb::kv::block_number_from_txn_hash_provider(backend.get()), ethdb::kv::block_number_from_block_hash_provider(backend.get()), ethdb::kv::block_hash_from_block_number_provider(backend.get())};
+    static db::chain::Providers providers{ethdb::kv::block_provider(backend.get()), ethdb::kv::block_number_from_txn_hash_provider(backend.get()), ethdb::kv::block_number_from_block_hash_provider(backend.get()), ethdb::kv::canonical_block_hash_from_number_provider(backend.get())};
     silkworm::db::chain::RemoteChainStorage chain_storage{transaction, providers};
 
     SECTION("null receipts without data") {

@@ -49,7 +49,7 @@ RemoteDatabase::~RemoteDatabase() {
 Task<std::unique_ptr<db::kv::api::Transaction>> RemoteDatabase::begin() {
     SILK_TRACE << "RemoteDatabase::begin " << this << " start";
     db::chain::Providers providers{block_provider(backend_), block_number_from_txn_hash_provider(backend_),
-                                   block_number_from_block_hash_provider(backend_), block_hash_from_block_number_provider(backend_)};
+                                   block_number_from_block_hash_provider(backend_), canonical_block_hash_from_number_provider(backend_)};
     auto txn = std::make_unique<RemoteTransaction>(*stub_,
                                                    grpc_context_,
                                                    state_cache_,

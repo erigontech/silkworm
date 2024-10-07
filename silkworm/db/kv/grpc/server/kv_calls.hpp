@@ -51,7 +51,7 @@ constexpr auto kDbSchemaVersion = api::Version{3, 0, 0};
 constexpr std::chrono::milliseconds kMaxTxDuration{60'000};
 
 //! The max number of opened cursors for each remote transaction (arbitrary limit on this KV implementation).
-constexpr std::size_t kMaxTxCursors{100};
+constexpr size_t kMaxTxCursors{100};
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
 //! rpc Version(google.protobuf.Empty) returns (types.VersionReply);

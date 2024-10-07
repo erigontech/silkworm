@@ -121,7 +121,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
         CHECK(to_hex(ef_bytes) == to_expected_hex(ef_test.offsets.size() - 1, ef_test.expected_u, ef_test.expected_data));
 
         // Decode monotone ascending integer sequence from Elias-Fano representation and compare with original
-        constexpr std::size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
+        constexpr size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
         std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
         EliasFanoList32 ef_list_copy{ef_test.offsets.size() - 1, ef_test.expected_u, data};
         for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {

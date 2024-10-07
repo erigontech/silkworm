@@ -182,7 +182,7 @@ intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t bl
 
 std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
     out << "miner_reward: " << intx::to_string(reward.miner) << " ommer_rewards: [";
-    for (std::size_t i{0}; i < reward.ommers.size(); ++i) {
+    for (size_t i{0}; i < reward.ommers.size(); ++i) {
         out << intx::to_string(reward.ommers[i]);
         if (i != reward.ommers.size() - 1) {
             out << " ";

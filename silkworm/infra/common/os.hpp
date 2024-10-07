@@ -26,6 +26,6 @@ uint64_t max_file_descriptors();
 
 bool set_max_file_descriptors(uint64_t max_descriptors);
 
-std::size_t page_size() noexcept;
+size_t page_size() noexcept;
 
 }  // namespace silkworm::os

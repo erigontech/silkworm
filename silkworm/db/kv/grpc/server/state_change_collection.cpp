@@ -138,8 +138,8 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     SILKWORM_ASSERT(latest_change_ != nullptr);
 
     const auto& ac_it = account_change_index_.find(address);
-    std::optional<std::size_t> ac_index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second)
-                                                                             : std::nullopt};
+    std::optional<size_t> ac_index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second)
+                                                                        : std::nullopt};
 
     if (!ac_index || incarnation > latest_change_->changes(static_cast<int>(ac_index.value())).incarnation()) {
         ac_index = latest_change_->changes_size();

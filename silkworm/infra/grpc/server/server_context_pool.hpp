@@ -33,7 +33,7 @@ using ServerCompletionQueuePtr = std::unique_ptr<::grpc::ServerCompletionQueue>;
 //! Asynchronous server scheduler running an execution loop w/ integrated gRPC server.
 class ServerContext : public concurrency::Context {
   public:
-    ServerContext(std::size_t context_id, ServerCompletionQueuePtr server_queue);
+    ServerContext(size_t context_id, ServerCompletionQueuePtr server_queue);
 
     [[nodiscard]] agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
     [[nodiscard]] agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }

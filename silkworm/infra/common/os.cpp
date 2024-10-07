@@ -69,14 +69,14 @@ bool set_max_file_descriptors(uint64_t max_descriptors) {
 #endif
 }
 
-std::size_t page_size() noexcept {
-    static auto system_page_size = []() -> std::size_t {
+size_t page_size() noexcept {
+    static auto system_page_size = []() -> size_t {
 #ifdef _WIN32
         SYSTEM_INFO system_info;
         ::GetSystemInfo(&system_info);
-        return static_cast<std::size_t>(system_info.dwPageSize);
+        return static_cast<size_t>(system_info.dwPageSize);
 #else
-        return static_cast<std::size_t>(::getpagesize());
+        return static_cast<size_t>(::getpagesize());
 #endif  // _WIN32
     }();
     return system_page_size;

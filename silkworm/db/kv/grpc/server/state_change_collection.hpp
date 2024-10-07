@@ -93,10 +93,10 @@ class StateChangeCollection : public StateChangeSource {
     remote::StateChange* latest_change_{nullptr};
 
     //! The mapping between accounts and their change indexes.
-    std::map<evmc::address, std::size_t> account_change_index_;
+    std::map<evmc::address, size_t> account_change_index_;
 
     //! The mapping between account storage locations and their change indexes.
-    std::map<evmc::address, std::map<evmc::bytes32, std::size_t>> storage_change_index_;
+    std::map<evmc::address, std::map<evmc::bytes32, size_t>> storage_change_index_;
 
     //! The registered batch consumers.
     std::map<StateChangeToken, StateChangeConsumer> consumers_;

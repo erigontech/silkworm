@@ -564,7 +564,7 @@ class TestTracer : public EvmTracer {
     [[nodiscard]] const evmc_revision& rev() const { return rev_; }
     [[nodiscard]] const std::vector<evmc_message>& msg_stack() const { return msg_stack_; }
     [[nodiscard]] const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
-    [[nodiscard]] const std::map<uint32_t, std::size_t>& memory_size_stack() const { return memory_size_stack_; }
+    [[nodiscard]] const std::map<uint32_t, size_t>& memory_size_stack() const { return memory_size_stack_; }
     [[nodiscard]] const std::map<uint32_t, evmc::bytes32>& storage_stack() const { return storage_stack_; }
     [[nodiscard]] const CallResult& result() const { return result_; }
 
@@ -579,7 +579,7 @@ class TestTracer : public EvmTracer {
     std::vector<evmc_message> msg_stack_;
     Bytes bytecode_;
     std::vector<uint32_t> pc_stack_;
-    std::map<uint32_t, std::size_t> memory_size_stack_;
+    std::map<uint32_t, size_t> memory_size_stack_;
     std::map<uint32_t, evmc::bytes32> storage_stack_;
     CallResult result_;
 };
@@ -643,7 +643,7 @@ TEST_CASE("Tracing smart contract with storage", "[core][execution]") {
     CHECK(tracer1.msg_stack().at(0).gas == 0);
     CHECK(tracer1.bytecode() == code);
     CHECK(tracer1.pc_stack() == std::vector<uint32_t>{0});
-    CHECK(tracer1.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}});
+    CHECK(tracer1.memory_size_stack() == std::map<uint32_t, size_t>{{0, 0}});
     CHECK(tracer1.result().status == EVMC_OUT_OF_GAS);
     CHECK(tracer1.result().gas_left == 0);
     CHECK(tracer1.result().data.empty());
@@ -673,19 +673,19 @@ TEST_CASE("Tracing smart contract with storage", "[core][execution]") {
     CHECK(tracer2.msg_stack().at(0).gas == 50'000);
     CHECK(tracer2.bytecode() == code);
     CHECK(tracer2.pc_stack() == std::vector<uint32_t>{0, 2, 4, 5, 8, 10, 11, 13, 14, 16, 18, 19, 21});
-    CHECK(tracer2.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0},
-                                                                         {2, 0},
-                                                                         {4, 0},
-                                                                         {5, 0},
-                                                                         {8, 0},
-                                                                         {10, 0},
-                                                                         {11, 0},
-                                                                         {13, 0},
-                                                                         {14, 0},
-                                                                         {16, 0},
-                                                                         {18, 0},
-                                                                         {19, 32},
-                                                                         {21, 32}});
+    CHECK(tracer2.memory_size_stack() == std::map<uint32_t, size_t>{{0, 0},
+                                                                    {2, 0},
+                                                                    {4, 0},
+                                                                    {5, 0},
+                                                                    {8, 0},
+                                                                    {10, 0},
+                                                                    {11, 0},
+                                                                    {13, 0},
+                                                                    {14, 0},
+                                                                    {16, 0},
+                                                                    {18, 0},
+                                                                    {19, 32},
+                                                                    {21, 32}});
     CHECK(tracer2.result().status == EVMC_SUCCESS);
     CHECK(tracer2.result().gas_left == 9964);
     CHECK(tracer2.result().data == res.data);
@@ -725,7 +725,7 @@ TEST_CASE("Tracing smart contract with storage", "[core][execution]") {
                                          {5, to_bytes32(*from_hex("f5"))},
                                      });
     CHECK(tracer3.pc_stack() == std::vector<uint32_t>{0, 2, 3, 5});
-    CHECK(tracer3.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}, {2, 0}, {3, 0}, {5, 0}});
+    CHECK(tracer3.memory_size_stack() == std::map<uint32_t, size_t>{{0, 0}, {2, 0}, {3, 0}, {5, 0}});
     CHECK(tracer3.result().status == EVMC_SUCCESS);
     CHECK(tracer3.result().gas_left == 49191);
     CHECK(tracer3.result().data.empty());

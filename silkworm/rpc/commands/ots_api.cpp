@@ -198,8 +198,8 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     }
 
     const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
-    const auto page_number = params[1].get<std::size_t>();
-    const auto page_size = params[2].get<std::size_t>();
+    const auto page_number = params[1].get<size_t>();
+    const auto page_size = params[2].get<size_t>();
 
     SILK_DEBUG << "block_id: " << block_id << " page_number: " << page_number << " page_size: " << page_size;
 

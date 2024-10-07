@@ -746,7 +746,7 @@ class AsyncStateChangesCall
     : public AsyncServerStreamingCall<remote::StateChangeRequest, remote::StateChangeBatch, remote::KV::StubInterface,
                                       &remote::KV::StubInterface::PrepareAsyncStateChanges> {
   public:
-    static std::size_t num_pending_calls() { return pending_calls_.size(); }
+    static size_t num_pending_calls() { return pending_calls_.size(); }
 
     static void add_pending_call(AsyncStateChangesCall* call) {
         pending_calls_.push_back(call);
@@ -989,7 +989,7 @@ int main(int argc, char* argv[]) {
         std::atomic_bool pump_stop{false};
         std::thread pump_thread{[&]() {
             SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " start";
-            std::size_t channel_index{0};
+            size_t channel_index{0};
             while (!pump_stop) {
                 AsyncCallFactory call_factory{channels[channel_index], &queue};
                 call_factory.start_batch(pump_stop, batch_options);

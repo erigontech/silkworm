@@ -30,17 +30,17 @@ class StreamWriter {
 
     virtual Task<void> open_stream() = 0;
     virtual Task<void> close_stream() = 0;
-    virtual Task<std::size_t> write(std::string_view content, bool last) = 0;
+    virtual Task<size_t> write(std::string_view content, bool last) = 0;
     virtual size_t get_capacity() const noexcept = 0;
 };
 
-static constexpr std::size_t kDefaultCapacity{4096};
+static constexpr size_t kDefaultCapacity{4096};
 
 class StringWriter : public StreamWriter {
   public:
     StringWriter() = default;
 
-    explicit StringWriter(std::size_t initial_capacity) {
+    explicit StringWriter(size_t initial_capacity) {
         content_.reserve(initial_capacity);
     }
 
@@ -50,7 +50,7 @@ class StringWriter : public StreamWriter {
 
     Task<void> close_stream() override { co_return; }
 
-    Task<std::size_t> write(std::string_view content, bool /*last*/) override {
+    Task<size_t> write(std::string_view content, bool /*last*/) override {
         content_.append(content);
         co_return content.size();
     }

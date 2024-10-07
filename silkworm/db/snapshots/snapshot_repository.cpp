@@ -60,7 +60,7 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
     bundles_ = bundles;
 }
 
-std::size_t SnapshotRepository::bundles_count() const {
+size_t SnapshotRepository::bundles_count() const {
     std::scoped_lock lock(bundles_mutex_);
     return bundles_->size();
 }

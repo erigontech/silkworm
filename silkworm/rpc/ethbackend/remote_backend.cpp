@@ -121,7 +121,7 @@ Task<PeerInfos> RemoteBackEnd::peers() {
     ::google::protobuf::Empty request;
     const auto reply = co_await peers_rpc.finish_on(executor_, request);
     PeerInfos peer_infos;
-    peer_infos.reserve(static_cast<std::size_t>(reply.peers_size()));
+    peer_infos.reserve(static_cast<size_t>(reply.peers_size()));
     for (const auto& peer : reply.peers()) {
         PeerInfo peer_info{
             .id = peer.id(),
@@ -205,7 +205,7 @@ Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(uint64_t num
 std::vector<Bytes> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs) {
     // Convert encoded transactions from std::string to Bytes
     std::vector<Bytes> encoded_transactions;
-    encoded_transactions.reserve(static_cast<std::size_t>(grpc_txs.size()));
+    encoded_transactions.reserve(static_cast<size_t>(grpc_txs.size()));
     for (const auto& grpc_tx_string : grpc_txs) {
         encoded_transactions.push_back(string_to_bytes(grpc_tx_string));
     }
@@ -214,7 +214,7 @@ std::vector<Bytes> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrFi
 
 std::vector<Withdrawal> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrField<::types::Withdrawal>& grpc_withdrawals) {
     std::vector<Withdrawal> withdrawals;
-    withdrawals.reserve(static_cast<std::size_t>(grpc_withdrawals.size()));
+    withdrawals.reserve(static_cast<size_t>(grpc_withdrawals.size()));
     for (auto& grpc_withdrawal : grpc_withdrawals) {
         Withdrawal w{grpc_withdrawal.index(),
                      grpc_withdrawal.validator_index(),

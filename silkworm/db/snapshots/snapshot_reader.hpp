@@ -94,7 +94,7 @@ class Snapshot {
     [[nodiscard]] BlockNum block_to() const { return path_.block_to(); }
 
     [[nodiscard]] bool empty() const { return item_count() == 0; }
-    [[nodiscard]] std::size_t item_count() const { return decoder_.words_count(); }
+    [[nodiscard]] size_t item_count() const { return decoder_.words_count(); }
 
     [[nodiscard]] MemoryMappedRegion memory_file_region() const;
 

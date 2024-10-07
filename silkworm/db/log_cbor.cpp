@@ -120,7 +120,7 @@ class LogCborListener : public cbor::listener {
 
     void on_bytes(unsigned char* data, int size) override {
         ensure(size >= 0, "Log CBOR: unexpected format (on_bytes called with negative size)");
-        const auto data_size{static_cast<std::size_t>(size)};
+        const auto data_size{static_cast<size_t>(size)};
 
         if (state_ == ProcessingState::kWaitAddress) {
             ensure(data_size == kAddressLength, [&]() { return "Log CBOR: unexpected address size " + std::to_string(data_size); });
@@ -142,7 +142,7 @@ class LogCborListener : public cbor::listener {
 
     void on_array(int size) override {
         ensure(size >= 0, "Log CBOR: unexpected format (on_array called with negative size)");
-        const auto array_size{static_cast<std::size_t>(size)};
+        const auto array_size{static_cast<size_t>(size)};
 
         if (state_ == ProcessingState::kWaitLogs) {
             consumer_.on_num_logs(array_size);
@@ -165,10 +165,10 @@ class LogCborListener : public cbor::listener {
   protected:
     LogCborConsumer& consumer_;
     ProcessingState state_{ProcessingState::kWaitLogs};
-    std::size_t current_num_logs_{0};
-    std::size_t current_log_{0};
-    std::size_t current_num_topics_{0};
-    std::size_t current_topic_{0};
+    size_t current_num_logs_{0};
+    size_t current_log_{0};
+    size_t current_num_topics_{0};
+    size_t current_topic_{0};
 };
 
 void cbor_decode(ByteView data, LogCborConsumer& consumer) {
@@ -187,7 +187,7 @@ class LogBuilder : public LogCborConsumer {
         return std::cmp_equal(logs_.size(), current_num_logs_);
     }
 
-    void on_num_logs(std::size_t num_logs) override {
+    void on_num_logs(size_t num_logs) override {
         current_num_logs_ += num_logs;
         logs_.reserve(num_logs);
     }
@@ -196,7 +196,7 @@ class LogBuilder : public LogCborConsumer {
         std::memcpy(current_log_.address.bytes, address_bytes.data(), address_bytes.size());
     }
 
-    void on_num_topics(std::size_t num_topics) override {
+    void on_num_topics(size_t num_topics) override {
         current_log_.topics.reserve(num_topics);
     }
 
@@ -216,7 +216,7 @@ class LogBuilder : public LogCborConsumer {
   private:
     std::vector<Log>& logs_;
     Log current_log_;
-    std::size_t current_num_logs_{0};
+    size_t current_num_logs_{0};
 };
 
 bool cbor_decode(ByteView data, std::vector<Log>& logs) {

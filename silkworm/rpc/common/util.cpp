@@ -40,8 +40,8 @@ static const char* kBase64Chars[2] = {
     "-_"};
 
 std::string base64_encode(ByteView bytes_to_encode, bool url) {
-    const std::size_t len = bytes_to_encode.size();
-    const std::size_t len_encoded = (len + 2) / 3 * 4;
+    const size_t len = bytes_to_encode.size();
+    const size_t len_encoded = (len + 2) / 3 * 4;
 
     char trailing_char = url ? '.' : '=';
     const char* base64_chars_ = kBase64Chars[url ? 1 : 0];

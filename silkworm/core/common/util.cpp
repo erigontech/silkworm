@@ -239,7 +239,7 @@ float to_float(const intx::uint256& n) noexcept {
 std::string snake_to_camel(std::string_view snake) {
     std::string camel;
     camel += static_cast<char>(std::toupper(static_cast<unsigned char>(snake[0])));
-    for (std::size_t i = 1; i < snake.length(); ++i) {
+    for (size_t i = 1; i < snake.length(); ++i) {
         if (snake[i] == '_' && (i + 1) < snake.length()) {
             camel += static_cast<char>(std::toupper(static_cast<unsigned char>(snake[++i])));
         } else {

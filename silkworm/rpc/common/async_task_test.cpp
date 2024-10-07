@@ -29,25 +29,25 @@ namespace silkworm::rpc {
 struct AsyncTaskTest : test_util::ServiceContextTestBase {
 };
 
-const static std::vector<std::pair<std::size_t, std::size_t>> kTestData = {
+const static std::vector<std::pair<size_t, size_t>> kTestData = {
     {0, 1},
     {1, 1},
     {9, 362'880},
     {10, 3'628'800},
 };
 
-std::size_t recursive_factorial(std::size_t n) {
+size_t recursive_factorial(size_t n) {
     return n == 0 ? 1 : n * recursive_factorial(n - 1);
 }
 
 template <typename Executor>
-Task<std::size_t> async_factorial(Executor runner, std::size_t number) {
+Task<size_t> async_factorial(Executor runner, size_t number) {
     co_return co_await async_task(runner, recursive_factorial, number);
 }
 
 TEST_CASE_METHOD(AsyncTaskTest, "async_task: factorial", "[rpc][common][async_task]") {
     WorkerPool workers;
-    for (std::size_t i{0}; i < kTestData.size(); ++i) {
+    for (size_t i{0}; i < kTestData.size(); ++i) {
         const auto [n, r] = kTestData[i];
         SECTION("factorial " + std::to_string(n)) {
             CHECK(spawn_and_wait(async_factorial(workers.get_executor(), n)) == r);

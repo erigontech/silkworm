@@ -59,7 +59,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     std::vector<KeyValue> collected_data;
 
     AccountWalker::Collector collector = [&](ByteView k, ByteView v) {
-        if (max_result > 0 && collected_data.size() >= static_cast<std::size_t>(max_result)) {
+        if (max_result > 0 && collected_data.size() >= static_cast<size_t>(max_result)) {
             dump_accounts.next = bytes_to_address(k);
             return false;
         }

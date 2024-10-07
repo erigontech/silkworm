@@ -540,7 +540,7 @@ void Senders::increment_total_processed_blocks() {
     ++total_processed_blocks_;
 }
 
-void Senders::increment_total_collected_transactions(std::size_t delta) {
+void Senders::increment_total_collected_transactions(size_t delta) {
     std::unique_lock lock{mutex_};
     total_collected_transactions_ += delta;
 }

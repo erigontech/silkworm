@@ -29,7 +29,7 @@ static std::string build_thread_name(const char name_tag[11], size_t id) {
     return {name_tag + std::to_string(id)};
 }
 
-ServerContext::ServerContext(std::size_t context_id, ServerCompletionQueuePtr queue)
+ServerContext::ServerContext(size_t context_id, ServerCompletionQueuePtr queue)
     : Context{context_id},
       server_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::move(queue))},
       client_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::make_unique<grpc::CompletionQueue>())},
@@ -80,7 +80,7 @@ ServerContextPool::ServerContextPool(
         throw std::logic_error("ServerContextPool size is 0");
     }
 
-    for (std::size_t i{0}; i < settings.num_contexts; ++i) {
+    for (size_t i{0}; i < settings.num_contexts; ++i) {
         add_context(ServerContext{i, server_builder.AddCompletionQueue()});
     }
 }

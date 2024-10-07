@@ -35,17 +35,17 @@
 namespace silkworm::snapshots::seg {
 
 //! Size in bytes of metadata header fields in compressed file
-constexpr std::size_t kWordsCountSize{sizeof(uint64_t)};
-constexpr std::size_t kEmptyWordsCountSize{sizeof(uint64_t)};
-constexpr std::size_t kDictionaryLengthSize{sizeof(uint64_t)};
+constexpr size_t kWordsCountSize{sizeof(uint64_t)};
+constexpr size_t kEmptyWordsCountSize{sizeof(uint64_t)};
+constexpr size_t kDictionaryLengthSize{sizeof(uint64_t)};
 
 //! Minimum compressed file size given the metadata header
-constexpr std::size_t kMinimumFileSize = 32;
+constexpr size_t kMinimumFileSize = 32;
 
 //! Maximum allowed depth in compressed file
-constexpr std::size_t kMaxAllowedDepth = 50;
+constexpr size_t kMaxAllowedDepth = 50;
 
-DecodingTable::DecodingTable(std::size_t max_depth) : max_depth_(max_depth) {
+DecodingTable::DecodingTable(size_t max_depth) : max_depth_(max_depth) {
     bit_length_ = max_depth_ > kMaxTableBitLength ? kMaxTableBitLength : max_depth_;
 }
 
@@ -73,7 +73,7 @@ std::ostream& operator<<(std::ostream& out, const PatternTable& pt) {
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
     const int bit_len = static_cast<int>(pt.bit_length_);
-    for (std::size_t i{0}; i < pt.codewords_.size(); ++i) {
+    for (size_t i{0}; i < pt.codewords_.size(); ++i) {
         const auto& cw = pt.codewords_[i];
         if (cw) {
             out << std::dec << std::setw(3) << i << " " << std::hex << std::setw(bit_len) << cw->code() << "\n";
@@ -97,7 +97,7 @@ std::ostream& operator<<(std::ostream& out, const PatternTable& pt) {
 //! @return the word distances for power of 2
 static PatternTable::WordDistances build_word_distances() {
     PatternTable::WordDistances word_distances{};
-    for (std::size_t i{1}; i < PatternTable::kNumPowers; ++i) {
+    for (size_t i{1}; i < PatternTable::kNumPowers; ++i) {
         std::vector<int> distances{};
         distances.reserve((size_t{1} << (PatternTable::kNumPowers - 1 - i)) - 1);
         for (int j{1 << i}; 0 < j && j < PatternTable::kMaxPower; j += (1 << i)) {
@@ -112,9 +112,9 @@ static PatternTable::WordDistances build_word_distances() {
 const PatternTable::WordDistances PatternTable::kWordDistances{build_word_distances()};
 
 //! Initialize condensed table threshold for bit length using default value
-std::size_t PatternTable::condensed_table_bit_length_threshold_{kDefaultCondensedTableBitLengthThreshold};
+size_t PatternTable::condensed_table_bit_length_threshold_{kDefaultCondensedTableBitLengthThreshold};
 
-void PatternTable::set_condensed_table_bit_length_threshold(std::size_t condensed_table_bit_length_threshold) {
+void PatternTable::set_condensed_table_bit_length_threshold(size_t condensed_table_bit_length_threshold) {
     if (condensed_table_bit_length_threshold > kMaxTableBitLength) {
         throw std::invalid_argument{
             "bit length threshold for condensed tables is too big: " +
@@ -125,17 +125,17 @@ void PatternTable::set_condensed_table_bit_length_threshold(std::size_t condense
     condensed_table_bit_length_threshold_ = condensed_table_bit_length_threshold;
 }
 
-PatternTable::PatternTable(std::size_t max_depth) : DecodingTable(max_depth) {
+PatternTable::PatternTable(size_t max_depth) : DecodingTable(max_depth) {
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
         codewords_.resize(size_t{1} << bit_length_);
     }
 }
 
-std::size_t PatternTable::build_condensed(std::span<Pattern> patterns) {
+size_t PatternTable::build_condensed(std::span<Pattern> patterns) {
     return build_condensed(patterns, max_depth_, 0, 0, 0);
 }
 
-std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
+size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
     SILK_TRACE << "#patterns: " << patterns.size() << " highest_depth: " << highest_depth << " code: " << code
                << " bits: " << std::bitset<CHAR_BIT>(static_cast<unsigned int>(bits)) << " depth: " << depth;
     if (patterns.empty()) {
@@ -227,7 +227,7 @@ const CodeWord* PatternTable::search_condensed(uint16_t code) const {
     return nullptr;
 }
 
-bool PatternTable::check_distance(std::size_t power, int distance) {
+bool PatternTable::check_distance(size_t power, int distance) {
     const auto& distances = PatternTable::kWordDistances[power];
     auto it = std::find_if(distances.cbegin(), distances.cend(), [distance](const int d) {
         return d == distance;
@@ -235,7 +235,7 @@ bool PatternTable::check_distance(std::size_t power, int distance) {
     return it != distances.cend();
 }
 
-PositionTable::PositionTable(std::size_t max_depth) : DecodingTable(max_depth) {
+PositionTable::PositionTable(size_t max_depth) : DecodingTable(max_depth) {
     positions_.resize(size_t{1} << bit_length_);
     lengths_.resize(size_t{1} << bit_length_);
     children_.resize(size_t{1} << bit_length_);
@@ -253,7 +253,7 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
     }
     const auto& first_position = positions.front();
     if (depth == first_position.depth) {
-        if (bit_length_ == static_cast<std::size_t>(bits)) {
+        if (bit_length_ == static_cast<size_t>(bits)) {
             positions_[code] = first_position.value;
             lengths_[code] = static_cast<uint8_t>(bits);
             children_[code] = nullptr;
@@ -280,14 +280,14 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
         throw std::runtime_error("cannot build position tree: highest_depth reached zero");
     }
     const int b0 = build_tree(positions, highest_depth - 1, code, bits + 1, depth + 1);
-    return b0 + build_tree(positions.subspan(static_cast<std::size_t>(b0)), highest_depth - 1, static_cast<uint16_t>((1 << bits) | code), bits + 1, depth + 1);
+    return b0 + build_tree(positions.subspan(static_cast<size_t>(b0)), highest_depth - 1, static_cast<uint16_t>((1 << bits) | code), bits + 1, depth + 1);
 }
 
 std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
     out << "Position Table:\n";
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
-    for (std::size_t i{0}; i < pt.positions_.size(); ++i) {
+    for (size_t i{0}; i < pt.positions_.size(); ++i) {
         const uint64_t position = pt.positions_[i];
         const uint64_t length = pt.lengths_[i];
         out << std::dec << std::setw(3) << i << " position: " << position << " length: " << length;
@@ -367,7 +367,7 @@ void Decompressor::open() {
         throw std::runtime_error("invalid pattern_dict_length for compressed file size: " + std::to_string(compressed_file_size));
     }
 
-    const std::size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
+    const size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
     read_patterns(ByteView{address + patterns_dict_offset, pattern_dict_length});
 
     // Read positions from compressed file
@@ -377,7 +377,7 @@ void Decompressor::open() {
         throw std::runtime_error("invalid position_dict_length for compressed file size: " + std::to_string(compressed_file_size));
     }
 
-    const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
+    const size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
     read_positions(ByteView{address + positions_dict_offset, position_dict_length});
 
     // Store the start offset and length of the data words
@@ -560,7 +560,7 @@ ByteView Decompressor::Iterator::data() const {
     }
 
     // First pass: we only check the patterns. Only run this loop as far as prefix goes, no need to go any further
-    std::size_t buffer_position{0};
+    size_t buffer_position{0};
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
         // Positions where to insert patterns are encoded relative to one another
         buffer_position += pos - 1;
@@ -585,13 +585,13 @@ ByteView Decompressor::Iterator::data() const {
     (void)next_position(true);
 
     // Second pass: we check spaces not covered by the patterns
-    std::size_t last_uncovered{0};
+    size_t last_uncovered{0};
     buffer_position = 0;
     for (auto pos{next_position(false)}; pos != 0 && last_uncovered < prefix_size; pos = next_position(false)) {
         // Positions where to insert patterns are encoded relative to one another
         buffer_position += pos - 1;
         if (buffer_position > last_uncovered) {
-            const std::size_t position_diff = buffer_position - last_uncovered;
+            const size_t position_diff = buffer_position - last_uncovered;
             SILK_TRACE << "Iterator::has_prefix other-data pos=" << pos << " last_uncovered=" << last_uncovered
                        << " buffer_position=" << buffer_position << " position_diff=" << position_diff
                        << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
@@ -604,7 +604,7 @@ ByteView Decompressor::Iterator::data() const {
         last_uncovered = buffer_position + next_pattern().size();
     }
     if (prefix_size > last_uncovered && word_length > last_uncovered) {
-        const std::size_t position_diff = word_length - last_uncovered;
+        const size_t position_diff = word_length - last_uncovered;
         SILK_TRACE << "Iterator::has_prefix other-data last_uncovered=" << last_uncovered
                    << " buffer_position=" << buffer_position << " position_diff=" << position_diff
                    << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
@@ -636,12 +636,12 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     }
 
     // Track position into buffer where to insert part of the word
-    std::size_t buffer_offset = buffer.size();
+    size_t buffer_offset = buffer.size();
     buffer.resize(buffer_offset + word_length);
     SILK_TRACE << "Iterator::next buffer resized to: " << buffer.size();
 
     // Fill in the patterns
-    std::size_t buffer_position = buffer_offset;
+    size_t buffer_position = buffer_offset;
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
         // Positions where to insert patterns are encoded relative to one another
         buffer_position += pos - 1;
@@ -664,14 +664,14 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
 
     // Restore the beginning of buffer
     buffer_position = buffer_offset;
-    std::size_t last_uncovered = buffer_offset;
+    size_t last_uncovered = buffer_offset;
 
     // Fill in data which is not the patterns
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
         // Positions where to insert patterns are encoded relative to one another
         buffer_position += pos - 1;
         if (buffer_position > last_uncovered) {
-            std::size_t position_diff = buffer_position - last_uncovered;
+            size_t position_diff = buffer_position - last_uncovered;
             SILK_TRACE << "Iterator::next other-data pos=" << pos << " last_uncovered=" << last_uncovered
                        << " buffer_position=" << buffer_position << " position_diff=" << position_diff
                        << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
@@ -681,7 +681,7 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
         last_uncovered = buffer_position + next_pattern().size();
     }
     if (buffer_offset + word_length > last_uncovered) {
-        std::size_t position_diff = buffer_offset + word_length - last_uncovered;
+        size_t position_diff = buffer_offset + word_length - last_uncovered;
         SILK_TRACE << "Iterator::next other-data last_uncovered=" << last_uncovered
                    << " buffer_position=" << buffer_position << " position_diff=" << position_diff
                    << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
@@ -733,9 +733,9 @@ uint64_t Decompressor::Iterator::skip() {
         return word_offset_;
     }
 
-    std::size_t uncovered_count{0};
-    std::size_t buffer_position{0};
-    std::size_t last_uncovered{0};
+    size_t uncovered_count{0};
+    size_t buffer_position{0};
+    size_t last_uncovered{0};
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
         // Positions where to insert are encoded relative to one another
         buffer_position += pos - 1;
@@ -853,9 +853,9 @@ uint64_t Decompressor::Iterator::next_position(bool clean) {
     return position;
 }
 
-uint16_t Decompressor::Iterator::next_code(std::size_t bit_length) {
+uint16_t Decompressor::Iterator::next_code(size_t bit_length) {
     uint16_t code = static_cast<uint16_t>(decoder_->words_start_[word_offset_]) >> bit_position_;
-    if (static_cast<std::size_t>(CHAR_BIT - bit_position_) < bit_length && word_offset_ + 1 < data_size()) {
+    if (static_cast<size_t>(CHAR_BIT - bit_position_) < bit_length && word_offset_ + 1 < data_size()) {
         code |= decoder_->words_start_[word_offset_ + 1] << (CHAR_BIT - bit_position_);
     }
     code &= (1 << bit_length) - 1;

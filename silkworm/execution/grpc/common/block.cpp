@@ -70,20 +70,20 @@ BlockHeader header_from_proto(const proto::Header& proto_header) {
 void body_from_proto(const ::execution::BlockBody& proto_body, BlockBody& body, Hash& block_hash, BlockNum& block_number) {
     block_hash = rpc::bytes32_from_h256(proto_body.block_hash());
     block_number = proto_body.block_number();
-    body.transactions.reserve(static_cast<std::size_t>(proto_body.transactions_size()));
+    body.transactions.reserve(static_cast<size_t>(proto_body.transactions_size()));
     for (const auto& received_tx : proto_body.transactions()) {
         ByteView raw_tx_rlp{string_view_to_byte_view(received_tx)};
         Transaction tx;
         rlp::decode(raw_tx_rlp, tx);
         body.transactions.push_back(std::move(tx));
     }
-    body.ommers.reserve(static_cast<std::size_t>(proto_body.uncles_size()));
+    body.ommers.reserve(static_cast<size_t>(proto_body.uncles_size()));
     for (const auto& received_ommer : proto_body.uncles()) {
         body.ommers.emplace_back(header_from_proto(received_ommer));
     }
     if (proto_body.withdrawals_size() > 0) {
         std::vector<Withdrawal> withdrawals;
-        withdrawals.reserve(static_cast<std::size_t>(proto_body.withdrawals_size()));
+        withdrawals.reserve(static_cast<size_t>(proto_body.withdrawals_size()));
         body.withdrawals = std::move(withdrawals);
     }
     for (const auto& received_withdrawal : proto_body.withdrawals()) {

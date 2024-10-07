@@ -120,9 +120,9 @@ constexpr int kTestLeaf{4};
 
 using RecSplit4 = RecSplit<kTestLeaf>;
 template <>
-const std::size_t RecSplit4::kLowerAggregationBound = RecSplit4::SplitStrategy::kLowerAggregationBound;
+const size_t RecSplit4::kLowerAggregationBound = RecSplit4::SplitStrategy::kLowerAggregationBound;
 template <>
-const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
+const size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::kMemo = RecSplit4::fill_golomb_rice();
 
@@ -137,7 +137,7 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][snapshots][recsplit]")
     constexpr int kTestBucketSize{128};
 
     std::vector<Hash128> hashed_keys;
-    for (std::size_t i{0}; i < kTestNumKeys; ++i) {
+    for (size_t i{0}; i < kTestNumKeys; ++i) {
         hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
     }
 
@@ -172,7 +172,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][snapshots][recsplit]")
     TemporaryFile index_file;
 
     struct RecSplitParams {
-        std::size_t key_count{0};
+        size_t key_count{0};
         uint16_t bucket_size{0};
     };
     std::vector<RecSplitParams> recsplit_params_sequence{
@@ -185,7 +185,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][snapshots][recsplit]")
     for (const auto [key_count, bucket_size] : recsplit_params_sequence) {
         SECTION("random_hash128 OK [" + std::to_string(key_count) + "-" + std::to_string(bucket_size) + "]") {  // NOLINT
             std::vector<Hash128> hashed_keys;
-            for (std::size_t i{0}; i < key_count; ++i) {
+            for (size_t i{0}; i < key_count; ++i) {
                 hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
             }
 

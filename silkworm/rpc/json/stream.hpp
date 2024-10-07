@@ -90,7 +90,7 @@ class Stream {
     StreamWriter& writer_;
     std::stack<std::uint8_t> stack_;
 
-    const std::size_t buffer_capacity_;
+    const size_t buffer_capacity_;
     std::string buffer_;
 
     using ChunkChannel = boost::asio::experimental::concurrent_channel<void(boost::system::error_code, DataChunk)>;

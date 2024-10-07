@@ -23,7 +23,7 @@ std::ostream& operator<<(std::ostream& out, const Context& c) {
     return out;
 }
 
-Context::Context(std::size_t context_id)
+Context::Context(size_t context_id)
     : context_id_{context_id},
       io_context_{std::make_shared<boost::asio::io_context>()},
       work_{boost::asio::make_work_guard(*io_context_)} {}

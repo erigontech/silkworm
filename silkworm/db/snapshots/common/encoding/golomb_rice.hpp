@@ -62,17 +62,17 @@ class GolombRiceVector {
   public:
     class Builder {
       public:
-        static constexpr std::size_t kDefaultAllocatedWords{16};
+        static constexpr size_t kDefaultAllocatedWords{16};
 
         Builder() : Builder(kDefaultAllocatedWords) {}
 
-        explicit Builder(const std::size_t allocated_words) : data_(allocated_words) {}
+        explicit Builder(const size_t allocated_words) : data_(allocated_words) {}
 
         void append_fixed(const uint64_t v, const uint64_t log2golomb) {
             if (log2golomb == 0) return;
 
             const uint64_t lower_bits = v & ((uint64_t{1} << log2golomb) - 1);
-            std::size_t used_bits = bit_count_ & 63;
+            size_t used_bits = bit_count_ & 63;
 
             data_.resize((bit_count_ + log2golomb + 63) / 64);
 
@@ -89,7 +89,7 @@ class GolombRiceVector {
         }
 
         void append_unary_all(const Uint32Sequence& unary) {
-            std::size_t bit_inc = 0;
+            size_t bit_inc = 0;
             for (const auto u : unary) {
                 // Each number u uses u+1 bits for its unary representation
                 bit_inc += u + 1;
@@ -123,18 +123,18 @@ class GolombRiceVector {
 
       private:
         Uint64Sequence data_;
-        std::size_t bit_count_{0};
+        size_t bit_count_{0};
 
         Uint32Sequence unaries_;
     };
 
     class LazyBuilder {
       public:
-        static constexpr std::size_t kDefaultAllocatedWords{16};
+        static constexpr size_t kDefaultAllocatedWords{16};
 
         LazyBuilder() : LazyBuilder(kDefaultAllocatedWords) {}
 
-        explicit LazyBuilder(const std::size_t allocated_words) {
+        explicit LazyBuilder(const size_t allocated_words) {
             fixeds_.reserve(allocated_words);
             unaries_.reserve(allocated_words);
         }
@@ -167,7 +167,7 @@ class GolombRiceVector {
     GolombRiceVector() = default;
     explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data_(std::move(input_data)) {}
 
-    [[nodiscard]] std::size_t size() const { return data_.size(); }
+    [[nodiscard]] size_t size() const { return data_.size(); }
 
     class Reader {
       public:
@@ -186,7 +186,7 @@ class GolombRiceVector {
                 }
             }
 
-            const auto pos = static_cast<std::size_t>(rho(curr_window_unary_));
+            const auto pos = static_cast<size_t>(rho(curr_window_unary_));
 
             curr_window_unary_ >>= pos;
             curr_window_unary_ >>= 1;
@@ -195,7 +195,7 @@ class GolombRiceVector {
             result += pos;
             result <<= log2golomb;
 
-            std::size_t idx64 = curr_fixed_offset_ >> 6;
+            size_t idx64 = curr_fixed_offset_ >> 6;
             uint64_t shift = curr_fixed_offset_ & 63;
             uint64_t fixed = data_[idx64] >> shift;
             if (shift + log2golomb > 64) {
@@ -206,10 +206,10 @@ class GolombRiceVector {
             return result;
         }
 
-        void skip_subtree(const std::size_t nodes, const std::size_t fixed_len) {
+        void skip_subtree(const size_t nodes, const size_t fixed_len) {
             SILKWORM_ASSERT(nodes > 0);
-            std::size_t missing = nodes, cnt = 0;
-            while ((cnt = static_cast<std::size_t>(nu(curr_window_unary_))) < missing) {
+            size_t missing = nodes, cnt = 0;
+            while ((cnt = static_cast<size_t>(nu(curr_window_unary_))) < missing) {
                 curr_window_unary_ = *(curr_ptr_unary_++);
                 missing -= cnt;
                 valid_lower_bits_unary_ = 64;
@@ -222,9 +222,9 @@ class GolombRiceVector {
             curr_fixed_offset_ += fixed_len;
         }
 
-        void read_reset(const std::size_t bit_pos, const std::size_t unary_offset) {
+        void read_reset(const size_t bit_pos, const size_t unary_offset) {
             curr_fixed_offset_ = bit_pos;
-            std::size_t unary_pos = bit_pos + unary_offset;
+            size_t unary_pos = bit_pos + unary_offset;
             curr_ptr_unary_ = data_.data() + unary_pos / 64;
             curr_window_unary_ = *(curr_ptr_unary_++) >> (unary_pos & 63);
             valid_lower_bits_unary_ = 64 - (unary_pos & 63);
@@ -232,10 +232,10 @@ class GolombRiceVector {
 
       private:
         const Uint64Sequence& data_;
-        std::size_t curr_fixed_offset_{0};
+        size_t curr_fixed_offset_{0};
         uint64_t curr_window_unary_{0};
         uint64_t const* curr_ptr_unary_{nullptr};
-        std::size_t valid_lower_bits_unary_{0};
+        size_t valid_lower_bits_unary_{0};
     };
 
     [[nodiscard]] Reader reader() const { return Reader{data_}; }

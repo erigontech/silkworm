@@ -59,7 +59,7 @@ IndexInputDataQuery::Iterator DecompressorIndexInputDataQuery::end() {
     return IndexInputDataQuery::Iterator{this, impl_it, decompressor_index_query_entry(impl_it->it)};
 }
 
-std::size_t DecompressorIndexInputDataQuery::keys_count() {
+size_t DecompressorIndexInputDataQuery::keys_count() {
     seg::Decompressor decoder{segment_path_.path(), segment_region_};
     decoder.open();
     return decoder.words_count();

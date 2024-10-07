@@ -95,7 +95,7 @@ Task<void> Connection::do_read() {
     }
 }
 
-Task<std::size_t> Connection::write(std::string_view content, bool last) {
+Task<size_t> Connection::write(std::string_view content, bool last) {
     try {
         const auto written = co_await stream_.async_write_some(last, boost::asio::buffer(content.data(), content.size()), boost::asio::use_awaitable);
 
@@ -110,7 +110,7 @@ Task<std::size_t> Connection::write(std::string_view content, bool last) {
     }
 }
 
-Task<std::size_t> Connection::do_write(const std::string& content) {
+Task<size_t> Connection::do_write(const std::string& content) {
     try {
         const auto written = co_await stream_.async_write(boost::asio::buffer(content), boost::asio::use_awaitable);
 

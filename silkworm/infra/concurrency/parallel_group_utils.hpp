@@ -35,7 +35,7 @@ namespace silkworm::concurrency {
  */
 void rethrow_first_exception_if_any(
     const std::array<std::exception_ptr, 2>& exceptions,
-    const std::array<std::size_t, 2>& order);
+    const std::array<size_t, 2>& order);
 
 /**
  * Given some exceptions rethrows the one which happened first that was unexpected.
@@ -46,7 +46,7 @@ void rethrow_first_exception_if_any(
  */
 void rethrow_first_exception_if_any(
     const std::vector<std::exception_ptr>& exceptions,
-    const std::vector<std::size_t>& order);
+    const std::vector<size_t>& order);
 
 /**
  * Build a ranged `parallel_group` task consisting of `count` subtasks produced by `task_factory`:

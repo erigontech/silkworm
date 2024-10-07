@@ -88,17 +88,17 @@ static constexpr uint64_t kQPerSuperQ = kSuperQ / kQ;
 static constexpr uint64_t kSuperQSize16 = 1 + kQPerSuperQ / 4;
 static constexpr uint64_t kSuperQSize32 = 1 + kQPerSuperQ / 2;
 
-template <class T, std::size_t Extent>
+template <class T, size_t Extent>
 static void set(std::span<T, Extent> bits, const uint64_t pos) {
     bits[pos / 64] |= uint64_t{1} << (pos % 64);
 }
 
 //! This assumes that bits are set in monotonic order, so that we can skip the masking for the second word
-template <class T, std::size_t Extent>
+template <class T, size_t Extent>
 static void set_bits(std::span<T, Extent> bits, const uint64_t start, const uint64_t width, const uint64_t value) {
     const uint64_t shift = start & 63;
     const uint64_t mask = ((uint64_t{1} << width) - 1) << shift;
-    const std::size_t idx64 = start >> 6;
+    const size_t idx64 = start >> 6;
     bits[idx64] = (bits[idx64] & ~mask) | (value << shift);
     if (shift + width > 64) {
         // Change two 64-bit words
@@ -109,8 +109,8 @@ static void set_bits(std::span<T, Extent> bits, const uint64_t start, const uint
 //! 32-bit Elias-Fano (EF) list that can be used to encode one monotone non-decreasing sequence
 class EliasFanoList32 {
   public:
-    static constexpr std::size_t kCountLength{sizeof(uint64_t)};
-    static constexpr std::size_t kULength{sizeof(uint64_t)};
+    static constexpr size_t kCountLength{sizeof(uint64_t)};
+    static constexpr size_t kULength{sizeof(uint64_t)};
 
     //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
     static std::unique_ptr<EliasFanoList32> from_encoded_data(std::span<uint8_t> encoded_data) {
@@ -146,21 +146,21 @@ class EliasFanoList32 {
         std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
     }
 
-    [[nodiscard]] std::size_t sequence_length() const { return count_ + 1; }
+    [[nodiscard]] size_t sequence_length() const { return count_ + 1; }
 
-    [[nodiscard]] std::size_t count() const { return count_; }
+    [[nodiscard]] size_t count() const { return count_; }
 
-    [[nodiscard]] std::size_t max() const { return max_value_; }
+    [[nodiscard]] size_t max() const { return max_value_; }
 
-    [[nodiscard]] std::size_t min() const { return get(0); }
+    [[nodiscard]] size_t min() const { return get(0); }
 
     [[nodiscard]] const Uint64Sequence& data() const { return data_; }
 
-    [[nodiscard]] std::size_t encoded_data_size() const { return kCountLength + kULength + data_.size() * sizeof(uint64_t); }
+    [[nodiscard]] size_t encoded_data_size() const { return kCountLength + kULength + data_.size() * sizeof(uint64_t); }
 
     [[nodiscard]] uint64_t get(uint64_t i) const {
         uint64_t lower = i * l_;
-        std::size_t idx64 = lower / 64;
+        size_t idx64 = lower / 64;
         uint64_t shift = lower % 64;
         SILKWORM_ASSERT(idx64 < lower_bits_.size());
         lower = lower_bits_[idx64] >> shift;
@@ -491,21 +491,21 @@ class DoubleEliasFanoList16 {
     //! Minimum delta between successive positions
     uint64_t position_min_delta_{0};
 
-    [[nodiscard]] std::size_t lower_bits_size_words() const {
+    [[nodiscard]] size_t lower_bits_size_words() const {
         return ((num_buckets_ + 1) * (l_cum_keys_ + l_position_) + 63) / 64 + 1;
     }
 
-    [[nodiscard]] std::size_t cum_keys_size_words() const {
+    [[nodiscard]] size_t cum_keys_size_words() const {
         return (num_buckets_ + 1 + (u_cum_keys_ >> l_cum_keys_) + 63) / 64;
     }
 
-    [[nodiscard]] std::size_t position_size_words() const {
+    [[nodiscard]] size_t position_size_words() const {
         return (num_buckets_ + 1 + (u_position_ >> l_position_) + 63) / 64;
     }
 
-    [[nodiscard]] std::size_t jump_size_words() const {
+    [[nodiscard]] size_t jump_size_words() const {
         // Compute whole blocks
-        std::size_t size = ((num_buckets_ + 1) / kSuperQ) * kSuperQSize16 * 2;
+        size_t size = ((num_buckets_ + 1) / kSuperQ) * kSuperQSize16 * 2;
         // Compute partial block (if any)
         if ((num_buckets_ + 1) % kSuperQ != 0) {
             size += (1 + (((num_buckets_ + 1) % kSuperQ + kQ - 1) / kQ + 3) / 4) * 2;
@@ -562,7 +562,7 @@ class DoubleEliasFanoList16 {
         ef.lower_bits_mask_position_ = (1UL << ef.l_position_) - 1;
 
         // Erigon assumes that data fills up the stream until the end
-        std::size_t read_count{0};
+        size_t read_count{0};
         while (!is.eof()) {
             ef.data_.resize(read_count + 1);
             is.read(reinterpret_cast<char*>(ef.data_.data() + read_count), static_cast<std::streamsize>(sizeof(uint64_t)));

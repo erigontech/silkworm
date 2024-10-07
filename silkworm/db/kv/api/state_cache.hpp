@@ -53,8 +53,8 @@ class StateCache {
 
     virtual void on_new_block(const api::StateChangeSet& state_changes) = 0;
 
-    virtual std::size_t latest_data_size() = 0;
-    virtual std::size_t latest_code_size() = 0;
+    virtual size_t latest_data_size() = 0;
+    virtual size_t latest_code_size() = 0;
 
     virtual uint64_t state_hit_count() const = 0;
     virtual uint64_t state_miss_count() const = 0;
@@ -115,8 +115,8 @@ class CoherentStateCache : public StateCache {
 
     void on_new_block(const api::StateChangeSet& state_changes) override;
 
-    std::size_t latest_data_size() override;
-    std::size_t latest_code_size() override;
+    size_t latest_data_size() override;
+    size_t latest_code_size() override;
 
     uint64_t state_hit_count() const override { return state_hit_count_; }
     uint64_t state_miss_count() const override { return state_miss_count_; }

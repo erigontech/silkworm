@@ -837,7 +837,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             throw std::invalid_argument{"Unexpected size for receipts in handle_eth_get_transaction_receipt"};
         }
 
-        std::optional<std::size_t> tx_index;
+        std::optional<size_t> tx_index;
         for (size_t idx{0}; idx < transactions.size(); ++idx) {
             auto ethash_hash = transactions[idx].hash();
 
@@ -1404,7 +1404,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
 
         silkworm::Bytes hash_data{};
 
-        for (std::size_t i{0}; i < tx_hash_list.size(); ++i) {
+        for (size_t i{0}; i < tx_hash_list.size(); ++i) {
             struct CallBundleTxInfo tx_info {};
             const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, tx_hash_list[i]);
             if (!tx_with_block) {
@@ -2010,7 +2010,7 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
     uint64_t block_count{0};
     if (params[0].is_string()) {
         const auto value = params[0].get<std::string>();
-        std::size_t processed_characters{0};
+        size_t processed_characters{0};
         block_count = std::stoul(value, &processed_characters, 16);
         if (processed_characters != value.size()) {
             const auto error_msg = "invalid block_count: " + value;

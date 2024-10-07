@@ -28,11 +28,11 @@ struct PaginatedSequenceBenchTest : public test_util::ContextTestBase {
 };
 
 template <typename TSequence>
-TSequence make_paginated_sequence(const std::size_t page_size, const std::size_t n) {
-    const std::size_t num_pages = n / page_size + (n % page_size ? 1 : 0);
-    const std::size_t last_page_size = n % page_size ? n % page_size : page_size;
+TSequence make_paginated_sequence(const size_t page_size, const size_t n) {
+    const size_t num_pages = n / page_size + (n % page_size ? 1 : 0);
+    const size_t last_page_size = n % page_size ? n % page_size : page_size;
     typename TSequence::Paginator paginator = [=]() -> Task<typename TSequence::PageResult> {
-        static std::size_t count{0};
+        static size_t count{0};
         const bool has_more = ++count < num_pages;
         typename TSequence::Page p(has_more ? page_size : last_page_size, 0);
         co_return typename TSequence::PageResult{std::move(p), has_more};
@@ -40,8 +40,8 @@ TSequence make_paginated_sequence(const std::size_t page_size, const std::size_t
     return TSequence{std::move(paginator)};
 }
 
-Task<std::size_t> paginated_sequence_iteration(PaginatedUint64& paginated) {
-    std::size_t accumulator{0};
+Task<size_t> paginated_sequence_iteration(PaginatedUint64& paginated) {
+    size_t accumulator{0};
     auto it = co_await paginated.begin();
     while (it != paginated.end()) {
         accumulator += *it;
@@ -51,8 +51,8 @@ Task<std::size_t> paginated_sequence_iteration(PaginatedUint64& paginated) {
 }
 
 static void benchmark_paginated_sequence_iteration(benchmark::State& state) {
-    const auto page_size = static_cast<std::size_t>(state.range(0));
-    const auto n = static_cast<std::size_t>(state.range(1));
+    const auto page_size = static_cast<size_t>(state.range(0));
+    const auto n = static_cast<size_t>(state.range(1));
 
     PaginatedSequenceBenchTest test;
     auto paginated_sequence = make_paginated_sequence<PaginatedUint64>(page_size, n);
@@ -149,8 +149,8 @@ class PaginatedSequence2 {
 
 using Paginated2Uint64 = PaginatedSequence2<uint64_t>;
 
-Task<std::size_t> paginated_sequence_2_iteration(Paginated2Uint64& paginated) {
-    std::size_t accumulator{0};
+Task<size_t> paginated_sequence_2_iteration(Paginated2Uint64& paginated) {
+    size_t accumulator{0};
     auto it = co_await paginated.begin();
     while (it != paginated.end()) {
         accumulator += *it;
@@ -163,8 +163,8 @@ Task<std::size_t> paginated_sequence_2_iteration(Paginated2Uint64& paginated) {
 }
 
 static void benchmark_paginated_sequence_2_iteration(benchmark::State& state) {
-    const auto page_size = static_cast<std::size_t>(state.range(0));
-    const auto n = static_cast<std::size_t>(state.range(1));
+    const auto page_size = static_cast<size_t>(state.range(0));
+    const auto n = static_cast<size_t>(state.range(1));
 
     PaginatedSequenceBenchTest test;
     auto paginated_sequence = make_paginated_sequence<Paginated2Uint64>(page_size, n);

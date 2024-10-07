@@ -41,13 +41,13 @@ api::ExecutionPayload execution_payload_from_proto(const ::types::ExecutionPaylo
     std::copy(payload.extra_data().cbegin(), payload.extra_data().cend(), execution_payload.extra_data.begin());
     execution_payload.base_fee_per_gas = rpc::uint256_from_h256(payload.base_fee_per_gas());
     execution_payload.block_hash = rpc::bytes32_from_h256(payload.block_hash());
-    execution_payload.transactions.reserve(static_cast<std::size_t>(payload.transactions_size()));
+    execution_payload.transactions.reserve(static_cast<size_t>(payload.transactions_size()));
     for (const auto& proto_transaction : payload.transactions()) {
         execution_payload.transactions.emplace_back(string_view_to_byte_view(proto_transaction));
     }
     if (payload.withdrawals_size() > 0) {
         std::vector<Withdrawal> withdrawals;
-        withdrawals.reserve(static_cast<std::size_t>(payload.withdrawals_size()));
+        withdrawals.reserve(static_cast<size_t>(payload.withdrawals_size()));
         execution_payload.withdrawals = std::move(withdrawals);
     }
     for (const auto& proto_withdrawal : payload.withdrawals()) {

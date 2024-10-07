@@ -35,11 +35,11 @@ namespace silkworm::concurrency {
 //! Asynchronous scheduler running an execution loop.
 class Context {
   public:
-    explicit Context(std::size_t context_id);
+    explicit Context(size_t context_id);
     virtual ~Context() = default;
 
     [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
-    [[nodiscard]] std::size_t id() const noexcept { return context_id_; }
+    [[nodiscard]] size_t id() const noexcept { return context_id_; }
 
     //! Execute the scheduler loop until stopped.
     virtual void execute_loop();
@@ -49,7 +49,7 @@ class Context {
 
   protected:
     //! The unique scheduler identifier.
-    std::size_t context_id_;
+    size_t context_id_;
 
     //! The asio asynchronous event loop scheduler.
     std::shared_ptr<boost::asio::io_context> io_context_;
@@ -94,7 +94,7 @@ class ContextPool : public ExecutorPool {
         SILK_TRACE << "ContextPool::start START";
 
         // Create a pool of threads to run all the contexts (each context having 1 thread)
-        for (std::size_t i{0}; i < contexts_.size(); ++i) {
+        for (size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
             context_threads_.create_thread([&, i = i]() {
                 log::set_thread_name(("asio_ctx_s" + std::to_string(i)).c_str());
@@ -134,7 +134,7 @@ class ContextPool : public ExecutorPool {
 
         if (!stopped_.exchange(true)) {
             // Explicitly stop all context runnable components
-            for (std::size_t i{0}; i < contexts_.size(); ++i) {
+            for (size_t i{0}; i < contexts_.size(); ++i) {
                 contexts_[i].stop();
                 SILK_TRACE << "ContextPool::stop context[" << i << "] stopped: " << contexts_[i].io_context();
             }
@@ -150,7 +150,7 @@ class ContextPool : public ExecutorPool {
         join();
     }
 
-    std::size_t size() const { return contexts_.size(); }
+    size_t size() const { return contexts_.size(); }
 
     //! Use a round-robin scheme to choose the next context to use
     T& next_context() {

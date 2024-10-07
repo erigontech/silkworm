@@ -83,7 +83,7 @@ bool contains_duplicate(const std::vector<T>& items) {
 namespace silkworm::snapshots::rec_split {
 
 //! The recsplit parallel building strategy
-template <std::size_t LEAF_SIZE>
+template <size_t LEAF_SIZE>
 struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     explicit ParallelBuildingStrategy(ThreadPool& tp) : thread_pool_{tp} {
     }
@@ -91,7 +91,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
   protected:
     class Bucket {
       public:
-        explicit Bucket(std::size_t bucket_size) {
+        explicit Bucket(size_t bucket_size) {
             keys_.reserve(bucket_size);
             values_.reserve(bucket_size);
         }
@@ -124,7 +124,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         std::stringstream index_ofs_{std::ios::in | std::ios::out | std::ios::binary};
     };
 
-    void setup(const RecSplitSettings& settings, std::size_t bucket_count) override {
+    void setup(const RecSplitSettings& settings, size_t bucket_count) override {
         double_enum_index_ = settings.double_enum_index;
         bucket_count_ = bucket_count;
 
@@ -295,7 +295,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
     uint64_t keys_added_{0};
 
     //! The number of buckets for this Recsplit algorithm instance
-    std::size_t bucket_count_{0};
+    size_t bucket_count_{0};
 
     //! The buckets of the RecSplit algorithm
     std::vector<Bucket> buckets_;

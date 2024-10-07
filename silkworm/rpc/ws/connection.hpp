@@ -37,7 +37,7 @@ namespace silkworm::rpc::ws {
 
 using TcpStream = boost::beast::websocket::stream<boost::beast::tcp_stream>;
 
-static constexpr std::size_t kDefaultCapacity{5 * 1024 * 1024};
+static constexpr size_t kDefaultCapacity{5 * 1024 * 1024};
 
 //! Represents a single connection from a client via websocket.
 class Connection : public StreamWriter {
@@ -60,13 +60,13 @@ class Connection : public StreamWriter {
     Task<void> open_stream() override { co_return; }
     Task<void> close_stream() override { co_return; }
     size_t get_capacity() const noexcept override { return kDefaultCapacity; }
-    Task<std::size_t> write(std::string_view content, bool last) override;
+    Task<size_t> write(std::string_view content, bool last) override;
 
   private:
     Task<void> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<std::size_t> do_write(const std::string& content);
+    Task<size_t> do_write(const std::string& content);
 
     //! The WebSocket TCP stream
     TcpStream stream_;

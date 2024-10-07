@@ -37,7 +37,7 @@ class TransactionToBlockIndexInputDataQuery : public IndexInputDataQuery {
 
     Iterator begin() override;
     Iterator end() override;
-    std::size_t keys_count() override;
+    size_t keys_count() override;
     std::pair<std::shared_ptr<void>, Iterator::value_type> next_iterator(std::shared_ptr<void> it_impl) override;
     bool equal_iterators(std::shared_ptr<void> lhs_it_impl, std::shared_ptr<void> rhs_it_impl) const override;
 

@@ -48,7 +48,7 @@ static constexpr std::string_view kColon{":"};
 static constexpr std::string_view kDoubleQuotes{"\""};
 
 //! The maximum number of items enqueued in the chunk channel
-static constexpr std::size_t kChannelCapacity{100};
+static constexpr size_t kChannelCapacity{100};
 
 Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, size_t buffer_capacity)
     : writer_(writer),
@@ -322,7 +322,7 @@ Task<void> Stream::do_async_write(ChunkPtr chunk, bool last) {
 
 Task<void> Stream::run() {
     uint32_t total_writes{0};
-    std::size_t total_bytes_sent{0};
+    size_t total_bytes_sent{0};
     while (true) {
         try {
             const DataChunk data_chunk = co_await channel_.async_receive(boost::asio::use_awaitable);

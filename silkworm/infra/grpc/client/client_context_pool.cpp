@@ -25,7 +25,7 @@ namespace silkworm::rpc {
 
 using namespace concurrency;
 
-ClientContext::ClientContext(std::size_t context_id)
+ClientContext::ClientContext(size_t context_id)
     : Context{context_id},
       grpc_context_{std::make_unique<agrpc::GrpcContext>()},
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())} {}

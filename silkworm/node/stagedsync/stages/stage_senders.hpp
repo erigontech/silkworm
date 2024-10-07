@@ -75,13 +75,13 @@ class Senders final : public Stage {
     void store_senders(db::RWTxn& txn);
 
     void increment_total_processed_blocks();
-    void increment_total_collected_transactions(std::size_t delta);
+    void increment_total_collected_transactions(size_t delta);
 
     const ChainConfig& chain_config_;
     db::BlockAmount prune_mode_senders_;
 
     //! The size of recovery batches
-    std::size_t max_batch_size_;
+    size_t max_batch_size_;
 
     //! The current recovery batch being created
     std::shared_ptr<AddressRecoveryBatch> batch_;
@@ -98,8 +98,8 @@ class Senders final : public Stage {
 
     // Stats
     std::mutex mutex_{};
-    std::size_t total_processed_blocks_{0};
-    std::size_t total_collected_transactions_{0};
+    size_t total_processed_blocks_{0};
+    size_t total_collected_transactions_{0};
     std::string current_key_{};
 };
 

@@ -29,7 +29,7 @@ namespace silkworm {
 
 class BlockCache {
   public:
-    explicit BlockCache(std::size_t capacity = 1024, bool shared_cache = true)
+    explicit BlockCache(size_t capacity = 1024, bool shared_cache = true)
         : block_cache_(capacity, shared_cache) {}
 
     std::optional<std::shared_ptr<BlockWithHash>> get(const evmc::bytes32& key) {

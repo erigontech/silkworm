@@ -29,9 +29,9 @@ struct BinarySearchTest : test_util::ServiceContextTestBase {
 };
 
 struct BinaryTestData {
-    std::vector<std::size_t> sequence;
-    std::size_t value;
-    std::size_t result;
+    std::vector<size_t> sequence;
+    size_t value;
+    size_t result;
 };
 
 std::vector<BinaryTestData> kTestData = {
@@ -49,7 +49,7 @@ std::vector<BinaryTestData> kTestData = {
     {{1, 2, 6, 6, 7}, 9, 5},
 };
 
-Task<std::size_t> binary_search_in_vector(std::vector<std::size_t> sequence, std::size_t value) {
+Task<size_t> binary_search_in_vector(std::vector<size_t> sequence, size_t value) {
     co_return co_await binary_search(sequence.size(), [&, value](uint64_t i) -> Task<bool> {
         co_return i < sequence.size() && sequence[i] >= value;
     });
@@ -57,7 +57,7 @@ Task<std::size_t> binary_search_in_vector(std::vector<std::size_t> sequence, std
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[rpc][common][binary_search]") {
-    for (std::size_t i{0}; i < kTestData.size(); ++i) {
+    for (size_t i{0}; i < kTestData.size(); ++i) {
         const auto [s, v, r] = kTestData[i];
         SECTION("search" + std::to_string(i)) {
             CHECK_NOTHROW(spawn_and_wait(binary_search_in_vector(s, v)) == r);

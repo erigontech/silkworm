@@ -31,8 +31,8 @@ struct InterfaceLogSettings {
     bool enabled{false};
     std::string ifc_name;
     std::filesystem::path container_folder{"logs/"};
-    std::size_t max_file_size_mb{1};
-    std::size_t max_files{100};
+    size_t max_file_size_mb{1};
+    size_t max_files{100};
     bool auto_flush{false};
     bool dump_response{false};
 };

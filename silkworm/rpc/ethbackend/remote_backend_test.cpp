@@ -420,7 +420,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc]
         },
     };
     const std::vector<NewPayloadRequest> requests = {request_v1, request_v2_no_w, request_v2_w};
-    for (std::size_t i{0}; i < requests.size(); ++i) {
+    for (size_t i{0}; i < requests.size(); ++i) {
         const auto& new_payload_request = requests[i];
 
         SECTION("call engine_new_payload and get VALID status [i=" + std::to_string(i) + "]") {

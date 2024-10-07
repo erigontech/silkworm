@@ -24,8 +24,8 @@
 
 namespace silkworm::rpc {
 
-using BinaryPredicate = absl::FunctionRef<Task<bool>(std::size_t)>;
+using BinaryPredicate = absl::FunctionRef<Task<bool>(size_t)>;
 
-Task<std::size_t> binary_search(std::size_t n, BinaryPredicate pred);
+Task<size_t> binary_search(size_t n, BinaryPredicate pred);
 
 }  // namespace silkworm::rpc

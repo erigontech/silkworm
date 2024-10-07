@@ -492,7 +492,7 @@ void copy_address(const evmone::uint256* stack, std::string& address) {
 
 void copy_stack(std::uint8_t op_code, const evmone::uint256* stack, std::vector<std::string>& trace_stack) {
     const int top = get_stack_count(op_code);
-    trace_stack.reserve(top > 0 ? static_cast<std::size_t>(top) : 0);
+    trace_stack.reserve(top > 0 ? static_cast<size_t>(top) : 0);
     for (int i = top - 1; i >= 0; --i) {
         trace_stack.push_back("0x" + intx::to_string(stack[-i], 16));
     }
@@ -805,7 +805,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
     start_gas_.push(msg.gas);
 
-    std::size_t index = traces_.size();
+    size_t index = traces_.size();
     traces_.resize(traces_.size() + 1);
 
     Trace& trace = traces_[index];
@@ -886,7 +886,7 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     last_trace.op_code = opcode;
 
     if (opcode == OP_SELFDESTRUCT) {
-        std::size_t idx = traces_.size();
+        size_t idx = traces_.size();
         traces_.resize(traces_.size() + 1);
         Trace& trace = traces_[idx];
         trace.type = "suicide";
@@ -1373,7 +1373,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
             }
         }
 
-        std::size_t index{0};
+        size_t index{0};
         for (auto& ommer_reward : block_rewards.ommers) {
             RewardAction action;
             action.author = block_with_hash.block.ommers[index].beneficiary;
@@ -1792,7 +1792,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
-        for (std::size_t idx{0}; idx < transaction.transaction_index; ++idx) {
+        for (size_t idx{0}; idx < transaction.transaction_index; ++idx) {
             silkworm::Transaction txn{block.transactions[idx]};
             const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);
             if (execution_result.pre_check_error) {

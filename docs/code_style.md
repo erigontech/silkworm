@@ -27,7 +27,7 @@ This is a list of project-specific guidelines that take precedence over the rule
 1. `using namespace foo` is allowed inside .cpp files, but not inside headers.
 1. User-defined literals are allowed.
 1. `template <Concept T>` syntax is allowed.
-1. Use `std::size_t` with `std::` prefix instead of `size_t`.  
+1. Use `size_t` without `std::` prefix.  
 
 ### Libraries
 

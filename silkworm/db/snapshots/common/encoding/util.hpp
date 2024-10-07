@@ -67,7 +67,6 @@ using std::unique_ptr;
 using std::max;
 using std::min;
 
-using std::size_t;
 using std::uint16_t;
 using std::uint32_t;
 using std::uint64_t;

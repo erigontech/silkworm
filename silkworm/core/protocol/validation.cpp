@@ -35,7 +35,7 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
         EVMC_LONDON,    // kDynamicFee
         EVMC_CANCUN,    // kBlob
     };
-    const auto i{static_cast<std::size_t>(type)};
+    const auto i{static_cast<size_t>(type)};
     return i < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[i];
 }
 

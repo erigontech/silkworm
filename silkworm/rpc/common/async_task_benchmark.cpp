@@ -23,7 +23,7 @@
 
 namespace silkworm::rpc {
 
-std::size_t recursive_factorial(std::size_t n) {
+size_t recursive_factorial(size_t n) {
     return n == 0 ? 1 : n * recursive_factorial(n - 1);
 }
 
@@ -31,9 +31,9 @@ struct AsyncTaskBenchTest : test_util::ServiceContextTestBase {
 };
 
 template <typename Executor>
-Task<std::size_t> async_compose_factorial(const Executor runner, const std::size_t number) {
+Task<size_t> async_compose_factorial(const Executor runner, const size_t number) {
     const auto this_executor = co_await ThisTask::executor;
-    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr, std::size_t)>(
+    co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr, size_t)>(
         [&](auto& self) {
             boost::asio::post(runner, [&, self = std::move(self)]() mutable {
                 try {
@@ -53,7 +53,7 @@ Task<std::size_t> async_compose_factorial(const Executor runner, const std::size
 }
 
 static void benchmark_async_compose(benchmark::State& state) {
-    const auto n = static_cast<std::size_t>(state.range(0));
+    const auto n = static_cast<size_t>(state.range(0));
 
     WorkerPool workers{};
     AsyncTaskBenchTest test;
@@ -69,12 +69,12 @@ BENCHMARK(benchmark_async_compose)->Arg(1'000);
 BENCHMARK(benchmark_async_compose)->Arg(10'000);
 
 template <typename Executor>
-Task<std::size_t> async_task_factorial(Executor runner, std::size_t number) {
+Task<size_t> async_task_factorial(Executor runner, size_t number) {
     co_return co_await async_task(runner, recursive_factorial, number);
 }
 
 static void benchmark_async_task(benchmark::State& state) {
-    const auto n = static_cast<std::size_t>(state.range(0));
+    const auto n = static_cast<size_t>(state.range(0));
 
     WorkerPool workers{};
     AsyncTaskBenchTest test;

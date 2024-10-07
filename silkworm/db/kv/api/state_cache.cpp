@@ -53,20 +53,20 @@ std::unique_ptr<StateView> CoherentStateCache::get_view(Transaction& tx) {
     return root->ready ? std::make_unique<CoherentStateView>(tx, this) : nullptr;
 }
 
-std::size_t CoherentStateCache::latest_data_size() {
+size_t CoherentStateCache::latest_data_size() {
     std::shared_lock read_lock{rw_mutex_};
     if (latest_state_view_ == nullptr) {
         return 0;
     }
-    return static_cast<std::size_t>(latest_state_view_->cache.size());
+    return static_cast<size_t>(latest_state_view_->cache.size());
 }
 
-std::size_t CoherentStateCache::latest_code_size() {
+size_t CoherentStateCache::latest_code_size() {
     std::shared_lock read_lock{rw_mutex_};
     if (latest_state_view_ == nullptr) {
         return 0;
     }
-    return static_cast<std::size_t>(latest_state_view_->code_cache.size());
+    return static_cast<size_t>(latest_state_view_->code_cache.size());
 }
 
 void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_set) {
@@ -113,8 +113,8 @@ void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_s
         }
     }
 
-    state_key_count_ = static_cast<std::size_t>(latest_state_view_->cache.size());
-    code_key_count_ = static_cast<std::size_t>(latest_state_view_->code_cache.size());
+    state_key_count_ = static_cast<size_t>(latest_state_view_->cache.size());
+    code_key_count_ = static_cast<size_t>(latest_state_view_->code_cache.size());
 
     root->ready = true;
 }

@@ -337,7 +337,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
 
     std::vector<evmc::bytes32> ommer_hashes;
     ommer_hashes.reserve(b.block.ommers.size());
-    for (std::size_t i{0}; i < b.block.ommers.size(); ++i) {
+    for (size_t i{0}; i < b.block.ommers.size(); ++i) {
         ommer_hashes.emplace(ommer_hashes.end(), b.block.ommers[i].hash());
         SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
@@ -414,7 +414,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     }
 
     json["fullblock"]["transactions"] = b.transactions;
-    for (std::size_t i{0}; i < json["fullblock"]["transactions"].size(); ++i) {
+    for (size_t i{0}; i < json["fullblock"]["transactions"].size(); ++i) {
         auto& json_txn = json["fullblock"]["transactions"][i];
         json_txn["transactionIndex"] = to_quantity(b.receipts.at(i).tx_index);
         json_txn["blockHash"] = b.hash;
@@ -427,14 +427,14 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
 
     std::vector<evmc::bytes32> ommer_hashes;
     ommer_hashes.reserve(b.ommers.size());
-    for (std::size_t i{0}; i < b.ommers.size(); ++i) {
+    for (size_t i{0}; i < b.ommers.size(); ++i) {
         ommer_hashes.emplace(ommer_hashes.end(), b.ommers[i].hash());
         SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
 
     json["fullblock"]["uncles"] = ommer_hashes;
     json["receipts"] = b.receipts;
-    for (std::size_t i{0}; i < json["receipts"].size(); ++i) {
+    for (size_t i{0}; i < json["receipts"].size(); ++i) {
         auto& json_txn = json["receipts"][i];
         json_txn["logs"] = nullptr;
         json_txn["logsBloom"] = nullptr;
@@ -446,7 +446,7 @@ void to_json(nlohmann::json& json, const TransactionsWithReceipts& b) {
     json["firstPage"] = b.first_page;
     json["lastPage"] = b.last_page;
     json["txs"] = b.transactions;
-    for (std::size_t i{0}; i < json["txs"].size(); ++i) {
+    for (size_t i{0}; i < json["txs"].size(); ++i) {
         auto& json_txn = json["txs"][i];
         json_txn["transactionIndex"] = to_quantity(b.receipts.at(i).tx_index);
         json_txn["blockHash"] = b.blocks.at(i).hash;
@@ -454,7 +454,7 @@ void to_json(nlohmann::json& json, const TransactionsWithReceipts& b) {
         json_txn["gasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.blocks.at(i).header.base_fee_per_gas.value_or(0)));
     }
     json["receipts"] = b.receipts;
-    for (std::size_t i{0}; i < json["receipts"].size(); ++i) {
+    for (size_t i{0}; i < json["receipts"].size(); ++i) {
         auto& json_txn = json["receipts"][i];
         json_txn["effectiveGasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.blocks.at(i).header.base_fee_per_gas.value_or(0)));
         json_txn["timestamp"] = b.blocks.at(i).header.timestamp;

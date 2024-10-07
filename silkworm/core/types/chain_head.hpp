@@ -41,7 +41,7 @@ inline bool operator==(const BlockId& a, const ChainHead& b) {
     return a.number == b.height && a.hash == b.hash;
 }
 
-inline BlockId to_BlockId(const ChainHead& head) {
+inline BlockId to_block_id(const ChainHead& head) {
     return {.number = head.height, .hash = head.hash};
 }
 

@@ -29,7 +29,7 @@ class InboundBlockHeaders : public InboundMessage {
 
     [[nodiscard]] std::string name() const override { return "InboundBlockHeaders"; }
     [[nodiscard]] std::string content() const override;
-    [[nodiscard]] uint64_t reqId() const override;
+    [[nodiscard]] uint64_t req_id() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 

@@ -22,7 +22,7 @@ namespace silkworm::execution::grpc::client {
 
 ::types::H256 h256_from_block_hash(const Hash& block_hash) {
     ::types::H256 request;
-    rpc::H256_from_bytes32(block_hash, &request);
+    rpc::h256_from_bytes32(block_hash, &request);
     return request;
 }
 
@@ -32,14 +32,14 @@ std::optional<BlockNum> block_number_from_response(const ::execution::GetHeaderH
 
 api::ForkChoice fork_choice_from_response(const ::execution::ForkChoice& response) {
     api::ForkChoice fork_choice{
-        .head_block_hash = rpc::bytes32_from_H256(response.head_block_hash()),
+        .head_block_hash = rpc::bytes32_from_h256(response.head_block_hash()),
         .timeout = response.timeout(),
     };
     if (response.has_finalized_block_hash()) {
-        fork_choice.finalized_block_hash = rpc::bytes32_from_H256(response.finalized_block_hash());
+        fork_choice.finalized_block_hash = rpc::bytes32_from_h256(response.finalized_block_hash());
     }
     if (response.has_safe_block_hash()) {
-        fork_choice.safe_block_hash = rpc::bytes32_from_H256(response.safe_block_hash());
+        fork_choice.safe_block_hash = rpc::bytes32_from_h256(response.safe_block_hash());
     }
     return fork_choice;
 }

@@ -487,7 +487,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
                            << " nonexistent_key=" << to_hex(nonexistent_key);
                 // Hash the nonexistent key using murmur3 and check its presence in existence filter
                 rec_split::Hash128 key_hash{};
-                snapshots::rec_split::MurmurHash3_x64_128(nonexistent_key.data(), nonexistent_key.size(), salt, &key_hash);
+                snapshots::rec_split::murmur_hash3_x64_128(nonexistent_key.data(), nonexistent_key.size(), salt, &key_hash);
                 if (const bool key_found = existence_index.contains_hash(key_hash.first); key_found) {
                     ++nonexistent_found_count;
                 }
@@ -496,7 +496,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
         } else {
             value = *kv_iterator;
             rec_split::Hash128 key_hash{};
-            snapshots::rec_split::MurmurHash3_x64_128(key.data(), key.size(), salt, &key_hash);
+            snapshots::rec_split::murmur_hash3_x64_128(key.data(), key.size(), salt, &key_hash);
             const bool key_found = existence_index.contains_hash(key_hash.first);
             SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
             ensure(key_found,

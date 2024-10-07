@@ -40,8 +40,8 @@ static api::Blocks sample_blocks() {
 
 static void empty_proto_block(proto::Block* proto_block) {
     static const auto kEmptyHeaderHash{BlockHeader{}.hash()};
-    proto_block->mutable_header()->set_allocated_block_hash(rpc::H256_from_bytes32(kEmptyHeaderHash).release());
-    proto_block->mutable_body()->set_allocated_block_hash(rpc::H256_from_bytes32(kEmptyHeaderHash).release());
+    proto_block->mutable_header()->set_allocated_block_hash(rpc::h256_from_bytes32(kEmptyHeaderHash).release());
+    proto_block->mutable_body()->set_allocated_block_hash(rpc::h256_from_bytes32(kEmptyHeaderHash).release());
     ;
 }
 
@@ -57,8 +57,8 @@ static proto::InsertBlocksRequest sample_bad_proto_insert_block_request() {
     proto::Block* proto_block = request.add_blocks();
     sample_proto_block(proto_block);
     // Block hash in both header and body set to wrong value (i.e. hash of empty string)
-    proto_block->mutable_header()->set_allocated_block_hash(rpc::H256_from_bytes32(kEmptyHash).release());
-    proto_block->mutable_body()->set_allocated_block_hash(rpc::H256_from_bytes32(kEmptyHash).release());
+    proto_block->mutable_header()->set_allocated_block_hash(rpc::h256_from_bytes32(kEmptyHash).release());
+    proto_block->mutable_body()->set_allocated_block_hash(rpc::h256_from_bytes32(kEmptyHash).release());
     return request;
 }
 

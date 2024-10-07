@@ -45,7 +45,7 @@ void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, S
     }
 }
 
-uint64_t InboundBlockBodies::reqId() const { return packet_.request_id; }
+uint64_t InboundBlockBodies::req_id() const { return packet_.request_id; }
 
 std::string InboundBlockBodies::content() const {
     std::stringstream content;

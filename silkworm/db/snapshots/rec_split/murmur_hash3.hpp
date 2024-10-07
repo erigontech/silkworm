@@ -33,7 +33,7 @@ typedef unsigned __int64 uint64_t;
 
 namespace silkworm::snapshots::rec_split {
 
-void MurmurHash3_x64_128(const void* key, uint64_t len, uint32_t seed, void* out);
+void murmur_hash3_x64_128(const void* key, uint64_t len, uint32_t seed, void* out);
 
 class Murmur3 {
   public:
@@ -44,7 +44,7 @@ class Murmur3 {
     }
 
     void hash_x64_128(const void* key, uint64_t len, void* out) const {
-        MurmurHash3_x64_128(key, len, seed_, out);
+        murmur_hash3_x64_128(key, len, seed_, out);
     }
 
   private:

@@ -48,7 +48,7 @@ Task<evmc::address> RemoteBackEnd::etherbase() {
     evmc::address evmc_address;
     if (reply.has_address()) {
         const auto& h160_address = reply.address();
-        evmc_address = address_from_H160(h160_address);
+        evmc_address = address_from_h160(h160_address);
     }
     SILK_TRACE << "RemoteBackEnd::etherbase address=" << evmc_address << " t=" << clock_time::since(start_time);
     co_return evmc_address;
@@ -146,7 +146,7 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_number, const HashAsSpan& has
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncBlock> get_block_rpc{*stub_, grpc_context_};
     ::remote::BlockRequest request;
     request.set_block_height(block_number);
-    request.set_allocated_block_hash(H256_from_bytes(hash).release());
+    request.set_allocated_block_hash(h256_from_bytes(hash).release());
     const auto reply = co_await get_block_rpc.finish_on(executor_, request);
     ByteView block_rlp{string_view_to_byte_view(reply.block_rlp())};
     if (const auto decode_result{rlp::decode(block_rlp, block)}; !decode_result) {
@@ -171,7 +171,7 @@ Task<BlockNum> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& h
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncTxnLookup> txn_lookup_rpc{*stub_, grpc_context_};
     ::remote::TxnLookupRequest request;
-    request.set_allocated_txn_hash(H256_from_bytes(hash).release());
+    request.set_allocated_txn_hash(h256_from_bytes(hash).release());
     const auto reply = co_await txn_lookup_rpc.finish_on(executor_, request);
     auto bn = reply.block_number();
     SILK_TRACE << "RemoteBackEnd::get_block_number_from_txn_hash bn=" << bn << " t=" << clock_time::since(start_time);
@@ -182,7 +182,7 @@ Task<BlockNum> RemoteBackEnd::get_block_number_from_hash(const HashAsSpan& hash)
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncHeaderNumber> header_number_rpc{*stub_, grpc_context_};
     ::remote::HeaderNumberRequest request;
-    request.set_allocated_hash(H256_from_bytes(hash).release());
+    request.set_allocated_hash(h256_from_bytes(hash).release());
     const auto reply = co_await header_number_rpc.finish_on(executor_, request);
     auto bn = reply.number();
     SILK_TRACE << "RemoteBackEnd::get_block_number_from_hash bn=" << bn << " t=" << clock_time::since(start_time);
@@ -196,7 +196,7 @@ Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(uint64_t num
     request.set_block_number(number);
     const auto reply = co_await canonical_hsh_rpc.finish_on(executor_, request);
     evmc::bytes32 hash;
-    span_from_H256(reply.hash(), hash.bytes);
+    span_from_h256(reply.hash(), hash.bytes);
     SILK_TRACE << "RemoteBackEnd::get_block_hash_from_block_number bn="
                << " t=" << clock_time::since(start_time);
     co_return hash;
@@ -218,7 +218,7 @@ std::vector<Withdrawal> RemoteBackEnd::decode(const ::google::protobuf::Repeated
     for (auto& grpc_withdrawal : grpc_withdrawals) {
         Withdrawal w{grpc_withdrawal.index(),
                      grpc_withdrawal.validator_index(),
-                     address_from_H160(grpc_withdrawal.address()),
+                     address_from_h160(grpc_withdrawal.address()),
                      grpc_withdrawal.amount()};
         withdrawals.emplace_back(w);
     }

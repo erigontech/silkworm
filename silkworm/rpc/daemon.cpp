@@ -81,11 +81,6 @@ static std::string get_library_versions() {
     return library_versions;
 }
 
-using ethdb::kv::block_number_from_block_hash_provider;
-using ethdb::kv::block_number_from_txn_hash_provider;
-using ethdb::kv::block_provider;
-using ethdb::kv::canonical_block_hash_from_number_provider;
-
 int Daemon::run(const DaemonSettings& settings) {
     const bool are_settings_valid{validate_settings(settings)};
     if (!are_settings_valid) {

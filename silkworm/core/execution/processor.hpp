@@ -59,6 +59,9 @@ class ExecutionProcessor {
     void reset();
 
   private:
+    //! Update the transaction-context-wide access sets introduced by EIP-2929 and refined in EIP-3651
+    void update_access_lists(const evmc::address& sender, const Transaction& txn, evmc_revision rev) noexcept;
+
     /**
      * Execute the block, but do not write to the DB yet.
      * Does not perform any post-execution validation (for example, receipt root is not checked).

@@ -45,4 +45,12 @@ inline db::chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from
     };
 }
 
+inline db::chain::Providers make_backend_providers(ethbackend::BackEnd* backend) {
+    return {
+        ethdb::kv::block_provider(backend),
+        ethdb::kv::block_number_from_txn_hash_provider(backend),
+        ethdb::kv::block_number_from_block_hash_provider(backend),
+        ethdb::kv::canonical_block_hash_from_number_provider(backend)};
+}
+
 }  // namespace silkworm::rpc::ethdb::kv

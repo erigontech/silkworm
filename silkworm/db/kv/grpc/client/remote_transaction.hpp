@@ -42,7 +42,7 @@ class RemoteTransaction : public api::BaseTransaction {
     RemoteTransaction(::remote::KV::StubInterface& stub,
                       agrpc::GrpcContext& grpc_context,
                       api::StateCache* state_cache,
-                      chain::Providers& providers);
+                      chain::Providers providers);
     ~RemoteTransaction() override = default;
 
     uint64_t tx_id() const override { return tx_id_; }

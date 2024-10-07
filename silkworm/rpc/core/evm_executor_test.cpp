@@ -56,11 +56,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     ClientContextPool pool{1};
     boost::asio::any_io_executor io_executor{pool.next_io_context().get_executor()};
     test::BackEndMock backend;
-    db::chain::Providers providers{ethdb::kv::block_provider(&backend),
-                                   ethdb::kv::block_number_from_txn_hash_provider(&backend),
-                                   ethdb::kv::block_number_from_block_hash_provider(&backend),
-                                   ethdb::kv::canonical_block_hash_from_number_provider(&backend)};
-    RemoteChainStorage storage{transaction, providers};
+    RemoteChainStorage storage{transaction, ethdb::kv::make_backend_providers(&backend)};
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};

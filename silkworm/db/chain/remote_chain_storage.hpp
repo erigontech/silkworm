@@ -42,7 +42,7 @@ struct Providers {
 //! in remote database (accessed via gRPC KV I/F) or remote snapshot files (accessed via gRPC ETHBACKEND I/F)
 class RemoteChainStorage : public ChainStorage {
   public:
-    RemoteChainStorage(kv::api::Transaction& tx, Providers& providers);
+    RemoteChainStorage(kv::api::Transaction& tx, Providers providers);
     ~RemoteChainStorage() override = default;
 
     [[nodiscard]] Task<ChainConfig> read_chain_config() const override;

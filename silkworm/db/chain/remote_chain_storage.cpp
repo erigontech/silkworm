@@ -28,7 +28,7 @@
 
 namespace silkworm::db::chain {
 
-RemoteChainStorage::RemoteChainStorage(kv::api::Transaction& tx, Providers& providers)
+RemoteChainStorage::RemoteChainStorage(kv::api::Transaction& tx, Providers providers)
     : tx_{tx}, providers_{std::move(providers)} {}
 
 Task<ChainConfig> RemoteChainStorage::read_chain_config() const {

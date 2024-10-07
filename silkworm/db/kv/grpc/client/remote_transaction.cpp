@@ -33,7 +33,7 @@ RemoteTransaction::RemoteTransaction(
     Stub& stub,
     agrpc::GrpcContext& grpc_context,
     api::StateCache* state_cache,
-    chain::Providers& providers)
+    chain::Providers providers)
     : BaseTransaction(state_cache),
       providers_{std::move(providers)},
       stub_{stub},

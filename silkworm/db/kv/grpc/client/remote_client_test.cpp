@@ -47,7 +47,7 @@ struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub
         [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
     chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
         [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
-    chain::BlockHashFromBlockNumberProvider block_hash_from_block_number_provider{
+    chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
         [](BlockNum) -> Task<evmc::bytes32> { co_return 0; }};
 
   protected:
@@ -55,10 +55,10 @@ struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub
         return RemoteClient{std::move(stub_),
                             grpc_context_,
                             state_cache.get(),
-                            block_provider,
-                            block_number_from_txn_hash_provider,
-                            block_number_from_block_hash_provider,
-                            block_hash_from_block_number_provider};
+                            {block_provider,
+                             block_number_from_txn_hash_provider,
+                             block_number_from_block_hash_provider,
+                             canonical_block_hash_from_number_provider}};
     }
 };
 

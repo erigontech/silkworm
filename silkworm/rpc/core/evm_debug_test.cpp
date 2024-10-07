@@ -57,7 +57,7 @@ struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
     json::Stream stream{io_executor, writer};
     test::BackEndMock backend;
-    RemoteChainStorage chain_storage{transaction, ethdb::kv::block_provider(&backend), ethdb::kv::block_number_from_txn_hash_provider(&backend), ethdb::kv::block_number_from_block_hash_provider(&backend), ethdb::kv::block_hash_from_block_number_provider(&backend)};
+    RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};
 };
 
 class TestDebugExecutor : DebugExecutor {

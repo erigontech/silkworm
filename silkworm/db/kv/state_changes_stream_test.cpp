@@ -87,7 +87,7 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
         [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
     chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
         [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
-    chain::BlockHashFromBlockNumberProvider block_hash_from_block_number_provider{
+    chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
         [](BlockNum) -> Task<evmc::bytes32> { co_return 0; }};
 
     RemoteClient make_remote_client(auto&& channel_or_stub) {
@@ -95,10 +95,10 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
             std::forward<decltype(channel_or_stub)>(channel_or_stub),
             grpc_context_,
             state_cache.get(),
-            block_provider,
-            block_number_from_txn_hash_provider,
-            block_number_from_block_hash_provider,
-            block_hash_from_block_number_provider};
+            {block_provider,
+             block_number_from_txn_hash_provider,
+             block_number_from_block_hash_provider,
+             canonical_block_hash_from_number_provider}};
     }
 };
 

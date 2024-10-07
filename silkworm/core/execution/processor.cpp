@@ -40,25 +40,13 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
-    state_.access_account(*sender);
-
-    if (txn.to) {
-        state_.access_account(*txn.to);
-        // EVM itself increments the nonce for contract creation
-        state_.set_nonce(*sender, txn.nonce + 1);
-    }
-
-    for (const AccessListEntry& ae : txn.access_list) {
-        state_.access_account(ae.account);
-        for (const evmc::bytes32& key : ae.storage_keys) {
-            state_.access_storage(ae.account, key);
-        }
-    }
 
     const evmc_revision rev{evm_.revision()};
-    if (rev >= EVMC_SHANGHAI) {
-        // EIP-3651: Warm COINBASE
-        state_.access_account(evm_.beneficiary);
+    update_access_lists(*sender, txn, rev);
+
+    if (txn.to) {
+        // EVM itself increments the nonce for contract creation
+        state_.set_nonce(*sender, txn.nonce + 1);
     }
 
     const BlockHeader& header{evm_.block().header};
@@ -78,7 +66,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
     SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
 
-    const CallResult vm_res{evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
+    const CallResult vm_res = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
 
     const uint64_t gas_used{txn.gas_limit - refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund)};
 
@@ -110,7 +98,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 }
 
 CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept {
-    const std::optional sender{txn.sender()};
+    const std::optional<evmc::address> sender{txn.sender()};
+    SILKWORM_ASSERT(sender);
 
     SILKWORM_ASSERT(protocol::validate_call_precheck(txn, evm_) == ValidationResult::kOk);
     SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender()), bailout) == ValidationResult::kOk);
@@ -124,19 +113,11 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
         evm_.add_tracer(*tracer);
     }
 
-    state_.access_account(*sender);
+    const evmc_revision rev{evm_.revision()};
+    update_access_lists(*sender, txn, rev);
 
     if (txn.to) {
-        state_.access_account(*txn.to);
-        // EVM itself increments the nonce for contract creation
         state_.set_nonce(*sender, state_.get_nonce(*txn.sender()) + 1);
-    }
-
-    for (const AccessListEntry& ae : txn.access_list) {
-        state_.access_account(ae.account);
-        for (const evmc::bytes32& key : ae.storage_keys) {
-            state_.access_storage(ae.account, key);
-        }
     }
 
     if (!bailout) {
@@ -176,6 +157,26 @@ void ExecutionProcessor::reset() {
 
 uint64_t ExecutionProcessor::available_gas() const noexcept {
     return evm_.block().header.gas_limit - cumulative_gas_used_;
+}
+
+void ExecutionProcessor::update_access_lists(const evmc::address& sender, const Transaction& txn, evmc_revision rev) noexcept {
+    state_.access_account(sender);
+
+    if (txn.to) {
+        state_.access_account(*txn.to);
+    }
+
+    for (const AccessListEntry& ae : txn.access_list) {
+        state_.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            state_.access_storage(ae.account, key);
+        }
+    }
+
+    if (rev >= EVMC_SHANGHAI) {
+        // EIP-3651: Warm COINBASE
+        state_.access_account(evm_.beneficiary);
+    }
 }
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, const intx::uint256& effective_gas_price, uint64_t gas_left, uint64_t gas_refund) noexcept {

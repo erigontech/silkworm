@@ -23,14 +23,8 @@ parity_listStorageKeys,\
 ots_getContractCreator,\
 erigon_getLatestLogs,\
 eth_getLogs,\
-erigon_getBlockReceiptsByBlockHash/test_05.json,\
-eth_getBlockReceipts/test_04.json,\
-ots_getBlockDetails/test_05.json,\
-ots_getBlockDetailsByHash/test_03.json,\
-ots_getBlockTransactions/test_04.json,\
-ots_getBlockTransactions/test_07.json,\
-ots_searchTransactionsAfter,\
 txpool_content,\
+ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore --transport_type http,websocket
 fi
 

@@ -57,7 +57,7 @@ struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
     json::Stream stream{io_executor, writer};
     test::BackEndMock backend;
-    RemoteChainStorage chain_storage{transaction, ethdb::kv::block_provider(&backend), ethdb::kv::block_number_from_txn_hash_provider(&backend)};
+    RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};
 };
 
 class TestDebugExecutor : DebugExecutor {
@@ -270,10 +270,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-                co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
-            }));
         EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
@@ -281,10 +277,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
-            }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
-                co_return kAccountChangeSetValue1;
             }));
 
         const auto block_number = 5'405'095;  // 0x5279A7

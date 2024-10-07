@@ -28,14 +28,21 @@ namespace silkworm::db::chain {
 
 using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, Block&)>;
 using BlockNumberFromTxnHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
+using BlockNumberFromBlockHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
+using CanonicalBlockHashFromNumberProvider = std::function<Task<evmc::bytes32>(BlockNum)>;
+
+struct Providers {
+    BlockProvider block;
+    BlockNumberFromTxnHashProvider block_number_from_txn_hash;
+    BlockNumberFromBlockHashProvider block_number_from_hash;
+    CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number;
+};
 
 //! RemoteChainStorage must be used when blockchain data is remote with respect to the running component, i.e. it is
 //! in remote database (accessed via gRPC KV I/F) or remote snapshot files (accessed via gRPC ETHBACKEND I/F)
 class RemoteChainStorage : public ChainStorage {
   public:
-    RemoteChainStorage(kv::api::Transaction& tx,
-                       BlockProvider block_provider,
-                       BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider);
+    RemoteChainStorage(kv::api::Transaction& tx, Providers providers);
     ~RemoteChainStorage() override = default;
 
     [[nodiscard]] Task<ChainConfig> read_chain_config() const override;
@@ -78,8 +85,7 @@ class RemoteChainStorage : public ChainStorage {
 
   private:
     kv::api::Transaction& tx_;
-    BlockProvider block_provider_;
-    BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider_;
+    Providers providers_;
 };
 
 }  // namespace silkworm::db::chain

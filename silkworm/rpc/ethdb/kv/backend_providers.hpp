@@ -33,4 +33,24 @@ inline db::chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_prov
     };
 }
 
+inline db::chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider(ethbackend::BackEnd* backend) {
+    return [backend](HashAsSpan hash) -> Task<BlockNum> {
+        co_return co_await backend->get_block_number_from_hash(hash);
+    };
+}
+
+inline db::chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider(ethbackend::BackEnd* backend) {
+    return [backend](BlockNum number) -> Task<evmc::bytes32> {
+        co_return co_await backend->get_block_hash_from_block_number(number);
+    };
+}
+
+inline db::chain::Providers make_backend_providers(ethbackend::BackEnd* backend) {
+    return {
+        ethdb::kv::block_provider(backend),
+        ethdb::kv::block_number_from_txn_hash_provider(backend),
+        ethdb::kv::block_number_from_block_hash_provider(backend),
+        ethdb::kv::canonical_block_hash_from_number_provider(backend)};
+}
+
 }  // namespace silkworm::rpc::ethdb::kv

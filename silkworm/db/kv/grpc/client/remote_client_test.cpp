@@ -45,14 +45,20 @@ struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub
     // We're not testing blocks here, so we don't care about proper block-number-from-txn-hash provider
     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
         [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+    chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
+        [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+    chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
+        [](BlockNum) -> Task<evmc::bytes32> { co_return 0; }};
 
   protected:
     RemoteClient make_api_client() override {
         return RemoteClient{std::move(stub_),
                             grpc_context_,
                             state_cache.get(),
-                            block_provider,
-                            block_number_from_txn_hash_provider};
+                            {block_provider,
+                             block_number_from_txn_hash_provider,
+                             block_number_from_block_hash_provider,
+                             canonical_block_hash_from_number_provider}};
     }
 };
 

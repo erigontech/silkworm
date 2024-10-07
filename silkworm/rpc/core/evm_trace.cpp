@@ -17,7 +17,6 @@
 #include "evm_trace.hpp"
 
 #include <algorithm>
-#include <memory>
 #include <set>
 #include <stack>
 #include <string>
@@ -125,7 +124,11 @@ void to_json(nlohmann::json& json, const TraceOp& trace_op) {
         json["ex"] = *(trace_op.trace_ex);
     }
     json["idx"] = trace_op.idx;
-    json["op"] = trace_op.op_name;
+    if (trace_op.op_name) {
+        json["op"] = trace_op.op_name.value();
+    } else {
+        json["op"] = "opcode " + get_opcode_hex(trace_op.op_code) + " not defined";
+    }
     json["pc"] = trace_op.pc;
     if (trace_op.sub) {
         json["sub"] = *trace_op.sub;
@@ -670,7 +673,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     SILK_DEBUG << "VmTraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(op_code)
-               << ", opcode_name: " << op_name
+               << ", opcode_name: " << op_name.value_or("UNDEFINED")
                << ", index_prefix: " << index_prefix
                << ", execution_state: {"
                << "   gas_left: " << std::dec << gas
@@ -915,7 +918,7 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     SILK_DEBUG << "TraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(opcode)
-               << ", opcode_name: " << opcode_name
+               << ", opcode_name: " << opcode_name.value_or("UNDEFINED")
                << ", recipient: " << evmc::address{execution_state.msg->recipient}
                << ", sender: " << evmc::address{execution_state.msg->sender}
                << ", execution_state: {"
@@ -1138,7 +1141,7 @@ void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* sta
 
     SILK_DEBUG << "StateDiffTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
-               << ", opcode_name: " << opcode_name
+               << ", opcode_name: " << opcode_name.value_or("UNDEFINED")
                << ", recipient: " << evmc::address{execution_state.msg->recipient}
                << ", sender: " << evmc::address{execution_state.msg->sender}
                << ", execution_state: {"

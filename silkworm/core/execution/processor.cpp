@@ -18,9 +18,12 @@
 
 #include <cassert>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
 
@@ -29,6 +32,31 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
     : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
     evm_.transfer = rule_set.transfer_func();
+}
+
+static void print_header(const BlockHeader& header) {
+    std::cout << "Header:\nhash=" << to_hex(header.hash()) << "\n"
+              << "parent_hash=" << to_hex(header.parent_hash) << "\n"
+              << "number=" << header.number << "\n"
+              << "beneficiary=" << header.beneficiary << "\n"
+              << "ommers_hash=" << to_hex(header.ommers_hash) << "\n"
+              << "state_root=" << to_hex(header.state_root) << "\n"
+              << "transactions_root=" << to_hex(header.transactions_root) << "\n"
+              << "receipts_root=" << to_hex(header.receipts_root) << "\n"
+              << "withdrawals_root=" << (header.withdrawals_root ? to_hex(*header.withdrawals_root) : "") << "\n"
+              << "beneficiary=" << header.beneficiary << "\n"
+              << "timestamp=" << header.timestamp << "\n"
+              << "nonce=" << to_hex(header.nonce) << "\n"
+              << "prev_randao=" << to_hex(header.prev_randao) << "\n"
+              << "base_fee_per_gas=" << (header.base_fee_per_gas ? intx::to_string(*header.base_fee_per_gas) : "") << "\n"
+              << "difficulty=" << intx::to_string(header.difficulty) << "\n"
+              << "gas_limit=" << header.gas_limit << "\n"
+              << "gas_used=" << header.gas_used << "\n"
+              << "blob_gas_used=" << header.blob_gas_used.value_or(0) << "\n"
+              << "excess_blob_gas=" << header.excess_blob_gas.value_or(0) << "\n"
+              << "logs_bloom=" << to_hex(header.logs_bloom) << "\n"
+              << "extra_data=" << to_hex(header.extra_data) << "\n"
+              << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }()) << "\n";
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
@@ -146,6 +174,12 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         const ValidationResult err{protocol::validate_transaction(txn, state_, available_gas())};
         if (err != ValidationResult::kOk) {
             return err;
+        }
+        const BlockHeader& header{evm_.block().header};
+        const intx::uint256 base_fee_per_gas = header.base_fee_per_gas.value_or(0);
+        if (txn.max_fee_per_gas < base_fee_per_gas) {
+            print_header(header);
+            //return ValidationResult::kInvalidGasLimit;
         }
         execute_transaction(txn, *receipt_it);
         ++receipt_it;

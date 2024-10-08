@@ -132,7 +132,7 @@ class InMemoryCollector {
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
     [[nodiscard]] std::string get_load_key() const {
-        std::unique_lock l{mutex_};
+        std::scoped_lock l{mutex_};
         return loading_key_;
     }
 
@@ -148,7 +148,7 @@ class InMemoryCollector {
 
     // for progress tracking only
     void set_loading_key(ByteView key) {
-        std::unique_lock l{mutex_};
+        std::scoped_lock l{mutex_};
         loading_key_ = to_hex(key, true);
     }
     mutable std::mutex mutex_{};  // To sync loading_key_

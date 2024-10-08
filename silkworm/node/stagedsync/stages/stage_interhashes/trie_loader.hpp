@@ -37,7 +37,7 @@ class TrieLoader {
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
     [[nodiscard]] std::string get_log_key() const {
-        std::unique_lock lock{log_mtx_};
+        std::scoped_lock lock{log_mtx_};
         return log_key_;
     }
 

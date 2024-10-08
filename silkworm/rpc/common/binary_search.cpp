@@ -18,12 +18,12 @@
 
 namespace silkworm::rpc {
 
-Task<std::size_t> binary_search(std::size_t n, BinaryPredicate pred) {
-    std::size_t i{0};
-    std::size_t j{n};
+Task<size_t> binary_search(size_t n, BinaryPredicate pred) {
+    size_t i{0};
+    size_t j{n};
     while (j > i) {
-        const std::size_t count{j - i};
-        const std::size_t m{i + count / 2};
+        const size_t count{j - i};
+        const size_t m{i + count / 2};
         if (co_await pred(m)) {
             j = m;
         } else {

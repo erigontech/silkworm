@@ -37,7 +37,7 @@ Task<uint16_t> SocketStream::receive_short() {
     co_return value;
 }
 
-Task<Bytes> SocketStream::receive_fixed(std::size_t size) {
+Task<Bytes> SocketStream::receive_fixed(size_t size) {
     Bytes data(size, 0);
     co_await async_read(socket_, buffer(data), use_awaitable);
     co_return std::move(data);

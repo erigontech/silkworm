@@ -39,7 +39,7 @@ class SocketStream {
     Task<void> send(Bytes data);
 
     Task<uint16_t> receive_short();
-    Task<Bytes> receive_fixed(std::size_t size);
+    Task<Bytes> receive_fixed(size_t size);
     Task<ByteView> receive_size_and_data(Bytes& raw_data);
 
   private:

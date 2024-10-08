@@ -37,7 +37,7 @@ IndexInputDataQuery::Iterator TransactionToBlockIndexInputDataQuery::end() {
     return IndexInputDataQuery::Iterator{this, impl_it, query_entry(*impl_it)};
 }
 
-std::size_t TransactionToBlockIndexInputDataQuery::keys_count() {
+size_t TransactionToBlockIndexInputDataQuery::keys_count() {
     return query_.expected_tx_count();
 }
 

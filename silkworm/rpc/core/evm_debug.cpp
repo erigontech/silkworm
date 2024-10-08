@@ -313,9 +313,9 @@ void DebugTracer::write_log(const DebugLog& log) {
         stream_.write_field("memory");
         stream_.open_array();
         for (const auto& item : log.memory) {
-            const std::size_t len = 64;
+            const size_t len = 64;
             const auto data = item.data();
-            for (std::size_t start = 0; start < item.size(); start += len) {
+            for (size_t start = 0; start < item.size(); start += len) {
                 stream_.write_entry({data + start, len});
             }
         }

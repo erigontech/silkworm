@@ -59,12 +59,12 @@
 namespace silkworm::snapshots::rec_split {
 
 //! The recsplit sequential building strategy
-template <std::size_t LEAF_SIZE>
+template <size_t LEAF_SIZE>
 struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy {
-    explicit SequentialBuildingStrategy(std::size_t etl_optimal_size) : etl_optimal_size_{etl_optimal_size} {}
+    explicit SequentialBuildingStrategy(size_t etl_optimal_size) : etl_optimal_size_{etl_optimal_size} {}
 
   protected:
-    void setup(const RecSplitSettings& settings, std::size_t bucket_count) override {
+    void setup(const RecSplitSettings& settings, size_t bucket_count) override {
         offset_collector_ = std::make_unique<db::etl::Collector>(etl_optimal_size_);
         bucket_collector_ = std::make_unique<db::etl::Collector>(etl_optimal_size_);
 
@@ -176,7 +176,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
 
         // Sets of size 0 and 1 are not further processed, just write them to index
         if (current_bucket_.size() > 1) {
-            for (std::size_t i{1}; i < current_bucket_.size(); ++i) {
+            for (size_t i{1}; i < current_bucket_.size(); ++i) {
                 if (current_bucket_[i] == current_bucket_[i - 1]) {
                     SILK_TRACE << "collision detected key=" << current_bucket_[i - 1];
                     return true;
@@ -235,7 +235,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
 
   private:
     // Optimal size for offset and bucket ETL collectors
-    std::size_t etl_optimal_size_{db::etl::kOptimalBufferSize};
+    size_t etl_optimal_size_{db::etl::kOptimalBufferSize};
 
     //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
     bool double_enum_index_{false};

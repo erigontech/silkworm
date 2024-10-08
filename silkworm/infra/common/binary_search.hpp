@@ -37,6 +37,6 @@ namespace silkworm {
 // binary_find_if(vec.size(), [&](size_t i) { return vec[i] > value;});
 //
 // N.B. Also similar to golang sort.Search.
-std::size_t binary_find_if(std::size_t n, absl::FunctionRef<bool(std::size_t)> f);
+size_t binary_find_if(size_t n, absl::FunctionRef<bool(size_t)> f);
 
 }  // namespace silkworm

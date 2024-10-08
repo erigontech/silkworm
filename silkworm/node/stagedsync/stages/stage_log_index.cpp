@@ -36,13 +36,13 @@ namespace {
         LogBitmapBuilder(AddressHandler address_callback, TopicHandler topic_callback)
             : address_callback_{std::move(address_callback)}, topic_callback_{std::move(topic_callback)} {}
 
-        void on_num_logs(std::size_t /*num_logs*/) override {}
+        void on_num_logs(size_t /*num_logs*/) override {}
 
         void on_address(std::span<const uint8_t, kAddressLength> address) override {
             address_callback_(address);
         }
 
-        void on_num_topics(std::size_t /*num_topics*/) override {}
+        void on_num_topics(size_t /*num_topics*/) override {}
 
         void on_topic(HashAsSpan topic) override {
             topic_callback_(topic);

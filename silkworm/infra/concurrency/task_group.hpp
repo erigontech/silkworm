@@ -66,7 +66,7 @@ namespace silkworm::concurrency {
  */
 class TaskGroup {
   public:
-    TaskGroup(const boost::asio::any_io_executor& executor, std::size_t max_tasks)
+    TaskGroup(const boost::asio::any_io_executor& executor, size_t max_tasks)
         : completions_(executor, max_tasks),
           exceptions_(executor, 1) {}
 
@@ -86,14 +86,14 @@ class TaskGroup {
 
   private:
     void close();
-    void on_complete(std::size_t task_id, const std::exception_ptr& ex_ptr);
+    void on_complete(size_t task_id, const std::exception_ptr& ex_ptr);
     bool is_completed();
 
     std::mutex mutex_;
     bool is_closed_{false};
-    std::size_t last_task_id_{0};
-    std::map<std::size_t, boost::asio::cancellation_signal> tasks_;
-    concurrency::Channel<std::pair<std::size_t, std::exception_ptr>> completions_;
+    size_t last_task_id_{0};
+    std::map<size_t, boost::asio::cancellation_signal> tasks_;
+    concurrency::Channel<std::pair<size_t, std::exception_ptr>> completions_;
     concurrency::Channel<std::exception_ptr> exceptions_;
 };
 

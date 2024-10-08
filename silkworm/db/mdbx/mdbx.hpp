@@ -147,7 +147,7 @@ class ROCursorDupSort : public virtual ROCursor {
     MoveResult move(MoveOperation operation, bool throw_notfound) override = 0;
     MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override = 0;
     virtual MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
-    [[nodiscard]] virtual std::size_t count_multivalue() const = 0;
+    [[nodiscard]] virtual size_t count_multivalue() const = 0;
 };
 
 //! \brief Read-write key-value cursor for single-value tables
@@ -498,7 +498,7 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
     MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
-    [[nodiscard]] std::size_t count_multivalue() const override;
+    [[nodiscard]] size_t count_multivalue() const override;
     MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept override;
     void insert(const Slice& key, Slice value) override;
     void upsert(const Slice& key, const Slice& value) override;

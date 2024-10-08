@@ -36,7 +36,7 @@ class Server final {
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
-    Task<void> async_run(std::optional<std::size_t> stack_size = {});
+    Task<void> async_run(std::optional<size_t> stack_size = {});
 
   private:
     std::unique_ptr<ServerImpl> p_impl_;

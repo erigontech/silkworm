@@ -124,7 +124,7 @@ inline void load_server_certificate(boost::asio::ssl::context& ctx) {
         "-----END DH PARAMETERS-----\n";
 
     ctx.set_password_callback(
-        [](std::size_t,
+        [](size_t,
            boost::asio::ssl::context_base::password_purpose) {
             return "test";
         });
@@ -378,7 +378,7 @@ class Session : public std::enable_shared_from_this<Session> {
                          beast::bind_front_handler(&Session::on_read, shared_from_this()));
     }
 
-    void on_read(beast::error_code ec, std::size_t bytes_transferred) {
+    void on_read(beast::error_code ec, size_t bytes_transferred) {
         boost::ignore_unused(bytes_transferred);
 
         // This means they closed the connection
@@ -404,7 +404,7 @@ class Session : public std::enable_shared_from_this<Session> {
                            beast::bind_front_handler(&Session::on_write, this->shared_from_this(), keep_alive));
     }
 
-    void on_write(bool keep_alive, beast::error_code ec, std::size_t bytes_transferred) {
+    void on_write(bool keep_alive, beast::error_code ec, size_t bytes_transferred) {
         boost::ignore_unused(bytes_transferred);
 
         if (ec) {

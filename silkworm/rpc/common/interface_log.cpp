@@ -59,8 +59,8 @@ class InterfaceLogImpl final {
     bool auto_flush_;
     bool dump_response_;
     std::filesystem::path file_path_;
-    std::size_t max_file_size_;
-    std::size_t max_files_;
+    size_t max_file_size_;
+    size_t max_files_;
     std::shared_ptr<spdlog::sinks::rotating_file_sink_mt> rotating_sink_;
     std::shared_ptr<spdlog::logger> rotating_logger_;
 };

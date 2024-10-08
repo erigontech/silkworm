@@ -107,7 +107,7 @@ static bool is_operation_cancelled_error(const std::exception_ptr& ex_ptr) {
     }
 }
 
-void TaskGroup::on_complete(std::size_t task_id, const std::exception_ptr& ex_ptr) {
+void TaskGroup::on_complete(size_t task_id, const std::exception_ptr& ex_ptr) {
     bool is_cancelled = ex_ptr && is_operation_cancelled_error(ex_ptr);
 
     std::scoped_lock lock(mutex_);

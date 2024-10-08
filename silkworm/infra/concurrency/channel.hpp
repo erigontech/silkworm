@@ -34,7 +34,7 @@ template <typename T>
 class Channel {
   public:
     explicit Channel(const boost::asio::any_io_executor& executor) : channel_(executor) {}
-    Channel(const boost::asio::any_io_executor& executor, std::size_t max_buffer_size)
+    Channel(const boost::asio::any_io_executor& executor, size_t max_buffer_size)
         : channel_(executor, max_buffer_size) {}
 
     Task<void> send(T value) {

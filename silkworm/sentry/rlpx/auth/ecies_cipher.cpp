@@ -31,8 +31,8 @@
 
 namespace silkworm::sentry::rlpx::auth {
 
-static const std::size_t kKeySize = 16;
-static const std::size_t kMacSize = 32;
+static const size_t kKeySize = 16;
+static const size_t kMacSize = 32;
 
 static Bytes kdf(ByteView secret);
 using namespace crypto;
@@ -131,15 +131,15 @@ Bytes EciesCipher::serialize_message(const Message& message) {
 }
 
 EciesCipher::Message EciesCipher::deserialize_message(ByteView message_data) {
-    const std::size_t key_size = SecP256K1Context::kPublicKeySizeUncompressed;
-    const std::size_t iv_size = kAESBlockSize;
-    const std::size_t mac_size = kMacSize;
+    const size_t key_size = SecP256K1Context::kPublicKeySizeUncompressed;
+    const size_t iv_size = kAESBlockSize;
+    const size_t mac_size = kMacSize;
 
-    const std::size_t min_size = key_size + iv_size + mac_size;
+    const size_t min_size = key_size + iv_size + mac_size;
     if (message_data.size() < min_size) {
         throw EciesCipherError(EciesCipherErrorCode::kDataSizeTooShort, "EciesCipher::deserialize_message: message data is too short");
     }
-    const std::size_t cipher_text_size = message_data.size() - min_size;
+    const size_t cipher_text_size = message_data.size() - min_size;
 
     Bytes key_data{&message_data[0], key_size};
     Bytes iv{&message_data[key_size], iv_size};

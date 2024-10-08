@@ -29,7 +29,7 @@
 namespace silkworm {
 
 // SmallMap is a constexpr-friendly immutable map suitable for a small number of elements.
-template <std::totally_ordered Key, std::default_initializable T, std::size_t max_size = 8>
+template <std::totally_ordered Key, std::default_initializable T, size_t max_size = 8>
 class SmallMap {
   public:
     using ValueType = std::pair<Key, T>;
@@ -73,7 +73,7 @@ class SmallMap {
         return size_ == 0;
     }
 
-    [[nodiscard]] constexpr std::size_t size() const noexcept {
+    [[nodiscard]] constexpr size_t size() const noexcept {
         return size_;
     }
 
@@ -111,7 +111,7 @@ class SmallMap {
     }
 
     std::array<ValueType, max_size> data_{};
-    std::size_t size_{0};
+    size_t size_{0};
 };
 
 template <std::totally_ordered Key, std::equality_comparable T>

@@ -35,7 +35,7 @@ using ChannelFactory = std::function<std::shared_ptr<::grpc::Channel>()>;
 //! Asynchronous client scheduler running an execution loop w/ integrated gRPC client.
 class ClientContext : public concurrency::Context {
   public:
-    explicit ClientContext(std::size_t context_id);
+    explicit ClientContext(size_t context_id);
 
     [[nodiscard]] agrpc::GrpcContext* grpc_context() const noexcept { return grpc_context_.get(); }
 

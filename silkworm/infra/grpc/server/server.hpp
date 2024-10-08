@@ -132,7 +132,7 @@ class Server {
         SILK_TRACE << "Server::shutdown " << this << " END";
     }
 
-    Task<void> async_run(const char* thread_name, std::optional<std::size_t> stack_size = {}) {
+    Task<void> async_run(const char* thread_name, std::optional<size_t> stack_size = {}) {
         auto run = [this] {
             this->build_and_start();
             this->join();
@@ -142,7 +142,7 @@ class Server {
     }
 
     //! Returns the number of server contexts.
-    [[nodiscard]] std::size_t num_contexts() const {
+    [[nodiscard]] size_t num_contexts() const {
         return context_pool_ ? context_pool_->size() : 0;
     }
 

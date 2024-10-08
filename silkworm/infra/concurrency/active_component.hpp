@@ -34,7 +34,7 @@ class ActiveComponent : public Stoppable {
     virtual void execution_loop() = 0;
 
     //! This adapter method makes ActiveComponent suitable to be used as asynchronous task
-    Task<void> async_run(const char* thread_name, std::optional<std::size_t> stack_size = {}) {
+    Task<void> async_run(const char* thread_name, std::optional<size_t> stack_size = {}) {
         auto run = [this] { this->execution_loop(); };
         auto stop = [this] { this->stop(); };
         co_await concurrency::async_thread(std::move(run), std::move(stop), thread_name, stack_size);

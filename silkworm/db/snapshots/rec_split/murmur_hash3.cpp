@@ -52,7 +52,7 @@ inline uint64_t rotl64(uint64_t x, int8_t r) {
 // Block read - if your platform needs to do endian-swapping or can only
 // handle aligned reads, do the conversion here
 
-FORCE_INLINE uint64_t getblock64(const uint64_t* p, std::size_t i) {
+FORCE_INLINE uint64_t getblock64(const uint64_t* p, size_t i) {
     return p[i];
 }
 
@@ -71,7 +71,7 @@ FORCE_INLINE uint64_t fmix64(uint64_t k) {
 void murmur_hash3_x64_128(const void* key, const uint64_t len,
                           const uint32_t seed, void* out) {
     const auto* data = reinterpret_cast<const uint8_t*>(key);
-    const std::size_t num_blocks = len / 16;
+    const size_t num_blocks = len / 16;
 
     uint64_t h1 = seed;
     uint64_t h2 = seed;
@@ -84,7 +84,7 @@ void murmur_hash3_x64_128(const void* key, const uint64_t len,
 
     const auto* blocks = reinterpret_cast<const uint64_t*>(data);
 
-    for (std::size_t i{0}; i < num_blocks; ++i) {
+    for (size_t i{0}; i < num_blocks; ++i) {
         uint64_t k1 = getblock64(blocks, i * 2 + 0);
         uint64_t k2 = getblock64(blocks, i * 2 + 1);
 

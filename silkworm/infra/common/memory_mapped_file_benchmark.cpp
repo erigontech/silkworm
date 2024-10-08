@@ -45,10 +45,10 @@ static void benchmark_checksum_ifstream(benchmark::State& state) {
     const auto tmp_file_path = create_random_temporary_file(state.range(0));
 
     for ([[maybe_unused]] auto _ : state) {
-        std::unique_ptr<char[]> buffer{new char[static_cast<std::size_t>(kPageSize)]};
+        std::unique_ptr<char[]> buffer{new char[static_cast<size_t>(kPageSize)]};
         std::ifstream snapshot_stream{tmp_file_path, std::ifstream::binary};
         int checksum{0};
-        std::size_t count{0};
+        size_t count{0};
         while (snapshot_stream) {
             snapshot_stream.read(buffer.get(), kPageSize);
             for (size_t i{0}; std::cmp_less(i, snapshot_stream.gcount()); ++i, ++count) {

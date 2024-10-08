@@ -59,7 +59,7 @@ class CallTraceIndex : public Stage {
 
     void reset_log_progress();  // Clears out all logging vars
 
-    std::size_t batch_size_;
+    size_t batch_size_;
     db::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_;
 

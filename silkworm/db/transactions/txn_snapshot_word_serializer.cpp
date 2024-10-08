@@ -76,7 +76,7 @@ ByteView slice_tx_payload(ByteView tx_rlp) {
         throw std::runtime_error{error.str()};
     }
 
-    const std::size_t tx_payload_offset = tx_rlp.size() - tx_header.payload_length;
+    const size_t tx_payload_offset = tx_rlp.size() - tx_header.payload_length;
     return tx_rlp.substr(tx_payload_offset);
 }
 

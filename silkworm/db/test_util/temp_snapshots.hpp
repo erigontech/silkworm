@@ -31,15 +31,15 @@ using snapshots::SnapshotPath;
 using snapshots::SnapshotType;
 
 //! Big-endian encoder
-inline std::size_t encode_big_endian(uint64_t value, Bytes& output) {
-    const std::size_t old_size = output.size();
+inline size_t encode_big_endian(uint64_t value, Bytes& output) {
+    const size_t old_size = output.size();
     output.resize(old_size + sizeof(uint64_t));
     endian::store_big_u64(output.data() + old_size, value);
     return output.size();
 }
 
 //! Varint encoder
-inline std::size_t encode_varint(uint64_t value, Bytes& output) {
+inline size_t encode_varint(uint64_t value, Bytes& output) {
     Bytes encoded;
     seg::varint::encode(encoded, value);
     output.append(encoded);

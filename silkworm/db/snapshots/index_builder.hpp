@@ -82,7 +82,7 @@ struct IndexInputDataQuery {
 
     virtual Iterator begin() = 0;
     virtual Iterator end() = 0;
-    virtual std::size_t keys_count() = 0;
+    virtual size_t keys_count() = 0;
     virtual std::pair<std::shared_ptr<void>, Iterator::value_type> next_iterator(std::shared_ptr<void> it_impl) = 0;
     virtual bool equal_iterators(std::shared_ptr<void> lhs_it_impl, std::shared_ptr<void> rhs_it_impl) const = 0;
 };
@@ -97,7 +97,7 @@ class DecompressorIndexInputDataQuery : public IndexInputDataQuery {
 
     Iterator begin() override;
     Iterator end() override;
-    std::size_t keys_count() override;
+    size_t keys_count() override;
     std::pair<std::shared_ptr<void>, Iterator::value_type> next_iterator(std::shared_ptr<void> it_impl) override;
     bool equal_iterators(std::shared_ptr<void> lhs_it_impl, std::shared_ptr<void> rhs_it_impl) const override;
 
@@ -127,7 +127,7 @@ struct IndexBuilder {
     const SnapshotPath& path() const { return descriptor_.index_file; }
 
   private:
-    static constexpr std::size_t kBucketSize{2'000};
+    static constexpr size_t kBucketSize{2'000};
 
     IndexDescriptor descriptor_;
     std::unique_ptr<IndexInputDataQuery> query_;

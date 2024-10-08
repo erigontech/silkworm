@@ -24,10 +24,10 @@
 namespace silkworm::snapshots::rec_split {
 
 TEST_CASE("murmur_hash3_x64_128", "[silkworm][recsplit][support]") {
-    constexpr std::size_t kHashBits{128};
-    constexpr std::size_t kExpectedVerification{0x6384BA69};
+    constexpr size_t kHashBits{128};
+    constexpr size_t kExpectedVerification{0x6384BA69};
 
-    constexpr std::size_t kHashBytes = kHashBits / 8u;
+    constexpr size_t kHashBytes = kHashBits / 8u;
 
     uint8_t* key{new uint8_t[256]};
     uint8_t* hashes{new uint8_t[kHashBytes * 256u]};

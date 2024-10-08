@@ -25,9 +25,9 @@ std::mt19937_64 random_engine{std::random_device{}()};
 
 Generator default_generator = []() { return random_engine(); };
 
-FilterStorage::FilterStorage(std::size_t max_size, double max_filter_age) : generator_{default_generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
+FilterStorage::FilterStorage(size_t max_size, double max_filter_age) : generator_{default_generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
 
-FilterStorage::FilterStorage(Generator& generator, std::size_t max_size, double max_filter_age) : generator_{generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
+FilterStorage::FilterStorage(Generator& generator, size_t max_size, double max_filter_age) : generator_{generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
 
 std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -44,7 +44,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
     FilterEntry entry{filter};
     std::string filter_id;
     bool slot_found{false};
-    std::size_t count{0};
+    size_t count{0};
     while (max_size_ > count++) {
         filter_id = to_quantity(generator_());
         slot_found = storage_.find(filter_id) == storage_.end();

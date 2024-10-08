@@ -122,7 +122,7 @@ inline bool AccessListTracer::exclude(const evmc::address& address, evmc_revisio
 
 void AccessListTracer::add_storage(const evmc::address& address, const evmc::bytes32& storage) {
     SILK_TRACE << "add_storage:" << address << " storage: " << to_hex(storage);
-    for (std::size_t i{0}; i < access_list_.size(); ++i) {
+    for (size_t i{0}; i < access_list_.size(); ++i) {
         if (access_list_[i].account == address) {
             for (const auto& storage_key : access_list_[i].storage_keys) {
                 if (storage_key == storage) {
@@ -141,7 +141,7 @@ void AccessListTracer::add_storage(const evmc::address& address, const evmc::byt
 
 void AccessListTracer::add_address(const evmc::address& address) {
     SILK_TRACE << "add_address:" << address;
-    for (std::size_t i{0}; i < access_list_.size(); ++i) {
+    for (size_t i{0}; i < access_list_.size(); ++i) {
         if (access_list_[i].account == address) {
             return;
         }
@@ -153,9 +153,9 @@ void AccessListTracer::add_address(const evmc::address& address) {
 
 void AccessListTracer::dump(const std::string& user_string, const AccessList& acl) {
     std::cout << "Dump: " << user_string << "\n";
-    for (std::size_t i{0}; i < acl.size(); ++i) {
+    for (size_t i{0}; i < acl.size(); ++i) {
         std::cout << "Address: " << acl[i].account << "\n";
-        for (std::size_t z{0}; z < acl[i].storage_keys.size(); ++z) {
+        for (size_t z{0}; z < acl[i].storage_keys.size(); ++z) {
             std::cout << "-> StorageKeys: " << to_hex(acl[i].storage_keys[z]) << "\n";
         }
     }
@@ -166,17 +166,17 @@ bool AccessListTracer::compare(const AccessList& acl1, const AccessList& acl2) {
     if (acl1.size() != acl2.size()) {
         return false;
     }
-    for (std::size_t i{0}; i < acl1.size(); ++i) {
+    for (size_t i{0}; i < acl1.size(); ++i) {
         bool match_address = false;
-        for (std::size_t j{0}; j < acl2.size(); ++j) {
+        for (size_t j{0}; j < acl2.size(); ++j) {
             if (acl2[j].account == acl1[i].account) {
                 match_address = true;
                 if (acl2[j].storage_keys.size() != acl1[i].storage_keys.size()) {
                     return false;
                 }
                 bool match_storage = false;
-                for (std::size_t z{0}; z < acl1[i].storage_keys.size(); ++z) {
-                    for (std::size_t t{0}; t < acl2[j].storage_keys.size(); ++t) {
+                for (size_t z{0}; z < acl1[i].storage_keys.size(); ++z) {
+                    for (size_t t{0}; t < acl2[j].storage_keys.size(); ++t) {
                         if (acl2[j].storage_keys[t] == acl1[i].storage_keys[z]) {
                             match_storage = true;
                             break;

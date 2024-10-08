@@ -606,7 +606,7 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
         // Remove the block bodies up to the unwind point
         const auto body_cursor{txn.rw_cursor(db::table::kBlockBodies)};
         const auto start_key{db::block_key(unwind_point)};
-        std::size_t erased_bodies{0};
+        size_t erased_bodies{0};
         auto body_data{body_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
         while (body_data) {
             body_cursor->erase();
@@ -617,7 +617,7 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
 
         // Remove the block headers up to the unwind point
         const auto header_cursor{txn.rw_cursor(db::table::kHeaders)};
-        std::size_t erased_headers{0};
+        size_t erased_headers{0};
         auto header_data{header_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
         while (header_data) {
             header_cursor->erase();
@@ -628,7 +628,7 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
 
         // Remove the canonical hashes up to the unwind point
         const auto canonical_cursor{txn.rw_cursor(db::table::kCanonicalHashes)};
-        std::size_t erased_hashes{0};
+        size_t erased_hashes{0};
         auto hash_data{canonical_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
         while (hash_data) {
             canonical_cursor->erase();

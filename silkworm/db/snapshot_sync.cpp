@@ -183,7 +183,7 @@ Task<void> SnapshotSync::download_snapshots() {
         if (log::test_verbosity(log::Level::kTrace)) {
             std::string counters_dump;
             for (int i{0}; i < counters.size(); ++i) {
-                const auto& stats_metric = client_.stats_metrics().at(static_cast<std::size_t>(i));
+                const auto& stats_metric = client_.stats_metrics().at(static_cast<size_t>(i));
                 counters_dump.append(stats_metric.name);
                 counters_dump.append("=");
                 counters_dump.append(std::to_string(counters[i]));

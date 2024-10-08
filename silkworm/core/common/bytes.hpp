@@ -39,16 +39,16 @@ class ByteView : public evmc::bytes_view {
     constexpr ByteView(const uint8_t* data, size_type length) noexcept
         : evmc::bytes_view{data, length} {}
 
-    template <std::size_t N>
+    template <size_t N>
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     constexpr ByteView(const uint8_t (&array)[N]) noexcept : evmc::bytes_view{array, N} {}
 
-    template <std::size_t N>
+    template <size_t N>
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     constexpr ByteView(const std::array<uint8_t, N>& array) noexcept
         : evmc::bytes_view{array.data(), N} {}
 
-    template <std::size_t Extent>
+    template <size_t Extent>
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     constexpr ByteView(std::span<const uint8_t, Extent> span) noexcept
         : evmc::bytes_view{span.data(), span.size()} {}
@@ -56,7 +56,7 @@ class ByteView : public evmc::bytes_view {
     [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
 };
 
-template <std::size_t Extent>
+template <size_t Extent>
 using ByteSpan = std::span<uint8_t, Extent>;
 
 }  // namespace silkworm

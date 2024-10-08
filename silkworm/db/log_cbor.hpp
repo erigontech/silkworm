@@ -31,9 +31,9 @@ Bytes cbor_encode(const std::vector<Log>& v);
 struct LogCborConsumer {
     virtual ~LogCborConsumer() = default;
 
-    virtual void on_num_logs(std::size_t num_logs) = 0;
+    virtual void on_num_logs(size_t num_logs) = 0;
     virtual void on_address(std::span<const uint8_t, kAddressLength> address_bytes) = 0;
-    virtual void on_num_topics(std::size_t num_topics) = 0;
+    virtual void on_num_topics(size_t num_topics) = 0;
     virtual void on_topic(HashAsSpan topic_bytes) = 0;
     virtual void on_data(std::span<const uint8_t> data_bytes) = 0;
 };

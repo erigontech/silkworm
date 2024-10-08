@@ -38,7 +38,7 @@ fi
 args=(
 	-clang-tidy-binary "$tidy"
 	-p 1
-	-exclude "(mock_block_exchange.hpp|mock_execution_client.hpp|.pb.h|mock_back_end.hpp|remote_backend)"
+	-exclude "(mock_.+\\.hpp|\\.pb\\.h|remote_backend)"
 	-j 6
 	-timeout 60
 	-config-file "$project_dir/.clang-tidy"

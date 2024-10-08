@@ -122,9 +122,9 @@ constexpr int kTestLeaf{4};
 using RecSplit4 = RecSplit<kTestLeaf>;
 
 template <>
-const std::size_t RecSplit4::kLowerAggregationBound;
+const size_t RecSplit4::kLowerAggregationBound;
 template <>
-const std::size_t RecSplit4::kUpperAggregationBound;
+const size_t RecSplit4::kUpperAggregationBound;
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::kMemo;
 
@@ -139,7 +139,7 @@ TEST_CASE("RecSplit4-Par: keys=1000 buckets=128", "[silkworm][node][recsplit]") 
     constexpr int kTestBucketSize{128};
 
     std::vector<Hash128> hashed_keys;
-    for (std::size_t i{0}; i < kTestNumKeys; ++i) {
+    for (size_t i{0}; i < kTestNumKeys; ++i) {
         hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
     }
 
@@ -175,7 +175,7 @@ TEST_CASE("RecSplit4-Par: multiple keys-buckets", "[silkworm][node][recsplit]") 
     ThreadPool thread_pool{2};
 
     struct RecSplitParams {
-        std::size_t key_count{0};
+        size_t key_count{0};
         uint16_t bucket_size{0};
     };
     std::vector<RecSplitParams> recsplit_params_sequence{
@@ -188,7 +188,7 @@ TEST_CASE("RecSplit4-Par: multiple keys-buckets", "[silkworm][node][recsplit]") 
     for (const auto [key_count, bucket_size] : recsplit_params_sequence) {
         SECTION("random_hash128 OK [" + std::to_string(key_count) + "-" + std::to_string(bucket_size) + "]") {  // NOLINT
             std::vector<Hash128> hashed_keys;
-            for (std::size_t i{0}; i < key_count; ++i) {
+            for (size_t i{0}; i < key_count; ++i) {
                 hashed_keys.push_back({next_pseudo_random(), next_pseudo_random()});
             }
 

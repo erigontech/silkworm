@@ -213,7 +213,7 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
 
     std::vector<SilkwormChainSnapshot> snapshot_sequence;
     snapshot_sequence.reserve(headers_snapshot_sequence.size());
-    for (std::size_t i{0}; i < headers_snapshot_sequence.size(); ++i) {
+    for (size_t i{0}; i < headers_snapshot_sequence.size(); ++i) {
         SilkwormChainSnapshot chain_snapshot{
             headers_snapshot_sequence[i],
             bodies_snapshot_sequence[i],

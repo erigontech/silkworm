@@ -36,15 +36,15 @@ namespace silkworm::snapshots::seg {
 class DecodingTable {
   public:
     //! The max bit length for tables (we don't use tables larger than 2^9)
-    constexpr static std::size_t kMaxTableBitLength{9};
+    constexpr static size_t kMaxTableBitLength{9};
 
-    [[nodiscard]] std::size_t bit_length() const { return bit_length_; }
+    [[nodiscard]] size_t bit_length() const { return bit_length_; }
 
   protected:
-    explicit DecodingTable(std::size_t max_depth);
+    explicit DecodingTable(size_t max_depth);
 
-    std::size_t bit_length_{0};
-    std::size_t max_depth_;
+    size_t bit_length_{0};
+    size_t max_depth_;
 };
 
 class PatternTable;
@@ -83,7 +83,7 @@ struct Pattern {
 class PatternTable : public DecodingTable {
   public:
     //! The default bit length threshold after which tables are condensed (default: all NOT condensed)
-    constexpr static std::size_t kDefaultCondensedTableBitLengthThreshold = kMaxTableBitLength;
+    constexpr static size_t kDefaultCondensedTableBitLengthThreshold = kMaxTableBitLength;
     constexpr static int kNumPowers{10};
     constexpr static int kMaxPower{512};
     using WordDistances = std::array<std::vector<int>, kNumPowers>;
@@ -93,27 +93,27 @@ class PatternTable : public DecodingTable {
     //! @details Tables with bit length greater than threshold will be condensed. To disable condensing completely
     //! set `condensed_table_bit_length_threshold` to 9; to enable condensing for all tables, set it to 0; to
     //! enable condensing for tables of size greater than 64, set it to 6.
-    static void set_condensed_table_bit_length_threshold(std::size_t condensed_table_bit_length_threshold);
+    static void set_condensed_table_bit_length_threshold(size_t condensed_table_bit_length_threshold);
 
-    explicit PatternTable(std::size_t max_depth);
+    explicit PatternTable(size_t max_depth);
 
-    [[nodiscard]] const CodeWord* codeword(std::size_t code) const {
+    [[nodiscard]] const CodeWord* codeword(size_t code) const {
         return code < codewords_.size() ? codewords_[code] : nullptr;
     }
 
-    [[nodiscard]] std::size_t num_codewords() const { return codewords_.size(); }
+    [[nodiscard]] size_t num_codewords() const { return codewords_.size(); }
 
     [[nodiscard]] const CodeWord* search_condensed(uint16_t code) const;
 
-    std::size_t build_condensed(std::span<Pattern> patterns);
+    size_t build_condensed(std::span<Pattern> patterns);
 
   private:
     static const WordDistances kWordDistances;
-    static std::size_t condensed_table_bit_length_threshold_;
+    static size_t condensed_table_bit_length_threshold_;
 
-    [[nodiscard]] static bool check_distance(std::size_t power, int distance);
+    [[nodiscard]] static bool check_distance(size_t power, int distance);
 
-    std::size_t build_condensed(
+    size_t build_condensed(
         std::span<Pattern> patterns,
         uint64_t highest_depth,
         uint16_t code,
@@ -136,19 +136,19 @@ struct Position {
 
 class PositionTable : public DecodingTable {
   public:
-    explicit PositionTable(std::size_t max_depth);
+    explicit PositionTable(size_t max_depth);
 
-    [[nodiscard]] std::size_t num_positions() const { return positions_.size(); }
+    [[nodiscard]] size_t num_positions() const { return positions_.size(); }
 
-    [[nodiscard]] uint64_t position(std::size_t code) const {
+    [[nodiscard]] uint64_t position(size_t code) const {
         return code < positions_.size() ? positions_[code] : 0;
     }
 
-    [[nodiscard]] uint8_t length(std::size_t code) const {
+    [[nodiscard]] uint8_t length(size_t code) const {
         return code < lengths_.size() ? lengths_[code] : 0;
     }
 
-    [[nodiscard]] PositionTable* child(std::size_t code) const {
+    [[nodiscard]] PositionTable* child(size_t code) const {
         return code < children_.size() ? children_[code].get() : nullptr;
     }
 
@@ -183,10 +183,10 @@ consteval void enable_bitmask_operator_not(CompressionKind);
 class Decompressor {
   public:
     //! The max number of patterns in decoding tables
-    constexpr static std::size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 510;
+    constexpr static size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 510;
 
     //! The max number of positions in decoding tables
-    constexpr static std::size_t kMaxTablePositions = (1 << DecodingTable::kMaxTableBitLength) * 100;
+    constexpr static size_t kMaxTablePositions = (1 << DecodingTable::kMaxTableBitLength) * 100;
 
     enum class ReadMode : uint8_t {
         kNormal,
@@ -201,7 +201,7 @@ class Decompressor {
       public:
         Iterator(const Decompressor* decoder, std::shared_ptr<ReadModeGuard> read_mode_guard);
 
-        [[nodiscard]] std::size_t data_size() const { return decoder_->words_length_; }
+        [[nodiscard]] size_t data_size() const { return decoder_->words_length_; }
 
         //! Check if any next word is present in the data stream
         [[nodiscard]] bool has_next() const { return word_offset_ < decoder_->words_length_; }
@@ -263,7 +263,7 @@ class Decompressor {
         [[nodiscard]] uint64_t next_position(bool clean);
 
         //! Read next code from the data stream
-        [[nodiscard]] inline uint16_t next_code(std::size_t bit_length);
+        [[nodiscard]] inline uint16_t next_code(size_t bit_length);
 
         //! The decoder on which iterator works
         const Decompressor* decoder_;

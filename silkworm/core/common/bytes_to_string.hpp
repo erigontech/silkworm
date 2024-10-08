@@ -35,7 +35,7 @@ inline const uint8_t* byte_ptr_cast(const char* ptr) { return reinterpret_cast<c
 inline Bytes string_to_bytes(const std::string& s) { return {s.begin(), s.end()}; }
 inline ByteView string_view_to_byte_view(std::string_view v) { return {byte_ptr_cast(v.data()), v.length()}; }
 
-template <std::size_t Size>
+template <size_t Size>
 ByteView array_to_byte_view(const std::array<unsigned char, Size>& array) {
     return ByteView{reinterpret_cast<const uint8_t*>(array.data()), Size};
 }

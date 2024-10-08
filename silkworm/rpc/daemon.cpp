@@ -261,7 +261,7 @@ void Daemon::add_private_services() {
     auto grpc_channel = create_channel_();
 
     // Add the private state to each execution context
-    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
+    for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& context = context_pool_.next_context();
         auto& io_context{*context.io_context()};
         auto& grpc_context{*context.grpc_context()};
@@ -294,7 +294,7 @@ void Daemon::add_shared_services() {
     auto filter_storage = std::make_shared<FilterStorage>(context_pool_.size() * kDefaultFilterStorageSize);
 
     // Add the shared state to the execution contexts
-    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
+    for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& context = context_pool_.next_context();
         auto& io_context = *context.io_context();
 
@@ -328,7 +328,7 @@ void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::Ex
            "Daemon::add_execution_services: number of execution engines must be equal to the number of contexts");
 
     // Add the Engine API execution service to each execution context
-    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
+    for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& io_context = context_pool_.next_io_context();
         add_shared_service<engine::ExecutionEngine>(io_context, engines[i]);
     }
@@ -381,7 +381,7 @@ void Daemon::start() {
     settings_.engine_ifc_log_settings.container_folder = data_folder / settings_.engine_ifc_log_settings.container_folder;
 
     // Create and start the configured RPC services for each execution context
-    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
+    for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& ioc = context_pool_.next_io_context();
 
         if (!settings_.eth_end_point.empty()) {

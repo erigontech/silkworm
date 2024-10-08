@@ -77,7 +77,7 @@ class MemoryMutationCursor : public RWCursorDupSort {
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
     MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
-    [[nodiscard]] std::size_t count_multivalue() const override;
+    [[nodiscard]] size_t count_multivalue() const override;
     MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept override;
     void insert(const Slice& key, Slice value) override;
     void upsert(const Slice& key, const Slice& value) override;

@@ -18,12 +18,12 @@
 
 namespace silkworm {
 
-std::size_t binary_find_if(std::size_t n, absl::FunctionRef<bool(std::size_t)> f) {
-    std::size_t i{0};
-    std::size_t j{n};
+size_t binary_find_if(size_t n, absl::FunctionRef<bool(size_t)> f) {
+    size_t i{0};
+    size_t j{n};
     while (j > i) {
-        const std::size_t count{j - i};
-        const std::size_t m{i + count / 2};
+        const size_t count{j - i};
+        const size_t m{i + count / 2};
         if (f(m)) {
             j = m;
         } else {

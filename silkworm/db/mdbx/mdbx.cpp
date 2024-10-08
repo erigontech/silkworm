@@ -517,7 +517,7 @@ MoveResult PooledCursor::move(MoveOperation operation, const Slice& key, const S
     return ::mdbx::cursor::move(operation, key, value, throw_notfound);
 }
 
-std::size_t PooledCursor::count_multivalue() const {
+size_t PooledCursor::count_multivalue() const {
     return ::mdbx::cursor::count_multivalue();
 }
 

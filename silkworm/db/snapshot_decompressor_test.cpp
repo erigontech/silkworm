@@ -47,14 +47,14 @@ using namespace snapshots::seg;
 //! DecodingTable exposed for white-box testing
 class DecodingTableForTest : public DecodingTable {
   public:
-    explicit DecodingTableForTest(std::size_t max_depth) : DecodingTable(max_depth) {}
-    [[nodiscard]] std::size_t max_depth() const { return max_depth_; }
+    explicit DecodingTableForTest(size_t max_depth) : DecodingTable(max_depth) {}
+    [[nodiscard]] size_t max_depth() const { return max_depth_; }
 };
 
 //! set_condensed_table_bit_length_threshold
 class SetCondensedTableBitLengthThresholdGuard {
   public:
-    explicit SetCondensedTableBitLengthThresholdGuard(std::size_t threshold) {
+    explicit SetCondensedTableBitLengthThresholdGuard(size_t threshold) {
         PatternTable::set_condensed_table_bit_length_threshold(threshold);
     }
     ~SetCondensedTableBitLengthThresholdGuard() {
@@ -63,15 +63,15 @@ class SetCondensedTableBitLengthThresholdGuard {
 };
 
 TEST_CASE("DecodingTable::DecodingTable", "[silkworm][node][seg][decompressor]") {
-    std::map<std::string, std::pair<std::size_t, std::size_t>> test_params{
+    std::map<std::string, std::pair<size_t, size_t>> test_params{
         {"max depth is 0", {0, 0}},
         {"max depth is < kMaxTableBitLength", {DecodingTable::kMaxTableBitLength - 1, DecodingTable::kMaxTableBitLength - 1}},
         {"max depth is = kMaxTableBitLength", {DecodingTable::kMaxTableBitLength, DecodingTable::kMaxTableBitLength}},
         {"max depth is > kMaxTableBitLength", {DecodingTable::kMaxTableBitLength + 1, DecodingTable::kMaxTableBitLength}},
     };
     for (const auto& [test_name, test_pair] : test_params) {
-        std::size_t max_depth = test_pair.first;
-        std::size_t expected_bit_length = test_pair.second;
+        size_t max_depth = test_pair.first;
+        size_t expected_bit_length = test_pair.second;
         DecodingTableForTest table{max_depth};
         CHECK(table.max_depth() == max_depth);
         CHECK(table.bit_length() == expected_bit_length);
@@ -426,7 +426,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][
     CHECK_NOTHROW(decoder.open());
 
     {
-        std::size_t i{0};
+        size_t i{0};
         auto it = decoder.make_iterator();
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
@@ -453,7 +453,7 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]
     CHECK_NOTHROW(decoder.open());
 
     {
-        std::size_t i{0};
+        size_t i{0};
         auto it = decoder.make_iterator();
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
@@ -480,7 +480,7 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
     CHECK_NOTHROW(decoder.open());
 
     {
-        std::size_t i{0};
+        size_t i{0};
         auto it = decoder.make_iterator();
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};

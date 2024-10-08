@@ -51,7 +51,7 @@ Task<void> TxPoolRpcApi::handle_txpool_content(const nlohmann::json& request, nl
         transactions_content["baseFee"];
 
         bool error = false;
-        for (std::size_t i{0}; i < txpool_transactions.size(); ++i) {
+        for (size_t i{0}; i < txpool_transactions.size(); ++i) {
             ByteView from{txpool_transactions[i].rlp};
             std::string sender = address_to_hex(txpool_transactions[i].sender);
             Transaction txn{};

@@ -640,8 +640,8 @@ MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& 
     throw std::runtime_error{"MemoryMutationCursor::move(MoveOperation,const Slice&,const Slice&,bool) not implemented"};
 }
 
-std::size_t MemoryMutationCursor::count_multivalue() const {
-    std::size_t count{0};
+size_t MemoryMutationCursor::count_multivalue() const {
+    size_t count{0};
     return count;
 }
 

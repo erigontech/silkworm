@@ -65,10 +65,10 @@ PoWSync::NewHeight PoWSync::resume() {  // find the point (head) where we left o
         ChainHead fcu_as_head{*last_fcu_number, last_fcu.head_block_hash, *total_difficulty};
         ensure_invariant(fcu_as_head == chain_fork_view_.head(), "last FCU misaligned with canonical head");
         chain_fork_view_.reset_head(fcu_as_head);
-        head = to_BlockId(fcu_as_head);
+        head = to_block_id(fcu_as_head);
     } else {
         // ... else we use the head computed parsing the last N headers
-        head = to_BlockId(chain_fork_view_.head());
+        head = to_block_id(chain_fork_view_.head());
     }
 
     return head;

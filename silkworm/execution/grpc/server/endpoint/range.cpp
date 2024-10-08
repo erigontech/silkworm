@@ -32,7 +32,7 @@ api::BlockHashes block_hashes_from_request(const proto::GetBodiesByHashesRequest
     api::BlockHashes hashes;
     hashes.reserve(static_cast<size_t>(request.hashes_size()));
     for (const auto& h256 : request.hashes()) {
-        hashes.emplace_back(rpc::bytes32_from_H256(h256));
+        hashes.emplace_back(rpc::bytes32_from_h256(h256));
     }
     return hashes;
 }

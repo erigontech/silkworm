@@ -24,7 +24,7 @@ std::ostream& operator<<(std::ostream& os, const silkworm::InboundMessage& msg) 
 }
 
 std::string identify(const silkworm::InboundMessage& message) {
-    return message.name() + " reqId=" + std::to_string(message.reqId());
+    return message.name() + " reqId=" + std::to_string(message.req_id());
 }
 
 }  // namespace silkworm

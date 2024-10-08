@@ -219,7 +219,7 @@ Task<void> IsCanonicalHashCall::operator()(api::DirectService& service) {
     proto::IsCanonicalResponse reply;
     ::grpc::Status status;
     try {
-        const auto block_hash{rpc::bytes32_from_H256(request_)};
+        const auto block_hash{rpc::bytes32_from_h256(request_)};
         const bool is_canonical = co_await service.is_canonical_hash(block_hash);
         reply.set_canonical(is_canonical);
         status = ::grpc::Status::OK;
@@ -233,7 +233,7 @@ Task<void> GetHeaderHashNumberCall::operator()(api::DirectService& service) {
     proto::GetHeaderHashNumberResponse reply;
     ::grpc::Status status;
     try {
-        const auto block_hash{rpc::bytes32_from_H256(request_)};
+        const auto block_hash{rpc::bytes32_from_h256(request_)};
         const auto block_number = co_await service.get_header_hash_number(block_hash);
         reply = response_from_block_number(block_number);
         status = ::grpc::Status::OK;

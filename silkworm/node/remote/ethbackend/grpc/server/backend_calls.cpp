@@ -31,7 +31,7 @@ remote::EtherbaseReply EtherbaseCall::response_;
 void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     const auto etherbase = backend.etherbase();
     if (etherbase.has_value()) {
-        const auto h160 = rpc::H160_from_address(etherbase.value()).release();
+        const auto h160 = rpc::h160_from_address(etherbase.value()).release();
         EtherbaseCall::response_.set_allocated_address(h160);
     }
 }
@@ -40,7 +40,7 @@ Task<void> EtherbaseCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "EtherbaseCall START";
     if (response_.has_address()) {
         co_await agrpc::finish(responder_, response_, ::grpc::Status::OK);
-        SILK_TRACE << "EtherbaseCall END etherbase: " << rpc::address_from_H160(response_.address());
+        SILK_TRACE << "EtherbaseCall END etherbase: " << rpc::address_from_h160(response_.address());
     } else {
         const ::grpc::Status error{::grpc::StatusCode::INTERNAL, "etherbase must be explicitly specified"};
         co_await agrpc::finish_with_error(responder_, error);

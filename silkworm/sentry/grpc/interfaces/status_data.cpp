@@ -30,7 +30,7 @@ namespace proto = ::sentry;
 using namespace silkworm::rpc;
 
 eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t eth_version) {
-    Bytes genesis_hash = bytes_from_H256(data.fork_data().genesis());
+    Bytes genesis_hash = bytes_from_h256(data.fork_data().genesis());
 
     const auto& height_forks = data.fork_data().height_forks();
     std::vector<BlockNum> fork_block_numbers;
@@ -51,8 +51,8 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
     auto message = eth::StatusMessage{
         eth_version,
         data.network_id(),
-        uint256_from_H256(data.total_difficulty()),
-        bytes_from_H256(data.best_hash()),
+        uint256_from_h256(data.total_difficulty()),
+        bytes_from_h256(data.best_hash()),
         genesis_hash,
         eth::ForkId{genesis_hash, fork_block_numbers, fork_block_times, data.max_block_height()},
     };
@@ -68,7 +68,7 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
 static proto::Forks make_proto_forks(ByteView genesis_hash, const std::vector<BlockNum>& fork_block_numbers,
                                      const std::vector<BlockTime>& fork_block_times) {
     proto::Forks forks;
-    forks.mutable_genesis()->CopyFrom(*H256_from_bytes(genesis_hash));
+    forks.mutable_genesis()->CopyFrom(*h256_from_bytes(genesis_hash));
 
     for (auto block_number : fork_block_numbers) {
         forks.add_height_forks(block_number);
@@ -84,8 +84,8 @@ static proto::Forks make_proto_forks(ByteView genesis_hash, const std::vector<Bl
 proto::StatusData proto_status_data_from_status_data(const eth::StatusData& data) {
     proto::StatusData result;
     result.set_network_id(data.message.network_id);
-    result.mutable_total_difficulty()->CopyFrom(*H256_from_uint256(data.message.total_difficulty));
-    result.mutable_best_hash()->CopyFrom(*H256_from_bytes(data.message.best_block_hash));
+    result.mutable_total_difficulty()->CopyFrom(*h256_from_uint256(data.message.total_difficulty));
+    result.mutable_best_hash()->CopyFrom(*h256_from_bytes(data.message.best_block_hash));
     result.mutable_fork_data()->CopyFrom(make_proto_forks(data.message.genesis_hash, data.fork_block_numbers, data.fork_block_times));
     result.set_max_block_height(data.head_block_num);
 

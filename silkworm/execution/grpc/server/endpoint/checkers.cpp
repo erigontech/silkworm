@@ -28,13 +28,13 @@ namespace silkworm::execution::grpc::server {
 
 ::execution::ForkChoice response_from_fork_choice(const api::ForkChoice& fork_choice) {
     ::execution::ForkChoice response;
-    response.set_allocated_head_block_hash(rpc::H256_from_bytes32(fork_choice.head_block_hash).release());
+    response.set_allocated_head_block_hash(rpc::h256_from_bytes32(fork_choice.head_block_hash).release());
     response.set_timeout(fork_choice.timeout);
     if (fork_choice.finalized_block_hash) {
-        response.set_allocated_finalized_block_hash(rpc::H256_from_bytes32(*fork_choice.finalized_block_hash).release());
+        response.set_allocated_finalized_block_hash(rpc::h256_from_bytes32(*fork_choice.finalized_block_hash).release());
     }
     if (fork_choice.safe_block_hash) {
-        response.set_allocated_safe_block_hash(rpc::H256_from_bytes32(*fork_choice.safe_block_hash).release());
+        response.set_allocated_safe_block_hash(rpc::h256_from_bytes32(*fork_choice.safe_block_hash).release());
     }
     return response;
 }

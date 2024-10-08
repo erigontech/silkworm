@@ -26,7 +26,7 @@ namespace silkworm::execution::grpc::client {
     ::execution::GetSegmentRequest request;
     if (std::holds_alternative<Hash>(number_or_hash)) {
         const auto& block_hash{std::get<Hash>(number_or_hash)};
-        request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
+        request.set_allocated_block_hash(rpc::h256_from_bytes32(block_hash).release());
     } else {
         SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
         const auto block_number{std::get<BlockNum>(number_or_hash)};
@@ -39,7 +39,7 @@ std::optional<TotalDifficulty> total_difficulty_from_response(const ::execution:
     if (!response.has_td()) {
         return {};
     }
-    return rpc::uint256_from_H256(response.td());
+    return rpc::uint256_from_h256(response.td());
 }
 
 std::optional<BlockHeader> header_from_response(const ::execution::GetHeaderResponse& response) {

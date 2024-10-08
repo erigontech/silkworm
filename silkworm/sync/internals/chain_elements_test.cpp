@@ -109,7 +109,7 @@ TEST_CASE("anchors") {
         REQUIRE(anchor.last_link_height == headers[1].number);
         REQUIRE(anchor.peer_id == peer_id);
         REQUIRE(anchor.links.empty());
-        REQUIRE(anchor.chainLength() == 1);
+        REQUIRE(anchor.chain_length() == 1);
     }
 
     SECTION("children") {

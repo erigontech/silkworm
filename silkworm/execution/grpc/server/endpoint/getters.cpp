@@ -29,7 +29,7 @@ api::BlockNumberOrHash block_number_or_hash_from_request(const proto::GetSegment
     if (request.has_block_number()) {
         number_or_hash = request.block_number();
     } else if (request.has_block_hash()) {
-        number_or_hash = rpc::bytes32_from_H256(request.block_hash());
+        number_or_hash = rpc::bytes32_from_h256(request.block_hash());
     }
     return number_or_hash;
 }
@@ -37,7 +37,7 @@ api::BlockNumberOrHash block_number_or_hash_from_request(const proto::GetSegment
 proto::GetTDResponse response_from_total_difficulty(const std::optional<TotalDifficulty>& total_difficulty) {
     proto::GetTDResponse response;
     if (total_difficulty) {
-        response.set_allocated_td(rpc::H256_from_uint256(*total_difficulty).release());
+        response.set_allocated_td(rpc::h256_from_uint256(*total_difficulty).release());
     }
     return response;
 }

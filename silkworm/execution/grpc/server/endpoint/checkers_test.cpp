@@ -65,10 +65,10 @@ static constexpr auto kTimeout{100u};
 
 static proto::ForkChoice sample_proto_fork_choice() {
     proto::ForkChoice fork_choice;
-    fork_choice.set_allocated_head_block_hash(rpc::H256_from_bytes32(kHeadHash).release());
+    fork_choice.set_allocated_head_block_hash(rpc::h256_from_bytes32(kHeadHash).release());
     fork_choice.set_timeout(kTimeout);
-    fork_choice.set_allocated_finalized_block_hash(rpc::H256_from_bytes32(kFinalizedHash).release());
-    fork_choice.set_allocated_safe_block_hash(rpc::H256_from_bytes32(kSafeHash).release());
+    fork_choice.set_allocated_finalized_block_hash(rpc::h256_from_bytes32(kFinalizedHash).release());
+    fork_choice.set_allocated_safe_block_hash(rpc::h256_from_bytes32(kSafeHash).release());
     return fork_choice;
 }
 

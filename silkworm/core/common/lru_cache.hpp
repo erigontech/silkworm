@@ -89,12 +89,12 @@ class LruCache {
     // this method is not thread-safe. Returns address of the element in the internal map
     const value_t* get(const key_t& key) {
         SILKWORM_ASSERT(!thread_safe_);
-        return _get(key);
+        return get_internal(key);
     }
 
     std::optional<value_t> get_as_copy(const key_t& key) {
         SILKWORM_LRU_CACHE_GUARD
-        auto val = _get(key);
+        auto val = get_internal(key);
         if (val == nullptr) {
             return std::nullopt;
         }
@@ -130,7 +130,7 @@ class LruCache {
     }
 
   private:
-    const value_t* _get(const key_t& key) {
+    const value_t* get_internal(const key_t& key) {
         auto it = cache_items_map_.find(key);
         if (it == cache_items_map_.end()) {
             return nullptr;

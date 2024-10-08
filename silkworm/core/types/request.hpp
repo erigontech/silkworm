@@ -37,19 +37,20 @@ using RequestPtr = std::unique_ptr<Request>;
 std::vector<RequestPtr> extract_deposit_requests_from_logs(const std::vector<Log>& logs);
 
 struct Request {
-    enum class RequestType : uint8_t {
-        DepositRequestType = 0,
-        WithdrawalRequestType = 1,
-        ConsolidationRequestType = 2
+    enum class RequestType {
+        kDepositRequestType = 0,
+        kWithdrawalRequestType = 1,
+        kConsolidationRequestType = 2
     };
 
     virtual ~Request() = default;
     virtual void encode(Bytes& to) const = 0;
     virtual size_t length() const = 0;
+    virtual DecodingResult decode(ByteView& from, rlp::Leftover mode) = 0;
 };
 
-struct DepositRequest final : public Request {
-    std::array<uint8_t, kBLSKeyLen> pub_key;
+struct DepositRequest final : Request {
+    BLSKey pub_key;
     Hash withdrawal_credentials;
     uint64_t amount = 0;
     BLSSignature signature;
@@ -57,30 +58,34 @@ struct DepositRequest final : public Request {
 
     void encode(Bytes& to) const override;
     size_t length() const override;
+    DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
 };
 
-struct WithdrawalRequest final : public Request {
+struct WithdrawalRequest final : Request {
     evmc::address source_address;
-    std::array<uint8_t, kBLSKeyLen> validator_pub_key;
+    BLSKey validator_pub_key;
     uint64_t amount{};
 
     void encode(Bytes& to) const override;
     size_t length() const override;
+    DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
 };
 
-struct ConsolidationRequest final : public Request {
+struct ConsolidationRequest final : Request {
     evmc::address source_address;
     BLSKey source_pub_key;
     BLSKey target_pub_key;
 
     void encode(Bytes& to) const override;
     size_t length() const override;
+    DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
 };
 
 namespace rlp {
     size_t length(const Request&);
     void encode(Bytes& to, const Request&);
     DecodingResult decode(ByteView& from, Request& to, Leftover mode = Leftover::kProhibit) noexcept;
+    DecodingResult decode(ByteView& from, std::vector<RequestPtr>& to, Leftover mode = Leftover::kAllow) noexcept;
 }  // namespace rlp
 
 }  // namespace silkworm

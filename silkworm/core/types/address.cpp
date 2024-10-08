@@ -30,6 +30,11 @@ namespace rlp {
         encode(to, ByteView{address.bytes});
     }
 
+    DecodingResult decode(ByteView& from, evmc::address& address, Leftover mode) {
+        SILKWORM_ASSERT(from.size() >= std::size(address.bytes));
+        return decode(from, address.bytes, mode);
+    }
+
     size_t length(const evmc::address& address) noexcept {
         return length(ByteView{address.bytes});
     }

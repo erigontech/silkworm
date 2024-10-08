@@ -54,10 +54,18 @@ static rlp::Header compute_header(const WithdrawalRequest& request) {
     return header;
 }
 
+static rlp::Header compute_header(const ConsolidationRequest& request) {
+    rlp::Header header{.list = true};
+    header.payload_length += rlp::length(request.source_address);
+    header.payload_length += rlp::length(request.source_pub_key);
+    header.payload_length += rlp::length(request.target_pub_key);
+    return header;
+}
+
 void DepositRequest::encode(Bytes& to) const {
     const auto header = compute_header(*this);
     using underlying = std::underlying_type_t<Request::RequestType>;
-    rlp::encode(to, static_cast<underlying>(Request::RequestType::DepositRequestType));
+    to.push_back(static_cast<underlying>(Request::RequestType::kDepositRequestType));
     rlp::encode_header(to, header);
     rlp::encode(to, pub_key);
     rlp::encode(to, withdrawal_credentials);
@@ -73,13 +81,17 @@ size_t DepositRequest::length() const {
     header.payload_length += rlp::length(amount);
     header.payload_length += rlp::length(signature);
     header.payload_length += rlp::length(index);
-    return rlp::length_of_length(header.payload_length) + header.payload_length;
+    return rlp::length_of_length(header.payload_length) + header.payload_length + sizeof(std::underlying_type<RequestType>);
+}
+
+DecodingResult DepositRequest::decode(ByteView& from, rlp::Leftover mode) {
+    return rlp::decode(from, mode, pub_key, withdrawal_credentials, amount, signature, index);
 }
 
 void WithdrawalRequest::encode(Bytes& to) const {
     const auto header = compute_header(*this);
     using underlying = std::underlying_type_t<Request::RequestType>;
-    rlp::encode(to, static_cast<underlying>(Request::RequestType::WithdrawalRequestType));
+    to.push_back(static_cast<underlying>(Request::RequestType::kWithdrawalRequestType));
     rlp::encode_header(to, header);
     rlp::encode(to, source_address);
     rlp::encode(to, validator_pub_key);
@@ -91,14 +103,33 @@ size_t WithdrawalRequest::length() const {
     header.payload_length += rlp::length(source_address);
     header.payload_length += rlp::length(validator_pub_key);
     header.payload_length += rlp::length(amount);
-    return rlp::length_of_length(header.payload_length) + header.payload_length;
+    return rlp::length_of_length(header.payload_length) + header.payload_length + sizeof(std::underlying_type<RequestType>);
 }
 
-void ConsolidationRequest::encode(Bytes& /*to*/) const {
+DecodingResult WithdrawalRequest::decode(ByteView& from, rlp::Leftover mode) {
+    return rlp::decode(from, mode, source_address, validator_pub_key, amount);
+}
+
+void ConsolidationRequest::encode(Bytes& to) const {
+    const auto header = compute_header(*this);
+    using underlying = std::underlying_type_t<Request::RequestType>;
+    to.push_back(static_cast<underlying>(Request::RequestType::kConsolidationRequestType));
+    rlp::encode_header(to, header);
+    rlp::encode(to, source_address);
+    rlp::encode(to, source_pub_key);
+    rlp::encode(to, target_pub_key);
 }
 
 size_t ConsolidationRequest::length() const {
-    return 0;
+    rlp::Header header{.list = true};
+    header.payload_length += rlp::length(source_address);
+    header.payload_length += rlp::length(source_pub_key);
+    header.payload_length += rlp::length(target_pub_key);
+    return rlp::length_of_length(header.payload_length) + header.payload_length + sizeof(std::underlying_type<RequestType>);
+}
+
+DecodingResult ConsolidationRequest::decode(ByteView& from, rlp::Leftover mode) {
+    return rlp::decode(from, mode, source_address, source_pub_key, target_pub_key);
 }
 
 namespace rlp {
@@ -111,7 +142,35 @@ namespace rlp {
         request.encode(to);
     }
 
-    DecodingResult decode(ByteView& /*from*/, Request& /*to*/, Leftover /*mode*/) noexcept {
+    DecodingResult decode(ByteView& from, Request& to, Leftover mode) noexcept {
+        return to.decode(from, mode);
+    }
+
+    DecodingResult decode(ByteView& from, [[maybe_unused]] std::vector<RequestPtr>& to, Leftover mode) noexcept {
+        if (from.empty()) {
+            return {};
+        }
+
+        using Creator = std::function<RequestPtr()>;
+        static const std::vector<Creator> kRequestCreators = {
+            []() -> RequestPtr { return std::make_unique<DepositRequest>(); },
+            []() -> RequestPtr { return std::make_unique<WithdrawalRequest>(); },
+            []() -> RequestPtr { return std::make_unique<ConsolidationRequest>(); }};
+
+        auto input_view = from;
+
+        for (;;) {
+            const auto request_type = input_view[0];
+            SILKWORM_ASSERT(request_type < kRequestCreators.size());
+
+            auto request = kRequestCreators[request_type]();
+            // Advance by one byte - request type is not rlp-encoded
+            input_view = input_view.substr(1, input_view.size());
+            if (const auto decode_res = decode(input_view, *request, mode); !decode_res) {
+                return decode_res;
+            }
+        }
+
         return {};
     }
 

@@ -23,6 +23,9 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/rlp/decode.hpp>
+
+#include "silkworm/core/common/decoding_result.hpp"
 
 namespace silkworm {
 
@@ -45,6 +48,7 @@ std::string address_to_hex(const evmc::address& address);
 
 namespace rlp {
     void encode(Bytes& to, const evmc::address& address);
+    DecodingResult decode(ByteView& from, evmc::address& to, Leftover mode = Leftover::kProhibit);
     size_t length(const evmc::address& address) noexcept;
 }  // namespace rlp
 

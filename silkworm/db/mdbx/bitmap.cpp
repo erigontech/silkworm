@@ -147,7 +147,7 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
                 throw std::runtime_error("Operation cancelled");
             }
 
-            std::unique_lock log_lck(log_mtx_);
+            std::scoped_lock log_lck{log_mtx_};
             current_key_ = abridge(to_hex(key, true), kAddressLength);
             log_time = now + 5s;
         }
@@ -192,7 +192,7 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
         }
     }
 
-    std::unique_lock log_lck(log_mtx_);
+    std::scoped_lock log_lck{log_mtx_};
     current_key_.clear();
 }
 
@@ -226,7 +226,7 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
             if (SignalHandler::signalled()) {
                 throw std::runtime_error("Operation cancelled");
             }
-            std::unique_lock log_lck(log_mtx_);
+            std::scoped_lock log_lck{log_mtx_};
             current_key_ = abridge(to_hex(data_key_view, true), kAddressLength);
             log_time = now + 5s;
         }
@@ -259,7 +259,7 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
         target_data = target.to_next(/*throw_notfound=*/false);
     }
 
-    std::unique_lock log_lck(log_mtx_);
+    std::scoped_lock log_lck{log_mtx_};
     current_key_.clear();
 }
 

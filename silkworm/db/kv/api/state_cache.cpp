@@ -48,7 +48,7 @@ CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(con
 
 std::unique_ptr<StateView> CoherentStateCache::get_view(Transaction& tx) {
     const auto view_id = tx.view_id();
-    std::unique_lock write_lock{rw_mutex_};
+    std::scoped_lock write_lock{rw_mutex_};
     CoherentStateRoot* root = get_root(view_id);
     return root->ready ? std::make_unique<CoherentStateView>(tx, this) : nullptr;
 }
@@ -76,7 +76,7 @@ void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_s
         return;
     }
 
-    std::unique_lock write_lock{rw_mutex_};
+    std::scoped_lock write_lock{rw_mutex_};
 
     const auto view_id = state_changes_set.state_version_id;
     CoherentStateRoot* root = advance_root(view_id);
@@ -248,7 +248,7 @@ Task<std::optional<Bytes>> CoherentStateCache::get(ByteView key, Transaction& tx
     }
 
     read_lock.unlock();
-    std::unique_lock write_lock{rw_mutex_};
+    std::scoped_lock write_lock{rw_mutex_};
 
     kv.value = value;
     add(std::move(kv), root_it->second.get(), view_id);
@@ -290,7 +290,7 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(ByteView key, Transactio
     }
 
     read_lock.unlock();
-    std::unique_lock write_lock{rw_mutex_};
+    std::scoped_lock write_lock{rw_mutex_};
 
     kv.value = value;
     add_code(std::move(kv), root_it->second.get(), view_id);

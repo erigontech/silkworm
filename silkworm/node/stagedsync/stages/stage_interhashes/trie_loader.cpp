@@ -95,7 +95,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
 
                 if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                     SignalHandler::throw_if_signalled();
-                    std::unique_lock log_lck(log_mtx_);
+                    std::scoped_lock log_lck(log_mtx_);
                     log_key_ = to_hex(hashed_account_data_key_view, true);
                     log_time = now + 2s;
                 }

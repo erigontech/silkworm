@@ -114,7 +114,8 @@ Bad:
 
 ### P4 RAII lock type usage
 
-Use `std::scoped_lock` for a common case where a single mutex needs to be locked immediately and unlocked at the end of the scope. Use other lock types sparingly if other features are needed (e.g. multiple mutexes, deferred locking etc).
+Use `std::scoped_lock` for a common case where a single mutex needs to be locked immediately and unlocked at the end of the scope. Do not use `std::lock_guard`.  
+Use `std::unique_lock` where a manual `unlock()` is required, for working with `std::condition_variable` or if other unique_lock features are needed (e.g. deferred locking, adoption).
 
 ### P5 SILKWORM_ASSERT
 

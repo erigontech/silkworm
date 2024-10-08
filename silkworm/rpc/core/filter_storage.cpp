@@ -30,7 +30,7 @@ FilterStorage::FilterStorage(size_t max_size, double max_filter_age) : generator
 FilterStorage::FilterStorage(Generator& generator, size_t max_size, double max_filter_age) : generator_{generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
 
 std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::scoped_lock lock{mutex_};
 
     if (storage_.size() >= max_size_) {
         clean_up();
@@ -62,7 +62,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
 }
 
 bool FilterStorage::remove_filter(const std::string& filter_id) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::scoped_lock lock{mutex_};
 
     const auto itr = storage_.find(filter_id);
     if (itr == storage_.end()) {
@@ -74,7 +74,7 @@ bool FilterStorage::remove_filter(const std::string& filter_id) {
 }
 
 std::optional<std::reference_wrapper<StoredFilter>> FilterStorage::get_filter(const std::string& filter_id) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::scoped_lock lock{mutex_};
 
     clean_up();
 

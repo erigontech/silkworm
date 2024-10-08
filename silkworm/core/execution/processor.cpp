@@ -59,6 +59,53 @@ static void print_header(const BlockHeader& header) {
               << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }()) << "\n";
 }
 
+static void print_txn(const Transaction& txn) {
+    std::cout << "Transaction: " << "\n"
+              << "hash=" << to_hex(txn.hash()) << "\n"
+              << "type=" << static_cast<uint8_t>(txn.type) << "\n"
+              << "from=" << (txn.sender() ? address_to_hex(*txn.sender()) : "") << "\n"
+              << "to=" << (txn.to ? address_to_hex(*txn.to) : "") << "\n"
+              << "chain_id=" << (txn.chain_id ? intx::to_string(*txn.chain_id) : "") << "\n"
+              << "nonce=" << txn.nonce << "\n"
+              << "value=" << intx::to_string(txn.value) << "\n"
+              << "gas_limit=" << txn.gas_limit << "\n"
+              << "max_fee_per_gas=" << intx::to_string(txn.max_fee_per_gas) << "\n"
+              << "max_fee_per_blob_gas=" << intx::to_string(txn.max_fee_per_blob_gas) << "\n"
+              << "max_priority_fee_per_gas=" << intx::to_string(txn.max_priority_fee_per_gas) << "\n"
+              << "odd_y_parity=" << txn.odd_y_parity << "\n"
+              << "v=" << intx::to_string(txn.v()) << "\n"
+              << "r=" << intx::to_string(txn.r) << "\n"
+              << "s=" << intx::to_string(txn.s) << "\n"
+              << "data=" << to_hex(txn.data) << "\n"
+              << "access_list=" << ([&]() {
+                     std::string rep{"["};
+                     for (size_t i{0}; i < txn.access_list.size(); ++i) {
+                         const auto& access_entry{txn.access_list[i]};
+                         rep.append(address_to_hex(access_entry.account));
+                         rep.append(" : [");
+                         for (size_t j{0}; j < access_entry.storage_keys.size(); ++j) {
+                             rep.append(to_hex(access_entry.storage_keys[j].bytes));
+                             if (j != access_entry.storage_keys.size() - 1) rep.append(", ");
+                         }
+                         if (i != txn.access_list.size() - 1) rep.append("], ");
+                     }
+                     rep.append("]");
+                     return rep;
+                 }())
+              << "\n"
+              << "blob_versioned_hashes=" << ([&]() {
+                     std::string rep{"["};
+                     for (size_t i{0}; i < txn.blob_versioned_hashes.size(); ++i) {
+                         rep.append(to_hex(txn.blob_versioned_hashes[i]));
+                         if (i != txn.blob_versioned_hashes.size() - 1) rep.append(", ");
+                     }
+                     rep.append("]");
+                     return rep;
+                 }())
+              << "\n"
+              << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, txn); return b; }()) << "\n";
+}
+
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
     assert(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
@@ -180,6 +227,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         const intx::uint256 base_fee_per_gas = header.base_fee_per_gas.value_or(0);
         if (txn.max_fee_per_gas < base_fee_per_gas) {
             std::cout << "Txn position: " << txn_id << "\n";
+            print_txn(txn);
             print_header(header);
             //return ValidationResult::kInvalidGasLimit;
         }

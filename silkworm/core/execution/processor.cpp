@@ -226,7 +226,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         const BlockHeader& header{evm_.block().header};
         const intx::uint256 base_fee_per_gas = header.base_fee_per_gas.value_or(0);
         if (txn.max_fee_per_gas < base_fee_per_gas) {
-            std::cout << "Txn position: " << txn_id << "\n";
+            std::cout << "Txn position: " << txn_id << " #txns: " << block.transactions.size() << "\n";
             print_txn(txn);
             print_header(header);
             //return ValidationResult::kInvalidGasLimit;

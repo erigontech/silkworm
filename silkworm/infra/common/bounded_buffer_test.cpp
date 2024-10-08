@@ -26,7 +26,7 @@ namespace silkworm {
 using namespace std::this_thread;      // sleep_for, sleep_until
 using namespace std::chrono_literals;  // ns, us, ms, s, h, etc.
 
-double CalculatePi(int depth) {
+double calculate_pi(int depth) {
     double pi = 0.0;
     for (int i = 0; i < depth; ++i) {
         auto numerator = static_cast<double>(((i % 2) * 2) - 1);
@@ -50,7 +50,7 @@ class Producer {
         sleep_for(10ms);
         for (int i = 0; i < iterations_; ++i) {
             if (delay_) {
-                auto pi = CalculatePi(i % 1000);
+                auto pi = calculate_pi(i % 1000);
                 if (pi < 3.14) {
                     sleep_for(1ns);
                 }
@@ -76,7 +76,7 @@ class Consumer {
         for (int i = 0; i < iterations_; ++i) {
             value_type item;
             if (delay_) {
-                auto pi = CalculatePi(i % 1000);
+                auto pi = calculate_pi(i % 1000);
                 if (pi < 3.14) {
                     sleep_for(1ns);
                 }

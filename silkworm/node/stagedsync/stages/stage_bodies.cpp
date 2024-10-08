@@ -227,13 +227,16 @@ Stage::Result BodiesStage::prune(db::RWTxn&) {
 }
 
 std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MUST be thread safe
-    static RepeatedMeasure<BlockNum> height_progress{0};
+    if (!is_stopping()) {
+        static RepeatedMeasure<BlockNum> height_progress{0};
 
-    height_progress.set(current_height_);
+        height_progress.set(current_height_);
 
-    return {"current number", std::to_string(height_progress.get()),
-            "progress", std::to_string(height_progress.delta()),
-            "bodies/secs", std::to_string(height_progress.throughput())};
+        return {"current number", std::to_string(height_progress.get()),
+                "progress", std::to_string(height_progress.delta()),
+                "bodies/secs", std::to_string(height_progress.throughput())};
+    }
+    return {};
 }
 
 }  // namespace silkworm::stagedsync

@@ -61,8 +61,8 @@ using Storage = std::map<std::string, std::string>;
 
 struct DebugLog {
     std::uint32_t pc{0};
-    unsigned char opcode{0};
-    std::string op;
+    unsigned char op_code{0};
+    std::optional<std::string> op_name;
     std::int64_t gas{0};
     std::int64_t gas_cost{0};
     std::int32_t depth{0};
@@ -98,6 +98,7 @@ class DebugTracer : public EvmTracer {
     std::vector<DebugLog> logs_;
     std::map<evmc::address, Storage> storage_;
     const char* const* opcode_names_ = nullptr;
+    const char* const* latest_opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::optional<uint8_t> last_opcode_;
 };

@@ -493,7 +493,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
             statistics_.requested_items += kMaxLen;
 
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->block_height
-                       << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->last_link_height << " )";
+                       << " (chain bundle len = " << anchor->chain_length() << ", last link = " << anchor->last_link_height << " )";
 
             extension_condition_ = "ok";
             return request_message;  // try (again) to extend this anchor
@@ -1099,7 +1099,7 @@ std::string HeaderChain::dump_chain_bundles() const {
         std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parent_hash) +
                                   ": start=" + std::to_string(anchor->block_height) +
                                   ", end=" + std::to_string(anchor->last_link_height) +
-                                  ", len=" + std::to_string(anchor->chainLength()) +
+                                  ", len=" + std::to_string(anchor->chain_length()) +
                                   ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
         output += anchor_dump;
     }

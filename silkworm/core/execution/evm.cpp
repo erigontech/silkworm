@@ -59,12 +59,11 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
-EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout) noexcept
+EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},
       block_{block},
       state_{state},
       config_{config},
-      bailout_{bailout},
       evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 {}
 
@@ -101,7 +100,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
     auto value{intx::be::load<intx::uint256>(message.value)};
     const auto owned_funds = state_.get_balance(message.sender);
-    if (!bailout_ && owned_funds < value) {
+    if (!bailout && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
 
         for (auto tracer : tracers_) {
@@ -150,7 +149,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         state_.set_nonce(contract_addr, 1);
     }
 
-    transfer(state_, message.sender, contract_addr, value, bailout_);
+    transfer(state_, message.sender, contract_addr, value, bailout);
 
     const evmc_message deploy_message{
         .kind = message.depth > 0 ? message.kind : EVMC_CALL,
@@ -206,7 +205,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
 
     const auto value{intx::be::load<intx::uint256>(message.value)};
     const auto owned_funds = state_.get_balance(message.sender);
-    if (!bailout_ && message.kind != EVMC_DELEGATECALL && owned_funds < value) {
+    if (!bailout && message.kind != EVMC_DELEGATECALL && owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
@@ -219,7 +218,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             state_.touch(message.recipient);
         } else {
-            transfer(state_, message.sender, message.recipient, value, bailout_);
+            transfer(state_, message.sender, message.recipient, value, bailout);
         }
     }
 
@@ -268,45 +267,6 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     }
 
     return res;
-}
-
-CallResult EVM::deduct_entry_fees(const Transaction& txn) const {
-    if (!bailout_) {
-        const evmc_revision rev{revision()};
-        const intx::uint256 base_fee_per_gas{block().header.base_fee_per_gas.value_or(0)};
-
-        // EIP-1559 normal gas cost
-        intx::uint256 required_funds;
-        if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
-            // This method should be called after check (max_fee and base_fee) present in pre_check() method
-            const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
-                                                                                            : txn.max_priority_fee_per_gas};
-            required_funds = txn.gas_limit * effective_gas_price;
-        } else {
-            required_funds = 0;
-        }
-
-        // EIP-4844 blob gas cost (calc_data_fee)
-        if (block().header.blob_gas_used && rev >= EVMC_CANCUN) {
-            // compute blob fee for eip-4844 data blobs if any
-            const intx::uint256 blob_gas_price{block().header.blob_gas_price().value_or(0)};
-            required_funds += txn.total_blob_gas() * blob_gas_price;
-        }
-
-        intx::uint512 maximum_cost = required_funds;
-        if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
-            maximum_cost = txn.maximum_gas_cost();
-        }
-
-        const auto owned_funds = state_.get_balance(*txn.sender());
-        if (owned_funds < maximum_cost + txn.value) {
-            std::string from = address_to_hex(*txn.sender());
-            std::string msg = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
-            return {.status = EVMC_INSUFFICIENT_BALANCE, .error_message = msg};
-        }
-        state_.subtract_from_balance(*txn.sender(), required_funds);
-    }
-    return {.status = EVMC_SUCCESS};
 }
 
 evmc_result EVM::execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept {
@@ -372,6 +332,11 @@ evmc_revision EVM::revision() const noexcept {
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
     evm1_->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
     tracers_.push_back(std::ref(tracer));
+}
+
+void EVM::remove_tracers() noexcept {
+    evm1_->remove_tracers();
+    tracers_.clear();
 }
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {

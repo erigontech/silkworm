@@ -38,15 +38,13 @@ struct RemoteClient : public api::Client {
         const rpc::ChannelFactory& create_channel,
         agrpc::GrpcContext& grpc_context,
         api::StateCache* state_cache,
-        chain::BlockProvider block_provider,
-        chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+        chain::Providers providers,
         std::function<Task<void>()> on_disconnect = []() -> Task<void> { co_return; });
     RemoteClient(
         std::unique_ptr<::remote::KV::StubInterface> stub,
         agrpc::GrpcContext& grpc_context,
         api::StateCache* state_cache,
-        chain::BlockProvider block_provider,
-        chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider,
+        chain::Providers providers,
         std::function<Task<void>()> on_disconnect = []() -> Task<void> { co_return; });
     ~RemoteClient() override;
 

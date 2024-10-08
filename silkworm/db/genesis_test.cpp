@@ -46,11 +46,11 @@ TEST_CASE("Database genesis initialization") {
         REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
         CHECK(read_chain_config(txn) == kBorMainnetConfig);
     }
-    SECTION("Initialize with Mumbai") {
-        auto source_data{read_genesis_data(kMumbaiConfig.chain_id)};
+    SECTION("Initialize with Amoy") {
+        auto source_data{read_genesis_data(kAmoyConfig.chain_id)};
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
         REQUIRE(initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
-        CHECK(read_chain_config(txn) == kMumbaiConfig);
+        CHECK(read_chain_config(txn) == kAmoyConfig);
     }
 
     SECTION("Initialize with invalid Json") {

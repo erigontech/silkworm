@@ -51,8 +51,7 @@ Task<std::unique_ptr<db::kv::api::Transaction>> RemoteDatabase::begin() {
     auto txn = std::make_unique<RemoteTransaction>(*stub_,
                                                    grpc_context_,
                                                    state_cache_,
-                                                   block_provider(backend_),
-                                                   block_number_from_txn_hash_provider(backend_));
+                                                   ethdb::kv::make_backend_providers(backend_));
     co_await txn->open();
     SILK_TRACE << "RemoteDatabase::begin " << this << " txn: " << txn.get() << " end";
     co_return txn;

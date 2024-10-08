@@ -25,7 +25,7 @@ namespace silkworm {
 
 class InboundMessage : public Message {
   public:
-    [[nodiscard]] virtual uint64_t reqId() const = 0;
+    [[nodiscard]] virtual uint64_t req_id() const = 0;
     [[nodiscard]] virtual std::string content() const = 0;
 };
 

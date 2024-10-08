@@ -484,7 +484,7 @@ class AsyncEtherbaseCall : public AsyncUnaryCall<
         if (ok && status_.ok()) {
             if (reply_.has_address()) {
                 const auto h160_address = reply_.address();
-                const auto address = silkworm::rpc::address_from_H160(h160_address);
+                const auto address = silkworm::rpc::address_from_h160(h160_address);
                 SILK_INFO << "Etherbase reply: " << address << " [latency=" << latency() / 1ns << " ns]";
             } else {
                 SILK_INFO << "Etherbase reply: no address";

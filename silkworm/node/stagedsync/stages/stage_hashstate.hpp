@@ -25,9 +25,11 @@ class HashState final : public Stage {
   public:
     HashState(
         SyncContext* sync_context,
-        const db::etl::CollectorSettings& etl_settings)
+        db::etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kHashStateKey),
-          collector_(std::make_unique<db::etl_mdbx::Collector>(etl_settings)) {}
+          etl_settings_(std::move(etl_settings)) {}
+    HashState(const HashState&) = delete;  // not copyable
+    HashState(HashState&&) = delete;       // nor movable
     ~HashState() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
@@ -90,6 +92,7 @@ class HashState final : public Stage {
     std::string current_key_;
 
     // Collector (used only in !incremental_)
+    db::etl::CollectorSettings etl_settings_;
     std::unique_ptr<db::etl_mdbx::Collector> collector_;
 };
 

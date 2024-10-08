@@ -99,9 +99,10 @@ TEST_CASE("Config revision") {
 // For Polygon the Agra hard fork (=Shanghai without withdrawals) is activated based on the block number
 // rather than timestamp.
 TEST_CASE("Agra revision") {
-    CHECK(kMumbaiConfig.revision(41'874'000 - 1, 0) == EVMC_LONDON);
-    CHECK(kMumbaiConfig.revision(41'874'000, 0) == EVMC_SHANGHAI);
-    CHECK(kMumbaiConfig.revision(41'874'000 + 1, 0) == EVMC_SHANGHAI);
+    auto bor_config{std::get<protocol::bor::Config>(kBorMainnetConfig.rule_set_config)};
+    CHECK(kBorMainnetConfig.revision(bor_config.agra_block - 1, 0) == EVMC_LONDON);
+    CHECK(kBorMainnetConfig.revision(bor_config.agra_block, 0) == EVMC_SHANGHAI);
+    CHECK(kBorMainnetConfig.revision(bor_config.agra_block + 1, 0) == EVMC_SHANGHAI);
 }
 
 TEST_CASE("distinct_fork_points") {

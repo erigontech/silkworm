@@ -48,7 +48,7 @@ class PatternAggregatorImpl {
   public:
     explicit PatternAggregatorImpl(const filesystem::path& etl_work_path)
         : etl_work_path_(etl_work_path),
-          collector_(make_unique<db::etl::Collector>(etl_work_path, db::etl::kOptimalBufferSize / 2)) {}
+          collector_(make_unique<db::etl::Collector>(etl_work_path, db::etl::kOptimalBufferSize / 4)) {}
 
     void collect_pattern(Pattern pattern) {
         collector_->collect(std::move(pattern.data), big_endian_encode(pattern.score));
@@ -57,6 +57,15 @@ class PatternAggregatorImpl {
     vector<Pattern> aggregate();
 
   private:
+    /**
+     * The max number of patterns to keep in reserve
+     * while building the sorted list incrementally in order_by_score_and_limit.
+     * Having more than kMaxPatterns patterns in consideration
+     * produces 10% better compression ratio while still keeping RAM usage under control.
+     * see DictReducerSoftLimit in erigon
+     */
+    static constexpr size_t kMaxPatternsSoftLimit = 1'000'000;
+
     // destination = SELECT data, sum(score) FROM source GROUP BY data
     static void sum_score_group_by_pattern(db::etl::Collector& source, db::etl::Collector& destination);
 
@@ -103,13 +112,17 @@ vector<Pattern> PatternAggregatorImpl::order_by_score_and_limit(db::etl::Collect
         patterns.push_back(std::move(pattern));
         ranges::push_heap(patterns, comparator);
 
-        if (patterns.size() > PatternAggregator::kMaxPatterns) {
+        if (patterns.size() > kMaxPatternsSoftLimit) {
             ranges::pop_heap(patterns, comparator);
             patterns.pop_back();
         }
     });
 
     ranges::sort(patterns, comparator);
+
+    if (patterns.size() > PatternAggregator::kMaxPatterns) {
+        patterns.resize(PatternAggregator::kMaxPatterns);
+    }
 
     return patterns;
 }

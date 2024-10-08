@@ -94,6 +94,7 @@ CheckOptions:
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.EnumConstantPrefix: k
+  readability-identifier-naming.FunctionCase: lower_case
   readability-identifier-naming.GlobalConstantCase: CamelCase
   readability-identifier-naming.GlobalConstantPrefix: k
   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE

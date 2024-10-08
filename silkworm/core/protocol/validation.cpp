@@ -159,6 +159,82 @@ ValidationResult pre_validate_transactions(const Block& block, const ChainConfig
     return ValidationResult::kOk;
 }
 
+ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) noexcept {
+    const std::optional sender{txn.sender()};
+    if (!sender) {
+        return ValidationResult::kInvalidSignature;
+    }
+
+    if (evm.revision() >= EVMC_LONDON) {
+        if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
+            if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
+                return ValidationResult::kMaxPriorityFeeGreaterThanMax;
+            }
+
+            if (txn.max_fee_per_gas < evm.block().header.base_fee_per_gas) {
+                return ValidationResult::kMaxFeeLessThanBase;
+            }
+        }
+    } else {
+        if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
+            return ValidationResult::kUnsupportedTransactionType;
+        }
+    }
+
+    if (evm.revision() >= EVMC_CANCUN) {
+        if (!evm.block().header.excess_blob_gas) {
+            return ValidationResult::kWrongBlobGasUsed;
+        }
+    }
+
+    const intx::uint128 g0{protocol::intrinsic_gas(txn, evm.revision())};
+    assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
+
+    if (txn.gas_limit < g0) {
+        return ValidationResult::kIntrinsicGas;
+    }
+
+    return ValidationResult::kOk;
+}
+
+ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, const intx::uint256& owned_funds, bool bailout) noexcept {
+    if (!bailout) {
+        const intx::uint256 base_fee{evm.block().header.base_fee_per_gas.value_or(0)};
+        const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= evm.block().header.base_fee_per_gas ? txn.effective_gas_price(base_fee)
+                                                                                                           : txn.max_priority_fee_per_gas};
+
+        const auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
+        intx::uint512 maximum_cost = required_funds;
+        if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
+            maximum_cost = txn.maximum_gas_cost();
+        }
+        if (owned_funds < maximum_cost + txn.value) {
+            return ValidationResult::kInsufficientFunds;
+        }
+    }
+    return ValidationResult::kOk;
+}
+
+intx::uint256 compute_call_cost(const Transaction& txn, const intx::uint256& effective_gas_price, const EVM& evm) {
+    // EIP-1559 normal gas cost
+    intx::uint256 required_funds;
+    if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
+        // This method should be called after check (max_fee and base_fee) present in pre_check() method
+        required_funds = txn.gas_limit * effective_gas_price;
+    } else {
+        required_funds = 0;
+    }
+
+    // EIP-4844 blob gas cost (calc_data_fee)
+    if (evm.block().header.blob_gas_used && evm.revision() >= EVMC_CANCUN) {
+        // compute blob fee for eip-4844 data blobs if any
+        const intx::uint256 blob_gas_price{evm.block().header.blob_gas_price().value_or(0)};
+        required_funds += txn.total_blob_gas() * blob_gas_price;
+    }
+
+    return required_funds;
+}
+
 intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent) {
     if (!parent.base_fee_per_gas) {
         return kInitialBaseFee;

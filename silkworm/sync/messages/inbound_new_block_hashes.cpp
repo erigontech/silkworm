@@ -72,7 +72,7 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
     hc.top_seen_block_height(max);
 }
 
-uint64_t InboundNewBlockHashes::reqId() const { return req_id_; }
+uint64_t InboundNewBlockHashes::req_id() const { return req_id_; }
 
 std::string InboundNewBlockHashes::content() const {
     std::stringstream content;

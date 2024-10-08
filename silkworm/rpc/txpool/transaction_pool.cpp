@@ -108,7 +108,7 @@ Task<std::optional<uint64_t>> TransactionPool::nonce(const evmc::address& addres
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::nonce address=" << address;
     ::txpool::NonceRequest request;
-    request.set_allocated_address(H160_from_address(address).release());
+    request.set_allocated_address(h160_from_address(address).release());
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncNonce> nonce_rpc{*stub_, grpc_context_};
     const auto reply = co_await nonce_rpc.finish_on(executor_, request);
     SILK_DEBUG << "TransactionPool::nonce found:" << reply.found() << " nonce: " << reply.nonce() << " t=" << clock_time::since(start_time);
@@ -140,7 +140,7 @@ Task<TransactionsInPool> TransactionPool::get_transactions() {
     for (int i = 0; i < txs_size; ++i) {
         const auto& tx = reply.txs(i);
         TransactionInfo element{};
-        element.sender = address_from_H160(tx.sender());
+        element.sender = address_from_h160(tx.sender());
         const auto& rlp = tx.rlp_tx();
         element.rlp = silkworm::Bytes{rlp.begin(), rlp.end()};
         if (tx.txn_type() == ::txpool::AllReply_TxnType_PENDING) {

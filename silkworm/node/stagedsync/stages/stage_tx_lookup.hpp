@@ -32,6 +32,8 @@ class TxLookup : public Stage {
         : Stage(sync_context, db::stages::kTxLookupKey),
           etl_settings_(std::move(etl_settings)),
           prune_mode_tx_index_(prune_mode_tx_index) {}
+    TxLookup(const TxLookup&) = delete;  // not copyable
+    TxLookup(TxLookup&&) = delete;       // nor movable
     ~TxLookup() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
@@ -43,7 +45,7 @@ class TxLookup : public Stage {
     db::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_tx_index_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> collector_{nullptr};
+    std::unique_ptr<db::etl_mdbx::Collector> collector_;
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

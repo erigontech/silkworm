@@ -36,7 +36,7 @@ proto::GetBodiesByHashesRequest bodies_request_from_block_hashes(const api::Bloc
     proto::GetBodiesByHashesRequest request;
     for (const auto& hash : block_hashes) {
         ::types::H256* h256{request.add_hashes()};
-        rpc::H256_from_bytes32(hash, h256);
+        rpc::h256_from_bytes32(hash, h256);
     }
     return request;
 }

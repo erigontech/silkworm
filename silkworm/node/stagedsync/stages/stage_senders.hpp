@@ -54,7 +54,7 @@ class Senders final : public Stage {
         SyncContext* sync_context,
         const ChainConfig& chain_config,
         size_t batch_size,
-        const db::etl::CollectorSettings& etl_settings,
+        db::etl::CollectorSettings etl_settings,
         db::BlockAmount prune_mode_senders);
     ~Senders() override = default;
 
@@ -93,7 +93,8 @@ class Senders final : public Stage {
     uint64_t collected_senders_{0};
 
     //! ETL collector writing recovered senders in bulk
-    db::etl_mdbx::Collector collector_;
+    db::etl::CollectorSettings etl_settings_;
+    std::unique_ptr<db::etl_mdbx::Collector> collector_;
 
     // Stats
     std::mutex mutex_{};

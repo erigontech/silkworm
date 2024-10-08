@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,5 +19,5 @@
 #include <string_view>
 
 namespace silkworm {
-constinit extern const std::string_view kGenesisMumbaiJson;
+constinit extern const std::string_view kGenesisAmoyJson;
 }

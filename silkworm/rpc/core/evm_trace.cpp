@@ -17,7 +17,6 @@
 #include "evm_trace.hpp"
 
 #include <algorithm>
-#include <memory>
 #include <set>
 #include <stack>
 #include <string>
@@ -125,7 +124,11 @@ void to_json(nlohmann::json& json, const TraceOp& trace_op) {
         json["ex"] = *(trace_op.trace_ex);
     }
     json["idx"] = trace_op.idx;
-    json["op"] = trace_op.op_name;
+    if (trace_op.op_name) {
+        json["op"] = trace_op.op_name.value();
+    } else {
+        json["op"] = "opcode " + get_opcode_hex(trace_op.op_code) + " not defined";
+    }
     json["pc"] = trace_op.pc;
     if (trace_op.sub) {
         json["sub"] = *trace_op.sub;
@@ -670,7 +673,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     SILK_DEBUG << "VmTraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(op_code)
-               << ", opcode_name: " << op_name
+               << ", opcode_name: " << op_name.value_or("UNDEFINED")
                << ", index_prefix: " << index_prefix
                << ", execution_state: {"
                << "   gas_left: " << std::dec << gas
@@ -915,7 +918,7 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     SILK_DEBUG << "TraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(opcode)
-               << ", opcode_name: " << opcode_name
+               << ", opcode_name: " << opcode_name.value_or("UNDEFINED")
                << ", recipient: " << evmc::address{execution_state.msg->recipient}
                << ", sender: " << evmc::address{execution_state.msg->sender}
                << ", execution_state: {"
@@ -1138,7 +1141,7 @@ void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* sta
 
     SILK_DEBUG << "StateDiffTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
-               << ", opcode_name: " << opcode_name
+               << ", opcode_name: " << opcode_name.value_or("UNDEFINED")
                << ", recipient: " << evmc::address{execution_state.msg->recipient}
                << ", sender: " << evmc::address{execution_state.msg->sender}
                << ", execution_state: {"
@@ -1414,7 +1417,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
         std::shared_ptr<EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         std::vector<TraceCallResult> trace_call_result(transactions.size());
         for (size_t index = 0; index < transactions.size(); ++index) {
@@ -1477,7 +1480,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         StateAddresses state_addresses(initial_ibs);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number);
-        EVMExecutor executor{chain_config, workers_, state};
+        EVMExecutor executor{block, chain_config, workers_, state};
 
         std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
@@ -1537,7 +1540,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         TraceDeployResult result;
 
@@ -1596,7 +1599,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
         auto state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
         silkworm::IntraBlockState initial_ibs{*state};
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1622,7 +1625,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1650,7 +1653,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         executor.call_first_n(block, transaction_with_block.transaction.transaction_index);
 
@@ -1680,7 +1683,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
         silkworm::IntraBlockState initial_ibs{*state};
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number - 1);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         for (size_t i = 0; i < block.transactions.size(); ++i) {
             auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
@@ -1788,7 +1791,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         tracers.push_back(tracer);
 
         auto curr_state = tx_.create_state(current_executor, chain_storage_, block_number);
-        EVMExecutor executor{chain_config, workers_, curr_state};
+        EVMExecutor executor{block, chain_config, workers_, curr_state};
         for (std::size_t idx{0}; idx < transaction.transaction_index; ++idx) {
             silkworm::Transaction txn{block.transactions[idx]};
             const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);

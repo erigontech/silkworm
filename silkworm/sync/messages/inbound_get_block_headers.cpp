@@ -71,7 +71,7 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
     }
 }
 
-uint64_t InboundGetBlockHeaders::reqId() const { return packet_.request_id; }
+uint64_t InboundGetBlockHeaders::req_id() const { return packet_.request_id; }
 
 std::string InboundGetBlockHeaders::content() const {
     std::stringstream content;

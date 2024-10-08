@@ -68,8 +68,8 @@ FORCE_INLINE uint64_t fmix64(uint64_t k) {
     return k;
 }
 
-void MurmurHash3_x64_128(const void* key, const uint64_t len,
-                         const uint32_t seed, void* out) {
+void murmur_hash3_x64_128(const void* key, const uint64_t len,
+                          const uint32_t seed, void* out) {
     const auto* data = reinterpret_cast<const uint8_t*>(key);
     const std::size_t num_blocks = len / 16;
 

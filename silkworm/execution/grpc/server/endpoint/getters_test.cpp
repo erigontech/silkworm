@@ -49,7 +49,7 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<B
         request.set_block_number(*number);
     }
     if (hash) {
-        request.set_allocated_block_hash(rpc::H256_from_bytes32(*hash).release());
+        request.set_allocated_block_hash(rpc::h256_from_bytes32(*hash).release());
     }
     return request;
 }
@@ -74,7 +74,7 @@ static constexpr TotalDifficulty kTotalDifficulty{1'000'000};
 static proto::GetTDResponse sample_td_response(bool has_value) {
     proto::GetTDResponse response;
     if (has_value) {
-        response.set_allocated_td(rpc::H256_from_uint256(kTotalDifficulty).release());
+        response.set_allocated_td(rpc::h256_from_uint256(kTotalDifficulty).release());
     }
     return response;
 }
@@ -104,7 +104,7 @@ static proto::GetHeaderResponse sample_get_header_response() {
     proto::GetHeaderResponse response;
     proto::Header* proto_header = response.mutable_header();
     sample_proto_header(proto_header);
-    proto_header->set_allocated_block_hash(rpc::H256_from_bytes32(kSampleBlockHash).release());
+    proto_header->set_allocated_block_hash(rpc::h256_from_bytes32(kSampleBlockHash).release());
     return response;
 }
 

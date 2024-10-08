@@ -95,7 +95,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config, bool bailout = false) noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
 
     ~EVM();
 
@@ -112,6 +112,7 @@ class EVM {
     [[nodiscard]] evmc_revision revision() const noexcept;
 
     void add_tracer(EvmTracer& tracer) noexcept;
+    void remove_tracers() noexcept;
     [[nodiscard]] const EvmTracers& tracers() const noexcept { return tracers_; };
 
     AnalysisCache* analysis_cache{nullptr};                   // provide one for better performance
@@ -123,7 +124,7 @@ class EVM {
 
     gsl::not_null<TransferFunc*> transfer{standard_transfer};
 
-    CallResult deduct_entry_fees(const Transaction& txn) const;
+    bool bailout{false};
 
   private:
     friend class EvmHost;
@@ -143,7 +144,6 @@ class EVM {
     const Block& block_;
     IntraBlockState& state_;
     const ChainConfig& config_;
-    bool bailout_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;

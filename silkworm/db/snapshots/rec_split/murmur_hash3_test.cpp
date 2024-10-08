@@ -23,7 +23,7 @@
 
 namespace silkworm::snapshots::rec_split {
 
-TEST_CASE("MurmurHash3_x64_128", "[silkworm][recsplit][support]") {
+TEST_CASE("murmur_hash3_x64_128", "[silkworm][recsplit][support]") {
     constexpr std::size_t kHashBits{128};
     constexpr std::size_t kExpectedVerification{0x6384BA69};
 
@@ -40,11 +40,11 @@ TEST_CASE("MurmurHash3_x64_128", "[silkworm][recsplit][support]") {
     // Hash keys of the form {0}, {0,1}, {0,1,2}... up to N=255 using 256-N as the seed
     for (uint32_t i{0}; i < 256; ++i) {
         key[i] = static_cast<uint8_t>(i);
-        MurmurHash3_x64_128(key, i, 256 - i, &hashes[i * kHashBytes]);
+        murmur_hash3_x64_128(key, i, 256 - i, &hashes[i * kHashBytes]);
     }
 
     // Then hash the result array
-    MurmurHash3_x64_128(hashes, kHashBytes * 256, 0, res);
+    murmur_hash3_x64_128(hashes, kHashBytes * 256, 0, res);
 
     // The first four bytes of that hash, interpreted as a LE integer, is our verification value
     const int verification = (res[0] << 0) | (res[1] << 8) | (res[2] << 16) | (res[3] << 24);

@@ -79,7 +79,7 @@ struct Anchor {
           peer_id{std::move(p)} {
     }
 
-    BlockNum chainLength() const { return last_link_height - block_height + 1; }
+    BlockNum chain_length() const { return last_link_height - block_height + 1; }
 
     void remove_child(const Link& child) {
         std::erase_if(links, [child](auto& link) { return (link->hash == child.hash); });

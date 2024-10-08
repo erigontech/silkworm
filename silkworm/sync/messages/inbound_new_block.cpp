@@ -43,7 +43,7 @@ void InboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, Sent
     bs.accept_new_block(packet_.block, peer_id_);  // add to prefetched bodies
 }
 
-uint64_t InboundNewBlock::reqId() const { return req_id_; }
+uint64_t InboundNewBlock::req_id() const { return req_id_; }
 
 std::string InboundNewBlock::content() const {
     std::stringstream content;

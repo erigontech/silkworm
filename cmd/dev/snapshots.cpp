@@ -21,6 +21,7 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <absl/strings/match.h>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
@@ -441,7 +442,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     ensure(!settings.input_file_path.empty(), "open_existence_index: --file must be specified");
     ensure(settings.input_file_path.extension() == ".kv", "open_existence_index: --file must be .kv file");
     const auto is_file_for_domain = [](const auto& file_path, auto domain_name) -> bool {
-        return file_path.filename().string().find(domain_name) != std::string::npos;
+        return absl::StrContains(file_path.filename().string(), domain_name);
     };
     const bool is_account_file = is_file_for_domain(settings.input_file_path, db::table::kAccountDomain);
     ensure(is_account_file, "open_existence_index: --file must be an accounts .kv file (e.g. v1-accounts.0-1024.kv)");
@@ -486,7 +487,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
                            << " nonexistent_key=" << to_hex(nonexistent_key);
                 // Hash the nonexistent key using murmur3 and check its presence in existence filter
                 rec_split::Hash128 key_hash{};
-                snapshots::rec_split::MurmurHash3_x64_128(nonexistent_key.data(), nonexistent_key.size(), salt, &key_hash);
+                snapshots::rec_split::murmur_hash3_x64_128(nonexistent_key.data(), nonexistent_key.size(), salt, &key_hash);
                 if (const bool key_found = existence_index.contains_hash(key_hash.first); key_found) {
                     ++nonexistent_found_count;
                 }
@@ -495,7 +496,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
         } else {
             value = *kv_iterator;
             rec_split::Hash128 key_hash{};
-            snapshots::rec_split::MurmurHash3_x64_128(key.data(), key.size(), salt, &key_hash);
+            snapshots::rec_split::murmur_hash3_x64_128(key.data(), key.size(), salt, &key_hash);
             const bool key_found = existence_index.contains_hash(key_hash.first);
             SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
             ensure(key_found,

@@ -63,7 +63,7 @@ static api::StorageChangeSequence storage_changes_from_proto(const proto::Accoun
     storage_change_set.reserve(static_cast<size_t>(account_change.storage_changes_size()));
     for (const auto& proto_storage_change : account_change.storage_changes()) {
         storage_change_set.emplace_back(api::StorageChange{
-            .location = rpc::bytes32_from_H256(proto_storage_change.location()),
+            .location = rpc::bytes32_from_h256(proto_storage_change.location()),
             .data = string_to_bytes(proto_storage_change.data()),
         });
     }
@@ -78,7 +78,7 @@ static api::AccountChangeSequence account_change_set_from_proto(const proto::Sta
     account_change_set.reserve(static_cast<size_t>(state_change.changes_size()));
     for (const auto& proto_account_change : state_change.changes()) {
         account_change_set.emplace_back(api::AccountChange{
-            .address = rpc::address_from_H160(proto_account_change.address()),
+            .address = rpc::address_from_h160(proto_account_change.address()),
             .incarnation = proto_account_change.incarnation(),
             .change_type = action_from_proto(proto_account_change.action()),
             .data = string_to_bytes(proto_account_change.data()),
@@ -114,7 +114,7 @@ api::StateChangeSet state_change_set_from_batch(const proto::StateChangeBatch& b
         state_change_set.state_changes.emplace_back(api::StateChange{
             .direction = change.direction() == proto::Direction::FORWARD ? api::kForward : api::kUnwind,
             .block_height = change.block_height(),
-            .block_hash = rpc::bytes32_from_H256(change.block_hash()),
+            .block_hash = rpc::bytes32_from_h256(change.block_hash()),
             .account_changes = account_change_set_from_proto(change),
             .rlp_txs = rlp_txs_from_proto(change),
         });

@@ -28,7 +28,7 @@ class BlockExecutor {
 
     BlockExecutor(const ChainConfig* chain_config, bool write_receipts, bool write_call_traces, bool write_change_sets);
 
-    ValidationResult execute_single(const Block& block, db::Buffer& state_buffer, AnalysisCache& analysis_cache, ObjectPool<evmone::ExecutionState>& state_pool);
+    ValidationResult execute_single(const Block& block, db::Buffer& state_buffer, AnalysisCache& analysis_cache);
 
   private:
     const ChainConfig* chain_config_;

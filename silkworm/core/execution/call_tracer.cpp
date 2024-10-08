@@ -118,7 +118,7 @@ inline bool check_memory_gas(int64_t& gas_left, Memory& memory, const uint256& o
 template <Opcode Op>
 inline evmc_status_code check_preconditions(const intx::uint256* stack_top, int stack_height, int64_t gas,
                                             const evmone::ExecutionState& state) noexcept {
-    const auto& cost_table{get_baseline_cost_table(state.rev, state.analysis.baseline->eof_header.version)};
+    const auto& cost_table{get_baseline_cost_table(state.rev, state.analysis.baseline->eof_header().version)};
     return check_requirements<Op>(cost_table, gas, stack_top, stack_top - stack_height);
 }
 

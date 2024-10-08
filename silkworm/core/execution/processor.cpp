@@ -170,6 +170,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
 
     receipts.resize(block.transactions.size());
     auto receipt_it{receipts.begin()};
+    size_t txn_id{0};
     for (const auto& txn : block.transactions) {
         const ValidationResult err{protocol::validate_transaction(txn, state_, available_gas())};
         if (err != ValidationResult::kOk) {
@@ -178,11 +179,14 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         const BlockHeader& header{evm_.block().header};
         const intx::uint256 base_fee_per_gas = header.base_fee_per_gas.value_or(0);
         if (txn.max_fee_per_gas < base_fee_per_gas) {
+            std::cout << "Txn position: " << txn_id << "\n";
             print_header(header);
             //return ValidationResult::kInvalidGasLimit;
         }
         execute_transaction(txn, *receipt_it);
         ++receipt_it;
+        //std::cout << "Txn position: " << txn_id << " END\n";
+        ++txn_id;
     }
 
     state_.clear_journal_and_substate();

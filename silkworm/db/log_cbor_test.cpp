@@ -39,17 +39,17 @@ TEST_CASE("CBOR encoding of logs") {
 }
 
 TEST_CASE("CBOR decoding of empty logs") {
-    const auto kEmptyEncodedLogs{"80"};
+    static constexpr std::string_view kEmptyEncodedLogs = "80";
     std::vector<Log> logs{};
     CHECK(cbor_decode(*from_hex(kEmptyEncodedLogs), logs));
 }
 
 TEST_CASE("CBOR decoding of logs") {
-    const auto kEncoded{
+    static constexpr std::string_view kEncoded =
         "828354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043835444fd3ab8381cc3d"
         "14afa7c4af7fd13cdc65026e1825820000000000000000000000000000000000000000000000"
         "000000000000000dead582000000000000000000000000000000000000000000000000000000"
-        "0000000abba46aabbff780043"};
+        "0000000abba46aabbff780043";
     std::vector<Log> logs{};
     CHECK(cbor_decode(*from_hex(kEncoded), logs));
     CHECK(logs.size() == 2);

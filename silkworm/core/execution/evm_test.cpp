@@ -1107,8 +1107,8 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
 
     Block block{};
     block.header.number = *chain_config.constantinople_block;
-    static constexpr auto kZeroAddress = 0x0000000000000000000000000000000000000000_address;
-    const auto caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+    static constexpr evmc::address kZeroAddress = 0x0000000000000000000000000000000000000000_address;
+    const evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
     const auto contract_address{create_address(caller, 0)};
 
     InMemoryState db;
@@ -1160,7 +1160,7 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
 
 // First occurrence at mainnet block 1'639'553
 TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]") {
-    static constexpr auto kZeroAddress = 0x0000000000000000000000000000000000000000_address;
+    static constexpr evmc::address kZeroAddress = 0x0000000000000000000000000000000000000000_address;
     evmc::address external_account{0xf466859ead1932d743d622cb74fc058882e8648a_address};
     const auto caller_address{create_address(external_account, 0)};
     const auto callee_address{create_address(external_account, 1)};

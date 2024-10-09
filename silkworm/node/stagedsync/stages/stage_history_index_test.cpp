@@ -37,7 +37,7 @@ namespace silkworm {
 stagedsync::HistoryIndex make_stage_history_index(
     stagedsync::SyncContext* sync_context,
     const db::test_util::TempChainData& chain_data) {
-    constexpr auto kBatchSize{512_Mebi};
+    static constexpr size_t kBatchSize = 512_Mebi;
     return stagedsync::HistoryIndex{
         sync_context,
         kBatchSize,
@@ -448,8 +448,8 @@ TEST_CASE("HistoryIndex + Account access_layer") {
 
     db::Buffer buffer{txn};
 
-    const auto miner_a{0x00000000000000000000000000000000000000aa_address};
-    const auto miner_b{0x00000000000000000000000000000000000000bb_address};
+    const evmc::address miner_a{0x00000000000000000000000000000000000000aa_address};
+    const evmc::address miner_b{0x00000000000000000000000000000000000000bb_address};
 
     Block block1;
     block1.header.number = 1;

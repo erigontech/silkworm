@@ -281,9 +281,9 @@ TEST_CASE("RecSplit8: unsupported feature", "[silkworm][snapshots][recsplit][ign
     // Purposely alter the index file to insert an unsupported feature value
     std::ifstream input{index_file.path(), std::ios::binary};
     std::vector<unsigned char> buffer{std::istreambuf_iterator<char>(input), {}};
-    const auto feature_flag_offset{394};
-    const auto invalid_feature_value{250};
-    buffer[feature_flag_offset] = invalid_feature_value;
+    static constexpr size_t kFeatureFlagOffset = 394;
+    static constexpr unsigned char kInvalidFeatureValue = 250;
+    buffer[kFeatureFlagOffset] = kInvalidFeatureValue;
     std::ofstream output{index_file.path(), std::ios::binary};
     for (const auto b : buffer) {
         output << b;

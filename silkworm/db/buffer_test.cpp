@@ -35,19 +35,19 @@ TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
-    const auto address{0xbe00000000000000000000000000000000000000_address};
+    const evmc::address address{0xbe00000000000000000000000000000000000000_address};
     const Bytes key{storage_prefix(address, kDefaultIncarnation)};
 
-    const auto location_a{0x0000000000000000000000000000000000000000000000000000000000000013_bytes32};
-    const auto value_a1{0x000000000000000000000000000000000000000000000000000000000000006b_bytes32};
-    const auto value_a2{0x0000000000000000000000000000000000000000000000000000000000000085_bytes32};
-    const auto value_a3{0x0000000000000000000000000000000000000000000000000000000000000095_bytes32};
-    const auto value_nil{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const evmc::bytes32 location_a{0x0000000000000000000000000000000000000000000000000000000000000013_bytes32};
+    const evmc::bytes32 value_a1{0x000000000000000000000000000000000000000000000000000000000000006b_bytes32};
+    const evmc::bytes32 value_a2{0x0000000000000000000000000000000000000000000000000000000000000085_bytes32};
+    const evmc::bytes32 value_a3{0x0000000000000000000000000000000000000000000000000000000000000095_bytes32};
+    const evmc::bytes32 value_nil{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
 
-    const auto location_b{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
-    const auto value_b{0x0000000000000000000000000000000000000000000000000000000000000132_bytes32};
+    const evmc::bytes32 location_b{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
+    const evmc::bytes32 value_b{0x0000000000000000000000000000000000000000000000000000000000000132_bytes32};
 
-    const auto location_c{0x0000000000000000000000000000000000000000000000000000000000000003_bytes32};
+    const evmc::bytes32 location_c{0x0000000000000000000000000000000000000000000000000000000000000003_bytes32};
 
     auto state = txn.rw_cursor_dup_sort(table::kPlainState);
 
@@ -247,7 +247,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
     auto& txn{context.rw_txn()};
 
     SECTION("New EOA account") {
-        const auto address{0xbe00000000000000000000000000000000000000_address};
+        const evmc::address address{0xbe00000000000000000000000000000000000000_address};
         Account current_account;
         current_account.balance = kEther;
 
@@ -275,7 +275,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
     }
 
     SECTION("Changed EOA account") {
-        const auto address{0xbe00000000000000000000000000000000000000_address};
+        const evmc::address address{0xbe00000000000000000000000000000000000000_address};
         Account initial_account;
         initial_account.nonce = 1;
         initial_account.balance = 0;
@@ -311,7 +311,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
     }
 
     SECTION("Delete contract account") {
-        const auto address{0xbe00000000000000000000000000000000000000_address};
+        const evmc::address address{0xbe00000000000000000000000000000000000000_address};
         Account account;
         account.incarnation = kDefaultIncarnation;
         account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
@@ -332,7 +332,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
     }
 
     SECTION("Delete contract account and recreate as EOA") {
-        const auto address{0xbe00000000000000000000000000000000000000_address};
+        const evmc::address address{0xbe00000000000000000000000000000000000000_address};
         Account account;
         account.incarnation = kDefaultIncarnation;
         account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
@@ -360,7 +360,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
     }
 
     SECTION("Change EOA account w/ new value equal to old one") {
-        const auto address{0xbe00000000000000000000000000000000000000_address};
+        const evmc::address address{0xbe00000000000000000000000000000000000000_address};
         Account initial_account;
         initial_account.nonce = 2;
         initial_account.balance = kEther;

@@ -51,7 +51,7 @@ set(SILKWORM_CORE_PUBLIC_LIBS
     secp256k1
     tl::expected
 )
-set(SILKWORM_CORE_PRIVATE_LIBS ff blst)
+set(SILKWORM_CORE_PRIVATE_LIBS ff blst::blst)
 
 if(SILKWORM_CORE_USE_ABSEIL)
   find_package(absl REQUIRED)

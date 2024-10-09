@@ -578,9 +578,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
 
-// Skip the following tests in macOS build because raised exception seems not to be catchable despite the correct catch block
-// Maybe somehow related to https://github.com/llvm/llvm-project/issues/49036
-#if !defined(__APPLE__)
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple blocks: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};
@@ -808,7 +805,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     const auto result0{execute_blocks(start_block, end_block)};
     CHECK(result0.execute_block_result == SILKWORM_INTERNAL_ERROR);
 }
-#endif  // !defined(__APPLE__)
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{tmp_dir.path()};

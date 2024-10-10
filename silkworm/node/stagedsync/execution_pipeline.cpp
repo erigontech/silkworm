@@ -39,6 +39,8 @@
 
 namespace silkworm::stagedsync {
 
+using namespace silkworm::db::stages;
+
 #if defined(NDEBUG)
 static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 #else
@@ -89,63 +91,63 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
  */
 
 void ExecutionPipeline::load_stages() {
-    stages_.emplace(db::stages::kHeadersKey,
+    stages_.emplace(kHeadersKey,
                     std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
-    stages_.emplace(db::stages::kBlockBodiesKey, bodies_stage_factory_(sync_context_.get()));
-    stages_.emplace(db::stages::kBlockHashesKey,
+    stages_.emplace(kBlockBodiesKey, bodies_stage_factory_(sync_context_.get()));
+    stages_.emplace(kBlockHashesKey,
                     std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(db::stages::kSendersKey,
+    stages_.emplace(kSendersKey,
                     std::make_unique<stagedsync::Senders>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.senders()));
-    stages_.emplace(db::stages::kExecutionKey,
+    stages_.emplace(kExecutionKey,
                     std::make_unique<stagedsync::Execution>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->prune_mode));
-    stages_.emplace(db::stages::kHashStateKey,
+    stages_.emplace(kHashStateKey,
                     std::make_unique<stagedsync::HashState>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(db::stages::kIntermediateHashesKey,
+    stages_.emplace(kIntermediateHashesKey,
                     std::make_unique<stagedsync::InterHashes>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(db::stages::kHistoryIndexKey,
+    stages_.emplace(kHistoryIndexKey,
                     std::make_unique<stagedsync::HistoryIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
-    stages_.emplace(db::stages::kLogIndexKey,
+    stages_.emplace(kLogIndexKey,
                     std::make_unique<stagedsync::LogIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
-    stages_.emplace(db::stages::kCallTracesKey,
+    stages_.emplace(kCallTracesKey,
                     std::make_unique<stagedsync::CallTraceIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.call_traces()));
-    stages_.emplace(db::stages::kTxLookupKey,
+    stages_.emplace(kTxLookupKey,
                     std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
-    stages_.emplace(db::stages::kTriggersStageKey,
+    stages_.emplace(kTriggersStageKey,
                     std::make_unique<stagedsync::TriggersStage>(sync_context_.get()));
-    stages_.emplace(db::stages::kFinishKey,
+    stages_.emplace(kFinishKey,
                     std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info.build_description));
     current_stage_ = stages_.begin();
 
     stages_forward_order_.insert(stages_forward_order_.begin(),
                                  {
-                                     db::stages::kHeadersKey,
-                                     db::stages::kBlockHashesKey,
-                                     db::stages::kBlockBodiesKey,
-                                     db::stages::kSendersKey,
-                                     db::stages::kExecutionKey,
-                                     db::stages::kHashStateKey,
-                                     db::stages::kIntermediateHashesKey,
-                                     db::stages::kHistoryIndexKey,
-                                     db::stages::kLogIndexKey,
-                                     db::stages::kCallTracesKey,
-                                     db::stages::kTxLookupKey,
-                                     db::stages::kFinishKey,
+                                     kHeadersKey,
+                                     kBlockHashesKey,
+                                     kBlockBodiesKey,
+                                     kSendersKey,
+                                     kExecutionKey,
+                                     kHashStateKey,
+                                     kIntermediateHashesKey,
+                                     kHistoryIndexKey,
+                                     kLogIndexKey,
+                                     kCallTracesKey,
+                                     kTxLookupKey,
+                                     kFinishKey,
                                  });
 
     stages_unwind_order_.insert(stages_unwind_order_.begin(),
                                 {
-                                    db::stages::kFinishKey,
-                                    db::stages::kTxLookupKey,
-                                    db::stages::kCallTracesKey,
-                                    db::stages::kLogIndexKey,
-                                    db::stages::kHistoryIndexKey,
-                                    db::stages::kHashStateKey,
-                                    db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
-                                    db::stages::kExecutionKey,
-                                    db::stages::kSendersKey,
-                                    db::stages::kBlockBodiesKey,
-                                    db::stages::kBlockHashesKey,  // De-canonify block hashes
-                                    db::stages::kHeadersKey,
+                                    kFinishKey,
+                                    kTxLookupKey,
+                                    kCallTracesKey,
+                                    kLogIndexKey,
+                                    kHistoryIndexKey,
+                                    kHashStateKey,
+                                    kIntermediateHashesKey,  // Needs to happen after unwinding HashState
+                                    kExecutionKey,
+                                    kSendersKey,
+                                    kBlockBodiesKey,
+                                    kBlockHashesKey,  // De-canonify block hashes
+                                    kHeadersKey,
                                 });
 }
 
@@ -160,7 +162,7 @@ bool ExecutionPipeline::stop() {
 }
 
 StageScheduler& ExecutionPipeline::stage_scheduler() const {
-    return *dynamic_cast<StageScheduler*>(stages_.at(db::stages::kTriggersStageKey).get());
+    return *dynamic_cast<StageScheduler*>(stages_.at(kTriggersStageKey).get());
 }
 
 Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
@@ -222,7 +224,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 return stage_result;
             } /* clang-format on */
 
-            auto stage_head_number = db::stages::read_stage_progress(cycle_txn, current_stage_->first);
+            auto stage_head_number = read_stage_progress(cycle_txn, current_stage_->first);
             if (!stop_at_block && stage_head_number != target_height) {
                 throw std::logic_error("Sync pipeline: stage returned success with an height different from target=" +
                                        to_string(target_height) + " reached= " + to_string(stage_head_number));

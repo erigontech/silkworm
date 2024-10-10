@@ -32,7 +32,7 @@ namespace silkworm::db::etl_mdbx {
 
 // Function pointer to process Load on before Load data into tables
 using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value,
-                                      db::RWCursorDupSort&, MDBX_put_flags_t)>;
+                                      RWCursorDupSort&, MDBX_put_flags_t)>;
 
 template <typename CollectorStorage = etl::MapStorage>
 class InMemoryCollector : public etl::InMemoryCollector<CollectorStorage> {
@@ -44,18 +44,18 @@ class InMemoryCollector : public etl::InMemoryCollector<CollectorStorage> {
     //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
     //! \param [in] flags : Optional put flags for append or upsert (default) items
     void load(
-        db::RWCursorDupSort& target,
+        RWCursorDupSort& target,
         const KVLoadFunc& load_func = {},
         MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT) {
         etl::KVLoadFunc base_load_func = [&](const Bytes& key, const Bytes& value) {
             if (load_func) {
                 load_func(key, value, target, flags);
             } else {
-                mdbx::slice k{db::to_slice(key)};
+                mdbx::slice k{to_slice(key)};
                 if (value.empty()) {
                     target.erase(k);
                 } else {
-                    mdbx::slice v{db::to_slice(value)};
+                    mdbx::slice v{to_slice(value)};
                     mdbx::error::success_or_throw(target.put(k, &v, flags));
                 }
             }
@@ -97,7 +97,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 
 template <typename COLLECTOR>
 void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
@@ -131,16 +131,16 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
     });
 
     // Load data
-    db::PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
+    PooledCursor to{context.rw_txn(), table::kHeaderNumbers};
     collector.load(to, load_func);
 
     if (load_func) {
         size_t found_items{0};
-        db::PooledCursor from{context.rw_txn(), db::table::kHeaderNumbers};
+        PooledCursor from{context.rw_txn(), table::kHeaderNumbers};
         auto data = from.to_first();
         while (data) {
-            auto key = db::from_slice(data.key);
-            auto value = db::from_slice(data.value);
+            auto key = from_slice(data.key);
+            auto value = from_slice(data.value);
             ++found_items;
 
             // find key in set and compare value
@@ -181,14 +181,14 @@ TEST_CASE("collect_and_default_load_move_in_memory_vector") {
 TEST_CASE("collect_and_load_in_memory_map") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
+        table.upsert(to_slice(ekey), to_slice(evalue));
     });
 }
 
 TEST_CASE("collect_and_load_in_memory_vector") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
-        table.upsert(db::to_slice(ekey), db::to_slice(evalue));
+        table.upsert(to_slice(ekey), to_slice(evalue));
     });
 }
 

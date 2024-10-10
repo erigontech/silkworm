@@ -79,7 +79,7 @@ class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pai
 
   private:
     struct TxCursor {
-        std::unique_ptr<db::ROCursorDupSort> cursor;
+        std::unique_ptr<ROCursorDupSort> cursor;
         std::string bucket_name;
     };
 
@@ -96,7 +96,7 @@ class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pai
 
     void handle_cursor_close(const remote::Cursor* request);
 
-    void handle_operation(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_operation(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response);
 
     void handle_max_ttl_timer_expired(mdbx::env* chaindata_env);
 
@@ -104,35 +104,35 @@ class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pai
 
     bool restore_cursors(std::vector<CursorPosition>& positions);
 
-    void handle_first(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_first(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_first_dup(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_first_dup(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_seek(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_seek(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_seek_both(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_seek_both(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_seek_exact(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_seek_exact(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_seek_both_exact(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_seek_both_exact(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_current(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_current(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_last(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_last(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_last_dup(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_last_dup(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_next(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_next(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_next_dup(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_next_dup(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_next_no_dup(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_next_no_dup(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_prev(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_prev(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_prev_dup(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_prev_dup(ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_prev_no_dup(db::ROCursorDupSort& cursor, remote::Pair& response);
+    void handle_prev_no_dup(ROCursorDupSort& cursor, remote::Pair& response);
 
     void throw_with_internal_error(const remote::Cursor* request, const std::exception& exc);
 
@@ -143,7 +143,7 @@ class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pai
     static std::chrono::milliseconds max_ttl_duration_;
     static inline uint64_t next_tx_id_{0};
 
-    db::ROTxnManaged read_only_txn_;
+    ROTxnManaged read_only_txn_;
     std::map<uint32_t, TxCursor> cursors_;
     uint32_t last_cursor_id_{0};
 };

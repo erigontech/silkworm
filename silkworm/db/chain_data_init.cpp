@@ -40,26 +40,26 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
         });
 
     auto chaindata_env_config = node_settings.chaindata_env_config;
-    chaindata_env_config.create = !std::filesystem::exists(db::get_datafile_path(chaindata_env_config.path));
+    chaindata_env_config.create = !std::filesystem::exists(get_datafile_path(chaindata_env_config.path));
     chaindata_env_config.exclusive = true;
 
     // Open chaindata environment and check tables are consistent
     log::Info("Opening database", {"path", chaindata_env_config.path});
-    mdbx::env_managed chaindata_env = db::open_env(chaindata_env_config);
-    db::RWTxnManaged tx(chaindata_env);
+    mdbx::env_managed chaindata_env = open_env(chaindata_env_config);
+    RWTxnManaged tx(chaindata_env);
 
     // Ensures all tables are present
-    db::table::check_or_create_chaindata_tables(tx);
-    log::Info("Database schema", {"version", db::read_schema_version(tx)->to_string()});
+    table::check_or_create_chaindata_tables(tx);
+    log::Info("Database schema", {"version", read_schema_version(tx)->to_string()});
 
     // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
     // prune mode
-    const auto header_download_progress{db::stages::read_stage_progress(tx, db::stages::kHeadersKey)};
+    const auto header_download_progress{stages::read_stage_progress(tx, stages::kHeadersKey)};
 
     // Check db is initialized with chain config
     std::optional<ChainConfig> chain_config;
     {
-        chain_config = db::read_chain_config(tx);
+        chain_config = read_chain_config(tx);
         if (!chain_config.has_value() && node_settings.init_if_empty) {
             auto source_data{read_genesis_data(node_settings.network_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
@@ -68,9 +68,9 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
                                          std::to_string(node_settings.network_id) + " : unknown network");
             }
             log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
-            db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
+            initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
             tx.commit_and_renew();
-            chain_config = db::read_chain_config(tx);
+            chain_config = read_chain_config(tx);
         }
 
         if (!chain_config.has_value()) {
@@ -157,14 +157,14 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
             }
 
             if (new_members_added || old_members_changed) {
-                db::update_chain_config(tx, **known_chain);
+                update_chain_config(tx, **known_chain);
                 tx.commit_and_renew();
                 chain_config = **known_chain;
             }
         }
 
         // Load genesis_hash
-        chain_config->genesis_hash = db::read_canonical_header_hash(tx, 0);
+        chain_config->genesis_hash = read_canonical_header_hash(tx, 0);
         if (!chain_config->genesis_hash.has_value())
             throw std::runtime_error("Could not load genesis hash");
 
@@ -174,7 +174,7 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
 
     // Detect prune-mode and verify is compatible
     {
-        auto db_prune_mode{db::read_prune_mode(*tx)};
+        auto db_prune_mode{read_prune_mode(*tx)};
         if (db_prune_mode != node_settings.prune_mode) {
             // In case we have mismatching modes (cli != db) we prevent
             // further execution ONLY if we've already synced something
@@ -182,7 +182,7 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
                 throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
                                          db_prune_mode.to_string() + " got " + node_settings.prune_mode.to_string());
             }
-            db::write_prune_mode(*tx, node_settings.prune_mode);
+            write_prune_mode(*tx, node_settings.prune_mode);
         }
         log::Info("Effective pruning", {"mode", node_settings.prune_mode.to_string()});
     }

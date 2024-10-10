@@ -45,6 +45,7 @@
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
 using namespace silkworm;
+using namespace silkworm::db::kv::api;
 using namespace silkworm::rpc;
 
 inline std::ostream& operator<<(std::ostream& out, const types::H160& address) {
@@ -848,8 +849,8 @@ int kv_seek() {
     return kv_seek(target, table_name, key_bytes.value());
 }
 
-Task<void> kv_domain_get_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
-                               db::kv::api::DomainPointQuery&& query,
+Task<void> kv_domain_get_query(const std::shared_ptr<Service>& kv_service,
+                               DomainPointQuery&& query,
                                const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
@@ -863,8 +864,8 @@ Task<void> kv_domain_get_query(const std::shared_ptr<db::kv::api::Service>& kv_s
     }
 }
 
-Task<void> kv_history_seek_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
-                                 db::kv::api::HistoryPointQuery&& query,
+Task<void> kv_history_seek_query(const std::shared_ptr<Service>& kv_service,
+                                 HistoryPointQuery&& query,
                                  const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
@@ -877,8 +878,8 @@ Task<void> kv_history_seek_query(const std::shared_ptr<db::kv::api::Service>& kv
     }
 }
 
-Task<void> kv_index_range_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
-                                db::kv::api::IndexRangeQuery&& query,
+Task<void> kv_index_range_query(const std::shared_ptr<Service>& kv_service,
+                                IndexRangeQuery&& query,
                                 const bool verbose) {
     try {
         auto tx = co_await kv_service->begin_transaction();
@@ -887,7 +888,7 @@ Task<void> kv_index_range_query(const std::shared_ptr<db::kv::api::Service>& kv_
         auto it = co_await paginated_result.begin();
         std::cout << "KV IndexRange <- #timestamps: ";
         int count{0};
-        db::kv::api::ListOfTimestamp timestamps;
+        ListOfTimestamp timestamps;
         while (it != paginated_result.end()) {
             timestamps.emplace_back(*it);
             ++count;
@@ -905,8 +906,8 @@ Task<void> kv_index_range_query(const std::shared_ptr<db::kv::api::Service>& kv_
     }
 }
 
-Task<void> kv_history_range_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
-                                  db::kv::api::HistoryRangeQuery&& query,
+Task<void> kv_history_range_query(const std::shared_ptr<Service>& kv_service,
+                                  HistoryRangeQuery&& query,
                                   const bool verbose) {
     try {
         auto tx = co_await kv_service->begin_transaction();
@@ -915,7 +916,7 @@ Task<void> kv_history_range_query(const std::shared_ptr<db::kv::api::Service>& k
         auto it = co_await paginated_result.begin();
         std::cout << "KV HistoryRange <- #keys and #values: ";
         int count{0};
-        std::vector<db::kv::api::KeyValue> keys_and_values;
+        std::vector<KeyValue> keys_and_values;
         while (it != paginated_result.end()) {
             keys_and_values.emplace_back(*it);
             ++count;
@@ -933,8 +934,8 @@ Task<void> kv_history_range_query(const std::shared_ptr<db::kv::api::Service>& k
     }
 }
 
-Task<void> kv_domain_range_query(const std::shared_ptr<db::kv::api::Service>& kv_service,
-                                 db::kv::api::DomainRangeQuery&& query,
+Task<void> kv_domain_range_query(const std::shared_ptr<Service>& kv_service,
+                                 DomainRangeQuery&& query,
                                  const bool verbose) {
     try {
         auto tx = co_await kv_service->begin_transaction();
@@ -943,7 +944,7 @@ Task<void> kv_domain_range_query(const std::shared_ptr<db::kv::api::Service>& kv
         auto it = co_await paginated_result.begin();
         std::cout << "KV DomainRange <- #keys and #values: ";
         int count{0};
-        std::vector<db::kv::api::KeyValue> keys_and_values;
+        std::vector<KeyValue> keys_and_values;
         while (it != paginated_result.end()) {
             keys_and_values.emplace_back(*it);
             ++count;
@@ -962,7 +963,7 @@ Task<void> kv_domain_range_query(const std::shared_ptr<db::kv::api::Service>& kv
 }
 
 template <typename Q>
-using KVQueryFunc = Task<void> (*)(const std::shared_ptr<db::kv::api::Service>&, Q&&, bool);
+using KVQueryFunc = Task<void> (*)(const std::shared_ptr<Service>&, Q&&, bool);
 
 template <typename Q>
 int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_func, Q&& query, const bool verbose) {
@@ -986,7 +987,7 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
         // ETHBACKEND
         ethbackend::RemoteBackEnd eth_backend{*io_context, channel_factory(), *grpc_context};
         // DB KV API client
-        db::kv::api::CoherentStateCache state_cache;
+        CoherentStateCache state_cache;
         db::kv::grpc::client::RemoteClient client{channel_factory,
                                                   *grpc_context,
                                                   &state_cache,
@@ -1039,7 +1040,7 @@ int kv_domain_get() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    db::kv::api::DomainPointQuery query{
+    DomainPointQuery query{
         .table = table_name,
         .key = *key_bytes,
         .timestamp = timestamp > -1 ? std::make_optional(timestamp) : std::nullopt,
@@ -1079,7 +1080,7 @@ int kv_history_seek() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    db::kv::api::HistoryPointQuery query{
+    HistoryPointQuery query{
         .table = table_name,
         .key = *key_bytes,
         .timestamp = timestamp,
@@ -1119,7 +1120,7 @@ int kv_index_range() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    db::kv::api::IndexRangeQuery query{
+    IndexRangeQuery query{
         .table = table_name,
         .key = *key_bytes,
         .from_timestamp = 0,
@@ -1154,7 +1155,7 @@ int kv_history_range() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    db::kv::api::HistoryRangeQuery query{
+    HistoryRangeQuery query{
         .table = table_name,
         .from_timestamp = 0,
         .to_timestamp = -1,
@@ -1211,7 +1212,7 @@ int kv_domain_range() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    db::kv::api::DomainRangeQuery query{
+    DomainRangeQuery query{
         .table = table_name,
         .from_key = *from_key_bytes,
         .to_key = *to_key_bytes,

@@ -41,6 +41,7 @@
 namespace silkworm {
 
 namespace snapshot_test = snapshots::test_util;
+using namespace silkworm::db;
 
 struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
@@ -228,7 +229,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: block not fo
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{10};  // This does not exist, TestDatabaseContext db contains up to block 9
     BlockNum end_block{100};
-    db::RWTxnManaged external_txn{env};
+    RWTxnManaged external_txn{env};
     const auto result0{
         silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
                                     true, true, true)};
@@ -262,7 +263,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: chain id not
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{1};
     BlockNum end_block{2};
-    db::RWTxnManaged external_txn{env};
+    RWTxnManaged external_txn{env};
     const auto result0{
         silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
                                     true, true, true)};
@@ -291,8 +292,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: chain id not
 static void insert_block(mdbx::env& env, Block& block) {
     auto block_hash = block.header.hash();
 
-    db::RWTxnManaged rw_txn{env};
-    db::write_senders(rw_txn, block_hash, block.header.number, block);
+    RWTxnManaged rw_txn{env};
+    write_senders(rw_txn, block_hash, block.header.number, block);
 
     intx::uint256 max_priority_fee_per_gas =
         block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;
@@ -304,9 +305,9 @@ static void insert_block(mdbx::env& env, Block& block) {
     block.transactions.emplace(block.transactions.begin(), system_transaction);
     block.transactions.emplace_back(system_transaction);
 
-    db::write_header(rw_txn, block.header, true);
-    db::write_raw_body(rw_txn, block, block_hash, block.header.number);
-    db::write_canonical_header_hash(rw_txn, block_hash.bytes, block.header.number);
+    write_header(rw_txn, block.header, true);
+    write_raw_body(rw_txn, block, block_hash, block.header.number);
+    write_canonical_header_hash(rw_txn, block_hash.bytes, block.header.number);
     rw_txn.commit_and_stop();
 }
 
@@ -362,7 +363,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     insert_block(env, block);
 
     // Execute block 11 using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{env};
+    RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -370,9 +371,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
 
     // Prepare and insert block 11 (same as block 10)
@@ -384,7 +385,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     insert_block(env, block);
 
     // Execute block 11 using an *external* txn, then commit
-    db::RWTxnManaged external_txn1{env};
+    RWTxnManaged external_txn1{env};
 
     start_block = 11, end_block = 11;
     const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
@@ -393,9 +394,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block: OK", "[silkworm][capi]") {
@@ -456,9 +457,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
 
     // Prepare and insert block 11 (same as block 10)
@@ -476,9 +477,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple blocks: OK", "[silkworm][capi]") {
@@ -541,7 +542,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{env};
+    RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10 + kBlocks - 1};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -549,9 +550,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == kBlocks * value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == kBlocks * value);
     ro_txn.abort();
 
     // Insert N blocks again
@@ -564,7 +565,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn1{env};
+    RWTxnManaged external_txn1{env};
 
     start_block = 10 + kBlocks, end_block = 10 + 2 * kBlocks - 1;
     const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
@@ -573,9 +574,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple blocks: OK", "[silkworm][capi]") {
@@ -645,9 +646,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
 
     // Insert N blocks again
@@ -668,9 +669,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple blocks: insufficient buffer", "[silkworm][capi]") {
@@ -733,7 +734,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{env};
+    RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10 + kBlocks - 1};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -1053,7 +1054,7 @@ static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
 static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};

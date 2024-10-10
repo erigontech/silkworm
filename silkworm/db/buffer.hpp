@@ -155,7 +155,7 @@ class Buffer : public State {
 
   private:
     RWTxn& txn_;
-    db::DataModel access_layer_;
+    DataModel access_layer_;
 
     // Settings
 

@@ -84,7 +84,7 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
         const auto tx_id = ++next_tx_id_;
 
         // Create a new read-only transaction.
-        read_only_txn_ = db::ROTxnManaged{*chaindata_env};
+        read_only_txn_ = ROTxnManaged{*chaindata_env};
         SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << tx_id << " view: " << read_only_txn_->id();
 
         // Send an unsolicited message containing the transaction ID and view ID (i.e. MDBX txn ID)
@@ -201,7 +201,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
     const std::string& bucket_name = request->bucket_name();
 
     // Bucket name must be a valid MDBX map name
-    if (!db::has_map(read_only_txn_, bucket_name.c_str())) {
+    if (!has_map(read_only_txn_, bucket_name.c_str())) {
         const auto err = "unknown bucket: " + request->bucket_name();
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << err;
         throw_with_error(::grpc::Status{::grpc::StatusCode::INVALID_ARGUMENT, err});
@@ -216,7 +216,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
 
     // Create a new database cursor tracking also bucket name (needed for reopening). We create a read-only dup-sort
     // cursor so that it works for both single-value and multi-value tables.
-    const db::MapConfig map_config{
+    const MapConfig map_config{
         .name = bucket_name.c_str(),
         .value_mode = request->op() == remote::Op::OPEN ? ::mdbx::value_mode::single : ::mdbx::value_mode::multi,
     };
@@ -264,7 +264,7 @@ void TxCall::handle_cursor_close(const remote::Cursor* request) {
     SILK_DEBUG << "Tx peer: " << peer() << " closed cursor: " << request->cursor();
 }
 
-void TxCall::handle_operation(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_operation(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_DEBUG << "Tx peer=" << peer() << " op=" << remote::Op_Name(request->op()) << " cursor=" << request->cursor();
 
     switch (request->op()) {
@@ -336,7 +336,7 @@ void TxCall::handle_max_ttl_timer_expired(mdbx::env* chaindata_env) {
 
     // Close and reopen to avoid long-lived transactions (resource-consuming for MDBX)
     read_only_txn_.abort();
-    read_only_txn_ = db::ROTxnManaged{*chaindata_env};
+    read_only_txn_ = ROTxnManaged{*chaindata_env};
 
     // Restore the whole state of the transaction (i.e. all cursor positions)
     const bool restore_success = restore_cursors(positions);
@@ -353,7 +353,7 @@ bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
             positions.emplace_back();
         } else {
             const auto result = tx_cursor.cursor->current(/*throw_notfound=*/false);
-            SILK_DEBUG << "Tx save cursor: " << cursor_id << " result: " << db::detail::dump_mdbx_result(result);
+            SILK_DEBUG << "Tx save cursor: " << cursor_id << " result: " << detail::dump_mdbx_result(result);
             if (!result) {
                 return false;
             }
@@ -373,7 +373,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
 
     for (auto& [cursor_id, tx_cursor] : cursors_) {
         const std::string& bucket_name = tx_cursor.bucket_name;
-        const db::MapConfig map_config{bucket_name.c_str()};
+        const MapConfig map_config{bucket_name.c_str()};
 
         // Bind each cursor to the renewed transaction.
         auto& cursor = tx_cursor.cursor;
@@ -394,11 +394,11 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
             /* multi-value table */
             mdbx::slice value{current_value->c_str()};
             const auto lbm_result = cursor->lower_bound_multivalue(key, value, /*throw_notfound=*/false);
-            SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << db::detail::dump_mdbx_result(lbm_result);
+            SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << detail::dump_mdbx_result(lbm_result);
             // It may happen that key where we stopped disappeared after transaction reopen, then just move to next key
             if (!lbm_result) {
                 const auto next_result = cursor->to_next(/*throw_notfound=*/false);
-                SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " next_result: " << db::detail::dump_mdbx_result(next_result);
+                SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " next_result: " << detail::dump_mdbx_result(next_result);
                 if (!next_result) {
                     return false;
                 }
@@ -406,7 +406,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
         } else {
             /* single-value table */
             const auto result = (key.empty()) ? cursor->to_first(/*throw_notfound=*/false) : cursor->lower_bound(key, /*throw_notfound=*/false);
-            SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " result: " << db::detail::dump_mdbx_result(result);
+            SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " result: " << detail::dump_mdbx_result(result);
             if (!result) {
                 return false;
             }
@@ -416,11 +416,11 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
     return true;
 }
 
-void TxCall::handle_first(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_first(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_first " << this << " START";
 
     const auto result = cursor.to_first(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx FIRST result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx FIRST result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -430,11 +430,11 @@ void TxCall::handle_first(db::ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_first " << this << " END";
 }
 
-void TxCall::handle_first_dup(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_first_dup(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_first_dup " << this << " START";
 
     const auto result = cursor.to_current_first_multi(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx FIRST_DUP result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx FIRST_DUP result: " << detail::dump_mdbx_result(result);
 
     // Do not use `operator bool(result)` to avoid MDBX Assertion `!done || (bool(key) && bool(value))' failed
     if (result.done && result.value) {
@@ -444,12 +444,12 @@ void TxCall::handle_first_dup(db::ROCursorDupSort& cursor, remote::Pair& respons
     SILK_TRACE << "TxCall::handle_first_dup " << this << " END";
 }
 
-void TxCall::handle_seek(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_seek(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek " << this << " START";
     mdbx::slice key{request->k()};
 
     const auto result = (key.empty()) ? cursor.to_first(/*throw_notfound=*/false) : cursor.lower_bound(key, /*throw_notfound=*/false);
-    SILK_DEBUG << "Tx SEEK result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx SEEK result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -459,13 +459,13 @@ void TxCall::handle_seek(const remote::Cursor* request, db::ROCursorDupSort& cur
     SILK_TRACE << "TxCall::handle_seek " << this << " END";
 }
 
-void TxCall::handle_seek_both(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_seek_both(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek_both " << this << " START";
     mdbx::slice key{request->k()};
     mdbx::slice value{request->v()};
 
     const auto result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
-    SILK_DEBUG << "Tx SEEK_BOTH result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx SEEK_BOTH result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_v(result.value.as_string());
@@ -474,7 +474,7 @@ void TxCall::handle_seek_both(const remote::Cursor* request, db::ROCursorDupSort
     SILK_TRACE << "TxCall::handle_seek_both " << this << " END";
 }
 
-void TxCall::handle_seek_exact(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_seek_exact(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek_exact " << this << " START";
     mdbx::slice key{request->k()};
 
@@ -483,7 +483,7 @@ void TxCall::handle_seek_exact(const remote::Cursor* request, db::ROCursorDupSor
 
     if (found) {
         const auto result = cursor.current(/*throw_notfound=*/false);
-        SILK_DEBUG << "Tx SEEK_EXACT result: " << db::detail::dump_mdbx_result(result);
+        SILK_DEBUG << "Tx SEEK_EXACT result: " << detail::dump_mdbx_result(result);
 
         if (result) {
             response.set_k(request->k());
@@ -494,13 +494,13 @@ void TxCall::handle_seek_exact(const remote::Cursor* request, db::ROCursorDupSor
     SILK_TRACE << "TxCall::handle_seek_exact " << this << " END";
 }
 
-void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_seek_both_exact(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " START";
     mdbx::slice key{request->k()};
     mdbx::slice value{request->v()};
 
     const auto result = cursor.find_multivalue(key, value, /*throw_notfound=*/false);
-    SILK_DEBUG << "Tx SEEK_BOTH_EXACT result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx SEEK_BOTH_EXACT result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(request->k());
@@ -510,11 +510,11 @@ void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::ROCursorD
     SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " END";
 }
 
-void TxCall::handle_current(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_current(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_current " << this << " START";
 
     const auto result = cursor.current(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx CURRENT result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx CURRENT result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -524,11 +524,11 @@ void TxCall::handle_current(db::ROCursorDupSort& cursor, remote::Pair& response)
     SILK_TRACE << "TxCall::handle_current " << this << " END";
 }
 
-void TxCall::handle_last(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_last(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_last " << this << " START";
 
     const auto result = cursor.to_last(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx LAST result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx LAST result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -538,11 +538,11 @@ void TxCall::handle_last(db::ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_last " << this << " END";
 }
 
-void TxCall::handle_last_dup(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_last_dup(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
 
     const auto result = cursor.to_current_last_multi(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx LAST_DUP result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx LAST_DUP result: " << detail::dump_mdbx_result(result);
 
     // Do not use `operator bool(result)` to avoid MDBX Assertion `!done || (bool(key) && bool(value))' failed
     if (result.done && result.value) {
@@ -552,11 +552,11 @@ void TxCall::handle_last_dup(db::ROCursorDupSort& cursor, remote::Pair& response
     SILK_TRACE << "TxCall::handle_last_dup " << this << " END";
 }
 
-void TxCall::handle_next(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_next(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next " << this << " START";
 
     const auto result = cursor.to_next(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx NEXT result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx NEXT result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -566,11 +566,11 @@ void TxCall::handle_next(db::ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next " << this << " END";
 }
 
-void TxCall::handle_next_dup(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_next_dup(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
 
     const auto result = cursor.to_current_next_multi(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx NEXT_DUP result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx NEXT_DUP result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -580,11 +580,11 @@ void TxCall::handle_next_dup(db::ROCursorDupSort& cursor, remote::Pair& response
     SILK_TRACE << "TxCall::handle_next_dup " << this << " END";
 }
 
-void TxCall::handle_next_no_dup(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_next_no_dup(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next_no_dup " << this << " START";
 
     const auto result = cursor.to_next_first_multi(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx NEXT_NO_DUP result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx NEXT_NO_DUP result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -594,11 +594,11 @@ void TxCall::handle_next_no_dup(db::ROCursorDupSort& cursor, remote::Pair& respo
     SILK_TRACE << "TxCall::handle_next_no_dup " << this << " END";
 }
 
-void TxCall::handle_prev(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_prev(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev " << this << " START";
 
     const auto result = cursor.to_previous(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx PREV result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx PREV result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -608,11 +608,11 @@ void TxCall::handle_prev(db::ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev " << this << " END";
 }
 
-void TxCall::handle_prev_dup(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_prev_dup(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev_dup " << this << " START";
 
     const auto result = cursor.to_current_prev_multi(/*throw_notfound=*/false);
-    SILK_DEBUG << "Tx PREV_DUP result: " << db::detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx PREV_DUP result: " << detail::dump_mdbx_result(result);
 
     if (result) {
         response.set_k(result.key.as_string());
@@ -622,7 +622,7 @@ void TxCall::handle_prev_dup(db::ROCursorDupSort& cursor, remote::Pair& response
     SILK_TRACE << "TxCall::handle_prev_dup " << this << " END";
 }
 
-void TxCall::handle_prev_no_dup(db::ROCursorDupSort& cursor, remote::Pair& response) {
+void TxCall::handle_prev_no_dup(ROCursorDupSort& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev_no_dup " << this << " START";
 
     const auto result = cursor.to_previous_last_multi(/*throw_notfound=*/false);

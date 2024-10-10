@@ -32,14 +32,15 @@
 namespace silkworm::stagedsync {
 
 using namespace std::chrono_literals;
+using namespace silkworm::db;
 
 Senders::Senders(
     SyncContext* sync_context,
     const ChainConfig& chain_config,
     size_t batch_size,
-    db::etl::CollectorSettings etl_settings,
-    db::BlockAmount prune_mode_senders)
-    : Stage(sync_context, db::stages::kSendersKey),
+    etl::CollectorSettings etl_settings,
+    BlockAmount prune_mode_senders)
+    : Stage(sync_context, stages::kSendersKey),
       chain_config_(chain_config),
       prune_mode_senders_(prune_mode_senders),
       max_batch_size_{batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
@@ -49,14 +50,14 @@ Senders::Senders(
     batch_->reserve(max_batch_size_);
 }
 
-Stage::Result Senders::forward(db::RWTxn& txn) {
+Stage::Result Senders::forward(RWTxn& txn) {
     std::unique_lock log_lock(sl_mutex_);
     operation_ = OperationType::kForward;
     total_processed_blocks_ = 0;
     total_collected_transactions_ = 0;
     log_lock.unlock();
 
-    collector_ = std::make_unique<db::etl_mdbx::Collector>(etl_settings_);
+    collector_ = std::make_unique<etl_mdbx::Collector>(etl_settings_);
 
     const auto res{parallel_recover(txn)};
     if (res == Stage::Result::kSuccess) {
@@ -72,7 +73,7 @@ Stage::Result Senders::forward(db::RWTxn& txn) {
     return res;
 }
 
-Stage::Result Senders::unwind(db::RWTxn& txn) {
+Stage::Result Senders::unwind(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
     if (!sync_context_->unwind_point.has_value()) return ret;
@@ -93,7 +94,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto bodies_stage_progress{db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey)};
+        const auto bodies_stage_progress{stages::read_stage_progress(txn, stages::kBlockBodiesKey)};
         if (previous_progress <= to || bodies_stage_progress <= to) {
             // Nothing to process
             operation_ = OperationType::kNone;
@@ -101,7 +102,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
         }
 
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -109,16 +110,16 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        auto unwind_cursor = txn.rw_cursor(db::table::kSenders);
-        const auto start_key{db::block_key(to + 1)};
+        auto unwind_cursor = txn.rw_cursor(table::kSenders);
+        const auto start_key{block_key(to + 1)};
         size_t erased{0};
-        auto data{unwind_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        auto data{unwind_cursor->lower_bound(to_slice(start_key), /*throw_notfound=*/false)};
         while (data) {
             // Log and abort check
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                 throw_if_stopping();
                 std::unique_lock log_lck(sl_mutex_);
-                const auto reached_block_number{endian::load_big_u64(db::from_slice(data.key).data())};
+                const auto reached_block_number{endian::load_big_u64(from_slice(data.key).data())};
                 current_key_ = std::to_string(reached_block_number);
                 log_time = now + 5s;
             }
@@ -129,7 +130,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
         if (sw) {
             const auto [_, duration]{sw->lap()};
             log::Trace(log_prefix_,
-                       {"origin", db::table::kSenders.name,
+                       {"origin", table::kSenders.name,
                         "erased", std::to_string(erased),
                         "in", StopWatch::format(duration)});
         }
@@ -159,7 +160,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result Senders::prune(db::RWTxn& txn) {
+Stage::Result Senders::prune(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::kPrune;
     current_key_.clear();
@@ -193,7 +194,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
         }
 
         const BlockNum segment_width{forward_progress - prune_progress};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),
@@ -201,12 +202,12 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
                        "threshold", std::to_string(prune_threshold)});
         }
 
-        auto prune_cursor = txn.rw_cursor(db::table::kSenders);
-        const auto upper_key{db::block_key(prune_threshold)};
+        auto prune_cursor = txn.rw_cursor(table::kSenders);
+        const auto upper_key{block_key(prune_threshold)};
         size_t erased{0};
-        auto prune_data{prune_cursor->lower_bound(db::to_slice(upper_key), /*throw_notfound=*/false)};
+        auto prune_data{prune_cursor->lower_bound(to_slice(upper_key), /*throw_notfound=*/false)};
         while (prune_data) {
-            const auto reached_block_number{endian::load_big_u64(db::from_slice(prune_data.key).data())};
+            const auto reached_block_number{endian::load_big_u64(from_slice(prune_data.key).data())};
             // Log and abort check
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                 throw_if_stopping();
@@ -224,9 +225,9 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
         throw_if_stopping();
         if (sw) {
             const auto [_, duration]{sw->lap()};
-            log::Trace(log_prefix_, {"source", db::table::kSenders.name, "erased", std::to_string(erased), "in", StopWatch::format(duration)});
+            log::Trace(log_prefix_, {"source", table::kSenders.name, "erased", std::to_string(erased), "in", StopWatch::format(duration)});
         }
-        db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
+        stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
@@ -251,11 +252,11 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
     return ret;
 }
 
-void Senders::set_prune_mode_senders(db::BlockAmount prune_mode_senders) {
+void Senders::set_prune_mode_senders(BlockAmount prune_mode_senders) {
     prune_mode_senders_ = prune_mode_senders;
 }
 
-Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
+Stage::Result Senders::parallel_recover(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
     collected_senders_ = 0;
@@ -264,17 +265,17 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
     results_.clear();
 
     try {
-        db::DataModel data_model{txn};
+        DataModel data_model{txn};
 
         // Check stage boundaries using previous execution of current stage and current execution of previous stage
-        auto previous_progress{db::stages::read_stage_progress(txn, db::stages::kSendersKey)};
-        auto block_hashes_progress{db::stages::read_stage_progress(txn, db::stages::kBlockHashesKey)};
-        auto block_bodies_progress{db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey)};
+        auto previous_progress{stages::read_stage_progress(txn, stages::kSendersKey)};
+        auto block_hashes_progress{stages::read_stage_progress(txn, stages::kBlockHashesKey)};
+        auto block_bodies_progress{stages::read_stage_progress(txn, stages::kBlockBodiesKey)};
         auto target_block_num{std::min(block_hashes_progress, block_bodies_progress)};
         // note: it would be better to use sync_context_->target_height instead of target_block
 
         const BlockNum segment_width{target_block_num - previous_progress};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                                     "from", std::to_string(previous_progress),
                                     "to", std::to_string(target_block_num),
@@ -306,7 +307,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         // Start from first block and read all in sequence
         for (auto current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
-            const auto current_hash = db::read_canonical_header_hash(txn, current_block_num);
+            const auto current_hash = read_canonical_header_hash(txn, current_block_num);
             if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
                                                 "Canonical hash at height " + std::to_string(current_block_num) + " not found");
             const auto block_header = data_model.read_header(current_block_num, *current_hash);
@@ -359,7 +360,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         store_senders(txn);
 
         // Update stage progress with last reached block number
-        db::stages::write_stage_progress(txn, db::stages::kSendersKey, target_block_num);
+        stages::write_stage_progress(txn, stages::kSendersKey, target_block_num);
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
@@ -496,7 +497,7 @@ void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
                 key.clear();
                 value.clear();
             }
-            key = db::block_key(package.block_num, package.block_hash.bytes);
+            key = block_key(package.block_num, package.block_hash.bytes);
             value.clear();
             block_num = package.block_num;
         }
@@ -513,11 +514,11 @@ void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
 }
 
-void Senders::store_senders(db::RWTxn& txn) {
+void Senders::store_senders(RWTxn& txn) {
     if (!collector_->empty()) {
         log::Trace(log_prefix_, {"load ETL items", std::to_string(collector_->size())});
         // Prepare target table
-        auto senders_cursor = txn.rw_cursor_dup_sort(db::table::kSenders);
+        auto senders_cursor = txn.rw_cursor_dup_sort(table::kSenders);
         log::Trace(log_prefix_, {"load ETL data", human_size(collector_->bytes_size())});
         collector_->load(*senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
     }

@@ -30,7 +30,7 @@ namespace silkworm::db::bitmap {
 
 template <typename BlockUpperBound>
 Bytes upper_bound_suffix(BlockUpperBound value) {
-    // Cannot use db::block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
+    // Cannot use block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
     Bytes shard_suffix(sizeof(BlockUpperBound), '\0');
     intx::be::unsafe::store<BlockUpperBound>(&shard_suffix[0], value);
     return shard_suffix;
@@ -90,18 +90,18 @@ RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
 
 template <typename RoaringMap, typename BlockUpperBound>
 void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector) {
-    // Cannot use db::block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
+    // Cannot use block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
     Bytes last_shard_suffix{upper_bound_suffix(std::numeric_limits<BlockUpperBound>::max())};
 
     const size_t optimal_shard_size{
-        db::max_value_size_for_leaf_page(*txn, key_size + /*shard upper_bound*/ sizeof(BlockUpperBound))};
+        max_value_size_for_leaf_page(*txn, key_size + /*shard upper_bound*/ sizeof(BlockUpperBound))};
 
-    db::PooledCursor target(txn, index_config_);
+    PooledCursor target(txn, index_config_);
     etl_mdbx::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](
                                      const etl::Entry& entry,
                                      RWCursorDupSort& index_cursor,
                                      MDBX_put_flags_t put_flags) -> void {
-        auto new_bitmap{db::bitmap::parse_impl<RoaringMap>(entry.value)};  // Bitmap being merged
+        auto new_bitmap{bitmap::parse_impl<RoaringMap>(entry.value)};  // Bitmap being merged
 
         // Check whether we have any previous shard to merge with
         Bytes shard_key{
@@ -109,21 +109,21 @@ void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Coll
                 .substr(0, entry.key.size() - sizeof(uint16_t)) /* remove etl ordering suffix */
                 .append(last_shard_suffix)};                    /* and append const suffix for last key */
 
-        if (auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)}; index_data.done) {
+        if (auto index_data{index_cursor.find(to_slice(shard_key), /*throw_notfound=*/false)}; index_data.done) {
             // Merge previous and current bitmap
-            new_bitmap |= db::bitmap::parse_impl<RoaringMap>(index_data.value);
+            new_bitmap |= bitmap::parse_impl<RoaringMap>(index_data.value);
             index_cursor.erase();  // Delete currently found record as it'll be rewritten
         }
 
         // Consume bitmap splitting in shards
         while (!new_bitmap.isEmpty()) {
-            auto shard{db::bitmap::cut_left_impl<RoaringMap>(new_bitmap, optimal_shard_size)};
+            auto shard{bitmap::cut_left_impl<RoaringMap>(new_bitmap, optimal_shard_size)};
             const bool consumed_to_last_chunk{new_bitmap.isEmpty()};
             const BlockUpperBound suffix{consumed_to_last_chunk ? std::numeric_limits<BlockUpperBound>::max() : shard.maximum()};
             intx::be::unsafe::store<BlockUpperBound>(&shard_key[shard_key.size() - sizeof(BlockUpperBound)], suffix);
-            Bytes shard_bytes{db::bitmap::to_bytes(shard)};
-            mdbx::slice k{db::to_slice(shard_key)};
-            mdbx::slice v{db::to_slice(shard_bytes)};
+            Bytes shard_bytes{bitmap::to_bytes(shard)};
+            mdbx::slice k{to_slice(shard_key)};
+            mdbx::slice v{to_slice(shard_bytes)};
             mdbx::error::success_or_throw(index_cursor.put(k, &v, put_flags));
         }
     }};
@@ -139,7 +139,7 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    db::PooledCursor target(txn, index_config_);
+    PooledCursor target(txn, index_config_);
     for (const auto& [key, created] : keys) {
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
@@ -155,20 +155,20 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
         if (created) {
             // Key was created in the batch we're unwinding
             // Delete all its history
-            db::cursor_erase_prefix(target, key);
+            cursor_erase_prefix(target, key);
             continue;
         }
 
         // Locate previous incomplete shard. There's always one if account has been touched at least once in changeset
         const Bytes shard_key{key + upper_bound_suffix(std::numeric_limits<BlockUpperBound>::max())};
-        auto index_data{target.find(db::to_slice(shard_key), false)};
+        auto index_data{target.find(to_slice(shard_key), false)};
         while (index_data) {
-            const auto index_data_key_view{db::from_slice(index_data.key)};
+            const auto index_data_key_view{from_slice(index_data.key)};
             if (!index_data_key_view.starts_with(key)) {
                 break;
             }
 
-            auto db_bitmap{db::bitmap::parse_impl<RoaringMap>(index_data.value)};
+            auto db_bitmap{bitmap::parse_impl<RoaringMap>(index_data.value)};
             if (db_bitmap.maximum() <= to) {
                 break;
             }
@@ -186,8 +186,8 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
 
             // Replace current record with the new bitmap ensuring is marked as last shard
             target.erase();
-            Bytes shard_bytes{db::bitmap::to_bytes(db_bitmap)};
-            target.insert(db::to_slice(shard_key), db::to_slice(shard_bytes));
+            Bytes shard_bytes{bitmap::to_bytes(db_bitmap)};
+            target.insert(to_slice(shard_key), to_slice(shard_bytes));
             break;
         }
     }
@@ -217,10 +217,10 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    db::PooledCursor target(txn, index_config_);
+    PooledCursor target(txn, index_config_);
     auto target_data{target.to_first(/*throw_notfound=*/false)};
     while (target_data) {
-        const auto data_key_view{db::from_slice(target_data.key)};
+        const auto data_key_view{from_slice(target_data.key)};
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             if (SignalHandler::signalled()) {
@@ -240,7 +240,7 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
             target.erase();
         } else {
             // Read current bitmap
-            auto bitmap{db::bitmap::parse_impl<RoaringMap>(target_data.value)};
+            auto bitmap{bitmap::parse_impl<RoaringMap>(target_data.value)};
             bool shard_shrunk{false};
             while (!bitmap.isEmpty() && bitmap.minimum() <= threshold) {
                 bitmap.remove(bitmap.minimum());
@@ -248,8 +248,8 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
             }
             if (bitmap.isEmpty() || shard_shrunk) {
                 if (!bitmap.isEmpty()) {
-                    Bytes new_shard_data{db::bitmap::to_bytes(bitmap)};
-                    target.update(db::to_slice(data_key_view), db::to_slice(new_shard_data));
+                    Bytes new_shard_data{bitmap::to_bytes(bitmap)};
+                    target.update(to_slice(data_key_view), to_slice(new_shard_data));
                 } else {
                     target.erase();
                 }
@@ -277,7 +277,7 @@ void flush_bitmaps_impl(absl::btree_map<Bytes, RoaringMap>& bitmaps, etl::Collec
         Bytes etl_key(key.size() + sizeof(uint16_t), '\0');
         std::memcpy(&etl_key[0], key.data(), key.size());
         endian::store_big_u16(&etl_key[key.size()], flush_count);
-        collector->collect({etl_key, db::bitmap::to_bytes(bitmap)});
+        collector->collect({etl_key, bitmap::to_bytes(bitmap)});
     }
     bitmaps.clear();
 }

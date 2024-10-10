@@ -263,7 +263,7 @@ class DataModel {
   public:
     static void set_snapshot_repository(snapshots::SnapshotRepository* repository);
 
-    explicit DataModel(db::ROTxn& txn);
+    explicit DataModel(ROTxn& txn);
     ~DataModel() = default;
 
     // Not copyable nor movable
@@ -355,7 +355,7 @@ class DataModel {
 
     static inline snapshots::SnapshotRepository* repository_{nullptr};
 
-    db::ROTxn& txn_;
+    ROTxn& txn_;
 };
 
 }  // namespace silkworm::db

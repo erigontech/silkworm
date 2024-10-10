@@ -33,19 +33,20 @@
 
 namespace silkworm::stagedsync {
 
-using db::etl_mdbx::Collector;
+using namespace silkworm::db;
+using etl_mdbx::Collector;
 
-Stage::Result InterHashes::forward(db::RWTxn& txn) {
+Stage::Result InterHashes::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::kForward;
 
     try {
         throw_if_stopping();
-        db::DataModel data_model{txn};
+        DataModel data_model{txn};
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
+        auto hashstate_stage_progress{stages::read_stage_progress(txn, stages::kHashStateKey)};
         if (previous_progress == hashstate_stage_progress) {
             // Nothing to process
             operation_ = OperationType::kNone;
@@ -60,7 +61,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
                                  " greater than HashState progress " + std::to_string(hashstate_stage_progress));
         }
         const BlockNum segment_width{hashstate_stage_progress - previous_progress};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -69,7 +70,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
-        auto header_hash{db::read_canonical_header_hash(txn, hashstate_stage_progress)};
+        auto header_hash{read_canonical_header_hash(txn, hashstate_stage_progress)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(hashstate_stage_progress));
@@ -83,7 +84,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
         auto expected_state_root{header->state_root};
 
         reset_log_progress();
-        if (!previous_progress || segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
+        if (!previous_progress || segment_width > stages::kLargeBlockSegmentWorthRegen) {
             // Full regeneration
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
@@ -99,7 +100,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
 
         success_or_throw(ret);
         throw_if_stopping();
-        db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
+        stages::write_stage_progress(txn, stages::kIntermediateHashesKey, hashstate_stage_progress);
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
@@ -124,7 +125,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result InterHashes::unwind(db::RWTxn& txn) {
+Stage::Result InterHashes::unwind(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
     if (!sync_context_->unwind_point.has_value()) return ret;
@@ -134,7 +135,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        db::DataModel data_model{txn};
+        DataModel data_model{txn};
 
         BlockNum previous_progress{get_progress(txn)};
         if (to >= previous_progress) {
@@ -143,7 +144,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
             return Stage::Result::kSuccess;
         }
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -152,7 +153,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
-        auto header_hash{db::read_canonical_header_hash(txn, to)};
+        auto header_hash{read_canonical_header_hash(txn, to)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(to));
@@ -166,7 +167,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
         auto expected_state_root{header->state_root};
 
         reset_log_progress();
-        if (segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
+        if (segment_width > stages::kLargeBlockSegmentWorthRegen) {
             // Full regeneration
             // It will process all HashedState which is already unwound
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
@@ -177,7 +178,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
 
         success_or_throw(ret);
         throw_if_stopping();
-        db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, to);
+        stages::write_stage_progress(txn, stages::kIntermediateHashesKey, to);
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
@@ -202,9 +203,9 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result InterHashes::prune(db::RWTxn&) { return Stage::Result::kSuccess; }
+Stage::Result InterHashes::prune(RWTxn&) { return Stage::Result::kSuccess; }
 
-trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+trie::PrefixSet InterHashes::collect_account_changes(RWTxn& txn, BlockNum from, BlockNum to,
                                                      absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
@@ -224,19 +225,19 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     auto log_time{std::chrono::steady_clock::now()};
 
     std::unique_lock log_lck(log_mtx_);
-    current_source_ = std::string(db::table::kAccountChangeSet.name);
+    current_source_ = std::string(table::kAccountChangeSet.name);
     log_lck.unlock();
 
-    const Bytes starting_key{db::block_key(expected_blocknum)};
+    const Bytes starting_key{block_key(expected_blocknum)};
     trie::PrefixSet ret;
 
-    auto account_changeset = txn.ro_cursor_dup_sort(db::table::kAccountChangeSet);
-    auto plain_state = txn.ro_cursor_dup_sort(db::table::kPlainState);
+    auto account_changeset = txn.ro_cursor_dup_sort(table::kAccountChangeSet);
+    auto plain_state = txn.ro_cursor_dup_sort(table::kPlainState);
 
-    auto changeset_data{account_changeset->lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    auto changeset_data{account_changeset->lower_bound(to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
-        reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
+        reached_blocknum = endian::load_big_u64(from_slice(changeset_data.key).data());
         check_block_sequence(reached_blocknum, expected_blocknum);
         if (reached_blocknum > max_blocknum) {
             break;
@@ -250,7 +251,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
         }
 
         while (changeset_data) {
-            auto changeset_value_view{db::from_slice(changeset_data.value)};
+            auto changeset_value_view{from_slice(changeset_data.value)};
 
             // Extract address and hash if needed
             const evmc::address address{bytes_to_address(changeset_value_view)};
@@ -267,9 +268,9 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             if (auto item{plainstate_accounts.get(address)}; item != nullptr) {
                 plainstate_account = *item;
             } else {
-                auto ps_data{plain_state->find(db::to_slice(address), false)};
+                auto ps_data{plain_state->find(to_slice(address), false)};
                 if (ps_data && !ps_data.value.empty()) {
-                    const auto account{Account::from_encoded_storage(db::from_slice(ps_data.value))};
+                    const auto account{Account::from_encoded_storage(from_slice(ps_data.value))};
                     success_or_throw(account);
                     plainstate_account.emplace(*account);
                 }
@@ -292,7 +293,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
                         if (plainstate_account == std::nullopt ||
                             plainstate_account->incarnation != changeset_account->incarnation) {
                             deleted_ts_prefixes.insert(
-                                db::storage_prefix(address.bytes, changeset_account->incarnation));
+                                storage_prefix(address.bytes, changeset_account->incarnation));
                         }
                     }
                 } else {
@@ -310,7 +311,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
                             success_or_throw(changeset_account);
                             if (changeset_account->incarnation > plainstate_account->incarnation) {
                                 deleted_ts_prefixes.insert(
-                                    db::storage_prefix(address.bytes, plainstate_account->incarnation));
+                                    storage_prefix(address.bytes, plainstate_account->incarnation));
                             }
                         }
                     }
@@ -329,9 +330,9 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
 
     // Eventually delete nodes from trie for deleted accounts
     if (!deleted_ts_prefixes.empty()) {
-        auto trie_storage = txn.rw_cursor(db::table::kTrieOfStorage);
+        auto trie_storage = txn.rw_cursor(table::kTrieOfStorage);
         for (const auto& prefix : deleted_ts_prefixes) {
-            const auto prefix_slice{db::to_slice(prefix)};
+            const auto prefix_slice{to_slice(prefix)};
             auto data{trie_storage->lower_bound(prefix_slice, /*throw_notfound=*/false)};
             while (data && data.key.starts_with(prefix_slice)) {
                 trie_storage->erase();
@@ -347,7 +348,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     return ret;
 }
 
-trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+trie::PrefixSet InterHashes::collect_storage_changes(RWTxn& txn, BlockNum from, BlockNum to,
                                                      absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
@@ -361,21 +362,21 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
     auto log_time{std::chrono::steady_clock::now()};
 
     std::unique_lock log_lck(log_mtx_);
-    current_source_ = std::string(db::table::kStorageChangeSet.name);
+    current_source_ = std::string(table::kStorageChangeSet.name);
     current_key_ = std::to_string(expected_blocknum);
     log_lck.unlock();
 
-    const Bytes starting_key{db::block_key(expected_blocknum)};
+    const Bytes starting_key{block_key(expected_blocknum)};
     trie::PrefixSet ret;
 
     // Don't rehash same addresses
     absl::btree_map<evmc::address, ethash_hash256>::iterator hashed_addresses_it{hashed_addresses.begin()};
 
-    auto storage_changeset = txn.ro_cursor_dup_sort(db::table::kStorageChangeSet);
-    auto changeset_data{storage_changeset->lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    auto storage_changeset = txn.ro_cursor_dup_sort(table::kStorageChangeSet);
+    auto changeset_data{storage_changeset->lower_bound(to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
-        auto changeset_key_view{db::from_slice(changeset_data.key)};
+        auto changeset_key_view{from_slice(changeset_data.key)};
         reached_blocknum = endian::load_big_u64(changeset_key_view.data());
 
         if (reached_blocknum > to) {
@@ -400,20 +401,20 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
         changeset_key_view.remove_prefix(kAddressLength);
 
-        Bytes hashed_key(db::kHashedStoragePrefixLength + (2 * kHashLength), '\0');
+        Bytes hashed_key(kHashedStoragePrefixLength + (2 * kHashLength), '\0');
         std::memcpy(&hashed_key[0], hashed_addresses_it->second.bytes, kHashLength);
-        std::memcpy(&hashed_key[kHashLength], changeset_key_view.data(), db::kIncarnationLength);
+        std::memcpy(&hashed_key[kHashLength], changeset_key_view.data(), kIncarnationLength);
 
         while (changeset_data) {
-            auto changeset_value_view{db::from_slice(changeset_data.value)};
+            auto changeset_value_view{from_slice(changeset_data.value)};
 
             const ByteView location{changeset_value_view.substr(0, kHashLength)};
             const auto hashed_location{keccak256(location)};
 
             auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
-            std::memcpy(&hashed_key[db::kHashedStoragePrefixLength], unpacked_location.data(),
+            std::memcpy(&hashed_key[kHashedStoragePrefixLength], unpacked_location.data(),
                         unpacked_location.length());
-            auto ret_item{ByteView(hashed_key.data(), db::kHashedStoragePrefixLength + unpacked_location.length())};
+            auto ret_item{ByteView(hashed_key.data(), kHashedStoragePrefixLength + unpacked_location.length())};
 
             ret.insert(ret_item, changeset_value_view.length() == kHashLength);
             changeset_data = storage_changeset->to_current_next_multi(/*throw_notfound=*/false);
@@ -430,7 +431,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
     return ret;
 }
 
-Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
+Stage::Result InterHashes::regenerate_intermediate_hashes(RWTxn& txn, const evmc::bytes32* expected_root) {
     std::unique_lock log_lck(log_mtx_);
     incremental_ = false;
     current_source_.clear();
@@ -439,10 +440,10 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const 
     Stage::Result ret{Stage::Result::kSuccess};
 
     try {
-        log::Info(log_prefix_, {"clearing", db::table::kTrieOfAccounts.name});
-        txn->clear_map(db::table::kTrieOfAccounts.name);
-        log::Info(log_prefix_, {"clearing", db::table::kTrieOfStorage.name});
-        txn->clear_map(db::table::kTrieOfStorage.name);
+        log::Info(log_prefix_, {"clearing", table::kTrieOfAccounts.name});
+        txn->clear_map(table::kTrieOfAccounts.name);
+        log::Info(log_prefix_, {"clearing", table::kTrieOfStorage.name});
+        txn->clear_map(table::kTrieOfStorage.name);
         txn.commit_and_renew();
 
         account_collector_ = std::make_unique<Collector>(etl_settings_);
@@ -492,7 +493,7 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const 
     return ret;
 }
 
-Stage::Result InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
+Stage::Result InterHashes::increment_intermediate_hashes(RWTxn& txn, BlockNum from, BlockNum to,
                                                          const evmc::bytes32* expected_root) {
     std::unique_lock log_lck(log_mtx_);
     incremental_ = true;
@@ -557,26 +558,26 @@ Stage::Result InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNu
     return ret;
 }
 
-void InterHashes::flush_collected_nodes(db::RWTxn& txn) {
+void InterHashes::flush_collected_nodes(RWTxn& txn) {
     // Proceed with loading of newly generated nodes and deletion of obsolete ones.
     std::unique_lock log_lck(log_mtx_);
     trie_loader_.reset();
     loading_ = true;
     loading_collector_ = std::move(account_collector_);
     current_source_ = "etl";
-    current_target_ = std::string(db::table::kTrieOfAccounts.name);
+    current_target_ = std::string(table::kTrieOfAccounts.name);
     log_lck.unlock();
 
-    auto target = txn.rw_cursor_dup_sort(db::table::kTrieOfAccounts);  // note: not a multi-value table
+    auto target = txn.rw_cursor_dup_sort(table::kTrieOfAccounts);  // note: not a multi-value table
     MDBX_put_flags_t flags{target->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
     loading_collector_->load(*target, nullptr, flags);
 
     log_lck.lock();
     loading_collector_ = std::move(storage_collector_);
-    current_target_ = std::string(db::table::kTrieOfStorage.name);
+    current_target_ = std::string(table::kTrieOfStorage.name);
     log_lck.unlock();
 
-    target->bind(txn, db::table::kTrieOfStorage);
+    target->bind(txn, table::kTrieOfStorage);
     flags = target->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
     loading_collector_->load(*target, nullptr, flags);
 

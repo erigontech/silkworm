@@ -25,6 +25,8 @@
 
 namespace silkworm {
 
+using namespace silkworm::db;
+
 class HeadersStageForTest : public stagedsync::HeadersStage {
   public:
     using stagedsync::HeadersStage::HeaderDataModel;
@@ -42,12 +44,12 @@ TEST_CASE("HeadersStage - data model") {
      *         h0 <----- h1
      */
     SECTION("one header after the genesis") {
-        db::RWTxnManaged tx(context.env());
+        RWTxnManaged tx(context.env());
 
-        auto header0_hash = db::read_canonical_header_hash(tx, 0);
+        auto header0_hash = read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
-        auto header0 = db::read_canonical_header(tx, 0);
+        auto header0 = read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
 
         BlockNum headers_stage_height = 0;
@@ -73,9 +75,9 @@ TEST_CASE("HeadersStage - data model") {
         REQUIRE(hm.total_difficulty() == td);
 
         // check db content
-        // REQUIRE(db::read_head_header_hash(tx) == header1_hash);
-        REQUIRE(db::read_total_difficulty(tx, header1.number, header1.hash()) == td);
-        // REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number); block numbers will be added by stage block-hashes
+        // REQUIRE(read_head_header_hash(tx) == header1_hash);
+        REQUIRE(read_total_difficulty(tx, header1.number, header1.hash()) == td);
+        // REQUIRE(read_block_number(tx, header1.hash()) == header1.number); block numbers will be added by stage block-hashes
     }
 
     /* status:
@@ -85,10 +87,10 @@ TEST_CASE("HeadersStage - data model") {
      *                |-- h1'
      */
     SECTION("some header after the genesis") {
-        db::RWTxnManaged tx(context.env());
+        RWTxnManaged tx(context.env());
 
         // starting from an initial status
-        auto header0 = db::read_canonical_header(tx, 0);
+        auto header0 = read_canonical_header(tx, 0);
         auto header0_hash = header0->hash();
 
         // receiving 3 headers from a peer
@@ -126,8 +128,8 @@ TEST_CASE("HeadersStage - data model") {
         REQUIRE(hm.highest_hash() == header2_hash);
 
         // check db content
-        // REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
+        // REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
         // Now we suppose CL triggers an unwind, resetting to h0
         BlockNum headers_stage_height_fork = 0;
@@ -143,9 +145,9 @@ TEST_CASE("HeadersStage - data model") {
         REQUIRE(hm_fork.highest_hash() == header1b_hash);
 
         // check db content
-        // REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
-        REQUIRE(db::read_total_difficulty(tx, 1, header1b_hash) == expected_td_fork);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);  // this should remain
+        // REQUIRE(read_head_header_hash(tx) == header1b_hash);
+        REQUIRE(read_total_difficulty(tx, 1, header1b_hash) == expected_td_fork);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);  // this should remain
     }
 }
 

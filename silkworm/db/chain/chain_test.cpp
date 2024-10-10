@@ -59,14 +59,14 @@ struct ChainTest : public silkworm::test_util::ContextTestBase {
 
 TEST_CASE_METHOD(ChainTest, "read_header_number") {
     SECTION("existent hash") {
-        EXPECT_CALL(transaction, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> { co_return kNumber; }));
+        EXPECT_CALL(transaction, get_one(table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> { co_return kNumber; }));
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
         const auto header_number = spawn_and_wait(read_header_number(transaction, block_hash));
         CHECK(header_number == 4'000'000);
     }
 
     SECTION("non-existent hash") {
-        EXPECT_CALL(transaction, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
         const auto block_hash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
@@ -81,7 +81,7 @@ TEST_CASE_METHOD(ChainTest, "read_header_number") {
 
 TEST_CASE_METHOD(ChainTest, "read_canonical_block_hash") {
     SECTION("empty hash bytes") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
         uint64_t block_number{4'000'000};
@@ -89,7 +89,7 @@ TEST_CASE_METHOD(ChainTest, "read_canonical_block_hash") {
     }
 
     SECTION("shorter hash bytes") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return *from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff");
         }));
         uint64_t block_number{4'000'000};
@@ -98,7 +98,7 @@ TEST_CASE_METHOD(ChainTest, "read_canonical_block_hash") {
     }
 
     SECTION("longer hash bytes") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return *from_hex("439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dffabcdef");
         }));
         uint64_t block_number{4'000'000};
@@ -107,7 +107,7 @@ TEST_CASE_METHOD(ChainTest, "read_canonical_block_hash") {
     }
 
     SECTION("valid canonical hash") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kBlockHash;
         }));
         uint64_t block_number{4'000'000};
@@ -118,7 +118,7 @@ TEST_CASE_METHOD(ChainTest, "read_canonical_block_hash") {
 
 TEST_CASE_METHOD(ChainTest, "read_total_difficulty") {
     SECTION("empty RLP buffer") {
-        EXPECT_CALL(transaction, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
         evmc::bytes32 block_hash{0xd268bdabee5eab4914d0de9b0e0071364582cfb3c952b19727f1ab429f4ba2a8_bytes32};
@@ -127,7 +127,7 @@ TEST_CASE_METHOD(ChainTest, "read_total_difficulty") {
     }
 
     SECTION("invalid RLP buffer") {
-        EXPECT_CALL(transaction, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return *from_hex("000102");
         }));
         evmc::bytes32 block_hash{0xd268bdabee5eab4914d0de9b0e0071364582cfb3c952b19727f1ab429f4ba2a8_bytes32};
@@ -136,7 +136,7 @@ TEST_CASE_METHOD(ChainTest, "read_total_difficulty") {
     }
 
     SECTION("valid total difficulty") {
-        EXPECT_CALL(transaction, get_one(db::table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return *from_hex("8360c7cc");
         }));
         evmc::bytes32 block_hash{0xd268bdabee5eab4914d0de9b0e0071364582cfb3c952b19727f1ab429f4ba2a8_bytes32};

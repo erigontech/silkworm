@@ -21,8 +21,8 @@
 #include <silkworm/core/common/base.hpp>
 
 #include "data_migration_command.hpp"
-#include "mdbx/mdbx.hpp"
-#include "snapshots/snapshot_writer.hpp"
+#include "datastore/mdbx/mdbx.hpp"
+#include "datastore/snapshots/snapshot_writer.hpp"
 
 namespace silkworm::db {
 

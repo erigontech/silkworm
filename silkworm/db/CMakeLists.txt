@@ -16,9 +16,9 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(etl)
-add_subdirectory(mdbx)
-add_subdirectory(snapshots)
+add_subdirectory(datastore/etl)
+add_subdirectory(datastore/mdbx)
+add_subdirectory(datastore/snapshots)
 add_subdirectory(test_util)
 
 find_package(absl REQUIRED)

@@ -29,9 +29,9 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/log_cbor.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/directories.hpp>

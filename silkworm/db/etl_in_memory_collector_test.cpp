@@ -20,8 +20,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/db/etl/in_memory_collector.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/etl/in_memory_collector.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>

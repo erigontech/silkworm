@@ -18,7 +18,7 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
 
 namespace silkworm::cmd::common {
 

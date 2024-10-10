@@ -29,15 +29,15 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/datastore/snapshots/config.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_bundle.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_path.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/freezer.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/snapshot_merger.hpp>
-#include <silkworm/db/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/snapshots/config.hpp>
-#include <silkworm/db/snapshots/snapshot_bundle.hpp>
-#include <silkworm/db/snapshots/snapshot_path.hpp>
-#include <silkworm/db/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>

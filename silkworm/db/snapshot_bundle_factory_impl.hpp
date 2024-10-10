@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/snapshot_bundle_factory.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_bundle_factory.hpp>
 
 namespace silkworm::db {
 

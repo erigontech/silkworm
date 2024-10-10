@@ -38,19 +38,19 @@
 #include <silkworm/db/blocks/bodies/body_queries.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
+#include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
+#include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
+#include <silkworm/db/datastore/snapshots/index/btree_index.hpp>
+#include <silkworm/db/datastore/snapshots/index/existence_index.hpp>
+#include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
+#include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
+#include <silkworm/db/datastore/snapshots/seg/seg_zip.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
-#include <silkworm/db/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/snapshots/bittorrent/web_seed_client.hpp>
-#include <silkworm/db/snapshots/index/btree_index.hpp>
-#include <silkworm/db/snapshots/index/existence_index.hpp>
-#include <silkworm/db/snapshots/rec_split/murmur_hash3.hpp>
-#include <silkworm/db/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
-#include <silkworm/db/snapshots/seg/seg_zip.hpp>
-#include <silkworm/db/snapshots/snapshot_reader.hpp>
-#include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_queries.hpp>

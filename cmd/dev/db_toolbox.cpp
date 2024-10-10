@@ -41,13 +41,13 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

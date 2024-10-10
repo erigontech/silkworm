@@ -27,7 +27,7 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/mdbx/memory_mutation.hpp>
+#include <silkworm/db/datastore/mdbx/memory_mutation.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/execution/api/endpoint/validation.hpp>

@@ -23,8 +23,8 @@
 #include <silkworm/core/common/base.hpp>
 
 #include "data_migration.hpp"
-#include "snapshots/snapshot_repository.hpp"
-#include "snapshots/snapshot_size.hpp"
+#include "datastore/snapshots/snapshot_repository.hpp"
+#include "datastore/snapshots/snapshot_size.hpp"
 
 namespace silkworm::db {
 

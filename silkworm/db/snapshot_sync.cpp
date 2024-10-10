@@ -27,10 +27,10 @@
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/blocks/headers/header_snapshot.hpp>
-#include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/datastore/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/datastore/snapshots/bittorrent/torrent_file.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_path.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/bittorrent/torrent_file.hpp>
-#include <silkworm/db/snapshots/snapshot_path.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>

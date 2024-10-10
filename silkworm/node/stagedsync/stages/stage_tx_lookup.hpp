@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <silkworm/db/etl/collector_settings.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/etl/collector_settings.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stage.hpp>
 

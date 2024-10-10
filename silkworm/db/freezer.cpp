@@ -28,11 +28,11 @@
 #include "access_layer.hpp"
 #include "blocks/bodies/body_snapshot_freezer.hpp"
 #include "blocks/headers/header_snapshot_freezer.hpp"
+#include "datastore/snapshots/snapshot_bundle.hpp"
+#include "datastore/snapshots/snapshot_path.hpp"
+#include "datastore/snapshots/snapshot_writer.hpp"
 #include "prune_mode.hpp"
 #include "snapshot_freezer.hpp"
-#include "snapshots/snapshot_bundle.hpp"
-#include "snapshots/snapshot_path.hpp"
-#include "snapshots/snapshot_writer.hpp"
 #include "transactions/txn_snapshot_freezer.hpp"
 
 namespace silkworm::db {

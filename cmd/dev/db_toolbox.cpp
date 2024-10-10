@@ -44,11 +44,11 @@
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
+#include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>

@@ -18,8 +18,8 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
-#include <silkworm/db/stage_scheduler.hpp>
 
 namespace silkworm::stagedsync {
 

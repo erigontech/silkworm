@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,33 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#pragma once
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-#include <silkworm/db/datastore/snapshot_freezer.hpp>
+add_subdirectory(etl)
+add_subdirectory(mdbx)
+add_subdirectory(snapshots)
 
-namespace silkworm::db {
+find_package(Boost REQUIRED headers)
 
-class HeaderSnapshotFreezer : public SnapshotFreezer {
-  public:
-    ~HeaderSnapshotFreezer() override = default;
-    void copy(ROTxn& txn, const FreezerCommand& command, snapshots::SnapshotFileWriter& file_writer) const override;
-    void cleanup(RWTxn& txn, BlockNumRange range) const override;
-};
+# cmake-format: off
+set(LIBS_PUBLIC
+    Boost::headers
+    silkworm_core
+    silkworm_infra
+    silkworm_db_mdbx
+    silkworm_snapshots
+)
+# cmake-format: on
 
-}  // namespace silkworm::db
+# cmake-format: off
+set(LIBS_PRIVATE
+)
+# cmake-format: on
+
+silkworm_library(
+  silkworm_datastore
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
+)

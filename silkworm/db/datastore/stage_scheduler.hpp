@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include "mdbx/mdbx.hpp"
 
 namespace silkworm::stagedsync {
 

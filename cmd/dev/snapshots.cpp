@@ -38,6 +38,7 @@
 #include <silkworm/db/blocks/bodies/body_queries.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
+#include <silkworm/db/datastore/snapshot_merger.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
 #include <silkworm/db/datastore/snapshots/index/btree_index.hpp>
@@ -48,7 +49,6 @@
 #include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshot_merger.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/tables.hpp>

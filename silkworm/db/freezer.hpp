@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "data_migration.hpp"
+#include "datastore/data_migration.hpp"
 #include "datastore/mdbx/mdbx.hpp"
 #include "datastore/snapshots/snapshot_repository.hpp"
-#include "stage_scheduler.hpp"
+#include "datastore/stage_scheduler.hpp"
 
 namespace silkworm::db {
 

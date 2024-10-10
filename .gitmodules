@@ -30,9 +30,6 @@
 [submodule "glaze"]
 	path = third_party/glaze/glaze
 	url = https://github.com/stephenberry/glaze
-[submodule "blst"]
-	path = third_party/blst/blst
-	url = https://github.com/supranational/blst.git
 [submodule "cpp-base64"]
 	path = third_party/cpp-base64/cpp-base64
 	url = https://github.com/ReneNyffenegger/cpp-base64.git

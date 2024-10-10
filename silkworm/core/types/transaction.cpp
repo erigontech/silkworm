@@ -73,8 +73,38 @@ namespace rlp {
         encode(to, e.storage_keys);
     }
 
+    static Header header(const Authorization& authorization) {
+        Header header{.list = true};
+        header.payload_length = length(authorization.chain_id);
+        header.payload_length += 1 + kAddressLength;  // address is kAddressLength and one byte for size prefix
+        header.payload_length += length(authorization.nonce);
+        header.payload_length += length(authorization.v);
+        header.payload_length += length(authorization.r);
+        header.payload_length += length(authorization.r);
+        return header;
+    }
+
+    size_t length(const Authorization& authorization) {
+        Header h{header(authorization)};
+        return length_of_length(h.payload_length) + h.payload_length;
+    }
+
+    void encode(Bytes& to, const Authorization& authorization) {
+        encode_header(to, header(authorization));
+        encode(to, authorization.chain_id);
+        encode(to, authorization.address);
+        encode(to, authorization.nonce);
+        encode(to, authorization.v);
+        encode(to, authorization.r);
+        encode(to, authorization.s);
+    }
+
     DecodingResult decode(ByteView& from, AccessListEntry& to, Leftover mode) noexcept {
         return decode(from, mode, to.account.bytes, to.storage_keys);
+    }
+
+    DecodingResult decode(ByteView& from, Authorization& to, Leftover mode) noexcept {
+        return decode(from, mode, to.chain_id, to.address.bytes, to.nonce, to.v, to.r, to.s);
     }
 
     static Header header_base(const UnsignedTransaction& txn) {
@@ -99,6 +129,9 @@ namespace rlp {
             if (txn.type == TransactionType::kBlob) {
                 h.payload_length += length(txn.max_fee_per_blob_gas);
                 h.payload_length += length(txn.blob_versioned_hashes);
+            }
+            if (txn.type == TransactionType::kSetCode) {
+                h.payload_length += length(txn.authorizations);
             }
         }
 
@@ -181,6 +214,10 @@ namespace rlp {
             encode(to, txn.max_fee_per_blob_gas);
             encode(to, txn.blob_versioned_hashes);
         }
+
+        if (txn.type == TransactionType::kSetCode) {
+            encode(to, txn.authorizations);
+        }
     }
 
     void encode(Bytes& to, const Transaction& txn, bool wrap_eip2718_into_string) {
@@ -232,7 +269,8 @@ namespace rlp {
     static DecodingResult eip2718_decode(ByteView& from, Transaction& to) noexcept {
         if (to.type != TransactionType::kAccessList &&
             to.type != TransactionType::kDynamicFee &&
-            to.type != TransactionType::kBlob) {
+            to.type != TransactionType::kBlob &&
+            to.type != TransactionType::kSetCode) {
             return tl::unexpected{DecodingError::kUnsupportedTransactionType};
         }
 
@@ -283,6 +321,12 @@ namespace rlp {
             to.blob_versioned_hashes.clear();
         } else if (DecodingResult res{decode_items(from, to.max_fee_per_blob_gas, to.blob_versioned_hashes)}; !res) {
             return res;
+        }
+
+        if (to.type == TransactionType::kSetCode) {
+            if (DecodingResult res{decode(from, to.authorizations)}; !res) {
+                return res;
+            }
         }
 
         return decode_items(from, to.odd_y_parity, to.r, to.s);

@@ -279,7 +279,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return Bytes{};
             }));
 
-        const auto block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_number = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 50'000;
@@ -337,7 +337,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return Bytes{};
             }));
 
-        const auto block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_number = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -443,7 +443,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return Bytes{};
             }));
 
-        const auto block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_number = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -541,7 +541,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return Bytes{};
             }));
 
-        const auto block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_number = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -644,7 +644,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return Bytes{};
             }));
 
-        const auto block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_number = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -748,7 +748,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return Bytes{};
             }));
 
-        const auto block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_number = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -839,7 +839,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return Bytes{};
             }));
 
-        const auto block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_number = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -1040,7 +1040,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
                     co_return kAccountChangeSetValue3;
                 }));
 
-        const auto block_number = 4'417'196;  // 0x4366AC
+        const BlockNum block_number = 4'417'196;  // 0x4366AC
         Call call;
         call.from = 0x8ced5ad0d8da4ec211c17355ed3dbfec4cf0e5b9_address;
         call.to = 0x5e1f0c9ddbe3cb57b80c933fab5151627d7966fa_address;

@@ -37,10 +37,10 @@ static constexpr uint64_t kTestPendingBaseFee{10'000};
 static constexpr uint64_t kTestGasLimit{10'000'000};
 static constexpr uint64_t kTestDatabaseViewId{55};
 
-static constexpr auto kTestBlockNumber{1'000'000};
-static constexpr auto kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
+static constexpr BlockNum kTestBlockNumber{1'000'000};
+static constexpr evmc::bytes32 kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
 
-static constexpr auto kTestAddress{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+static constexpr evmc::address kTestAddress{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 static constexpr uint64_t kTestIncarnation{3};
 
 static const Bytes kTestData1{*from_hex("600035600055")};
@@ -49,8 +49,8 @@ static const Bytes kTestData2{*from_hex("6000356000550055")};
 static const Bytes kTestCode1{*from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
 static const Bytes kTestCode2{*from_hex("602a5f556101c960015560048060135f395ff35f355f55")};
 
-static const auto kTestHashedLocation1{0x6677907ab33937e392b9be983b30818f29d594039c9e1e7490bf7b3698888fb1_bytes32};
-static const auto kTestHashedLocation2{0xe046602dcccb1a2f1d176718c8e709a42bba57af2da2379ba7130e2f916c95cd_bytes32};
+static const evmc::bytes32 kTestHashedLocation1{0x6677907ab33937e392b9be983b30818f29d594039c9e1e7490bf7b3698888fb1_bytes32};
+static const evmc::bytes32 kTestHashedLocation2{0xe046602dcccb1a2f1d176718c8e709a42bba57af2da2379ba7130e2f916c95cd_bytes32};
 
 static const Bytes kTestValue1{*from_hex("0xABCD")};
 static const Bytes kTestValue2{*from_hex("0x4321")};

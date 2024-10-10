@@ -58,10 +58,10 @@ TEST_CASE("response_from_block_number", "[node][execution][grpc]") {
     }
 }
 
-static constexpr auto kHeadHash{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
-static constexpr auto kFinalizedHash{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
-static constexpr auto kSafeHash{0x0000000000000000000000000000000000000000000000000000000000000003_bytes32};
-static constexpr auto kTimeout{100u};
+static constexpr evmc::bytes32 kHeadHash{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
+static constexpr evmc::bytes32 kFinalizedHash{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
+static constexpr evmc::bytes32 kSafeHash{0x0000000000000000000000000000000000000000000000000000000000000003_bytes32};
+static constexpr uint64_t kTimeout{100u};
 
 static proto::ForkChoice sample_proto_fork_choice() {
     proto::ForkChoice fork_choice;

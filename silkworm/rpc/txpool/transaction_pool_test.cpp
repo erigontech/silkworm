@@ -118,7 +118,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::add_transaction", "[rpc]
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transaction", "[rpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::TransactionsReply> reader;
     EXPECT_CALL(*stub_, AsyncTransactionsRaw).WillOnce(testing::Return(&reader));
-    const auto tx_hash{0x3763e4f6e4198413383534c763f3f5dac5c5e939f0a81724e3beb96d6e2ad0d5_bytes32};
+    const evmc::bytes32 tx_hash{0x3763e4f6e4198413383534c763f3f5dac5c5e939f0a81724e3beb96d6e2ad0d5_bytes32};
 
     SECTION("call get_transaction and check success") {
         ::txpool::TransactionsReply response;
@@ -155,7 +155,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transaction", "[rpc]
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::nonce", "[rpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::NonceReply> reader;
     EXPECT_CALL(*stub_, AsyncNonceRaw).WillOnce(testing::Return(&reader));
-    const auto account{0x99f9b87991262f6ba471f09758cde1c0fc1de734_address};
+    const evmc::address account{0x99f9b87991262f6ba471f09758cde1c0fc1de734_address};
 
     SECTION("call nonce and check success") {
         ::txpool::NonceReply response;

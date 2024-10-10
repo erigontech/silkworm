@@ -24,7 +24,7 @@ namespace silkworm::rpc::json_rpc {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request no method", "[rpc][handle]") {
-    const auto request = R"({"jsonrpc":"2.0","id":1})"_json;
+    const nlohmann::json request = R"({"jsonrpc":"2.0","id":1})"_json;
     std::string reply;
     run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
@@ -38,7 +38,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request no method", "[r
 }
 
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request invalid method", "[rpc][handle_request]") {
-    const auto request = R"({"jsonrpc":"2.0","id":1, "method":"eth_AAA"})"_json;
+    const nlohmann::json request = R"({"jsonrpc":"2.0","id":1, "method":"eth_AAA"})"_json;
     std::string reply;
     run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
@@ -52,7 +52,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request invalid method"
 }
 
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "check handle_request method return failed", "[rpc][handle_request]") {
-    const auto request = R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"_json;
+    const nlohmann::json request = R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"_json;
     std::string reply;
     run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({

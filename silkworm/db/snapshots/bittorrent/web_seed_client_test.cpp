@@ -53,11 +53,11 @@ TEST_CASE("WebSeedClientForTest::is_caplin_segment", "[db][snapshot][bittorrent]
 }
 
 //! Content for manifest file containing one torrent file
-static constexpr auto kValidManifestContent{
+static constexpr std::string_view kValidManifestContent{
     "v1-010000-010500-bodies.seg.torrent\n"sv};
 
 //! Hexadecimal content for torrent file 'v1-010000-010500-bodies.seg'
-static constexpr auto kValidTorrentContent{
+static constexpr std::string_view kValidTorrentContent{
     "6431333a616e6e6f756e63652d6c6973746c6c34323a7564703a2f2f74726163"
     "6b65722e6f70656e747261636b722e6f72673a313333372f616e6e6f756e6365"
     "34363a7564703a2f2f747261636b65722e6f70656e626974746f7272656e742e"

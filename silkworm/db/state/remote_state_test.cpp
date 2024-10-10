@@ -67,7 +67,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             }));
         const BlockNum block_number = 1'000'000;
         AsyncRemoteState state{transaction, chain_storage, block_number};
-        const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read == ByteView{kCode});
     }
@@ -79,7 +79,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 co_return Bytes{};
             }));
         const BlockNum block_number = 1'000'000;
-        const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState state(current_executor, transaction, chain_storage, block_number);
         const auto code_read = state.read_code(address, code_hash);
         CHECK(code_read.empty());
@@ -98,7 +98,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 co_return Bytes{};
             }));
         const BlockNum block_number = 1'000'000;
-        const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto storage_read = remote_state.read_storage(address, 0, location);
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
@@ -211,7 +211,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             Bytes code{*from_hex("0x0608")};
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
-            const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+            const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
             RemoteState remote_state(io_context, transaction, storage, block_number);
             auto ret_code = remote_state.read_code(code_hash);
@@ -229,7 +229,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
             evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
-            const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+            const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
             RemoteState remote_state(io_context, transaction, storage, block_number);
             auto ret_storage = remote_state.read_storage(address, 0, location);
@@ -276,7 +276,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 co_return Bytes{};
             }));
         const BlockNum block_number = 1'000'000;
-        const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read.empty());
@@ -292,7 +292,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 co_return Bytes{};
             }));
         const BlockNum block_number = 1'000'000;
-        const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto storage_read{spawn_and_wait(state.read_storage(address, 0, location))};
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);

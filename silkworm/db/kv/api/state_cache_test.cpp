@@ -47,13 +47,13 @@ static constexpr uint64_t kTestViewId0{3'000'000};
 static constexpr uint64_t kTestViewId1{3'000'001};
 static constexpr uint64_t kTestViewId2{3'000'002};
 
-static constexpr auto kTestBlockNumber{1'000'000};
-static constexpr auto kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
+static constexpr BlockNum kTestBlockNumber{1'000'000};
+static constexpr evmc::bytes32 kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
 
-static constexpr auto kTestAddress1{0x0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6_address};
-static constexpr auto kTestAddress2{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
-static constexpr auto kTestAddress3{0x326c977e6efc84e512bb9c30f76e30c160ed06fb_address};
-static constexpr auto kTestAddress4{0x2d3be3b6021606e1af02fccbc6ea5b192e6d412d_address};
+static constexpr evmc::address kTestAddress1{0x0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6_address};
+static constexpr evmc::address kTestAddress2{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
+static constexpr evmc::address kTestAddress3{0x326c977e6efc84e512bb9c30f76e30c160ed06fb_address};
+static constexpr evmc::address kTestAddress4{0x2d3be3b6021606e1af02fccbc6ea5b192e6d412d_address};
 static const std::vector<evmc::address> kTestAddresses{kTestAddress1, kTestAddress2, kTestAddress3, kTestAddress4};
 static constexpr uint64_t kTestIncarnation{3};
 
@@ -69,8 +69,8 @@ static const Bytes kTestCode3{*from_hex("600260020160005500")};
 static const Bytes kTestCode4{*from_hex("60606040526008565b00")};
 static const std::vector<Bytes> kTestCodes{kTestCode1, kTestCode2, kTestCode3, kTestCode4};
 
-static const auto kTestHashedLocation1{0x6677907ab33937e392b9be983b30818f29d594039c9e1e7490bf7b3698888fb1_bytes32};
-static const auto kTestHashedLocation2{0xe046602dcccb1a2f1d176718c8e709a42bba57af2da2379ba7130e2f916c95cd_bytes32};
+static const evmc::bytes32 kTestHashedLocation1{0x6677907ab33937e392b9be983b30818f29d594039c9e1e7490bf7b3698888fb1_bytes32};
+static const evmc::bytes32 kTestHashedLocation2{0xe046602dcccb1a2f1d176718c8e709a42bba57af2da2379ba7130e2f916c95cd_bytes32};
 static const std::vector<evmc::bytes32> kTestHashedLocations{kTestHashedLocation1, kTestHashedLocation2};
 static const std::vector<Bytes> kTestZeroTxs{};
 
@@ -553,7 +553,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max vi
 }
 
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max keys", "[rpc][ethdb][kv][state_cache]") {
-    constexpr auto kMaxKeys{2u};
+    static constexpr uint64_t kMaxKeys = 2u;
     const CoherentCacheConfig config{kDefaultMaxViews, /*with_storage=*/true, kMaxKeys, kMaxKeys};
     CoherentStateCache cache{config};
 

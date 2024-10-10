@@ -23,7 +23,7 @@ namespace silkworm::rpc::commands {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "parity_getBlockReceipts: misnamed 'params' field", "[rpc][api]") {
-    const auto request = R"({"jsonrpc":"2.0","id":1,"method":"parity_getBlockReceipts","pirams":["0x0"]})";
+    const nlohmann::json request = R"({"jsonrpc":"2.0","id":1,"method":"parity_getBlockReceipts","pirams":["0x0"]})";
     std::string reply;
     run<&test_util::RequestHandlerForTest::handle_request>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({

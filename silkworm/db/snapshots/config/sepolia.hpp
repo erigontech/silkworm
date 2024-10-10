@@ -9,6 +9,8 @@
 
 namespace silkworm::snapshots {
 
+using namespace std::literals;
+
 inline constexpr std::array kSepoliaSnapshots{
     Entry{"accessor/v1-accounts.0-64.efi"sv, "2bb3a43fa5b3101ed7398ee38561576af20ba0f7"sv},
     Entry{"accessor/v1-accounts.0-64.vi"sv, "4a0a5b3175b473ec62e4d648576dc46e03c37c46"sv},

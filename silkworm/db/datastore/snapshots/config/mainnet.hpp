@@ -9,6 +9,8 @@
 
 namespace silkworm::snapshots {
 
+using namespace std::literals;
+
 inline constexpr std::array kMainnetSnapshots{
     Entry{"accessor/v1-accounts.0-64.efi"sv, "c18623d88b0993912010cf2fbfaf18a6b5006790"sv},
     Entry{"accessor/v1-accounts.0-64.vi"sv, "1f089966af59190d2fbdfe3bbd07defb8f8e96ec"sv},

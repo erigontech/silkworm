@@ -9,6 +9,8 @@
 
 namespace silkworm::snapshots {
 
+using namespace std::literals;
+
 inline constexpr std::array kHoleskySnapshots{
     Entry{"accessor/v1-accounts.0-32.efi"sv, "d5f3ade5d6c0bdab2cd3065a3cf4c1e68dce5072"sv},
     Entry{"accessor/v1-accounts.0-32.vi"sv, "6f87ddf0c414665f2cc775bb88a35e66f345769b"sv},

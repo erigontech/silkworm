@@ -9,6 +9,8 @@
 
 namespace silkworm::snapshots {
 
+using namespace std::literals;
+
 inline constexpr std::array kAmoySnapshots{
     Entry{"accessor/v1-accounts.0-16.efi"sv, "9f3cdbb8e9613daae877b093278ff01337b31c1d"sv},
     Entry{"accessor/v1-accounts.0-16.vi"sv, "016c3a1927b2f12978fb285a5f3a6d0999165c6d"sv},

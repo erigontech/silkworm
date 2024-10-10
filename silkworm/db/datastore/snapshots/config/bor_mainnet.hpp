@@ -9,6 +9,8 @@
 
 namespace silkworm::snapshots {
 
+using namespace std::literals;
+
 inline constexpr std::array kBorMainnetSnapshots{
     Entry{"accessor/v1-accounts.0-64.efi"sv, "21ccfc07c3914d033a018fc9b2cbc94d81cc5d5e"sv},
     Entry{"accessor/v1-accounts.0-64.vi"sv, "5dad87a30db8655c4e65ad24bff2aec321f8bf70"sv},

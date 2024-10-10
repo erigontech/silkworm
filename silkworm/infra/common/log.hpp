@@ -137,15 +137,23 @@ using Message = LogBuffer<Level::kNone>;
 
 }  // namespace silkworm::log
 
-#define SILK_LOGBUFFER(level_)                    \
+#define SILK_LOGBUFFER(level_, ...)               \
     if (!silkworm::log::test_verbosity(level_)) { \
     } else                                        \
-        silkworm::log::LogBuffer<level_>()
+        silkworm::log::LogBuffer<level_>(__VA_ARGS__)
 
-#define SILK_TRACE SILK_LOGBUFFER(silkworm::log::Level::kTrace)
-#define SILK_DEBUG SILK_LOGBUFFER(silkworm::log::Level::kDebug)
-#define SILK_INFO SILK_LOGBUFFER(silkworm::log::Level::kInfo)
-#define SILK_WARN SILK_LOGBUFFER(silkworm::log::Level::kWarning)
-#define SILK_ERROR SILK_LOGBUFFER(silkworm::log::Level::kError)
-#define SILK_CRIT SILK_LOGBUFFER(silkworm::log::Level::kCritical)
-#define SILK_LOG SILK_LOGBUFFER(silkworm::log::Level::kNone)
+#define SILK_TRACE_M(...) SILK_LOGBUFFER(silkworm::log::Level::kTrace, __VA_ARGS__)
+#define SILK_DEBUG_M(...) SILK_LOGBUFFER(silkworm::log::Level::kDebug, __VA_ARGS__)
+#define SILK_INFO_M(...) SILK_LOGBUFFER(silkworm::log::Level::kInfo, __VA_ARGS__)
+#define SILK_WARN_M(...) SILK_LOGBUFFER(silkworm::log::Level::kWarning, __VA_ARGS__)
+#define SILK_ERROR_M(...) SILK_LOGBUFFER(silkworm::log::Level::kError, __VA_ARGS__)
+#define SILK_CRIT_M(...) SILK_LOGBUFFER(silkworm::log::Level::kCritical, __VA_ARGS__)
+#define SILK_LOG_M(...) SILK_LOGBUFFER(silkworm::log::Level::kNone, __VA_ARGS__)
+
+#define SILK_TRACE SILK_TRACE_M()
+#define SILK_DEBUG SILK_DEBUG_M()
+#define SILK_INFO SILK_INFO_M()
+#define SILK_WARN SILK_WARN_M()
+#define SILK_ERROR SILK_ERROR_M()
+#define SILK_CRIT SILK_CRIT_M()
+#define SILK_LOG SILK_LOG_M()

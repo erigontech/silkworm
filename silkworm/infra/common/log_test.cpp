@@ -198,4 +198,41 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     }
 }
 
+TEST_CASE("SILK_LOGBUFFER", "[silkworm][common][log]") {
+    SKIP();
+    init();
+
+    log::Trace() << "hello using log::Trace";
+    log::Debug() << "hello using log::Debug";
+    log::Info() << "hello using log::Info";
+    log::Warning() << "hello using log::Warning";
+    log::Error() << "hello using log::Error";
+    log::Critical() << "hello using log::Critical";
+    log::Message() << "hello using log::Message";
+
+    log::Trace("log_test") << "hello using log::Trace(\"log_test\")";
+    log::Debug("log_test") << "hello using log::Debug(\"log_test\")";
+    log::Info("log_test") << "hello using log::Info(\"log_test\")";
+    log::Warning("log_test") << "hello using log::Warning(\"log_test\")";
+    log::Error("log_test") << "hello using log::Error(\"log_test\")";
+    log::Critical("log_test") << "hello using log::Critical(\"log_test\")";
+    log::Message("log_test") << "hello using log::Message(\"log_test\")";
+
+    SILK_TRACE << "hello using SILK_TRACE";
+    SILK_DEBUG << "hello using SILK_DEBUG";
+    SILK_INFO << "hello using SILK_INFO";
+    SILK_WARN << "hello using SILK_WARN";
+    SILK_ERROR << "hello using SILK_ERROR";
+    SILK_CRIT << "hello using SILK_CRIT";
+    SILK_LOG << "hello using SILK_LOG";
+
+    SILK_TRACE_M("log_test") << "hello using SILK_TRACE_M(\"log_test\")";
+    SILK_DEBUG_M("log_test") << "hello using SILK_DEBUG_M(\"log_test\")";
+    SILK_INFO_M("log_test") << "hello using SILK_INFO_M(\"log_test\")";
+    SILK_WARN_M("log_test") << "hello using SILK_WARN_M(\"log_test\")";
+    SILK_ERROR_M("log_test") << "hello using SILK_ERROR_M(\"log_test\")";
+    SILK_CRIT_M("log_test") << "hello using SILK_CRIT_M(\"log_test\")";
+    SILK_LOG_M("log_test") << "hello using SILK_LOG_M(\"log_test\")";
+}
+
 }  // namespace silkworm::log

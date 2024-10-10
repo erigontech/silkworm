@@ -84,6 +84,7 @@ struct ConsolidationRequest final : Request {
 namespace rlp {
     size_t length(const Request&);
     void encode(Bytes& to, const Request&);
+    void encode(Bytes& to, const std::vector<RequestPtr>&);
     DecodingResult decode(ByteView& from, Request& to, Leftover mode = Leftover::kProhibit) noexcept;
     DecodingResult decode(ByteView& from, std::vector<RequestPtr>& to, Leftover mode = Leftover::kAllow) noexcept;
 }  // namespace rlp

@@ -37,10 +37,10 @@
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/datastore/snapshots/index.hpp>
+#include <silkworm/db/datastore/snapshots/index_builder.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/index.hpp>
-#include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/snapshot_reader.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>

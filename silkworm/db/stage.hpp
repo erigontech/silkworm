@@ -20,7 +20,7 @@
 #include <exception>
 #include <mutex>
 
-#include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/datastore/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/ensure.hpp>

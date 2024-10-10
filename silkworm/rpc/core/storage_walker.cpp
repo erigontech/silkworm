@@ -21,7 +21,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

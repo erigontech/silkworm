@@ -17,7 +17,7 @@
 #include "local_cursor.hpp"
 
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 

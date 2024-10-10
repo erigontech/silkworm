@@ -29,9 +29,9 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/log_cbor.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -43,6 +43,7 @@
 
 using Roaring = roaring::Roaring;
 using namespace silkworm;
+using namespace silkworm::db;
 using namespace silkworm::cmd::common;
 
 enum class TargetIndex {
@@ -137,38 +138,38 @@ void trace(const Log& log) {
     }
 }
 
-void check_address_index(BlockNum block_number, const evmc::address& log_address, db::ROCursor* log_address_cursor) {
+void check_address_index(BlockNum block_number, const evmc::address& log_address, ROCursor* log_address_cursor) {
     // Transaction log address must be present in LogAddressIndex table
     const auto log_address_key{db::log_address_key(log_address, block_number)};
-    const auto log_address_data{log_address_cursor->lower_bound(db::to_slice(log_address_key), false)};
+    const auto log_address_data{log_address_cursor->lower_bound(to_slice(log_address_key), false)};
     ensure(log_address_data.done, [&]() { return "LogAddressIndex does not contain key " + to_hex(log_address_key); });
 
-    const auto [address_view, address_upper_bound_block] = db::split_log_address_key(log_address_data.key);
+    const auto [address_view, address_upper_bound_block] = split_log_address_key(log_address_data.key);
     const auto& address_view_ref = address_view;
     ensure(to_hex(address_view) == to_hex(log_address.bytes), [&]() { return "address mismatch in LogAddressIndex table: " + to_hex(address_view_ref); });
     ensure(address_upper_bound_block >= block_number, [&]() { return "upper bound mismatch in LogAddressIndex table: " + to_hex(address_view_ref); });
 
     // Retrieved chunk of the address roaring bitmap must contain the transaction log block
     const auto& log_address_value{log_address_data.value};
-    const auto address_bitmap_chunk{db::bitmap::parse32(log_address_value)};
+    const auto address_bitmap_chunk{bitmap::parse32(log_address_value)};
     ensure(address_bitmap_chunk.contains(static_cast<uint32_t>(block_number)),
            [&]() { return "address bitmap chunk " + address_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number); });
 }
 
-void check_topic_index(BlockNum block_number, const evmc::bytes32& log_topic, db::ROCursor* log_topic_cursor) {
+void check_topic_index(BlockNum block_number, const evmc::bytes32& log_topic, ROCursor* log_topic_cursor) {
     // Each transaction log topic must be present in LogTopicIndex table
     const auto log_topic_key{db::log_topic_key(log_topic, block_number)};
-    const auto log_topic_data{log_topic_cursor->lower_bound(db::to_slice(log_topic_key), false)};
+    const auto log_topic_data{log_topic_cursor->lower_bound(to_slice(log_topic_key), false)};
     ensure(log_topic_data.done, [&]() { return "LogTopicIndex does not contain key " + to_hex(log_topic_key); });
 
-    const auto [topic_view, topic_upper_bound_block] = db::split_log_topic_key(log_topic_data.key);
+    const auto [topic_view, topic_upper_bound_block] = split_log_topic_key(log_topic_data.key);
     const auto& topic_view_ref = topic_view;
     ensure(to_hex(topic_view) == to_hex(log_topic.bytes), [&]() { return "topic mismatch in LogTopicIndex table: " + to_hex(topic_view_ref); });
     ensure(topic_upper_bound_block >= block_number, [&]() { return "upper bound mismatch in LogTopicIndex table: " + to_hex(topic_view_ref); });
 
     // Retrieved chunk of the topic roaring bitmap must contain the transaction log block
     const auto& log_topic_value{log_topic_data.value};
-    const auto topic_bitmap_chunk{db::bitmap::parse32(log_topic_value)};
+    const auto topic_bitmap_chunk{bitmap::parse32(log_topic_value)};
     ensure(topic_bitmap_chunk.contains(static_cast<uint32_t>(block_number)),
            [&]() { return "topic bitmap chunk " + topic_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number); });
 }
@@ -197,22 +198,22 @@ int main(int argc, char* argv[]) {
         // Open the database and create a read-only txn
         auto data_dir{DataDirectory::from_chaindata(settings.chaindata)};
         data_dir.deploy();
-        db::EnvConfig db_config{data_dir.chaindata().path().string()};
-        auto env{db::open_env(db_config)};
-        db::ROTxnManaged txn{env};
+        EnvConfig db_config{data_dir.chaindata().path().string()};
+        auto env{open_env(db_config)};
+        ROTxnManaged txn{env};
 
-        auto logs_cursor = txn.ro_cursor(db::table::kLogs);
-        auto log_address_cursor = txn.ro_cursor(db::table::kLogAddressIndex);
-        auto log_topic_cursor = txn.ro_cursor(db::table::kLogTopicIndex);
+        auto logs_cursor = txn.ro_cursor(table::kLogs);
+        auto log_address_cursor = txn.ro_cursor(table::kLogAddressIndex);
+        auto log_topic_cursor = txn.ro_cursor(table::kLogTopicIndex);
 
         log::Info() << "Check transaction log indices for blocks " << block_range(settings) << " ...";
 
         // Start from the key having block_from as key prefix and iterate over TransactionLog on all blocks up to block_to
-        auto start_key_prefix{db::block_key(settings.block_from)};
-        auto logs_data{logs_cursor->lower_bound(db::to_slice(start_key_prefix), false)};
+        auto start_key_prefix{block_key(settings.block_from)};
+        auto logs_data{logs_cursor->lower_bound(to_slice(start_key_prefix), false)};
         ensure(logs_data.done, "Nonexistent block range: block_from not found");
         while (logs_data.done) {
-            const auto [block_number, tx_id] = db::split_log_key(logs_data.key);
+            const auto [block_number, tx_id] = split_log_key(logs_data.key);
             if (settings.block_to && block_number > *settings.block_to) {
                 log::Info() << "Target block " << *settings.block_to << " reached";
                 break;

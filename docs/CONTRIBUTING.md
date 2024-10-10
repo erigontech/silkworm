@@ -95,7 +95,7 @@ If you need to update the list of builtin snapshots in Silkworm, the following p
 * update `erigon-snapshot` submodule to the new commit
 * generate the embedded C++ code bindings for predefined snapshots by executing from project home folder:
 ```
-<build_folder>/cmd/dev/embed_toml -i third_party/erigon-snapshot -o silkworm/db/snapshots/config
+<build_folder>/cmd/dev/embed_toml -i third_party/erigon-snapshot -o silkworm/db/datastore/snapshots/config
 ```
 
 

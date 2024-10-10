@@ -24,6 +24,7 @@
 #include <silkworm/infra/common/log.hpp>
 
 using namespace silkworm;
+using namespace silkworm::db;
 
 enum Operation {
     kHashAccount,
@@ -31,25 +32,25 @@ enum Operation {
     kCode,
 };
 
-std::pair<db::MapConfig, db::MapConfig> get_tables_for_checking(Operation operation) {
+std::pair<MapConfig, MapConfig> get_tables_for_checking(Operation operation) {
     switch (operation) {
         case kHashAccount:
-            return {db::table::kPlainState, db::table::kHashedAccounts};
+            return {table::kPlainState, table::kHashedAccounts};
         case kHashStorage:
-            return {db::table::kPlainState, db::table::kHashedStorage};
+            return {table::kPlainState, table::kHashedStorage};
         default:
-            return {db::table::kPlainCodeHash, db::table::kHashedCodeHash};
+            return {table::kPlainCodeHash, table::kHashedCodeHash};
     }
 }
 
 void check(mdbx::txn& txn, Operation operation) {
     auto [source_config, target_config] = get_tables_for_checking(operation);
-    auto source_table{db::open_cursor(txn, source_config)};
-    auto target_table{db::open_cursor(txn, target_config)};
+    auto source_table{open_cursor(txn, source_config)};
+    auto target_table{open_cursor(txn, target_config)};
     auto data{source_table.to_first(/*throw_notfound*/ false)};
 
     while (data) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{db::from_slice(data.key)};
+        Bytes mdb_key_as_bytes{from_slice(data.key)};
 
         if (operation == kHashAccount) {
             // Account
@@ -60,14 +61,14 @@ void check(mdbx::txn& txn, Operation operation) {
             auto hash{keccak256(mdb_key_as_bytes)};
             ByteView key{hash.bytes};
 
-            auto actual_value{target_table.find(db::to_slice(key))};
+            auto actual_value{target_table.find(to_slice(key))};
             if (!actual_value) {
                 log::Error() << "key: " << to_hex(key) << ", does not exist.";
                 return;
             }
             if (actual_value.value != data.value) {
-                log::Error() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
-                             << to_hex(db::from_slice(actual_value.value));
+                log::Error() << "Expected: " << to_hex(from_slice(data.value)) << ", Actual: << "
+                             << to_hex(from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -79,13 +80,13 @@ void check(mdbx::txn& txn, Operation operation) {
                 continue;
             }
 
-            Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
+            Bytes key(kHashLength * 2 + kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
-            std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-            std::memcpy(&key[kHashLength + db::kIncarnationLength],
-                        keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
+            std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], kIncarnationLength);
+            std::memcpy(&key[kHashLength + kIncarnationLength],
+                        keccak256(mdb_key_as_bytes.substr(kAddressLength + kIncarnationLength)).bytes, kHashLength);
 
-            auto target_data{target_table.find_multivalue(db::to_slice(key), data.value, /*throw_notfound*/ false)};
+            auto target_data{target_table.find_multivalue(to_slice(key), data.value, /*throw_notfound*/ false)};
             if (!target_data) {
                 log::Error() << "Key: " << to_hex(key) << ", does not exist.";
                 return;
@@ -94,22 +95,22 @@ void check(mdbx::txn& txn, Operation operation) {
 
         } else {
             // Code
-            if (data.key.length() != kAddressLength + db::kIncarnationLength) {
+            if (data.key.length() != kAddressLength + kIncarnationLength) {
                 data = source_table.to_next(false);
                 continue;
             }
-            Bytes key(kHashLength + db::kIncarnationLength, '\0');
+            Bytes key(kHashLength + kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
-            std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-            auto actual_value{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
+            std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], kIncarnationLength);
+            auto actual_value{target_table.find(to_slice(key), /*throw_notfound*/ false)};
             if (!actual_value) {
                 log::Error() << "Key: " << to_hex(key) << ", does not exist.";
                 data = source_table.to_next(false);
                 continue;
             }
             if (actual_value.value != data.value) {
-                log::Error() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
-                             << to_hex(db::from_slice(actual_value.value));
+                log::Error() << "Expected: " << to_hex(from_slice(data.value)) << ", Actual: << "
+                             << to_hex(from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -130,8 +131,8 @@ int main(int argc, char* argv[]) {
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
-        db::EnvConfig db_config{data_dir.chaindata().path().string()};
-        auto env{db::open_env(db_config)};
+        EnvConfig db_config{data_dir.chaindata().path().string()};
+        auto env{open_env(db_config)};
         auto txn{env.start_write()};
 
         log::Info() << "Checking Accounts";

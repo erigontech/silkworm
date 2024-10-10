@@ -25,8 +25,8 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
-#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/infra/common/timer.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 

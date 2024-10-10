@@ -25,7 +25,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 

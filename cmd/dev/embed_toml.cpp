@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
             output << "#pragma once\n\n";
             output << "#include <array>\n";
             output << "#include <string_view>\n\n";
-            output << "#include <silkworm/db/snapshots/entry.hpp>\n\n";
+            output << "#include \"../entry.hpp\"\n\n";
             output << "namespace silkworm::snapshots {\n\n";
             output << "inline constexpr std::array k" << snapshot_name << "Snapshots{\n";
             for (auto&& [key, value] : table) {

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/snapshot_freezer.hpp>
+#include <silkworm/db/datastore/snapshot_freezer.hpp>
 
 namespace silkworm::db {
 

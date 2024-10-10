@@ -29,13 +29,15 @@
 
 namespace silkworm::stagedsync {
 
-HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height)
+using namespace silkworm::db;
+
+HeadersStage::HeaderDataModel::HeaderDataModel(RWTxn& tx, BlockNum headers_height)
     : tx_(tx), data_model_(tx), previous_height_(headers_height) {
-    auto headers_hash = db::read_canonical_header_hash(tx, headers_height);
+    auto headers_hash = read_canonical_header_hash(tx, headers_height);
     ensure(headers_hash.has_value(),
            [&]() { return "Headers stage, inconsistent canonical table: not found hash at height " + std::to_string(headers_height); });
 
-    std::optional<intx::uint256> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
+    std::optional<intx::uint256> headers_head_td = read_total_difficulty(tx, headers_height, *headers_hash);
     ensure(headers_head_td.has_value(),
            [&]() { return "Headers stage, inconsistent total-difficulty table: not found td at height " +
                           std::to_string(headers_height); });
@@ -63,18 +65,18 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     auto td = previous_td_ + header.difficulty;
 
     // Save progress
-    db::write_total_difficulty(tx_, height, hash, td);
+    write_total_difficulty(tx_, height, hash, td);
 
     previous_hash_ = hash;
     previous_td_ = td;
     previous_height_ = height;
 }
 
-void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RWTxn& tx) {
-    auto canonical_hash = db::read_canonical_header_hash(tx, unwind_point);
+void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, RWTxn& tx) {
+    auto canonical_hash = read_canonical_header_hash(tx, unwind_point);
     ensure(canonical_hash.has_value(), [&]() { return "Headers stage, expected canonical hash at height " + std::to_string(unwind_point); });
 
-    db::write_head_header_hash(tx, *canonical_hash);
+    write_head_header_hash(tx, *canonical_hash);
 
     // maybe we should remove only the bad header
 }
@@ -85,7 +87,7 @@ std::optional<BlockHeader> HeadersStage::HeaderDataModel::get_canonical_header(B
 
 // HeadersStage
 HeadersStage::HeadersStage(SyncContext* sync_context)
-    : Stage(sync_context, db::stages::kHeadersKey) {
+    : Stage(sync_context, stages::kHeadersKey) {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
@@ -94,7 +96,7 @@ HeadersStage::HeadersStage(SyncContext* sync_context)
     }
 }
 
-Stage::Result HeadersStage::forward(db::RWTxn& tx) {
+Stage::Result HeadersStage::forward(RWTxn& tx) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
@@ -104,7 +106,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
     operation_ = OperationType::kForward;
 
     try {
-        auto initial_height = current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+        auto initial_height = current_height_ = stages::read_stage_progress(tx, stages::kHeadersKey);
         BlockNum target_height = sync_context_->target_height;
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
@@ -118,7 +120,7 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
             return Stage::Result::kSuccess;
         }
         const BlockNum segment_width{target_height - current_height_};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(current_height_),
@@ -144,9 +146,9 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
             height_progress.set(current_height_);
         }
 
-        db::write_head_header_hash(tx, header_persistence.highest_hash());
+        write_head_header_hash(tx, header_persistence.highest_hash());
 
-        db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
+        stages::write_stage_progress(tx, stages::kHeadersKey, current_height_);
         result = Stage::Result::kSuccess;  // no reason to raise unwind
 
         auto headers_processed = current_height_ - initial_height;
@@ -163,8 +165,8 @@ Stage::Result HeadersStage::forward(db::RWTxn& tx) {
     return result;
 }
 
-Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
-    current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+Stage::Result HeadersStage::unwind(RWTxn& tx) {
+    current_height_ = stages::read_stage_progress(tx, stages::kHeadersKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
 
     if (!sync_context_->unwind_point.has_value()) return Stage::Result::kSuccess;
@@ -175,7 +177,7 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
     operation_ = OperationType::kUnwind;
 
     const BlockNum segment_width{current_height_ - new_height};
-    if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+    if (segment_width > stages::kSmallBlockSegmentWidth) {
         log::Info(log_prefix_,
                   {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                    "from", std::to_string(current_height_),
@@ -192,7 +194,7 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
 
         current_height_ = new_height;
 
-        db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
+        stages::write_stage_progress(tx, stages::kHeadersKey, current_height_);
 
         result = Stage::Result::kSuccess;
 
@@ -209,7 +211,7 @@ Stage::Result HeadersStage::unwind(db::RWTxn& tx) {
     return result;
 }
 
-Stage::Result HeadersStage::prune(db::RWTxn&) {
+Stage::Result HeadersStage::prune(RWTxn&) {
     return Stage::Result::kSuccess;
 }
 

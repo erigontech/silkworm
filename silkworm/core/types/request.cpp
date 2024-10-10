@@ -142,14 +142,39 @@ namespace rlp {
         request.encode(to);
     }
 
-    DecodingResult decode(ByteView& from, Request& to, Leftover mode) noexcept {
-        return to.decode(from, mode);
+    void encode(Bytes& to, const std::vector<RequestPtr>& requests) {
+        std::vector<RlpBytes> encoded_elements;
+        for (const auto& request : requests) {
+            Bytes encoded_phase1;
+            encode(encoded_phase1, *request);
+            Bytes encoded_phase2;
+            encode(encoded_phase2, encoded_phase1);
+            encoded_elements.push_back(RlpBytes{std::move(encoded_phase2)});
+        }
+        encode(to, std::span<const RlpBytes>{encoded_elements.data(), encoded_elements.size()});
     }
 
-    DecodingResult decode(ByteView& from, [[maybe_unused]] std::vector<RequestPtr>& to, Leftover mode) noexcept {
+    DecodingResult decode(ByteView& input, Request& to, Leftover mode) noexcept {
+        SILKWORM_ASSERT(input.size() > 1);
+        // Skip request type which is not encoded as RLP
+        input.remove_prefix(1);
+        return to.decode(input, mode);
+    }
+
+    DecodingResult decode(ByteView& from, std::vector<RequestPtr>& to, Leftover mode) noexcept {
         if (from.empty()) {
             return {};
         }
+
+        const auto h{decode_header(from)};
+        if (!h) {
+            return tl::unexpected{h.error()};
+        }
+        if (!h->list) {
+            return tl::unexpected{DecodingError::kUnexpectedString};
+        }
+
+        to.clear();
 
         using Creator = std::function<RequestPtr()>;
         static const std::vector<Creator> kRequestCreators = {
@@ -157,18 +182,24 @@ namespace rlp {
             []() -> RequestPtr { return std::make_unique<WithdrawalRequest>(); },
             []() -> RequestPtr { return std::make_unique<ConsolidationRequest>(); }};
 
-        auto input_view = from;
+        ByteView payload_view{from.substr(0, h->payload_length)};
 
-        for (;;) {
-            const auto request_type = input_view[0];
+        while (!payload_view.empty()) {
+            const auto request_type = from[0];
             SILKWORM_ASSERT(request_type < kRequestCreators.size());
 
             auto request = kRequestCreators[request_type]();
-            // Advance by one byte - request type is not rlp-encoded
-            input_view = input_view.substr(1, input_view.size());
-            if (const auto decode_res = decode(input_view, *request, mode); !decode_res) {
+            if (const auto decode_res = decode(from, *request, mode); !decode_res) {
                 return decode_res;
             }
+            const auto request_len = request->length();
+            to.push_back(std::move(request));
+            payload_view.remove_prefix(request_len);
+        }
+
+        from.remove_prefix(h->payload_length);
+        if (mode != Leftover::kAllow && !from.empty()) {
+            return tl::unexpected{DecodingError::kInputTooLong};
         }
 
         return {};

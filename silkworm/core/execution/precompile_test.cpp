@@ -271,10 +271,10 @@ TEST_CASE("POINT_EVALUATION") {
             "a444d6bb5aadc3ceb615b50d6606bd54bfe529f59247987cd1ab848d19de599a9052f1835fb0d0d44cf70183e19a68c9")};
     std::optional<Bytes> out{point_evaluation_run(in)};
     REQUIRE((out && out->length() == 64));
-    intx::uint256 fieldElementsPerBlob{intx::be::unsafe::load<intx::uint256>(out->data())};
-    CHECK(fieldElementsPerBlob == 4096);
-    intx::uint256 blsModulus{intx::be::unsafe::load<intx::uint256>(out->data() + 32)};
-    CHECK(blsModulus == kBlsModulus);
+    intx::uint256 field_elements_per_blob{intx::be::unsafe::load<intx::uint256>(out->data())};
+    CHECK(field_elements_per_blob == 4096);
+    intx::uint256 bls_modulus{intx::be::unsafe::load<intx::uint256>(out->data() + 32)};
+    CHECK(bls_modulus == kBlsModulus);
 
     // change hash version
     in[0] = 0x2;

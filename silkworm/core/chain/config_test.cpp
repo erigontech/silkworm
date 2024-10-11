@@ -106,7 +106,7 @@ TEST_CASE("Agra revision") {
 }
 
 TEST_CASE("distinct_fork_points") {
-    const std::vector<BlockNum> kExpectedMainnetForkNumbers{
+    const std::vector<BlockNum> expected_mainnet_fork_numbers{
         1'150'000,
         1'920'000,
         2'463'000,
@@ -120,17 +120,17 @@ TEST_CASE("distinct_fork_points") {
         13'773'000,
         15'050'000,
     };
-    const std::vector<BlockTime> kExpectedMainnetForkTimes{
+    const std::vector<BlockTime> expected_mainnet_fork_times{
         1681338455,
         1710338135,
     };
-    std::vector<uint64_t> kExpectedMainnetForkPoints{kExpectedMainnetForkNumbers};
-    kExpectedMainnetForkPoints.insert(kExpectedMainnetForkPoints.end(),
-                                      kExpectedMainnetForkTimes.cbegin(), kExpectedMainnetForkTimes.cend());
+    std::vector<uint64_t> expected_mainnet_fork_points{expected_mainnet_fork_numbers};
+    expected_mainnet_fork_points.insert(expected_mainnet_fork_points.end(),
+                                        expected_mainnet_fork_times.cbegin(), expected_mainnet_fork_times.cend());
 
-    CHECK(kMainnetConfig.distinct_fork_numbers() == kExpectedMainnetForkNumbers);
-    CHECK(kMainnetConfig.distinct_fork_times() == kExpectedMainnetForkTimes);
-    CHECK(kMainnetConfig.distinct_fork_points() == kExpectedMainnetForkPoints);
+    CHECK(kMainnetConfig.distinct_fork_numbers() == expected_mainnet_fork_numbers);
+    CHECK(kMainnetConfig.distinct_fork_times() == expected_mainnet_fork_times);
+    CHECK(kMainnetConfig.distinct_fork_points() == expected_mainnet_fork_points);
 }
 
 TEST_CASE("JSON serialization") {

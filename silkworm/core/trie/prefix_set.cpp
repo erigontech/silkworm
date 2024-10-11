@@ -80,8 +80,9 @@ std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix, s
 
 void PrefixSet::ensure_sorted() {
     if (!sorted_) {
-        std::sort(keys_.begin(), keys_.end());
-        keys_.erase(std::unique(keys_.begin(), keys_.end()), keys_.end());
+        std::ranges::sort(keys_);
+        const auto unique_kes = std::ranges::unique(keys_);
+        keys_.erase(unique_kes.begin(), unique_kes.end());
         sorted_ = true;
     }
 }

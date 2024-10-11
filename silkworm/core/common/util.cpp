@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <regex>
+#include <string_view>
 
 #include <silkworm/core/common/assert.hpp>
 
@@ -65,7 +66,7 @@ ByteView zeroless_view(ByteView data) {
 }
 
 std::string to_hex(ByteView bytes, bool with_prefix) {
-    static const char* kHexDigits{"0123456789abcdef"};
+    static constexpr std::string_view kHexDigits{"0123456789abcdef"};
     std::string out(bytes.length() * 2 + (with_prefix ? 2 : 0), '\0');
     char* dest{&out[0]};
     if (with_prefix) {

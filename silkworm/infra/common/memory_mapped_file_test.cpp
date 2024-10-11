@@ -19,6 +19,7 @@
 #include <chrono>
 #include <fstream>
 #include <stdexcept>
+#include <string_view>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -51,7 +52,7 @@ TEST_CASE("MemoryMappedFile from file", "[silkworm][infra][common][memory_mapped
         CHECK_NOTHROW(MemoryMappedFile{tmp_file.string(), {}, false});
     }
 
-    const std::string kFileContent{"\x01\x02\x03"};
+    static constexpr std::string_view kFileContent{"\x01\x02\x03"};
     const auto tmp_file = TemporaryDirectory::get_unique_temporary_path();
     std::ofstream tmp_stream{tmp_file, std::ios_base::binary};
     tmp_stream.write(kFileContent.data(), static_cast<std::streamsize>(kFileContent.size()));
@@ -117,7 +118,7 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
         CHECK_NOTHROW(MemoryMappedFile(tmp_file, mmf_from_file.region()));
     }
 
-    const std::string kFileContent{"\x01\x02\x03"};
+    static constexpr std::string_view kFileContent{"\x01\x02\x03"};
     const auto tmp_file = TemporaryDirectory::get_unique_temporary_path();
     std::ofstream tmp_stream{tmp_file, std::ios_base::binary};
     tmp_stream.write(kFileContent.data(), static_cast<std::streamsize>(kFileContent.size()));

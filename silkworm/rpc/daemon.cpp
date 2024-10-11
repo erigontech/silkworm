@@ -249,7 +249,6 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
 
-
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();
 }

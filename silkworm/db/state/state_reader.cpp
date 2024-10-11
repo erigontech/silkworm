@@ -66,7 +66,8 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
     if (!result.success) {
         co_return evmc::bytes32{};
     }
-    co_return to_bytes32(result.value);}
+    co_return to_bytes32(result.value);
+}
 
 Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, const evmc::bytes32& code_hash) const {
     if (code_hash == kEmptyHash) {

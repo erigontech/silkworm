@@ -28,7 +28,7 @@
 
 namespace silkworm::db::state {
 
-#ifdef notdef // tests commented wiating its conversion using TKV
+#ifdef notdef  // tests commented wiating its conversion using TKV
 
 using kv::api::KeyValue;
 using testing::_;
@@ -61,7 +61,6 @@ class StateReaderTest : public silkworm::test_util::ContextTestBase {
     db::test_util::MockTransaction transaction_;
     StateReader state_reader_{transaction_, kEarliestBlockNumber};
 };
-
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("no account for history empty and current state empty") {

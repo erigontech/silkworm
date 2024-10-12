@@ -44,12 +44,12 @@ class SnapshotPath {
   public:
     [[nodiscard]] static std::optional<SnapshotPath> parse(std::filesystem::path path);
 
-    [[nodiscard]] static SnapshotPath from(const std::filesystem::path& dir,
-                                           uint8_t version,
-                                           BlockNum block_from,
-                                           BlockNum block_to,
-                                           SnapshotType type,
-                                           const char* ext = kSegmentExtension);
+    [[nodiscard]] static SnapshotPath from(
+        const std::filesystem::path& dir,
+        uint8_t version,
+        BlockNumRange block_num_range,
+        SnapshotType type,
+        const char* ext = kSegmentExtension);
 
     [[nodiscard]] std::string filename() const { return path_.filename().string(); }
 
@@ -57,15 +57,11 @@ class SnapshotPath {
 
     [[nodiscard]] uint8_t version() const { return version_; }
 
-    [[nodiscard]] BlockNum block_from() const { return block_from_; }
-    [[nodiscard]] BlockNum block_to() const { return block_to_; }
     [[nodiscard]] BlockNumRange block_range() const { return BlockNumRange{block_from_, block_to_}; }
 
     [[nodiscard]] SnapshotType type() const { return type_; }
 
     [[nodiscard]] std::string type_string() const;
-
-    [[nodiscard]] uint64_t segment_size() const { return block_to_ - block_from_; }
 
     [[nodiscard]] bool is_segment() const { return path_.extension().string() == kSegmentExtension; }
 
@@ -93,10 +89,10 @@ class SnapshotPath {
     friend bool operator==(const SnapshotPath&, const SnapshotPath&) = default;
 
   protected:
-    static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type, const char* ext);
+    static std::filesystem::path build_filename(uint8_t version, BlockNumRange block_num_range, SnapshotType type, const char* ext);
     SnapshotPath related_path(SnapshotType type, const char* ext) const;
 
-    explicit SnapshotPath(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
+    explicit SnapshotPath(std::filesystem::path path, uint8_t version, BlockNumRange block_num_range, SnapshotType type);
 
     std::filesystem::path path_;
     uint8_t version_{0};

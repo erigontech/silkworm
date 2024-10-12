@@ -52,7 +52,7 @@ Snapshot::Iterator& Snapshot::Iterator::operator++() {
 
     if (has_next) {
         deserializer_->decode_word(*it_);
-        deserializer_->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+        deserializer_->check_sanity_with_metadata(path_);
     } else {
         deserializer_.reset();
     }
@@ -81,7 +81,7 @@ Snapshot::Iterator Snapshot::begin(std::shared_ptr<SnapshotWordDeserializer> des
         return end();
     }
     deserializer->decode_word(*it);
-    deserializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    deserializer->check_sanity_with_metadata(path_);
     return Snapshot::Iterator{std::move(it), std::move(deserializer), path()};
 }
 
@@ -103,7 +103,7 @@ Snapshot::Iterator Snapshot::seek(uint64_t offset, std::optional<Hash> hash_pref
     } catch (...) {
         return end();
     }
-    deserializer->check_sanity_with_metadata(path_.block_from(), path_.block_to());
+    deserializer->check_sanity_with_metadata(path_);
     return Snapshot::Iterator{std::move(it), std::move(deserializer), path()};
 }
 

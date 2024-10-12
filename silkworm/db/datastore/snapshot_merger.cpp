@@ -65,13 +65,13 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
             continue;
         }
         if (bundle.block_count() != block_count) {
-            first_block_num = bundle.block_from();
+            first_block_num = bundle.block_range().start;
             block_count = bundle.block_count();
             batch_size = 0;
         }
         ++batch_size;
         if (batch_size == kBatchSize) {
-            return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle.block_to()});
+            return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle.block_range().end});
         }
     }
 
@@ -89,7 +89,7 @@ struct RawSnapshotWordDeserializer : public SnapshotWordDeserializer {
 static std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(BlockNumRange range, SnapshotRepository& repository) {
     std::vector<std::shared_ptr<SnapshotBundle>> bundles;
     for (auto& bundle : repository.view_bundles()) {
-        if (range.contains(bundle->block_from()) && range.contains(bundle->block_to() - 1)) {
+        if (range.contains(bundle->block_range().start) && range.contains(bundle->block_range().end - 1)) {
             bundles.push_back(bundle);
         }
     }

@@ -66,7 +66,7 @@ class TransactionToBlockIndex {
         return {
             .index_file = segment_path.index_file_for_type(SnapshotType::transactions_to_block),
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
-            .base_data_id = segment_path.block_from(),
+            .base_data_id = segment_path.block_range().start,
             .double_enum_index = false,
             .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
         };

@@ -39,7 +39,9 @@ void decode_word_into_header(ByteView word, BlockHeader& header) {
     success_or_throw(decode_result, "decode_word_into_header: rlp::decode error");
 }
 
-void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNum block_from, BlockNum block_to) {
+void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNumRange block_num_range) {
+    BlockNum block_from = block_num_range.start;
+    BlockNum block_to = block_num_range.end;
     ensure((header.number >= block_from) && (header.number < block_to), [&]() {
         return "check_sanity_of_header_with_metadata: header.number=" + std::to_string(header.number) +
                " outside of range [" + std::to_string(block_from) + ", " + std::to_string(block_to) + ")";

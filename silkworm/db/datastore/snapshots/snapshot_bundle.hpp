@@ -125,9 +125,7 @@ struct SnapshotBundle : public SnapshotBundleData {
     }
 
     // assume that all snapshots have the same block range, and use one of them
-    BlockNum block_from() const { return header_snapshot.block_from(); }
-    BlockNum block_to() const { return header_snapshot.block_to(); }
-    BlockNumRange block_range() const { return {block_from(), block_to()}; }
+    BlockNumRange block_range() const { return header_snapshot.path().block_range(); }
     size_t block_count() const { return block_range().size(); }
 
     std::vector<std::filesystem::path> files();

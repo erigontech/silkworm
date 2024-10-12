@@ -51,10 +51,10 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
 
     std::erase_if(*bundles, [&](const auto& entry) {
         const SnapshotBundle& it = *entry.second;
-        return (bundle.block_from() <= it.block_from()) && (it.block_to() <= bundle.block_to());
+        return (bundle.block_range().start <= it.block_range().start) && (it.block_range().end <= bundle.block_range().end);
     });
 
-    BlockNum block_from = bundle.block_from();
+    BlockNum block_from = bundle.block_range().start;
     bundles->insert_or_assign(block_from, std::make_shared<SnapshotBundle>(std::move(bundle)));
 
     bundles_ = bundles;
@@ -78,7 +78,8 @@ BlockNum SnapshotRepository::max_block_available() const {
 
     // a bundle with the max block range is last in the sorted bundles map
     auto& bundle = *bundles_->rbegin()->second;
-    return (bundle.block_from() < bundle.block_to()) ? bundle.block_to() - 1 : bundle.block_from();
+    BlockNumRange block_num_range = bundle.block_range();
+    return (block_num_range.size() > 0) ? block_num_range.end - 1 : block_num_range.start;
 }
 
 std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
@@ -88,11 +89,11 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
     BlockNum previous_to{0};
     for (const auto& segment : ordered_segments) {
         // skips different types of snapshots having the same block range
-        if (segment.block_to() <= previous_to) continue;
-        if (segment.block_from() != previous_to) {
-            missing_ranges.emplace_back(previous_to, segment.block_from());
+        if (segment.block_range().end <= previous_to) continue;
+        if (segment.block_range().start != previous_to) {
+            missing_ranges.emplace_back(previous_to, segment.block_range().start);
         }
-        previous_to = segment.block_to();
+        previous_to = segment.block_range().end;
     }
     return missing_ranges;
 }
@@ -124,13 +125,13 @@ void SnapshotRepository::reopen_folder() {
 
     for (size_t i = 0; i < all_snapshot_paths.size(); ++i) {
         auto& path = all_snapshot_paths[i];
-        auto& group = groups[path.block_from()][false];
+        auto& group = groups[path.block_range().start][false];
         group[path.type()] = i;
     }
 
     for (size_t i = 0; i < all_index_paths.size(); ++i) {
         auto& path = all_index_paths[i];
-        auto& group = groups[path.block_from()][true];
+        auto& group = groups[path.block_range().start][true];
         group[path.type()] = i;
     }
 
@@ -161,8 +162,8 @@ void SnapshotRepository::reopen_folder() {
 
         auto& bundle = *bundles->at(num);
 
-        if (num < bundle.block_to()) {
-            num = bundle.block_to();
+        if (num < bundle.block_range().end) {
+            num = bundle.block_range().end;
         } else {
             break;
         }
@@ -182,8 +183,8 @@ std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number)
     for (const auto& bundle_ptr : this->view_bundles_reverse()) {
         auto& bundle = *bundle_ptr;
         // We're looking for the segment containing the target block number in its block range
-        if (((bundle.block_from() <= number) && (number < bundle.block_to())) ||
-            ((bundle.block_from() == number) && (bundle.block_from() == bundle.block_to()))) {
+        if (bundle.block_range().contains(number) ||
+            ((bundle.block_range().start == number) && (bundle.block_range().size() == 0))) {
             return bundle_ptr;
         }
     }

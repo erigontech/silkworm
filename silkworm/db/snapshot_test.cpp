@@ -43,44 +43,42 @@ static const SnapshotPath kValidHeadersSegmentPath{*SnapshotPath::parse("v1-0145
 
 class SnapshotPathForTest : public SnapshotPath {
   public:
-    SnapshotPathForTest(const std::filesystem::path& tmp_dir, BlockNum block_from, BlockNum block_to)
-        : SnapshotPath(SnapshotPath::from(tmp_dir,
-                                          kSnapshotV1,
-                                          block_from,
-                                          block_to,
-                                          SnapshotType::headers)) {}
+    SnapshotPathForTest(const std::filesystem::path& tmp_dir, BlockNumRange block_num_range)
+        : SnapshotPath{
+              SnapshotPath::from(
+                  tmp_dir,
+                  kSnapshotV1,
+                  block_num_range,
+                  SnapshotType::headers),
+          } {}
 };
 
 class SnapshotForTest : public Snapshot {
   public:
     explicit SnapshotForTest(SnapshotPath path) : Snapshot(std::move(path)) {}
     explicit SnapshotForTest(std::filesystem::path path) : Snapshot(*SnapshotPath::parse(std::move(path))) {}
-    SnapshotForTest(const std::filesystem::path& tmp_dir, BlockNum block_from, BlockNum block_to)
-        : Snapshot(SnapshotPathForTest{tmp_dir, block_from, block_to}) {}
+    SnapshotForTest(const std::filesystem::path& tmp_dir, BlockNumRange block_num_range)
+        : Snapshot{SnapshotPathForTest{tmp_dir, block_num_range}} {}
 };
 
 TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     TemporaryDirectory tmp_dir;
     SECTION("valid") {
-        std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
+        std::vector<BlockNumRange> block_ranges{
             {0, 1},
             {1'000, 1'000},
-            {1'000, 2'000}};
-        for (const auto& [block_from, block_to] : block_ranges) {
-            SnapshotForTest snapshot{tmp_dir.path(), block_from, block_to};
+            {1'000, 2'000},
+        };
+        for (const auto& block_num_range : block_ranges) {
+            SnapshotForTest snapshot{tmp_dir.path(), block_num_range};
             CHECK(!snapshot.fs_path().empty());
-            CHECK(snapshot.block_from() == block_from);
-            CHECK(snapshot.block_to() == block_to);
+            CHECK(snapshot.path().block_range() == block_num_range);
             CHECK(snapshot.item_count() == 0);
             CHECK(snapshot.empty());
         }
     }
     SECTION("invalid") {
-        std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
-            {1'000, 999}};
-        for (const auto& [block_from, block_to] : block_ranges) {
-            CHECK_THROWS_AS(SnapshotForTest(tmp_dir.path(), block_from, block_to), std::logic_error);
-        }
+        CHECK_THROWS_AS(SnapshotForTest(tmp_dir.path(), {1'000, 999}), std::logic_error);
     }
 }
 

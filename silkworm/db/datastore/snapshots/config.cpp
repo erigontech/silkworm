@@ -64,8 +64,8 @@ BlockNum Config::compute_max_block(const PreverifiedList& entries) {
         if (!snapshot_path) continue;
         if (!snapshot_path->is_segment()) continue;
         if (snapshot_path->type() != SnapshotType::headers) continue;
-        if (snapshot_path->block_to() > max_block) {
-            max_block = snapshot_path->block_to();
+        if (snapshot_path->block_range().end > max_block) {
+            max_block = snapshot_path->block_range().end;
         }
     }
     return max_block > 0 ? max_block - 1 : 0;

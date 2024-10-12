@@ -31,8 +31,7 @@ SnapshotPath TransactionIndex::bodies_segment_path(const SnapshotPath& segment_p
     return SnapshotPath::from(
         segment_path.path().parent_path(),
         segment_path.version(),
-        segment_path.block_from(),
-        segment_path.block_to(),
+        segment_path.block_range(),
         SnapshotType::bodies);
 }
 

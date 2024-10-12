@@ -340,29 +340,29 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
 
 class SampleSnapshotPath : public SnapshotPath {
   public:
-    SampleSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to, SnapshotType type)
-        : SnapshotPath(std::move(path), /*.version=*/1, from, to, type) {}
+    SampleSnapshotPath(std::filesystem::path path, BlockNumRange block_num_range, SnapshotType type)
+        : SnapshotPath(std::move(path), /*.version=*/1, block_num_range, type) {}
 };
 
 //! Sample Header snapshot path injecting custom from/to blocks to override 500'000 block range
 class SampleHeaderSnapshotPath : public SampleSnapshotPath {
   public:
     explicit SampleHeaderSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), 1'500'012, 1'500'014, SnapshotType::headers) {}
+        : SampleSnapshotPath(std::move(path), {1'500'012, 1'500'014}, SnapshotType::headers) {}
 };
 
 //! Sample Body snapshot path injecting custom from/to blocks to override 500'000 block range
 class SampleBodySnapshotPath : public SampleSnapshotPath {
   public:
     explicit SampleBodySnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), 1'500'012, 1'500'014, SnapshotType::bodies) {}
+        : SampleSnapshotPath(std::move(path), {1'500'012, 1'500'014}, SnapshotType::bodies) {}
 };
 
 //! Sample Transaction snapshot path injecting custom from/to blocks to override 500'000 block range
 class SampleTransactionSnapshotPath : public SampleSnapshotPath {
   public:
     explicit SampleTransactionSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), 1'500'012, 1'500'014, SnapshotType::transactions) {}
+        : SampleSnapshotPath(std::move(path), {1'500'012, 1'500'014}, SnapshotType::transactions) {}
 };
 
 }  // namespace silkworm::snapshots::test_util

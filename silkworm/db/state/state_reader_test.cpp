@@ -28,10 +28,8 @@
 
 namespace silkworm::db::state {
 
-using kv::api::KeyValue;
 using testing::_;
 using testing::Invoke;
-using testing::InvokeWithoutArgs;
 using testing::Unused;
 
 #ifndef SILKWORM_SANITIZE

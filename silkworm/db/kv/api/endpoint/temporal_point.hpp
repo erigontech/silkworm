@@ -44,6 +44,14 @@ struct DomainPointQuery {
     std::optional<Timestamp> timestamp;  // not present means 'latest state' (no history lookup)
     Bytes sub_key;
 };
+inline bool operator==(const db::kv::api::DomainPointQuery& dpq1, const db::kv::api::DomainPointQuery& dpq2) {
+    return (dpq1.tx_id == dpq2.tx_id &&
+            dpq1.table == dpq2.table &&
+            dpq1.key == dpq2.key &&
+            dpq1.timestamp == dpq2.timestamp &&
+            dpq1.sub_key == dpq2.sub_key);
+}
+
 
 using DomainPointResult = PointResult;
 

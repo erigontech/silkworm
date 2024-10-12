@@ -16,17 +16,13 @@
 
 #pragma once
 
-#include <algorithm>
-#include <array>
+#include <cstdint>
 #include <filesystem>
-#include <functional>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/block.hpp>
 
 #include "snapshot_type.hpp"
 #include "step.hpp"
@@ -42,49 +38,40 @@ inline constexpr uint8_t kSnapshotV1{1};
 
 class SnapshotPath {
   public:
-    [[nodiscard]] static std::optional<SnapshotPath> parse(std::filesystem::path path);
+    static std::optional<SnapshotPath> parse(std::filesystem::path path);
 
-    [[nodiscard]] static SnapshotPath from(
+    static SnapshotPath from(
         const std::filesystem::path& dir,
         uint8_t version,
         StepRange step_range,
         SnapshotType type,
         const char* ext = kSegmentExtension);
 
-    [[nodiscard]] std::string filename() const { return path_.filename().string(); }
-
-    [[nodiscard]] std::filesystem::path path() const { return path_; }
-
-    [[nodiscard]] uint8_t version() const { return version_; }
-
-    [[nodiscard]] StepRange step_range() const { return step_range_; }
-    [[nodiscard]] BlockNumRange block_range() const {
+    std::string filename() const { return path_.filename().string(); }
+    const std::filesystem::path& path() const { return path_; }
+    uint8_t version() const { return version_; }
+    StepRange step_range() const { return step_range_; }
+    // TODO: remove
+    BlockNumRange block_range() const {
         return step_range().to_block_num_range();
     }
+    SnapshotType type() const { return type_; }
+    std::string type_string() const;
+    bool is_segment() const { return path_.extension().string() == kSegmentExtension; }
+    bool exists() const { return std::filesystem::exists(path_); }
 
-    [[nodiscard]] SnapshotType type() const { return type_; }
-
-    [[nodiscard]] std::string type_string() const;
-
-    [[nodiscard]] bool is_segment() const { return path_.extension().string() == kSegmentExtension; }
-
-    [[nodiscard]] bool exists() const {
-        return std::filesystem::exists(std::filesystem::path{path_});
-    }
-
-    [[nodiscard]] SnapshotPath index_file() const {
+    SnapshotPath index_file() const {
         return related_path(type_, kIdxExtension);
     }
-
-    [[nodiscard]] SnapshotPath index_file_for_type(SnapshotType type) const {
+    SnapshotPath index_file_for_type(SnapshotType type) const {
         return related_path(type, kIdxExtension);
     }
-
-    [[nodiscard]] SnapshotPath snapshot_path_for_type(SnapshotType type) const {
+    SnapshotPath snapshot_path_for_type(SnapshotType type) const {
         return related_path(type, kSegmentExtension);
     }
 
-    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
+    // TODO: remove
+    std::filesystem::file_time_type last_write_time() const {
         return std::filesystem::last_write_time(path_);
     }
 

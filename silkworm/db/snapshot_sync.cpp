@@ -293,7 +293,7 @@ void SnapshotSync::seed_bundle(SnapshotBundle& bundle) {
 }
 
 void SnapshotSync::seed_snapshot(const SnapshotPath& path) {
-    std::filesystem::path torrent_path = path.path().concat(".torrent");
+    std::filesystem::path torrent_path = std::filesystem::path{path.path()}.concat(".torrent");
     auto torrent_file =
         std::filesystem::exists(torrent_path)
             ? bittorrent::TorrentFile{torrent_path}

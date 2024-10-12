@@ -20,6 +20,7 @@
 #include <filesystem>
 #include <iterator>
 #include <memory>
+#include <utility>
 
 #include "seg/compressor.hpp"
 #include "snapshot_path.hpp"

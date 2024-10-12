@@ -28,30 +28,21 @@
 
 namespace silkworm::db::state {
 
-#ifdef notdef  // tests commented wiating its conversion using TKV
 
 using kv::api::KeyValue;
 using testing::_;
 using testing::InvokeWithoutArgs;
+using testing::Unused;
+using testing::Invoke;
 
 #ifndef SILKWORM_SANITIZE
 static const evmc::address kZeroAddress{};
 static const Bytes kEncodedAccount{*from_hex(
-    "0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
-static const Bytes kEncodedAccountHistory{*from_hex(
-    "0100000000000000000000003a300000020000006e001b006f000f001800000050000000e042e442f5420e4320"
-    "432d433c4343435e436343e550e750eb50a160a4604f6175c504c6c7cedaceeccedbd0f3d0f4d001d104d105d1"
-    "09d18613b113061e801f861fd11fda1fe6323833ac3943651f67226c406d36706f70")};
-static const Bytes kEncodedAccountWithoutCodeHash{*from_hex(
-    "07023039080de0b6b3a76400000105")};
+    "01020203e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
 
 static const evmc::bytes32 kLocationHash{};
 static const Bytes kStorageLocation{*from_hex(
     "0000000000000000000000000000000000000000000000000000000000000000")};
-static const Bytes kEncodedStorageHistory{*from_hex(
-    "0100000000000000000000003a3000000700000044000a004600010048000100490005004c0001004d0001005e"
-    "00000040000000560000005a0000005e0000006a0000006e000000720000005da562a563a565a567a56aa59da5"
-    "a0a5f0a5f5a57ef926a863a8eb520b535d1b951bb71b3c1c741caa4f53f5b0f5184f536018f6")};
 
 static const Bytes kBinaryCode{*from_hex("0x60045e005c60016000555d")};
 static const evmc::bytes32 kCodeHash{0xef722d9baf50b9983c2fce6329c5a43a15b8d5ba79cd792e7199d615be88284d_bytes32};
@@ -66,12 +57,12 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("no account for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(transaction_, get(table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{};
-        }));
-        // 2. DatabaseReader::get_one call on kPlainState returns empty value
-        EXPECT_CALL(transaction_, get_one(table::kPlainStateName, ByteView{kZeroAddress.bytes})).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return Bytes{};
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = false,
+                .value = Bytes{}
+            };
+            co_return rsp1;
         }));
 
         // Execute the test: calling read_account should return no account
@@ -83,12 +74,12 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account found in current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(transaction_, get(table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{};
-        }));
-        // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(transaction_, get_one(table::kPlainStateName, ByteView{kZeroAddress.bytes})).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kEncodedAccount;
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = true,
+                .value = kEncodedAccount
+            };
+            co_return rsp1;
         }));
 
         // Execute the test: calling read_account should return the expected account
@@ -106,12 +97,12 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account found in history") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns the account bitmap
-        EXPECT_CALL(transaction_, get(table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{Bytes{ByteView{kZeroAddress.bytes}}, kEncodedAccountHistory};
-        }));
-        // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet returns the account data
-        EXPECT_CALL(transaction_, get_both_range(table::kAccountChangeSetName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
-            co_return kEncodedAccount;
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = true,
+                .value = kEncodedAccount
+            };
+            co_return rsp1;
         }));
 
         // Execute the test: calling read_account should return expected account
@@ -125,45 +116,18 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
             CHECK(account->incarnation == 5);
         }
     }
-
-    SECTION("account w/o code hash found current state") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(transaction_, get(table::kAccountHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{};
-        }));
-        // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(transaction_, get_one(table::kPlainStateName, ByteView{kZeroAddress.bytes})).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kEncodedAccountWithoutCodeHash;
-        }));
-        // 3. DatabaseReader::get_one call on kPlainContractCode returns account code hash
-        EXPECT_CALL(transaction_, get_one(table::kPlainCodeHashName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return Bytes{kCodeHash.bytes, kHashLength};
-        }));
-
-        // Execute the test: calling read_account should return the expected account
-        std::optional<Account> account;
-        CHECK_NOTHROW(account = spawn_and_wait(state_reader_.read_account(kZeroAddress)));
-        CHECK(account);
-        if (account) {
-            CHECK(account->nonce == 12345);
-            CHECK(account->balance == kEther);
-            CHECK(account->code_hash == kCodeHash);
-            CHECK(account->incarnation == 5);
-        }
-    }
 }
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("empty storage for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
-        EXPECT_CALL(transaction_, get(table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{};
-        }));
-        // 2. DatabaseReader::get_both_range call on kPlainState returns empty value
-        EXPECT_CALL(transaction_, get_both_range(table::kPlainStateName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
-            co_return Bytes{};
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = false,
+                .value = Bytes{}
+            };
+            co_return rsp1;
         }));
 
         // Execute the test: calling read_storage should return empty storage value
@@ -175,14 +139,13 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("storage found in current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
-        EXPECT_CALL(transaction_, get(table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{};
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = true,
+                .value = kStorageLocation
+            };
+            co_return rsp1;
         }));
-        // 2. DatabaseReader::get_both_range call on kPlainState returns empty value
-        EXPECT_CALL(transaction_, get_both_range(table::kPlainStateName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
-            co_return kStorageLocation;
-        }));
-
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
         CHECK_NOTHROW(location = spawn_and_wait(state_reader_.read_storage(kZeroAddress, 0, kLocationHash)));
@@ -192,14 +155,12 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("storage found in history") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns the storage bitmap
-        EXPECT_CALL(transaction_, get(table::kStorageHistoryName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{
-                storage_history_key(kZeroAddress, kLocationHash, kEarliestBlockNumber),
-                kEncodedStorageHistory};
-        }));
-        // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet the storage location value
-        EXPECT_CALL(transaction_, get_both_range(table::kStorageChangeSetName, _, _)).WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
-            co_return kStorageLocation;
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = true,
+                .value = kStorageLocation
+            };
+            co_return rsp1;
         }));
 
         // Execute the test: calling read_storage should return expected storage location
@@ -220,8 +181,12 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     SECTION("empty code found for code hash") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
-        EXPECT_CALL(transaction_, get_one(table::kCodeName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return Bytes{};
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = true,
+                .value = Bytes{}
+            };
+            co_return rsp1;
         }));
 
         // Execute the test: calling read_code should return an empty code
@@ -236,9 +201,14 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     SECTION("non-empty code found for code hash") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
-        EXPECT_CALL(transaction_, get_one(table::kCodeName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kBinaryCode;
+        EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult rsp1{
+                .success = true,
+                .value = kBinaryCode
+            };
+            co_return rsp1;
         }));
+
 
         // Execute the test: calling read_code should return a non-empty code
         std::optional<Bytes> code;
@@ -249,7 +219,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
         }
     }
 }
-#endif
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::db::state

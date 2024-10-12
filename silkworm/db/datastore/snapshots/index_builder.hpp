@@ -123,6 +123,10 @@ struct IndexBuilder {
     IndexBuilder(IndexBuilder&&) = default;
     IndexBuilder& operator=(IndexBuilder&&) = default;
 
+    void set_base_data_id(uint64_t id) {
+        descriptor_.base_data_id = id;
+    }
+
     void build();
 
     const SnapshotPath& path() const { return descriptor_.index_file; }

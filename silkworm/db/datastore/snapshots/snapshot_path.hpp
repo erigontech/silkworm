@@ -47,7 +47,7 @@ class SnapshotPath {
     [[nodiscard]] static SnapshotPath from(
         const std::filesystem::path& dir,
         uint8_t version,
-        BlockNumRange block_num_range,
+        StepRange step_range,
         SnapshotType type,
         const char* ext = kSegmentExtension);
 
@@ -57,7 +57,10 @@ class SnapshotPath {
 
     [[nodiscard]] uint8_t version() const { return version_; }
 
-    [[nodiscard]] BlockNumRange block_range() const { return BlockNumRange{block_from_, block_to_}; }
+    [[nodiscard]] StepRange step_range() const { return step_range_; }
+    [[nodiscard]] BlockNumRange block_range() const {
+        return step_range().to_block_num_range();
+    }
 
     [[nodiscard]] SnapshotType type() const { return type_; }
 
@@ -89,15 +92,22 @@ class SnapshotPath {
     friend bool operator==(const SnapshotPath&, const SnapshotPath&) = default;
 
   protected:
-    static std::filesystem::path build_filename(uint8_t version, BlockNumRange block_num_range, SnapshotType type, const char* ext);
+    static std::filesystem::path build_filename(
+        uint8_t version,
+        StepRange step_range,
+        SnapshotType type,
+        const char* ext);
     SnapshotPath related_path(SnapshotType type, const char* ext) const;
 
-    explicit SnapshotPath(std::filesystem::path path, uint8_t version, BlockNumRange block_num_range, SnapshotType type);
+    explicit SnapshotPath(
+        std::filesystem::path path,
+        uint8_t version,
+        StepRange step_range,
+        SnapshotType type);
 
     std::filesystem::path path_;
     uint8_t version_{0};
-    BlockNum block_from_{0};
-    BlockNum block_to_{0};
+    StepRange step_range_;
     SnapshotType type_;
 };
 

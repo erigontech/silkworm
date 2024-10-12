@@ -48,6 +48,7 @@ TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
     test::SampleBodySnapshotFile valid_body_snapshot{tmp_dir.path()};
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
     auto body_index = BodyIndex::make(body_snapshot_path);
+    body_index.set_base_data_id(valid_body_snapshot.block_num_range().start);
     CHECK_NOTHROW(body_index.build());
 }
 
@@ -107,7 +108,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
 
         CHECK_THROWS_WITH(TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), ContainsSubstring("invalid: position depth"));
-        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), ContainsSubstring("invalid: position depth"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path, valid_txs_snapshot.block_num_range().start).build(), ContainsSubstring("invalid: position depth"));
     }
 
     SECTION("KO: invalid position value") {
@@ -123,7 +124,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
 
         CHECK_THROWS_WITH(TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), ContainsSubstring("invalid: position read"));
-        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), ContainsSubstring("invalid: position read"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path, valid_txs_snapshot.block_num_range().start).build(), ContainsSubstring("invalid: position read"));
     }
 
     SECTION("KO: invalid positions count") {
@@ -139,7 +140,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
 
         CHECK_THROWS_WITH(TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), ContainsSubstring("invalid: position read"));
-        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), ContainsSubstring("invalid: position read"));
+        CHECK_THROWS_WITH(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path, valid_txs_snapshot.block_num_range().start).build(), ContainsSubstring("invalid: position read"));
     }
 
     SECTION("KO: invalid RLP") {
@@ -155,7 +156,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
 
         CHECK_THROWS_AS(TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), DecodingException);
-        CHECK_THROWS_AS(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path).build(), DecodingException);
+        CHECK_THROWS_AS(TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path, valid_txs_snapshot.block_num_range().start).build(), DecodingException);
     }
 
     SECTION("KO: unexpected tx amount") {
@@ -180,7 +181,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 
         auto tx_index = TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path);
         CHECK_THROWS_WITH(tx_index.build(), StartsWith("keys expected"));
-        auto tx_index_hash_to_block = TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path);
+        auto tx_index_hash_to_block = TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path, invalid_txs_snapshot.block_num_range().start);
         CHECK_THROWS_WITH(tx_index_hash_to_block.build(), ContainsSubstring("tx count mismatch"));
     }
 }
@@ -195,7 +196,7 @@ TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
 
     auto tx_index = TransactionIndex::make(bodies_snapshot_path, txs_snapshot_path);
     tx_index.build();
-    auto tx_index_hash_to_block = TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path);
+    auto tx_index_hash_to_block = TransactionToBlockIndex::make(bodies_snapshot_path, txs_snapshot_path, valid_txs_snapshot.block_num_range().start);
     tx_index_hash_to_block.build();
 }
 

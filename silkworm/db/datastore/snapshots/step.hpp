@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 
 namespace silkworm::snapshots {
 
@@ -50,7 +51,9 @@ struct StepRange {
     Step start;
     Step end;
 
-    StepRange(Step start1, Step end1) : start(start1), end(end1) {}
+    StepRange(Step start1, Step end1) : start(start1), end(end1) {
+        ensure(start <= end, "StepRange: end before start");
+    }
     friend bool operator==(const StepRange&, const StepRange&) = default;
     bool contains(Step x) const { return (start <= x) && (x < end); }
     size_t size() const { return end.value - start.value; }

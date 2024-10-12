@@ -187,33 +187,35 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
     auto header_index = HeaderIndex::make(header_snapshot_path);
+    header_index.set_base_data_id(header_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
     auto body_index = BodyIndex::make(body_snapshot_path);
+    body_index.set_base_data_id(body_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 
     SECTION("header w/ index") {
-        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'011));
-        // CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'012) != nullptr);  // needs full block number in snapshot file names
-        // CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'014));
+        CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'011));
+        CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'012));
+        CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'013));
+        CHECK_FIRST(repository.find_segment(SnapshotType::headers, 1'500'014));
     }
     SECTION("body w/ index") {
-        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'011));
-        // CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'012) != nullptr);  // needs full block number in snapshot file names
-        // CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'014));
+        CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'011));
+        CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'012));
+        CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'013));
+        CHECK_FIRST(repository.find_segment(SnapshotType::bodies, 1'500'014));
     }
     SECTION("tx w/ index") {
-        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'011));
-        // CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'012) != nullptr);  // needs full block number in snapshot file names
-        // CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'013) != nullptr);  // needs full block number in snapshot file names
-        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'014));
+        CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'011));
+        CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'012));
+        CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'013));
+        CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'014));
     }
     SECTION("greater than max_block_available") {
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, repository.max_block_available() + 1));
@@ -234,13 +236,15 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
     auto header_index = HeaderIndex::make(header_snapshot_path);
+    header_index.set_base_data_id(header_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
     auto body_index = BodyIndex::make(body_snapshot_path);
+    body_index.set_base_data_id(body_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 
@@ -281,6 +285,7 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
 
     // build an index
     auto index_builder = HeaderIndex::make(header_snapshot_path);
+    index_builder.set_base_data_id(header_snapshot_file.block_num_range().start);
     REQUIRE_NOTHROW(index_builder.build());
     auto index_path = index_builder.path().path();
 

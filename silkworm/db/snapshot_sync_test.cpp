@@ -117,14 +117,18 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     snapshots::test_util::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir_path};
     snapshots::test_util::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot_file.path()};
     snapshots::Snapshot header_snapshot{header_snapshot_path};
-    REQUIRE_NOTHROW(snapshots::HeaderIndex::make(header_snapshot_path).build());
+    auto header_index_builder = snapshots::HeaderIndex::make(header_snapshot_path);
+    header_index_builder.set_base_data_id(header_snapshot_file.block_num_range().start);
+    REQUIRE_NOTHROW(header_index_builder.build());
     snapshots::Index idx_header_hash{header_snapshot_path.index_file()};
 
     // Create a sample Body snapshot+index
     snapshots::test_util::SampleBodySnapshotFile body_snapshot_file{tmp_dir_path};
     snapshots::test_util::SampleBodySnapshotPath body_snapshot_path{body_snapshot_file.path()};
     snapshots::Snapshot body_snapshot{body_snapshot_path};
-    REQUIRE_NOTHROW(snapshots::BodyIndex::make(body_snapshot_path).build());
+    auto body_index_builder = snapshots::BodyIndex::make(body_snapshot_path);
+    body_index_builder.set_base_data_id(body_snapshot_file.block_num_range().start);
+    REQUIRE_NOTHROW(body_index_builder.build());
     snapshots::Index idx_body_number{body_snapshot_path.index_file()};
 
     // Create a sample Transaction snapshot+indexes
@@ -132,7 +136,7 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     snapshots::test_util::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot_file.path()};
     snapshots::Snapshot txn_snapshot{txn_snapshot_path};
     REQUIRE_NOTHROW(snapshots::TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(snapshots::TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(snapshots::TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot_file.block_num_range().start).build());
     snapshots::Index idx_txn_hash{txn_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions)};
     snapshots::Index idx_txn_hash_2_block{txn_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions_to_block)};
 
@@ -153,8 +157,9 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
 
     // Update the block headers in the database according to the repository content
     auto& tmp_db = test.context;
+    BlockNum max_block_available = header_snapshot_file.block_num_range().end - 1;
     auto is_stopping = [] { return false; };
-    CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), repository.max_block_available(), is_stopping));
+    CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), max_block_available, is_stopping));
 
     // Expect that the database is correctly populated (N.B. cannot check Difficulty table because of sample snapshots)
     auto block_is_in_header_numbers = [&](Hash block_hash, BlockNum expected_block_number) {

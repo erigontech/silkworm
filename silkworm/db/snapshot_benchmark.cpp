@@ -87,6 +87,7 @@ static void build_header_index(benchmark::State& state) {
     for ([[maybe_unused]] auto _ : state) {
         test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
         auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);
+        header_index.set_base_data_id(header_snapshot.block_num_range().start);
         header_index.build();
     }
 }
@@ -104,6 +105,7 @@ static void build_body_index(benchmark::State& state) {
     for ([[maybe_unused]] auto _ : state) {
         test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
         auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
+        body_index.set_base_data_id(body_snapshot.block_num_range().start);
         body_index.build();
     }
 }
@@ -122,12 +124,13 @@ static void build_tx_index(benchmark::State& state) {
     for ([[maybe_unused]] auto _ : state) {
         test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
         auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
+        body_index.set_base_data_id(body_snapshot.block_num_range().start);
         body_index.build();
 
         test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
         auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
         tx_index.build();
-        auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path);
+        auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start);
         tx_index_hash_to_block.build();
     }
 }
@@ -147,16 +150,18 @@ static void reopen_folder(benchmark::State& state) {
 
     test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
     auto header_index = snapshots::HeaderIndex::make(header_snapshot_path);
+    header_index.set_base_data_id(header_snapshot.block_num_range().start);
     header_index.build();
 
     test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
     auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
+    body_index.set_base_data_id(body_snapshot.block_num_range().start);
     body_index.build();
 
     test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
     auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
     tx_index.build();
-    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path);
+    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start);
     tx_index_hash_to_block.build();
 
     for ([[maybe_unused]] auto _ : state) {

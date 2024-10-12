@@ -26,14 +26,11 @@
 #include <absl/strings/str_split.h>
 #include <magic_enum.hpp>
 
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
-
-static constexpr size_t kFileNameBlockScaleFactor = kStepSizeForBlockSnapshots;
 
 std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const std::string filename_no_ext = path.stem().string();
@@ -44,40 +41,38 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
 
-    const auto [ver, scaled_from, scaled_to, tag] = std::tie(tokens[0], tokens[1], tokens[2], tokens[3]);
+    const auto [ver, from, to, tag] = std::tie(tokens[0], tokens[1], tokens[2], tokens[3]);
 
     // Expected version format: v<x> (hence check length, check first char and parse w/ offset by one)
     if (ver.empty() || ver[0] != 'v') {
         return std::nullopt;
     }
 
-    uint8_t version{0};
-    const auto ver_result = std::from_chars(ver.data() + 1, ver.data() + ver.size(), version);
+    uint8_t ver_num = 0;
+    const auto ver_result = std::from_chars(ver.data() + 1, ver.data() + ver.size(), ver_num);
     if (ver_result.ec == std::errc::invalid_argument) {
         return std::nullopt;
     }
 
     // Expected scaled block format: <dddddd>
-    if (scaled_from.size() != 6 || scaled_to.size() != 6) {
+    if (from.size() != 6 || to.size() != 6) {
         return std::nullopt;
     }
 
-    BlockNum scaled_block_from{0};
-    const auto from_result = std::from_chars(scaled_from.data(), scaled_from.data() + scaled_from.size(), scaled_block_from);
+    Step step_from{0};
+    const auto from_result = std::from_chars(from.data(), from.data() + from.size(), step_from.value);
     if (from_result.ec == std::errc::invalid_argument) {
         return std::nullopt;
     }
-    const BlockNum block_from{scaled_block_from * kFileNameBlockScaleFactor};
 
-    BlockNum scaled_block_to{0};
-    const auto to_result = std::from_chars(scaled_to.data(), scaled_to.data() + scaled_to.size(), scaled_block_to);
+    Step step_to{0};
+    const auto to_result = std::from_chars(to.data(), to.data() + to.size(), step_to.value);
     if (to_result.ec == std::errc::invalid_argument) {
         return std::nullopt;
     }
-    const BlockNum block_to{scaled_block_to * kFileNameBlockScaleFactor};
 
-    // Expected proper block range: [block_from, block_to)
-    if (block_to < block_from) {
+    // Expected proper range: [from, to)
+    if (step_to < step_from) {
         return std::nullopt;
     }
 
@@ -90,17 +85,17 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
 
-    return SnapshotPath{std::move(path), version, {block_from, block_to}, *type};
+    return SnapshotPath{std::move(path), ver_num, {step_from, step_to}, *type};
 }
 
 SnapshotPath SnapshotPath::from(
     const fs::path& dir,
     uint8_t version,
-    BlockNumRange block_num_range,
+    StepRange step_range,
     SnapshotType type,
     const char* ext) {
-    const auto filename = SnapshotPath::build_filename(version, block_num_range, type, ext);
-    return SnapshotPath{dir / filename, version, block_num_range, type};
+    const auto filename = SnapshotPath::build_filename(version, step_range, type, ext);
+    return SnapshotPath{dir / filename, version, step_range, type};
 }
 
 std::string SnapshotPath::type_string() const {
@@ -109,10 +104,9 @@ std::string SnapshotPath::type_string() const {
 
 fs::path SnapshotPath::build_filename(
     uint8_t version,
-    BlockNumRange block_num_range,
+    StepRange step_range,
     SnapshotType type,
     const char* ext) {
-    StepRange step_range = StepRange::from_block_num_range(block_num_range);
     std::string snapshot_type_name{magic_enum::enum_name(type)};
     std::string filename = absl::StrFormat(
         "v%d-%06d-%06d-%s%s",
@@ -125,31 +119,29 @@ fs::path SnapshotPath::build_filename(
 }
 
 SnapshotPath SnapshotPath::related_path(SnapshotType type, const char* ext) const {
-    return SnapshotPath::from(path_.parent_path(), version_, {block_from_, block_to_}, type, ext);
+    return SnapshotPath::from(path_.parent_path(), version_, step_range_, type, ext);
 }
 
 SnapshotPath::SnapshotPath(
     fs::path path,
     uint8_t version,
-    BlockNumRange block_num_range,
+    StepRange step_range,
     SnapshotType type)
     : path_{std::move(path)},
       version_{version},
-      block_from_{block_num_range.start},
-      block_to_{block_num_range.end},
+      step_range_{step_range},
       type_{type} {
-    ensure(block_to_ >= block_from_, "SnapshotPath: block_to less than block_from");
 }
 
 bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs) {
     if (lhs.version_ != rhs.version_) {
         return lhs.version_ < rhs.version_;
     }
-    if (lhs.block_from_ != rhs.block_from_) {
-        return lhs.block_from_ < rhs.block_from_;
+    if (lhs.step_range_.start != rhs.step_range_.start) {
+        return lhs.step_range_.start < rhs.step_range_.start;
     }
-    if (lhs.block_to_ != rhs.block_to_) {
-        return lhs.block_to_ < rhs.block_to_;
+    if (lhs.step_range_.end != rhs.step_range_.end) {
+        return lhs.step_range_.end < rhs.step_range_.end;
     }
     if (lhs.type_ != rhs.type_) {
         return lhs.type_ < rhs.type_;

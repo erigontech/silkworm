@@ -166,15 +166,19 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
 // - PaTS (PaT Size): size of pattern table in bytes
 // - PoTS (PoT Size): size of position table in bytes
 
+inline const BlockNumRange kSampleSnapshotBlockRange{1'500'012, 1'500'014};
+
 //! Sample Headers snapshot file: it contains the mainnet block headers in range [1'500'012, 1'500'013]
 //! At least 2 blocks are required because RecSplit key set must have at least *2* keys
 class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001500-headers.seg"};
+    static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001501-headers.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleHeaderSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
         : TemporarySnapshotFile{tmp_dir, kHeadersSnapshotFileName, *from_hex(hex)} {}
+
+    BlockNumRange block_num_range() const { return kSampleSnapshotBlockRange; }
 
     //! This ctor captures the correct sample snapshot content once for all
     explicit SampleHeaderSnapshotFile(const std::filesystem::path& tmp_dir)
@@ -212,11 +216,13 @@ class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
 //! Sample Bodies snapshot file: it contains the mainnet block bodies in range [1'500'012, 1'500'013]
 class SampleBodySnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001500-bodies.seg"};
+    static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001501-bodies.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleBodySnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
         : TemporarySnapshotFile{tmp_dir, kBodiesSnapshotFileName, *from_hex(hex)} {}
+
+    BlockNumRange block_num_range() const { return kSampleSnapshotBlockRange; }
 
     //! This empty ctor captures the correct sample snapshot content once for all
     explicit SampleBodySnapshotFile(const std::filesystem::path& tmp_dir)
@@ -253,11 +259,13 @@ class SampleBodySnapshotFile : public TemporarySnapshotFile {
 //! Sample Transactions snapshot file: it contains the mainnet block transactions in range [1'500'012, 1'500'013]
 class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001500-transactions.seg"};
+    static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001501-transactions.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleTransactionSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
         : TemporarySnapshotFile{tmp_dir, kTransactionsSnapshotFileName, *from_hex(hex)} {}
+
+    BlockNumRange block_num_range() const { return kSampleSnapshotBlockRange; }
 
     //! This empty ctor captures the correct sample snapshot content once for all
     explicit SampleTransactionSnapshotFile(const std::filesystem::path& tmp_dir)
@@ -340,29 +348,29 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
 
 class SampleSnapshotPath : public SnapshotPath {
   public:
-    SampleSnapshotPath(std::filesystem::path path, BlockNumRange block_num_range, SnapshotType type)
-        : SnapshotPath(std::move(path), /*.version=*/1, block_num_range, type) {}
+    SampleSnapshotPath(std::filesystem::path path, SnapshotType type)
+        : SnapshotPath(std::move(path), /*.version=*/1, StepRange::from_block_num_range(kSampleSnapshotBlockRange), type) {}
 };
 
 //! Sample Header snapshot path injecting custom from/to blocks to override 500'000 block range
 class SampleHeaderSnapshotPath : public SampleSnapshotPath {
   public:
     explicit SampleHeaderSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), {1'500'012, 1'500'014}, SnapshotType::headers) {}
+        : SampleSnapshotPath(std::move(path), SnapshotType::headers) {}
 };
 
 //! Sample Body snapshot path injecting custom from/to blocks to override 500'000 block range
 class SampleBodySnapshotPath : public SampleSnapshotPath {
   public:
     explicit SampleBodySnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), {1'500'012, 1'500'014}, SnapshotType::bodies) {}
+        : SampleSnapshotPath(std::move(path), SnapshotType::bodies) {}
 };
 
 //! Sample Transaction snapshot path injecting custom from/to blocks to override 500'000 block range
 class SampleTransactionSnapshotPath : public SampleSnapshotPath {
   public:
     explicit SampleTransactionSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), {1'500'012, 1'500'014}, SnapshotType::transactions) {}
+        : SampleSnapshotPath(std::move(path), SnapshotType::transactions) {}
 };
 
 }  // namespace silkworm::snapshots::test_util

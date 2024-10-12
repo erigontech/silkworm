@@ -82,7 +82,7 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
 
 TEST_CASE("SnapshotPath::from", "[silkworm][node][snapshot]") {
     SECTION("invalid") {
-        CHECK_THROWS_AS(SnapshotPath::from(std::filesystem::path{}, kSnapshotV1, {1'000, 999}, SnapshotType::headers),
+        CHECK_THROWS_AS(SnapshotPath::from(std::filesystem::path{}, kSnapshotV1, StepRange{Step{1'000}, Step{999}}, SnapshotType::headers),
                         std::logic_error);
     }
 }

@@ -43,12 +43,12 @@ static const SnapshotPath kValidHeadersSegmentPath{*SnapshotPath::parse("v1-0145
 
 class SnapshotPathForTest : public SnapshotPath {
   public:
-    SnapshotPathForTest(const std::filesystem::path& tmp_dir, BlockNumRange block_num_range)
+    SnapshotPathForTest(const std::filesystem::path& tmp_dir, StepRange step_range)
         : SnapshotPath{
               SnapshotPath::from(
                   tmp_dir,
                   kSnapshotV1,
-                  block_num_range,
+                  step_range,
                   SnapshotType::headers),
           } {}
 };
@@ -57,28 +57,28 @@ class SnapshotForTest : public Snapshot {
   public:
     explicit SnapshotForTest(SnapshotPath path) : Snapshot(std::move(path)) {}
     explicit SnapshotForTest(std::filesystem::path path) : Snapshot(*SnapshotPath::parse(std::move(path))) {}
-    SnapshotForTest(const std::filesystem::path& tmp_dir, BlockNumRange block_num_range)
-        : Snapshot{SnapshotPathForTest{tmp_dir, block_num_range}} {}
+    SnapshotForTest(const std::filesystem::path& tmp_dir, StepRange step_range)
+        : Snapshot{SnapshotPathForTest{tmp_dir, step_range}} {}
 };
 
 TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     TemporaryDirectory tmp_dir;
     SECTION("valid") {
-        std::vector<BlockNumRange> block_ranges{
-            {0, 1},
-            {1'000, 1'000},
-            {1'000, 2'000},
+        std::vector<StepRange> ranges{
+            {Step{0}, Step{1}},
+            {Step{1'000}, Step{1'000}},
+            {Step{1'000}, Step{2'000}},
         };
-        for (const auto& block_num_range : block_ranges) {
-            SnapshotForTest snapshot{tmp_dir.path(), block_num_range};
+        for (const auto& range : ranges) {
+            SnapshotForTest snapshot{tmp_dir.path(), range};
             CHECK(!snapshot.fs_path().empty());
-            CHECK(snapshot.path().block_range() == block_num_range);
+            CHECK(snapshot.path().step_range() == range);
             CHECK(snapshot.item_count() == 0);
             CHECK(snapshot.empty());
         }
     }
     SECTION("invalid") {
-        CHECK_THROWS_AS(SnapshotForTest(tmp_dir.path(), {1'000, 999}), std::logic_error);
+        CHECK_THROWS_AS(SnapshotForTest(tmp_dir.path(), StepRange{Step{1'000}, Step{999}}), std::logic_error);
     }
 }
 
@@ -125,6 +125,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
     test::SampleHeaderSnapshotFile valid_header_snapshot{tmp_dir.path()};               // contains headers for [1'500'012, 1'500'013]
     test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};  // necessary to tweak the block numbers
     auto header_index = HeaderIndex::make(header_snapshot_path);
+    header_index.set_base_data_id(valid_header_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
 
     Snapshot header_snapshot{header_snapshot_path};
@@ -167,6 +168,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     test::SampleBodySnapshotFile valid_body_snapshot{tmp_dir.path()};             // contains bodies for [1'500'012, 1'500'013]
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
     auto body_index = BodyIndex::make(body_snapshot_path);
+    body_index.set_base_data_id(valid_body_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
 
     Snapshot body_snapshot{body_snapshot_path};
@@ -224,7 +226,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
     auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     REQUIRE_NOTHROW(tx_index.build());
-    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path, valid_tx_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(tx_index_hash_to_block.build());
 
     Snapshot tx_snapshot{tx_snapshot_path};

@@ -50,23 +50,54 @@ class TransactionToBlockIndex {
     static IndexBuilder make(
         SnapshotPath bodies_segment_path,
         SnapshotPath segment_path) {
+        BlockNum first_block_num = segment_path.step_range().to_block_num_range().start;
         return make(
-            std::move(bodies_segment_path), std::nullopt,
-            std::move(segment_path), std::nullopt);
+            std::move(bodies_segment_path),
+            std::nullopt,
+            std::move(segment_path),
+            std::nullopt,
+            first_block_num);
+    }
+
+    static IndexBuilder make(
+        SnapshotPath bodies_segment_path,
+        SnapshotPath segment_path,
+        BlockNum first_block_num) {
+        return make(
+            std::move(bodies_segment_path),
+            std::nullopt,
+            std::move(segment_path),
+            std::nullopt,
+            first_block_num);
     }
 
     static IndexBuilder make(
         SnapshotPath bodies_segment_path,
         std::optional<MemoryMappedRegion> bodies_segment_region,
         SnapshotPath segment_path,
-        std::optional<MemoryMappedRegion> segment_region);
+        std::optional<MemoryMappedRegion> segment_region) {
+        BlockNum first_block_num = segment_path.step_range().to_block_num_range().start;
+        return make(
+            std::move(bodies_segment_path),
+            bodies_segment_region,
+            std::move(segment_path),
+            segment_region,
+            first_block_num);
+    }
+
+    static IndexBuilder make(
+        SnapshotPath bodies_segment_path,
+        std::optional<MemoryMappedRegion> bodies_segment_region,
+        SnapshotPath segment_path,
+        std::optional<MemoryMappedRegion> segment_region,
+        BlockNum first_block_num);
 
   private:
-    static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, uint64_t first_tx_id) {
+    static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, BlockNum first_block_num, uint64_t first_tx_id) {
         return {
             .index_file = segment_path.index_file_for_type(SnapshotType::transactions_to_block),
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
-            .base_data_id = segment_path.block_range().start,
+            .base_data_id = first_block_num,
             .double_enum_index = false,
             .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
         };

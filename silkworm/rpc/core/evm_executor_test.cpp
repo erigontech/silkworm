@@ -64,7 +64,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 };
 
-#ifdef notdef // temporary commented waiting its conversion using TKV interfaces
+#ifdef notdef  // temporary commented waiting its conversion using TKV interfaces
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     SECTION("failed if gas_limit < intrinsic_gas") {

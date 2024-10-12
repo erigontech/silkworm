@@ -59,7 +59,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         CHECK(code_read.empty());
     }
 
-#ifdef notdef // commented temporary waiting its conversion using TKV
+#ifdef notdef  // commented temporary waiting its conversion using TKV
     SECTION("read_code for non-empty hash") {
         static const Bytes kCode{*from_hex("0x0608")};
         EXPECT_CALL(transaction, get_one(table::kCodeName, _))

@@ -28,8 +28,8 @@
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/state/remote_state.hpp>
-#include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
@@ -39,13 +39,12 @@
 namespace silkworm::rpc::debug {
 
 bool operator==(const db::kv::api::DomainPointQuery dpq1, const db::kv::api::DomainPointQuery dpq2) {
-   return ( dpq1.tx_id == dpq2.tx_id &&
+    return (dpq1.tx_id == dpq2.tx_id &&
             dpq1.table == dpq2.table &&
             dpq1.key == dpq2.key &&
             dpq1.timestamp == dpq2.timestamp &&
             dpq1.sub_key == dpq2.sub_key);
 }
-
 
 using namespace silkworm::db;
 using kv::api::KeyValue;
@@ -90,7 +89,7 @@ class TestDebugExecutor : DebugExecutor {
     }
 };
 
-#ifdef notdef // temporary commented waiting its conversion using TKV interfaces
+#ifdef notdef  // temporary commented waiting its conversion using TKV interfaces
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
@@ -129,21 +128,20 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
                 co_return kConfigValue;
             }));
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                   co_return cursor;
-               }));
+            co_return cursor;
+        }));
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-                co_return *from_hex("0000000000000000");
-            }));
+            co_return *from_hex("0000000000000000");
+        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-                co_return *from_hex("0000000000000000");
-            }));
+            co_return *from_hex("0000000000000000");
+        }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-                db::kv::api::DomainPointResult rsp1{
-                     .success = true,
-                    .value = *silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df703000000000009db707")
-                };
-                co_return rsp1;
-            }));
+            db::kv::api::DomainPointResult rsp1{
+                .success = true,
+                .value = *silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df703000000000009db707")};
+            co_return rsp1;
+        }));
         EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, Bytes{}};
@@ -189,7 +187,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         })"_json);
     }
 }
-
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     static Bytes kAccountHistoryKey1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c700000000005279a8")};

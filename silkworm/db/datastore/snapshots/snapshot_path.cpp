@@ -88,13 +88,13 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     return SnapshotPath{std::move(path), ver_num, {step_from, step_to}, *type};
 }
 
-SnapshotPath SnapshotPath::from(
+SnapshotPath SnapshotPath::make(
     const fs::path& dir,
     uint8_t version,
     StepRange step_range,
     SnapshotType type,
     const char* ext) {
-    const auto filename = SnapshotPath::build_filename(version, step_range, type, ext);
+    const auto filename = SnapshotPath::make_filename(version, step_range, type, ext);
     return SnapshotPath{dir / filename, version, step_range, type};
 }
 
@@ -102,7 +102,7 @@ std::string SnapshotPath::type_string() const {
     return std::string{magic_enum::enum_name(type_)};
 }
 
-fs::path SnapshotPath::build_filename(
+fs::path SnapshotPath::make_filename(
     uint8_t version,
     StepRange step_range,
     SnapshotType type,
@@ -119,7 +119,7 @@ fs::path SnapshotPath::build_filename(
 }
 
 SnapshotPath SnapshotPath::related_path(SnapshotType type, const char* ext) const {
-    return SnapshotPath::from(path_.parent_path(), version_, step_range_, type, ext);
+    return SnapshotPath::make(path_.parent_path(), version_, step_range_, type, ext);
 }
 
 SnapshotPath::SnapshotPath(

@@ -40,7 +40,7 @@ class SnapshotPath {
   public:
     static std::optional<SnapshotPath> parse(std::filesystem::path path);
 
-    static SnapshotPath from(
+    static SnapshotPath make(
         const std::filesystem::path& dir,
         uint8_t version,
         StepRange step_range,
@@ -79,7 +79,7 @@ class SnapshotPath {
     friend bool operator==(const SnapshotPath&, const SnapshotPath&) = default;
 
   protected:
-    static std::filesystem::path build_filename(
+    static std::filesystem::path make_filename(
         uint8_t version,
         StepRange step_range,
         SnapshotType type,

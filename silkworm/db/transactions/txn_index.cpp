@@ -28,7 +28,7 @@ Bytes TransactionKeyFactory::make(ByteView key_data, uint64_t i) {
 }
 
 SnapshotPath TransactionIndex::bodies_segment_path(const SnapshotPath& segment_path) {
-    return SnapshotPath::from(
+    return SnapshotPath::make(
         segment_path.path().parent_path(),
         segment_path.version(),
         segment_path.step_range(),

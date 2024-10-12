@@ -45,7 +45,7 @@ class SnapshotPathForTest : public SnapshotPath {
   public:
     SnapshotPathForTest(const std::filesystem::path& tmp_dir, StepRange step_range)
         : SnapshotPath{
-              SnapshotPath::from(
+              SnapshotPath::make(
                   tmp_dir,
                   kSnapshotV1,
                   step_range,

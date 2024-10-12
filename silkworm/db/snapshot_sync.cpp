@@ -220,7 +220,7 @@ Task<void> SnapshotSync::download_snapshots() {
         const auto [_, inserted] = snapshot_set.insert(snapshot_file);
         SILKWORM_ASSERT(inserted);
         SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
-                  << " blocks " << SnapshotPath::parse(snapshot_file)->block_range().to_string()
+                  << " steps " << SnapshotPath::parse(snapshot_file)->step_range().to_string()
                   << " [" << (completed + 1) << "/" << num_snapshots << "]";
     }
 }

@@ -45,7 +45,7 @@ class BodyIndex {
         return {
             .index_file = segment_path.index_file(),
             .key_factory = std::make_unique<KeyFactory>(),
-            .base_data_id = segment_path.block_range().start,
+            .base_data_id = segment_path.step_range().to_block_num_range().start,
         };
     }
 };

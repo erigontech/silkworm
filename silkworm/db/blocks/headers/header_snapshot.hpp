@@ -53,7 +53,7 @@ struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
     }
 
     void check_sanity_with_metadata(const SnapshotPath& path) override {
-        check_sanity_of_header_with_metadata(value, path.block_range());
+        check_sanity_of_header_with_metadata(value, path.step_range().to_block_num_range());
     }
 };
 

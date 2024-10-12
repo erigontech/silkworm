@@ -125,13 +125,13 @@ void SnapshotRepository::reopen_folder() {
 
     for (size_t i = 0; i < all_snapshot_paths.size(); ++i) {
         auto& path = all_snapshot_paths[i];
-        auto& group = groups[path.block_range().start][false];
+        auto& group = groups[path.step_range().to_block_num_range().start][false];
         group[path.type()] = i;
     }
 
     for (size_t i = 0; i < all_index_paths.size(); ++i) {
         auto& path = all_index_paths[i];
-        auto& group = groups[path.block_range().start][true];
+        auto& group = groups[path.step_range().to_block_num_range().start][true];
         group[path.type()] = i;
     }
 

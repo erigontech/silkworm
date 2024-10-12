@@ -67,13 +67,13 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
             if (snapshot_file) {
                 CHECK(snapshot_file->path() == filename_expectation.filename);
                 CHECK(snapshot_file->version() == 1);
-                CHECK(snapshot_file->block_range() == filename_expectation.block_num_range);
+                CHECK(snapshot_file->step_range() == StepRange::from_block_num_range(filename_expectation.block_num_range));
                 CHECK(snapshot_file->type() == filename_expectation.type);
                 const SnapshotPath index_file = snapshot_file->index_file();
                 CHECK(index_file.path().stem() == snapshot_file->path().stem());
                 CHECK(index_file.path().extension() == kIdxExtension);
                 CHECK(index_file.version() == 1);
-                CHECK(index_file.block_range() == filename_expectation.block_num_range);
+                CHECK(index_file.step_range() == StepRange::from_block_num_range(filename_expectation.block_num_range));
                 CHECK(index_file.type() == filename_expectation.type);
             }
         }

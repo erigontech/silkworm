@@ -34,9 +34,10 @@
 
 namespace silkworm::db::state {
 
-using kv::api::KeyValue;
 using testing::_;
-
+using testing::Invoke;
+using testing::InvokeWithoutArgs;
+using testing::Unused;
 
 struct RemoteStateTest : public silkworm::test_util::ContextTestBase {
     db::test_util::MockTransaction transaction;

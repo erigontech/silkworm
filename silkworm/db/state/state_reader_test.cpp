@@ -55,10 +55,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = false,
                 .value = Bytes{}};
-            co_return rsp1;
+            co_return response;
         }));
 
         // Execute the test: calling read_account should return no account
@@ -71,10 +71,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kEncodedAccount};
-            co_return rsp1;
+            co_return response;
         }));
 
         // Execute the test: calling read_account should return the expected account
@@ -93,10 +93,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns the account bitmap
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kEncodedAccount};
-            co_return rsp1;
+            co_return response;
         }));
 
         // Execute the test: calling read_account should return expected account
@@ -117,10 +117,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = false,
                 .value = Bytes{}};
-            co_return rsp1;
+            co_return response;
         }));
 
         // Execute the test: calling read_storage should return empty storage value
@@ -133,10 +133,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kStorageLocation};
-            co_return rsp1;
+            co_return response;
         }));
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
@@ -148,10 +148,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns the storage bitmap
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kStorageLocation};
-            co_return rsp1;
+            co_return response;
         }));
 
         // Execute the test: calling read_storage should return expected storage location
@@ -173,10 +173,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
-            co_return rsp1;
+            co_return response;
         }));
 
         // Execute the test: calling read_code should return an empty code
@@ -192,10 +192,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+            db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kBinaryCode};
-            co_return rsp1;
+            co_return response;
         }));
 
         // Execute the test: calling read_code should return a non-empty code

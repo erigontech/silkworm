@@ -28,12 +28,11 @@
 
 namespace silkworm::db::state {
 
-
 using kv::api::KeyValue;
 using testing::_;
+using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
-using testing::Invoke;
 
 #ifndef SILKWORM_SANITIZE
 static const evmc::address kZeroAddress{};
@@ -60,8 +59,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = false,
-                .value = Bytes{}
-            };
+                .value = Bytes{}};
             co_return rsp1;
         }));
 
@@ -77,8 +75,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
-                .value = kEncodedAccount
-            };
+                .value = kEncodedAccount};
             co_return rsp1;
         }));
 
@@ -100,8 +97,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
-                .value = kEncodedAccount
-            };
+                .value = kEncodedAccount};
             co_return rsp1;
         }));
 
@@ -125,8 +121,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = false,
-                .value = Bytes{}
-            };
+                .value = Bytes{}};
             co_return rsp1;
         }));
 
@@ -142,8 +137,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
-                .value = kStorageLocation
-            };
+                .value = kStorageLocation};
             co_return rsp1;
         }));
         // Execute the test: calling read_storage should return expected storage location
@@ -158,8 +152,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
-                .value = kStorageLocation
-            };
+                .value = kStorageLocation};
             co_return rsp1;
         }));
 
@@ -184,8 +177,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
-                .value = Bytes{}
-            };
+                .value = Bytes{}};
             co_return rsp1;
         }));
 
@@ -204,11 +196,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
-                .value = kBinaryCode
-            };
+                .value = kBinaryCode};
             co_return rsp1;
         }));
-
 
         // Execute the test: calling read_code should return a non-empty code
         std::optional<Bytes> code;

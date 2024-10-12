@@ -223,7 +223,7 @@ bool is_stale_index_path(const SnapshotPath& index_path) {
                                      ? SnapshotType::transactions
                                      : index_path.type();
     SnapshotPath snapshot_path = index_path.snapshot_path_for_type(snapshot_type);
-    return (index_path.last_write_time() < snapshot_path.last_write_time());
+    return (fs::last_write_time(index_path.path()) < fs::last_write_time(snapshot_path.path()));
 }
 
 SnapshotPathList SnapshotRepository::stale_index_paths() const {

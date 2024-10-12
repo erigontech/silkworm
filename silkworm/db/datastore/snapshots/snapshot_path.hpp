@@ -70,11 +70,6 @@ class SnapshotPath {
         return related_path(type, kSegmentExtension);
     }
 
-    // TODO: remove
-    std::filesystem::file_time_type last_write_time() const {
-        return std::filesystem::last_write_time(path_);
-    }
-
     friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);
     friend bool operator==(const SnapshotPath&, const SnapshotPath&) = default;
 

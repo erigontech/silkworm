@@ -29,14 +29,9 @@
 #include <silkworm/core/types/block.hpp>
 
 #include "snapshot_type.hpp"
+#include "step.hpp"
 
 namespace silkworm::snapshots {
-
-//! The scale factor to convert the block numbers to/from the values in snapshot file names
-inline constexpr int kFileNameBlockScaleFactor{1'000};
-
-//! The minimum segment size measured as number of blocks included in each segment
-inline constexpr uint64_t kMinimumSegmentSize{kFileNameBlockScaleFactor};
 
 inline constexpr const char* kSegmentExtension{".seg"};
 inline constexpr const char* kIdxExtension{".idx"};

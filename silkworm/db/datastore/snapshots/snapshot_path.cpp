@@ -33,6 +33,8 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
+static constexpr size_t kFileNameBlockScaleFactor = kStepSizeForBlockSnapshots;
+
 std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const std::string filename_no_ext = path.stem().string();
 

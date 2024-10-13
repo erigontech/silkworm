@@ -52,7 +52,6 @@ inline bool operator==(const db::kv::api::DomainPointQuery& dpq1, const db::kv::
             dpq1.sub_key == dpq2.sub_key);
 }
 
-
 using DomainPointResult = PointResult;
 
 }  // namespace silkworm::db::kv::api

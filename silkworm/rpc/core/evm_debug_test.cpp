@@ -185,7 +185,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     static Bytes kAccountHistoryKey2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e556")};
 
     static Bytes kAccountHistoryKey3{*silkworm::from_hex("0x0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};  
+    static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     auto& tx = transaction;
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();

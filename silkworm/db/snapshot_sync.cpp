@@ -275,7 +275,9 @@ void SnapshotSync::seed_frozen_local_snapshots() {
     for (auto& bundle_ptr : repository_.view_bundles()) {
         auto& bundle = *bundle_ptr;
         bool is_frozen = bundle.block_range().size() >= kMaxMergerSnapshotSize;
-        bool is_preverified = bundle.block_range().end <= snapshots_config_.max_block_number() + 1;
+        const auto first_snapshot = bundle.snapshots()[0];
+        // assume that if one snapshot in the bundle is preverified, then all of them are
+        bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.get().path().filename());
         if (is_frozen && !is_preverified) {
             seed_bundle(bundle);
         }

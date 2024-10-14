@@ -22,8 +22,6 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/core/common/base.hpp>
-
 #include "snapshot_type.hpp"
 #include "step.hpp"
 
@@ -51,10 +49,6 @@ class SnapshotPath {
     std::string extension() const { return path_.extension().string(); }
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }
-    // TODO: remove
-    BlockNumRange block_range() const {
-        return step_range().to_block_num_range();
-    }
     SnapshotType type() const { return type_; }
     std::string type_string() const;
     bool exists() const { return std::filesystem::exists(path_); }

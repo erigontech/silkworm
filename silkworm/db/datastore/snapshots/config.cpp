@@ -16,6 +16,7 @@
 
 #include "config.hpp"
 
+#include <ranges>
 #include <span>
 
 #include <silkworm/core/common/small_map.hpp>
@@ -58,25 +59,6 @@ Config Config::lookup_known_config(
     return Config{std::move(entries)};
 }
 
-Config::Config(PreverifiedList entries)
-    : entries_(std::move(entries)),
-      max_block_number_(compute_max_block(entries_)) {
-}
-
-BlockNum Config::compute_max_block(const PreverifiedList& entries) {
-    BlockNum max_block{0};
-    for (const auto& entry : entries) {
-        const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{entry.file_name});
-        if (!snapshot_path) continue;
-        if (snapshot_path->extension() != kSegmentExtension) continue;
-        if (snapshot_path->type() != SnapshotType::headers) continue;
-        if (snapshot_path->block_range().end > max_block) {
-            max_block = snapshot_path->block_range().end;
-        }
-    }
-    return max_block > 0 ? max_block - 1 : 0;
-}
-
 PreverifiedList Config::remove_unsupported_entries(const PreverifiedList& entries) {
     static constexpr std::array kUnsupportedSnapshotNameTokens = {
         "/"sv,
@@ -89,13 +71,19 @@ PreverifiedList Config::remove_unsupported_entries(const PreverifiedList& entrie
 
     // erase file names containing any of the unsupported tokens
     std::erase_if(results, [&](const Entry& entry) {
-        return std::any_of(kUnsupportedSnapshotNameTokens.begin(), kUnsupportedSnapshotNameTokens.end(), [&entry](const auto& token) {
+        return std::ranges::any_of(kUnsupportedSnapshotNameTokens, [&entry](std::string_view token) {
             // NOLINTNEXTLINE(abseil-string-find-str-contains)
             return entry.file_name.find(token) != std::string_view::npos;
         });
     });
 
     return results;
+}
+
+bool Config::contains_file_name(std::string_view file_name) const {
+    return std::ranges::any_of(entries_, [&](const Entry& entry) {
+        return entry.file_name == file_name;
+    });
 }
 
 }  // namespace silkworm::snapshots

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <functional>
+#include <optional>
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
@@ -29,7 +31,9 @@ using PreverifiedList = std::vector<Entry>;
 
 class Config {
   public:
-    static Config lookup_known_config(ChainId chain_id);
+    static Config lookup_known_config(
+        ChainId chain_id,
+        std::optional<std::function<bool(std::string_view file_name)>> include_filter_opt = std::nullopt);
 
     explicit Config(PreverifiedList entries);
 
@@ -38,7 +42,7 @@ class Config {
 
   private:
     static BlockNum compute_max_block(const PreverifiedList& entries);
-    static PreverifiedList remove_unsupported_snapshots(const PreverifiedList& entries);
+    static PreverifiedList remove_unsupported_entries(const PreverifiedList& entries);
 
     PreverifiedList entries_;
     BlockNum max_block_number_;

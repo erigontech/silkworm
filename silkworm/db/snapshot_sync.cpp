@@ -53,6 +53,13 @@ struct PathHasher {
     }
 };
 
+static bool snapshot_file_is_fully_merged(std::string_view file_name) {
+    const auto path = SnapshotPath::parse(std::filesystem::path{file_name});
+    return path.has_value() &&
+           (path->extension() == kSegmentExtension) &&
+           (path->step_range().to_block_num_range().size() >= kMaxMergerSnapshotSize);
+}
+
 SnapshotSync::SnapshotSync(
     snapshots::SnapshotSettings settings,
     ChainId chain_id,
@@ -60,7 +67,7 @@ SnapshotSync::SnapshotSync(
     std::filesystem::path tmp_dir_path,
     stagedsync::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
-      snapshots_config_{Config::lookup_known_config(chain_id)},
+      snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
       chaindata_env_{std::move(chaindata_env)},
       repository_{settings_, std::make_unique<SnapshotBundleFactoryImpl>()},
       client_{settings_.bittorrent_settings},

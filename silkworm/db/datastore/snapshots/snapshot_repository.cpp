@@ -175,6 +175,16 @@ std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number)
     return {};
 }
 
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_range(BlockNumRange range) const {
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles;
+    for (const auto& bundle : view_bundles()) {
+        if ((range.start <= bundle->block_range().start) && (bundle->block_range().end <= range.end)) {
+            bundles.push_back(bundle);
+        }
+    }
+    return bundles;
+}
+
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
     ensure(fs::exists(settings_.repository_dir),
            [&]() { return "SnapshotRepository: " + settings_.repository_dir.string() + " does not exist"; });

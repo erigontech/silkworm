@@ -109,6 +109,8 @@ class SnapshotRepository {
     [[nodiscard]] std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, BlockNum number) const;
     std::shared_ptr<SnapshotBundle> find_bundle(BlockNum number) const;
 
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(BlockNumRange range) const;
+
   private:
     [[nodiscard]] SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);

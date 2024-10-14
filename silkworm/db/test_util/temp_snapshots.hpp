@@ -113,26 +113,57 @@ struct SnapshotBody {
 //! Temporary snapshot file
 class TemporarySnapshotFile {
   public:
-    TemporarySnapshotFile(const std::filesystem::path& tmp_dir,
-                          const std::string& filename,
-                          const SnapshotHeader& header = {},
-                          const SnapshotBody& body = {})
-        : file_(tmp_dir, filename) {
-        Bytes data{};
-        header.encode(data);
-        body.encode(data);
+    TemporarySnapshotFile(
+        const std::filesystem::path& tmp_dir,
+        const std::string& filename,
+        const SnapshotHeader& header = {},
+        const SnapshotBody& body = {})
+        : TemporarySnapshotFile{
+              parse_path_or_die(tmp_dir, filename),
+              encode_header_and_body(header, body),
+          } {}
+
+    TemporarySnapshotFile(
+        const std::filesystem::path& tmp_dir,
+        const std::string& filename,
+        ByteView data)
+        : TemporarySnapshotFile{
+              parse_path_or_die(tmp_dir, filename),
+              data,
+          } {}
+
+    TemporarySnapshotFile(
+        SnapshotPath path,
+        ByteView data)
+        : file_{path.path().parent_path(), path.filename()},
+          path_{std::move(path)} {
         file_.write(data);
     }
 
-    TemporarySnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename, ByteView data)
-        : file_(tmp_dir, filename) {
-        file_.write(data);
-    }
-
-    const std::filesystem::path& path() const { return file_.path(); }
+    const SnapshotPath& path() const { return path_; }
+    const std::filesystem::path& fs_path() const { return file_.path(); }
 
   private:
+    static Bytes encode_header_and_body(
+        const SnapshotHeader& header,
+        const SnapshotBody& body) {
+        Bytes data;
+        header.encode(data);
+        body.encode(data);
+        return data;
+    }
+
+    static SnapshotPath parse_path_or_die(
+        const std::filesystem::path& tmp_dir,
+        const std::string& filename) {
+        auto path = SnapshotPath::parse(tmp_dir / filename);
+        if (!path)
+            throw std::runtime_error{"TemporarySnapshotFile: invalid snapshot filename: " + filename};
+        return std::move(*path);
+    }
+
     silkworm::test_util::TemporaryFile file_;
+    SnapshotPath path_;
 };
 
 //! HelloWorld snapshot file: it contains just one word: "hello, world" w/o any patterns
@@ -344,33 +375,6 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
               "0679FA90B5A028A6D676D77923B19506C7AAAE5F1DC2F2244855AABB6672401C"
               "1B55B0D844FF"  // Txn position 0 block 1'500'013 END
               "03") {}
-};
-
-class SampleSnapshotPath : public SnapshotPath {
-  public:
-    SampleSnapshotPath(std::filesystem::path path, SnapshotType type)
-        : SnapshotPath(std::move(path), /*.version=*/1, StepRange::from_block_num_range(kSampleSnapshotBlockRange), type) {}
-};
-
-//! Sample Header snapshot path injecting custom from/to blocks to override 500'000 block range
-class SampleHeaderSnapshotPath : public SampleSnapshotPath {
-  public:
-    explicit SampleHeaderSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), SnapshotType::headers) {}
-};
-
-//! Sample Body snapshot path injecting custom from/to blocks to override 500'000 block range
-class SampleBodySnapshotPath : public SampleSnapshotPath {
-  public:
-    explicit SampleBodySnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), SnapshotType::bodies) {}
-};
-
-//! Sample Transaction snapshot path injecting custom from/to blocks to override 500'000 block range
-class SampleTransactionSnapshotPath : public SampleSnapshotPath {
-  public:
-    explicit SampleTransactionSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), SnapshotType::transactions) {}
 };
 
 }  // namespace silkworm::snapshots::test_util

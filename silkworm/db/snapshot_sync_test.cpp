@@ -115,33 +115,33 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
 
     // Create a sample Header snapshot+index
     snapshots::test_util::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir_path};
-    snapshots::test_util::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot_file.path()};
-    snapshots::Snapshot header_snapshot{header_snapshot_path};
-    auto header_index_builder = snapshots::HeaderIndex::make(header_snapshot_path);
+    auto& header_snapshot_path = header_snapshot_file.path();
+    Snapshot header_snapshot{header_snapshot_path};
+    auto header_index_builder = HeaderIndex::make(header_snapshot_path);
     header_index_builder.set_base_data_id(header_snapshot_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    snapshots::Index idx_header_hash{header_snapshot_path.index_file()};
+    Index idx_header_hash{header_snapshot_path.index_file()};
 
     // Create a sample Body snapshot+index
     snapshots::test_util::SampleBodySnapshotFile body_snapshot_file{tmp_dir_path};
-    snapshots::test_util::SampleBodySnapshotPath body_snapshot_path{body_snapshot_file.path()};
-    snapshots::Snapshot body_snapshot{body_snapshot_path};
-    auto body_index_builder = snapshots::BodyIndex::make(body_snapshot_path);
+    auto& body_snapshot_path = body_snapshot_file.path();
+    Snapshot body_snapshot{body_snapshot_path};
+    auto body_index_builder = BodyIndex::make(body_snapshot_path);
     body_index_builder.set_base_data_id(body_snapshot_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    snapshots::Index idx_body_number{body_snapshot_path.index_file()};
+    Index idx_body_number{body_snapshot_path.index_file()};
 
     // Create a sample Transaction snapshot+indexes
     snapshots::test_util::SampleTransactionSnapshotFile txn_snapshot_file{tmp_dir_path};
-    snapshots::test_util::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot_file.path()};
-    snapshots::Snapshot txn_snapshot{txn_snapshot_path};
-    REQUIRE_NOTHROW(snapshots::TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(snapshots::TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot_file.block_num_range().start).build());
-    snapshots::Index idx_txn_hash{txn_snapshot_path.related_path(snapshots::SnapshotType::transactions, kIdxExtension)};
-    snapshots::Index idx_txn_hash_2_block{txn_snapshot_path.related_path(snapshots::SnapshotType::transactions_to_block, kIdxExtension)};
+    auto& txn_snapshot_path = txn_snapshot_file.path();
+    Snapshot txn_snapshot{txn_snapshot_path};
+    REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot_file.block_num_range().start).build());
+    Index idx_txn_hash{txn_snapshot_path.related_path(SnapshotType::transactions, kIdxExtension)};
+    Index idx_txn_hash_2_block{txn_snapshot_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
 
     // Add a sample Snapshot bundle to the repository
-    snapshots::SnapshotBundle bundle{{
+    SnapshotBundle bundle{{
         .header_snapshot = std::move(header_snapshot),
         .idx_header_hash = std::move(idx_header_hash),
 

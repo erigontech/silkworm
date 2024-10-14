@@ -808,15 +808,15 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
-    snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{tmp_dir.path()};
-    snapshot_test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};
-    snapshot_test::SampleBodySnapshotFile valid_body_snapshot{tmp_dir.path()};
-    snapshot_test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};
-    snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{tmp_dir.path()};
-    snapshot_test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};
+    snapshot_test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};
+    auto& header_snapshot_path = header_snapshot_file.path();
+    snapshot_test::SampleBodySnapshotFile body_snapshot_file{tmp_dir.path()};
+    auto& body_snapshot_path = body_snapshot_file.path();
+    snapshot_test::SampleTransactionSnapshotFile tx_snapshot_file{tmp_dir.path()};
+    auto& tx_snapshot_path = tx_snapshot_file.path();
 
     auto header_index_builder = snapshots::HeaderIndex::make(header_snapshot_path);
-    header_index_builder.set_base_data_id(valid_header_snapshot.block_num_range().start);
+    header_index_builder.set_base_data_id(header_snapshot_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
     snapshots::Snapshot header_snapshot{header_snapshot_path};
     header_snapshot.reopen_segment();
@@ -824,7 +824,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     idx_header_hash.reopen_index();
 
     auto body_index_builder = snapshots::BodyIndex::make(body_snapshot_path);
-    body_index_builder.set_base_data_id(valid_body_snapshot.block_num_range().start);
+    body_index_builder.set_base_data_id(body_snapshot_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
     snapshots::Snapshot body_snapshot{body_snapshot_path};
     body_snapshot.reopen_segment();
@@ -833,7 +833,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
 
     auto tx_index_builder = snapshots::TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
     tx_index_builder.build();
-    auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path, valid_tx_snapshot.block_num_range().start);
+    auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path, tx_snapshot_file.block_num_range().start);
     tx_index_hash_to_block_builder.build();
     snapshots::Snapshot tx_snapshot{tx_snapshot_path};
     tx_snapshot.reopen_segment();

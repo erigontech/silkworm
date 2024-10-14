@@ -170,15 +170,14 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'014));
     }
 
-    test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
-    auto header_index = HeaderIndex::make(header_snapshot_path);
+    auto header_index = HeaderIndex::make(header_snapshot.path());
     header_index.set_base_data_id(header_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
-    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
+    auto& body_snapshot_path = body_snapshot.path();
     auto body_index = BodyIndex::make(body_snapshot_path);
     body_index.set_base_data_id(body_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
-    test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
+    auto& txn_snapshot_path = txn_snapshot.path();
     REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
     REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start).build());
 
@@ -219,15 +218,14 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
     test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
 
-    test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot.path()};  // necessary to tweak the block numbers
-    auto header_index = HeaderIndex::make(header_snapshot_path);
+    auto header_index = HeaderIndex::make(header_snapshot.path());
     header_index.set_base_data_id(header_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
-    test::SampleBodySnapshotPath body_snapshot_path{body_snapshot.path()};  // necessary to tweak the block numbers
+    auto& body_snapshot_path = body_snapshot.path();
     auto body_index = BodyIndex::make(body_snapshot_path);
     body_index.set_base_data_id(body_snapshot.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
-    test::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot.path()};  // necessary to tweak the block numbers
+    auto& txn_snapshot_path = txn_snapshot.path();
     REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
     REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start).build());
 
@@ -266,7 +264,7 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
 
     // create a snapshot file
     test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};
-    test::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot_file.path()};
+    auto& header_snapshot_path = header_snapshot_file.path();
 
     // build an index
     auto index_builder = HeaderIndex::make(header_snapshot_path);

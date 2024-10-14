@@ -139,21 +139,6 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     }
 }
 
-TEST_CASE("SnapshotRepository::missing_block_ranges", "[silkworm][node][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
-    TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings, bundle_factory()};
-
-    test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
-    test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
-    test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
-    repository.reopen_folder();
-    CHECK(repository.missing_block_ranges() == std::vector<BlockNumRange>{
-                                                   BlockNumRange{0, 11'500'000},
-                                                   BlockNumRange{12'000'000, 14'500'000}});
-}
-
 TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;

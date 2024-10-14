@@ -154,10 +154,7 @@ Task<void> SnapshotSync::download_snapshots_if_needed() {
 }
 
 Task<void> SnapshotSync::download_snapshots() {
-    const auto missing_block_ranges = repository_.missing_block_ranges();
-    if (!missing_block_ranges.empty()) {
-        SILK_INFO << "SnapshotSync: downloading missing snapshots";
-    }
+    SILK_INFO << "SnapshotSync: downloading missing snapshots if needed";
 
     const auto& snapshot_config = snapshots_config_;
     if (snapshot_config.preverified_snapshots().empty()) {

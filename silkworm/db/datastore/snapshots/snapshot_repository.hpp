@@ -73,8 +73,6 @@ class SnapshotRepository {
     //! All types of .seg and .idx files are available up to this block number
     [[nodiscard]] BlockNum max_block_available() const;
 
-    [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
-
     [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
     void build_indexes(SnapshotBundle& bundle) const;

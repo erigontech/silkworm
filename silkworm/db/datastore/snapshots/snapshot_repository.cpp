@@ -82,22 +82,6 @@ BlockNum SnapshotRepository::max_block_available() const {
     return (block_num_range.size() > 0) ? block_num_range.end - 1 : block_num_range.start;
 }
 
-std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
-    const auto ordered_segments = get_segment_files();
-
-    std::vector<BlockNumRange> missing_ranges;
-    BlockNum previous_to{0};
-    for (const auto& segment : ordered_segments) {
-        // skips different types of snapshots having the same block range
-        if (segment.block_range().end <= previous_to) continue;
-        if (segment.block_range().start != previous_to) {
-            missing_ranges.emplace_back(previous_to, segment.block_range().start);
-        }
-        previous_to = segment.block_range().end;
-    }
-    return missing_ranges;
-}
-
 std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
     auto bundle = find_bundle(number);
     if (bundle) {

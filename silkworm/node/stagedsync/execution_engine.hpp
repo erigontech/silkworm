@@ -30,8 +30,8 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
-#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/execution/api/execution_engine.hpp>
 #include <silkworm/infra/concurrency/context_pool.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>

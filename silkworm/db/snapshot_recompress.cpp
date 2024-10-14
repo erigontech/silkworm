@@ -21,7 +21,7 @@
 
 #include "blocks/bodies/body_snapshot.hpp"
 #include "blocks/headers/header_snapshot.hpp"
-#include "snapshots/snapshot_path.hpp"
+#include "datastore/snapshots/snapshot_path.hpp"
 #include "transactions/txn_snapshot.hpp"
 
 namespace silkworm::snapshots {

@@ -97,7 +97,7 @@ TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
         buffer.write_to_db(/*write_change_sets=*/false);
 
         // Location A should have the previous value of old value in state changes, i.e. value_a1
-        const auto storage_changes{db::read_storage_changes(txn, 0)};
+        const auto storage_changes{read_storage_changes(txn, 0)};
         REQUIRE(storage_changes.size() == 1);
         const auto& [changed_address, changed_map] = *storage_changes.begin();
         CHECK(changed_address == address);
@@ -120,7 +120,7 @@ TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
 
         buffer.write_to_db();
 
-        const auto storage_changes{db::read_storage_changes(txn, 0)};
+        const auto storage_changes{read_storage_changes(txn, 0)};
         REQUIRE(storage_changes.size() == 1);
         const auto& [changed_address, changed_map] = *storage_changes.begin();
         CHECK(changed_address == address);
@@ -149,11 +149,11 @@ TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
                               /*initial=*/value_a3, /*current=*/value_a2);
         buffer.write_to_db();
 
-        const auto storage_changes1{db::read_storage_changes(txn, 1)};
+        const auto storage_changes1{read_storage_changes(txn, 1)};
         REQUIRE(storage_changes1.size() == 1);
-        const auto storage_changes2{db::read_storage_changes(txn, 2)};
+        const auto storage_changes2{read_storage_changes(txn, 2)};
         REQUIRE(storage_changes2.size() == 1);
-        const auto storage_changes3{db::read_storage_changes(txn, 3)};
+        const auto storage_changes3{read_storage_changes(txn, 3)};
         REQUIRE(storage_changes3.size() == 1);
 
         const std::optional<ByteView> db_value_a2{find_value_suffix(*state, key, location_a.bytes)};
@@ -259,11 +259,11 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         CHECK(buffer.current_batch_state_size() == kAddressLength + current_account.encoding_length_for_storage());
         REQUIRE_NOTHROW(buffer.write_to_db());
 
-        auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
+        auto account_changeset{open_cursor(txn, table::kAccountChangeSet)};
         REQUIRE(txn->get_map_stat(account_changeset.map()).ms_entries == 1);
         auto data{account_changeset.to_first()};
-        auto data_key_view{db::from_slice(data.key)};
-        auto data_value_view{db::from_slice(data.value)};
+        auto data_key_view{from_slice(data.key)};
+        auto data_value_view{from_slice(data.value)};
 
         auto changeset_blocknum{endian::load_big_u64(data_key_view.data())};
         REQUIRE(changeset_blocknum == 1);
@@ -292,11 +292,11 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         CHECK(buffer.current_batch_state_size() == kAddressLength + current_account.encoding_length_for_storage());
         REQUIRE_NOTHROW(buffer.write_to_db());
 
-        auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
+        auto account_changeset{open_cursor(txn, table::kAccountChangeSet)};
         REQUIRE(txn->get_map_stat(account_changeset.map()).ms_entries == 1);
         auto data{account_changeset.to_first()};
-        auto data_key_view{db::from_slice(data.key)};
-        auto data_value_view{db::from_slice(data.value)};
+        auto data_key_view{from_slice(data.key)};
+        auto data_value_view{from_slice(data.value)};
 
         auto changeset_blocknum{endian::load_big_u64(data_key_view.data())};
         REQUIRE(changeset_blocknum == 1);
@@ -324,11 +324,11 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         CHECK(buffer.current_batch_state_size() == kAddressLength + (kAddressLength + kIncarnationLength));
         REQUIRE_NOTHROW(buffer.write_to_db());
 
-        auto incarnations{db::open_cursor(txn, table::kIncarnationMap)};
+        auto incarnations{open_cursor(txn, table::kIncarnationMap)};
         REQUIRE_NOTHROW(incarnations.to_first());
         auto data{incarnations.current()};
         REQUIRE(std::memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
-        REQUIRE(endian::load_big_u64(db::from_slice(data.value).data()) == account.incarnation);
+        REQUIRE(endian::load_big_u64(from_slice(data.value).data()) == account.incarnation);
     }
 
     SECTION("Delete contract account and recreate as EOA") {
@@ -352,11 +352,11 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         REQUIRE(!buffer.account_changes().empty());
         REQUIRE_NOTHROW(buffer.write_to_db());
 
-        auto incarnations{db::open_cursor(txn, table::kIncarnationMap)};
+        auto incarnations{open_cursor(txn, table::kIncarnationMap)};
         REQUIRE_NOTHROW(incarnations.to_first());
         auto data{incarnations.current()};
         CHECK(std::memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
-        CHECK(endian::load_big_u64(db::from_slice(data.value).data()) == account.incarnation);
+        CHECK(endian::load_big_u64(from_slice(data.value).data()) == account.incarnation);
     }
 
     SECTION("Change EOA account w/ new value equal to old one") {
@@ -377,7 +377,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         CHECK(buffer.current_batch_state_size() == 0);
         REQUIRE_NOTHROW(buffer.write_to_db());
 
-        auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
+        auto account_changeset{open_cursor(txn, table::kAccountChangeSet)};
         REQUIRE(txn->get_map_stat(account_changeset.map()).ms_entries == 0);
     }
 }

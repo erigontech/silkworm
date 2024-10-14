@@ -19,7 +19,7 @@
 #include <optional>
 #include <string>
 
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::db {

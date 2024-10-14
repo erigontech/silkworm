@@ -34,6 +34,7 @@
 #include "../common/common.hpp"
 
 using namespace silkworm;
+using namespace silkworm::db;
 using namespace silkworm::cmd::common;
 
 int main(int argc, char* argv[]) {
@@ -64,15 +65,15 @@ int main(int argc, char* argv[]) {
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    EnvConfig db_config{data_dir.chaindata().path().string()};
 
-    auto env{db::open_env(db_config)};
-    db::ROTxnManaged txn{env};
+    auto env{open_env(db_config)};
+    ROTxnManaged txn{env};
 
-    auto canonical_hashes_cursor = txn.ro_cursor(db::table::kCanonicalHashes);
-    auto bodies_cursor = txn.ro_cursor(db::table::kBlockBodies);
-    auto tx_cursor = txn.ro_cursor(db::table::kBlockTransactions);
-    auto senders_cursor = txn.ro_cursor(db::table::kSenders);
+    auto canonical_hashes_cursor = txn.ro_cursor(table::kCanonicalHashes);
+    auto bodies_cursor = txn.ro_cursor(table::kBlockBodies);
+    auto tx_cursor = txn.ro_cursor(table::kBlockTransactions);
+    auto senders_cursor = txn.ro_cursor(table::kSenders);
 
     uint64_t expected_block_number{block_from};
     uint64_t processed_senders_count{0};
@@ -83,9 +84,9 @@ int main(int argc, char* argv[]) {
         // Seek at the first block body (if any)
         Bytes first_block(8, '\0');
         endian::store_big_u64(first_block.data(), block_from);
-        const bool block_from_found = bodies_cursor->seek(db::to_slice(first_block));
+        const bool block_from_found = bodies_cursor->seek(to_slice(first_block));
         if (block_from_found) {
-            log::Error() << "First block " << block_from << " not found in " << db::table::kBlockBodies.name << " table";
+            log::Error() << "First block " << block_from << " not found in " << table::kBlockBodies.name << " table";
             return -1;
         }
 
@@ -100,17 +101,17 @@ int main(int argc, char* argv[]) {
             }
 
             // Decode block body data as RLP buffer
-            auto body_rlp{db::from_slice(bodies_data.value)};
+            auto body_rlp{from_slice(bodies_data.value)};
             auto body{unwrap_or_throw(decode_stored_block_body(body_rlp))};
 
             // Process block transactions one-by-one
             log::Debug() << "Processing block: " << block_number << " txn count: " << body.txn_count;
             if (body.txn_count > 0) {
                 // Retrieve canonical block hash
-                const Bytes canonical_key{db::block_key(block_number)};
-                const auto canonical_data{canonical_hashes_cursor->find(db::to_slice(canonical_key), false)};
+                const Bytes canonical_key{block_key(block_number)};
+                const auto canonical_data{canonical_hashes_cursor->find(to_slice(canonical_key), false)};
                 if (!canonical_data) {
-                    log::Error() << "Block " << block_number << " not found in " << db::table::kCanonicalHashes.name << " table";
+                    log::Error() << "Block " << block_number << " not found in " << table::kCanonicalHashes.name << " table";
                     continue;
                 }
                 SILKWORM_ASSERT(canonical_data.value.length() == kHashLength);
@@ -118,10 +119,10 @@ int main(int argc, char* argv[]) {
                 log::Debug() << "Block hash: " << to_hex(block_hash);
 
                 // Read the ordered sequence of block senders (one for each transaction)
-                auto senders_key{db::block_key(block_number, block_hash.bytes)};
-                auto senders_data{senders_cursor->find(db::to_slice(senders_key), /*throw_notfound = */ false)};
+                auto senders_key{block_key(block_number, block_hash.bytes)};
+                auto senders_data{senders_cursor->find(to_slice(senders_key), /*throw_notfound = */ false)};
                 if (!senders_data) {
-                    log::Error() << "Block " << block_number << " hash " << to_hex(block_hash) << " not found in " << db::table::kSenders.name << " table";
+                    log::Error() << "Block " << block_number << " hash " << to_hex(block_hash) << " not found in " << table::kSenders.name << " table";
                     break;
                 }
 
@@ -139,13 +140,13 @@ int main(int argc, char* argv[]) {
                 // Read block transactions one at a time
                 std::vector<Transaction> transactions;
                 uint64_t i{0};
-                auto tx_data{tx_cursor->find(db::to_slice(tx_key), false)};
+                auto tx_data{tx_cursor->find(to_slice(tx_key), false)};
                 for (; i < body.txn_count && tx_data.done; ++i, tx_data = tx_cursor->to_next(false)) {
                     if (!tx_data) {
-                        log::Error() << "Block " << block_number << " tx " << i << " not found in " << db::table::kBlockTransactions.name << " table";
+                        log::Error() << "Block " << block_number << " tx " << i << " not found in " << table::kBlockTransactions.name << " table";
                         continue;
                     }
-                    ByteView transaction_rlp{db::from_slice(tx_data.value)};
+                    ByteView transaction_rlp{from_slice(tx_data.value)};
 
                     // Decode transaction data as RLP buffer
                     Transaction tx;

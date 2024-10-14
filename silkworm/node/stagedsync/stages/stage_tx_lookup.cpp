@@ -25,9 +25,10 @@
 
 namespace silkworm::stagedsync {
 
-using db::etl_mdbx::Collector;
+using namespace silkworm::db;
+using etl_mdbx::Collector;
 
-Stage::Result TxLookup::forward(db::RWTxn& txn) {
+Stage::Result TxLookup::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::kForward;
     try {
@@ -35,7 +36,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
+        const auto target_progress{stages::read_stage_progress(txn, stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
             operation_ = OperationType::kNone;
@@ -49,7 +50,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
         }
 
         // Snapshots already have TxLookup index, so we must start after max frozen block here
-        const auto highest_frozen_block_number{db::DataModel::highest_frozen_block_number()};
+        const auto highest_frozen_block_number{DataModel::highest_frozen_block_number()};
         if (highest_frozen_block_number > previous_progress) {
             previous_progress = std::min(highest_frozen_block_number, target_progress);
             // If pruning is enabled, make it start from max frozen block as well
@@ -60,7 +61,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -103,7 +104,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result TxLookup::unwind(db::RWTxn& txn) {
+Stage::Result TxLookup::unwind(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
     if (!sync_context_->unwind_point.has_value()) return ret;
@@ -115,7 +116,7 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto execution_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
+        const auto execution_progress{stages::read_stage_progress(txn, stages::kExecutionKey)};
         if (previous_progress <= to || execution_progress <= to) {
             // Nothing to process
             operation_ = OperationType::kNone;
@@ -123,14 +124,14 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
         }
 
         // Snapshots already have TxLookup index, so we must stop before max frozen block here
-        const auto highest_frozen_block_number{db::DataModel::highest_frozen_block_number()};
+        const auto highest_frozen_block_number{DataModel::highest_frozen_block_number()};
         if (highest_frozen_block_number > to) {
             to = highest_frozen_block_number;
         }
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -168,7 +169,7 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result TxLookup::prune(db::RWTxn& txn) {
+Stage::Result TxLookup::prune(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::kPrune;
 
@@ -196,7 +197,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),
@@ -210,7 +211,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
         }
 
         reset_log_progress();
-        db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
+        stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
@@ -235,12 +236,12 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
     return ret;
 }
 
-void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
+void TxLookup::forward_impl(RWTxn& txn, const BlockNum from, const BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::kForward;
     loading_.store(false);
     collector_ = std::make_unique<Collector>(etl_settings_);
-    current_source_ = std::string(db::table::kBlockBodies.name);
+    current_source_ = std::string(table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
     log_lck.unlock();
@@ -250,11 +251,11 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
 
     log_lck.lock();
     loading_.store(true);
-    current_target_ = std::string(db::table::kTxLookup.name);
+    current_target_ = std::string(table::kTxLookup.name);
     current_key_.clear();
     log_lck.unlock();
 
-    auto target = txn.rw_cursor_dup_sort(db::table::kTxLookup);  // note: not a multi-value table
+    auto target = txn.rw_cursor_dup_sort(table::kTxLookup);  // note: not a multi-value table
     collector_->load(*target, nullptr,
                      target->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT);
 
@@ -267,12 +268,12 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     log_lck.unlock();
 }
 
-void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
+void TxLookup::unwind_impl(RWTxn& txn, BlockNum from, BlockNum to) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::kUnwind;
     loading_.store(false);
     collector_ = std::make_unique<Collector>(etl_settings_);
-    current_source_ = std::string(db::table::kBlockBodies.name);
+    current_source_ = std::string(table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
     log_lck.unlock();
@@ -282,11 +283,11 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
 
     log_lck.lock();
     loading_.store(true);
-    current_target_ = std::string(db::table::kTxLookup.name);
+    current_target_ = std::string(table::kTxLookup.name);
     current_key_.clear();
     log_lck.unlock();
 
-    auto target = txn.rw_cursor_dup_sort(db::table::kTxLookup);  // note: not a multi-value table
+    auto target = txn.rw_cursor_dup_sort(table::kTxLookup);  // note: not a multi-value table
     collector_->load(*target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
@@ -298,8 +299,8 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 }
 
-void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
-    const db::MapConfig source_config{db::table::kBlockBodies};
+void TxLookup::prune_impl(RWTxn& txn, BlockNum from, BlockNum to) {
+    const MapConfig source_config{table::kBlockBodies};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::kPrune;
@@ -315,11 +316,11 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
 
     log_lck.lock();
     loading_.store(true);
-    current_target_ = std::string(db::table::kTxLookup.name);
+    current_target_ = std::string(table::kTxLookup.name);
     current_key_.clear();
     log_lck.unlock();
 
-    auto target = txn.rw_cursor_dup_sort(db::table::kTxLookup);  // note: not a multi-value table
+    auto target = txn.rw_cursor_dup_sort(table::kTxLookup);  // note: not a multi-value table
     collector_->load(*target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
@@ -331,13 +332,13 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 }
 
-void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
+void TxLookup::collect_transaction_hashes_from_canonical_bodies(RWTxn& txn,
                                                                 const BlockNum from, const BlockNum to,
                                                                 const bool for_deletion) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    db::DataModel data_model{txn};
+    DataModel data_model{txn};
 
     BlockNum target_block_num{std::max(from, to)};
     BlockNum start_block_num{std::min(from, to) + 1};
@@ -345,7 +346,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
     Bytes etl_value{};
 
     for (BlockNum current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
-        auto current_hash = db::read_canonical_header_hash(txn, current_block_num);
+        auto current_hash = read_canonical_header_hash(txn, current_block_num);
         if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
                                             "Canonical hash at height " + std::to_string(current_block_num) + " not found");
         std::vector<Bytes> rlp_encoded_txs;

@@ -38,7 +38,9 @@
 
 namespace silkworm::rpc::debug {
 
-using db::kv::api::KeyValue;
+using namespace silkworm::db;
+using kv::api::KeyValue;
+using silkworm::db::state::RemoteState;
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -65,7 +67,7 @@ class TestDebugExecutor : DebugExecutor {
     explicit TestDebugExecutor(
         BlockCache& block_cache,
         WorkerPool& workers,
-        db::kv::api::Transaction& tx,
+        kv::api::Transaction& tx,
         DebugConfig config = {})
         : DebugExecutor(block_cache, workers, tx, config) {}
     ~TestDebugExecutor() override = default;
@@ -94,39 +96,39 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
         }));
 
     SECTION("precompiled contract failure") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{Bytes{}, Bytes{}};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kPlainStateValue1;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, Bytes{}};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, Bytes{}};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey3}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey3}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -254,27 +256,27 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
         }));
 
     SECTION("Call: failed with intrinsic gas too low") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -304,35 +306,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: full output") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -410,35 +412,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no stack") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -508,35 +510,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no memory") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -611,35 +613,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no storage") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -715,35 +717,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no stack, memory and storage") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -806,35 +808,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call with stream") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -996,44 +998,44 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
         }));
 
     SECTION("Call: TO present") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
         EXPECT_CALL(transaction,
-                    get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1},
+                    get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1},
                                    silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> Task<std::optional<Bytes>> {
                     co_return kAccountChangeSetValue1;
                 }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
                                                 silkworm::ByteView{kAccountChangeSetSubkey2}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> Task<std::optional<Bytes>> {
                     co_return kAccountChangeSetValue2;
                 }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey3},
+        EXPECT_CALL(transaction, get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey3},
                                                 silkworm::ByteView{kAccountChangeSetSubkey3}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> Task<std::optional<Bytes>> {
@@ -1141,48 +1143,48 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<db::state::RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
         }));
 
-    EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
+    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kZeroHeader;
         }));
-    EXPECT_CALL(transaction, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
+    EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
+    EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
         }));
     EXPECT_CALL(transaction,
-                get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey},
+                get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey},
                                silkworm::ByteView{kAccountChangeSetSubkey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue;
         }));
     EXPECT_CALL(transaction,
-                get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1},
+                get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1},
                                silkworm::ByteView{kAccountChangeSetSubkey1}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue1;
         }));
     EXPECT_CALL(transaction,
-                get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
+                get_both_range(table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
                                silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
             co_return kAccountChangeSetValue2;
         }));
-    EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
+    EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
         }));
-    EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
+    EXPECT_CALL(transaction, get(table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
         }));
-    EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey}))
+    EXPECT_CALL(transaction, get_one(table::kPlainStateName, silkworm::ByteView{kPlainStateKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));

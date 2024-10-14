@@ -30,7 +30,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/empty_hashes.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>

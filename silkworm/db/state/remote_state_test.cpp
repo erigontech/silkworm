@@ -42,14 +42,14 @@ using testing::Unused;
 struct RemoteStateTest : public silkworm::test_util::ContextTestBase {
     db::test_util::MockTransaction transaction;
     boost::asio::any_io_executor current_executor{io_context_.get_executor()};
-    test_util::MockChainStorage chain_storage;
+    db::test_util::MockChainStorage chain_storage;
 };
 
 TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buffer]") {
     const evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
 
     SECTION("read_code for empty hash") {
-        EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))
+        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -61,7 +61,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 
     SECTION("read_code for non-empty hash") {
         static const Bytes kCode{*from_hex("0x0608")};
-        EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))
+        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kCode;
             }));
@@ -74,7 +74,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 
     SECTION("read_code with empty response from db") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))
+        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -89,11 +89,11 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 
     SECTION("read_storage with empty response from db") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, get(db::table::kStorageHistoryName, _))
+        EXPECT_CALL(transaction, get(table::kStorageHistoryName, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{Bytes{}, Bytes{}};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kPlainStateName, _, _))
+        EXPECT_CALL(transaction, get_both_range(table::kPlainStateName, _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return Bytes{};
             }));
@@ -108,11 +108,11 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 
     SECTION("read_account with empty response from db") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, _))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{Bytes{}, Bytes{}};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, _))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -256,11 +256,11 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     */
 
     SECTION("AsyncRemoteState::read_account for empty response from db") {
-        EXPECT_CALL(transaction, get(db::table::kAccountHistoryName, _))
+        EXPECT_CALL(transaction, get(table::kAccountHistoryName, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{Bytes{}, Bytes{}};
             }));
-        EXPECT_CALL(transaction, get_one(db::table::kPlainStateName, _))
+        EXPECT_CALL(transaction, get_one(table::kPlainStateName, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -271,7 +271,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_code with empty response from db") {
-        EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))
+        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -283,11 +283,11 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_storage with empty response from db") {
-        EXPECT_CALL(transaction, get(db::table::kStorageHistoryName, _))
+        EXPECT_CALL(transaction, get(table::kStorageHistoryName, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{Bytes{}, Bytes{}};
             }));
-        EXPECT_CALL(transaction, get_both_range(db::table::kPlainStateName, _, _))
+        EXPECT_CALL(transaction, get_both_range(table::kPlainStateName, _, _))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
                 co_return Bytes{};
             }));
@@ -352,7 +352,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::canonical_hash for empty response from chain storage") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _))
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _))
             .WillRepeatedly(InvokeWithoutArgs([=]() -> Task<Bytes> {
                 co_return Bytes{};
             }));

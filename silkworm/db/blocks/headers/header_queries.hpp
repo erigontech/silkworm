@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/basic_queries.hpp>
+#include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 
 #include "header_snapshot.hpp"
 

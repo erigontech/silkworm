@@ -24,7 +24,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 #include "base_transaction.hpp"
 #include "cursor.hpp"

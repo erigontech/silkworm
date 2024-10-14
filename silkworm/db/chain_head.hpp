@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/core/types/chain_head.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 namespace silkworm::db {
 

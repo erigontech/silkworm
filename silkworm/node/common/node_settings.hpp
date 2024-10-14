@@ -23,8 +23,8 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/etl/collector_settings.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/etl/collector_settings.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/common/directories.hpp>

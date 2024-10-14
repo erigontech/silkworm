@@ -19,7 +19,7 @@
 #include <filesystem>
 
 #include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 namespace silkworm::db::test_util {
 

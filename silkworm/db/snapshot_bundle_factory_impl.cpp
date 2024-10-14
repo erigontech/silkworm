@@ -59,7 +59,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
         case SnapshotType::bodies:
             return {std::make_shared<IndexBuilder>(BodyIndex::make(seg_file))};
         case SnapshotType::transactions: {
-            auto bodies_segment_path = TransactionIndex::bodies_segment_path(seg_file);
+            auto bodies_segment_path = seg_file.related_path(SnapshotType::bodies, kSegmentExtension);
             if (!bodies_segment_path.exists()) return {};
             return {
                 std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, seg_file)),

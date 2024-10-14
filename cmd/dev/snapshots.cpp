@@ -340,7 +340,7 @@ void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
                     break;
                 }
                 case SnapshotType::transactions: {
-                    auto bodies_segment_path = TransactionIndex::bodies_segment_path(*snap_file);
+                    auto bodies_segment_path = snap_file->related_path(SnapshotType::bodies, kSegmentExtension);
                     auto index = TransactionIndex::make(bodies_segment_path, *snap_file);
                     index.build();
 

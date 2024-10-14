@@ -137,8 +137,8 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     snapshots::Snapshot txn_snapshot{txn_snapshot_path};
     REQUIRE_NOTHROW(snapshots::TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
     REQUIRE_NOTHROW(snapshots::TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot_file.block_num_range().start).build());
-    snapshots::Index idx_txn_hash{txn_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions)};
-    snapshots::Index idx_txn_hash_2_block{txn_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions_to_block)};
+    snapshots::Index idx_txn_hash{txn_snapshot_path.related_path(snapshots::SnapshotType::transactions, kIdxExtension)};
+    snapshots::Index idx_txn_hash_2_block{txn_snapshot_path.related_path(snapshots::SnapshotType::transactions_to_block, kIdxExtension)};
 
     // Add a sample Snapshot bundle to the repository
     snapshots::SnapshotBundle bundle{{

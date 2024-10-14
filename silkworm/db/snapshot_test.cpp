@@ -236,7 +236,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     idx_txn_hash.reopen_index();
     TransactionFindByIdQuery txn_by_id{{tx_snapshot, idx_txn_hash}};
 
-    Index idx_txn_hash_2_block{tx_snapshot_path.index_file_for_type(SnapshotType::transactions_to_block)};
+    Index idx_txn_hash_2_block{tx_snapshot_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
     idx_txn_hash_2_block.reopen_index();
     TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{{tx_snapshot, idx_txn_hash}}};
 

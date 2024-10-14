@@ -31,7 +31,6 @@ namespace silkworm::snapshots {
 
 inline constexpr const char* kSegmentExtension{".seg"};
 inline constexpr const char* kIdxExtension{".idx"};
-inline constexpr const char* kTmpExtension{".tmp"};
 
 //! The snapshot version 1 aka v1
 inline constexpr uint8_t kSnapshotV1{1};
@@ -49,6 +48,7 @@ class SnapshotPath {
 
     std::string filename() const { return path_.filename().string(); }
     const std::filesystem::path& path() const { return path_; }
+    std::string extension() const { return path_.extension().string(); }
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }
     // TODO: remove
@@ -57,17 +57,11 @@ class SnapshotPath {
     }
     SnapshotType type() const { return type_; }
     std::string type_string() const;
-    bool is_segment() const { return path_.extension().string() == kSegmentExtension; }
     bool exists() const { return std::filesystem::exists(path_); }
 
+    SnapshotPath related_path(SnapshotType type, const char* ext) const;
     SnapshotPath index_file() const {
         return related_path(type_, kIdxExtension);
-    }
-    SnapshotPath index_file_for_type(SnapshotType type) const {
-        return related_path(type, kIdxExtension);
-    }
-    SnapshotPath snapshot_path_for_type(SnapshotType type) const {
-        return related_path(type, kSegmentExtension);
     }
 
     friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);
@@ -79,9 +73,8 @@ class SnapshotPath {
         StepRange step_range,
         SnapshotType type,
         const char* ext);
-    SnapshotPath related_path(SnapshotType type, const char* ext) const;
 
-    explicit SnapshotPath(
+    SnapshotPath(
         std::filesystem::path path,
         uint8_t version,
         StepRange step_range,

@@ -222,7 +222,7 @@ bool is_stale_index_path(const SnapshotPath& index_path) {
     SnapshotType snapshot_type = (index_path.type() == SnapshotType::transactions_to_block)
                                      ? SnapshotType::transactions
                                      : index_path.type();
-    SnapshotPath snapshot_path = index_path.snapshot_path_for_type(snapshot_type);
+    SnapshotPath snapshot_path = index_path.related_path(snapshot_type, kSegmentExtension);
     return (fs::last_write_time(index_path.path()) < fs::last_write_time(snapshot_path.path()));
 }
 

@@ -62,7 +62,7 @@ BlockNum Config::compute_max_block(const PreverifiedList& entries) {
     for (const auto& entry : entries) {
         const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{entry.file_name});
         if (!snapshot_path) continue;
-        if (!snapshot_path->is_segment()) continue;
+        if (snapshot_path->extension() != kSegmentExtension) continue;
         if (snapshot_path->type() != SnapshotType::headers) continue;
         if (snapshot_path->block_range().end > max_block) {
             max_block = snapshot_path->block_range().end;

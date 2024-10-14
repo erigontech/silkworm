@@ -51,6 +51,7 @@ struct BlockNumRange {
     BlockNumRange(BlockNum start1, BlockNum end1) : start(start1), end(end1) {}
     friend bool operator==(const BlockNumRange&, const BlockNumRange&) = default;
     bool contains(BlockNum num) const { return (start <= num) && (num < end); }
+    bool contains_range(BlockNumRange range) const { return (start <= range.start) && (range.end <= end); }
     BlockNum size() const { return end - start; }
     std::string to_string() const { return std::string("[") + std::to_string(start) + ", " + std::to_string(end) + ")"; }
 };

@@ -38,12 +38,12 @@ struct Step {
 
     BlockNum to_block_num() const { return value * kStepSizeForBlockSnapshots; }
     static Step from_block_num(BlockNum block_num) {
-        return Step{block_num / kStepSizeForBlockSnapshots};
+        return Step{static_cast<size_t>(block_num / kStepSizeForBlockSnapshots)};
     }
 
     uint64_t to_txn_id() const { return value * kStepSizeForTemporalSnapshots; }
     static Step from_txn_id(uint64_t txn_id) {
-        return Step{txn_id / kStepSizeForTemporalSnapshots};
+        return Step{static_cast<size_t>(txn_id / kStepSizeForTemporalSnapshots)};
     }
 };
 
@@ -56,6 +56,7 @@ struct StepRange {
     }
     friend bool operator==(const StepRange&, const StepRange&) = default;
     bool contains(Step x) const { return (start <= x) && (x < end); }
+    bool contains_range(StepRange range) const { return (start <= range.start) && (range.end <= end); }
     size_t size() const { return end.value - start.value; }
     std::string to_string() const { return std::string("[") + start.to_string() + ", " + end.to_string() + ")"; }
 

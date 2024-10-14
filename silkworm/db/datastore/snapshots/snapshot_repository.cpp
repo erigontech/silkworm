@@ -51,7 +51,7 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
 
     std::erase_if(*bundles, [&](const auto& entry) {
         const SnapshotBundle& it = *entry.second;
-        return (bundle.block_range().start <= it.block_range().start) && (it.block_range().end <= bundle.block_range().end);
+        return bundle.block_range().contains_range(it.block_range());
     });
 
     BlockNum block_from = bundle.block_range().start;
@@ -178,7 +178,7 @@ std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number)
 std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_range(BlockNumRange range) const {
     std::vector<std::shared_ptr<SnapshotBundle>> bundles;
     for (const auto& bundle : view_bundles()) {
-        if ((range.start <= bundle->block_range().start) && (bundle->block_range().end <= range.end)) {
+        if (range.contains_range(bundle->block_range())) {
             bundles.push_back(bundle);
         }
     }

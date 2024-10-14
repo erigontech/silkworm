@@ -25,7 +25,9 @@
 
 namespace silkworm::db::kv::api {
 
+//! Database meta-transaction ID (a transaction over mdbx and snapshots)
 using TxId = uint64_t;
+
 using Timestamp = int64_t;
 using TimestampRange = std::pair<Timestamp, Timestamp>;
 

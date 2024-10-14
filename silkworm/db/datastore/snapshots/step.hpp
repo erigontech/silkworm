@@ -41,8 +41,8 @@ struct Step {
         return Step{static_cast<size_t>(block_num / kStepSizeForBlockSnapshots)};
     }
 
-    uint64_t to_txn_id() const { return value * kStepSizeForTemporalSnapshots; }
-    static Step from_txn_id(uint64_t txn_id) {
+    TxnId to_txn_id() const { return value * kStepSizeForTemporalSnapshots; }
+    static Step from_txn_id(TxnId txn_id) {
         return Step{static_cast<size_t>(txn_id / kStepSizeForTemporalSnapshots)};
     }
 };
@@ -65,10 +65,8 @@ struct StepRange {
         return {Step::from_block_num(range.start), Step::from_block_num(range.end + kStepSizeForBlockSnapshots - 1)};
     }
 
-    // TODO: fix range type to txn range
-    BlockNumRange to_txn_id_range() const { return {start.to_txn_id(), end.to_txn_id()}; }
-    // TODO: fix range type to txn range
-    static StepRange from_txn_id_range(BlockNumRange range) {
+    TxnIdRange to_txn_id_range() const { return {start.to_txn_id(), end.to_txn_id()}; }
+    static StepRange from_txn_id_range(TxnIdRange range) {
         return {Step::from_txn_id(range.start), Step::from_txn_id(range.end + kStepSizeForTemporalSnapshots - 1)};
     }
 };

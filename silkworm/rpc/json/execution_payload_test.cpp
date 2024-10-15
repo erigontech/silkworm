@@ -217,7 +217,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
                                      });
     }
     SECTION("invalid hex transaction") {
-        const auto json = R"({
+        const nlohmann::json json = R"({
             "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
             "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
             "stateRoot":"0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45",
@@ -431,7 +431,7 @@ TEST_CASE("deserialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
         CHECK(payload.excess_blob_gas == 0x0100);
     }
     SECTION("missing excess_blob_gas") {
-        const auto json = R"({
+        const nlohmann::json json = R"({
             "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
             "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
             "stateRoot":"0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45",
@@ -453,7 +453,7 @@ TEST_CASE("deserialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
         CHECK_THROWS_AS(from_json(json, payload), std::system_error);
     }
     SECTION("missing blob_gas_used") {
-        const auto json = R"({
+        const nlohmann::json json = R"({
             "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
             "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
             "stateRoot":"0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45",
@@ -475,7 +475,7 @@ TEST_CASE("deserialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
         CHECK_THROWS_AS(from_json(json, payload), std::system_error);
     }
     SECTION("invalid missing withdrawals") {
-        const auto json = R"({
+        const nlohmann::json json = R"({
             "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
             "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
             "stateRoot":"0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45",

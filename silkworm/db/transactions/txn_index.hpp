@@ -59,7 +59,6 @@ class TransactionIndex {
         return IndexBuilder{std::move(descriptor), std::move(query)};
     }
 
-    static SnapshotPath bodies_segment_path(const SnapshotPath& segment_path);
     static std::pair<uint64_t, uint64_t> compute_txs_amount(
         SnapshotPath bodies_segment_path,
         std::optional<MemoryMappedRegion> bodies_segment_region);

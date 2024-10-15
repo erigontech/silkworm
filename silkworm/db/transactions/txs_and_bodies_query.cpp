@@ -135,7 +135,7 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() {
         txs_decoder->begin(),
         bodies_decoder,
         bodies_decoder->begin(),
-        bodies_segment_path_.block_from(),
+        first_block_num_,
         first_tx_id_,
         expected_tx_count_,
         log_title,

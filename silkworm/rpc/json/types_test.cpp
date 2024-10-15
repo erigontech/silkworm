@@ -739,7 +739,7 @@ TEST_CASE("serialize PayloadStatusV1", "[silkworm::json][to_json]") {
 }
 
 TEST_CASE("make empty json content", "[silkworm::json][make_json_content]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":0
     })"_json;
     const auto j = make_json_content(request, {});
@@ -751,7 +751,7 @@ TEST_CASE("make empty json content", "[silkworm::json][make_json_content]") {
 }
 
 TEST_CASE("make json content", "[silkworm::json][make_json_content]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":123
     })"_json;
     nlohmann::json json_result = {{"currency", "ETH"}, {"value", 4.2}};
@@ -764,7 +764,7 @@ TEST_CASE("make json content", "[silkworm::json][make_json_content]") {
 }
 
 TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":0
     })"_json;
     const auto j = make_json_error(request, 0, "");
@@ -776,7 +776,7 @@ TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":0
     })"_json;
     const auto j = make_json_error(request, {{0, ""}, silkworm::Bytes{}});
@@ -788,7 +788,7 @@ TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make json error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":123
     })"_json;
 
@@ -801,7 +801,7 @@ TEST_CASE("make json error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make json revert error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":123
     })"_json;
 

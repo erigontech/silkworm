@@ -51,10 +51,10 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
 
     std::erase_if(*bundles, [&](const auto& entry) {
         const SnapshotBundle& it = *entry.second;
-        return (bundle.block_from() <= it.block_from()) && (it.block_to() <= bundle.block_to());
+        return bundle.block_range().contains_range(it.block_range());
     });
 
-    BlockNum block_from = bundle.block_from();
+    BlockNum block_from = bundle.block_range().start;
     bundles->insert_or_assign(block_from, std::make_shared<SnapshotBundle>(std::move(bundle)));
 
     bundles_ = bundles;
@@ -78,23 +78,8 @@ BlockNum SnapshotRepository::max_block_available() const {
 
     // a bundle with the max block range is last in the sorted bundles map
     auto& bundle = *bundles_->rbegin()->second;
-    return (bundle.block_from() < bundle.block_to()) ? bundle.block_to() - 1 : bundle.block_from();
-}
-
-std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
-    const auto ordered_segments = get_segment_files();
-
-    std::vector<BlockNumRange> missing_ranges;
-    BlockNum previous_to{0};
-    for (const auto& segment : ordered_segments) {
-        // skips different types of snapshots having the same block range
-        if (segment.block_to() <= previous_to) continue;
-        if (segment.block_from() != previous_to) {
-            missing_ranges.emplace_back(previous_to, segment.block_from());
-        }
-        previous_to = segment.block_to();
-    }
-    return missing_ranges;
+    BlockNumRange block_num_range = bundle.block_range();
+    return (block_num_range.size() > 0) ? block_num_range.end - 1 : block_num_range.start;
 }
 
 std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
@@ -124,13 +109,13 @@ void SnapshotRepository::reopen_folder() {
 
     for (size_t i = 0; i < all_snapshot_paths.size(); ++i) {
         auto& path = all_snapshot_paths[i];
-        auto& group = groups[path.block_from()][false];
+        auto& group = groups[path.step_range().to_block_num_range().start][false];
         group[path.type()] = i;
     }
 
     for (size_t i = 0; i < all_index_paths.size(); ++i) {
         auto& path = all_index_paths[i];
-        auto& group = groups[path.block_from()][true];
+        auto& group = groups[path.step_range().to_block_num_range().start][true];
         group[path.type()] = i;
     }
 
@@ -161,8 +146,8 @@ void SnapshotRepository::reopen_folder() {
 
         auto& bundle = *bundles->at(num);
 
-        if (num < bundle.block_to()) {
-            num = bundle.block_to();
+        if (num < bundle.block_range().end) {
+            num = bundle.block_range().end;
         } else {
             break;
         }
@@ -182,12 +167,22 @@ std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number)
     for (const auto& bundle_ptr : this->view_bundles_reverse()) {
         auto& bundle = *bundle_ptr;
         // We're looking for the segment containing the target block number in its block range
-        if (((bundle.block_from() <= number) && (number < bundle.block_to())) ||
-            ((bundle.block_from() == number) && (bundle.block_from() == bundle.block_to()))) {
+        if (bundle.block_range().contains(number) ||
+            ((bundle.block_range().start == number) && (bundle.block_range().size() == 0))) {
             return bundle_ptr;
         }
     }
     return {};
+}
+
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_range(BlockNumRange range) const {
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles;
+    for (const auto& bundle : view_bundles()) {
+        if (range.contains_range(bundle->block_range())) {
+            bundles.push_back(bundle);
+        }
+    }
+    return bundles;
 }
 
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
@@ -221,8 +216,8 @@ bool is_stale_index_path(const SnapshotPath& index_path) {
     SnapshotType snapshot_type = (index_path.type() == SnapshotType::transactions_to_block)
                                      ? SnapshotType::transactions
                                      : index_path.type();
-    SnapshotPath snapshot_path = index_path.snapshot_path_for_type(snapshot_type);
-    return (index_path.last_write_time() < snapshot_path.last_write_time());
+    SnapshotPath snapshot_path = index_path.related_path(snapshot_type, kSegmentExtension);
+    return (fs::last_write_time(index_path.path()) < fs::last_write_time(snapshot_path.path()));
 }
 
 SnapshotPathList SnapshotRepository::stale_index_paths() const {

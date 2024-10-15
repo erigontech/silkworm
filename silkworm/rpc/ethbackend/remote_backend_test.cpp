@@ -311,7 +311,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbacke
         p->set_block_number(0x1);
         p->set_gas_limit(0x1c9c380);
         p->set_timestamp(0x5);
-        const auto tx_bytes{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
+        const Bytes tx_bytes{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
         p->add_transactions(tx_bytes.data(), tx_bytes.size());
         const auto hi_hi_hi_logsbloom{make_h256(0x1000000000000000, 0x0, 0x0, 0x0)};
         const auto hi_hi_logsbloom{new ::types::H512()};
@@ -364,7 +364,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc]
     silkworm::Bloom bloom;
     bloom.fill(0);
     bloom[0] = 0x12;
-    const auto transaction{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
+    const Bytes transaction{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
     const NewPayloadRequest request_v1{
         .execution_payload = ExecutionPayload{
             .version = ExecutionPayload::kV1,

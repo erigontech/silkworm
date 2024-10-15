@@ -22,12 +22,12 @@
 namespace silkworm::rpc {
 
 TEST_CASE("deserialize wrong receipt", "[rpc][from_json]") {
-    const auto j = R"({})"_json;
+    const nlohmann::json j = R"({})"_json;
     CHECK_THROWS(j.get<Receipt>());
 }
 
 TEST_CASE("deserialize empty receipt", "[rpc][from_json]") {
-    const auto j = R"({"success":false,"cumulative_gas_used":0})"_json;
+    const nlohmann::json j = R"({"success":false,"cumulative_gas_used":0})"_json;
     const auto r = j.get<Receipt>();
     CHECK(r.success == false);
     CHECK(r.cumulative_gas_used == 0);
@@ -58,7 +58,7 @@ TEST_CASE("deserialize wrong object receipt", "[rpc][from_json]") {
 }
 
 TEST_CASE("deserialize empty array receipt", "[rpc][from_json]") {
-    const auto j1 = R"([0,null,0,0])"_json;
+    const nlohmann::json j1 = R"([0,null,0,0])"_json;
     const auto r1 = j1.get<Receipt>();
     CHECK(*r1.type == 0);
     CHECK(r1.success == false);
@@ -71,7 +71,7 @@ TEST_CASE("deserialize empty array receipt", "[rpc][from_json]") {
 }
 
 TEST_CASE("deserialize array receipt", "[rpc][from_json]") {
-    const auto j = R"([1,null,1,123456])"_json;
+    const nlohmann::json j = R"([1,null,1,123456])"_json;
     const auto r = j.get<Receipt>();
     CHECK(*r.type == 1);
     CHECK(r.success == true);

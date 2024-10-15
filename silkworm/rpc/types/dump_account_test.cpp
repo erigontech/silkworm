@@ -26,9 +26,9 @@
 
 namespace silkworm::rpc {
 
-const auto kZeroAddress = evmc::address{};
-const auto kEmptyHash = evmc::bytes32{};
-const auto kZeroBalance = intx::uint256{0};
+static constexpr evmc::address kZeroAddress;
+static constexpr evmc::bytes32 kEmptyHash;
+static constexpr intx::uint256 kZeroBalance = intx::uint256{0};
 
 using evmc::literals::operator""_address;
 using evmc::literals::operator""_bytes32;

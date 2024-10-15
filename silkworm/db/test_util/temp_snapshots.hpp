@@ -80,7 +80,7 @@ struct SnapshotHeader {
     }
 
   private:
-    [[nodiscard]] uint64_t compute_patterns_size() const {
+    uint64_t compute_patterns_size() const {
         uint64_t patterns_size{0};
         Bytes temp_buffer{};
         for (const auto& pattern : patterns) {
@@ -91,7 +91,7 @@ struct SnapshotHeader {
         return patterns_size;
     }
 
-    [[nodiscard]] uint64_t compute_positions_size() const {
+    uint64_t compute_positions_size() const {
         uint64_t positions_size{0};
         Bytes temp_buffer{};
         for (const auto& position : positions) {

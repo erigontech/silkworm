@@ -52,14 +52,18 @@ class InterHashes final : public Stage {
     //! \brief Erigon's RegenerateIntermediateHashes
     //! \remarks might throw WrongRoot
     //! \return the state root
-    [[nodiscard]] Stage::Result regenerate_intermediate_hashes(db::RWTxn& txn,
-                                                               const evmc::bytes32* expected_root = nullptr);
+    Stage::Result regenerate_intermediate_hashes(
+        db::RWTxn& txn,
+        const evmc::bytes32* expected_root = nullptr);
 
     //! \brief Erigon's IncrementIntermediateHashes
     //! \remarks might throw
     //! \return the state root
-    [[nodiscard]] Stage::Result increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                              const evmc::bytes32* expected_root = nullptr);
+    Stage::Result increment_intermediate_hashes(
+        db::RWTxn& txn,
+        BlockNum from,
+        BlockNum to,
+        const evmc::bytes32* expected_root = nullptr);
 
     //! \brief Persists in TrieAccount and TrieStorage the collected nodes (and respective deletions if any)
     void flush_collected_nodes(db::RWTxn& txn);

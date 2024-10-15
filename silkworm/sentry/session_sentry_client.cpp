@@ -64,7 +64,7 @@ class SessionSentryClientImpl : public api::SentryClient {
         co_return (co_await sentry_client_->service());
     }
 
-    [[nodiscard]] bool is_ready() override {
+    bool is_ready() override {
         std::scoped_lock lock(state_mutex_);
         return (state_ == State::kReady) || (state_ == State::kInit);
     }

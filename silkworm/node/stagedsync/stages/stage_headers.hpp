@@ -86,9 +86,9 @@ class HeadersStage : public Stage {
         static void remove_headers(BlockNum unwind_point, db::RWTxn& tx);
 
         // holds the status of a batch insertion of headers
-        [[nodiscard]] BlockNum highest_height() const;
-        [[nodiscard]] Hash highest_hash() const;
-        [[nodiscard]] intx::uint256 total_difficulty() const;
+        BlockNum highest_height() const;
+        Hash highest_hash() const;
+        intx::uint256 total_difficulty() const;
 
         std::optional<BlockHeader> get_canonical_header(BlockNum height) const;
 

@@ -88,12 +88,12 @@ class Snapshot {
     Snapshot& operator=(Snapshot&&) = default;
 
     const SnapshotPath& path() const { return path_; }
-    [[nodiscard]] std::filesystem::path fs_path() const { return path_.path(); }
+    std::filesystem::path fs_path() const { return path_.path(); }
 
-    [[nodiscard]] bool empty() const { return item_count() == 0; }
-    [[nodiscard]] size_t item_count() const { return decoder_.words_count(); }
+    bool empty() const { return item_count() == 0; }
+    size_t item_count() const { return decoder_.words_count(); }
 
-    [[nodiscard]] MemoryMappedRegion memory_file_region() const;
+    MemoryMappedRegion memory_file_region() const;
 
     void reopen_segment();
     void close();

@@ -22,7 +22,7 @@ namespace silkworm::concurrency {
 
 struct ExecutorPool {
     virtual ~ExecutorPool() = default;
-    [[nodiscard]] virtual boost::asio::any_io_executor any_executor() = 0;
+    virtual boost::asio::any_io_executor any_executor() = 0;
 };
 
 }  // namespace silkworm::concurrency

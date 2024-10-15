@@ -54,9 +54,9 @@ class SnapshotRepository {
         std::unique_ptr<SnapshotBundleFactory> bundle_factory);
     ~SnapshotRepository();
 
-    [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
-    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
-    [[nodiscard]] const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
+    const SnapshotSettings& settings() const { return settings_; }
+    std::filesystem::path path() const { return settings_.repository_dir; }
+    const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
 
     void reopen_folder();
     void close();
@@ -66,14 +66,14 @@ class SnapshotRepository {
     //! Replace bundles whose ranges are contained within the given bundle
     void replace_snapshot_bundles(SnapshotBundle bundle);
 
-    [[nodiscard]] size_t bundles_count() const;
-    [[nodiscard]] size_t total_snapshots_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
-    [[nodiscard]] size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
+    size_t bundles_count() const;
+    size_t total_snapshots_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
+    size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
 
     //! All types of .seg and .idx files are available up to this block number
-    [[nodiscard]] BlockNum max_block_available() const;
+    BlockNum max_block_available() const;
 
-    [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
+    std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
     void build_indexes(SnapshotBundle& bundle) const;
 
@@ -106,21 +106,21 @@ class SnapshotRepository {
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
-    [[nodiscard]] std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, BlockNum number) const;
+    std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, BlockNum number) const;
     std::shared_ptr<SnapshotBundle> find_bundle(BlockNum number) const;
 
     std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(BlockNumRange range) const;
 
   private:
-    [[nodiscard]] SnapshotPathList get_segment_files() const {
+    SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);
     }
 
-    [[nodiscard]] SnapshotPathList get_idx_files() const {
+    SnapshotPathList get_idx_files() const {
         return get_files(kIdxExtension);
     }
 
-    [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
+    SnapshotPathList get_files(const std::string& ext) const;
 
     SnapshotPathList stale_index_paths() const;
 

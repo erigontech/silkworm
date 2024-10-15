@@ -46,7 +46,7 @@ class ExecutionProcessor {
     //! \brief Execute the block.
     //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.
     //! \pre RuleSet's validate_block_header & pre_validate_block_body must return kOk.
-    [[nodiscard]] ValidationResult execute_block(std::vector<Receipt>& receipts) noexcept;
+    ValidationResult execute_block(std::vector<Receipt>& receipts) noexcept;
 
     //! \brief Flush IntraBlockState into cumulative State.
     void flush_state();
@@ -67,7 +67,7 @@ class ExecutionProcessor {
      * Does not perform any post-execution validation (for example, receipt root is not checked).
      * Precondition: validate_block_header & pre_validate_block_body must return kOk.
      */
-    [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
+    ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
 
     //! \brief Notify the registered tracers at the start of block execution.
     void notify_block_execution_start(const Block& block);

@@ -99,21 +99,21 @@ class EVM {
 
     ~EVM();
 
-    [[nodiscard]] const Block& block() const noexcept { return block_; }
+    const Block& block() const noexcept { return block_; }
 
-    [[nodiscard]] const ChainConfig& config() const noexcept { return config_; }
+    const ChainConfig& config() const noexcept { return config_; }
 
     IntraBlockState& state() noexcept { return state_; }
-    [[nodiscard]] const IntraBlockState& state() const noexcept { return state_; }
+    const IntraBlockState& state() const noexcept { return state_; }
 
     // Precondition: txn.from must be recovered
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 
-    [[nodiscard]] evmc_revision revision() const noexcept;
+    evmc_revision revision() const noexcept;
 
     void add_tracer(EvmTracer& tracer) noexcept;
     void remove_tracers() noexcept;
-    [[nodiscard]] const EvmTracers& tracers() const noexcept { return tracers_; };
+    const EvmTracers& tracers() const noexcept { return tracers_; };
 
     AnalysisCache* analysis_cache{nullptr};  // provide one for better performance
 
@@ -151,22 +151,22 @@ class EvmHost : public evmc::Host {
   public:
     explicit EvmHost(EVM& evm) noexcept : evm_{evm} {}
 
-    [[nodiscard]] bool account_exists(const evmc::address& address) const noexcept override;
+    bool account_exists(const evmc::address& address) const noexcept override;
 
     evmc_access_status access_account(const evmc::address& address) noexcept override;
 
     evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept override;
 
-    [[nodiscard]] evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
+    evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
 
     evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key,
                                     const evmc::bytes32& value) noexcept override;
 
-    [[nodiscard]] evmc::uint256be get_balance(const evmc::address& address) const noexcept override;
+    evmc::uint256be get_balance(const evmc::address& address) const noexcept override;
 
-    [[nodiscard]] size_t get_code_size(const evmc::address& address) const noexcept override;
+    size_t get_code_size(const evmc::address& address) const noexcept override;
 
-    [[nodiscard]] evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept override;
+    evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept override;
 
     size_t copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
                      size_t buffer_size) const noexcept override;
@@ -175,14 +175,14 @@ class EvmHost : public evmc::Host {
 
     evmc::Result call(const evmc_message& message) noexcept override;
 
-    [[nodiscard]] evmc_tx_context get_tx_context() const noexcept override;
+    evmc_tx_context get_tx_context() const noexcept override;
 
-    [[nodiscard]] evmc::bytes32 get_block_hash(int64_t block_number) const noexcept override;
+    evmc::bytes32 get_block_hash(int64_t block_number) const noexcept override;
 
     void emit_log(const evmc::address& address, const uint8_t* data, size_t data_size, const evmc::bytes32 topics[],
                   size_t num_topics) noexcept override;
 
-    [[nodiscard]] evmc::bytes32 get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept override;
+    evmc::bytes32 get_transient_storage(const evmc::address& addr, const evmc::bytes32& key) const noexcept override;
 
     void set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value) noexcept override;
 

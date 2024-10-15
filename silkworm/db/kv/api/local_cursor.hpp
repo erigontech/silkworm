@@ -36,7 +36,7 @@ class LocalCursor : public CursorDupSort {
   public:
     LocalCursor(mdbx::txn& txn, uint32_t cursor_id) : cursor_id_{cursor_id}, txn_{txn} {}
 
-    [[nodiscard]] uint32_t cursor_id() const override { return cursor_id_; };
+    uint32_t cursor_id() const override { return cursor_id_; };
 
     Task<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override;
 

@@ -24,9 +24,9 @@ namespace silkworm::protocol {
 struct EthashConfig {
     bool validate_seal{true};
 
-    [[nodiscard]] nlohmann::json to_json() const noexcept;
+    nlohmann::json to_json() const noexcept;
 
-    [[nodiscard]] static std::optional<EthashConfig> from_json(const nlohmann::json& json) noexcept;
+    static std::optional<EthashConfig> from_json(const nlohmann::json& json) noexcept;
 
     bool operator==(const EthashConfig&) const = default;
 };

@@ -807,12 +807,12 @@ struct BatchOptions {
     std::vector<Rpc> configured_calls;
     int64_t interval_between_calls{100};
 
-    [[nodiscard]] bool is_configured(Rpc call) const {
+    bool is_configured(Rpc call) const {
         return configured_calls.empty() || contains_call(call);
     }
 
   private:
-    [[nodiscard]] bool contains_call(Rpc call) const {
+    bool contains_call(Rpc call) const {
         return std::find(configured_calls.begin(), configured_calls.end(), call) != configured_calls.end();
     }
 };

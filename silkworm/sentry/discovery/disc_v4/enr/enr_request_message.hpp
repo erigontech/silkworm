@@ -25,8 +25,8 @@ namespace silkworm::sentry::discovery::disc_v4::enr {
 struct EnrRequestMessage {
     std::chrono::time_point<std::chrono::system_clock> expiration;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static EnrRequestMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static EnrRequestMessage rlp_decode(ByteView data);
 
     static const uint8_t kId;
 };

@@ -20,8 +20,8 @@
 
 class GrpcErrorCategory : public std::error_category {
   public:
-    [[nodiscard]] const char* name() const noexcept override;
-    [[nodiscard]] std::string message(int ev) const override;
+    const char* name() const noexcept override;
+    std::string message(int ev) const override;
 
     void set_error(std::string&& error_message) {
         error_message_ = std::move(error_message);

@@ -26,7 +26,7 @@ class Error : public std::runtime_error {
     Error(TErrorCode code, const char* message)
         : std::runtime_error(message),
           code_(code) {}
-    [[nodiscard]] TErrorCode code() const { return code_; }
+    TErrorCode code() const { return code_; }
 
   private:
     TErrorCode code_;

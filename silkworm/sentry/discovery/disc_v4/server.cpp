@@ -156,7 +156,7 @@ class ServerImpl {
     }
 
   private:
-    [[nodiscard]] ip::udp::endpoint listen_endpoint() const {
+    ip::udp::endpoint listen_endpoint() const {
         return ip::udp::endpoint{ip_, port_};
     }
 

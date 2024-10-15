@@ -76,7 +76,7 @@ class Progress {
     ~Progress() = default;
 
     //! Returns current progress percent
-    [[nodiscard]] uint32_t percent() const {
+    uint32_t percent() const {
         if (!max_counter_) {
             return 100;
         }
@@ -88,8 +88,8 @@ class Progress {
 
     void step() { ++current_counter_; }
     void set_current(size_t count) { current_counter_ = std::max(count, current_counter_); }
-    [[nodiscard]] size_t get_current() const noexcept { return current_counter_; }
-    [[nodiscard]] size_t get_increment_count() const noexcept { return bar_width_ ? (max_counter_ / bar_width_) : 0u; }
+    size_t get_current() const noexcept { return current_counter_; }
+    size_t get_increment_count() const noexcept { return bar_width_ ? (max_counter_ / bar_width_) : 0u; }
 
     void reset() {
         current_counter_ = 0;
@@ -112,7 +112,7 @@ class Progress {
         return ret;
     }
 
-    [[maybe_unused]] [[nodiscard]] std::string print_progress(char c = '.') const {
+    [[maybe_unused]] std::string print_progress(char c = '.') const {
         uint32_t percentage{percent()};
         uint32_t numChars{percentage / percent_step_};
         if (!numChars) {
@@ -135,19 +135,19 @@ struct DbTableInfo {
     std::string name{};
     mdbx::txn::map_stat stat;
     mdbx::map_handle::info info;
-    [[nodiscard]] size_t pages() const noexcept {
+    size_t pages() const noexcept {
         return stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages;
     }
-    [[nodiscard]] size_t size() const noexcept { return pages() * stat.ms_psize; }
+    size_t size() const noexcept { return pages() * stat.ms_psize; }
 };
 
-[[nodiscard]] bool operator==(const DbTableInfo& lhs, const DbTableInfo& rhs) {
+bool operator==(const DbTableInfo& lhs, const DbTableInfo& rhs) {
     return lhs.name == rhs.name;
 }
 
 using DbComparisonResult = tl::expected<void, std::string>;
 
-[[nodiscard]] DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs, bool check_layout) {
+DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs, bool check_layout) {
     // Skip freelist table because its content depends not only on *which* data you write but also *how* you write it
     // (i.e. writing the same data w/ different commit policies can lead to different freelist content)
     if (lhs.name == "FREE_DBI" && rhs.name == "FREE_DBI") {

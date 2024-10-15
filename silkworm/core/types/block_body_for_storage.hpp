@@ -38,7 +38,7 @@ struct BlockBodyForStorage {
     std::vector<BlockHeader> ommers;
     std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // EIP-4895
 
-    [[nodiscard]] Bytes encode() const;
+    Bytes encode() const;
 
     friend bool operator==(const BlockBodyForStorage&, const BlockBodyForStorage&) = default;
 };

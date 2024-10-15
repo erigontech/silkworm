@@ -62,12 +62,12 @@ class ObjectPool {
         return ret;
     }
 
-    [[nodiscard]] bool empty() const {
+    bool empty() const {
         SILKWORM_DETAIL_OBJECT_POOL_GUARD
         return pool_.empty();
     }
 
-    [[nodiscard]] size_t size() const {
+    size_t size() const {
         SILKWORM_DETAIL_OBJECT_POOL_GUARD
         return pool_.size();
     }

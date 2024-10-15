@@ -69,23 +69,23 @@ class SmallMap {
         return *this;
     }
 
-    [[nodiscard]] constexpr bool empty() const noexcept {
+    constexpr bool empty() const noexcept {
         return size_ == 0;
     }
 
-    [[nodiscard]] constexpr size_t size() const noexcept {
+    constexpr size_t size() const noexcept {
         return size_;
     }
 
-    [[nodiscard]] constexpr auto begin() const noexcept {
+    constexpr auto begin() const noexcept {
         return data_.begin();
     }
 
-    [[nodiscard]] constexpr auto end() const noexcept {
+    constexpr auto end() const noexcept {
         return begin() + size_;
     }
 
-    [[nodiscard]] constexpr const T* find(const Key& key) const noexcept {
+    constexpr const T* find(const Key& key) const noexcept {
         // linear search is faster than binary for small sizes
         for (size_t i{0}; i < size_; ++i) {
             if (data_[i].first == key) {
@@ -96,7 +96,7 @@ class SmallMap {
     }
 
     template <std::constructible_from<Key> NewKeyType = Key>
-    [[nodiscard]] std::map<NewKeyType, T> to_std_map() const {
+    std::map<NewKeyType, T> to_std_map() const {
         std::map<NewKeyType, T> ret;
         for (const auto& [key, val] : *this) {
             ret[NewKeyType(key)] = val;

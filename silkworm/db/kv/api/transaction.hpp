@@ -43,8 +43,8 @@ class Transaction {
 
     virtual ~Transaction() = default;
 
-    [[nodiscard]] virtual uint64_t tx_id() const = 0;
-    [[nodiscard]] virtual uint64_t view_id() const = 0;
+    virtual uint64_t tx_id() const = 0;
+    virtual uint64_t view_id() const = 0;
 
     virtual void set_state_cache_enabled(bool cache_enabled) = 0;
 

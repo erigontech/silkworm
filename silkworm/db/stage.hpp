@@ -83,20 +83,20 @@ class Stage : public Stoppable {
     //! \param [in] txn : A db transaction holder
     //! \return Result
     //! \remarks Must be overridden
-    [[nodiscard]] virtual Stage::Result forward(db::RWTxn& txn) = 0;
+    virtual Stage::Result forward(db::RWTxn& txn) = 0;
 
     //! \brief Unwind is called when the stage should be unwound. The unwind logic must be here.
     //! \param [in] txn : A db transaction holder
     //! \param [in] to : New height we need to unwind to
     //! \return Result
     //! \remarks Must be overridden
-    [[nodiscard]] virtual Stage::Result unwind(db::RWTxn& txn) = 0;
+    virtual Stage::Result unwind(db::RWTxn& txn) = 0;
 
     //! \brief Prune is called when (part of) stage previously persisted data should be deleted. The pruning logic
     //! must be here.
     //! \param [in] txn : A db transaction holder
     //! \return Result
-    [[nodiscard]] virtual Stage::Result prune(db::RWTxn& txn) = 0;
+    virtual Stage::Result prune(db::RWTxn& txn) = 0;
 
     //! \brief Returns the actual progress recorded into db
     BlockNum get_progress(db::ROTxn& txn);
@@ -116,10 +116,10 @@ class Stage : public Stoppable {
     void set_log_prefix(const std::string& prefix) { log_prefix_ = prefix; };
 
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
-    [[nodiscard]] virtual std::vector<std::string> get_log_progress() { return {}; };
+    virtual std::vector<std::string> get_log_progress() { return {}; };
 
     //! \brief Returns the key name of the stage instance
-    [[nodiscard]] const char* name() const { return stage_name_; }
+    const char* name() const { return stage_name_; }
 
     //! \brief Forces an exception if stage has been requested to stop
     void throw_if_stopping();
@@ -143,8 +143,8 @@ class StageError : public std::exception {
     explicit StageError(Stage::Result err);
     explicit StageError(Stage::Result err, std::string message);
     ~StageError() noexcept override = default;
-    [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
-    [[nodiscard]] int err() const noexcept { return err_; }
+    const char* what() const noexcept override { return message_.c_str(); }
+    int err() const noexcept { return err_; }
 
   protected:
     int err_;

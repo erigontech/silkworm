@@ -24,7 +24,7 @@ namespace silkworm {
 TEST_CASE("SharedService", "[silkworm][infra][concurrency][services]") {
     struct Integer {
         explicit Integer(int value) : value_(value) {}
-        [[nodiscard]] int value() const { return value_; }
+        int value() const { return value_; }
 
       private:
         int value_{0};

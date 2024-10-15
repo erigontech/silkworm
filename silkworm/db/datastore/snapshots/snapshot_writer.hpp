@@ -69,7 +69,7 @@ class SnapshotFileWriter {
     SnapshotFileWriter(SnapshotFileWriter&&) = default;
     SnapshotFileWriter& operator=(SnapshotFileWriter&&) = default;
 
-    [[nodiscard]] SnapshotPath path() const { return path_; }
+    SnapshotPath path() const { return path_; }
 
     Iterator out(std::shared_ptr<SnapshotWordSerializer> serializer);
 

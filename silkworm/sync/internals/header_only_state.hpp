@@ -31,14 +31,18 @@ class CustomHeaderOnlyChainState : public BlockState {
   public:
     explicit CustomHeaderOnlyChainState(OldestFirstLinkMap& persisted_link_queue);
 
-    std::optional<BlockHeader> read_header(uint64_t block_number,
-                                           const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockHeader> read_header(
+        uint64_t block_number,
+        const evmc::bytes32& block_hash) const noexcept override;
 
-    [[nodiscard]] bool read_body(BlockNum block_number, const evmc::bytes32& block_hash,
-                                 BlockBody& out) const noexcept override;
+    [[nodiscard]] bool read_body(
+        BlockNum block_number,
+        const evmc::bytes32& block_hash,
+        BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<intx::uint256> total_difficulty(
+        uint64_t block_number,
+        const evmc::bytes32& block_hash) const noexcept override;
 };
 
 // A better Chain_State implementation
@@ -50,14 +54,18 @@ class SimpleHeaderOnlyChainState : public BlockState {
   public:
     void insert_header(const BlockHeader& header, const evmc::bytes32& hash);
 
-    std::optional<BlockHeader> read_header(uint64_t block_number,
-                                           const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockHeader> read_header(
+        uint64_t block_number,
+        const evmc::bytes32& block_hash) const noexcept override;
 
-    [[nodiscard]] bool read_body(BlockNum block_number, const evmc::bytes32& block_hash,
-                                 BlockBody& out) const noexcept override;
+    [[nodiscard]] bool read_body(
+        BlockNum block_number,
+        const evmc::bytes32& block_hash,
+        BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<intx::uint256> total_difficulty(
+        uint64_t block_number,
+        const evmc::bytes32& block_hash) const noexcept override;
 };
 
 }  // namespace silkworm

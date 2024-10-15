@@ -71,7 +71,7 @@ class BitTorrentClient : public ActiveComponent {
     //! Subscription for torrent completion announcements
     boost::signals2::signal<FileCallback> completed_subscription;
 
-    [[nodiscard]] const std::vector<lt::stats_metric>& stats_metrics() const { return stats_metrics_; }
+    const std::vector<lt::stats_metric>& stats_metrics() const { return stats_metrics_; }
 
     //! Add the specified info hash to the download list
     void add_info_hash(std::string_view name, std::string_view info_hash);
@@ -97,10 +97,10 @@ class BitTorrentClient : public ActiveComponent {
     static std::vector<char> load_file(const std::filesystem::path& filename);
     static void save_file(const std::filesystem::path& filename, const std::vector<char>& data);
 
-    [[nodiscard]] lt::session_params load_or_create_session_parameters() const;
-    [[nodiscard]] std::vector<lt::add_torrent_params> load_resume_data() const;
-    [[nodiscard]] std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
-    [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
+    lt::session_params load_or_create_session_parameters() const;
+    std::vector<lt::add_torrent_params> load_resume_data() const;
+    std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
+    bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
 
     void request_torrent_updates(bool stats_included);
     void request_save_resume_data(lt::resume_data_flags_t flags);

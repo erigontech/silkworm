@@ -48,7 +48,7 @@ using namespace snapshots::seg;
 class DecodingTableForTest : public DecodingTable {
   public:
     explicit DecodingTableForTest(size_t max_depth) : DecodingTable(max_depth) {}
-    [[nodiscard]] size_t max_depth() const { return max_depth_; }
+    size_t max_depth() const { return max_depth_; }
 };
 
 //! set_condensed_table_bit_length_threshold

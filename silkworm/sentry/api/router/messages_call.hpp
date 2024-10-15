@@ -45,7 +45,7 @@ class MessagesCall final {
 
     MessagesCall() = default;
 
-    [[nodiscard]] const MessageIdSet& message_id_filter() const { return message_id_filter_; }
+    const MessageIdSet& message_id_filter() const { return message_id_filter_; }
 
     Task<Result> result() {
         auto future = result_promise_->get_future();
@@ -56,7 +56,7 @@ class MessagesCall final {
         result_promise_->set_value(std::move(result));
     }
 
-    [[nodiscard]] std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal() const {
+    std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal() const {
         return unsubscribe_signal_;
     }
 

@@ -27,11 +27,11 @@ namespace silkworm::rpc {
 // NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor)
 class ProtocolErrorCategory final : public boost::system::error_category {
   public:
-    [[nodiscard]] const char* name() const noexcept override {
+    const char* name() const noexcept override {
         return "rpc::ProtocolErrorCategory";
     };
 
-    [[nodiscard]] std::string message(int ev) const override {
+    std::string message(int ev) const override {
         switch (static_cast<ErrorCode>(ev)) {
             case ErrorCode::kParseError:
                 return "invalid JSON was received by the server";

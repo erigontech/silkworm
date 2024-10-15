@@ -48,7 +48,7 @@ class Buffer {
         size_ = 0;
     }
 
-    [[nodiscard]] bool overflows() const noexcept {
+    bool overflows() const noexcept {
         // Whether accounted size overflows optimal_size_ (i.e. time to flush)
         return size_ >= optimal_size_;
     }
@@ -58,12 +58,12 @@ class Buffer {
         std::sort(buffer_.begin(), buffer_.end());
     }
 
-    [[nodiscard]] size_t size() const noexcept {
+    size_t size() const noexcept {
         // Actual size of accounted data
         return size_;
     }
 
-    [[nodiscard]] const std::vector<Entry>& entries() const noexcept { return buffer_; }
+    const std::vector<Entry>& entries() const noexcept { return buffer_; }
 
   private:
     size_t optimal_size_;

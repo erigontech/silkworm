@@ -105,7 +105,7 @@ class GolombRiceVector {
             }
         }
 
-        [[nodiscard]] uint64_t get_bits() const { return bit_count_; }
+        uint64_t get_bits() const { return bit_count_; }
 
         GolombRiceVector build() {
             data_.resize(data_.size());
@@ -167,7 +167,7 @@ class GolombRiceVector {
     GolombRiceVector() = default;
     explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data_(std::move(input_data)) {}
 
-    [[nodiscard]] size_t size() const { return data_.size(); }
+    size_t size() const { return data_.size(); }
 
     class Reader {
       public:
@@ -238,7 +238,7 @@ class GolombRiceVector {
         size_t valid_lower_bits_unary_{0};
     };
 
-    [[nodiscard]] Reader reader() const { return Reader{data_}; }
+    Reader reader() const { return Reader{data_}; }
 
   private:
     Uint64Sequence data_;

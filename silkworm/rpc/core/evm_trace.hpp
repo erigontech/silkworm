@@ -223,8 +223,8 @@ class IterableStack : public std::stack<T, Container> {
   public:
     using const_iterator = typename Container::const_iterator;
 
-    [[nodiscard]] const_iterator begin() const { return c.begin(); }
-    [[nodiscard]] const_iterator end() const { return std::end(c); }
+    const_iterator begin() const { return c.begin(); }
+    const_iterator end() const { return std::end(c); }
 };
 
 class TraceTracer : public silkworm::EvmTracer {
@@ -281,15 +281,15 @@ class StateAddresses {
     StateAddresses(const StateAddresses&) = delete;
     StateAddresses& operator=(const StateAddresses&) = delete;
 
-    [[nodiscard]] bool exists(const evmc::address& address) const noexcept;
+    bool exists(const evmc::address& address) const noexcept;
 
-    [[nodiscard]] intx::uint256 get_balance(const evmc::address& address) const noexcept;
+    intx::uint256 get_balance(const evmc::address& address) const noexcept;
     void set_balance(const evmc::address& address, const intx::uint256& value) noexcept { balances_[address] = value; }
 
-    [[nodiscard]] uint64_t get_nonce(const evmc::address& address) const noexcept;
+    uint64_t get_nonce(const evmc::address& address) const noexcept;
     void set_nonce(const evmc::address& address, uint64_t nonce) noexcept { nonces_[address] = nonce; }
 
-    [[nodiscard]] silkworm::ByteView get_code(const evmc::address& address) const noexcept;
+    silkworm::ByteView get_code(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, silkworm::ByteView code) noexcept { codes_[address] = silkworm::Bytes{code}; }
 
     void remove(const evmc::address& address) noexcept;

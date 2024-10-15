@@ -28,23 +28,23 @@ class MemoryMutationCursor : public RWCursorDupSort {
     MemoryMutationCursor(MemoryMutation& memory_mutation, const MapConfig& config);
     ~MemoryMutationCursor() override = default;
 
-    [[nodiscard]] bool is_table_cleared() const;
-    [[nodiscard]] bool is_entry_deleted(const Slice& key, const Slice& value) const;
+    bool is_table_cleared() const;
+    bool is_entry_deleted(const Slice& key, const Slice& value) const;
 
     void bind(ROTxn& txn, const MapConfig& config) override;
 
-    [[nodiscard]] ::mdbx::map_handle map() const override;
+    ::mdbx::map_handle map() const override;
 
-    [[nodiscard]] size_t size() const override;
-    [[nodiscard]] bool is_multi_value() const override;
-    [[nodiscard]] bool is_dangling() const override;
+    size_t size() const override;
+    bool is_multi_value() const override;
+    bool is_dangling() const override;
 
     CursorResult to_first() override;
     CursorResult to_first(bool throw_notfound) override;
     CursorResult to_previous() override;
     CursorResult to_previous(bool throw_notfound) override;
-    [[nodiscard]] CursorResult current() const override;
-    [[nodiscard]] CursorResult current(bool throw_notfound) const override;
+    CursorResult current() const override;
+    CursorResult current(bool throw_notfound) const override;
     CursorResult to_next() override;
     CursorResult to_next(bool throw_notfound) override;
     CursorResult to_last() override;
@@ -56,9 +56,9 @@ class MemoryMutationCursor : public RWCursorDupSort {
     MoveResult move(MoveOperation operation, bool throw_notfound) override;
     MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override;
     bool seek(const Slice& key) override;
-    [[nodiscard]] bool eof() const override;
-    [[nodiscard]] bool on_first() const override;
-    [[nodiscard]] bool on_last() const override;
+    bool eof() const override;
+    bool on_first() const override;
+    bool on_last() const override;
     CursorResult to_previous_last_multi() override;
     CursorResult to_previous_last_multi(bool throw_notfound) override;
     CursorResult to_current_first_multi() override;
@@ -76,7 +76,7 @@ class MemoryMutationCursor : public RWCursorDupSort {
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
     MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
-    [[nodiscard]] size_t count_multivalue() const override;
+    size_t count_multivalue() const override;
     MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept override;
     void insert(const Slice& key, Slice value) override;
     void upsert(const Slice& key, const Slice& value) override;

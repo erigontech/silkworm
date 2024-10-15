@@ -112,8 +112,8 @@ void write_canonical_header_hash(RWTxn& txn, const uint8_t (&hash)[kHashLength],
 [[nodiscard]] bool read_body(ROTxn& txn, const evmc::bytes32& hash, BlockBody& body);
 [[nodiscard]] bool read_canonical_body(ROTxn& txn, BlockNum block_number, bool read_senders, BlockBody& body);
 
-[[nodiscard]] std::optional<BlockBodyForStorage> read_body_for_storage(ROTxn& txn, const Bytes& key);
-[[nodiscard]] std::optional<BlockBodyForStorage> read_canonical_body_for_storage(ROTxn& txn, BlockNum height);
+std::optional<BlockBodyForStorage> read_body_for_storage(ROTxn& txn, const Bytes& key);
+std::optional<BlockBodyForStorage> read_canonical_body_for_storage(ROTxn& txn, BlockNum height);
 
 //! \brief Read the canonical block at specified height
 [[nodiscard]] bool read_canonical_block(ROTxn& txn, BlockNum height, Block& block);
@@ -123,8 +123,8 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
                                 bool read_senders = false);
 
 //! \brief Check the presence of a block body using block number and hash
-[[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
-[[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash);
+bool has_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
+bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash);
 
 //! \brief Writes block body in table::kBlockBodies
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
@@ -271,34 +271,34 @@ class DataModel {
     DataModel& operator=(const DataModel&) = delete;
 
     //! Retrieve the chain configuration for which database is populated
-    [[nodiscard]] std::optional<ChainConfig> read_chain_config() const;
+    std::optional<ChainConfig> read_chain_config() const;
 
     //! Retrieve the chain unique identifier for which database is populated
-    [[nodiscard]] std::optional<ChainId> read_chain_id() const;
+    std::optional<ChainId> read_chain_id() const;
 
     //! Get the highest block number
-    [[nodiscard]] BlockNum highest_block_number() const;
+    BlockNum highest_block_number() const;
 
     //! Get the highest block number frozen into snapshots
-    [[nodiscard]] static BlockNum highest_frozen_block_number();
+    static BlockNum highest_frozen_block_number();
 
     //! Read block header with the specified key (block number, hash)
-    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, HashAsArray hash) const;
+    std::optional<BlockHeader> read_header(BlockNum block_number, HashAsArray hash) const;
 
     //! Read block header with the specified key (block number, hash)
-    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, const Hash& block_hash) const;
+    std::optional<BlockHeader> read_header(BlockNum block_number, const Hash& block_hash) const;
 
     //! Read block header with the specified hash
-    [[nodiscard]] std::optional<BlockHeader> read_header(const Hash& block_hash) const;
+    std::optional<BlockHeader> read_header(const Hash& block_hash) const;
 
     //! Read block header with the specified block number
-    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number) const;
+    std::optional<BlockHeader> read_header(BlockNum block_number) const;
 
     //! Read block number from hash
-    [[nodiscard]] std::optional<BlockNum> read_block_number(const Hash& block_hash) const;
+    std::optional<BlockNum> read_block_number(const Hash& block_hash) const;
 
     //! Read all sibling block headers at specified height
-    [[nodiscard]] std::vector<BlockHeader> read_sibling_headers(BlockNum block_number) const;
+    std::vector<BlockHeader> read_sibling_headers(BlockNum block_number) const;
 
     //! Read block body in output parameter returning true on success and false on missing block
     [[nodiscard]] bool read_body(BlockNum height, HashAsArray hash, bool read_senders, BlockBody& body) const;
@@ -306,13 +306,13 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
     //! Read block body for storage from the snapshot repository
-    [[nodiscard]] static std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum height);
+    static std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum height);
 
     //! Read the canonical block header at specified height
-    [[nodiscard]] std::optional<Hash> read_canonical_header_hash(BlockNum height) const;
+    std::optional<Hash> read_canonical_header_hash(BlockNum height) const;
 
     //! Read the canonical block header at specified height
-    [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
+    std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
 
     //! Read the canonical block body at specified height
     [[nodiscard]] bool read_canonical_body(BlockNum height, BlockBody& body) const;
@@ -321,8 +321,8 @@ class DataModel {
     [[nodiscard]] bool read_canonical_block(BlockNum height, Block& block) const;
 
     //! Check the presence of a block body using block number and hash
-    [[nodiscard]] bool has_body(BlockNum height, HashAsArray hash) const;
-    [[nodiscard]] bool has_body(BlockNum height, const Hash& hash) const;
+    bool has_body(BlockNum height, HashAsArray hash) const;
+    bool has_body(BlockNum height, const Hash& hash) const;
 
     //! Read block returning true on success and false on missing block
     [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const;
@@ -332,12 +332,12 @@ class DataModel {
     //! Read the RLP encoded block transactions at specified height
     [[nodiscard]] bool read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;
 
-    [[nodiscard]] std::optional<BlockNum> read_tx_lookup(const evmc::bytes32& tx_hash) const;
+    std::optional<BlockNum> read_tx_lookup(const evmc::bytes32& tx_hash) const;
 
     //! Read total difficulty at specified height
-    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const;
-    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum, HashAsArray hash) const;
-    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(ByteView key) const;
+    std::optional<intx::uint256> read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const;
+    std::optional<intx::uint256> read_total_difficulty(BlockNum, HashAsArray hash) const;
+    std::optional<intx::uint256> read_total_difficulty(ByteView key) const;
 
     //! Read all block headers up to limit in reverse order from last, processing each one via a user defined callback
     void for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const;
@@ -350,8 +350,8 @@ class DataModel {
     static bool is_body_in_snapshot(BlockNum height);
     static bool read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs);
     static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs);
-    [[nodiscard]] std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
-    [[nodiscard]] static std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash);
+    std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
+    static std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash);
 
     static inline snapshots::SnapshotRepository* repository_{nullptr};
 

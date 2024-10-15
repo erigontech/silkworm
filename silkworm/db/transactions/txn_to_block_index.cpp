@@ -60,18 +60,20 @@ IndexBuilder TransactionToBlockIndex::make(
     SnapshotPath bodies_segment_path,
     std::optional<MemoryMappedRegion> bodies_segment_region,
     SnapshotPath segment_path,
-    std::optional<MemoryMappedRegion> segment_region) {
+    std::optional<MemoryMappedRegion> segment_region,
+    BlockNum first_block_num) {
     auto txs_amount = TransactionIndex::compute_txs_amount(bodies_segment_path, bodies_segment_region);
     const uint64_t first_tx_id = txs_amount.first;
     const uint64_t expected_tx_count = txs_amount.second;
 
-    auto descriptor = make_descriptor(segment_path, first_tx_id);
+    auto descriptor = make_descriptor(segment_path, first_block_num, first_tx_id);
 
     TxsAndBodiesQuery data_query{
         std::move(segment_path),
         segment_region,
         std::move(bodies_segment_path),
         bodies_segment_region,
+        first_block_num,
         first_tx_id,
         expected_tx_count,
     };

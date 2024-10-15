@@ -27,15 +27,13 @@ namespace silkworm::snapshots {
 
 TEST_CASE("Config::lookup_known_config", "[silkworm][snapshot][config]") {
     SECTION("nonexistent") {
-        const auto nonexistent_snapshot_config = Config::lookup_known_config(0);
-        CHECK(nonexistent_snapshot_config.preverified_snapshots().empty());
-        CHECK(nonexistent_snapshot_config.max_block_number() == 0);
+        const auto cfg = Config::lookup_known_config(0);
+        CHECK(cfg.preverified_snapshots().empty());
     }
 
     SECTION("mainnet") {
-        constexpr size_t kMaxBlockNumber{20'500'000};
-        const auto mainnet_snapshot_config = Config::lookup_known_config(1);
-        CHECK(mainnet_snapshot_config.max_block_number() == kMaxBlockNumber - 1);
+        const auto cfg = Config::lookup_known_config(1);
+        CHECK_FALSE(cfg.preverified_snapshots().empty());
     }
 }
 
@@ -43,7 +41,6 @@ TEST_CASE("Config", "[silkworm][snapshot][config]") {
     SECTION("empty") {
         Config cfg{{}};
         CHECK(cfg.preverified_snapshots().empty());
-        CHECK(cfg.max_block_number() == 0);
     }
 
     SECTION("non-empty") {
@@ -57,7 +54,6 @@ TEST_CASE("Config", "[silkworm][snapshot][config]") {
         };
         Config cfg{preverified};
         CHECK(cfg.preverified_snapshots().size() == preverified.size());
-        CHECK(cfg.max_block_number() == 14'500'000 - 1);
     }
 }
 

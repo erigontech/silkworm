@@ -42,11 +42,12 @@ SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path,
 }
 
 SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, BlockNumRange range) const {
+    StepRange step_range = StepRange::from_block_num_range(range);
     PathByTypeProvider snapshot_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::from(dir_path, kSnapshotV1, range.start, range.end, type);
+        return SnapshotPath::make(dir_path, kSnapshotV1, step_range, type);
     };
     PathByTypeProvider index_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::from(dir_path, kSnapshotV1, range.start, range.end, type, kIdxExtension);
+        return SnapshotPath::make(dir_path, kSnapshotV1, step_range, type, kIdxExtension);
     };
     return make(std::move(snapshot_path), std::move(index_path));
 }
@@ -58,7 +59,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
         case SnapshotType::bodies:
             return {std::make_shared<IndexBuilder>(BodyIndex::make(seg_file))};
         case SnapshotType::transactions: {
-            auto bodies_segment_path = TransactionIndex::bodies_segment_path(seg_file);
+            auto bodies_segment_path = seg_file.related_path(SnapshotType::bodies, kSegmentExtension);
             if (!bodies_segment_path.exists()) return {};
             return {
                 std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, seg_file)),

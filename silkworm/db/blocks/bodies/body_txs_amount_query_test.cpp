@@ -29,8 +29,7 @@ TEST_CASE("BodyTxsAmountQuery") {
     silkworm::test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test_util::SampleBodySnapshotFile snapshot_file{tmp_dir.path()};
-    test_util::SampleBodySnapshotPath snapshot_path{snapshot_file.path()};
-    Snapshot snapshot{snapshot_path};
+    Snapshot snapshot{snapshot_file.path()};
     snapshot.reopen_segment();
 
     BodyTxsAmountQuery query{snapshot};

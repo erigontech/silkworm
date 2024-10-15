@@ -65,13 +65,13 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
             continue;
         }
         if (bundle.block_count() != block_count) {
-            first_block_num = bundle.block_from();
+            first_block_num = bundle.block_range().start;
             block_count = bundle.block_count();
             batch_size = 0;
         }
         ++batch_size;
         if (batch_size == kBatchSize) {
-            return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle.block_to()});
+            return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle.block_range().end});
         }
     }
 
@@ -86,16 +86,6 @@ struct RawSnapshotWordDeserializer : public SnapshotWordDeserializer {
     }
 };
 
-static std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(BlockNumRange range, SnapshotRepository& repository) {
-    std::vector<std::shared_ptr<SnapshotBundle>> bundles;
-    for (auto& bundle : repository.view_bundles()) {
-        if (range.contains(bundle->block_from()) && range.contains(bundle->block_to() - 1)) {
-            bundles.push_back(bundle);
-        }
-    }
-    return bundles;
-}
-
 std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& merger_command = dynamic_cast<SnapshotMergerCommand&>(*command);
     auto range = merger_command.range;
@@ -106,7 +96,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
         log::Debug("SnapshotMerger") << "merging " << path.type_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
-        for (auto& bundle_ptr : bundles_in_range(range, snapshots_)) {
+        for (auto& bundle_ptr : snapshots_.bundles_in_range(range)) {
             auto& bundle = *bundle_ptr;
             SnapshotReader<RawSnapshotWordDeserializer> reader{bundle.snapshot(path.type())};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
@@ -135,7 +125,7 @@ static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
 void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<SnapshotMergerResult&>(*result);
     auto& bundle = freezer_result.bundle;
-    auto merged_bundles = bundles_in_range(bundle.block_range(), snapshots_);
+    auto merged_bundles = snapshots_.bundles_in_range(bundle.block_range());
 
     move_files(bundle.files(), snapshots_.path());
 

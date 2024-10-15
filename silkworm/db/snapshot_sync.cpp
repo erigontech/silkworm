@@ -53,6 +53,13 @@ struct PathHasher {
     }
 };
 
+static bool snapshot_file_is_fully_merged(std::string_view file_name) {
+    const auto path = SnapshotPath::parse(std::filesystem::path{file_name});
+    return path.has_value() &&
+           (path->extension() == kSegmentExtension) &&
+           (path->step_range().to_block_num_range().size() >= kMaxMergerSnapshotSize);
+}
+
 SnapshotSync::SnapshotSync(
     snapshots::SnapshotSettings settings,
     ChainId chain_id,
@@ -60,7 +67,7 @@ SnapshotSync::SnapshotSync(
     std::filesystem::path tmp_dir_path,
     stagedsync::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
-      snapshots_config_{Config::lookup_known_config(chain_id)},
+      snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
       chaindata_env_{std::move(chaindata_env)},
       repository_{settings_, std::make_unique<SnapshotBundleFactoryImpl>()},
       client_{settings_.bittorrent_settings},
@@ -154,10 +161,7 @@ Task<void> SnapshotSync::download_snapshots_if_needed() {
 }
 
 Task<void> SnapshotSync::download_snapshots() {
-    const auto missing_block_ranges = repository_.missing_block_ranges();
-    if (!missing_block_ranges.empty()) {
-        SILK_INFO << "SnapshotSync: downloading missing snapshots";
-    }
+    SILK_INFO << "SnapshotSync: downloading missing snapshots if needed";
 
     const auto& snapshot_config = snapshots_config_;
     if (snapshot_config.preverified_snapshots().empty()) {
@@ -220,7 +224,7 @@ Task<void> SnapshotSync::download_snapshots() {
         const auto [_, inserted] = snapshot_set.insert(snapshot_file);
         SILKWORM_ASSERT(inserted);
         SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
-                  << " blocks " << SnapshotPath::parse(snapshot_file)->block_range().to_string()
+                  << " steps " << SnapshotPath::parse(snapshot_file)->step_range().to_string()
                   << " [" << (completed + 1) << "/" << num_snapshots << "]";
     }
 }
@@ -271,7 +275,9 @@ void SnapshotSync::seed_frozen_local_snapshots() {
     for (auto& bundle_ptr : repository_.view_bundles()) {
         auto& bundle = *bundle_ptr;
         bool is_frozen = bundle.block_range().size() >= kMaxMergerSnapshotSize;
-        bool is_preverified = bundle.block_to() <= snapshots_config_.max_block_number() + 1;
+        const auto first_snapshot = bundle.snapshots()[0];
+        // assume that if one snapshot in the bundle is preverified, then all of them are
+        bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.get().path().filename());
         if (is_frozen && !is_preverified) {
             seed_bundle(bundle);
         }
@@ -293,7 +299,7 @@ void SnapshotSync::seed_bundle(SnapshotBundle& bundle) {
 }
 
 void SnapshotSync::seed_snapshot(const SnapshotPath& path) {
-    std::filesystem::path torrent_path = path.path().concat(".torrent");
+    std::filesystem::path torrent_path = std::filesystem::path{path.path()}.concat(".torrent");
     auto torrent_file =
         std::filesystem::exists(torrent_path)
             ? bittorrent::TorrentFile{torrent_path}

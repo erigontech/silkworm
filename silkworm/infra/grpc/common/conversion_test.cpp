@@ -114,7 +114,8 @@ TEST_CASE("span_from_h512", "[rpc][conversion]") {
     }
 }
 
-static auto kSampleBytes32{0x000000000000007f0000000000000007000000000000006f0000000000000006_bytes32};
+static constexpr evmc::bytes32 kSampleBytes32 = 0x000000000000007f0000000000000007000000000000006f0000000000000006_bytes32;
+
 static std::unique_ptr<types::H256> sample_h256() {
     auto hi = new types::H128();
     auto lo = new types::H128();
@@ -170,7 +171,8 @@ TEST_CASE("address_from_h160", "[rpc][conversion]") {
     }
 }
 
-static auto kSampleBytes16{*from_hex("0x000000000000007f0000000000000007")};
+static const Bytes kSampleBytes16 = *from_hex("0x000000000000007f0000000000000007");
+
 static std::unique_ptr<types::H128> sample_h128() {
     auto h128_ptr = std::make_unique<::types::H128>();
     h128_ptr->set_lo(0x07);

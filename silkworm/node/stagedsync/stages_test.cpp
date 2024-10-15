@@ -259,7 +259,7 @@ TEST_CASE("Sync Stages") {
 
         REQUIRE_NOTHROW(txn.commit_and_renew());
 
-        constexpr auto kExpectedSender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
+        constexpr evmc::address kExpectedSender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
         {
             auto senders_map{txn->open_map(table::kSenders.name)};
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 2);
@@ -316,7 +316,7 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
 
         uint64_t block_number{1};
-        const auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+        const evmc::address miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
         Block block{};
         block.header.number = block_number;
@@ -614,9 +614,9 @@ TEST_CASE("Sync Stages") {
         using StageResult = stagedsync::Stage::Result;
 
         // Prepare block 1
-        const auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
-        const auto sender{0x9b9e32061f64f6c3f570a63b97a178d84e961db1_address};
-        const auto receiver{miner};
+        const evmc::address miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+        const evmc::address sender{0x9b9e32061f64f6c3f570a63b97a178d84e961db1_address};
+        const evmc::address receiver{miner};
 
         Block block{};
         block.header.number = 1;

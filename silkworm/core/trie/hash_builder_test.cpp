@@ -34,11 +34,11 @@ TEST_CASE("Empty trie") {
 }
 
 TEST_CASE("HashBuilder1") {
-    const auto key1{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
-    const auto key2{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
+    const evmc::bytes32 key1{0x0000000000000000000000000000000000000000000000000000000000000001_bytes32};
+    const evmc::bytes32 key2{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
 
-    const auto val1{*from_hex("01")};
-    const auto val2{*from_hex("02")};
+    const Bytes val1{*from_hex("01")};
+    const Bytes val2{*from_hex("02")};
 
     HashBuilder hb;
     hb.add_leaf(unpack_nibbles(key1.bytes), val1);
@@ -193,7 +193,7 @@ TEST_CASE("HashBuilder3") {
 */
 
 TEST_CASE("Known root hash") {
-    const auto root_hash{0x9fa752911d55c3a1246133fe280785afbdba41f357e9cae1131d5f5b0a078b9c_bytes32};
+    const evmc::bytes32 root_hash{0x9fa752911d55c3a1246133fe280785afbdba41f357e9cae1131d5f5b0a078b9c_bytes32};
     HashBuilder hb;
     hb.add_branch_node({}, root_hash);
     CHECK(to_hex(hb.root_hash()) == to_hex(root_hash.bytes));

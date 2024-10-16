@@ -29,9 +29,9 @@
 
 namespace {
 #ifdef _WIN32
-const auto kInvalidArgumentMessage = "invalid argument";
+const char* kInvalidArgumentMessage = "invalid argument";
 #else
-const auto kInvalidArgumentMessage = "Invalid argument";
+const char* kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
@@ -116,9 +116,9 @@ TEST_CASE("decode logs from CBOR 4", "[rpc][ethdb][cbor]") {
 TEST_CASE("decode logs from incorrect bytes", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
-    const auto b1 = *silkworm::from_hex("81");
+    const Bytes b1 = *silkworm::from_hex("81");
     CHECK(!cbor_decode(b1, logs));
-    const auto b2 = *silkworm::from_hex("83808040");
+    const Bytes b2 = *silkworm::from_hex("83808040");
     CHECK_THROWS_MATCHES(cbor_decode(b2, logs), std::invalid_argument, Message("Log CBOR: unexpected format(on_array wrong number of fields)"));
 }
 
@@ -180,9 +180,9 @@ TEST_CASE("decode receipts from CBOR 3", "[rpc][ethdb][cbor]") {
 TEST_CASE("decode receipts from incorrect bytes", "[rpc][ethdb][cbor]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
-    const auto b1 = *silkworm::from_hex("81");
+    const Bytes b1 = *silkworm::from_hex("81");
     CHECK_THROWS(cbor_decode(b1, receipts));
-    const auto b2 = *silkworm::from_hex("83808040");
+    const Bytes b2 = *silkworm::from_hex("83808040");
     CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + kInvalidArgumentMessage));
 }
 

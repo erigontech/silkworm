@@ -768,7 +768,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     // TODO: temoporarily disabled, to be fixed (JG)
     // SECTION("updates storage") {
-    //     static constexpr auto kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    //     static constexpr evmc::address kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     //     auto block1 = generate_sample_child_blocks(current_head);
 
     //     // This contract initially sets its 0th storage to 0x2a and its 1st storage to 0x01c9.

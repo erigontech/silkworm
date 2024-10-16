@@ -336,7 +336,7 @@ TEST_CASE("get_receipts") {
     }
 
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/469011
-        const auto block_hash{0x608e7102f689c99c027c9f49860212348000eb2e13bff37aa4453605a0a2b9e7_bytes32};
+        const evmc::bytes32 block_hash{0x608e7102f689c99c027c9f49860212348000eb2e13bff37aa4453605a0a2b9e7_bytes32};
         EXPECT_CALL(transaction, get_one(table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kNumber; }));
         EXPECT_CALL(transaction, get_one(table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kHeader; }));
         EXPECT_CALL(transaction, get_one(table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return kBody; }));

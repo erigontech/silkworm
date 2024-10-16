@@ -53,11 +53,11 @@ TEST_CASE("WebSeedClientForTest::is_caplin_segment", "[db][snapshot][bittorrent]
 }
 
 //! Content for manifest file containing one torrent file
-static constexpr auto kValidManifestContent{
+static constexpr std::string_view kValidManifestContent{
     "v1-010000-010500-bodies.seg.torrent\n"sv};
 
 //! Hexadecimal content for torrent file 'v1-010000-010500-bodies.seg'
-static constexpr auto kValidTorrentContent{
+static constexpr std::string_view kValidTorrentContent{
     "6431333a616e6e6f756e63652d6c6973746c6c34323a7564703a2f2f74726163"
     "6b65722e6f70656e747261636b722e6f72673a313333372f616e6e6f756e6365"
     "34363a7564703a2f2f747261636b65722e6f70656e626974746f7272656e742e"
@@ -148,7 +148,7 @@ TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::validate_torrent_file
 TEST_CASE_METHOD(WebSeedClientTest, "WebSeedClientForTest::is_whitelisted", "[db][snapshot][bittorrent]") {
     CHECK(client.is_whitelisted("v1-010000-010500-bodies.seg", "542b3f77a2f3c4b9d8a4085d838bdd1b14043f3b"));
     CHECK(client.is_whitelisted("v1-010000-010500-headers.seg", "080d0cd1613831820c8f5e48715d68643f48054a"));
-    CHECK(client.is_whitelisted("v1-010000-010500-transactions.seg", "3e1a85df07d9d6de89a95476214fcf58dbe9234d"));
+    CHECK(client.is_whitelisted("v1-010000-010500-transactions.seg", "8151bbc8b6635465760af6ebcfd630c9679b31a5"));
 
     CHECK_FALSE(client.is_whitelisted("", ""));
     CHECK_FALSE(client.is_whitelisted("v1-010000-010500-bodies2.seg", "542b3f77a2f3c4b9d8a4085d838bdd1b14043f3b"));     // name

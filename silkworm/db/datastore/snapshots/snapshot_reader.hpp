@@ -87,11 +87,8 @@ class Snapshot {
     Snapshot(Snapshot&&) = default;
     Snapshot& operator=(Snapshot&&) = default;
 
-    [[nodiscard]] SnapshotPath path() const { return path_; }
+    const SnapshotPath& path() const { return path_; }
     [[nodiscard]] std::filesystem::path fs_path() const { return path_.path(); }
-
-    [[nodiscard]] BlockNum block_from() const { return path_.block_from(); }
-    [[nodiscard]] BlockNum block_to() const { return path_.block_to(); }
 
     [[nodiscard]] bool empty() const { return item_count() == 0; }
     [[nodiscard]] size_t item_count() const { return decoder_.words_count(); }
@@ -188,8 +185,7 @@ class SnapshotReader {
         return iterator_read_into_vector(std::move(it), count);
     }
 
-    [[nodiscard]] BlockNum block_from() const { return snapshot_.block_from(); }
-    [[nodiscard]] BlockNum block_to() const { return snapshot_.block_to(); }
+    const SnapshotPath& path() const { return snapshot_.path(); }
 
   private:
     const Snapshot& snapshot_;

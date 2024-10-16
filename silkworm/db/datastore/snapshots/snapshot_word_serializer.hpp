@@ -21,6 +21,8 @@
 
 namespace silkworm::snapshots {
 
+class SnapshotPath;
+
 struct SnapshotWordSerializer {
     virtual ~SnapshotWordSerializer() = default;
     virtual ByteView encode_word() = 0;
@@ -33,7 +35,7 @@ concept SnapshotWordSerializerConcept = std::derived_from<TWordSerializer, Snaps
 struct SnapshotWordDeserializer {
     virtual ~SnapshotWordDeserializer() = default;
     virtual void decode_word(ByteView word) = 0;
-    virtual void check_sanity_with_metadata(BlockNum /*block_from*/, BlockNum /*block_to*/) {}
+    virtual void check_sanity_with_metadata(const SnapshotPath& /*path*/) {}
 };
 
 template <class TWordDeserializer>

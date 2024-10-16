@@ -29,9 +29,9 @@
 
 namespace {
 #ifdef _WIN32
-const auto kInvalidArgumentMessage = "invalid argument";
+const char* kInvalidArgumentMessage = "invalid argument";
 #else
-const auto kInvalidArgumentMessage = "Invalid argument";
+const char* kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
@@ -114,7 +114,7 @@ TEST_CASE("deserialize empty log", "[rpc][from_json]") {
 }
 
 TEST_CASE("deserialize array log", "[rpc][from_json]") {
-    const auto bytes = silkworm::from_hex("8354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043").value();
+    const Bytes bytes = silkworm::from_hex("8354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043").value();
     const auto j = nlohmann::json::from_cbor(bytes);
     const auto log = j.get<Log>();
     CHECK(log.address == 0xea674fdde714fd979de3edf0f56aa9716b898ec8_address);

@@ -112,9 +112,9 @@ TEST_CASE("Bitmap Index Loader") {
     test_util::TempChainData context;
     RWTxn& txn{context.rw_txn()};
 
-    const auto address1{0x00000000000000000001_address};
-    const auto address2{0x00000000000000000002_address};
-    const auto address3{0x00000000000000000003_address};
+    const evmc::address address1{0x00000000000000000001_address};
+    const evmc::address address2{0x00000000000000000002_address};
+    const evmc::address address3{0x00000000000000000003_address};
 
     // Note range is [min,max)
     roaring::Roaring64Map roaring1{roaring::api::roaring_bitmap_from_range(1, 20'001, 1)};

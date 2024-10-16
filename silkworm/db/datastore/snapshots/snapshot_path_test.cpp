@@ -53,14 +53,13 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
     SECTION("valid") {
         struct ValidFilenameExpectation {
             const char* filename;
-            BlockNum block_from;
-            BlockNum block_to;
+            BlockNumRange block_num_range;
             SnapshotType type;
         };
         const ValidFilenameExpectation valid_filenames[]{
-            {"v1-014500-015000-headers.seg", 14'500'000, 15'000'000, SnapshotType::headers},
-            {"v1-011500-012000-bodies.seg", 11'500'000, 12'000'000, SnapshotType::bodies},
-            {"v1-018300-018400-transactions.seg", 18'300'000, 18'400'000, SnapshotType::transactions},
+            {"v1-014500-015000-headers.seg", {14'500'000, 15'000'000}, SnapshotType::headers},
+            {"v1-011500-012000-bodies.seg", {11'500'000, 12'000'000}, SnapshotType::bodies},
+            {"v1-018300-018400-transactions.seg", {18'300'000, 18'400'000}, SnapshotType::transactions},
         };
         for (const auto& filename_expectation : valid_filenames) {
             const auto snapshot_file = SnapshotPath::parse(filename_expectation.filename);
@@ -68,16 +67,13 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
             if (snapshot_file) {
                 CHECK(snapshot_file->path() == filename_expectation.filename);
                 CHECK(snapshot_file->version() == 1);
-                CHECK(snapshot_file->block_from() == filename_expectation.block_from);
-                CHECK(snapshot_file->block_to() == filename_expectation.block_to);
-                CHECK(snapshot_file->segment_size() == filename_expectation.block_to - filename_expectation.block_from);
+                CHECK(snapshot_file->step_range() == StepRange::from_block_num_range(filename_expectation.block_num_range));
                 CHECK(snapshot_file->type() == filename_expectation.type);
                 const SnapshotPath index_file = snapshot_file->index_file();
                 CHECK(index_file.path().stem() == snapshot_file->path().stem());
                 CHECK(index_file.path().extension() == kIdxExtension);
                 CHECK(index_file.version() == 1);
-                CHECK(index_file.block_from() == filename_expectation.block_from);
-                CHECK(index_file.block_to() == filename_expectation.block_to);
+                CHECK(index_file.step_range() == StepRange::from_block_num_range(filename_expectation.block_num_range));
                 CHECK(index_file.type() == filename_expectation.type);
             }
         }
@@ -86,7 +82,7 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
 
 TEST_CASE("SnapshotPath::from", "[silkworm][node][snapshot]") {
     SECTION("invalid") {
-        CHECK_THROWS_AS(SnapshotPath::from(std::filesystem::path{}, kSnapshotV1, 1'000, 999, SnapshotType::headers),
+        CHECK_THROWS_AS(SnapshotPath::make(std::filesystem::path{}, kSnapshotV1, StepRange{Step{1'000}, Step{999}}, SnapshotType::headers),
                         std::logic_error);
     }
 }

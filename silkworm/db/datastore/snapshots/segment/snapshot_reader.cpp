@@ -23,30 +23,30 @@
 
 namespace silkworm::snapshots {
 
-Snapshot::Snapshot(
+SegmentFileReader::SegmentFileReader(
     SnapshotPath path,
     std::optional<MemoryMappedRegion> segment_region)
     : path_(std::move(path)),
       decoder_{path_.path(), segment_region} {}
 
-Snapshot::~Snapshot() {
+SegmentFileReader::~SegmentFileReader() {
     close();
 }
 
-MemoryMappedRegion Snapshot::memory_file_region() const {
+MemoryMappedRegion SegmentFileReader::memory_file_region() const {
     const auto memory_file{decoder_.memory_file()};
     if (!memory_file) return MemoryMappedRegion{};
     return memory_file->region();
 }
 
-void Snapshot::reopen_segment() {
+void SegmentFileReader::reopen_segment() {
     close();
 
     // Open decompressor that opens the mapped file in turns
     decoder_.open();
 }
 
-Snapshot::Iterator& Snapshot::Iterator::operator++() {
+SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
     bool has_next = it_.has_next();
     ++it_;
 
@@ -59,7 +59,7 @@ Snapshot::Iterator& Snapshot::Iterator::operator++() {
     return *this;
 }
 
-Snapshot::Iterator& Snapshot::Iterator::operator+=(size_t count) {
+SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator+=(size_t count) {
     while ((count > 1) && it_.has_next()) {
         it_.skip();
         --count;
@@ -70,30 +70,30 @@ Snapshot::Iterator& Snapshot::Iterator::operator+=(size_t count) {
     return *this;
 }
 
-bool operator==(const Snapshot::Iterator& lhs, const Snapshot::Iterator& rhs) {
+bool operator==(const SegmentFileReader::Iterator& lhs, const SegmentFileReader::Iterator& rhs) {
     return (lhs.deserializer_ == rhs.deserializer_) &&
            (!lhs.deserializer_ || (lhs.it_ == rhs.it_));
 }
 
-Snapshot::Iterator Snapshot::begin(std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
+SegmentFileReader::Iterator SegmentFileReader::begin(std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
     auto it = decoder_.begin();
     if (it == decoder_.end()) {
         return end();
     }
     deserializer->decode_word(*it);
     deserializer->check_sanity_with_metadata(path_);
-    return Snapshot::Iterator{std::move(it), std::move(deserializer), path()};
+    return SegmentFileReader::Iterator{std::move(it), std::move(deserializer), path()};
 }
 
-Snapshot::Iterator Snapshot::end() const {
-    return Snapshot::Iterator{decoder_.end(), {}, path()};
+SegmentFileReader::Iterator SegmentFileReader::end() const {
+    return SegmentFileReader::Iterator{decoder_.end(), {}, path()};
 }
 
-seg::Decompressor::Iterator Snapshot::seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const {
+seg::Decompressor::Iterator SegmentFileReader::seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const {
     return decoder_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
 }
 
-Snapshot::Iterator Snapshot::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
+SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
     auto it = seek_decoder(offset, hash_prefix);
     if (it == decoder_.end()) {
         return end();
@@ -104,10 +104,10 @@ Snapshot::Iterator Snapshot::seek(uint64_t offset, std::optional<Hash> hash_pref
         return end();
     }
     deserializer->check_sanity_with_metadata(path_);
-    return Snapshot::Iterator{std::move(it), std::move(deserializer), path()};
+    return SegmentFileReader::Iterator{std::move(it), std::move(deserializer), path()};
 }
 
-void Snapshot::close() {
+void SegmentFileReader::close() {
     // Close decompressor that closes the mapped file in turns
     decoder_.close();
 }

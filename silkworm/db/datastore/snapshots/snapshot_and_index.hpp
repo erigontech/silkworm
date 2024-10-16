@@ -21,8 +21,8 @@
 
 namespace silkworm::snapshots {
 
-struct SnapshotAndIndex {
-    const Snapshot& snapshot;
+struct SegmentAndIndex {
+    const SegmentFileReader& segment;
     const Index& index;
 };
 

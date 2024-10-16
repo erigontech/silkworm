@@ -59,7 +59,7 @@ struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
 
 static_assert(SnapshotWordDeserializerConcept<HeaderSnapshotWordDeserializer>);
 
-using HeaderSnapshotReader = SnapshotReader<HeaderSnapshotWordDeserializer>;
-using HeaderSnapshotWriter = SnapshotWriter<HeaderSnapshotWordSerializer>;
+using HeaderSegmentReader = SegmentReader<HeaderSnapshotWordDeserializer>;
+using HeaderSegmentWriter = SegmentWriter<HeaderSnapshotWordSerializer>;
 
 }  // namespace silkworm::snapshots

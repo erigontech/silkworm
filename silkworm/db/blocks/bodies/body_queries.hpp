@@ -22,6 +22,6 @@
 
 namespace silkworm::snapshots {
 
-using BodyFindByBlockNumQuery = FindByIdQuery<BodySnapshotReader>;
+using BodyFindByBlockNumQuery = FindByIdQuery<BodySegmentReader>;
 
 }  // namespace silkworm::snapshots

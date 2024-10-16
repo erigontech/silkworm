@@ -32,15 +32,15 @@
 namespace silkworm::snapshots {
 
 struct SnapshotBundleData {
-    Snapshot header_snapshot;
+    SegmentFileReader header_segment;
     //! Index header_hash -> block_num -> headers_segment_offset
     Index idx_header_hash;
 
-    Snapshot body_snapshot;
+    SegmentFileReader body_segment;
     //! Index block_num -> bodies_segment_offset
     Index idx_body_number;
 
-    Snapshot txn_snapshot;
+    SegmentFileReader txn_segment;
     //! Index transaction_hash -> txn_id -> transactions_segment_offset
     Index idx_txn_hash;
     //! Index transaction_hash -> block_num
@@ -57,11 +57,11 @@ struct SnapshotBundle : public SnapshotBundleData {
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
-    std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
+    std::array<std::reference_wrapper<SegmentFileReader>, kSnapshotsCount> segments() {
         return {
-            header_snapshot,
-            body_snapshot,
-            txn_snapshot,
+            header_segment,
+            body_segment,
+            txn_segment,
         };
     }
 
@@ -91,18 +91,18 @@ struct SnapshotBundle : public SnapshotBundleData {
         };
     }
 
-    const Snapshot& snapshot(SnapshotType type) const {
+    const SegmentFileReader& segment(SnapshotType type) const {
         switch (type) {
             case headers:
-                return header_snapshot;
+                return header_segment;
             case bodies:
-                return body_snapshot;
+                return body_segment;
             case transactions:
             case transactions_to_block:
-                return txn_snapshot;
+                return txn_segment;
         }
         SILKWORM_ASSERT(false);
-        return header_snapshot;
+        return header_segment;
     }
 
     const Index& index(SnapshotType type) const {
@@ -120,12 +120,12 @@ struct SnapshotBundle : public SnapshotBundleData {
         return idx_header_hash;
     }
 
-    SnapshotAndIndex snapshot_and_index(SnapshotType type) const {
-        return {snapshot(type), index(type)};
+    SegmentAndIndex segment_and_index(SnapshotType type) const {
+        return {segment(type), index(type)};
     }
 
     // assume that all snapshots have the same block range, and use one of them
-    BlockNumRange block_range() const { return header_snapshot.path().step_range().to_block_num_range(); }
+    BlockNumRange block_range() const { return header_segment.path().step_range().to_block_num_range(); }
     size_t block_count() const { return block_range().size(); }
 
     std::vector<std::filesystem::path> files();

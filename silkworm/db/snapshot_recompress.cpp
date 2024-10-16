@@ -26,10 +26,10 @@
 
 namespace silkworm::snapshots {
 
-template <class TSnapshotReader, class TSnapshotWriter>
-void copy_reader_to_writer(const Snapshot& file_reader, SnapshotFileWriter& file_writer) {
-    TSnapshotReader reader{file_reader};
-    TSnapshotWriter writer{file_writer};
+template <class TSegmentReader, class TSegmentWriter>
+void copy_reader_to_writer(const SegmentFileReader& file_reader, SegmentFileWriter& file_writer) {
+    TSegmentReader reader{file_reader};
+    TSegmentWriter writer{file_writer};
     std::copy(reader.begin(), reader.end(), writer.out());
 }
 
@@ -37,29 +37,29 @@ void snapshot_file_recompress(const std::filesystem::path& path) {
     auto path_opt = SnapshotPath::parse(path);
     if (!path_opt) throw std::runtime_error{"bad snapshot path"};
 
-    Snapshot file_reader{*path_opt};
+    SegmentFileReader file_reader{*path_opt};
     file_reader.reopen_segment();
 
     auto out_path = path;
     out_path.replace_extension("seg2");
     TemporaryDirectory tmp_dir;
-    SnapshotFileWriter file_writer{*SnapshotPath::parse(out_path), tmp_dir.path()};
+    SegmentFileWriter file_writer{*SnapshotPath::parse(out_path), tmp_dir.path()};
 
     switch (path_opt->type()) {
         case SnapshotType::headers:
-            copy_reader_to_writer<HeaderSnapshotReader, HeaderSnapshotWriter>(file_reader, file_writer);
+            copy_reader_to_writer<HeaderSegmentReader, HeaderSegmentWriter>(file_reader, file_writer);
             break;
         case SnapshotType::bodies:
-            copy_reader_to_writer<BodySnapshotReader, BodySnapshotWriter>(file_reader, file_writer);
+            copy_reader_to_writer<BodySegmentReader, BodySegmentWriter>(file_reader, file_writer);
             break;
         case SnapshotType::transactions:
-            copy_reader_to_writer<TransactionSnapshotReader, TransactionSnapshotWriter>(file_reader, file_writer);
+            copy_reader_to_writer<TransactionSegmentReader, TransactionSegmentWriter>(file_reader, file_writer);
             break;
         default:
             throw std::runtime_error{"invalid snapshot type"};
     }
 
-    SnapshotFileWriter::flush(std::move(file_writer));
+    SegmentFileWriter::flush(std::move(file_writer));
 }
 
 }  // namespace silkworm::snapshots

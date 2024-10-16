@@ -82,10 +82,10 @@ BlockNum SnapshotRepository::max_block_available() const {
     return (block_num_range.size() > 0) ? block_num_range.end - 1 : block_num_range.start;
 }
 
-std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
+std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
     auto bundle = find_bundle(number);
     if (bundle) {
-        return {bundle->snapshot_and_index(type), bundle};
+        return {bundle->segment_and_index(type), bundle};
     }
     return {std::nullopt, {}};
 }
@@ -157,7 +157,7 @@ void SnapshotRepository::reopen_folder() {
     lock.unlock();
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
-              << " snapshots: " << total_snapshots_count()
+              << " segments: " << total_segments_count()
               << " indexes: " << total_indexes_count()
               << " max block available: " << max_block_available();
 }

@@ -172,8 +172,8 @@ Task<void> SnapshotSync::download_snapshots() {
     const size_t num_snapshots = snapshot_config.preverified_snapshots().size();
     SILK_INFO << "SnapshotSync: download started: [0/" << num_snapshots << "]";
 
-    auto log_added = [](const std::filesystem::path& snapshot_file) {
-        SILK_TRACE << "SnapshotSync: download started for: " << snapshot_file.filename().string();
+    auto log_added = [](const std::filesystem::path& path) {
+        SILK_TRACE << "SnapshotSync: download started for: " << path.filename().string();
     };
     boost::signals2::scoped_connection added_subscription{client_.added_subscription.connect(log_added)};
 
@@ -202,8 +202,8 @@ Task<void> SnapshotSync::download_snapshots() {
     auto executor = co_await boost::asio::this_coro::executor;
     // make the buffer bigger so that try_send always succeeds in case of duplicate files (see snapshot_set below)
     concurrency::Channel<std::filesystem::path> completed_channel{executor, num_snapshots * 2};
-    auto log_completed = [&](const std::filesystem::path& snapshot_file) {
-        completed_channel.try_send(snapshot_file);
+    auto log_completed = [&](const std::filesystem::path& path) {
+        completed_channel.try_send(path);
     };
     boost::signals2::scoped_connection completed_subscription{client_.completed_subscription.connect(log_completed)};
 
@@ -276,7 +276,7 @@ void SnapshotSync::seed_frozen_local_snapshots() {
     for (auto& bundle_ptr : repository_.view_bundles()) {
         auto& bundle = *bundle_ptr;
         bool is_frozen = bundle.block_range().size() >= kMaxMergerSnapshotSize;
-        const auto first_snapshot = bundle.snapshots()[0];
+        const auto first_snapshot = bundle.segments()[0];
         // assume that if one snapshot in the bundle is preverified, then all of them are
         bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.get().path().filename());
         if (is_frozen && !is_preverified) {
@@ -334,7 +334,7 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
 
     for (const auto& bundle_ptr : repository_.view_bundles()) {
         const auto& bundle = *bundle_ptr;
-        for (const BlockHeader& header : HeaderSnapshotReader{bundle.header_snapshot}) {
+        for (const BlockHeader& header : HeaderSegmentReader{bundle.header_segment}) {
             SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
             const auto block_number = header.number;
             if (block_number > max_block_available) continue;
@@ -387,9 +387,9 @@ void SnapshotSync::update_block_bodies(RWTxn& txn, BlockNum max_block_available)
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto [tx_snapshot, _] = repository_.find_segment(SnapshotType::transactions, max_block_available);
-    ensure(tx_snapshot.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
-    const auto last_tx_id = tx_snapshot->index.base_data_id() + tx_snapshot->snapshot.item_count();
+    const auto [txn_segment, _] = repository_.find_segment(SnapshotType::transactions, max_block_available);
+    ensure(txn_segment.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
+    const auto last_tx_id = txn_segment->index.base_data_id() + txn_segment->segment.item_count();
     reset_map_sequence(txn, table::kBlockTransactions.name, last_tx_id + 1);
     SILK_INFO << "SnapshotSync: database table BlockTransactions sequence reset";
 

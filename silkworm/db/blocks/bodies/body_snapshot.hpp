@@ -55,7 +55,7 @@ struct BodySnapshotWordDeserializer : public SnapshotWordDeserializer {
 
 static_assert(SnapshotWordDeserializerConcept<BodySnapshotWordDeserializer>);
 
-using BodySnapshotReader = SnapshotReader<BodySnapshotWordDeserializer>;
-using BodySnapshotWriter = SnapshotWriter<BodySnapshotWordSerializer>;
+using BodySegmentReader = SegmentReader<BodySnapshotWordDeserializer>;
+using BodySegmentWriter = SegmentWriter<BodySnapshotWordSerializer>;
 
 }  // namespace silkworm::snapshots

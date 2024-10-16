@@ -28,7 +28,7 @@
 
 namespace silkworm::snapshots {
 
-class SnapshotFileWriter {
+class SegmentFileWriter {
   public:
     class Iterator {
       public:
@@ -62,18 +62,18 @@ class SnapshotFileWriter {
 
     static_assert(std::output_iterator<Iterator, typename Iterator::value_type>);
 
-    explicit SnapshotFileWriter(
+    explicit SegmentFileWriter(
         SnapshotPath path,
         const std::filesystem::path& tmp_dir_path);
 
-    SnapshotFileWriter(SnapshotFileWriter&&) = default;
-    SnapshotFileWriter& operator=(SnapshotFileWriter&&) = default;
+    SegmentFileWriter(SegmentFileWriter&&) = default;
+    SegmentFileWriter& operator=(SegmentFileWriter&&) = default;
 
     SnapshotPath path() const { return path_; }
 
     Iterator out(std::shared_ptr<SnapshotWordSerializer> serializer);
 
-    static void flush(SnapshotFileWriter writer);
+    static void flush(SegmentFileWriter writer);
 
   private:
     SnapshotPath path_;
@@ -81,7 +81,7 @@ class SnapshotFileWriter {
 };
 
 template <SnapshotWordSerializerConcept TWordSerializer>
-class SnapshotWriter {
+class SegmentWriter {
   public:
     class Iterator {
       public:
@@ -91,7 +91,7 @@ class SnapshotWriter {
         using pointer = void;
         using reference = void;
 
-        explicit Iterator(SnapshotFileWriter::Iterator it)
+        explicit Iterator(SegmentFileWriter::Iterator it)
             : it_(std::move(it)) {}
 
         Iterator& operator*() { return *this; }
@@ -108,7 +108,7 @@ class SnapshotWriter {
         }
 
       private:
-        SnapshotFileWriter::Iterator::value_type set_value(value_type value) {
+        SegmentFileWriter::Iterator::value_type set_value(value_type value) {
             SnapshotWordSerializer& base_serializer = *it_.serializer();
             // dynamic_cast is safe because TWordSerializer was used when creating the Iterator
             auto& s = dynamic_cast<TWordSerializer&>(base_serializer);
@@ -116,25 +116,25 @@ class SnapshotWriter {
             return it_.serializer();
         }
 
-        SnapshotFileWriter::Iterator it_;
+        SegmentFileWriter::Iterator it_;
     };
 
     static_assert(std::output_iterator<Iterator, typename Iterator::value_type>);
 
     using WordDeserializer = TWordSerializer;
 
-    explicit SnapshotWriter(SnapshotFileWriter& snapshot) : snapshot_(snapshot) {}
+    explicit SegmentWriter(SegmentFileWriter& writer) : writer_(writer) {}
 
     Iterator out() {
-        return Iterator{snapshot_.out(std::make_shared<TWordSerializer>())};
+        return Iterator{writer_.out(std::make_shared<TWordSerializer>())};
     }
 
   private:
-    SnapshotFileWriter& snapshot_;
+    SegmentFileWriter& writer_;
 };
 
-template <class TSnapshotWriter>
-concept SnapshotWriterConcept = std::same_as<TSnapshotWriter, SnapshotWriter<typename TSnapshotWriter::WordDeserializer>> ||
-                                std::derived_from<TSnapshotWriter, SnapshotWriter<typename TSnapshotWriter::WordDeserializer>>;
+template <class TSegmentWriter>
+concept SegmentWriterConcept = std::same_as<TSegmentWriter, SegmentWriter<typename TSegmentWriter::WordDeserializer>> ||
+                               std::derived_from<TSegmentWriter, SegmentWriter<typename TSegmentWriter::WordDeserializer>>;
 
 }  // namespace silkworm::snapshots

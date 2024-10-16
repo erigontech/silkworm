@@ -25,9 +25,9 @@
 
 namespace silkworm::db {
 
-void HeaderSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SnapshotFileWriter& file_writer) const {
+void HeaderSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
-    snapshots::HeaderSnapshotWriter writer{file_writer};
+    snapshots::HeaderSegmentWriter writer{file_writer};
     auto out = writer.out();
     for (BlockNum i = range.start; i < range.end; ++i) {
         auto value_opt = read_canonical_header(txn, i);

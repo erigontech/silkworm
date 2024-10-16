@@ -29,13 +29,13 @@ using namespace snapshots;
 
 SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const {
     return SnapshotBundle{{
-        .header_snapshot = Snapshot(snapshot_path(SnapshotType::headers)),
+        .header_segment = SegmentFileReader(snapshot_path(SnapshotType::headers)),
         .idx_header_hash = Index(index_path(SnapshotType::headers)),
 
-        .body_snapshot = Snapshot(snapshot_path(SnapshotType::bodies)),
+        .body_segment = SegmentFileReader(snapshot_path(SnapshotType::bodies)),
         .idx_body_number = Index(index_path(SnapshotType::bodies)),
 
-        .txn_snapshot = Snapshot(snapshot_path(SnapshotType::transactions)),
+        .txn_segment = SegmentFileReader(snapshot_path(SnapshotType::transactions)),
         .idx_txn_hash = Index(index_path(SnapshotType::transactions)),
         .idx_txn_hash_2_block = Index(index_path(SnapshotType::transactions_to_block)),
     }};
@@ -52,18 +52,18 @@ SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_
     return make(std::move(snapshot_path), std::move(index_path));
 }
 
-std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPath& seg_file) const {
-    switch (seg_file.type()) {
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPath& segment_path) const {
+    switch (segment_path.type()) {
         case SnapshotType::headers:
-            return {std::make_shared<IndexBuilder>(HeaderIndex::make(seg_file))};
+            return {std::make_shared<IndexBuilder>(HeaderIndex::make(segment_path))};
         case SnapshotType::bodies:
-            return {std::make_shared<IndexBuilder>(BodyIndex::make(seg_file))};
+            return {std::make_shared<IndexBuilder>(BodyIndex::make(segment_path))};
         case SnapshotType::transactions: {
-            auto bodies_segment_path = seg_file.related_path(SnapshotType::bodies, kSegmentExtension);
+            auto bodies_segment_path = segment_path.related_path(SnapshotType::bodies, kSegmentExtension);
             if (!bodies_segment_path.exists()) return {};
             return {
-                std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, seg_file)),
-                std::make_shared<IndexBuilder>(TransactionToBlockIndex::make(bodies_segment_path, seg_file)),
+                std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, segment_path)),
+                std::make_shared<IndexBuilder>(TransactionToBlockIndex::make(bodies_segment_path, segment_path)),
             };
         }
         default:
@@ -72,9 +72,9 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
     }
 }
 
-std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPathList& snapshot_paths) const {
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPathList& segment_paths) const {
     std::vector<std::shared_ptr<IndexBuilder>> all_builders;
-    for (const auto& path : snapshot_paths) {
+    for (const auto& path : segment_paths) {
         auto builders = index_builders(path);
         all_builders.insert(all_builders.end(), builders.begin(), builders.end());
     }

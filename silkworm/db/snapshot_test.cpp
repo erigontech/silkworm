@@ -54,11 +54,11 @@ class SnapshotPathForTest : public SnapshotPath {
           } {}
 };
 
-class SnapshotForTest : public Snapshot {
+class SnapshotForTest : public SegmentFileReader {
   public:
-    explicit SnapshotForTest(SnapshotPath path) : Snapshot(std::move(path)) {}
+    explicit SnapshotForTest(SnapshotPath path) : SegmentFileReader(std::move(path)) {}
     SnapshotForTest(const std::filesystem::path& tmp_dir, StepRange step_range)
-        : Snapshot{SnapshotPathForTest{tmp_dir, step_range}} {}
+        : SegmentFileReader{SnapshotPathForTest{tmp_dir, step_range}} {}
 };
 
 TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
@@ -122,18 +122,18 @@ TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
 TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};  // contains headers for [1'500'012, 1'500'013]
-    auto& header_snapshot_path = header_snapshot_file.path();
-    auto header_index = HeaderIndex::make(header_snapshot_path);
-    header_index.set_base_data_id(header_snapshot_file.block_num_range().start);
+    test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};  // contains headers for [1'500'012, 1'500'013]
+    auto& header_segment_path = header_segment_file.path();
+    auto header_index = HeaderIndex::make(header_segment_path);
+    header_index.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
 
-    Snapshot header_snapshot{header_snapshot_path};
-    header_snapshot.reopen_segment();
+    SegmentFileReader header_segment{header_segment_path};
+    header_segment.reopen_segment();
 
-    Index idx_header_hash{header_snapshot_path.index_file()};
+    Index idx_header_hash{header_segment_path.index_file()};
     idx_header_hash.reopen_index();
-    HeaderFindByBlockNumQuery header_by_number{{header_snapshot, idx_header_hash}};
+    HeaderFindByBlockNumQuery header_by_number{{header_segment, idx_header_hash}};
 
     CHECK(!header_by_number.exec(1'500'011));
     CHECK(header_by_number.exec(1'500'012));
@@ -165,18 +165,18 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
 TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    test::SampleBodySnapshotFile body_snapshot_file{tmp_dir.path()};  // contains bodies for [1'500'012, 1'500'013]
-    auto& body_snapshot_path = body_snapshot_file.path();
-    auto body_index = BodyIndex::make(body_snapshot_path);
-    body_index.set_base_data_id(body_snapshot_file.block_num_range().start);
+    test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};  // contains bodies for [1'500'012, 1'500'013]
+    auto& body_segment_path = body_segment_file.path();
+    auto body_index = BodyIndex::make(body_segment_path);
+    body_index.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
 
-    Snapshot body_snapshot{body_snapshot_path};
-    body_snapshot.reopen_segment();
+    SegmentFileReader body_segment{body_segment_path};
+    body_segment.reopen_segment();
 
-    Index idx_body_number{body_snapshot_path.index_file()};
+    Index idx_body_number{body_segment_path.index_file()};
     idx_body_number.reopen_index();
-    BodyFindByBlockNumQuery body_by_number{{body_snapshot, idx_body_number}};
+    BodyFindByBlockNumQuery body_by_number{{body_segment, idx_body_number}};
 
     CHECK(!body_by_number.exec(1'500'011));
     CHECK(body_by_number.exec(1'500'012));
@@ -186,26 +186,26 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
         CHECK(body_for_storage->base_txn_id == 7'341'271);
         CHECK(body_for_storage->txn_count == 2 + 1);  // 2 system txs + 1 tx
     }
-    // CHECK(!body_snapshot.body_by_number(1'500'014)); // TODO(canepat) assert in EF, should return std::nullopt instead
+    // CHECK(!body_segment.body_by_number(1'500'014)); // TODO(canepat) assert in EF, should return std::nullopt instead
 }
 
 // https://etherscan.io/block/1500013
 TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    auto& body_snapshot_path = body_snapshot.path();
-    test::SampleTransactionSnapshotFile tx_snapshot_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
-    auto& tx_snapshot_path = tx_snapshot_file.path();
-    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    auto& body_segment_path = body_segment.path();
+    test::SampleTransactionSnapshotFile txn_segment_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
+    auto& txn_segment_path = txn_segment_file.path();
+    auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     CHECK_NOTHROW(tx_index.build());
 
-    Snapshot tx_snapshot{tx_snapshot_path};
-    tx_snapshot.reopen_segment();
+    SegmentFileReader txn_segment{txn_segment_path};
+    txn_segment.reopen_segment();
 
-    Index idx_txn_hash{tx_snapshot_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionFindByIdQuery txn_by_id{{tx_snapshot, idx_txn_hash}};
+    TransactionFindByIdQuery txn_by_id{{txn_segment, idx_txn_hash}};
 
     const auto transaction = txn_by_id.exec(7'341'272);
     CHECK(transaction.has_value());
@@ -220,25 +220,25 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
 TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    auto& body_snapshot_path = body_snapshot.path();
-    test::SampleTransactionSnapshotFile tx_snapshot_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
-    auto& tx_snapshot_path = tx_snapshot_file.path();
-    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    auto& body_segment_path = body_segment.path();
+    test::SampleTransactionSnapshotFile txn_segment_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
+    auto& txn_segment_path = txn_segment_file.path();
+    auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     REQUIRE_NOTHROW(tx_index.build());
-    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path, tx_snapshot_file.block_num_range().start);
+    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(tx_index_hash_to_block.build());
 
-    Snapshot tx_snapshot{tx_snapshot_path};
-    tx_snapshot.reopen_segment();
+    SegmentFileReader txn_segment{txn_segment_path};
+    txn_segment.reopen_segment();
 
-    Index idx_txn_hash{tx_snapshot_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionFindByIdQuery txn_by_id{{tx_snapshot, idx_txn_hash}};
+    TransactionFindByIdQuery txn_by_id{{txn_segment, idx_txn_hash}};
 
-    Index idx_txn_hash_2_block{tx_snapshot_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
+    Index idx_txn_hash_2_block{txn_segment_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
     idx_txn_hash_2_block.reopen_index();
-    TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{{tx_snapshot, idx_txn_hash}}};
+    TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     auto transaction = txn_by_id.exec(7'341'269);  // known txn id in block 1'500'012
@@ -264,19 +264,19 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
 TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    auto& body_snapshot_path = body_snapshot.path();
-    test::SampleTransactionSnapshotFile tx_snapshot_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
-    auto& tx_snapshot_path = tx_snapshot_file.path();
-    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    auto& body_segment_path = body_segment.path();
+    test::SampleTransactionSnapshotFile txn_segment_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
+    auto& txn_segment_path = txn_segment_file.path();
+    auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     REQUIRE_NOTHROW(tx_index.build());
 
-    Snapshot tx_snapshot{tx_snapshot_path};
-    tx_snapshot.reopen_segment();
+    SegmentFileReader txn_segment{txn_segment_path};
+    txn_segment.reopen_segment();
 
-    Index idx_txn_hash{tx_snapshot_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionRangeFromIdQuery query{{tx_snapshot, idx_txn_hash}};
+    TransactionRangeFromIdQuery query{{txn_segment, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     CHECK(query.exec_into_vector(7'341'263, 0).empty());
@@ -296,19 +296,19 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
 TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][index]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    auto& body_snapshot_path = body_snapshot.path();
-    test::SampleTransactionSnapshotFile tx_snapshot_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
-    auto& tx_snapshot_path = tx_snapshot_file.path();
-    auto tx_index = TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    auto& body_segment_path = body_segment.path();
+    test::SampleTransactionSnapshotFile txn_segment_file{tmp_dir.path()};  // contains txs for [1'500'012, 1'500'013]
+    auto& txn_segment_path = txn_segment_file.path();
+    auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     REQUIRE_NOTHROW(tx_index.build());
 
-    Snapshot tx_snapshot{tx_snapshot_path};
-    tx_snapshot.reopen_segment();
+    SegmentFileReader txn_segment{txn_segment_path};
+    txn_segment.reopen_segment();
 
-    Index idx_txn_hash{tx_snapshot_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.index_file()};
     idx_txn_hash.reopen_index();
-    TransactionPayloadRlpRangeFromIdQuery query{{tx_snapshot, idx_txn_hash}};
+    TransactionPayloadRlpRangeFromIdQuery query{{txn_segment, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     CHECK(query.exec_into_vector(7'341'263, 0).empty());

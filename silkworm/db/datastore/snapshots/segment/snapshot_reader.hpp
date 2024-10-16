@@ -43,7 +43,7 @@ namespace silkworm::snapshots {
 //! outside of this class and a \code Snapshot instance can be created by specifying the \code MemoryMappedRegion
 //! segment containing the information about the memory region already mapped. This must be taken into account
 //! because we must avoid to memory-map it again.
-class Snapshot {
+class SegmentFileReader {
   public:
     class Iterator {
       public:
@@ -79,13 +79,13 @@ class Snapshot {
 
     static inline const auto kPageSize{os::page_size()};
 
-    explicit Snapshot(
+    explicit SegmentFileReader(
         SnapshotPath path,
         std::optional<MemoryMappedRegion> segment_region = std::nullopt);
-    ~Snapshot();
+    ~SegmentFileReader();
 
-    Snapshot(Snapshot&&) = default;
-    Snapshot& operator=(Snapshot&&) = default;
+    SegmentFileReader(SegmentFileReader&&) = default;
+    SegmentFileReader& operator=(SegmentFileReader&&) = default;
 
     const SnapshotPath& path() const { return path_; }
     std::filesystem::path fs_path() const { return path_.path(); }
@@ -113,7 +113,7 @@ class Snapshot {
 };
 
 template <SnapshotWordDeserializerConcept TWordDeserializer>
-class SnapshotReader {
+class SegmentReader {
   public:
     class Iterator {
       public:
@@ -123,7 +123,7 @@ class SnapshotReader {
         using pointer = value_type*;
         using reference = value_type&;
 
-        explicit Iterator(Snapshot::Iterator it)
+        explicit Iterator(SegmentFileReader::Iterator it)
             : it_(std::move(it)) {}
 
         reference operator*() const { return value(); }
@@ -151,25 +151,25 @@ class SnapshotReader {
             return s.value;
         }
 
-        Snapshot::Iterator it_;
+        SegmentFileReader::Iterator it_;
     };
 
     static_assert(std::input_iterator<Iterator>);
 
     using WordDeserializer = TWordDeserializer;
 
-    explicit SnapshotReader(const Snapshot& snapshot) : snapshot_(snapshot) {}
+    explicit SegmentReader(const SegmentFileReader& reader) : reader_(reader) {}
 
     Iterator begin() const {
-        return Iterator{snapshot_.begin(std::make_shared<TWordDeserializer>())};
+        return Iterator{reader_.begin(std::make_shared<TWordDeserializer>())};
     }
 
     Iterator end() const {
-        return Iterator{snapshot_.end()};
+        return Iterator{reader_.end()};
     }
 
     Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        return Iterator{snapshot_.seek(offset, hash_prefix, std::make_shared<TWordDeserializer>())};
+        return Iterator{reader_.seek(offset, hash_prefix, std::make_shared<TWordDeserializer>())};
     }
 
     std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
@@ -180,19 +180,19 @@ class SnapshotReader {
     std::vector<typename Iterator::value_type> read_into_vector(uint64_t offset, size_t count) const {
         auto it = seek(offset);
         if (it == end()) {
-            throw std::runtime_error("SnapshotReader::read_into_vector: bad offset " + std::to_string(offset));
+            throw std::runtime_error("SegmentReader::read_into_vector: bad offset " + std::to_string(offset));
         }
         return iterator_read_into_vector(std::move(it), count);
     }
 
-    const SnapshotPath& path() const { return snapshot_.path(); }
+    const SnapshotPath& path() const { return reader_.path(); }
 
   private:
-    const Snapshot& snapshot_;
+    const SegmentFileReader& reader_;
 };
 
-template <class TSnapshotReader>
-concept SnapshotReaderConcept = std::same_as<TSnapshotReader, SnapshotReader<typename TSnapshotReader::WordDeserializer>> ||
-                                std::derived_from<TSnapshotReader, SnapshotReader<typename TSnapshotReader::WordDeserializer>>;
+template <class TSegmentReader>
+concept SegmentReaderConcept = std::same_as<TSegmentReader, SegmentReader<typename TSegmentReader::WordDeserializer>> ||
+                               std::derived_from<TSegmentReader, SegmentReader<typename TSegmentReader::WordDeserializer>>;
 
 }  // namespace silkworm::snapshots

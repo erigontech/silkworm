@@ -87,17 +87,17 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
 }
 
 static const SnapshotFreezer& get_snapshot_freezer(SnapshotType type) {
-    static HeaderSnapshotFreezer header_snapshot_freezer;
-    static BodySnapshotFreezer body_snapshot_freezer;
-    static TransactionSnapshotFreezer txn_snapshot_freezer;
+    static HeaderSnapshotFreezer header_segment_freezer;
+    static BodySnapshotFreezer body_segment_freezer;
+    static TransactionSnapshotFreezer txn_segment_freezer;
 
     switch (type) {
         case SnapshotType::headers:
-            return header_snapshot_freezer;
+            return header_segment_freezer;
         case SnapshotType::bodies:
-            return body_snapshot_freezer;
+            return body_segment_freezer;
         case SnapshotType::transactions:
-            return txn_snapshot_freezer;
+            return txn_segment_freezer;
         default:
             SILKWORM_ASSERT(false);
             throw std::runtime_error("invalid type");
@@ -109,15 +109,15 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
     auto range = freezer_command.range;
 
     auto bundle = snapshots_.bundle_factory().make(tmp_dir_path_, range);
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        auto path = snapshot_ref.get().path();
-        SnapshotFileWriter file_writer{path, tmp_dir_path_};
+    for (auto& segment_ref : bundle.segments()) {
+        auto path = segment_ref.get().path();
+        SegmentFileWriter file_writer{path, tmp_dir_path_};
         {
             auto db_tx = db_access_.start_ro_tx();
             auto& freezer = get_snapshot_freezer(path.type());
             freezer.copy(db_tx, freezer_command, file_writer);
         }
-        SnapshotFileWriter::flush(std::move(file_writer));
+        SegmentFileWriter::flush(std::move(file_writer));
     }
 
     return std::make_shared<FreezerResult>(std::move(bundle));

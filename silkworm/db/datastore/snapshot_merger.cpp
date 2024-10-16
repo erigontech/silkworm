@@ -91,14 +91,14 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
     auto range = merger_command.range;
 
     auto new_bundle = snapshots_.bundle_factory().make(tmp_dir_path_, range);
-    for (auto& snapshot_ref : new_bundle.snapshots()) {
-        auto path = snapshot_ref.get().path();
+    for (auto& segment_ref : new_bundle.segments()) {
+        auto path = segment_ref.get().path();
         log::Debug("SnapshotMerger") << "merging " << path.type_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(range)) {
             auto& bundle = *bundle_ptr;
-            SnapshotReader<RawSnapshotWordDeserializer> reader{bundle.snapshot(path.type())};
+            SegmentReader<RawSnapshotWordDeserializer> reader{bundle.segment(path.type())};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 

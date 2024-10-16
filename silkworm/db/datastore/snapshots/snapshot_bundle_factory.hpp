@@ -36,8 +36,8 @@ struct SnapshotBundleFactory {
     virtual SnapshotBundle make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const = 0;
     virtual SnapshotBundle make(const std::filesystem::path& dir_path, BlockNumRange range) const = 0;
 
-    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPath& seg_file) const = 0;
-    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& snapshot_paths) const = 0;
+    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPath& segment_path) const = 0;
+    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& segment_paths) const = 0;
 };
 
 }  // namespace silkworm::snapshots

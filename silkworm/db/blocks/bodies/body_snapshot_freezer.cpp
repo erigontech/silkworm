@@ -25,11 +25,11 @@
 
 namespace silkworm::db {
 
-void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SnapshotFileWriter& file_writer) const {
+void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
     uint64_t base_txn_id = command.base_txn_id;
 
-    snapshots::BodySnapshotWriter writer{file_writer};
+    snapshots::BodySegmentWriter writer{file_writer};
     auto out = writer.out();
     for (BlockNum i = range.start; i < range.end; ++i) {
         auto value_opt = read_canonical_body_for_storage(txn, i);

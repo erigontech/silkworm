@@ -23,10 +23,10 @@
 
 namespace silkworm::snapshots {
 
-using TransactionSnapshotReader = SnapshotReader<TransactionSnapshotWordDeserializer>;
-using TransactionSnapshotWriter = SnapshotWriter<TransactionSnapshotWordSerializer>;
+using TransactionSegmentReader = SegmentReader<TransactionSnapshotWordDeserializer>;
+using TransactionSegmentWriter = SegmentWriter<TransactionSnapshotWordSerializer>;
 
 template <BytesOrByteView TBytes>
-using TransactionSnapshotPayloadRlpReader = SnapshotReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>>;
+using TransactionSnapshotPayloadRlpReader = SegmentReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>>;
 
 }  // namespace silkworm::snapshots

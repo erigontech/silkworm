@@ -18,23 +18,23 @@
 
 namespace silkworm::snapshots {
 
-SnapshotFileWriter::SnapshotFileWriter(
+SegmentFileWriter::SegmentFileWriter(
     SnapshotPath path,
     const std::filesystem::path& tmp_dir_path)
     : path_(std::move(path)),
       compressor_(path_.path(), tmp_dir_path) {
 }
 
-SnapshotFileWriter::Iterator& SnapshotFileWriter::Iterator::operator=(const SnapshotFileWriter::Iterator::value_type& value) {
+SegmentFileWriter::Iterator& SegmentFileWriter::Iterator::operator=(const SegmentFileWriter::Iterator::value_type& value) {
     *it_ = value->encode_word();
     return *this;
 }
 
-SnapshotFileWriter::Iterator SnapshotFileWriter::out(std::shared_ptr<SnapshotWordSerializer> serializer) {
-    return SnapshotFileWriter::Iterator{compressor_.add_word_iterator(), std::move(serializer)};
+SegmentFileWriter::Iterator SegmentFileWriter::out(std::shared_ptr<SnapshotWordSerializer> serializer) {
+    return SegmentFileWriter::Iterator{compressor_.add_word_iterator(), std::move(serializer)};
 }
 
-void SnapshotFileWriter::flush(SnapshotFileWriter writer) {
+void SegmentFileWriter::flush(SegmentFileWriter writer) {
     seg::Compressor::compress(std::move(writer.compressor_));
 }
 

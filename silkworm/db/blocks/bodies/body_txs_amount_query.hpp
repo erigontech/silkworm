@@ -29,12 +29,12 @@ class BodyTxsAmountQuery {
         uint64_t count{};
     };
 
-    explicit BodyTxsAmountQuery(const Snapshot& snapshot) : snapshot_(snapshot) {}
+    explicit BodyTxsAmountQuery(const SegmentFileReader& segment) : segment_(segment) {}
 
     Result exec();
 
   private:
-    const Snapshot& snapshot_;
+    const SegmentFileReader& segment_;
 };
 
 }  // namespace silkworm::snapshots

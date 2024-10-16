@@ -80,13 +80,13 @@ static void build_header_index(benchmark::State& state) {
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
-        auto header_index = HeaderIndex::make(header_snapshot.path());
-        header_index.set_base_data_id(header_snapshot.block_num_range().start);
+        auto header_index = HeaderIndex::make(header_segment.path());
+        header_index.set_base_data_id(header_segment.block_num_range().start);
         header_index.build();
     }
 }
@@ -99,11 +99,11 @@ static void build_body_index(benchmark::State& state) {
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
-        auto body_index = BodyIndex::make(body_snapshot.path());
-        body_index.set_base_data_id(body_snapshot.block_num_range().start);
+        auto body_index = BodyIndex::make(body_segment.path());
+        body_index.set_base_data_id(body_segment.block_num_range().start);
         body_index.build();
     }
 }
@@ -116,19 +116,19 @@ static void build_tx_index(benchmark::State& state) {
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
-        auto& body_snapshot_path = body_snapshot.path();
-        auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
-        body_index.set_base_data_id(body_snapshot.block_num_range().start);
+        auto& body_segment_path = body_segment.path();
+        auto body_index = snapshots::BodyIndex::make(body_segment_path);
+        body_index.set_base_data_id(body_segment.block_num_range().start);
         body_index.build();
 
-        auto& txn_snapshot_path = txn_snapshot.path();
-        auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
+        auto& txn_segment_path = txn_segment.path();
+        auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
         tx_index.build();
-        auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start);
+        auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment.block_num_range().start);
         tx_index_hash_to_block.build();
     }
 }
@@ -142,23 +142,23 @@ static void reopen_folder(benchmark::State& state) {
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
-    auto header_index = HeaderIndex::make(header_snapshot.path());
-    header_index.set_base_data_id(header_snapshot.block_num_range().start);
+    auto header_index = HeaderIndex::make(header_segment.path());
+    header_index.set_base_data_id(header_segment.block_num_range().start);
     header_index.build();
 
-    auto& body_snapshot_path = body_snapshot.path();
-    auto body_index = BodyIndex::make(body_snapshot_path);
-    body_index.set_base_data_id(body_snapshot.block_num_range().start);
+    auto& body_segment_path = body_segment.path();
+    auto body_index = BodyIndex::make(body_segment_path);
+    body_index.set_base_data_id(body_segment.block_num_range().start);
     body_index.build();
 
-    auto& txn_snapshot_path = txn_snapshot.path();
-    auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
+    auto& txn_segment_path = txn_segment.path();
+    auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     tx_index.build();
-    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start);
+    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment.block_num_range().start);
     tx_index_hash_to_block.build();
 
     for ([[maybe_unused]] auto _ : state) {

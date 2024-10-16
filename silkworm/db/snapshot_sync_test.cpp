@@ -114,41 +114,41 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     auto tmp_dir_path = test.tmp_dir.path();
 
     // Create a sample Header snapshot+index
-    snapshots::test_util::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir_path};
-    auto& header_snapshot_path = header_snapshot_file.path();
-    Snapshot header_snapshot{header_snapshot_path};
-    auto header_index_builder = HeaderIndex::make(header_snapshot_path);
-    header_index_builder.set_base_data_id(header_snapshot_file.block_num_range().start);
+    snapshots::test_util::SampleHeaderSnapshotFile header_segment_file{tmp_dir_path};
+    auto& header_segment_path = header_segment_file.path();
+    SegmentFileReader header_segment{header_segment_path};
+    auto header_index_builder = HeaderIndex::make(header_segment_path);
+    header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    Index idx_header_hash{header_snapshot_path.index_file()};
+    Index idx_header_hash{header_segment_path.index_file()};
 
     // Create a sample Body snapshot+index
-    snapshots::test_util::SampleBodySnapshotFile body_snapshot_file{tmp_dir_path};
-    auto& body_snapshot_path = body_snapshot_file.path();
-    Snapshot body_snapshot{body_snapshot_path};
-    auto body_index_builder = BodyIndex::make(body_snapshot_path);
-    body_index_builder.set_base_data_id(body_snapshot_file.block_num_range().start);
+    snapshots::test_util::SampleBodySnapshotFile body_segment_file{tmp_dir_path};
+    auto& body_segment_path = body_segment_file.path();
+    SegmentFileReader body_segment{body_segment_path};
+    auto body_index_builder = BodyIndex::make(body_segment_path);
+    body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    Index idx_body_number{body_snapshot_path.index_file()};
+    Index idx_body_number{body_segment_path.index_file()};
 
     // Create a sample Transaction snapshot+indexes
-    snapshots::test_util::SampleTransactionSnapshotFile txn_snapshot_file{tmp_dir_path};
-    auto& txn_snapshot_path = txn_snapshot_file.path();
-    Snapshot txn_snapshot{txn_snapshot_path};
-    REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot_file.block_num_range().start).build());
-    Index idx_txn_hash{txn_snapshot_path.related_path(SnapshotType::transactions, kIdxExtension)};
-    Index idx_txn_hash_2_block{txn_snapshot_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
+    snapshots::test_util::SampleTransactionSnapshotFile txn_segment_file{tmp_dir_path};
+    auto& txn_segment_path = txn_segment_file.path();
+    SegmentFileReader txn_segment{txn_segment_path};
+    REQUIRE_NOTHROW(TransactionIndex::make(body_segment_path, txn_segment_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start).build());
+    Index idx_txn_hash{txn_segment_path.related_path(SnapshotType::transactions, kIdxExtension)};
+    Index idx_txn_hash_2_block{txn_segment_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
 
     // Add a sample Snapshot bundle to the repository
     SnapshotBundle bundle{{
-        .header_snapshot = std::move(header_snapshot),
+        .header_segment = std::move(header_segment),
         .idx_header_hash = std::move(idx_header_hash),
 
-        .body_snapshot = std::move(body_snapshot),
+        .body_segment = std::move(body_segment),
         .idx_body_number = std::move(idx_body_number),
 
-        .txn_snapshot = std::move(txn_snapshot),
+        .txn_segment = std::move(txn_segment),
         .idx_txn_hash = std::move(idx_txn_hash),
         .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
     }};
@@ -157,7 +157,7 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
 
     // Update the block headers in the database according to the repository content
     auto& tmp_db = test.context;
-    BlockNum max_block_available = header_snapshot_file.block_num_range().end - 1;
+    BlockNum max_block_available = header_segment_file.block_num_range().end - 1;
     auto is_stopping = [] { return false; };
     CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), max_block_available, is_stopping));
 

@@ -32,7 +32,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::db {
@@ -155,7 +155,7 @@ class Buffer : public State {
 
   private:
     RWTxn& txn_;
-    db::DataModel access_layer_;
+    DataModel access_layer_;
 
     // Settings
 

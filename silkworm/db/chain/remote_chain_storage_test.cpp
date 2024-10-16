@@ -53,10 +53,10 @@ struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
 
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
     SECTION("empty chain data") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kBlockHash;
         }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
 #ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
@@ -67,20 +67,20 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
     }
 
     SECTION("invalid JSON chain data") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kBlockHash;
         }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kInvalidJsonChainConfig;
         }));
         CHECK_THROWS_AS(spawn_and_wait(storage.read_chain_config()), nlohmann::json::parse_error);
     }
 
     SECTION("valid JSON chain data") {
-        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kBlockHash;
         }));
-        EXPECT_CALL(transaction, get_one(db::table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
+        EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kChainConfig;
         }));
         const auto chain_config = spawn_and_wait(storage.read_chain_config());

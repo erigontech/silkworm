@@ -33,7 +33,7 @@
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/receipt.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::snapshots {
@@ -263,7 +263,7 @@ class DataModel {
   public:
     static void set_snapshot_repository(snapshots::SnapshotRepository* repository);
 
-    explicit DataModel(db::ROTxn& txn);
+    explicit DataModel(ROTxn& txn);
     ~DataModel() = default;
 
     // Not copyable nor movable
@@ -355,7 +355,7 @@ class DataModel {
 
     static inline snapshots::SnapshotRepository* repository_{nullptr};
 
-    db::ROTxn& txn_;
+    ROTxn& txn_;
 };
 
 }  // namespace silkworm::db

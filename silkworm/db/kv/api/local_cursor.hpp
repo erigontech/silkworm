@@ -26,7 +26,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 #include "cursor.hpp"
 

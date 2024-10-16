@@ -34,6 +34,7 @@
 namespace silkworm {
 
 namespace asio = boost::asio;
+using namespace silkworm::db;
 using namespace silkworm::test_util;
 using namespace stagedsync;
 using namespace intx;  // just for literals
@@ -64,7 +65,7 @@ TEST_CASE("MainChain transaction handling") {
         auto keep_db_txn_open = i == 1;
 
         SECTION("keep_db_txn_open = " + std::to_string(keep_db_txn_open)) {
-            test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
+            silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
             asio::io_context io;
             asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
@@ -73,11 +74,11 @@ TEST_CASE("MainChain transaction handling") {
             context.add_genesis_data();
             context.commit_txn();
 
-            Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+            Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
             NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             node_settings.keep_db_txn_open = keep_db_txn_open;
-            db::RWAccess db_access{context.env()};
+            RWAccess db_access{context.env()};
             MainChainForTest main_chain{
                 io.get_executor(),
                 node_settings,
@@ -161,7 +162,7 @@ TEST_CASE("MainChain transaction handling") {
 }
 
 TEST_CASE("MainChain") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
@@ -170,10 +171,10 @@ TEST_CASE("MainChain") {
     context.add_genesis_data();
     context.commit_txn();
 
-    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+    Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    db::RWAccess db_access{context.env()};
+    RWAccess db_access{context.env()};
     MainChainForTest main_chain{
         io.get_executor(),
         node_settings,
@@ -185,10 +186,10 @@ TEST_CASE("MainChain") {
 
     auto& tx = main_chain.tx();
 
-    auto header0_hash = db::read_canonical_header_hash(tx, 0);
+    auto header0_hash = read_canonical_header_hash(tx, 0);
     REQUIRE(header0_hash.has_value());
 
-    auto header0 = db::read_canonical_header(tx, 0);
+    auto header0 = read_canonical_header(tx, 0);
     REQUIRE(header0.has_value());
 
     BlockId block0_id{0, *header0_hash};
@@ -223,7 +224,7 @@ TEST_CASE("MainChain") {
 
         // check db
         BlockBody saved_body;
-        bool present = db::read_body(tx, block1_hash, block1.header.number, saved_body);
+        bool present = read_body(tx, block1_hash, block1.header.number, saved_body);
         REQUIRE(present);
 
         auto progress = main_chain.get_block_progress();
@@ -235,11 +236,11 @@ TEST_CASE("MainChain") {
         // verifying the chain
         auto verification = main_chain.verify_chain(block1_hash);
 
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kHeadersKey) == 1);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockHashesKey) == 1);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey) == 1);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kSendersKey) == 0);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kExecutionKey) == 0);
+        CHECK(stages::read_stage_progress(tx, stages::kHeadersKey) == 1);
+        CHECK(stages::read_stage_progress(tx, stages::kBlockHashesKey) == 1);
+        CHECK(stages::read_stage_progress(tx, stages::kBlockBodiesKey) == 1);
+        CHECK(stages::read_stage_progress(tx, stages::kSendersKey) == 0);
+        CHECK(stages::read_stage_progress(tx, stages::kExecutionKey) == 0);
 
         CHECK(!holds_alternative<ValidationError>(verification));
         REQUIRE(holds_alternative<InvalidChain>(verification));
@@ -331,7 +332,7 @@ TEST_CASE("MainChain") {
 
         // check db content
         BlockBody saved_body;
-        bool present = db::read_body(tx, block1_hash, block1.header.number, saved_body);
+        bool present = read_body(tx, block1_hash, block1.header.number, saved_body);
         REQUIRE(present);
 
         auto present_in_canonical = main_chain.get_finalized_canonical_hash(block1.header.number);

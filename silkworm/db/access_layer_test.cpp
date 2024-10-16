@@ -23,7 +23,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
@@ -120,9 +120,9 @@ TEST_CASE("Db Opening", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     // Empty dir
     std::string empty{};
-    db::EnvConfig db_config{empty};
+    EnvConfig db_config{empty};
     db_config.in_memory = true;
-    REQUIRE_THROWS_AS(db::open_env(db_config), std::invalid_argument);
+    REQUIRE_THROWS_AS(open_env(db_config), std::invalid_argument);
 
     // Conflicting flags
     TemporaryDirectory tmp_dir1;
@@ -133,42 +133,42 @@ TEST_CASE("Db Opening", "[db][access_layer]") {
     db_config.path = data_dir.chaindata().path().string();
     db_config.create = true;
     db_config.shared = true;
-    REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
+    REQUIRE_THROWS_AS(open_env(db_config), std::runtime_error);
 
     // Must open
     db_config.shared = false;
     ::mdbx::env_managed env;
-    REQUIRE_NOTHROW(env = db::open_env(db_config));
+    REQUIRE_NOTHROW(env = open_env(db_config));
 
     // Create in same path not allowed
     ::mdbx::env_managed env2;
-    REQUIRE_THROWS(env2 = db::open_env(db_config));
+    REQUIRE_THROWS(env2 = open_env(db_config));
 
     env.close();
 
     // Conflicting flags
     TemporaryDirectory tmp_dir2;
-    db_config = db::EnvConfig{tmp_dir2.path().string()};
+    db_config = EnvConfig{tmp_dir2.path().string()};
     db_config.create = true;
     db_config.readonly = true;
     db_config.in_memory = true;
-    REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
+    REQUIRE_THROWS_AS(open_env(db_config), std::runtime_error);
 
     // Must open
     db_config.readonly = false;
     db_config.exclusive = true;
-    REQUIRE_NOTHROW(env = db::open_env(db_config));
+    REQUIRE_NOTHROW(env = open_env(db_config));
     env.close();
 }
 
 TEST_CASE("Methods cursor_for_each/cursor_for_count", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     ::mdbx::map_handle main_map{1};
     auto main_stat{txn->get_map_stat(main_map)};
-    db::PooledCursor main_crs{txn, main_map};
+    PooledCursor main_crs{txn, main_map};
     std::vector<std::string> table_names{};
 
     const auto walk_func{[&table_names](ByteView key, ByteView) {
@@ -176,14 +176,14 @@ TEST_CASE("Methods cursor_for_each/cursor_for_count", "[db][access_layer]") {
     }};
 
     main_crs.to_first();
-    db::cursor_for_each(main_crs, walk_func);
-    CHECK(table_names.size() == sizeof(db::table::kChainDataTables) / sizeof(db::table::kChainDataTables[0]));
+    cursor_for_each(main_crs, walk_func);
+    CHECK(table_names.size() == sizeof(table::kChainDataTables) / sizeof(table::kChainDataTables[0]));
     CHECK(table_names.size() == main_stat.ms_entries);
 
     main_crs.to_first();
     size_t max_count = table_names.size() - 1;
     table_names.clear();
-    db::cursor_for_count(main_crs, walk_func, max_count);
+    cursor_for_count(main_crs, walk_func, max_count);
     CHECK(table_names.size() == max_count);
 }
 
@@ -200,7 +200,7 @@ TEST_CASE("VersionBase primitives", "[db][access_layer]") {
 
 TEST_CASE("Sequences", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     auto val1{read_map_sequence(txn, table::kBlockTransactions.name)};
@@ -232,7 +232,7 @@ TEST_CASE("Sequences", "[db][access_layer]") {
     // Tamper with sequence
     Bytes fake_value(sizeof(uint32_t), '\0');
     mdbx::slice key(table::kBlockTransactions.name);
-    auto tgt{db::open_cursor(txn2, table::kSequence)};
+    auto tgt{open_cursor(txn2, table::kSequence)};
     tgt.upsert(key, to_slice(fake_value));
 
     bool thrown{false};
@@ -247,45 +247,45 @@ TEST_CASE("Sequences", "[db][access_layer]") {
 
 TEST_CASE("Schema Version", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context(/*with_create_tables=*/false);
+    test_util::TempChainData context(/*with_create_tables=*/false);
 
     SECTION("Read/Write") {
-        auto version{db::read_schema_version(context.rw_txn())};
+        auto version{read_schema_version(context.rw_txn())};
         CHECK(version.has_value() == false);
 
         version = VersionBase{3, 0, 0};
-        CHECK_NOTHROW(db::write_schema_version(context.rw_txn(), version.value()));
+        CHECK_NOTHROW(write_schema_version(context.rw_txn(), version.value()));
         context.commit_and_renew_txn();
-        version = db::read_schema_version(context.rw_txn());
+        version = read_schema_version(context.rw_txn());
         CHECK(version.has_value() == true);
 
-        auto version2{db::read_schema_version(context.rw_txn())};
+        auto version2{read_schema_version(context.rw_txn())};
         CHECK(version.value() == version2.value());
 
         version2 = VersionBase{2, 0, 0};
-        CHECK_THROWS(db::write_schema_version(context.rw_txn(), version2.value()));
+        CHECK_THROWS(write_schema_version(context.rw_txn(), version2.value()));
 
         version2 = VersionBase{3, 1, 0};
-        CHECK_NOTHROW(db::write_schema_version(context.rw_txn(), version2.value()));
+        CHECK_NOTHROW(write_schema_version(context.rw_txn(), version2.value()));
     }
 
     SECTION("Incompatible schema") {
         // Reduce compat schema version
-        constexpr VersionBase kIncompatibleVersion{db::table::kRequiredSchemaVersion.major - 1, 0, 0};
-        REQUIRE_NOTHROW(db::write_schema_version(context.rw_txn(), kIncompatibleVersion));
-        REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.rw_txn()));
+        constexpr VersionBase kIncompatibleVersion{table::kRequiredSchemaVersion.major - 1, 0, 0};
+        REQUIRE_NOTHROW(write_schema_version(context.rw_txn(), kIncompatibleVersion));
+        REQUIRE_THROWS(table::check_or_create_chaindata_tables(context.rw_txn()));
     }
 
     SECTION("Incompatible table") {
-        (void)context.txn().create_map(db::table::kBlockBodies.name, mdbx::key_mode::reverse,
+        (void)context.txn().create_map(table::kBlockBodies.name, mdbx::key_mode::reverse,
                                        mdbx::value_mode::multi_reverse);
-        REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.rw_txn()));
+        REQUIRE_THROWS(table::check_or_create_chaindata_tables(context.rw_txn()));
     }
 }
 
 TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.txn()};
 
     SECTION("Prune Mode") {
@@ -299,28 +299,28 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
 
         // No value in db -> no pruning
         {
-            auto prune_mode{db::read_prune_mode(txn)};
+            auto prune_mode{read_prune_mode(txn)};
             CHECK(prune_mode.to_string() == "--prune=");
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            auto db_prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
+            CHECK_NOTHROW(write_prune_mode(txn, prune_mode));
+            auto db_prune_mode = std::make_unique<PruneMode>(read_prune_mode(txn));
             REQUIRE(prune_mode == *db_prune_mode);
         }
 
         // Cross-check we have the same value
         {
-            auto prune_mode = db::read_prune_mode(txn);
+            auto prune_mode = read_prune_mode(txn);
             CHECK(prune_mode.to_string() == "--prune=");
         }
 
         // Write rubbish to prune mode
         {
-            auto target{db::open_cursor(txn, table::kDatabaseInfo)};
+            auto target{open_cursor(txn, table::kDatabaseInfo)};
             std::string db_key{"pruneHistoryType"};
             std::string db_value{"random"};
             target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
             bool hasThrown{false};
             try {
-                (void)db::read_prune_mode(txn);
+                (void)read_prune_mode(txn);
             } catch (const std::runtime_error&) {
                 hasThrown = true;
             }
@@ -331,19 +331,19 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
 
         // Provide different combinations of cli arguments
         std::string prune, expected;
-        db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-        db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
+        PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
+        PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
 
         prune = "hrstc";
         expected = "--prune=hrstc";
         {
             auto prune_mode =
-                db::parse_prune_mode(prune,  //
-                                     olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                     beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                parse_prune_mode(prune,  //
+                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
             REQUIRE(prune_mode.to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
+            REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
+            prune_mode = read_prune_mode(txn);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE(prune_mode.history().value_from_head(10) == 0);
         }
@@ -355,12 +355,12 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
         expected = "--prune=tc --prune.h.older=8000 --prune.r.before=10000 --prune.s.older=80000";
         {
             auto prune_mode =
-                db::parse_prune_mode(prune,  //
-                                     olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                     beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                parse_prune_mode(prune,  //
+                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
             REQUIRE(prune_mode.to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
+            REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
+            prune_mode = read_prune_mode(txn);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE(prune_mode.history() != prune_mode.receipts());
             REQUIRE(prune_mode.tx_index() == prune_mode.call_traces());
@@ -373,12 +373,12 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
         expected = "--prune=htc --prune.r.before=10000";
         {
             auto prune_mode =
-                db::parse_prune_mode(prune,  //
-                                     olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                     beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                parse_prune_mode(prune,  //
+                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
             REQUIRE(prune_mode.to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
+            REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
+            prune_mode = read_prune_mode(txn);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE(prune_mode.receipts().value() == 10000);
             REQUIRE(prune_mode.history().value() == kFullImmutabilityThreshold);
@@ -391,12 +391,12 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
         expected = "--prune=rt --prune.h.older=90005 --prune.c.before=10000";
         {
             auto prune_mode =
-                db::parse_prune_mode(prune,  //
-                                     olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                     beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                parse_prune_mode(prune,  //
+                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
             REQUIRE(prune_mode.to_string() == expected);
-            REQUIRE_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
+            REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
+            prune_mode = read_prune_mode(txn);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE(prune_mode.receipts().value() == kFullImmutabilityThreshold);
             REQUIRE(prune_mode.tx_index().value() == kFullImmutabilityThreshold);
@@ -412,7 +412,7 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
 
 TEST_CASE("Stages", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     // Querying a non-existent stage name should throw
@@ -430,7 +430,7 @@ TEST_CASE("Stages", "[db][access_layer]") {
 
     // Write voluntary wrong value in stage
     Bytes stage_progress(2, 0);
-    auto map{db::open_cursor(txn, table::kSyncStageProgress)};
+    auto map{open_cursor(txn, table::kSyncStageProgress)};
     CHECK_NOTHROW(txn->upsert(map, mdbx::slice{stages::kBlockBodiesKey}, to_slice(stage_progress)));
     CHECK_THROWS(block_num = stages::read_stage_progress(txn, stages::kBlockBodiesKey));
 
@@ -443,7 +443,7 @@ TEST_CASE("Stages", "[db][access_layer]") {
 }
 
 TEST_CASE("Difficulty", "[db][access_layer]") {
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     BlockNum block_num{10};
@@ -458,7 +458,7 @@ TEST_CASE("Difficulty", "[db][access_layer]") {
 
 TEST_CASE("Headers and bodies", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num{11'054'435};
@@ -520,7 +520,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         REQUIRE(full_senders.length() == 2 * kAddressLength);
 
         Bytes key{block_key(header.number, hash.bytes)};
-        auto sender_table{db::open_cursor(txn, table::kSenders)};
+        auto sender_table{open_cursor(txn, table::kSenders)};
         sender_table.upsert(to_slice(key), to_slice(full_senders));
         REQUIRE(read_block_by_number(txn, block_num, read_senders, block));
         CHECK(block.header == header);
@@ -542,7 +542,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));
 
         size_t count = 0;
-        auto processed = db::process_blocks_at_height(
+        auto processed = process_blocks_at_height(
             txn,
             height,
             [&count, &height](const Block& block) {
@@ -562,7 +562,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));  // another body after the prev two
 
         count = 0;
-        processed = db::process_blocks_at_height(
+        processed = process_blocks_at_height(
             txn,
             height,
             [&count, &height](const Block& block) {
@@ -576,10 +576,10 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
 
 TEST_CASE("Storage", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
-    db::PooledCursor table{txn, table::kPlainState};
+    PooledCursor table{txn, table::kPlainState};
 
     const auto addr{0xb000000000000000000000000000000000000008_address};
     const Bytes key{storage_prefix(addr, kDefaultIncarnation)};
@@ -597,14 +597,14 @@ TEST_CASE("Storage", "[db][access_layer]") {
     upsert_storage_value(table, key, loc2.bytes, val2.bytes);
     upsert_storage_value(table, key, loc3.bytes, val3.bytes);
 
-    CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc1) == val1);
-    CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc2) == val2);
-    CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc3) == val3);
-    CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc4) == evmc::bytes32{});
+    CHECK(read_storage(txn, addr, kDefaultIncarnation, loc1) == val1);
+    CHECK(read_storage(txn, addr, kDefaultIncarnation, loc2) == val2);
+    CHECK(read_storage(txn, addr, kDefaultIncarnation, loc3) == val3);
+    CHECK(read_storage(txn, addr, kDefaultIncarnation, loc4) == evmc::bytes32{});
 }
 
 TEST_CASE("Account history", "[db][access_layer]") {
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     BlockNum block_num{42};
@@ -631,7 +631,7 @@ TEST_CASE("Account history", "[db][access_layer]") {
 
     Bytes ah_key{account_history_key(account_address, UINT64_MAX)};
     roaring::Roaring64Map bitmap({block_num});
-    ah_cursor->upsert(to_slice(ah_key), to_slice(db::bitmap::to_bytes(bitmap)));
+    ah_cursor->upsert(to_slice(ah_key), to_slice(bitmap::to_bytes(bitmap)));
 
     std::optional<uint64_t> previous_incarnation{read_previous_incarnation(txn, account_address, block_num - 1)};
     REQUIRE(previous_incarnation.has_value());
@@ -639,7 +639,7 @@ TEST_CASE("Account history", "[db][access_layer]") {
 }
 
 TEST_CASE("Account changes", "[db][access_layer]") {
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num1{42};
@@ -663,7 +663,7 @@ TEST_CASE("Account changes", "[db][access_layer]") {
     const char* val3{""};
     const char* val4{"9a31634956ec64b6865a"};
 
-    auto table{db::open_cursor(txn, table::kAccountChangeSet)};
+    auto table{open_cursor(txn, table::kAccountChangeSet)};
 
     Bytes data1{ByteView{addr1}};
     Bytes key1{block_key(block_num1)};
@@ -699,7 +699,7 @@ TEST_CASE("Account changes", "[db][access_layer]") {
 
 TEST_CASE("Storage changes", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num1{42};
@@ -733,27 +733,27 @@ TEST_CASE("Storage changes", "[db][access_layer]") {
     uint64_t incarnation3{3};
     uint64_t incarnation4{1};
 
-    auto table{db::open_cursor(txn, table::kStorageChangeSet)};
+    auto table{open_cursor(txn, table::kStorageChangeSet)};
 
     Bytes data1{ByteView{location1}};
     data1.append(val1);
     auto key1{storage_change_key(block_num1, addr1, incarnation1)};
-    table.upsert(db::to_slice(key1), db::to_slice(data1));
+    table.upsert(to_slice(key1), to_slice(data1));
 
     Bytes data2{ByteView{location2}};
     data2.append(val2);
     auto key2{storage_change_key(block_num1, addr2, incarnation2)};
-    table.upsert(db::to_slice(key2), db::to_slice(data2));
+    table.upsert(to_slice(key2), to_slice(data2));
 
     Bytes data3{ByteView{location3}};
     data3.append(val3);
     auto key3{storage_change_key(block_num1, addr3, incarnation3)};
-    table.upsert(db::to_slice(key3), db::to_slice(data3));
+    table.upsert(to_slice(key3), to_slice(data3));
 
     Bytes data4{ByteView{location4}};
     data4.append(val4);
     auto key4{storage_change_key(block_num3, addr4, incarnation4)};
-    table.upsert(db::to_slice(key4), db::to_slice(data4));
+    table.upsert(to_slice(key4), to_slice(data4));
 
     CHECK(txn->get_map_stat(table.map()).ms_entries == 4);
 
@@ -779,20 +779,20 @@ TEST_CASE("Storage changes", "[db][access_layer]") {
 
 TEST_CASE("Chain config", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     const auto chain_config1{read_chain_config(txn)};
     CHECK(chain_config1 == std::nullopt);
 
-    auto canonical_hashes{db::open_cursor(txn, table::kCanonicalHashes)};
+    auto canonical_hashes{open_cursor(txn, table::kCanonicalHashes)};
     const Bytes genesis_block_key{block_key(0)};
     canonical_hashes.upsert(to_slice(genesis_block_key), to_slice(kSepoliaGenesisHash));
 
     const auto chain_config2{read_chain_config(txn)};
     CHECK(chain_config2 == std::nullopt);
 
-    auto config_table{db::open_cursor(txn, table::kConfig)};
+    auto config_table{open_cursor(txn, table::kConfig)};
     const std::string sepolia_config_json{kSepoliaConfig.to_json().dump()};
     config_table.upsert(to_slice(kSepoliaGenesisHash), mdbx::slice{sepolia_config_json.c_str()});
 
@@ -802,35 +802,35 @@ TEST_CASE("Chain config", "[db][access_layer]") {
 
 TEST_CASE("Head header", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
-    REQUIRE(db::read_head_header_hash(txn) == std::nullopt);
-    REQUIRE_NOTHROW(db::write_head_header_hash(txn, kSepoliaGenesisHash));
-    REQUIRE(db::read_head_header_hash(txn).value() == kSepoliaGenesisHash);
+    REQUIRE(read_head_header_hash(txn) == std::nullopt);
+    REQUIRE_NOTHROW(write_head_header_hash(txn, kSepoliaGenesisHash));
+    REQUIRE(read_head_header_hash(txn).value() == kSepoliaGenesisHash);
 }
 
 TEST_CASE("Last Fork Choice", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     auto hash1 = 0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32;
     auto hash2 = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
     auto hash3 = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_bytes32;
 
-    db::write_last_head_block(txn, hash1);
-    db::write_last_safe_block(txn, hash2);
-    db::write_last_finalized_block(txn, hash3);
+    write_last_head_block(txn, hash1);
+    write_last_safe_block(txn, hash2);
+    write_last_finalized_block(txn, hash3);
 
-    CHECK(db::read_last_head_block(txn) == hash1);
-    CHECK(db::read_last_safe_block(txn) == hash2);
-    CHECK(db::read_last_finalized_block(txn) == hash3);
+    CHECK(read_last_head_block(txn) == hash1);
+    CHECK(read_last_safe_block(txn) == hash2);
+    CHECK(read_last_finalized_block(txn) == hash3);
 }
 
 TEST_CASE("read rlp encoded transactions", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     uint64_t block_num{11'054'435};
@@ -861,7 +861,7 @@ TEST_CASE("read rlp encoded transactions", "[db][access_layer]") {
 
 TEST_CASE("write and read body w/ withdrawals", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    db::test_util::TempChainData context;
+    test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
     BlockHeader header;

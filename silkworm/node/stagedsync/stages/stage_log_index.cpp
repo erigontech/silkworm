@@ -25,6 +25,8 @@
 
 namespace silkworm::stagedsync {
 
+using namespace silkworm::db;
+
 namespace {
     //! LogBitmapBuilder is a CBOR consumer which builds address and topic roaring bitmaps from the CBOR
     //! representation of a sequence of Logs
@@ -56,7 +58,7 @@ namespace {
     };
 }  // namespace
 
-Stage::Result LogIndex::forward(db::RWTxn& txn) {
+Stage::Result LogIndex::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::kForward;
     try {
@@ -64,7 +66,7 @@ Stage::Result LogIndex::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
+        const auto target_progress{stages::read_stage_progress(txn, stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
             operation_ = OperationType::kNone;
@@ -79,7 +81,7 @@ Stage::Result LogIndex::forward(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -125,7 +127,7 @@ Stage::Result LogIndex::forward(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result LogIndex::unwind(db::RWTxn& txn) {
+Stage::Result LogIndex::unwind(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
     if (!sync_context_->unwind_point.has_value()) return ret;
@@ -137,7 +139,7 @@ Stage::Result LogIndex::unwind(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
+        const auto execution_stage_progress{stages::read_stage_progress(txn, stages::kExecutionKey)};
         if (previous_progress <= to || execution_stage_progress <= to) {
             // Nothing to process
             operation_ = OperationType::kNone;
@@ -146,7 +148,7 @@ Stage::Result LogIndex::unwind(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -185,7 +187,7 @@ Stage::Result LogIndex::unwind(db::RWTxn& txn) {
     return ret;
 }
 
-Stage::Result LogIndex::prune(db::RWTxn& txn) {
+Stage::Result LogIndex::prune(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::kPrune;
 
@@ -213,7 +215,7 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
-        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+        if (segment_width > stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),
@@ -222,12 +224,12 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
         }
 
         if (!prune_progress || prune_progress < forward_progress) {
-            prune_impl(txn, prune_threshold, db::table::kLogAddressIndex);
-            prune_impl(txn, prune_threshold, db::table::kLogTopicIndex);
+            prune_impl(txn, prune_threshold, table::kLogAddressIndex);
+            prune_impl(txn, prune_threshold, table::kLogTopicIndex);
         }
 
         reset_log_progress();
-        db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
+        stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
@@ -253,10 +255,10 @@ Stage::Result LogIndex::prune(db::RWTxn& txn) {
     return ret;
 }
 
-void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
-    using db::etl_mdbx::Collector;
+void LogIndex::forward_impl(RWTxn& txn, const BlockNum from, const BlockNum to) {
+    using etl_mdbx::Collector;
 
-    const db::MapConfig source_config{db::table::kLogs};
+    const MapConfig source_config{table::kLogs};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::kForward;
@@ -274,16 +276,16 @@ void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     log_lck.lock();
     loading_ = true;
     current_key_.clear();
-    current_target_ = db::table::kLogAddressIndex.name;
-    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogAddressIndex);
+    current_target_ = table::kLogAddressIndex.name;
+    index_loader_ = std::make_unique<bitmap::IndexLoader>(table::kLogAddressIndex);
     log_lck.unlock();
 
     index_loader_->merge_bitmaps32(txn, kAddressLength, addresses_collector_.get());
 
     log_lck.lock();
     current_key_.clear();
-    current_target_ = db::table::kLogTopicIndex.name;
-    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogTopicIndex);
+    current_target_ = table::kLogTopicIndex.name;
+    index_loader_ = std::make_unique<bitmap::IndexLoader>(table::kLogTopicIndex);
     log_lck.unlock();
 
     index_loader_->merge_bitmaps32(txn, kHashLength, topics_collector_.get());
@@ -295,8 +297,8 @@ void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     log_lck.unlock();
 }
 
-void LogIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
-    const db::MapConfig source_config{db::table::kLogs};
+void LogIndex::unwind_impl(RWTxn& txn, BlockNum from, BlockNum to) {
+    const MapConfig source_config{table::kLogs};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::kUnwind;
@@ -310,15 +312,15 @@ void LogIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     collect_unique_keys_from_logs(txn, source_config, from, to, addresses_keys, topics_keys);
 
     log_lck.lock();
-    current_target_ = db::table::kLogAddressIndex.name;
-    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogAddressIndex);
+    current_target_ = table::kLogAddressIndex.name;
+    index_loader_ = std::make_unique<bitmap::IndexLoader>(table::kLogAddressIndex);
     log_lck.unlock();
 
     index_loader_->unwind_bitmaps32(txn, to, addresses_keys);
 
     log_lck.lock();
-    current_target_ = db::table::kLogTopicIndex.name;
-    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogTopicIndex);
+    current_target_ = table::kLogTopicIndex.name;
+    index_loader_ = std::make_unique<bitmap::IndexLoader>(table::kLogTopicIndex);
     log_lck.unlock();
 
     index_loader_->unwind_bitmaps32(txn, to, topics_keys);
@@ -331,8 +333,8 @@ void LogIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 }
 
-void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
-                                         const db::MapConfig& source_config,
+void LogIndex::collect_bitmaps_from_logs(RWTxn& txn,
+                                         const MapConfig& source_config,
                                          BlockNum from, BlockNum to) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
@@ -370,9 +372,9 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
             topics_bitmaps_size += sizeof(uint32_t);
         }};
 
-    auto start_key{db::block_key(from + 1)};
+    auto start_key{block_key(from + 1)};
     auto source = txn.ro_cursor(source_config);
-    auto source_data{source->lower_bound(db::to_slice(start_key), false)};
+    auto source_data{source->lower_bound(to_slice(start_key), false)};
     while (source_data) {
         reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
         if (reached_block_number > max_block_number) break;
@@ -390,16 +392,16 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
 
         // Flush bitmaps batch by batch
         if (topics_bitmaps_size > batch_size_) {
-            db::bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps,
-                                                          topics_collector_.get(),
-                                                          topics_flush_count++);
+            bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps,
+                                                      topics_collector_.get(),
+                                                      topics_flush_count++);
             topics_bitmaps_size = 0;
         }
 
         if (addresses_bitmaps_size > batch_size_) {
-            db::bitmap::IndexLoader::flush_bitmaps_to_etl(addresses_bitmaps,
-                                                          addresses_collector_.get(),
-                                                          addresses_flush_count++);
+            bitmap::IndexLoader::flush_bitmaps_to_etl(addresses_bitmaps,
+                                                      addresses_collector_.get(),
+                                                      addresses_flush_count++);
             addresses_bitmaps_size = 0;
         }
 
@@ -407,12 +409,12 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
     }
 
     // Flush remaining portion of bitmaps (if any)
-    db::bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps, topics_collector_.get(), topics_flush_count);
-    db::bitmap::IndexLoader::flush_bitmaps_to_etl(addresses_bitmaps, addresses_collector_.get(), addresses_flush_count);
+    bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps, topics_collector_.get(), topics_flush_count);
+    bitmap::IndexLoader::flush_bitmaps_to_etl(addresses_bitmaps, addresses_collector_.get(), addresses_flush_count);
 }
 
-void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
-                                             const db::MapConfig& source_config,
+void LogIndex::collect_unique_keys_from_logs(RWTxn& txn,
+                                             const MapConfig& source_config,
                                              BlockNum from, BlockNum to,
                                              std::map<Bytes, bool>& addresses,
                                              std::map<Bytes, bool>& topics) {
@@ -434,9 +436,9 @@ void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
             (void)topics.try_emplace(key, false);
         }};
 
-    auto start_key{db::block_key(expected_block_number)};
+    auto start_key{block_key(expected_block_number)};
     auto source = txn.ro_cursor(source_config);
-    auto source_data{source->lower_bound(db::to_slice(start_key), false)};
+    auto source_data{source->lower_bound(to_slice(start_key), false)};
     while (source_data) {
         reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
         if (reached_block_number > max_block_number) break;
@@ -456,14 +458,14 @@ void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
     }
 }
 
-void LogIndex::prune_impl(db::RWTxn& txn, BlockNum threshold, const db::MapConfig& target) {
+void LogIndex::prune_impl(RWTxn& txn, BlockNum threshold, const MapConfig& target) {
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::kPrune;
     loading_ = false;
     current_source_ = target.name;
     current_target_ = current_source_;
     current_key_.clear();
-    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(target);
+    index_loader_ = std::make_unique<bitmap::IndexLoader>(target);
     log_lck.unlock();
 
     index_loader_->prune_bitmaps32(txn, threshold);
@@ -485,9 +487,9 @@ std::vector<std::string> LogIndex::get_log_progress() {
         switch (operation_) {
             case OperationType::kForward:
                 if (loading_) {
-                    if (current_target_ == db::table::kLogAddressIndex.name && addresses_collector_) {
+                    if (current_target_ == table::kLogAddressIndex.name && addresses_collector_) {
                         current_key_ = abridge(addresses_collector_->get_load_key(), kAddressLength);
-                    } else if (current_target_ == db::table::kLogTopicIndex.name && topics_collector_) {
+                    } else if (current_target_ == table::kLogTopicIndex.name && topics_collector_) {
                         current_key_ = abridge(topics_collector_->get_load_key(), kAddressLength);
                     } else {
                         current_key_.clear();

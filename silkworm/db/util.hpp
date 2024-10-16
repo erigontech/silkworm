@@ -31,7 +31,7 @@ see its package dbutils.
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 namespace silkworm::db {
 

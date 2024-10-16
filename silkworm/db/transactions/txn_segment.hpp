@@ -14,19 +14,19 @@
    limitations under the License.
 */
 
-#include "body_snapshot.hpp"
+#pragma once
 
-#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_writer.hpp>
+
+#include "txn_segment_word_serializer.hpp"
 
 namespace silkworm::snapshots {
 
-void encode_word_from_body(Bytes& word, const BlockBodyForStorage& body) {
-    word = body.encode();
-}
+using TransactionSegmentReader = SegmentReader<TransactionSnapshotWordDeserializer>;
+using TransactionSegmentWriter = SegmentWriter<TransactionSnapshotWordSerializer>;
 
-void decode_word_into_body(ByteView word, BlockBodyForStorage& body) {
-    const auto result = decode_stored_block_body(word, body);
-    success_or_throw(result, "decode_word_into_body: decode_stored_block_body error");
-}
+template <BytesOrByteView TBytes>
+using TransactionSnapshotPayloadRlpReader = SegmentReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>>;
 
 }  // namespace silkworm::snapshots

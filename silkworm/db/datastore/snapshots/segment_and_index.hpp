@@ -16,17 +16,14 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/snapshots/segment/snapshot_reader.hpp>
-#include <silkworm/db/datastore/snapshots/segment/snapshot_writer.hpp>
-
-#include "txn_snapshot_word_serializer.hpp"
+#include "rec_split_index/index.hpp"
+#include "segment/segment_reader.hpp"
 
 namespace silkworm::snapshots {
 
-using TransactionSegmentReader = SegmentReader<TransactionSnapshotWordDeserializer>;
-using TransactionSegmentWriter = SegmentWriter<TransactionSnapshotWordSerializer>;
-
-template <BytesOrByteView TBytes>
-using TransactionSnapshotPayloadRlpReader = SegmentReader<TransactionSnapshotWordPayloadRlpDeserializer<TBytes>>;
+struct SegmentAndIndex {
+    const SegmentFileReader& segment;
+    const Index& index;
+};
 
 }  // namespace silkworm::snapshots

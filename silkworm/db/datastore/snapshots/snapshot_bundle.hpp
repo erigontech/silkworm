@@ -26,8 +26,8 @@
 
 #include "common/snapshot_path.hpp"
 #include "rec_split_index/index.hpp"
-#include "segment/snapshot_reader.hpp"
-#include "snapshot_and_index.hpp"
+#include "segment/segment_reader.hpp"
+#include "segment_and_index.hpp"
 
 namespace silkworm::snapshots {
 

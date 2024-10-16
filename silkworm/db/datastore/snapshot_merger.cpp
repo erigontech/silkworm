@@ -25,7 +25,7 @@
 
 #include "snapshots/common/snapshot_path.hpp"
 #include "snapshots/seg/compressor.hpp"
-#include "snapshots/segment/snapshot_writer.hpp"
+#include "snapshots/segment/segment_writer.hpp"
 #include "snapshots/snapshot_bundle.hpp"
 
 namespace silkworm::db {

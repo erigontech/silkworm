@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "header_snapshot.hpp"
+#include "header_segment.hpp"
 
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>

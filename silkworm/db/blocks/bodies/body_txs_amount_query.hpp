@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-#include <silkworm/db/datastore/snapshots/segment/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 
 namespace silkworm::snapshots {
 

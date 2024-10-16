@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "snapshot_writer.hpp"
+#include "segment_writer.hpp"
 
 namespace silkworm::snapshots {
 

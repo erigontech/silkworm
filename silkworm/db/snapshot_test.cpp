@@ -28,11 +28,11 @@
 #include "blocks/headers/header_index.hpp"
 #include "blocks/headers/header_queries.hpp"
 #include "datastore/snapshots/index_builder.hpp"
-#include "datastore/snapshots/segment/snapshot_reader.hpp"
+#include "datastore/snapshots/segment/segment_reader.hpp"
 #include "test_util/temp_snapshots.hpp"
 #include "transactions/txn_index.hpp"
 #include "transactions/txn_queries.hpp"
-#include "transactions/txn_snapshot_word_serializer.hpp"
+#include "transactions/txn_segment_word_serializer.hpp"
 #include "transactions/txn_to_block_index.hpp"
 
 namespace silkworm::snapshots {

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "txn_snapshot_word_serializer.hpp"
+#include "txn_segment_word_serializer.hpp"
 
 #include <algorithm>
 #include <sstream>

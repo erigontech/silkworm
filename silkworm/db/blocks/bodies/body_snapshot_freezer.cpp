@@ -21,7 +21,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-#include "body_snapshot.hpp"
+#include "body_segment.hpp"
 
 namespace silkworm::db {
 

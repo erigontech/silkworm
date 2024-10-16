@@ -21,7 +21,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-#include "txn_snapshot.hpp"
+#include "txn_segment.hpp"
 
 namespace silkworm::db {
 

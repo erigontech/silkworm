@@ -21,8 +21,8 @@
 
 #include <silkworm/core/types/hash.hpp>
 
-#include "segment/snapshot_reader.hpp"
-#include "snapshot_and_index.hpp"
+#include "segment/segment_reader.hpp"
+#include "segment_and_index.hpp"
 
 namespace silkworm::snapshots {
 

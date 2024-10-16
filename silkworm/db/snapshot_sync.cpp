@@ -33,7 +33,7 @@
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
-#include "blocks/headers/header_snapshot.hpp"
+#include "blocks/headers/header_segment.hpp"
 #include "datastore/mdbx/etl_mdbx_collector.hpp"
 #include "datastore/snapshots/bittorrent/torrent_file.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"

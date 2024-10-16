@@ -38,7 +38,7 @@
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
-#include <silkworm/db/datastore/snapshots/segment/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>

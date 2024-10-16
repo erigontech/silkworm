@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "snapshot_reader.hpp"
+#include "segment_reader.hpp"
 
 #include <stdexcept>
 

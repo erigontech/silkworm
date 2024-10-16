@@ -27,7 +27,7 @@
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
-#include <silkworm/db/datastore/snapshots/segment/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>

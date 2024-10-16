@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-#include "body_snapshot.hpp"
+#include "body_segment.hpp"
 
 namespace silkworm::snapshots {
 

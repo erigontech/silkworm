@@ -22,7 +22,7 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 
-#include "txn_snapshot.hpp"
+#include "txn_segment.hpp"
 
 namespace silkworm::snapshots {
 

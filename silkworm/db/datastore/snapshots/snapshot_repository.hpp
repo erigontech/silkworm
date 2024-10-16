@@ -32,7 +32,7 @@
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
-#include "snapshot_and_index.hpp"
+#include "segment_and_index.hpp"
 #include "snapshot_bundle.hpp"
 #include "snapshot_bundle_factory.hpp"
 #include "snapshot_settings.hpp"

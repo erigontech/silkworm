@@ -18,7 +18,7 @@
 
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 
-#include "header_snapshot.hpp"
+#include "header_segment.hpp"
 
 namespace silkworm::snapshots {
 

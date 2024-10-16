@@ -22,6 +22,8 @@
 #include <silkworm/rpc/json/glaze.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
+#include "authorization.hpp"
+
 namespace silkworm {
 
 void to_json(nlohmann::json& json, const Transaction& transaction);
@@ -56,6 +58,7 @@ struct GlazeJsonTransaction {
     std::optional<std::monostate> nullto;
     std::optional<std::vector<GlazeJsonAccessList>> access_list;
     std::optional<std::vector<std::string>> blob_versioned_hashes;
+    std::optional<std::vector<GlazeJsonAuthorization>> authorizations;
 
     struct glaze {
         using T = GlazeJsonTransaction;
@@ -83,7 +86,8 @@ struct GlazeJsonTransaction {
             "transactionIndex", &T::transaction_index,
             "blockHash", &T::block_hash,
             "blockNumber", &T::block_number,
-            "gasPrice", &T::gas_price);
+            "gasPrice", &T::gas_price,
+            "authorizations", &T::authorizations);
     };
 };
 

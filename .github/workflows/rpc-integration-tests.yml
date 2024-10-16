@@ -52,6 +52,11 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
+      - name: Pause the Erigon instance dedicated to db maintenance
+        if: false # disabled while running RpcDaemon attached to E3 using gRPC
+        run: |
+          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
+
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
@@ -79,6 +84,11 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           ${{runner.workspace}}/silkworm/.github/workflows/stop_integration_rpcdaemon.sh $RPC_DAEMON_PID
+
+      - name: Resume the Erigon instance dedicated to db maintenance
+        if: false # disabled while running RpcDaemon attached to E3 using gRPC
+        run: |
+          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
       - name: Upload test results
         if: steps.test_step.outputs.TEST_RESULT != 'success'

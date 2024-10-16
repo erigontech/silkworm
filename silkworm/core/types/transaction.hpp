@@ -42,12 +42,14 @@ struct AccessListEntry {
 
 // EIP-7702 Authorization
 struct Authorization {
-    ChainId chain_id{};
+    intx::uint256 chain_id;
     evmc::address address;
     uint64_t nonce{};
     intx::uint256 v;
     intx::uint256 r;
     intx::uint256 s;
+
+    friend bool operator==(const Authorization&, const Authorization&) = default;
 };
 
 // EIP-2718 transaction type

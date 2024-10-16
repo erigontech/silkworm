@@ -73,14 +73,15 @@ namespace rlp {
         encode(to, e.storage_keys);
     }
 
-    static Header header(const Authorization& authorization) {
+    static Header header([[maybe_unused]] const Authorization& authorization) {
         Header header{.list = true};
         header.payload_length = length(authorization.chain_id);
-        header.payload_length += 1 + kAddressLength;  // address is kAddressLength and one byte for size prefix
+        header.payload_length += kAddressLength + 1;  // address is kAddressLength and one byte for size prefix
         header.payload_length += length(authorization.nonce);
         header.payload_length += length(authorization.v);
         header.payload_length += length(authorization.r);
-        header.payload_length += length(authorization.r);
+        header.payload_length += length(authorization.s);
+
         return header;
     }
 
@@ -103,7 +104,7 @@ namespace rlp {
         return decode(from, mode, to.account.bytes, to.storage_keys);
     }
 
-    DecodingResult decode(ByteView& from, Authorization& to, Leftover mode) noexcept {
+    DecodingResult decode([[maybe_unused]] ByteView& from, [[maybe_unused]] Authorization& to, [[maybe_unused]] Leftover mode) noexcept {
         return decode(from, mode, to.chain_id, to.address.bytes, to.nonce, to.v, to.r, to.s);
     }
 
@@ -115,7 +116,7 @@ namespace rlp {
         }
 
         h.payload_length += length(txn.nonce);
-        if (txn.type == TransactionType::kDynamicFee || txn.type == TransactionType::kBlob) {
+        if (txn.type == TransactionType::kDynamicFee || txn.type == TransactionType::kBlob || txn.type == TransactionType::kSetCode) {
             h.payload_length += length(txn.max_priority_fee_per_gas);
         }
         h.payload_length += length(txn.max_fee_per_gas);
@@ -324,7 +325,7 @@ namespace rlp {
         }
 
         if (to.type == TransactionType::kSetCode) {
-            if (DecodingResult res{decode(from, to.authorizations)}; !res) {
+            if (DecodingResult res{decode(from, to.authorizations, Leftover::kAllow)}; !res) {
                 return res;
             }
         }

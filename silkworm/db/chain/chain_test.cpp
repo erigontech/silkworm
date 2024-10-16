@@ -79,43 +79,6 @@ TEST_CASE_METHOD(ChainTest, "read_header_number") {
     }
 }
 
-TEST_CASE_METHOD(ChainTest, "read_canonical_block_hash") {
-    SECTION("empty hash bytes") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return Bytes{};
-        }));
-        uint64_t block_number{4'000'000};
-        CHECK_THROWS_AS(spawn_and_wait(read_canonical_block_hash(transaction, block_number)), std::invalid_argument);
-    }
-
-    SECTION("shorter hash bytes") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return *from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff");
-        }));
-        uint64_t block_number{4'000'000};
-        const auto block_hash = spawn_and_wait(read_canonical_block_hash(transaction, block_number));
-        CHECK(block_hash == 0x009816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
-    }
-
-    SECTION("longer hash bytes") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return *from_hex("439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dffabcdef");
-        }));
-        uint64_t block_number{4'000'000};
-        const auto block_hash = spawn_and_wait(read_canonical_block_hash(transaction, block_number));
-        CHECK(block_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
-    }
-
-    SECTION("valid canonical hash") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kBlockHash;
-        }));
-        uint64_t block_number{4'000'000};
-        const auto block_hash = spawn_and_wait(read_canonical_block_hash(transaction, block_number));
-        CHECK(block_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
-    }
-}
-
 TEST_CASE_METHOD(ChainTest, "read_total_difficulty") {
     SECTION("empty RLP buffer") {
         EXPECT_CALL(transaction, get_one(table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {

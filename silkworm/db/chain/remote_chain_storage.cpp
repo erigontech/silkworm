@@ -32,7 +32,7 @@ RemoteChainStorage::RemoteChainStorage(kv::api::Transaction& tx, Providers provi
     : tx_{tx}, providers_{std::move(providers)} {}
 
 Task<ChainConfig> RemoteChainStorage::read_chain_config() const {
-    const auto genesis_block_hash{co_await read_canonical_block_hash(tx_, kEarliestBlockNumber)};
+    const auto genesis_block_hash{co_await providers_.canonical_block_hash_from_number(kEarliestBlockNumber)};
     SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << to_hex(genesis_block_hash.bytes);
     const ByteView genesis_block_hash_bytes{genesis_block_hash.bytes, kHashLength};
     const auto data{co_await tx_.get_one(db::table::kConfigName, genesis_block_hash_bytes)};
@@ -72,7 +72,7 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, Block& block) const 
 }
 
 Task<bool> RemoteChainStorage::read_block(BlockNum number, bool read_senders, Block& block) const {
-    const auto hash = co_await read_canonical_block_hash(tx_, number);
+    const auto hash = co_await providers_.canonical_block_hash_from_number(number);
     co_return co_await providers_.block(number, hash.bytes, read_senders, block);
 }
 
@@ -121,17 +121,17 @@ Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockBody& body) cons
 }
 
 Task<std::optional<Hash>> RemoteChainStorage::read_canonical_header_hash(BlockNum number) const {
-    co_return co_await read_canonical_block_hash(tx_, number);
+    co_return co_await providers_.canonical_block_hash_from_number(number);
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_canonical_header(BlockNum number) const {
-    const auto hash = co_await read_canonical_block_hash(tx_, number);
+    const auto hash = co_await providers_.canonical_block_hash_from_number(number);
     co_return co_await read_header(number, hash);
 }
 
 Task<bool> RemoteChainStorage::read_canonical_body(BlockNum number, BlockBody& body) const {
     Block block;
-    const auto hash = co_await read_canonical_block_hash(tx_, number);
+    const auto hash = co_await providers_.canonical_block_hash_from_number(number);
     const bool success = co_await providers_.block(number, hash.bytes, /*.read_senders=*/false, block);
     if (!success) {
         co_return false;
@@ -143,7 +143,7 @@ Task<bool> RemoteChainStorage::read_canonical_body(BlockNum number, BlockBody& b
 }
 
 Task<bool> RemoteChainStorage::read_canonical_block(BlockNum number, Block& block) const {
-    const auto hash = co_await read_canonical_block_hash(tx_, number);
+    const auto hash = co_await providers_.canonical_block_hash_from_number(number);
     const bool success = co_await providers_.block(number, hash.bytes, /*.read_senders=*/false, block);
     if (!success) {
         co_return false;

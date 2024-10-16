@@ -52,8 +52,8 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-#include "sequence.hpp"
-#include "util.hpp"
+#include "../common/encoding/sequence.hpp"
+#include "../common/encoding/util.hpp"
 
 namespace silkworm::snapshots::encoding {
 

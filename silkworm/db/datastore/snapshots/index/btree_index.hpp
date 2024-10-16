@@ -23,7 +23,7 @@
 
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "../common/encoding/elias_fano.hpp"
+#include "../elias_fano/elias_fano.hpp"
 #include "../seg/decompressor.hpp"
 #include "btree.hpp"
 

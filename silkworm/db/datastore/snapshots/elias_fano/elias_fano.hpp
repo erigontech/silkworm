@@ -61,8 +61,8 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-#include "sequence.hpp"
-#include "util.hpp"
+#include "../common/encoding/sequence.hpp"
+#include "../common/encoding/util.hpp"
 
 // Elias-Fano encoding is a high bits / low bits representation of a monotonically increasing sequence of N > 0 natural numbers x[i]
 // 0 <= x[0] <= x[1] <= ... <= x[N-2] <= x[N-1] <= U

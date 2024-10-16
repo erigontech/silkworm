@@ -76,8 +76,8 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "../common/bitmask_operators.hpp"
-#include "../common/encoding/elias_fano.hpp"
-#include "../common/encoding/golomb_rice.hpp"
+#include "../elias_fano/elias_fano.hpp"
+#include "golomb_rice.hpp"
 #include "murmur_hash3.hpp"
 
 #pragma GCC diagnostic push

@@ -16,38 +16,33 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(bittorrent)
-add_subdirectory(seg)
-
 find_package(absl REQUIRED strings)
-find_package(Boost REQUIRED headers url) # headers for signals2
+find_package(Boost REQUIRED headers url)
+find_package(GTest REQUIRED)
+find_package(LibtorrentRasterbar REQUIRED)
 find_package(magic_enum REQUIRED)
-find_package(Microsoft.GSL REQUIRED)
-find_package(OpenSSL REQUIRED)
 
 # cmake-format: off
 set(LIBS_PRIVATE
     absl::strings
-    Boost::headers
+    LibtorrentRasterbar::torrent-rasterbar
     magic_enum::magic_enum
-    OpenSSL::Crypto
-    silkworm_snapshots_seg
 )
 # cmake-format: on
 
 # cmake-format: off
 set(LIBS_PUBLIC
-    Microsoft.GSL::GSL
+    Boost::headers
+    Boost::url
     silkworm_core
     silkworm_infra
-    silkworm_bittorrent
 )
 # cmake-format: on
 
 silkworm_library(
-  silkworm_snapshots
+  silkworm_bittorrent
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
 )
 
-target_link_libraries(silkworm_snapshots_test PRIVATE silkworm_infra_test_util)
+target_link_libraries(silkworm_bittorrent_test PRIVATE GTest::gmock silkworm_infra_test_util)

@@ -47,7 +47,6 @@ using db::chain::RemoteChainStorage;
 using db::kv::api::KeyValue;
 using testing::_;
 using testing::Invoke;
-using testing::InvokeWithoutArgs;
 using testing::Unused;
 
 struct EVMExecutorTest : public test_util::ServiceContextTestBase {

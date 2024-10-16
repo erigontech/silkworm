@@ -29,9 +29,11 @@
 
 namespace silkworm::rpc::commands {
 
+#ifdef notdef  // commented Temporary wating implementaion local-transaction
 using silkworm::test_util::SetLogVerbosityGuard;
 using test_util::RequestHandlerForTest;
 using test_util::RpcApiTestBase;
+#endif
 
 // Function to recursively sort JSON arrays
 void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)

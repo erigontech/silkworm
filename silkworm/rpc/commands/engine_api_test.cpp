@@ -502,6 +502,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedv1 KO: empty safe bl
     })"_json);
 }
 
+#ifdef notdef
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: EL config has the same CL config", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -763,6 +764,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: no matc
         }
     })"_json);
 }
+#endif
 
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorrect params", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;

@@ -20,11 +20,11 @@
 
 namespace silkworm::db {
 
-class TransactionSnapshotFreezer : public SnapshotFreezer {
+class TransactionSegmentCollation : public SegmentCollation {
   public:
-    ~TransactionSnapshotFreezer() override = default;
-    void copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const override;
-    void cleanup(RWTxn& txn, BlockNumRange range) const override;
+    ~TransactionSegmentCollation() override = default;
+    void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const override;
+    void prune(RWTxn& txn, BlockNumRange range) const override;
 };
 
 }  // namespace silkworm::db

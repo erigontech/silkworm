@@ -25,18 +25,18 @@
 
 namespace silkworm::db {
 
-void HeaderSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const {
+void HeaderSegmentCollation::copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
     snapshots::HeaderSegmentWriter writer{file_writer};
     auto out = writer.out();
     for (BlockNum i = range.start; i < range.end; ++i) {
         auto value_opt = read_canonical_header(txn, i);
-        if (!value_opt) throw std::runtime_error{"HeaderSnapshotFreezer::copy missing header for block " + std::to_string(i)};
+        if (!value_opt) throw std::runtime_error{"HeaderSegmentCollation::copy missing header for block " + std::to_string(i)};
         *out++ = *value_opt;
     }
 }
 
-void HeaderSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
+void HeaderSegmentCollation::prune(RWTxn& txn, BlockNumRange range) const {
     for (BlockNum i = range.start, count = 1; i < range.end; ++i, ++count) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
@@ -45,7 +45,7 @@ void HeaderSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
         delete_header(txn, i, hash);
 
         if ((count > 10000) && ((count % 10000) == 0)) {
-            log::Debug("HeaderSnapshotFreezer") << "cleaned up until block " << i;
+            log::Debug("HeaderSegmentCollation") << "cleaned up until block " << i;
         }
     }
 }

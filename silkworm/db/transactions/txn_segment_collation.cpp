@@ -25,7 +25,7 @@
 
 namespace silkworm::db {
 
-void TransactionSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const {
+void TransactionSegmentCollation::copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
     snapshots::TransactionSegmentWriter writer{file_writer};
     auto out = writer.out();
@@ -34,7 +34,7 @@ void TransactionSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command,
     for (BlockNum i = range.start; i < range.end; ++i) {
         BlockBody body;
         bool found = read_canonical_body(txn, i, /* read_senders = */ true, body);
-        if (!found) throw std::runtime_error{"TransactionSnapshotFreezer::copy missing body for block " + std::to_string(i)};
+        if (!found) throw std::runtime_error{"TransactionSegmentCollation::copy missing body for block " + std::to_string(i)};
 
         *out++ = system_tx;
         for (auto& value : body.transactions) {
@@ -44,7 +44,7 @@ void TransactionSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command,
     }
 }
 
-void TransactionSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
+void TransactionSegmentCollation::prune(RWTxn& txn, BlockNumRange range) const {
     for (BlockNum i = range.start, count = 1; i < range.end; ++i, ++count) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
@@ -59,7 +59,7 @@ void TransactionSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const 
         }
 
         if ((count > 10000) && ((count % 10000) == 0)) {
-            log::Debug("TransactionSnapshotFreezer") << "cleaned up until block " << i;
+            log::Debug("TransactionSegmentCollation") << "cleaned up until block " << i;
         }
     }
 }

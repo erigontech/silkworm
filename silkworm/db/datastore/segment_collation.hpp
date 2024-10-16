@@ -26,30 +26,30 @@
 
 namespace silkworm::db {
 
-struct FreezerCommand : public DataMigrationCommand {
+struct SegmentCollationCommand : public DataMigrationCommand {
     BlockNumRange range;
     uint64_t base_txn_id;
 
-    FreezerCommand(BlockNumRange range1, uint64_t base_txn_id1)
+    SegmentCollationCommand(BlockNumRange range1, uint64_t base_txn_id1)
         : range(range1),
           base_txn_id(base_txn_id1) {}
-    ~FreezerCommand() override = default;
+    ~SegmentCollationCommand() override = default;
 
     std::string description() const override {
         std::stringstream stream;
-        stream << "FreezerCommand " << range.to_string();
+        stream << "SegmentCollationCommand " << range.to_string();
         return stream.str();
     }
 };
 
-struct SnapshotFreezer {
-    virtual ~SnapshotFreezer() = default;
+struct SegmentCollation {
+    virtual ~SegmentCollation() = default;
 
     //! Copies data for a block range from db to the snapshot file.
-    virtual void copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const = 0;
+    virtual void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const = 0;
 
     //! Cleans up data for a block range from db after it was copied to the snapshot file.
-    virtual void cleanup(RWTxn& txn, BlockNumRange range) const = 0;
+    virtual void prune(RWTxn& txn, BlockNumRange range) const = 0;
 };
 
 }  // namespace silkworm::db

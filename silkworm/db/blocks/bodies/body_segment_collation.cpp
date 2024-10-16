@@ -25,7 +25,7 @@
 
 namespace silkworm::db {
 
-void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const {
+void BodySegmentCollation::copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
     uint64_t base_txn_id = command.base_txn_id;
 
@@ -33,7 +33,7 @@ void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapsh
     auto out = writer.out();
     for (BlockNum i = range.start; i < range.end; ++i) {
         auto value_opt = read_canonical_body_for_storage(txn, i);
-        if (!value_opt) throw std::runtime_error{"BodySnapshotFreezer::copy missing body for block " + std::to_string(i)};
+        if (!value_opt) throw std::runtime_error{"BodySegmentCollation::copy missing body for block " + std::to_string(i)};
         BlockBodyForStorage& value = *value_opt;
         // remap to sequential values without gaps (see txnum.go)
         value.base_txn_id = base_txn_id;
@@ -42,7 +42,7 @@ void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapsh
     }
 }
 
-void BodySnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
+void BodySegmentCollation::prune(RWTxn& txn, BlockNumRange range) const {
     for (BlockNum i = range.start, count = 1; i < range.end; ++i, ++count) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
@@ -51,7 +51,7 @@ void BodySnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
         delete_body(txn, hash, i);
 
         if ((count > 10000) && ((count % 10000) == 0)) {
-            log::Debug("BodySnapshotFreezer") << "cleaned up until block " << i;
+            log::Debug("BodySegmentCollation") << "cleaned up until block " << i;
         }
     }
 }

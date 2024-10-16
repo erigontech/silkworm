@@ -19,14 +19,8 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
-#include <memory>
-#include <optional>
-#include <span>
+#include <istream>
 #include <vector>
-
-#include <silkworm/core/common/bytes.hpp>
-#include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots::bloom_filter {
 
@@ -34,19 +28,11 @@ namespace silkworm::snapshots::bloom_filter {
 //! \remark Serialized binary format compatible with: https://github.com/holiman/bloomfilter
 class BloomFilter {
   public:
-    //! The minimum Bloom filter bits count
-    static constexpr size_t kMinimumBitsCount = 2;
-
-    //! The fixed number of keys
-    static constexpr size_t kHardCodedK = 3;
-
-    using KeyArray = std::array<uint64_t, kHardCodedK>;
-
-    static uint64_t optimal_bits_count(uint64_t max_key_count, double p);
-
-    explicit BloomFilter(uint64_t bits_count = kMinimumBitsCount);
+    explicit BloomFilter(std::filesystem::path path);
+    BloomFilter();
     BloomFilter(uint64_t max_key_count, double p);
 
+    const std::filesystem::path& path() const { return path_; }
     uint64_t bits_count() const { return bits_count_; }
     uint64_t key_count() const { return keys_.size(); }
 
@@ -61,11 +47,21 @@ class BloomFilter {
 
     friend std::istream& operator>>(std::istream& is, BloomFilter& filter);
 
+    static uint64_t optimal_bits_count(uint64_t max_key_count, double p);
+
+    //! The fixed number of keys
+    static constexpr size_t kHardCodedK = 3;
+
   private:
+    using KeyArray = std::array<uint64_t, kHardCodedK>;
+
     static void ensure_min_bits_count(uint64_t bits_count);
     static KeyArray new_random_keys();
 
     BloomFilter(uint64_t bits_count, KeyArray keys);
+
+    //! The index file path
+    std::filesystem::path path_;
 
     //! The number of bits that the bitmap should be able to track
     uint64_t bits_count_;

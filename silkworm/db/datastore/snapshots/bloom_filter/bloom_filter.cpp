@@ -16,9 +16,11 @@
 
 #include "bloom_filter.hpp"
 
+#include <fstream>
 #include <numbers>
 #include <random>
 #include <sstream>
+#include <stdexcept>
 #include <string_view>
 
 #include <openssl/evp.h>
@@ -30,6 +32,9 @@
 namespace silkworm::snapshots::bloom_filter {
 
 using namespace std::numbers;
+
+//! The minimum Bloom filter bits count
+static constexpr size_t kMinimumBitsCount = 2;
 
 //! kRotation sets how much to rotate the hash on each filter iteration.
 //! This is somewhat randomly set to a prime on the lower segment of 64.
@@ -44,8 +49,26 @@ uint64_t BloomFilter::optimal_bits_count(uint64_t max_key_count, double p) {
     return static_cast<uint64_t>(std::ceil(-static_cast<double>(max_key_count) * std::log(p) / (ln2 * ln2)));
 }
 
-BloomFilter::BloomFilter(uint64_t bits_count)
-    : BloomFilter(bits_count, new_random_keys()) {}
+BloomFilter::BloomFilter(std::filesystem::path path)
+    : BloomFilter{kMinimumBitsCount, new_random_keys()} {
+    if (!std::filesystem::exists(path)) {
+        throw std::runtime_error("index file " + path.filename().string() + " doesn't exist");
+    }
+    if (std::filesystem::file_size(path) == 0) {
+        throw std::runtime_error("index file " + path.filename().string() + " is empty");
+    }
+    std::ifstream file_stream{path, std::ios::in | std::ios::binary};
+    file_stream.exceptions(std::ios::failbit | std::ios::badbit);
+    file_stream >> *this;
+
+    path_ = std::move(path);
+}
+
+BloomFilter::BloomFilter()
+    : BloomFilter{kMinimumBitsCount, new_random_keys()} {}
+
+BloomFilter::BloomFilter(uint64_t max_key_count, double p)
+    : BloomFilter{optimal_bits_count(max_key_count, p), new_random_keys()} {}
 
 BloomFilter::BloomFilter(uint64_t bits_count, KeyArray keys)
     : bits_count_(bits_count),
@@ -53,9 +76,6 @@ BloomFilter::BloomFilter(uint64_t bits_count, KeyArray keys)
       bits_((bits_count + 63) / 64, 0) {
     ensure_min_bits_count(bits_count);
 }
-
-BloomFilter::BloomFilter(uint64_t max_key_count, double p)
-    : BloomFilter(optimal_bits_count(max_key_count, p)) {}
 
 void BloomFilter::add_hash(uint64_t hash) {
     for (size_t n = 0; n < kHardCodedK; ++n) {

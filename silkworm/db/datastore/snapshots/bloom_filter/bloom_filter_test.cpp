@@ -24,6 +24,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/test_util/temporary_file.hpp>
 
 #include "../test_util/sample_bloom_filter_data.hpp"
 
@@ -34,12 +35,17 @@ TEST_CASE("BloomFilter", "[snapshot][index][bloom_filter]") {
         CHECK_THROWS_AS(BloomFilter(0, 0.01), std::runtime_error);
     }
 
+    SECTION("empty file") {
+        TemporaryDirectory tmp_dir;
+        CHECK_THROWS_AS(BloomFilter{tmp_dir.get_unique_temporary_path()}, std::runtime_error);
+    }
+
     SECTION("item present") {
         // Create PRNG to generate pseudo-random hash values
         static std::mt19937_64 rnd_generator{std::random_device{}()};
         std::uniform_int_distribution<uint32_t> u32_distribution;
 
-        BloomFilter filter{BloomFilter::optimal_bits_count(10'000'000, 0.01)};
+        BloomFilter filter{10'000'000, 0.01};
         CHECK(filter.key_count() == BloomFilter::kHardCodedK);
         CHECK(filter.bits_count() == BloomFilter::optimal_bits_count(10'000'000, 0.01));
 
@@ -58,6 +64,25 @@ TEST_CASE("BloomFilter", "[snapshot][index][bloom_filter]") {
             if (!filter.contains_hash(h)) {  // definitely not present
                 CHECK(!added_hashes.contains(h));
             }
+        }
+    }
+
+    SECTION("item present in file") {
+        // Create PRNG to generate pseudo-random hash values
+        static std::mt19937_64 rnd_generator{std::random_device{}()};
+        std::uniform_int_distribution<uint32_t> u32_distribution;
+
+        // Create sample existence index
+        REQUIRE(!test_util::kValidBloomFilters.empty());
+        silkworm::test_util::TemporaryFile sample_ei_file;
+        sample_ei_file.write(*from_hex(test_util::kValidBloomFilters[0]));
+
+        BloomFilter existence_index{sample_ei_file.path()};
+        CHECK(existence_index.path() == sample_ei_file.path());
+        for (size_t i = 0; i < 100; ++i) {
+            const uint64_t h = u32_distribution(rnd_generator);
+            existence_index.add_hash(h);
+            CHECK(existence_index.contains_hash(h));
         }
     }
 }

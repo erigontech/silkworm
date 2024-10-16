@@ -41,7 +41,7 @@
 #include <silkworm/db/datastore/snapshot_merger.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
-#include <silkworm/db/datastore/snapshots/bloom_filter/existence_index.hpp>
+#include <silkworm/db/datastore/snapshots/bloom_filter/bloom_filter.hpp>
 #include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
@@ -543,7 +543,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
     kv_decompressor.open();
-    bloom_filter::ExistenceIndex existence_index{existence_index_file_path};
+    bloom_filter::BloomFilter existence_index{existence_index_file_path};
 
     SILK_INFO << "Starting KV scan and existence index check";
     size_t key_count{0}, found_count{0}, nonexistent_count{0}, nonexistent_found_count{0};

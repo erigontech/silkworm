@@ -34,6 +34,7 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
         EVMC_BERLIN,    // kAccessList
         EVMC_LONDON,    // kDynamicFee
         EVMC_CANCUN,    // kBlob
+        EVMC_PRAGUE,    // kSetCode
     };
     const auto i{static_cast<size_t>(type)};
     return i < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[i];
@@ -105,6 +106,17 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         }
         if (!txn.to) {
             return ValidationResult::kBlobCreateTransaction;
+        }
+    }
+
+    // EIP-7702
+    if (txn.type == TransactionType::kSetCode) {
+        // Contract creation is disallowed for SetCode transactions
+        if (contract_creation) {
+            return ValidationResult::kProhibitedContractCreation;
+        }
+        if (std::empty(txn.authorizations)) {
+            return ValidationResult::kEmptyAuthorizations;
         }
     }
 
@@ -184,6 +196,12 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
     if (evm.revision() >= EVMC_CANCUN) {
         if (!evm.block().header.excess_blob_gas) {
             return ValidationResult::kWrongBlobGasUsed;
+        }
+    }
+
+    if (evm.revision() >= EVMC_PRAGUE) {
+        if (txn.type == TransactionType::kSetCode && !txn.to) {
+            return ValidationResult::kProhibitedContractCreation;
         }
     }
 

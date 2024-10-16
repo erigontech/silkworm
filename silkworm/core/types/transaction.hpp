@@ -21,14 +21,12 @@
 
 #include <intx/intx.hpp>
 
+#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/concurrency/resettable_once_flag.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/types/hash.hpp>
-
-
 
 namespace silkworm {
 
@@ -140,7 +138,6 @@ namespace rlp {
 
     void encode(Bytes& to, const Authorization&);
     size_t length(const Authorization&);
-
 
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
     // (0x02 for EIP-1559 transactions); the same goes for receipts. This is true for signing and

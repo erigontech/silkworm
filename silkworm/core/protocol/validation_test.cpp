@@ -126,12 +126,16 @@ TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
     CHECK(validate_transaction(txn, ibs, UINT64_MAX) == ValidationResult::kSenderNoEOA);
 }
 
-TEST_CASE("EIP-7702: Reject transactions with zero destination address") {
+TEST_CASE("EIP-7702: Reject create transactions with zero destination address") {
     const evmc::address sender{0x71562b71999873DB5b286dF957af199Ec94617F7_address};
 
     Transaction txn{test::sample_transactions()[0]};
+    txn.type = TransactionType::kSetCode;
     txn.nonce = 0;
     txn.set_sender(sender);
+    txn.max_priority_fee_per_gas = 500'000'000;
+    txn.max_fee_per_gas = 700'000'000;
+    txn.to = std::nullopt;
 
     txn.authorizations.emplace_back(Authorization{});
 
@@ -139,9 +143,34 @@ TEST_CASE("EIP-7702: Reject transactions with zero destination address") {
     IntraBlockState ibs{state};
 
     ibs.add_to_balance(sender, 10 * kEther);
-    ibs.set_code(sender, *from_hex("B0B0FACE"));
 
-    CHECK(validate_transaction(txn, ibs, UINT64_MAX) == ValidationResult::kSenderNoEOA);
+    const std::optional<intx::uint256> base_fee_per_gas{500'000'000};
+    const std::optional<intx::uint256> blob_gas_price{std::nullopt};
+
+    CHECK(pre_validate_transaction(txn, EVMC_PRAGUE, 1, base_fee_per_gas, blob_gas_price) ==
+          ValidationResult::kProhibitedContractCreation);
+}
+
+TEST_CASE("EIP-7702: Reject transactions with empty authorization list") {
+    const evmc::address sender{0x71562b71999873DB5b286dF957af199Ec94617F7_address};
+
+    Transaction txn{test::sample_transactions()[0]};
+    txn.type = TransactionType::kSetCode;
+    txn.nonce = 0;
+    txn.set_sender(sender);
+    txn.max_priority_fee_per_gas = 500'000'000;
+    txn.max_fee_per_gas = 700'000'000;
+
+    InMemoryState state;
+    IntraBlockState ibs{state};
+
+    ibs.add_to_balance(sender, 10 * kEther);
+
+    const std::optional<intx::uint256> base_fee_per_gas{500'000'000};
+    const std::optional<intx::uint256> blob_gas_price{std::nullopt};
+
+    CHECK(pre_validate_transaction(txn, EVMC_PRAGUE, 1, base_fee_per_gas, blob_gas_price) ==
+          ValidationResult::kEmptyAuthorizations);
 }
 
 }  // namespace silkworm::protocol

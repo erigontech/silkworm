@@ -76,10 +76,10 @@ struct SnapshotSubcommandSettings {
     std::filesystem::path input_file_path;
     std::optional<std::string> snapshot_file_name;
     int page_size{kDefaultPageSize};
-    bool skip_system_txs{true};
+    bool skip_system_txs{false};
     std::optional<std::string> lookup_hash;
     std::optional<BlockNum> lookup_number;
-    bool print{true};
+    bool verbose{false};
 
     const std::filesystem::path& repository_dir() const { return settings.repository_dir; }
 };
@@ -172,7 +172,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     app.add_option("--page", snapshot_settings.page_size, "Page size in kB")
         ->capture_default_str()
         ->check(CLI::Range(1, 1024));
-    app.add_flag("--print", snapshot_settings.print, "Flag indicating if console dump is enabled or not")
+    app.add_flag("--verbose", snapshot_settings.verbose, "Flag indicating if console dump is enabled or not")
         ->capture_default_str();
 
     for (auto& cmd : {commands[SnapshotTool::lookup_header],
@@ -225,6 +225,14 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
             ->required()
             ->capture_default_str();
     }
+    for (auto& cmd : {commands[SnapshotTool::count_headers],
+                      commands[SnapshotTool::count_bodies],
+                      commands[SnapshotTool::lookup_body],
+                      commands[SnapshotTool::lookup_header],
+                      commands[SnapshotTool::lookup_txn]}) {
+        cmd->add_option("--snapshot_file", snapshot_settings.snapshot_file_name, "Path to snapshot file")
+            ->capture_default_str();
+    }
 
     for (auto& cmd : {commands[SnapshotTool::open_btree_index],
                       commands[SnapshotTool::open_existence_index]}) {
@@ -252,9 +260,24 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 }
 
 //! Convert one duration into another one returning the number of ticks for the latter one
+//! \param elapsed the duration to convert
 template <typename D, typename R, typename P>
 auto duration_as(const std::chrono::duration<R, P>& elapsed) {
     return std::chrono::duration_cast<D>(elapsed).count();
+}
+
+//! Convert the given duration into milliseconds
+//! \param elapsed the duration to convert
+template <typename R, typename P>
+auto as_milliseconds(const std::chrono::duration<R, P>& elapsed) {
+    return duration_as<std::chrono::milliseconds>(elapsed);
+}
+
+//! Convert the given duration into seconds
+//! \param elapsed the duration to convert
+template <typename R, typename P>
+auto as_seconds(const std::chrono::duration<R, P>& elapsed) {
+    return duration_as<std::chrono::seconds>(elapsed);
 }
 
 void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions) {
@@ -269,56 +292,117 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
         snapshot.reopen_segment();
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Decode snapshot elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Decode snapshot elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
 static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
     return std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
 }
 
-void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
+using BodyCounters = std::pair<int, uint64_t>;
+
+BodyCounters count_bodies_in_one(const SnapshotSubcommandSettings& settings, const Snapshot& body_snapshot) {
+    int num_bodies = 0;
+    uint64_t num_txns = 0;
+    const int kFirstItems = 3;
+    const int kStepItems = 50'000;
+    if (settings.verbose) {
+        SILK_INFO << "Printing first " << kFirstItems << " bodies, then every " << kStepItems;
+    }
+    for (const BlockBodyForStorage& b : BodySnapshotReader{body_snapshot}) {
+        // If *system transactions* should not be counted, skip first and last tx in block body
+        const auto base_txn_id{settings.skip_system_txs ? b.base_txn_id + 1 : b.base_txn_id};
+        const auto txn_count{settings.skip_system_txs && b.txn_count >= 2 ? b.txn_count - 2 : b.txn_count};
+        if (settings.verbose && (num_bodies < kFirstItems || num_bodies % kStepItems == 0)) {
+            SILK_INFO << "Body number: " << num_bodies << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
+                      << " #ommers: " << b.ommers.size();
+        }
+        ++num_bodies;
+        num_txns += txn_count;
+    }
+    return {num_bodies, num_txns};
+}
+
+BodyCounters count_bodies_in_all(const SnapshotSubcommandSettings& settings) {
     SnapshotRepository snapshot_repo{settings.settings, bundle_factory()};
     snapshot_repo.reopen_folder();
+    int num_bodies = 0;
+    uint64_t num_txns = 0;
+    for (const auto& bundle_ptr : snapshot_repo.view_bundles()) {
+        const auto& bundle = *bundle_ptr;
+        const auto [body_count, txn_count] = count_bodies_in_one(settings, bundle.body_snapshot);
+        num_bodies += body_count;
+        num_txns += txn_count;
+    }
+    return {num_bodies, num_txns};
+}
+
+void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    int num_bodies{0};
-    uint64_t num_txns{0};
+    int num_bodies = 0;
+    uint64_t num_txns = 0;
+    for (int i = 0; i < repetitions; ++i) {
+        if (settings.snapshot_file_name) {
+            const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.snapshot_file_name})};
+            ensure(snapshot_path.has_value(), "count_bodies: invalid snapshot_file path format");
+            ensure(snapshot_path->type() == SnapshotType::bodies, "count_bodies: snapshot_file must point to body segment");
+            Snapshot body_snapshot{*snapshot_path};
+            body_snapshot.reopen_segment();
+            std::tie(num_bodies, num_txns) = count_bodies_in_one(settings, body_snapshot);
+        } else {
+            std::tie(num_bodies, num_txns) = count_bodies_in_all(settings);
+        }
+    }
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "How many bodies: " << num_bodies << " txs: " << num_txns << " duration: " << as_milliseconds(elapsed) << " msec";
+}
+
+int count_headers_in_one(const SnapshotSubcommandSettings& settings, const Snapshot& header_snapshot) {
+    int num_headers = 0;
+    const int kFirstItems = 3;
+    const int kStepItems = 50'000;
+    if (settings.verbose) {
+        SILK_INFO << "Printing first " << kFirstItems << " headers, then every " << kStepItems;
+    }
+    for (const BlockHeader& h : HeaderSnapshotReader{header_snapshot}) {
+        ++num_headers;
+        if (settings.verbose && (num_headers < kFirstItems || num_headers % kStepItems == 0)) {
+            SILK_INFO << "Header number: " << h.number << " hash: " << to_hex(h.hash());
+        }
+    }
+    return num_headers;
+}
+
+int count_headers_in_all(const SnapshotSubcommandSettings& settings) {
+    SnapshotRepository snapshot_repo{settings.settings, bundle_factory()};
+    snapshot_repo.reopen_folder();
+    int num_headers{0};
+    for (const auto& bundle_ptr : snapshot_repo.view_bundles()) {
+        const auto& bundle = *bundle_ptr;
+        const auto header_count = count_headers_in_one(settings, bundle.header_snapshot);
+        num_headers += header_count;
+    }
+    return num_headers;
+}
+
+void count_headers(const SnapshotSubcommandSettings& settings, int repetitions) {
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    int num_headers{0};
     for (int i{0}; i < repetitions; ++i) {
-        for (const auto& bundle_ptr : snapshot_repo.view_bundles()) {
-            const auto& bundle = *bundle_ptr;
-            for (const BlockBodyForStorage& b : BodySnapshotReader{bundle.body_snapshot}) {
-                // If *system transactions* should not be counted, skip first and last tx in block body
-                const auto base_txn_id{settings.skip_system_txs ? b.base_txn_id + 1 : b.base_txn_id};
-                const auto txn_count{settings.skip_system_txs && b.txn_count >= 2 ? b.txn_count - 2 : b.txn_count};
-                SILK_TRACE << "Body number: " << num_bodies << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
-                           << " #ommers: " << b.ommers.size();
-                ++num_bodies;
-                num_txns += txn_count;
-            }
+        if (settings.snapshot_file_name) {
+            const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.snapshot_file_name})};
+            ensure(snapshot_path.has_value(), "count_headers: invalid snapshot_file path format");
+            ensure(snapshot_path->type() == SnapshotType::headers, "count_headers: snapshot_file must point to header segment");
+            Snapshot header_snapshot{*snapshot_path};
+            header_snapshot.reopen_segment();
+            num_headers = count_headers_in_one(settings, header_snapshot);
+        } else {
+            num_headers = count_headers_in_all(settings);
         }
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     const auto duration = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
-    SILK_INFO << "How many bodies: " << num_bodies << " txs: " << num_txns << " duration: " << duration << " msec";
-}
-
-void count_headers(const SnapshotSettings& settings, int repetitions) {
-    SnapshotRepository snapshot_repo{settings, bundle_factory()};
-    snapshot_repo.reopen_folder();
-    std::chrono::time_point start{std::chrono::steady_clock::now()};
-    int count{0};
-    for (int i{0}; i < repetitions; ++i) {
-        for (const auto& bundle_ptr : snapshot_repo.view_bundles()) {
-            const auto& bundle = *bundle_ptr;
-            for (const BlockHeader& h : HeaderSnapshotReader{bundle.header_snapshot}) {
-                ++count;
-                if (h.number % 50'000 == 0) {
-                    SILK_INFO << "Header number: " << h.number << " hash: " << to_hex(h.hash());
-                }
-            }
-        }
-    }
-    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "How many headers: " << count << " duration: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "How many headers: " << num_headers << " duration: " << duration << " msec";
 }
 
 void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
@@ -357,7 +441,7 @@ void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
         SILK_ERROR << "Invalid snapshot file: " << *settings.snapshot_file_name;
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Create index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Create index elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
 void open_index(const SnapshotSubcommandSettings& settings) {
@@ -393,7 +477,7 @@ void open_index(const SnapshotSubcommandSettings& settings) {
         SILK_INFO << "Index does not support 2-layer enum indexing";
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Open index elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
 void open_btree_index(const SnapshotSubcommandSettings& settings) {
@@ -435,7 +519,7 @@ void open_btree_index(const SnapshotSubcommandSettings& settings) {
     ensure(key_count == bt_index.key_count(), "open_btree_index: total key count does not match");
     SILK_INFO << "Open btree index matching: " << matching_count << " different: " << (key_count - matching_count);
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Open btree index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Open btree index elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
 void open_existence_index(const SnapshotSubcommandSettings& settings) {
@@ -517,7 +601,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     const float false_pos_rate = static_cast<float>(nonexistent_found_count) / static_cast<float>(nonexistent_count);
     SILK_INFO << "Open existence index keys: " << key_count << " non-existent: " << nonexistent_count << " false positives: " << false_pos_rate;
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Open existence index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Open existence index elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
@@ -600,7 +684,7 @@ void download(const DownloadSettings& settings) {
     }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Download elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";
+    SILK_INFO << "Download elapsed: " << as_seconds(elapsed) << " sec";
 }
 
 static void print_header(const BlockHeader& header, const std::string& snapshot_filename) {
@@ -651,7 +735,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     }
     if (matching_snapshot) {
         SILK_INFO << "Lookup header hash: " << hash->to_hex() << " found in: " << matching_snapshot->filename();
-        if (matching_header && settings.print) {
+        if (matching_header && settings.verbose) {
             print_header(*matching_header, matching_snapshot->filename());
         }
     } else {
@@ -659,7 +743,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Lookup header elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
 void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
@@ -675,7 +759,7 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
         ensure(header.has_value(),
                [&]() { return "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + snapshot_and_index->snapshot.path().filename(); });
         SILK_INFO << "Lookup header number: " << block_number << " found in: " << snapshot_and_index->snapshot.path().filename();
-        if (settings.print) {
+        if (settings.verbose) {
             print_header(*header, snapshot_and_index->snapshot.path().filename());
         }
     } else {
@@ -683,7 +767,7 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
     }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Lookup header elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
 void lookup_header(const SnapshotSubcommandSettings& settings) {
@@ -716,7 +800,7 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
     const auto body = BodyFindByBlockNumQuery{{body_snapshot, idx_body_number}}.exec(block_number);
     if (body) {
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot.path().filename();
-        if (settings.print) {
+        if (settings.verbose) {
             print_body(*body, body_snapshot.path().filename());
         }
     } else {
@@ -737,7 +821,7 @@ void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum blo
         ensure(body.has_value(),
                [&]() { return "lookup_body: " + std::to_string(block_number) + " NOT found in " + snapshot_and_index->snapshot.path().filename(); });
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << snapshot_and_index->snapshot.path().filename();
-        if (settings.print) {
+        if (settings.verbose) {
             print_body(*body, snapshot_and_index->snapshot.path().filename());
         }
     } else {
@@ -822,7 +906,7 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
         const auto transaction = TransactionFindByHashQuery{{tx_snapshot, idx_txn_hash}}.exec(hash);
         if (transaction) {
             SILK_INFO << "Lookup txn hash: " << hash.to_hex() << " found in: " << tx_snapshot.path().filename();
-            if (settings.print) {
+            if (settings.verbose) {
                 print_txn(*transaction, tx_snapshot.path().filename());
             }
         } else {
@@ -845,7 +929,7 @@ void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const
         const auto transaction = TransactionFindByHashQuery{snapshot_and_index}.exec(hash);
         if (transaction) {
             matching_snapshot = snapshot_and_index.snapshot.path();
-            if (settings.print) {
+            if (settings.verbose) {
                 print_txn(*transaction, matching_snapshot->path().filename());
             }
             break;
@@ -887,7 +971,7 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
         const auto transaction = TransactionFindByIdQuery{{tx_snapshot, idx_txn_hash}}.exec(txn_id);
         if (transaction) {
             SILK_INFO << "Lookup txn ID: " << txn_id << " found in: " << tx_snapshot.path().filename();
-            if (settings.print) {
+            if (settings.verbose) {
                 print_txn(*transaction, tx_snapshot.path().filename());
             }
         } else {
@@ -910,14 +994,14 @@ void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_
         const auto transaction = TransactionFindByIdQuery{snapshot_and_index}.exec(txn_id);
         if (transaction) {
             matching_snapshot = snapshot_and_index.snapshot.path();
-            if (settings.print) {
+            if (settings.verbose) {
                 print_txn(*transaction, matching_snapshot->path().filename());
             }
             break;
         }
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    SILK_INFO << "Lookup txn elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    SILK_INFO << "Lookup txn elapsed: " << as_milliseconds(elapsed) << " msec";
     if (matching_snapshot) {
         SILK_INFO << "Lookup txn ID: " << txn_id << " found in: " << matching_snapshot->path().filename();
     } else {
@@ -975,7 +1059,7 @@ void sync(const SnapshotSettings& settings) {
     runner.run(snapshot_sync.download_snapshots());
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
 
-    SILK_INFO << "Sync elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";
+    SILK_INFO << "Sync elapsed: " << as_seconds(elapsed) << " sec";
 }
 
 int main(int argc, char* argv[]) {
@@ -1002,7 +1086,7 @@ int main(int argc, char* argv[]) {
                 count_bodies(settings.snapshot_settings, settings.repetitions);
                 break;
             case SnapshotTool::count_headers:
-                count_headers(settings.snapshot_settings.settings, settings.repetitions);
+                count_headers(settings.snapshot_settings, settings.repetitions);
                 break;
             case SnapshotTool::create_index:
                 create_index(settings.snapshot_settings, settings.repetitions);

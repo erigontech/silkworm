@@ -48,7 +48,7 @@ struct DomainPointQuery {
     // auto operator<=>(const DomainPointQuery&) const = default;
 };
 
-inline bool operator==(const db::kv::api::DomainPointQuery& lhs, const db::kv::api::DomainPointQuery& rhs) {
+inline bool operator==(const DomainPointQuery& lhs, const DomainPointQuery& rhs) {
     return (lhs.tx_id == rhs.tx_id) &&
            (lhs.table == rhs.table) &&
            (lhs.key == rhs.key) &&

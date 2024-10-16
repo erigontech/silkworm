@@ -32,7 +32,7 @@
 
 namespace silkworm::snapshots {
 
-TransactionSnapshotWord slice_tx_data(ByteView buffer) {
+TransactionSegmentWord slice_tx_data(ByteView buffer) {
     // Skip first byte of tx hash plus sender address length for transaction decoding
     constexpr int kTxRlpDataOffset{1 + kAddressLength};
 
@@ -46,7 +46,7 @@ TransactionSnapshotWord slice_tx_data(ByteView buffer) {
     ByteView senders_data = buffer.substr(1, kAddressLength);
     ByteView tx_rlp = buffer.substr(kTxRlpDataOffset);
 
-    return TransactionSnapshotWord{
+    return TransactionSegmentWord{
         first_hash_byte,
         senders_data,
         tx_rlp,

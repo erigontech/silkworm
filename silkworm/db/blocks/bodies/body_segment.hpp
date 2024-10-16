@@ -28,11 +28,11 @@ namespace silkworm::snapshots {
 void encode_word_from_body(Bytes& word, const BlockBodyForStorage& body);
 void decode_word_into_body(ByteView word, BlockBodyForStorage& body);
 
-struct BodySnapshotWordSerializer : public SnapshotWordSerializer {
+struct BodySegmentWordSerializer : public SnapshotWordSerializer {
     BlockBodyForStorage value;
     Bytes word;
 
-    ~BodySnapshotWordSerializer() override = default;
+    ~BodySegmentWordSerializer() override = default;
 
     ByteView encode_word() override {
         word.clear();
@@ -41,21 +41,21 @@ struct BodySnapshotWordSerializer : public SnapshotWordSerializer {
     }
 };
 
-static_assert(SnapshotWordSerializerConcept<BodySnapshotWordSerializer>);
+static_assert(SnapshotWordSerializerConcept<BodySegmentWordSerializer>);
 
-struct BodySnapshotWordDeserializer : public SnapshotWordDeserializer {
+struct BodySegmentWordDeserializer : public SnapshotWordDeserializer {
     BlockBodyForStorage value;
 
-    ~BodySnapshotWordDeserializer() override = default;
+    ~BodySegmentWordDeserializer() override = default;
 
     void decode_word(ByteView word) override {
         decode_word_into_body(word, value);
     }
 };
 
-static_assert(SnapshotWordDeserializerConcept<BodySnapshotWordDeserializer>);
+static_assert(SnapshotWordDeserializerConcept<BodySegmentWordDeserializer>);
 
-using BodySegmentReader = SegmentReader<BodySnapshotWordDeserializer>;
-using BodySegmentWriter = SegmentWriter<BodySnapshotWordSerializer>;
+using BodySegmentReader = SegmentReader<BodySegmentWordDeserializer>;
+using BodySegmentWriter = SegmentWriter<BodySegmentWordSerializer>;
 
 }  // namespace silkworm::snapshots

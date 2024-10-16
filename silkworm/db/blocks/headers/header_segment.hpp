@@ -28,11 +28,11 @@ void encode_word_from_header(Bytes& word, const BlockHeader& header);
 void decode_word_into_header(ByteView word, BlockHeader& header);
 void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNumRange block_num_range);
 
-struct HeaderSnapshotWordSerializer : public SnapshotWordSerializer {
+struct HeaderSegmentWordSerializer : public SnapshotWordSerializer {
     BlockHeader value;
     Bytes word;
 
-    ~HeaderSnapshotWordSerializer() override = default;
+    ~HeaderSegmentWordSerializer() override = default;
 
     ByteView encode_word() override {
         word.clear();
@@ -41,12 +41,12 @@ struct HeaderSnapshotWordSerializer : public SnapshotWordSerializer {
     }
 };
 
-static_assert(SnapshotWordSerializerConcept<HeaderSnapshotWordSerializer>);
+static_assert(SnapshotWordSerializerConcept<HeaderSegmentWordSerializer>);
 
-struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
+struct HeaderSegmentWordDeserializer : public SnapshotWordDeserializer {
     BlockHeader value;
 
-    ~HeaderSnapshotWordDeserializer() override = default;
+    ~HeaderSegmentWordDeserializer() override = default;
 
     void decode_word(ByteView word) override {
         decode_word_into_header(word, value);
@@ -57,9 +57,9 @@ struct HeaderSnapshotWordDeserializer : public SnapshotWordDeserializer {
     }
 };
 
-static_assert(SnapshotWordDeserializerConcept<HeaderSnapshotWordDeserializer>);
+static_assert(SnapshotWordDeserializerConcept<HeaderSegmentWordDeserializer>);
 
-using HeaderSegmentReader = SegmentReader<HeaderSnapshotWordDeserializer>;
-using HeaderSegmentWriter = SegmentWriter<HeaderSnapshotWordSerializer>;
+using HeaderSegmentReader = SegmentReader<HeaderSegmentWordDeserializer>;
+using HeaderSegmentWriter = SegmentWriter<HeaderSegmentWordSerializer>;
 
 }  // namespace silkworm::snapshots

@@ -26,13 +26,13 @@
 
 namespace silkworm::snapshots {
 
-struct TransactionSnapshotWord {
+struct TransactionSegmentWord {
     uint8_t first_hash_byte{};
     ByteView senders_data;
     ByteView tx_rlp;
 };
 
-TransactionSnapshotWord slice_tx_data(ByteView buffer);
+TransactionSegmentWord slice_tx_data(ByteView buffer);
 
 ByteView slice_tx_payload(ByteView tx_rlp);
 
@@ -46,11 +46,11 @@ void decode_word_into_tx(ByteView word, Transaction& tx);
 
 Transaction empty_system_tx();
 
-struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
+struct TransactionSegmentWordSerializer : public SnapshotWordSerializer {
     Transaction value;
     Bytes word;
 
-    ~TransactionSnapshotWordSerializer() override = default;
+    ~TransactionSegmentWordSerializer() override = default;
 
     ByteView encode_word() override {
         word.clear();
@@ -59,28 +59,28 @@ struct TransactionSnapshotWordSerializer : public SnapshotWordSerializer {
     }
 };
 
-static_assert(SnapshotWordSerializerConcept<TransactionSnapshotWordSerializer>);
+static_assert(SnapshotWordSerializerConcept<TransactionSegmentWordSerializer>);
 
-struct TransactionSnapshotWordDeserializer : public SnapshotWordDeserializer {
+struct TransactionSegmentWordDeserializer : public SnapshotWordDeserializer {
     Transaction value;
 
-    ~TransactionSnapshotWordDeserializer() override = default;
+    ~TransactionSegmentWordDeserializer() override = default;
 
     void decode_word(ByteView word) override {
         decode_word_into_tx(word, value);
     }
 };
 
-static_assert(SnapshotWordDeserializerConcept<TransactionSnapshotWordDeserializer>);
+static_assert(SnapshotWordDeserializerConcept<TransactionSegmentWordDeserializer>);
 
 template <class TBytes>
 concept BytesOrByteView = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
 
 template <BytesOrByteView TBytes>
-struct TransactionSnapshotWordPayloadRlpDeserializer : public SnapshotWordDeserializer {
+struct TransactionSegmentWordPayloadRlpDeserializer : public SnapshotWordDeserializer {
     TBytes value;
 
-    ~TransactionSnapshotWordPayloadRlpDeserializer() override = default;
+    ~TransactionSegmentWordPayloadRlpDeserializer() override = default;
 
     void decode_word(ByteView word) override {
         if (word.empty()) {
@@ -93,6 +93,6 @@ struct TransactionSnapshotWordPayloadRlpDeserializer : public SnapshotWordDeseri
     }
 };
 
-static_assert(SnapshotWordDeserializerConcept<TransactionSnapshotWordPayloadRlpDeserializer<Bytes>>);
+static_assert(SnapshotWordDeserializerConcept<TransactionSegmentWordPayloadRlpDeserializer<Bytes>>);
 
 }  // namespace silkworm::snapshots

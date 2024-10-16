@@ -23,10 +23,9 @@
 
 #include <silkworm/core/common/base.hpp>
 
+#include "common/snapshot_path.hpp"
 #include "index_builder.hpp"
 #include "snapshot_bundle.hpp"
-#include "snapshot_path.hpp"
-#include "snapshot_type.hpp"
 
 namespace silkworm::snapshots {
 

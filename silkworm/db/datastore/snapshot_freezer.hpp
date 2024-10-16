@@ -22,7 +22,7 @@
 
 #include "data_migration_command.hpp"
 #include "mdbx/mdbx.hpp"
-#include "snapshots/snapshot_writer.hpp"
+#include "snapshots/segment/snapshot_writer.hpp"
 
 namespace silkworm::db {
 

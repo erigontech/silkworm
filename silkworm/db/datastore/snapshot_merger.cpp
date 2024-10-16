@@ -23,10 +23,10 @@
 #include <silkworm/infra/common/filesystem.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "snapshots/common/snapshot_path.hpp"
 #include "snapshots/seg/compressor.hpp"
+#include "snapshots/segment/snapshot_writer.hpp"
 #include "snapshots/snapshot_bundle.hpp"
-#include "snapshots/snapshot_path.hpp"
-#include "snapshots/snapshot_writer.hpp"
 
 namespace silkworm::db {
 

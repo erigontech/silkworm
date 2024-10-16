@@ -23,8 +23,8 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/types/hash.hpp>
 
-#include "rec_split/rec_split.hpp"
-#include "snapshot_path.hpp"
+#include "../common/snapshot_path.hpp"
+#include "../rec_split/rec_split.hpp"
 
 namespace silkworm::snapshots {
 

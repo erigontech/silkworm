@@ -26,8 +26,8 @@
 #include <silkworm/db/datastore/etl/collector.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
+#include "common/snapshot_path.hpp"
 #include "seg/decompressor.hpp"
-#include "snapshot_path.hpp"
 
 namespace silkworm::snapshots {
 

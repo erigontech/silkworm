@@ -29,12 +29,12 @@
 
 #include <silkworm/core/common/base.hpp>
 
-#include "common/iterator/map_values_view.hpp"
+#include "common/snapshot_path.hpp"
+#include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
 #include "snapshot_and_index.hpp"
 #include "snapshot_bundle.hpp"
 #include "snapshot_bundle_factory.hpp"
-#include "snapshot_path.hpp"
 #include "snapshot_settings.hpp"
 
 namespace silkworm::snapshots {

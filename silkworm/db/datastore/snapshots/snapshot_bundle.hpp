@@ -24,10 +24,10 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 
-#include "index.hpp"
+#include "common/snapshot_path.hpp"
+#include "rec_split_index/index.hpp"
+#include "segment/snapshot_reader.hpp"
 #include "snapshot_and_index.hpp"
-#include "snapshot_path.hpp"
-#include "snapshot_reader.hpp"
 
 namespace silkworm::snapshots {
 

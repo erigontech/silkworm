@@ -18,9 +18,9 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_word_serializer.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_writer.hpp>
+#include <silkworm/db/datastore/snapshots/segment/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/snapshot_word_serializer.hpp>
+#include <silkworm/db/datastore/snapshots/segment/snapshot_writer.hpp>
 
 namespace silkworm::snapshots {
 

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "index.hpp"
-#include "snapshot_reader.hpp"
+#include "rec_split_index/index.hpp"
+#include "segment/snapshot_reader.hpp"
 
 namespace silkworm::snapshots {
 

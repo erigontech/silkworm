@@ -29,7 +29,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "../common/bitmask_operators.hpp"
+#include "../common/util/bitmask_operators.hpp"
 
 namespace silkworm::snapshots::seg {
 

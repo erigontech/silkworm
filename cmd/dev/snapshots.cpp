@@ -41,12 +41,12 @@
 #include <silkworm/db/datastore/snapshot_merger.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
-#include <silkworm/db/datastore/snapshots/index/btree_index.hpp>
-#include <silkworm/db/datastore/snapshots/index/existence_index.hpp>
+#include <silkworm/db/datastore/snapshots/bloom_filter/existence_index.hpp>
+#include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
 #include <silkworm/db/datastore/snapshots/seg/seg_zip.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/snapshot_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>

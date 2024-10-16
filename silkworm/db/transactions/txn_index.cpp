@@ -17,7 +17,7 @@
 #include "txn_index.hpp"
 
 #include <silkworm/db/blocks/bodies/body_txs_amount_query.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/snapshot_reader.hpp>
 
 #include "txn_snapshot_word_serializer.hpp"
 

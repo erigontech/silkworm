@@ -22,8 +22,8 @@
 #include <memory>
 #include <utility>
 
-#include "seg/compressor.hpp"
-#include "snapshot_path.hpp"
+#include "../common/snapshot_path.hpp"
+#include "../seg/compressor.hpp"
 #include "snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {

@@ -26,14 +26,14 @@
 #include <silkworm/infra/common/log.hpp>
 
 #include "access_layer.hpp"
-#include "blocks/bodies/body_snapshot_freezer.hpp"
-#include "blocks/headers/header_snapshot_freezer.hpp"
-#include "datastore/snapshot_freezer.hpp"
+#include "blocks/bodies/body_segment_collation.hpp"
+#include "blocks/headers/header_segment_collation.hpp"
+#include "datastore/segment_collation.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
 #include "datastore/snapshots/segment/segment_writer.hpp"
 #include "datastore/snapshots/snapshot_bundle.hpp"
 #include "prune_mode.hpp"
-#include "transactions/txn_snapshot_freezer.hpp"
+#include "transactions/txn_segment_collation.hpp"
 
 namespace silkworm::db {
 

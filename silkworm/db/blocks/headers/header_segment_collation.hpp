@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/snapshot_freezer.hpp>
+#include <silkworm/db/datastore/segment_collation.hpp>
 
 namespace silkworm::db {
 
-class TransactionSnapshotFreezer : public SnapshotFreezer {
+class HeaderSnapshotFreezer : public SnapshotFreezer {
   public:
-    ~TransactionSnapshotFreezer() override = default;
+    ~HeaderSnapshotFreezer() override = default;
     void copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const override;
     void cleanup(RWTxn& txn, BlockNumRange range) const override;
 };

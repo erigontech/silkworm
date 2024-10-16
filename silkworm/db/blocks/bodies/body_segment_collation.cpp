@@ -14,38 +14,44 @@
    limitations under the License.
 */
 
-#include "header_snapshot_freezer.hpp"
+#include "body_segment_collation.hpp"
 
 #include <stdexcept>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-#include "header_segment.hpp"
+#include "body_segment.hpp"
 
 namespace silkworm::db {
 
-void HeaderSnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const {
+void BodySnapshotFreezer::copy(ROTxn& txn, const FreezerCommand& command, snapshots::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
-    snapshots::HeaderSegmentWriter writer{file_writer};
+    uint64_t base_txn_id = command.base_txn_id;
+
+    snapshots::BodySegmentWriter writer{file_writer};
     auto out = writer.out();
     for (BlockNum i = range.start; i < range.end; ++i) {
-        auto value_opt = read_canonical_header(txn, i);
-        if (!value_opt) throw std::runtime_error{"HeaderSnapshotFreezer::copy missing header for block " + std::to_string(i)};
-        *out++ = *value_opt;
+        auto value_opt = read_canonical_body_for_storage(txn, i);
+        if (!value_opt) throw std::runtime_error{"BodySnapshotFreezer::copy missing body for block " + std::to_string(i)};
+        BlockBodyForStorage& value = *value_opt;
+        // remap to sequential values without gaps (see txnum.go)
+        value.base_txn_id = base_txn_id;
+        base_txn_id += value.txn_count;
+        *out++ = value;
     }
 }
 
-void HeaderSnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
+void BodySnapshotFreezer::cleanup(RWTxn& txn, BlockNumRange range) const {
     for (BlockNum i = range.start, count = 1; i < range.end; ++i, ++count) {
         auto hash_opt = read_canonical_header_hash(txn, i);
         if (!hash_opt) continue;
-        auto& hash = *hash_opt;
+        auto hash = *hash_opt;
 
-        delete_header(txn, i, hash);
+        delete_body(txn, hash, i);
 
         if ((count > 10000) && ((count % 10000) == 0)) {
-            log::Debug("HeaderSnapshotFreezer") << "cleaned up until block " << i;
+            log::Debug("BodySnapshotFreezer") << "cleaned up until block " << i;
         }
     }
 }

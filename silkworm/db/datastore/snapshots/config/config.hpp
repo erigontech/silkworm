@@ -18,6 +18,7 @@
 
 #include <functional>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
@@ -28,6 +29,7 @@
 namespace silkworm::snapshots {
 
 using PreverifiedList = std::vector<Entry>;
+using PreverifiedListOfPairs = std::vector<std::pair<std::string_view, std::string_view>>;
 
 class Config {
   public:
@@ -39,6 +41,7 @@ class Config {
         : entries_(std::move(entries)) {}
 
     const PreverifiedList& preverified_snapshots() const { return entries_; }
+    PreverifiedListOfPairs preverified_snapshots_as_pairs() const;
     bool contains_file_name(std::string_view file_name) const;
 
   private:

@@ -21,8 +21,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <magic_enum.hpp>
 
-#include "snapshot_path.hpp"
-
 namespace silkworm::snapshots {
 
 TEST_CASE("Config::lookup_known_config", "[silkworm][snapshot][config]") {

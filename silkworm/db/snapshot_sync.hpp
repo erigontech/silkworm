@@ -31,7 +31,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/datastore/snapshots/config.hpp>
+#include <silkworm/db/datastore/snapshots/config/config.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_bundle.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_path.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>

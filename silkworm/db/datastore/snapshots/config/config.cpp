@@ -21,12 +21,11 @@
 
 #include <silkworm/core/common/small_map.hpp>
 
-#include "config/amoy.hpp"
-#include "config/bor_mainnet.hpp"
-#include "config/holesky.hpp"
-#include "config/mainnet.hpp"
-#include "config/sepolia.hpp"
-#include "snapshot_path.hpp"
+#include "chains/amoy.hpp"
+#include "chains/bor_mainnet.hpp"
+#include "chains/holesky.hpp"
+#include "chains/mainnet.hpp"
+#include "chains/sepolia.hpp"
 
 namespace silkworm::snapshots {
 
@@ -78,6 +77,14 @@ PreverifiedList Config::remove_unsupported_entries(const PreverifiedList& entrie
     });
 
     return results;
+}
+
+PreverifiedListOfPairs Config::preverified_snapshots_as_pairs() const {
+    PreverifiedListOfPairs entries;
+    for (const Entry& entry : entries_) {
+        entries.emplace_back(entry.file_name, entry.torrent_hash);
+    }
+    return entries;
 }
 
 bool Config::contains_file_name(std::string_view file_name) const {

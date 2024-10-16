@@ -606,7 +606,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
     const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id)};
-    WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots()};
+    WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots_as_pairs()};
 
     boost::asio::io_context scheduler;
     ShutdownSignal shutdown_signal{scheduler.get_executor()};

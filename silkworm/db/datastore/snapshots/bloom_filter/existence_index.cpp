@@ -18,7 +18,7 @@
 
 #include <fstream>
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::bloom_filter {
 
 ExistenceIndex::ExistenceIndex(std::filesystem::path index_file_path)
     : index_file_path_(std::move(index_file_path)) {
@@ -39,4 +39,4 @@ bool ExistenceIndex::contains_hash(uint64_t hash) {
     return filter_->contains_hash(hash);
 }
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::bloom_filter

@@ -27,7 +27,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::bloom_filter {
 
 using namespace std::numbers;
 
@@ -195,4 +195,4 @@ std::istream& operator>>(std::istream& is, BloomFilter& filter) {
     return is;
 }
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::bloom_filter

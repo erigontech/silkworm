@@ -72,7 +72,7 @@
 // P. Elias. Efficient storage and retrieval by content and address of static files. J. ACM, 21(2):246–260, 1974.
 // Partitioned Elias-Fano Indexes http://groups.di.unipi.it/~ottavian/files/elias_fano_sigir14.pdf
 
-namespace silkworm::snapshots::encoding {
+namespace silkworm::snapshots::elias_fano {
 
 //! Log2Q = Log2(Quantum)
 static constexpr uint64_t kLog2q = 8;
@@ -105,6 +105,8 @@ static void set_bits(std::span<T, Extent> bits, const uint64_t start, const uint
         bits[idx64 + 1] = value >> (64 - shift);
     }
 }
+
+using silkworm::snapshots::encoding::Uint64Sequence;
 
 //! 32-bit Elias-Fano (EF) list that can be used to encode one monotone non-decreasing sequence
 class EliasFanoList32 {
@@ -190,7 +192,7 @@ class EliasFanoList32 {
             d -= static_cast<uint64_t>(bit_count);
         }
 
-        const uint64_t sel = select64(window, d);
+        const uint64_t sel = encoding::select64(window, d);
         const auto value = ((current_word * 64 + sel - i) << l_ | (lower & lower_bits_mask_));
         return value;
     }
@@ -389,7 +391,7 @@ class DoubleEliasFanoList16 {
             window_cum_keys = upper_bits_cum_keys_[curr_word_cum_keys];
         }
         lower >>= l_position_;
-        cum_keys_next = ((curr_word_cum_keys * 64 + static_cast<uint64_t>(rho(window_cum_keys)) - i - 1) << l_cum_keys_ | (lower & lower_bits_mask_cum_keys_)) + cum_delta + cum_keys_min_delta_;
+        cum_keys_next = ((curr_word_cum_keys * 64 + static_cast<uint64_t>(encoding::rho(window_cum_keys)) - i - 1) << l_cum_keys_ | (lower & lower_bits_mask_cum_keys_)) + cum_delta + cum_keys_min_delta_;
     }
 
   private:
@@ -460,13 +462,13 @@ class DoubleEliasFanoList16 {
             delta_position -= static_cast<uint64_t>(bit_count);
         }
 
-        select_cum_keys = select64(window_cum_keys, delta_cum_keys);
+        select_cum_keys = encoding::select64(window_cum_keys, delta_cum_keys);
         cum_delta = i * cum_keys_min_delta_;
         cum_keys = ((curr_word_cum_keys * 64 + select_cum_keys - i) << l_cum_keys_ | (lower & lower_bits_mask_cum_keys_)) + cum_delta;
 
         lower >>= l_cum_keys_;
 
-        const uint64_t select_position = select64(window_position, delta_position);
+        const uint64_t select_position = encoding::select64(window_position, delta_position);
         const uint64_t bit_delta = i * position_min_delta_;
         position = ((curr_word_position * 64 + select_position - i) << l_position_ | (lower & lower_bits_mask_position_)) + bit_delta;
     }
@@ -554,8 +556,8 @@ class DoubleEliasFanoList16 {
         is.read(reinterpret_cast<char*>(uint64_buffer.data()), sizeof(uint64_t));
         ef.position_min_delta_ = endian::load_big_u64(uint64_buffer.data());
 
-        ef.l_position_ = ef.u_position_ / (ef.num_buckets_ + 1) == 0 ? 0 : static_cast<uint64_t>(lambda(ef.u_position_ / (ef.num_buckets_ + 1)));
-        ef.l_cum_keys_ = ef.u_cum_keys_ / (ef.num_buckets_ + 1) == 0 ? 0 : static_cast<uint64_t>(lambda(ef.u_cum_keys_ / (ef.num_buckets_ + 1)));
+        ef.l_position_ = ef.u_position_ / (ef.num_buckets_ + 1) == 0 ? 0 : static_cast<uint64_t>(encoding::lambda(ef.u_position_ / (ef.num_buckets_ + 1)));
+        ef.l_cum_keys_ = ef.u_cum_keys_ / (ef.num_buckets_ + 1) == 0 ? 0 : static_cast<uint64_t>(encoding::lambda(ef.u_cum_keys_ / (ef.num_buckets_ + 1)));
         SILKWORM_ASSERT(ef.l_cum_keys_ * 2 + ef.l_position_ <= 56);
 
         ef.lower_bits_mask_cum_keys_ = (1UL << ef.l_cum_keys_) - 1;
@@ -576,4 +578,4 @@ class DoubleEliasFanoList16 {
     }
 };
 
-}  // namespace silkworm::snapshots::encoding
+}  // namespace silkworm::snapshots::elias_fano

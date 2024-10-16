@@ -28,7 +28,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::bloom_filter {
 
 //! Bloom filter implementation (https://en.wikipedia.org/wiki/Bloom_filter)
 //! \remark Serialized binary format compatible with: https://github.com/holiman/bloomfilter
@@ -80,4 +80,4 @@ class BloomFilter {
     uint64_t inserted_count_{0};
 };
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::bloom_filter

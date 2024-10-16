@@ -24,7 +24,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::btree {
 
 //! Smallest shard available for scan instead of binary search
 static constexpr uint64_t kDefaultBtreeStartSkip{4};
@@ -213,4 +213,4 @@ BTree::BinarySearchResult BTree::binary_search_in_cache(ByteView key) {
     return {node, left_index, right_index};
 }
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::btree

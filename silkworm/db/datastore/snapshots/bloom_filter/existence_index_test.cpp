@@ -28,7 +28,7 @@
 
 #include "../test_util/sample_bloom_filter_data.hpp"
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::bloom_filter {
 
 using silkworm::test_util::TemporaryFile;
 
@@ -58,4 +58,4 @@ TEST_CASE("ExistenceIndex", "[snapshot][index][existence_index]") {
     }
 }
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::bloom_filter

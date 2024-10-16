@@ -29,9 +29,10 @@
 #include "../seg/compressor.hpp"
 #include "../seg/decompressor.hpp"
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::btree {
 
 using namespace silkworm::test_util;
+using elias_fano::EliasFanoList32;
 
 using KeyAndValue = std::pair<std::string_view, std::string_view>;
 
@@ -173,4 +174,4 @@ TEST_CASE("BTreeIndex", "[db]") {
     }
 }
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::btree

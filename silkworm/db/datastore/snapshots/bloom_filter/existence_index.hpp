@@ -23,7 +23,7 @@
 
 #include "bloom_filter.hpp"
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::bloom_filter {
 
 class BloomFilter;
 
@@ -51,4 +51,4 @@ class ExistenceIndex {
     std::unique_ptr<BloomFilter> filter_;
 };
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::bloom_filter

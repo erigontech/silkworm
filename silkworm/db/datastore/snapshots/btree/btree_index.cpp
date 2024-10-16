@@ -24,7 +24,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::btree {
 
 BTreeIndex::BTreeIndex(seg::Decompressor& kv_decompressor,
                        std::filesystem::path index_file_path,
@@ -141,4 +141,4 @@ bool BTreeIndex::Cursor::to_next() {
     return true;
 }
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::btree

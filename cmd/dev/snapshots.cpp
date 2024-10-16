@@ -490,7 +490,7 @@ void open_btree_index(const SnapshotSubcommandSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
     kv_decompressor.open();
-    snapshots::index::BTreeIndex bt_index{kv_decompressor, bt_index_file_path};
+    btree::BTreeIndex bt_index{kv_decompressor, bt_index_file_path};
     SILK_INFO << "Starting KV scan and BTreeIndex check, total keys: " << bt_index.key_count();
     size_t matching_count{0}, key_count{0};
     bool is_key{true};
@@ -543,7 +543,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
     kv_decompressor.open();
-    snapshots::index::ExistenceIndex existence_index{existence_index_file_path};
+    bloom_filter::ExistenceIndex existence_index{existence_index_file_path};
 
     SILK_INFO << "Starting KV scan and existence index check";
     size_t key_count{0}, found_count{0}, nonexistent_count{0}, nonexistent_found_count{0};

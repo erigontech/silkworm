@@ -23,7 +23,10 @@
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::snapshots::encoding {
+namespace silkworm::snapshots::rec_split {
+
+using silkworm::snapshots::encoding::Uint32Sequence;
+using silkworm::snapshots::encoding::Uint64Sequence;
 
 static const size_t kGolombRiceTestNumKeys{128};
 static const size_t kGolombRiceTestNumTrees{1'000};
@@ -85,4 +88,4 @@ TEST_CASE("GolombRiceVector", "[silkworm][recsplit][golomb_rice]") {
     }
 }
 
-}  // namespace silkworm::snapshots::encoding
+}  // namespace silkworm::snapshots::rec_split

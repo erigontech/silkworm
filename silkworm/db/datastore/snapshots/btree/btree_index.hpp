@@ -27,9 +27,7 @@
 #include "../seg/decompressor.hpp"
 #include "btree.hpp"
 
-namespace silkworm::snapshots::index {
-
-using encoding::EliasFanoList32;
+namespace silkworm::snapshots::btree {
 
 class BTreeIndex {
   public:
@@ -37,6 +35,7 @@ class BTreeIndex {
 
     using DataIndex = BTree::DataIndex;
     using DataIterator = BTree::DataIterator;
+    using EliasFanoList32 = elias_fano::EliasFanoList32;
 
     class Cursor {
       public:
@@ -96,4 +95,4 @@ class BTreeIndex {
     std::unique_ptr<BTree> btree_;
 };
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::btree

@@ -55,11 +55,14 @@
 #include "../common/encoding/sequence.hpp"
 #include "../common/encoding/util.hpp"
 
-namespace silkworm::snapshots::encoding {
+namespace silkworm::snapshots::rec_split {
 
 //! Storage for Golomb-Rice codes of a RecSplit bucket.
 class GolombRiceVector {
   public:
+    using Uint32Sequence = encoding::Uint32Sequence;
+    using Uint64Sequence = encoding::Uint64Sequence;
+
     class Builder {
       public:
         static constexpr size_t kDefaultAllocatedWords{16};
@@ -186,7 +189,7 @@ class GolombRiceVector {
                 }
             }
 
-            const auto pos = static_cast<size_t>(rho(curr_window_unary_));
+            const auto pos = static_cast<size_t>(encoding::rho(curr_window_unary_));
 
             curr_window_unary_ >>= pos;
             curr_window_unary_ >>= 1;
@@ -209,12 +212,12 @@ class GolombRiceVector {
         void skip_subtree(const size_t nodes, const size_t fixed_len) {
             SILKWORM_ASSERT(nodes > 0);
             size_t missing = nodes, cnt = 0;
-            while ((cnt = static_cast<size_t>(nu(curr_window_unary_))) < missing) {
+            while ((cnt = static_cast<size_t>(encoding::nu(curr_window_unary_))) < missing) {
                 curr_window_unary_ = *(curr_ptr_unary_++);
                 missing -= cnt;
                 valid_lower_bits_unary_ = 64;
             }
-            cnt = select64(curr_window_unary_, missing - 1);
+            cnt = encoding::select64(curr_window_unary_, missing - 1);
             curr_window_unary_ >>= cnt;
             curr_window_unary_ >>= 1;
             valid_lower_bits_unary_ -= cnt + 1;
@@ -241,17 +244,19 @@ class GolombRiceVector {
     Reader reader() const { return Reader{data_}; }
 
   private:
-    Uint64Sequence data_;
+    encoding::Uint64Sequence data_;
 
     friend std::ostream& operator<<(std::ostream& os, const GolombRiceVector& rbv) {
+        using namespace encoding;
         os << rbv.data_;
         return os;
     }
 
     friend std::istream& operator>>(std::istream& is, GolombRiceVector& rbv) {
+        using namespace encoding;
         is >> rbv.data_;
         return is;
     }
 };
 
-}  // namespace silkworm::snapshots::encoding
+}  // namespace silkworm::snapshots::rec_split

@@ -27,7 +27,7 @@
 
 #include "../test_util/sample_bloom_filter_data.hpp"
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::bloom_filter {
 
 TEST_CASE("BloomFilter", "[snapshot][index][bloom_filter]") {
     SECTION("empty") {
@@ -85,4 +85,4 @@ TEST_CASE("BloomFilter: operator>>", "[snapshot][index][bloom_filter]") {
     }
 }
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::bloom_filter

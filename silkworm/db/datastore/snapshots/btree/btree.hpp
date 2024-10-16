@@ -24,7 +24,7 @@
 
 #include "../seg/decompressor.hpp"
 
-namespace silkworm::snapshots::index {
+namespace silkworm::snapshots::btree {
 
 class BTree {
   public:
@@ -101,4 +101,4 @@ class BTree {
     bool check_encoded_keys_;
 };
 
-}  // namespace silkworm::snapshots::index
+}  // namespace silkworm::snapshots::btree

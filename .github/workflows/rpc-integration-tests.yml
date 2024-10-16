@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [ Erigon2, Erigon3 ]
+        backend: [ Erigon3 ]
     runs-on: [ self-hosted, "${{ matrix.backend }}" ]
     concurrency:
       group: ${{ github.workflow }}-${{ matrix.backend }}
@@ -33,11 +33,7 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          if [ ${{ matrix.backend }} == 'Erigon2' ]; then
-             git -c advice.detachedHead=false clone --depth 1 --branch v0.55.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
-          else
-             git -c advice.detachedHead=false clone --depth 1 --branch v0.55.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
-          fi
+          git -c advice.detachedHead=false clone --depth 1 --branch v0.55.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt
 
@@ -57,14 +53,14 @@ jobs:
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
       - name: Pause the Erigon instance dedicated to db maintenance
-        if: matrix.backend == 'Erigon2'
+        if: false # disabled while running RpcDaemon attached to E3 using gRPC
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
 
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh ${{ matrix.backend }} $ERIGON_DATA_DIR ./jwt.hex &
+          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh $ERIGON_DATA_DIR ./jwt.hex &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
@@ -72,7 +68,7 @@ jobs:
         id: test_step
         run: |
           # Run RPC integration test runner via http
-          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_tests.sh ${{ matrix.backend }} ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/ 
+          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_tests.sh ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/ 
 
           # Capture test runner script exit status
           test_exit_status=$?
@@ -90,7 +86,7 @@ jobs:
           ${{runner.workspace}}/silkworm/.github/workflows/stop_integration_rpcdaemon.sh $RPC_DAEMON_PID
 
       - name: Resume the Erigon instance dedicated to db maintenance
-        if: matrix.backend == 'Erigon2'
+        if: false # disabled while running RpcDaemon attached to E3 using gRPC
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 

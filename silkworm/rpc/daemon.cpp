@@ -32,7 +32,6 @@
 #include <silkworm/db/kv/api/direct_client.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/state/version.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
@@ -249,9 +248,6 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
-
-    // Specify if Erigon3 data storage model must be used or not
-    db::state::set_data_format_v3(settings_.use_erigon3_data_format);
 
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();

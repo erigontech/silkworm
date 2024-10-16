@@ -57,8 +57,8 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
                               std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort)
         : BaseTransaction(nullptr), tx_id_(tx_id), view_id_(view_id), cursor_(std::move(cursor)), cursor_dup_sort_(std::move(cursor_dup_sort)) {}
 
-    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
-    [[nodiscard]] uint64_t view_id() const override { return view_id_; }
+    uint64_t tx_id() const override { return tx_id_; }
+    uint64_t view_id() const override { return view_id_; }
 
     Task<void> open() override { co_return; }
 

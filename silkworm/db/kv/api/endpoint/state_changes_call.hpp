@@ -44,7 +44,7 @@ class StateChangesCall final {
 
     StateChangesCall() = default;
 
-    [[nodiscard]] const StateChangeOptions& options() const { return options_; }
+    const StateChangeOptions& options() const { return options_; }
 
     Task<StateChangeChannelPtr> result() {
         auto future = channel_promise_->get_future();
@@ -55,7 +55,7 @@ class StateChangesCall final {
         channel_promise_->set_value(std::move(channel));
     }
 
-    [[nodiscard]] std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal() const {
+    std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal() const {
         return unsubscribe_signal_;
     }
 

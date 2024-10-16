@@ -68,14 +68,14 @@ struct BlockHeader {
     std::optional<uint64_t> excess_blob_gas{std::nullopt};                // EIP-4844
     std::optional<evmc::bytes32> parent_beacon_block_root{std::nullopt};  // EIP-4788
 
-    [[nodiscard]] evmc::bytes32 hash(bool for_sealing = false, bool exclude_extra_data_sig = false) const;
+    evmc::bytes32 hash(bool for_sealing = false, bool exclude_extra_data_sig = false) const;
 
     //! \brief Calculates header's boundary. This is described by Equation(50) by the Yellow Paper.
     //! \return A hash of 256 bits with big endian byte order
-    [[nodiscard]] ethash::hash256 boundary() const;
+    ethash::hash256 boundary() const;
 
     //! \see https://eips.ethereum.org/EIPS/eip-4844#gas-accounting
-    [[nodiscard]] std::optional<intx::uint256> blob_gas_price() const;
+    std::optional<intx::uint256> blob_gas_price() const;
 
     friend bool operator==(const BlockHeader&, const BlockHeader&) = default;
 };

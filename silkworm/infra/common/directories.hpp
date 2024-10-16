@@ -35,16 +35,16 @@ class Directory {
     Directory& operator=(const Directory&) = delete;
 
     //! \brief Returns whether this Directory exists on filesystem
-    [[nodiscard]] bool exists() const;
+    bool exists() const;
 
     //! \brief Returns whether this Directory is empty
-    [[nodiscard]] bool is_empty() const;
+    bool is_empty() const;
 
     //! \brief Returns the cumulative size of all contained files and subdirectories
-    [[nodiscard]] size_t size() const;
+    size_t size() const;
 
     //! \brief Returns the std::filesystem::path of this Directory instance
-    [[nodiscard]] const std::filesystem::path& path() const;
+    const std::filesystem::path& path() const;
 
     //! \brief Removes all contained files and subdirectories
     virtual void clear() const;
@@ -139,17 +139,17 @@ class DataDirectory final : public Directory {
     void clear() const final { throw std::runtime_error("Can't clear a DataDirectory"); }
 
     //! \brief Returns the "chaindata" directory (where chain database is stored)
-    [[nodiscard]] const Directory& chaindata() const { return chaindata_; }
+    const Directory& chaindata() const { return chaindata_; }
     //! \brief Returns the "forks" directory (where forks files are stored)
-    [[nodiscard]] const Directory& forks() const { return forks_; }
+    const Directory& forks() const { return forks_; }
     //! \brief Returns the "logs" directory (where log files are stored)
-    [[nodiscard]] const Directory& logs() const { return logs_; }
+    const Directory& logs() const { return logs_; }
     //! \brief Returns the "nodes" directory (where discovery nodes info are stored)
-    [[nodiscard]] const Directory& nodes() const { return nodes_; }
+    const Directory& nodes() const { return nodes_; }
     //! \brief Returns the "snapshots" directory (where snapshot files are stored)
-    [[nodiscard]] const Directory& snapshots() const { return snapshots_; }
+    const Directory& snapshots() const { return snapshots_; }
     //! \brief Returns the "temp" directory (where temporary files are stored)
-    [[nodiscard]] const Directory& temp() const { return temp_; }
+    const Directory& temp() const { return temp_; }
 
   private:
     Directory chaindata_;  // Database storage

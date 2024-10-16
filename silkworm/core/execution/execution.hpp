@@ -38,8 +38,11 @@ namespace silkworm {
  * @param chain_config The configuration parameters for the chain.
  * @param receipts The transaction receipts produced by block execution.
  */
-[[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state, const ChainConfig& chain_config,
-                                                    std::vector<Receipt>& receipts) noexcept {
+inline ValidationResult execute_block(
+    const Block& block,
+    State& state,
+    const ChainConfig& chain_config,
+    std::vector<Receipt>& receipts) noexcept {
     const auto rule_set{protocol::rule_set_factory(chain_config)};
     if (!rule_set) {
         return ValidationResult::kUnknownProtocolRuleSet;
@@ -64,8 +67,10 @@ namespace silkworm {
  * @param state The chain state at the beginning of the block.
  * @param chain_config The configuration parameters for the chain.
  */
-[[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
-                                                    const ChainConfig& chain_config) noexcept {
+inline ValidationResult execute_block(
+    const Block& block,
+    State& state,
+    const ChainConfig& chain_config) noexcept {
     std::vector<Receipt> receipts;
     return execute_block(block, state, chain_config, receipts);
 }

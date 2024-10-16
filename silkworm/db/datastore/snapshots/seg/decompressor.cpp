@@ -539,7 +539,7 @@ ByteView Decompressor::Iterator::data() const {
     return ByteView{decoder_->words_start_, decoder_->words_length_};
 }
 
-[[nodiscard]] bool Decompressor::Iterator::has_prefix(ByteView prefix) {
+bool Decompressor::Iterator::has_prefix(ByteView prefix) {
     const auto prefix_size{prefix.size()};
 
     const auto start_offset = word_offset_;

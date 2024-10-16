@@ -156,7 +156,7 @@ void PeerManager::add_observer(std::weak_ptr<PeerManagerObserver> observer) {
     observers_.push_back(std::move(observer));
 }
 
-[[nodiscard]] std::list<std::shared_ptr<PeerManagerObserver>> PeerManager::observers() {
+std::list<std::shared_ptr<PeerManagerObserver>> PeerManager::observers() {
     std::scoped_lock lock(observers_mutex_);
     std::list<std::shared_ptr<PeerManagerObserver>> observers;
     for (auto& weak_observer : observers_) {

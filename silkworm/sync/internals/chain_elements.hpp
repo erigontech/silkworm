@@ -264,12 +264,12 @@ struct Segment
         });
     }
 
-    [[nodiscard]] HeaderList::Header_Ref highest_header() const { return front(); }
-    [[nodiscard]] HeaderList::Header_Ref lowest_header() const { return back(); }
+    HeaderList::Header_Ref highest_header() const { return front(); }
+    HeaderList::Header_Ref lowest_header() const { return back(); }
 
     using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice
 
-    [[nodiscard]] Slice slice(size_t start, size_t end) const {
+    Slice slice(size_t start, size_t end) const {
         return {data() + start, data() + end};
     }
 

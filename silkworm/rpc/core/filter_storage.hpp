@@ -47,7 +47,7 @@ struct StoredFilter : public Filter {
 
 struct FilterEntry {
     void renew() { last_access = std::chrono::system_clock::now(); }
-    [[nodiscard]] std::chrono::duration<double> age() const { return std::chrono::system_clock::now() - last_access; }
+    std::chrono::duration<double> age() const { return std::chrono::system_clock::now() - last_access; }
 
     StoredFilter filter;
     std::chrono::system_clock::time_point last_access = std::chrono::system_clock::now();
@@ -67,7 +67,7 @@ class FilterStorage {
     bool remove_filter(const std::string& filter_id);
     std::optional<std::reference_wrapper<StoredFilter>> get_filter(const std::string& filter_id);
 
-    [[nodiscard]] auto size() const {
+    auto size() const {
         return storage_.size();
     }
 

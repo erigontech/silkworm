@@ -30,16 +30,16 @@ class EccPublicKey {
   public:
     explicit EccPublicKey(Bytes data) : data_(std::move(data)) {}
 
-    [[nodiscard]] ByteView data() const { return data_; }
-    [[nodiscard]] Bytes::size_type size() const { return data_.size(); }
+    ByteView data() const { return data_; }
+    Bytes::size_type size() const { return data_.size(); }
 
-    [[nodiscard]] Bytes serialized_std(bool is_compressed = false) const;
-    [[nodiscard]] Bytes serialized() const;
-    [[nodiscard]] std::string hex() const;
+    Bytes serialized_std(bool is_compressed = false) const;
+    Bytes serialized() const;
+    std::string hex() const;
 
-    [[nodiscard]] static EccPublicKey deserialize_std(ByteView serialized_data);
-    [[nodiscard]] static EccPublicKey deserialize(ByteView serialized_data);
-    [[nodiscard]] static EccPublicKey deserialize_hex(std::string_view hex);
+    static EccPublicKey deserialize_std(ByteView serialized_data);
+    static EccPublicKey deserialize(ByteView serialized_data);
+    static EccPublicKey deserialize_hex(std::string_view hex);
 
     friend bool operator==(const EccPublicKey&, const EccPublicKey&) = default;
 

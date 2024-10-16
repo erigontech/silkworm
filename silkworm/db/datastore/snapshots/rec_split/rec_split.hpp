@@ -637,7 +637,7 @@ class RecSplit {
     using LookupResult = std::pair<size_t, bool>;
 
     //! Return the value associated with the given key within the index
-    [[nodiscard]] LookupResult lookup(const std::string& key) const { return lookup(string_view_to_byte_view(key)); }
+    LookupResult lookup(const std::string& key) const { return lookup(string_view_to_byte_view(key)); }
 
     //! Return the value associated with the given key within the index
     LookupResult lookup(ByteView key) const {
@@ -657,9 +657,9 @@ class RecSplit {
 
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
     //! only access to the Elias-Fano structure containing all offsets
-    [[nodiscard]] size_t lookup_by_ordinal(uint64_t i) const { return ef_offsets_->get(i); }
+    size_t lookup_by_ordinal(uint64_t i) const { return ef_offsets_->get(i); }
 
-    [[nodiscard]] std::optional<size_t> lookup_by_data_id(uint64_t data_id) const {
+    std::optional<size_t> lookup_by_data_id(uint64_t data_id) const {
         // check if data_id is not out of range
         uint64_t min = base_data_id();
         uint64_t max = min + key_count() - 1;
@@ -670,33 +670,33 @@ class RecSplit {
         return lookup_by_ordinal(data_id - base_data_id());
     }
 
-    [[nodiscard]] std::optional<size_t> lookup_by_key(ByteView key) const {
+    std::optional<size_t> lookup_by_key(ByteView key) const {
         auto [i, found] = lookup(key);
         return found ? std::optional{lookup_by_ordinal(i)} : std::nullopt;
     }
 
     //! Return the number of keys used to build the RecSplit instance
-    [[nodiscard]] size_t key_count() const { return key_count_; }
+    size_t key_count() const { return key_count_; }
 
-    [[nodiscard]] bool empty() const { return key_count_ == 0; }
-    [[nodiscard]] uint64_t base_data_id() const { return base_data_id_; }
-    [[nodiscard]] uint64_t record_mask() const { return record_mask_; }
-    [[nodiscard]] uint64_t bucket_count() const { return bucket_count_; }
-    [[nodiscard]] uint16_t bucket_size() const { return bucket_size_; }
+    bool empty() const { return key_count_ == 0; }
+    uint64_t base_data_id() const { return base_data_id_; }
+    uint64_t record_mask() const { return record_mask_; }
+    uint64_t bucket_count() const { return bucket_count_; }
+    uint16_t bucket_size() const { return bucket_size_; }
 
-    [[nodiscard]] bool double_enum_index() const { return double_enum_index_; }
-    [[nodiscard]] bool less_false_positives() const { return less_false_positives_; }
+    bool double_enum_index() const { return double_enum_index_; }
+    bool less_false_positives() const { return less_false_positives_; }
 
     //! Return the presence filter for the index. It can be empty if less false-positives feature is not enabled
-    [[nodiscard]] std::vector<uint8_t> existence_filter() const { return existence_filter_; }
+    std::vector<uint8_t> existence_filter() const { return existence_filter_; }
 
-    [[nodiscard]] size_t file_size() const { return std::filesystem::file_size(index_path_); }
+    size_t file_size() const { return std::filesystem::file_size(index_path_); }
 
-    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
+    std::filesystem::file_time_type last_write_time() const {
         return std::filesystem::last_write_time(index_path_);
     }
 
-    [[nodiscard]] MemoryMappedRegion memory_file_region() const { return encoded_file_ ? encoded_file_->region() : MemoryMappedRegion{}; }
+    MemoryMappedRegion memory_file_region() const { return encoded_file_ ? encoded_file_->region() : MemoryMappedRegion{}; }
 
   private:
     static size_t skip_bits(size_t m) { return kMemo[m] & 0xFFFF; }
@@ -895,7 +895,7 @@ class RecSplit {
     }
 
     //! Maps a 128-bit to a bucket using the first 64-bit half
-    [[nodiscard]] uint64_t hash128_to_bucket(const Hash128& hash) const { return remap128(hash.first, bucket_count_); }
+    uint64_t hash128_to_bucket(const Hash128& hash) const { return remap128(hash.first, bucket_count_); }
 
     void check_minimum_length(size_t minimum_length) {
         if (encoded_file_ && encoded_file_->size() < minimum_length) {

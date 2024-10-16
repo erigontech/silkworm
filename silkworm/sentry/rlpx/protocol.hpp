@@ -29,8 +29,8 @@ namespace silkworm::sentry::rlpx {
 
 struct Protocol {
     virtual ~Protocol() = default;
-    [[nodiscard]] virtual std::pair<std::string, uint8_t> capability() = 0;
-    [[nodiscard]] virtual Message first_message() = 0;
+    virtual std::pair<std::string, uint8_t> capability() = 0;
+    virtual Message first_message() = 0;
     virtual void handle_peer_first_message(const Message& message) = 0;
     virtual bool is_compatible_enr_entry(std::string_view name, ByteView data) = 0;
 

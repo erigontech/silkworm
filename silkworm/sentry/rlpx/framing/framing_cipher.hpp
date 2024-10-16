@@ -42,12 +42,12 @@ class FramingCipher final {
     FramingCipher(FramingCipher&&) noexcept;
     FramingCipher& operator=(FramingCipher&&) noexcept;
 
-    [[nodiscard]] Bytes encrypt_frame(Bytes frame_data);
+    Bytes encrypt_frame(Bytes frame_data);
 
-    [[nodiscard]] static size_t header_size();
-    [[nodiscard]] size_t decrypt_header(ByteView data);
-    [[nodiscard]] static size_t frame_size(size_t header_frame_size);
-    [[nodiscard]] Bytes decrypt_frame(ByteView data, size_t header_frame_size);
+    static size_t header_size();
+    size_t decrypt_header(ByteView data);
+    static size_t frame_size(size_t header_frame_size);
+    Bytes decrypt_frame(ByteView data, size_t header_frame_size);
 
   private:
     std::unique_ptr<FramingCipherImpl> impl_;

@@ -25,11 +25,11 @@
 namespace silkworm::sentry::rlpx {
 
 struct DisconnectMessage {
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static DisconnectMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static DisconnectMessage rlp_decode(ByteView data);
 
-    [[nodiscard]] sentry::Message to_message() const;
-    [[nodiscard]] static DisconnectMessage from_message(const sentry::Message& message);
+    sentry::Message to_message() const;
+    static DisconnectMessage from_message(const sentry::Message& message);
 
     static const uint8_t kId;
     DisconnectReason reason{DisconnectReason::kDisconnectRequested};

@@ -31,7 +31,7 @@ struct SentryClient {
     virtual Task<std::shared_ptr<Service>> service() = 0;
 
     //! Connected or just created an ready to handle calls. service() is unlikely to block for long.
-    [[nodiscard]] virtual bool is_ready() = 0;
+    virtual bool is_ready() = 0;
     virtual void on_disconnect(std::function<Task<void>()> callback) = 0;
     virtual Task<void> reconnect() = 0;
 };

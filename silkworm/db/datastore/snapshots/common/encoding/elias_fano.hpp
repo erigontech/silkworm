@@ -146,19 +146,19 @@ class EliasFanoList32 {
         std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
     }
 
-    [[nodiscard]] size_t sequence_length() const { return count_ + 1; }
+    size_t sequence_length() const { return count_ + 1; }
 
-    [[nodiscard]] size_t count() const { return count_; }
+    size_t count() const { return count_; }
 
-    [[nodiscard]] size_t max() const { return max_value_; }
+    size_t max() const { return max_value_; }
 
-    [[nodiscard]] size_t min() const { return get(0); }
+    size_t min() const { return get(0); }
 
-    [[nodiscard]] const Uint64Sequence& data() const { return data_; }
+    const Uint64Sequence& data() const { return data_; }
 
-    [[nodiscard]] size_t encoded_data_size() const { return kCountLength + kULength + data_.size() * sizeof(uint64_t); }
+    size_t encoded_data_size() const { return kCountLength + kULength + data_.size() * sizeof(uint64_t); }
 
-    [[nodiscard]] uint64_t get(uint64_t i) const {
+    uint64_t get(uint64_t i) const {
         uint64_t lower = i * l_;
         size_t idx64 = lower / 64;
         uint64_t shift = lower % 64;
@@ -263,7 +263,7 @@ class EliasFanoList32 {
         return total_words;
     }
 
-    [[nodiscard]] uint64_t jump_size_words() const {
+    uint64_t jump_size_words() const {
         uint64_t size = ((count_ + 1) / kSuperQ) * kSuperQSize32;  // Whole blocks
         if ((count_ + 1) % kSuperQ != 0) {
             size += 1 + (((count_ + 1) % kSuperQ + kQ - 1) / kQ + 3) / 2;  // Partial block
@@ -288,9 +288,9 @@ class DoubleEliasFanoList16 {
   public:
     DoubleEliasFanoList16() = default;
 
-    [[nodiscard]] const Uint64Sequence& data() const { return data_; }
+    const Uint64Sequence& data() const { return data_; }
 
-    [[nodiscard]] uint64_t num_buckets() const { return num_buckets_; }
+    uint64_t num_buckets() const { return num_buckets_; }
 
     void build(const Uint64Sequence& cum_keys, const Uint64Sequence& position) {
         SILKWORM_ASSERT(cum_keys.size() == position.size());
@@ -491,19 +491,19 @@ class DoubleEliasFanoList16 {
     //! Minimum delta between successive positions
     uint64_t position_min_delta_{0};
 
-    [[nodiscard]] size_t lower_bits_size_words() const {
+    size_t lower_bits_size_words() const {
         return ((num_buckets_ + 1) * (l_cum_keys_ + l_position_) + 63) / 64 + 1;
     }
 
-    [[nodiscard]] size_t cum_keys_size_words() const {
+    size_t cum_keys_size_words() const {
         return (num_buckets_ + 1 + (u_cum_keys_ >> l_cum_keys_) + 63) / 64;
     }
 
-    [[nodiscard]] size_t position_size_words() const {
+    size_t position_size_words() const {
         return (num_buckets_ + 1 + (u_position_ >> l_position_) + 63) / 64;
     }
 
-    [[nodiscard]] size_t jump_size_words() const {
+    size_t jump_size_words() const {
         // Compute whole blocks
         size_t size = ((num_buckets_ + 1) / kSuperQ) * kSuperQSize16 * 2;
         // Compute partial block (if any)

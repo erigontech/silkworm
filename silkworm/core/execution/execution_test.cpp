@@ -132,8 +132,8 @@ class BlockTracer : public EvmTracer {
         block_end_called_ = true;
     }
 
-    [[nodiscard]] bool block_start_called() const { return block_start_called_; }
-    [[nodiscard]] bool block_end_called() const { return block_end_called_; }
+    bool block_start_called() const { return block_start_called_; }
+    bool block_end_called() const { return block_end_called_; }
 
   private:
     bool block_start_called_{false};

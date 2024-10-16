@@ -115,13 +115,13 @@ class InMemoryCollector {
     }
 
     //! \brief Returns the number of actually collected items
-    [[nodiscard]] size_t size() const { return size_; }
+    size_t size() const { return size_; }
 
     //! \brief Returns the number of actually collected bytes
-    [[nodiscard]] size_t bytes_size() const { return bytes_size_; }
+    size_t bytes_size() const { return bytes_size_; }
 
     //! \brief Returns whether this instance is empty (i.e. no items)
-    [[nodiscard]] bool empty() const { return size_ == 0; }
+    bool empty() const { return size_ == 0; }
 
     //! \brief Clears contents of collector and reset
     void clear() {
@@ -131,7 +131,7 @@ class InMemoryCollector {
     }
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
-    [[nodiscard]] std::string get_load_key() const {
+    std::string get_load_key() const {
         std::scoped_lock l{mutex_};
         return loading_key_;
     }

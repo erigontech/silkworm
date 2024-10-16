@@ -28,8 +28,8 @@ struct FindNodeMessage {
     EccPublicKey target_public_key;
     std::chrono::time_point<std::chrono::system_clock> expiration;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static FindNodeMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static FindNodeMessage rlp_decode(ByteView data);
 
     static const uint8_t kId;
 

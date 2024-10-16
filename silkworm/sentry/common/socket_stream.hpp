@@ -33,8 +33,8 @@ class SocketStream {
     SocketStream(SocketStream&&) = default;
     SocketStream& operator=(SocketStream&&) noexcept = default;
 
-    [[nodiscard]] boost::asio::ip::tcp::socket& socket() { return socket_; }
-    [[nodiscard]] const boost::asio::ip::tcp::socket& socket() const { return socket_; }
+    boost::asio::ip::tcp::socket& socket() { return socket_; }
+    const boost::asio::ip::tcp::socket& socket() const { return socket_; }
 
     Task<void> send(Bytes data);
 

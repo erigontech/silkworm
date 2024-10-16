@@ -45,8 +45,9 @@ struct Call {
     std::optional<uint64_t> nonce;
     AccessList access_list;
 
-    [[nodiscard]] silkworm::Transaction to_transaction(const std::optional<AccessList>& override_access_list = std::nullopt,
-                                                       const std::optional<uint64_t> override_nonce = std::nullopt) const {
+    silkworm::Transaction to_transaction(
+        const std::optional<AccessList>& override_access_list = std::nullopt,
+        const std::optional<uint64_t> override_nonce = std::nullopt) const {
         silkworm::Transaction txn{};
         txn.set_sender(from ? *from : evmc::address{});
         txn.to = to;

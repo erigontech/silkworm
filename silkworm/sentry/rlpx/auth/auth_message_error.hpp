@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/sentry/common/error.hpp>
 
@@ -39,7 +40,7 @@ class AuthMessageErrorBase : public sentry::Error<AuthMessageErrorCode> {
         : sentry::Error<AuthMessageErrorCode>(code, ""),
           message_type_(message_type) {}
 
-    [[nodiscard]] AuthMessageType message_type() const { return message_type_; }
+    AuthMessageType message_type() const { return message_type_; }
 
   private:
     AuthMessageType message_type_;
@@ -55,9 +56,9 @@ class AuthMessageErrorDecryptFailure : public AuthMessageErrorBase, private Ecie
           EciesCipherError(cause),
           message_data_(std::move(message_data)) {}
 
-    [[nodiscard]] EciesCipherErrorCode cause_code() const { return EciesCipherError::code(); }
-    [[nodiscard]] const char* what() const noexcept override { return EciesCipherError::what(); }
-    [[nodiscard]] ByteView message_data() const { return message_data_; }
+    EciesCipherErrorCode cause_code() const { return EciesCipherError::code(); }
+    const char* what() const noexcept override { return EciesCipherError::what(); }
+    ByteView message_data() const { return message_data_; }
 
   private:
     Bytes message_data_;
@@ -71,8 +72,8 @@ class AuthMessageErrorBadRLP : public AuthMessageErrorBase, private DecodingExce
         : AuthMessageErrorBase(message_type, AuthMessageErrorCode::kBadRLP),
           DecodingException(cause) {}
 
-    [[nodiscard]] DecodingError cause_code() const { return err(); }
-    [[nodiscard]] const char* what() const noexcept override { return DecodingException::what(); }
+    DecodingError cause_code() const { return err(); }
+    const char* what() const noexcept override { return DecodingException::what(); }
 };
 
 }  // namespace silkworm::sentry::rlpx::auth

@@ -66,7 +66,7 @@ class StopWatch {
     void reset() noexcept;
 
     //! \brief Returns the vector of laptimes
-    [[nodiscard]] const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
+    const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
 
     //! \brief Returns a human readable duration
     static std::string format(Duration duration) noexcept;

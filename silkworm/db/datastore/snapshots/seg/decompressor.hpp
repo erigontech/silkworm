@@ -227,6 +227,10 @@ class Decompressor {
         //! @return the next word position
         uint64_t skip_uncompressed();
 
+        //! Move at the offset of the next word skipping current one using skip() or skip_uncompressed() as necessary
+        //! @return the next word position
+        uint64_t skip_auto();
+
         //! Reset to the specified offset in the data stream
         void reset(uint64_t data_offset);
 
@@ -265,6 +269,8 @@ class Decompressor {
         //! Read next code from the data stream
         inline uint16_t next_code(size_t bit_length);
 
+        bool is_next_word_compressed() const;
+
         //! The decoder on which iterator works
         const Decompressor* decoder_;
 
@@ -288,9 +294,10 @@ class Decompressor {
 
     static_assert(std::input_or_output_iterator<Iterator>);
 
-    explicit Decompressor(std::filesystem::path compressed_path,
-                          std::optional<MemoryMappedRegion> compressed_region = {},
-                          CompressionKind compression = CompressionKind::kKeys | CompressionKind::kValues);
+    explicit Decompressor(
+        std::filesystem::path compressed_path,
+        std::optional<MemoryMappedRegion> compressed_region = {},
+        CompressionKind compression_kind = CompressionKind::kKeys | CompressionKind::kValues);
     ~Decompressor();
 
     Decompressor(Decompressor&&) = default;
@@ -341,7 +348,7 @@ class Decompressor {
     std::optional<MemoryMappedRegion> compressed_region_;
 
     //! The type of compression for this segment
-    CompressionKind compression_;
+    CompressionKind compression_kind_;
 
     //! The memory-mapped compressed file
     std::unique_ptr<MemoryMappedFile> compressed_file_;

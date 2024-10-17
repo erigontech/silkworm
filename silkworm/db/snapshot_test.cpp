@@ -32,7 +32,7 @@
 #include "test_util/temp_snapshots.hpp"
 #include "transactions/txn_index.hpp"
 #include "transactions/txn_queries.hpp"
-#include "transactions/txn_segment_word_serializer.hpp"
+#include "transactions/txn_segment_word_codec.hpp"
 #include "transactions/txn_to_block_index.hpp"
 
 namespace silkworm::snapshots {

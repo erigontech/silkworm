@@ -31,10 +31,10 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 #include <silkworm/infra/common/os.hpp>
 
+#include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
 #include "../common/util/iterator/iterator_read_into_vector.hpp"
 #include "../seg/decompressor.hpp"
-#include "snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
 

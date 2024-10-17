@@ -19,7 +19,7 @@
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_writer.hpp>
 
-#include "txn_segment_word_serializer.hpp"
+#include "txn_segment_word_codec.hpp"
 
 namespace silkworm::snapshots {
 

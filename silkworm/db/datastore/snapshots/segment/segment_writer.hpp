@@ -22,9 +22,9 @@
 #include <memory>
 #include <utility>
 
+#include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
 #include "../seg/compressor.hpp"
-#include "snapshot_word_serializer.hpp"
 
 namespace silkworm::snapshots {
 

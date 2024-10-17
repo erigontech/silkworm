@@ -13,6 +13,16 @@ rm -rf ./mainnet/results/
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x engine_,\
 debug_traceCall/test_02.json,\
 erigon_getHeaderByHash/test_05.json,\
+debug_accountAt,\
+debug_traceBlockByHash,\
+erigon_getBlockReceiptsByBlockHash,\
+erigon_getHeaderByHash,\
+erigon_getLogsByHash,\
+eth_getBlockByHash,\
+eth_getBlockTransactionCountByHash,\
+eth_getRawTransactionByBlockHashAndIndex,\
+eth_getTransactionByBlockHashAndIndex,\
+eth_getUncleCountByBlockHash,\
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
@@ -39,3 +49,5 @@ else
 fi
 
 exit $failed_test
+
+

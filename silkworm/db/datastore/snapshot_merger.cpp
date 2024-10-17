@@ -23,10 +23,10 @@
 #include <silkworm/infra/common/filesystem.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "snapshots/common/snapshot_path.hpp"
 #include "snapshots/seg/compressor.hpp"
+#include "snapshots/segment/segment_writer.hpp"
 #include "snapshots/snapshot_bundle.hpp"
-#include "snapshots/snapshot_path.hpp"
-#include "snapshots/snapshot_writer.hpp"
 
 namespace silkworm::db {
 
@@ -78,9 +78,9 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
     return {};
 }
 
-struct RawSnapshotWordDeserializer : public SnapshotWordDeserializer {
+struct RawDecoder : public Decoder {
     ByteView value;
-    ~RawSnapshotWordDeserializer() override = default;
+    ~RawDecoder() override = default;
     void decode_word(ByteView word) override {
         value = word;
     }
@@ -91,14 +91,14 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
     auto range = merger_command.range;
 
     auto new_bundle = snapshots_.bundle_factory().make(tmp_dir_path_, range);
-    for (auto& snapshot_ref : new_bundle.snapshots()) {
-        auto path = snapshot_ref.get().path();
+    for (auto& segment_ref : new_bundle.segments()) {
+        auto path = segment_ref.get().path();
         log::Debug("SnapshotMerger") << "merging " << path.type_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(range)) {
             auto& bundle = *bundle_ptr;
-            SnapshotReader<RawSnapshotWordDeserializer> reader{bundle.snapshot(path.type())};
+            SegmentReader<RawDecoder> reader{bundle.segment(path.type())};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 

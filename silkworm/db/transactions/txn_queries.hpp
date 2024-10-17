@@ -22,14 +22,14 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 
-#include "txn_snapshot.hpp"
+#include "txn_segment.hpp"
 
 namespace silkworm::snapshots {
 
-using TransactionFindByIdQuery = FindByIdQuery<TransactionSnapshotReader>;
-using TransactionFindByHashQuery = FindByHashQuery<TransactionSnapshotReader>;
-using TransactionRangeFromIdQuery = RangeFromIdQuery<TransactionSnapshotReader>;
-using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>>;
+using TransactionFindByIdQuery = FindByIdQuery<TransactionSegmentReader>;
+using TransactionFindByHashQuery = FindByHashQuery<TransactionSegmentReader>;
+using TransactionRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentReader>;
+using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentPayloadRlpReader<Bytes>>;
 
 class TransactionBlockNumByTxnHashQuery {
   public:
@@ -60,11 +60,11 @@ class TransactionBlockNumByTxnHashRepoQuery {
     std::optional<BlockNum> exec(const Hash& hash) {
         for (const TBundle& bundle_ptr : bundles_) {
             const auto& bundle = *bundle_ptr;
-            const Snapshot& snapshot = bundle.txn_snapshot;
+            const SegmentFileReader& segment = bundle.txn_segment;
             const Index& idx_txn_hash = bundle.idx_txn_hash;
             const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block;
 
-            TransactionFindByHashQuery cross_check_query{{snapshot, idx_txn_hash}};
+            TransactionFindByHashQuery cross_check_query{{segment, idx_txn_hash}};
             TransactionBlockNumByTxnHashQuery query{idx_txn_hash_2_block, cross_check_query};
             auto block_num = query.exec(hash);
             if (block_num) {

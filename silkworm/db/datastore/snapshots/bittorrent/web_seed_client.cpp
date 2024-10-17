@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <map>
+#include <ranges>
 #include <string_view>
 
 #include <absl/strings/ascii.h>
@@ -61,14 +62,21 @@ static const std::map<std::string_view, std::string_view> kCloudflareHeaders{
     {"lsjdjwcush6jbnjj3jnjscoscisoc5s", "I%OSJDNFKE783DDHHJD873EFSIVNI7384R78SSJBJBCCJBC32JABBJCBJK45"},
 };
 
-WebSeedClient::WebSeedClient(std::vector<std::string> url_seeds, const PreverifiedList& preverified)
-    : WebSeedClient(std::make_unique<WebSession>(), std::move(url_seeds), preverified) {}
+WebSeedClient::WebSeedClient(
+    std::vector<std::string> url_seeds,
+    Whitelist whitelist)
+    : WebSeedClient{
+          std::make_unique<WebSession>(),
+          std::move(url_seeds),
+          std::move(whitelist),
+      } {}
 
-WebSeedClient::WebSeedClient(std::unique_ptr<WebSession> web_session,
-                             std::vector<std::string> url_seeds,
-                             const PreverifiedList& preverified)
+WebSeedClient::WebSeedClient(
+    std::unique_ptr<WebSession> web_session,
+    std::vector<std::string> url_seeds,
+    Whitelist whitelist)
     : url_seeds_{std::move(url_seeds)},
-      preverified_{preverified},
+      whitelist_{std::move(whitelist)},
       web_session_{std::move(web_session)} {}
 
 Task<TorrentInfoPtrList> WebSeedClient::discover_torrents(bool fail_fast) {
@@ -168,10 +176,6 @@ TorrentInfoPtr WebSeedClient::validate_torrent_file(const urls::url& provider_ur
     file_name.remove_suffix(kTorrentExtension.size());
 
     if (!is_whitelisted(file_name, lt::aux::to_hex(torrent_hash))) {
-        if (WebSeedClient::is_caplin_segment(file_name)) {
-            SILK_TRACE << "WebSeedClient::validate_torrent_file skip Caplin torrent: " << file_name;
-            return {};
-        }
         SILK_WARN << "WebSeedClient::validate_torrent_file torrent NOT whitelisted: " << file_name;
         if (throw_not_whitelisted_) {
             throw std::runtime_error{".torrent file " + std::string{file_name} + " is not whitelisted"};
@@ -183,17 +187,9 @@ TorrentInfoPtr WebSeedClient::validate_torrent_file(const urls::url& provider_ur
 }
 
 bool WebSeedClient::is_whitelisted(std::string_view file_name, std::string_view torrent_hash) {
-    SILK_TRACE << "WebSeedClient::is_whitelisted file_name: " << file_name << " torrent_hash: " << torrent_hash;
-    const auto it = std::find_if(preverified_.cbegin(), preverified_.cend(), [=](auto& preverified_file) {
-        const auto [preverified_file_name, preverified_hash] = preverified_file;
-        SILK_TRACE << "WebSeedClient::is_whitelisted preverified_file_name: " << preverified_file_name << " preverified_hash: " << preverified_hash;
-        return preverified_file_name == file_name && preverified_hash == torrent_hash;
+    return std::ranges::any_of(whitelist_, [&](const std::pair<std::string_view, std::string_view>& entry) {
+        return (entry.first == file_name) && (entry.second == torrent_hash);
     });
-    return it != preverified_.cend();
-}
-
-bool WebSeedClient::is_caplin_segment(std::string_view file_name) {
-    return file_name.ends_with("beaconblocks.seg") || file_name.ends_with("blobsidecars.seg");
 }
 
 }  // namespace silkworm::snapshots::bittorrent

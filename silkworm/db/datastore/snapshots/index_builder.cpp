@@ -46,34 +46,34 @@ static IndexInputDataQuery::Iterator::value_type decompressor_index_query_entry(
 }
 
 IndexInputDataQuery::Iterator DecompressorIndexInputDataQuery::begin() {
-    auto decoder = std::make_shared<seg::Decompressor>(segment_path_.path(), segment_region_);
-    decoder->open();
+    auto decompressor = std::make_shared<seg::Decompressor>(segment_path_.path(), segment_region_);
+    decompressor->open();
 
-    auto impl_it = std::make_shared<IteratorImpl>(IteratorImpl{decoder, decoder->begin()});
+    auto impl_it = std::make_shared<IteratorImpl>(IteratorImpl{decompressor, decompressor->begin()});
     return IndexInputDataQuery::Iterator{this, impl_it, decompressor_index_query_entry(impl_it->it)};
 }
 
 IndexInputDataQuery::Iterator DecompressorIndexInputDataQuery::end() {
-    auto decoder = std::make_shared<seg::Decompressor>(segment_path_.path(), segment_region_);
+    auto decompressor = std::make_shared<seg::Decompressor>(segment_path_.path(), segment_region_);
 
-    auto impl_it = std::make_shared<IteratorImpl>(IteratorImpl{{}, decoder->end()});
+    auto impl_it = std::make_shared<IteratorImpl>(IteratorImpl{{}, decompressor->end()});
     return IndexInputDataQuery::Iterator{this, impl_it, decompressor_index_query_entry(impl_it->it)};
 }
 
 size_t DecompressorIndexInputDataQuery::keys_count() {
-    seg::Decompressor decoder{segment_path_.path(), segment_region_};
-    decoder.open();
-    return decoder.words_count();
+    seg::Decompressor decompressor{segment_path_.path(), segment_region_};
+    decompressor.open();
+    return decompressor.words_count();
 }
 
 std::pair<std::shared_ptr<void>, IndexInputDataQuery::Iterator::value_type>
 DecompressorIndexInputDataQuery::next_iterator(std::shared_ptr<void> it_impl) {
     auto& it_impl_ref = *reinterpret_cast<IteratorImpl*>(it_impl.get());
     // check if not already at the end
-    if (it_impl_ref.decoder) {
+    if (it_impl_ref.decompressor) {
         ++it_impl_ref.it;
-        if (it_impl_ref.it == it_impl_ref.decoder->end()) {
-            it_impl_ref.decoder.reset();
+        if (it_impl_ref.it == it_impl_ref.decompressor->end()) {
+            it_impl_ref.decompressor.reset();
         }
     }
     return {it_impl, decompressor_index_query_entry(it_impl_ref.it)};
@@ -84,8 +84,8 @@ bool DecompressorIndexInputDataQuery::equal_iterators(
     std::shared_ptr<void> rhs_it_impl) const {
     auto lhs = reinterpret_cast<IteratorImpl*>(lhs_it_impl.get());
     auto rhs = reinterpret_cast<IteratorImpl*>(rhs_it_impl.get());
-    return (lhs->decoder == rhs->decoder) &&
-           (!lhs->decoder || (lhs->it == rhs->it));
+    return (lhs->decompressor == rhs->decompressor) &&
+           (!lhs->decompressor || (lhs->it == rhs->it));
 }
 
 void IndexBuilder::build() {

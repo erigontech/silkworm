@@ -26,14 +26,14 @@
 #include <silkworm/infra/common/log.hpp>
 
 #include "access_layer.hpp"
-#include "blocks/bodies/body_snapshot_freezer.hpp"
-#include "blocks/headers/header_snapshot_freezer.hpp"
-#include "datastore/snapshot_freezer.hpp"
+#include "blocks/bodies/body_segment_collation.hpp"
+#include "blocks/headers/header_segment_collation.hpp"
+#include "datastore/segment_collation.hpp"
+#include "datastore/snapshots/common/snapshot_path.hpp"
+#include "datastore/snapshots/segment/segment_writer.hpp"
 #include "datastore/snapshots/snapshot_bundle.hpp"
-#include "datastore/snapshots/snapshot_path.hpp"
-#include "datastore/snapshots/snapshot_writer.hpp"
 #include "prune_mode.hpp"
-#include "transactions/txn_snapshot_freezer.hpp"
+#include "transactions/txn_segment_collation.hpp"
 
 namespace silkworm::db {
 
@@ -81,23 +81,23 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
     }();
 
     if (end + kFullImmutabilityThreshold <= tip) {
-        return std::make_unique<FreezerCommand>(FreezerCommand{{start, end}, base_txn_id});
+        return std::make_unique<SegmentCollationCommand>(SegmentCollationCommand{{start, end}, base_txn_id});
     }
     return {};
 }
 
-static const SnapshotFreezer& get_snapshot_freezer(SnapshotType type) {
-    static HeaderSnapshotFreezer header_snapshot_freezer;
-    static BodySnapshotFreezer body_snapshot_freezer;
-    static TransactionSnapshotFreezer txn_snapshot_freezer;
+static const SegmentCollation& get_collation(SnapshotType type) {
+    static HeaderSegmentCollation header_collation;
+    static BodySegmentCollation body_collation;
+    static TransactionSegmentCollation txn_collation;
 
     switch (type) {
         case SnapshotType::headers:
-            return header_snapshot_freezer;
+            return header_collation;
         case SnapshotType::bodies:
-            return body_snapshot_freezer;
+            return body_collation;
         case SnapshotType::transactions:
-            return txn_snapshot_freezer;
+            return txn_collation;
         default:
             SILKWORM_ASSERT(false);
             throw std::runtime_error("invalid type");
@@ -105,19 +105,19 @@ static const SnapshotFreezer& get_snapshot_freezer(SnapshotType type) {
 }
 
 std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrationCommand> command) {
-    auto& freezer_command = dynamic_cast<FreezerCommand&>(*command);
+    auto& freezer_command = dynamic_cast<SegmentCollationCommand&>(*command);
     auto range = freezer_command.range;
 
     auto bundle = snapshots_.bundle_factory().make(tmp_dir_path_, range);
-    for (auto& snapshot_ref : bundle.snapshots()) {
-        auto path = snapshot_ref.get().path();
-        SnapshotFileWriter file_writer{path, tmp_dir_path_};
+    for (auto& segment_ref : bundle.segments()) {
+        auto path = segment_ref.get().path();
+        SegmentFileWriter file_writer{path, tmp_dir_path_};
         {
             auto db_tx = db_access_.start_ro_tx();
-            auto& freezer = get_snapshot_freezer(path.type());
+            auto& freezer = get_collation(path.type());
             freezer.copy(db_tx, freezer_command, file_writer);
         }
-        SnapshotFileWriter::flush(std::move(file_writer));
+        SegmentFileWriter::flush(std::move(file_writer));
     }
 
     return std::make_shared<FreezerResult>(std::move(bundle));
@@ -162,14 +162,14 @@ Task<void> Freezer::cleanup() {
     }
 
     co_await stage_scheduler_.schedule([this, range](RWTxn& db_tx) {
-        this->cleanup(db_tx, range);
+        this->prune_collations(db_tx, range);
     });
 }
 
-void Freezer::cleanup(RWTxn& db_tx, BlockNumRange range) const {
-    get_snapshot_freezer(SnapshotType::transactions).cleanup(db_tx, range);
-    get_snapshot_freezer(SnapshotType::bodies).cleanup(db_tx, range);
-    get_snapshot_freezer(SnapshotType::headers).cleanup(db_tx, range);
+void Freezer::prune_collations(RWTxn& db_tx, BlockNumRange range) const {
+    get_collation(SnapshotType::transactions).prune(db_tx, range);
+    get_collation(SnapshotType::bodies).prune(db_tx, range);
+    get_collation(SnapshotType::headers).prune(db_tx, range);
 }
 
 }  // namespace silkworm::db

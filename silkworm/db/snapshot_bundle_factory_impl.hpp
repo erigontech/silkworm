@@ -25,8 +25,8 @@ struct SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
 
     snapshots::SnapshotBundle make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const override;
     snapshots::SnapshotBundle make(const std::filesystem::path& dir_path, BlockNumRange range) const override;
-    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& seg_file) const override;
-    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPathList& snapshot_paths) const override;
+    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& segment_path) const override;
+    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPathList& segment_paths) const override;
 };
 
 }  // namespace silkworm::db

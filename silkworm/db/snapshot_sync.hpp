@@ -28,20 +28,20 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
-#include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/datastore/snapshots/config.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_bundle.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_path.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
-#include <silkworm/db/freezer.hpp>
 #include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
+#include "access_layer.hpp"
+#include "datastore/mdbx/mdbx.hpp"
 #include "datastore/snapshot_merger.hpp"
+#include "datastore/snapshots/bittorrent/client.hpp"
+#include "datastore/snapshots/common/snapshot_path.hpp"
+#include "datastore/snapshots/config/config.hpp"
+#include "datastore/snapshots/snapshot_bundle.hpp"
+#include "datastore/snapshots/snapshot_repository.hpp"
+#include "datastore/snapshots/snapshot_settings.hpp"
 #include "datastore/stage_scheduler.hpp"
+#include "freezer.hpp"
 
 namespace silkworm::db {
 

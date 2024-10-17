@@ -21,8 +21,8 @@
 #include <optional>
 
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {

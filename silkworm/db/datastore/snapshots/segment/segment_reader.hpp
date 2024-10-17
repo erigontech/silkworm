@@ -47,7 +47,7 @@ class SegmentFileReader {
   public:
     class Iterator {
       public:
-        using value_type = std::shared_ptr<SnapshotWordDeserializer>;
+        using value_type = std::shared_ptr<Decoder>;
         using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
@@ -55,11 +55,11 @@ class SegmentFileReader {
 
         Iterator(
             seg::Decompressor::Iterator it,
-            std::shared_ptr<SnapshotWordDeserializer> deserializer,
+            std::shared_ptr<Decoder> decoder,
             SnapshotPath path)
-            : it_(std::move(it)), deserializer_(std::move(deserializer)), path_(std::move(path)) {}
+            : it_(std::move(it)), decoder_(std::move(decoder)), path_(std::move(path)) {}
 
-        value_type operator*() const { return deserializer_; }
+        value_type operator*() const { return decoder_; }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++();
@@ -71,7 +71,7 @@ class SegmentFileReader {
 
       private:
         seg::Decompressor::Iterator it_;
-        std::shared_ptr<SnapshotWordDeserializer> deserializer_;
+        std::shared_ptr<Decoder> decoder_;
         SnapshotPath path_;
     };
 
@@ -98,10 +98,10 @@ class SegmentFileReader {
     void reopen_segment();
     void close();
 
-    Iterator begin(std::shared_ptr<SnapshotWordDeserializer> deserializer) const;
+    Iterator begin(std::shared_ptr<Decoder> decoder) const;
     Iterator end() const;
 
-    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordDeserializer> deserializer) const;
+    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<Decoder> decoder) const;
 
   private:
     seg::Decompressor::Iterator seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const;
@@ -112,12 +112,12 @@ class SegmentFileReader {
     seg::Decompressor decoder_;
 };
 
-template <SnapshotWordDeserializerConcept TWordDeserializer>
+template <DecoderConcept TDecoder>
 class SegmentReader {
   public:
     class Iterator {
       public:
-        using value_type = decltype(TWordDeserializer::value);
+        using value_type = decltype(TDecoder::value);
         using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
@@ -145,10 +145,10 @@ class SegmentReader {
 
       private:
         value_type& value() const {
-            SnapshotWordDeserializer& base_deserializer = **it_;
-            // dynamic_cast is safe because TWordDeserializer was used when creating the Iterator
-            auto& s = dynamic_cast<TWordDeserializer&>(base_deserializer);
-            return s.value;
+            Decoder& base_decoder = **it_;
+            // dynamic_cast is safe because TDecoder was used when creating the Iterator
+            auto& decoder = dynamic_cast<TDecoder&>(base_decoder);
+            return decoder.value;
         }
 
         SegmentFileReader::Iterator it_;
@@ -156,12 +156,12 @@ class SegmentReader {
 
     static_assert(std::input_iterator<Iterator>);
 
-    using WordDeserializer = TWordDeserializer;
+    using DecoderType = TDecoder;
 
     explicit SegmentReader(const SegmentFileReader& reader) : reader_(reader) {}
 
     Iterator begin() const {
-        return Iterator{reader_.begin(std::make_shared<TWordDeserializer>())};
+        return Iterator{reader_.begin(std::make_shared<TDecoder>())};
     }
 
     Iterator end() const {
@@ -169,7 +169,7 @@ class SegmentReader {
     }
 
     Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        return Iterator{reader_.seek(offset, hash_prefix, std::make_shared<TWordDeserializer>())};
+        return Iterator{reader_.seek(offset, hash_prefix, std::make_shared<TDecoder>())};
     }
 
     std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
@@ -192,7 +192,8 @@ class SegmentReader {
 };
 
 template <class TSegmentReader>
-concept SegmentReaderConcept = std::same_as<TSegmentReader, SegmentReader<typename TSegmentReader::WordDeserializer>> ||
-                               std::derived_from<TSegmentReader, SegmentReader<typename TSegmentReader::WordDeserializer>>;
+concept SegmentReaderConcept =
+    std::same_as<TSegmentReader, SegmentReader<typename TSegmentReader::DecoderType>> ||
+    std::derived_from<TSegmentReader, SegmentReader<typename TSegmentReader::DecoderType>>;
 
 }  // namespace silkworm::snapshots

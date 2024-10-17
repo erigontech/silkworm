@@ -32,7 +32,7 @@ class SegmentFileWriter {
   public:
     class Iterator {
       public:
-        using value_type = std::shared_ptr<SnapshotWordSerializer>;
+        using value_type = std::shared_ptr<Encoder>;
         using iterator_category [[maybe_unused]] = std::output_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = void;
@@ -40,8 +40,8 @@ class SegmentFileWriter {
 
         Iterator(
             seg::Compressor::Iterator it,
-            std::shared_ptr<SnapshotWordSerializer> serializer)
-            : it_(it), serializer_(std::move(serializer)) {}
+            std::shared_ptr<Encoder> encoder)
+            : it_(it), encoder_(std::move(encoder)) {}
 
         Iterator& operator*() { return *this; }
 
@@ -53,11 +53,11 @@ class SegmentFileWriter {
 
         Iterator& operator=(const value_type& value);
 
-        std::shared_ptr<SnapshotWordSerializer> serializer() const { return serializer_; }
+        std::shared_ptr<Encoder> encoder() const { return encoder_; }
 
       private:
         seg::Compressor::Iterator it_;
-        std::shared_ptr<SnapshotWordSerializer> serializer_;
+        std::shared_ptr<Encoder> encoder_;
     };
 
     static_assert(std::output_iterator<Iterator, typename Iterator::value_type>);
@@ -71,7 +71,7 @@ class SegmentFileWriter {
 
     SnapshotPath path() const { return path_; }
 
-    Iterator out(std::shared_ptr<SnapshotWordSerializer> serializer);
+    Iterator out(std::shared_ptr<Encoder> encoder);
 
     static void flush(SegmentFileWriter writer);
 
@@ -80,12 +80,12 @@ class SegmentFileWriter {
     seg::Compressor compressor_;
 };
 
-template <SnapshotWordSerializerConcept TWordSerializer>
+template <EncoderConcept TEncoder>
 class SegmentWriter {
   public:
     class Iterator {
       public:
-        using value_type = decltype(TWordSerializer::value);
+        using value_type = decltype(TEncoder::value);
         using iterator_category [[maybe_unused]] = std::output_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = void;
@@ -109,11 +109,11 @@ class SegmentWriter {
 
       private:
         SegmentFileWriter::Iterator::value_type set_value(value_type value) {
-            SnapshotWordSerializer& base_serializer = *it_.serializer();
-            // dynamic_cast is safe because TWordSerializer was used when creating the Iterator
-            auto& s = dynamic_cast<TWordSerializer&>(base_serializer);
-            s.value = std::move(value);
-            return it_.serializer();
+            Encoder& base_encoder = *it_.encoder();
+            // dynamic_cast is safe because TEncoder was used when creating the Iterator
+            auto& encoder = dynamic_cast<TEncoder&>(base_encoder);
+            encoder.value = std::move(value);
+            return it_.encoder();
         }
 
         SegmentFileWriter::Iterator it_;
@@ -121,12 +121,12 @@ class SegmentWriter {
 
     static_assert(std::output_iterator<Iterator, typename Iterator::value_type>);
 
-    using WordDeserializer = TWordSerializer;
+    using EncoderType = TEncoder;
 
     explicit SegmentWriter(SegmentFileWriter& writer) : writer_(writer) {}
 
     Iterator out() {
-        return Iterator{writer_.out(std::make_shared<TWordSerializer>())};
+        return Iterator{writer_.out(std::make_shared<TEncoder>())};
     }
 
   private:
@@ -134,7 +134,8 @@ class SegmentWriter {
 };
 
 template <class TSegmentWriter>
-concept SegmentWriterConcept = std::same_as<TSegmentWriter, SegmentWriter<typename TSegmentWriter::WordDeserializer>> ||
-                               std::derived_from<TSegmentWriter, SegmentWriter<typename TSegmentWriter::WordDeserializer>>;
+concept SegmentWriterConcept =
+    std::same_as<TSegmentWriter, SegmentWriter<typename TSegmentWriter::EncoderType>> ||
+    std::derived_from<TSegmentWriter, SegmentWriter<typename TSegmentWriter::EncoderType>>;
 
 }  // namespace silkworm::snapshots

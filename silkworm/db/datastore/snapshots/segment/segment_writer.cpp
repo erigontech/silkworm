@@ -30,8 +30,8 @@ SegmentFileWriter::Iterator& SegmentFileWriter::Iterator::operator=(const Segmen
     return *this;
 }
 
-SegmentFileWriter::Iterator SegmentFileWriter::out(std::shared_ptr<SnapshotWordSerializer> serializer) {
-    return SegmentFileWriter::Iterator{compressor_.add_word_iterator(), std::move(serializer)};
+SegmentFileWriter::Iterator SegmentFileWriter::out(std::shared_ptr<Encoder> encoder) {
+    return SegmentFileWriter::Iterator{compressor_.add_word_iterator(), std::move(encoder)};
 }
 
 void SegmentFileWriter::flush(SegmentFileWriter writer) {

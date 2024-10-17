@@ -51,10 +51,10 @@ SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
     ++it_;
 
     if (has_next) {
-        deserializer_->decode_word(*it_);
-        deserializer_->check_sanity_with_metadata(path_);
+        decoder_->decode_word(*it_);
+        decoder_->check_sanity_with_metadata(path_);
     } else {
-        deserializer_.reset();
+        decoder_.reset();
     }
     return *this;
 }
@@ -71,18 +71,18 @@ SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator+=(size_t coun
 }
 
 bool operator==(const SegmentFileReader::Iterator& lhs, const SegmentFileReader::Iterator& rhs) {
-    return (lhs.deserializer_ == rhs.deserializer_) &&
-           (!lhs.deserializer_ || (lhs.it_ == rhs.it_));
+    return (lhs.decoder_ == rhs.decoder_) &&
+           (!lhs.decoder_ || (lhs.it_ == rhs.it_));
 }
 
-SegmentFileReader::Iterator SegmentFileReader::begin(std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
+SegmentFileReader::Iterator SegmentFileReader::begin(std::shared_ptr<Decoder> decoder) const {
     auto it = decoder_.begin();
     if (it == decoder_.end()) {
         return end();
     }
-    deserializer->decode_word(*it);
-    deserializer->check_sanity_with_metadata(path_);
-    return SegmentFileReader::Iterator{std::move(it), std::move(deserializer), path()};
+    decoder->decode_word(*it);
+    decoder->check_sanity_with_metadata(path_);
+    return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path()};
 }
 
 SegmentFileReader::Iterator SegmentFileReader::end() const {
@@ -93,18 +93,18 @@ seg::Decompressor::Iterator SegmentFileReader::seek_decoder(uint64_t offset, std
     return decoder_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
 }
 
-SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<SnapshotWordDeserializer> deserializer) const {
+SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<Decoder> decoder) const {
     auto it = seek_decoder(offset, hash_prefix);
     if (it == decoder_.end()) {
         return end();
     }
     try {
-        deserializer->decode_word(*it);
+        decoder->decode_word(*it);
     } catch (...) {
         return end();
     }
-    deserializer->check_sanity_with_metadata(path_);
-    return SegmentFileReader::Iterator{std::move(it), std::move(deserializer), path()};
+    decoder->check_sanity_with_metadata(path_);
+    return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path()};
 }
 
 void SegmentFileReader::close() {

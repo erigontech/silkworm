@@ -46,11 +46,11 @@ void decode_word_into_tx(ByteView word, Transaction& tx);
 
 Transaction empty_system_tx();
 
-struct TransactionSegmentWordSerializer : public SnapshotWordSerializer {
+struct TransactionSegmentWordEncoder : public Encoder {
     Transaction value;
     Bytes word;
 
-    ~TransactionSegmentWordSerializer() override = default;
+    ~TransactionSegmentWordEncoder() override = default;
 
     ByteView encode_word() override {
         word.clear();
@@ -59,28 +59,28 @@ struct TransactionSegmentWordSerializer : public SnapshotWordSerializer {
     }
 };
 
-static_assert(SnapshotWordSerializerConcept<TransactionSegmentWordSerializer>);
+static_assert(EncoderConcept<TransactionSegmentWordEncoder>);
 
-struct TransactionSegmentWordDeserializer : public SnapshotWordDeserializer {
+struct TransactionSegmentWordDecoder : public Decoder {
     Transaction value;
 
-    ~TransactionSegmentWordDeserializer() override = default;
+    ~TransactionSegmentWordDecoder() override = default;
 
     void decode_word(ByteView word) override {
         decode_word_into_tx(word, value);
     }
 };
 
-static_assert(SnapshotWordDeserializerConcept<TransactionSegmentWordDeserializer>);
+static_assert(DecoderConcept<TransactionSegmentWordDecoder>);
 
 template <class TBytes>
 concept BytesOrByteView = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
 
 template <BytesOrByteView TBytes>
-struct TransactionSegmentWordPayloadRlpDeserializer : public SnapshotWordDeserializer {
+struct TransactionSegmentWordPayloadRlpDecoder : public Decoder {
     TBytes value;
 
-    ~TransactionSegmentWordPayloadRlpDeserializer() override = default;
+    ~TransactionSegmentWordPayloadRlpDecoder() override = default;
 
     void decode_word(ByteView word) override {
         if (word.empty()) {
@@ -93,6 +93,6 @@ struct TransactionSegmentWordPayloadRlpDeserializer : public SnapshotWordDeseria
     }
 };
 
-static_assert(SnapshotWordDeserializerConcept<TransactionSegmentWordPayloadRlpDeserializer<Bytes>>);
+static_assert(DecoderConcept<TransactionSegmentWordPayloadRlpDecoder<Bytes>>);
 
 }  // namespace silkworm::snapshots

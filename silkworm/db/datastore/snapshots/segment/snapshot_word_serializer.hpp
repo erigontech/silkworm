@@ -23,23 +23,25 @@ namespace silkworm::snapshots {
 
 class SnapshotPath;
 
-struct SnapshotWordSerializer {
-    virtual ~SnapshotWordSerializer() = default;
+struct Encoder {
+    virtual ~Encoder() = default;
     virtual ByteView encode_word() = 0;
 };
 
-template <class TWordSerializer>
-concept SnapshotWordSerializerConcept = std::derived_from<TWordSerializer, SnapshotWordSerializer> &&
-                                        requires(TWordSerializer serializer) { serializer.value; };
+template <class TEncoder>
+concept EncoderConcept =
+    std::derived_from<TEncoder, Encoder> &&
+    requires(TEncoder encoder) { encoder.value; };
 
-struct SnapshotWordDeserializer {
-    virtual ~SnapshotWordDeserializer() = default;
+struct Decoder {
+    virtual ~Decoder() = default;
     virtual void decode_word(ByteView word) = 0;
     virtual void check_sanity_with_metadata(const SnapshotPath& /*path*/) {}
 };
 
-template <class TWordDeserializer>
-concept SnapshotWordDeserializerConcept = std::derived_from<TWordDeserializer, SnapshotWordDeserializer> &&
-                                          requires(TWordDeserializer deserializer) { deserializer.value; };
+template <class TDecoder>
+concept DecoderConcept =
+    std::derived_from<TDecoder, Decoder> &&
+    requires(TDecoder decoder) { decoder.value; };
 
 }  // namespace silkworm::snapshots

@@ -78,9 +78,9 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
     return {};
 }
 
-struct RawSnapshotWordDeserializer : public SnapshotWordDeserializer {
+struct RawDecoder : public Decoder {
     ByteView value;
-    ~RawSnapshotWordDeserializer() override = default;
+    ~RawDecoder() override = default;
     void decode_word(ByteView word) override {
         value = word;
     }
@@ -98,7 +98,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(range)) {
             auto& bundle = *bundle_ptr;
-            SegmentReader<RawSnapshotWordDeserializer> reader{bundle.segment(path.type())};
+            SegmentReader<RawDecoder> reader{bundle.segment(path.type())};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 

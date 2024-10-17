@@ -29,7 +29,7 @@ namespace silkworm::snapshots {
 using TransactionFindByIdQuery = FindByIdQuery<TransactionSegmentReader>;
 using TransactionFindByHashQuery = FindByHashQuery<TransactionSegmentReader>;
 using TransactionRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentReader>;
-using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSnapshotPayloadRlpReader<Bytes>>;
+using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentPayloadRlpReader<Bytes>>;
 
 class TransactionBlockNumByTxnHashQuery {
   public:

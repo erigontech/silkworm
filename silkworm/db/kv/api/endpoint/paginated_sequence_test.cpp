@@ -164,8 +164,8 @@ struct TestPaginatorUint64 {
 
 TEST_CASE_METHOD(PaginatedSetTest, "set_intersection", "[db][kv][api][paginated_sequence]") {
     const Fixtures<std::pair<PageUint64Vector, PageUint64Vector>, std::vector<uint64_t>> fixtures{
-        {{/*v1=*/{}, /*v2=*/{}}, /*v1_and_v2=*/{}},  // both empty => empty
-        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_and_v2=*/{}},  // one empty => empty
+        {{/*v1=*/{}, /*v2=*/{}}, /*v1_and_v2=*/{}},                                                // both empty => empty
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_and_v2=*/{}},                    // one empty => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}}, /*v1_and_v2=*/{}},  // disjoint => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{7, 8, 9}, {10, 11, 12}, {13}}}, /*v1_and_v2=*/{7, 8}},
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}}, /*v1_and_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},
@@ -187,7 +187,7 @@ TEST_CASE_METHOD(PaginatedSetTest, "set_intersection", "[db][kv][api][paginated_
 
 TEST_CASE_METHOD(PaginatedSetTest, "set_union", "[db][kv][api][paginated_sequence]") {
     const Fixtures<std::pair<PageUint64Vector, PageUint64Vector>, std::vector<uint64_t>> fixtures{
-        {{/*v1=*/{}, /*v2=*/{}}, /*v1_or_v2=*/{}},  // both empty => empty
+        {{/*v1=*/{}, /*v2=*/{}}, /*v1_or_v2=*/{}},                                                    // both empty => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},  // one empty => other
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13}},
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{7, 8, 9}, {10, 11, 12}, {13}}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}},

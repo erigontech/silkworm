@@ -168,6 +168,7 @@ TEST_CASE_METHOD(PaginatedSetTest, "set_intersection", "[db][kv][api][paginated_
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_and_v2=*/{}},  // one empty => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}}, /*v1_and_v2=*/{}},  // disjoint => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{7, 8, 9}, {10, 11, 12}, {13}}}, /*v1_and_v2=*/{7, 8}},
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}}, /*v1_and_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},
     };
     int i = 0;
     for (const auto& [v1_v2_pair, expected_intersection_set] : fixtures) {
@@ -184,39 +185,27 @@ TEST_CASE_METHOD(PaginatedSetTest, "set_intersection", "[db][kv][api][paginated_
     }
 }
 
-TEST_CASE_METHOD(PaginatedSetTest, "set_union: non-empty uint64 sequence", "[db][kv][api][paginated_sequence]") {
-    PaginatedUint64::Paginator paginator1 = []() -> Task<PaginatedUint64::PageResult> {
-        static int count{0};
-        switch (++count) {
-            case 1:
-                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{1, 2, 3}, /*has_more=*/true};
-            case 2:
-                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{4, 5, 6}, /*has_more=*/true};
-            case 3:
-                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{7, 8}, /*has_more=*/false};
-            default:
-                throw std::logic_error{"unexpected call to paginator"};
+TEST_CASE_METHOD(PaginatedSetTest, "set_union", "[db][kv][api][paginated_sequence]") {
+    const Fixtures<std::pair<PageUint64Vector, PageUint64Vector>, std::vector<uint64_t>> fixtures{
+        {{/*v1=*/{}, /*v2=*/{}}, /*v1_or_v2=*/{}},  // both empty => empty
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},  // one empty => other
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13}},
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{7, 8, 9}, {10, 11, 12}, {13}}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}},
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}}, /*v1_and_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},
+    };
+    int i = 0;
+    for (const auto& [v1_v2_pair, expected_union_set] : fixtures) {
+        SECTION("test vector: " + std::to_string(++i)) {
+            const auto& [v1, v2] = v1_v2_pair;
+            TestPaginatorUint64 paginator1{v1}, paginator2{v2};
+            PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
+            const auto async_union = [](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
+                UnionIterator<PaginatedUint64::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin());
+                co_return co_await paginated_iterator_to_vector(std::move(it));
+            };
+            CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);
         }
-    };
-    PaginatedUint64::Paginator paginator2 = []() -> Task<PaginatedUint64::PageResult> {
-        static int count{0};
-        switch (++count) {
-            case 1:
-                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{7, 8, 9}, /*has_more=*/true};
-            case 2:
-                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{10, 11, 12}, /*has_more=*/true};
-            case 3:
-                co_return PaginatedUint64::PageResult{PaginatedUint64::Page{13}, /*has_more=*/false};
-            default:
-                throw std::logic_error{"unexpected call to paginator"};
-        }
-    };
-    PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
-    const auto async_intersection = [](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
-        UnionIterator<PaginatedUint64::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin());
-        co_return co_await paginated_iterator_to_vector(std::move(it));
-    };
-    CHECK(spawn_and_wait(async_intersection(paginated1, paginated2)) == std::vector<uint64_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13});
+    }
 }
 
 }  // namespace silkworm::db::kv::api

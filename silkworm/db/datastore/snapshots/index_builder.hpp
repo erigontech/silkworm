@@ -104,7 +104,7 @@ class DecompressorIndexInputDataQuery : public IndexInputDataQuery {
 
   private:
     struct IteratorImpl {
-        std::shared_ptr<seg::Decompressor> decoder;
+        std::shared_ptr<seg::Decompressor> decompressor;
         seg::Decompressor::Iterator it;
     };
 

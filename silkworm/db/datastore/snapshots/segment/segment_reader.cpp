@@ -27,14 +27,14 @@ SegmentFileReader::SegmentFileReader(
     SnapshotPath path,
     std::optional<MemoryMappedRegion> segment_region)
     : path_(std::move(path)),
-      decoder_{path_.path(), segment_region} {}
+      decompressor_{path_.path(), segment_region} {}
 
 SegmentFileReader::~SegmentFileReader() {
     close();
 }
 
 MemoryMappedRegion SegmentFileReader::memory_file_region() const {
-    const auto memory_file{decoder_.memory_file()};
+    const auto memory_file{decompressor_.memory_file()};
     if (!memory_file) return MemoryMappedRegion{};
     return memory_file->region();
 }
@@ -43,7 +43,7 @@ void SegmentFileReader::reopen_segment() {
     close();
 
     // Open decompressor that opens the mapped file in turns
-    decoder_.open();
+    decompressor_.open();
 }
 
 SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
@@ -76,8 +76,8 @@ bool operator==(const SegmentFileReader::Iterator& lhs, const SegmentFileReader:
 }
 
 SegmentFileReader::Iterator SegmentFileReader::begin(std::shared_ptr<Decoder> decoder) const {
-    auto it = decoder_.begin();
-    if (it == decoder_.end()) {
+    auto it = decompressor_.begin();
+    if (it == decompressor_.end()) {
         return end();
     }
     decoder->decode_word(*it);
@@ -86,16 +86,16 @@ SegmentFileReader::Iterator SegmentFileReader::begin(std::shared_ptr<Decoder> de
 }
 
 SegmentFileReader::Iterator SegmentFileReader::end() const {
-    return SegmentFileReader::Iterator{decoder_.end(), {}, path()};
+    return SegmentFileReader::Iterator{decompressor_.end(), {}, path()};
 }
 
-seg::Decompressor::Iterator SegmentFileReader::seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const {
-    return decoder_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
+seg::Decompressor::Iterator SegmentFileReader::seek_decompressor(uint64_t offset, std::optional<Hash> hash_prefix) const {
+    return decompressor_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
 }
 
 SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<Decoder> decoder) const {
-    auto it = seek_decoder(offset, hash_prefix);
-    if (it == decoder_.end()) {
+    auto it = seek_decompressor(offset, hash_prefix);
+    if (it == decompressor_.end()) {
         return end();
     }
     try {
@@ -109,7 +109,7 @@ SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::option
 
 void SegmentFileReader::close() {
     // Close decompressor that closes the mapped file in turns
-    decoder_.close();
+    decompressor_.close();
 }
 
 }  // namespace silkworm::snapshots

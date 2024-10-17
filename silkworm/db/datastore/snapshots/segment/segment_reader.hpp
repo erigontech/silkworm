@@ -91,7 +91,7 @@ class SegmentFileReader {
     std::filesystem::path fs_path() const { return path_.path(); }
 
     bool empty() const { return item_count() == 0; }
-    size_t item_count() const { return decoder_.words_count(); }
+    size_t item_count() const { return decompressor_.words_count(); }
 
     MemoryMappedRegion memory_file_region() const;
 
@@ -104,12 +104,12 @@ class SegmentFileReader {
     Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<Decoder> decoder) const;
 
   private:
-    seg::Decompressor::Iterator seek_decoder(uint64_t offset, std::optional<Hash> hash_prefix) const;
+    seg::Decompressor::Iterator seek_decompressor(uint64_t offset, std::optional<Hash> hash_prefix) const;
 
     //! The path of the segment file for this snapshot
     SnapshotPath path_;
 
-    seg::Decompressor decoder_;
+    seg::Decompressor decompressor_;
 };
 
 template <DecoderConcept TDecoder>

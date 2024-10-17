@@ -22,6 +22,8 @@
 
 #include <silkworm/core/common/bytes.hpp>
 
+#include "compression_kind.hpp"
+
 namespace silkworm::snapshots::seg {
 
 class CompressorImpl;
@@ -30,13 +32,15 @@ class Compressor {
   public:
     Compressor(
         const std::filesystem::path& path,
-        const std::filesystem::path& tmp_dir_path);
+        const std::filesystem::path& tmp_dir_path,
+        CompressionKind compression_kind = CompressionKind::kAll);
     ~Compressor();
 
     Compressor(Compressor&& other) noexcept;
     Compressor& operator=(Compressor&& other) noexcept;
 
-    void add_word(ByteView word, bool is_compressed = true);
+    void add_word(ByteView word);
+    void add_word(ByteView word, bool is_compressed);
     static void compress(Compressor compressor);
 
     using value_type = ByteView;

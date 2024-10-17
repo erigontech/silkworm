@@ -52,13 +52,16 @@ class CompressorImpl {
   public:
     CompressorImpl(
         const std::filesystem::path& path,
-        const std::filesystem::path& tmp_dir_path)
+        const std::filesystem::path& tmp_dir_path,
+        CompressionKind compression_kind)
         : path_(path),
+          compression_kind_(compression_kind),
           raw_words_file_path_(make_raw_words_file_path(path, tmp_dir_path)),
           raw_words_(raw_words_file_path_, RawWordsStream::OpenMode::kCreate, kOutputStreamBufferSize),
           pattern_aggregator_(tmp_dir_path) {}
     ~CompressorImpl();
 
+    void add_word(ByteView word);
     void add_word(ByteView word, bool is_compressed);
     void compress();
 
@@ -75,13 +78,20 @@ class CompressorImpl {
         return path_.string() + ".tmp.tmp";
     }
 
+    bool is_next_word_compressed() const;
+
     std::filesystem::path path_;
+
+    CompressionKind compression_kind_;
+    //! Flag indicating if next word is key (false) or value (true)
+    bool is_next_value_{false};
+
     std::filesystem::path raw_words_file_path_;
+    RawWordsStream raw_words_;
 
     Superstring current_superstring_;
     size_t superstring_sample_cycle_index_{};
 
-    RawWordsStream raw_words_;
     PatternExtractor pattern_extractor_;
     PatternAggregator pattern_aggregator_;
 };
@@ -89,6 +99,16 @@ class CompressorImpl {
 CompressorImpl::~CompressorImpl() {
     std::filesystem::remove(raw_words_file_path_);
     std::filesystem::remove(intermediate_file_path());
+}
+
+bool CompressorImpl::is_next_word_compressed() const {
+    CompressionKind next_word_compression_kind = is_next_value_ ? CompressionKind::kValues : CompressionKind::kKeys;
+    return (compression_kind_ & next_word_compression_kind) != CompressionKind::kNone;
+}
+
+void CompressorImpl::add_word(ByteView word) {
+    add_word(word, is_next_word_compressed());
+    is_next_value_ = !is_next_value_;
 }
 
 void CompressorImpl::add_word(ByteView word, bool is_compressed) {
@@ -339,8 +359,9 @@ void CompressorImpl::compress() {
 
 Compressor::Compressor(
     const std::filesystem::path& path,
-    const std::filesystem::path& tmp_dir_path)
-    : p_impl_(std::make_unique<CompressorImpl>(path, tmp_dir_path)) {}
+    const std::filesystem::path& tmp_dir_path,
+    CompressionKind compression_kind)
+    : p_impl_{std::make_unique<CompressorImpl>(path, tmp_dir_path, compression_kind)} {}
 Compressor::~Compressor() { static_assert(true); }
 
 Compressor::Compressor(Compressor&& other) noexcept
@@ -348,6 +369,10 @@ Compressor::Compressor(Compressor&& other) noexcept
 Compressor& Compressor::operator=(Compressor&& other) noexcept {
     p_impl_ = std::move(other.p_impl_);
     return *this;
+}
+
+void Compressor::add_word(ByteView word) {
+    p_impl_->add_word(word);
 }
 
 void Compressor::add_word(ByteView word, bool is_compressed) {

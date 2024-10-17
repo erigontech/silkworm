@@ -29,7 +29,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "../common/util/bitmask_operators.hpp"
+#include "compression_kind.hpp"
 
 namespace silkworm::snapshots::seg {
 
@@ -169,16 +169,6 @@ class PositionTable : public DecodingTable {
     friend std::ostream& operator<<(std::ostream& out, const PositionTable& pt);
 };
 
-enum class CompressionKind : uint8_t {
-    kNone = 0b0,
-    kKeys = 0b1,
-    kValues = 0b10,
-};
-
-consteval void enable_bitmask_operator_and(CompressionKind);
-consteval void enable_bitmask_operator_or(CompressionKind);
-consteval void enable_bitmask_operator_not(CompressionKind);
-
 //! Snapshot decoder using modified Condensed Huffman Table (CHT) algorithm
 class Decompressor {
   public:
@@ -227,6 +217,10 @@ class Decompressor {
         //! @return the next word position
         uint64_t skip_uncompressed();
 
+        //! Move at the offset of the next word skipping current one using skip() or skip_uncompressed() as necessary
+        //! @return the next word position
+        uint64_t skip_auto();
+
         //! Reset to the specified offset in the data stream
         void reset(uint64_t data_offset);
 
@@ -265,6 +259,8 @@ class Decompressor {
         //! Read next code from the data stream
         inline uint16_t next_code(size_t bit_length);
 
+        bool is_next_word_compressed() const;
+
         //! The decoder on which iterator works
         const Decompressor* decoder_;
 
@@ -288,9 +284,10 @@ class Decompressor {
 
     static_assert(std::input_or_output_iterator<Iterator>);
 
-    explicit Decompressor(std::filesystem::path compressed_path,
-                          std::optional<MemoryMappedRegion> compressed_region = {},
-                          CompressionKind compression = CompressionKind::kKeys | CompressionKind::kValues);
+    explicit Decompressor(
+        std::filesystem::path compressed_path,
+        std::optional<MemoryMappedRegion> compressed_region = {},
+        CompressionKind compression_kind = CompressionKind::kAll);
     ~Decompressor();
 
     Decompressor(Decompressor&&) = default;
@@ -341,7 +338,7 @@ class Decompressor {
     std::optional<MemoryMappedRegion> compressed_region_;
 
     //! The type of compression for this segment
-    CompressionKind compression_;
+    CompressionKind compression_kind_;
 
     //! The memory-mapped compressed file
     std::unique_ptr<MemoryMappedFile> compressed_file_;

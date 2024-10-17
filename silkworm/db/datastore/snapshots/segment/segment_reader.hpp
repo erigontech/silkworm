@@ -38,11 +38,16 @@
 
 namespace silkworm::snapshots {
 
-//! \brief Generic snapshot containing data points for a specific block interval [block_from, block_to).
-//! \warning The snapshot segment can also be externally managed. This means that the memory-mapping can happen
-//! outside of this class and a \code Snapshot instance can be created by specifying the \code MemoryMappedRegion
-//! segment containing the information about the memory region already mapped. This must be taken into account
-//! because we must avoid to memory-map it again.
+/**
+ * SegmentFileReader is a type-safe wrapper on top of a seg::Decompressor.
+ *
+ * The type-safe mechanism is based on Decoder interface.
+ * SegmentFileReader can be bound with any Decoder.
+ * SegmentFileReader is a template-free counterpart of SegmentReader.
+ * Use a SegmentReader for simple type-safe access to the data.
+ * SegmentFileReader can work with an externally owned MemoryMappedRegion if provided,
+ * otherwise the internal seg::Decompressor owns the memory mapped file.
+ */
 class SegmentFileReader {
   public:
     class Iterator {

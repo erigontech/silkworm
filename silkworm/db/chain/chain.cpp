@@ -40,18 +40,6 @@ Task<uint64_t> read_header_number(kv::api::Transaction& tx, const evmc::bytes32&
     co_return endian::load_big_u64(value.data());
 }
 
-Task<evmc::bytes32> read_canonical_block_hash(kv::api::Transaction& tx, uint64_t block_number) {
-    const auto block_key = db::block_key(block_number);
-    SILK_TRACE << "read_canonical_block_hash block_key: " << to_hex(block_key);
-    const auto value{co_await tx.get_one(table::kCanonicalHashesName, block_key)};
-    if (value.empty()) {
-        throw std::invalid_argument{"empty block hash value in read_canonical_block_hash"};
-    }
-    const auto canonical_block_hash{to_bytes32(value)};
-    SILK_DEBUG << "read_canonical_block_hash canonical block hash: " << to_hex(canonical_block_hash);
-    co_return canonical_block_hash;
-}
-
 Task<intx::uint256> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, uint64_t block_number) {
     const auto block_key = db::block_key(block_number, block_hash.bytes);
     SILK_TRACE << "read_total_difficulty block_key: " << to_hex(block_key);

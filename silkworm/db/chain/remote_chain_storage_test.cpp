@@ -36,6 +36,8 @@
 
 namespace silkworm::db::chain {
 
+#ifdef notdef
+
 using Catch::Matchers::Message;
 using testing::_;
 using testing::InvokeWithoutArgs;
@@ -52,7 +54,6 @@ static Bytes kChainConfig{*from_hex(
     "30302c22697374616e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a31323936353030302c226d75697"
     "2476c6163696572426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a373238303030307d")};
 
-#ifdef notdef
 
 struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     test_util::MockTransaction transaction;

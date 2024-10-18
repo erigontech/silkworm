@@ -35,13 +35,14 @@
 #include <silkworm/rpc/test_util/api_test_base.hpp>
 #include <silkworm/rpc/test_util/dummy_database.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
-#include <silkworm/rpc/test_util/mock_database.hpp>
 #include <silkworm/rpc/test_util/mock_execution_engine.hpp>
 
 namespace silkworm::rpc::commands {
 
 using db::kv::api::KeyValue;
 using rpc::test::DummyDatabase;
+
+static const evmc::bytes32 kZeroHeaderHash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
 
 class EngineRpcApiForTest : public EngineRpcApi {
   public:
@@ -60,11 +61,15 @@ using testing::InvokeWithoutArgs;
 
 struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApiForTest> {
     EngineRpcApiTest() : test_util::JsonApiTestBase<EngineRpcApiForTest>() {
-        add_private_service<ethdb::Database>(io_context_, std::make_unique<DummyDatabase>(mock_cursor, mock_cursor_dup_sort));
+        auto local_backend = std::make_unique<test::BackEndMock>();
+        add_private_service<ethbackend::BackEnd>(io_context_, std::move(local_backend));
+        mock_backend = dynamic_cast<test::BackEndMock*>(must_use_private_service<ethbackend::BackEnd>(io_context_));  // NOLINT
+
+        add_private_service<ethdb::Database>(io_context_, std::make_unique<DummyDatabase>(mock_cursor, mock_cursor_dup_sort, mock_backend));
         add_shared_service<engine::ExecutionEngine>(io_context_, mock_engine);
-        add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<test::BackEndMock>());
     }
 
+    test::BackEndMock* mock_backend{nullptr};
     std::shared_ptr<test_util::ExecutionEngineMock> mock_engine{std::make_shared<test_util::ExecutionEngineMock>()};
     std::shared_ptr<db::test_util::MockCursor> mock_cursor{std::make_shared<db::test_util::MockCursor>()};
     std::shared_ptr<db::test_util::MockCursorDupSort> mock_cursor_dup_sort{std::make_shared<db::test_util::MockCursorDupSort>()};
@@ -502,16 +507,17 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_forkchoiceUpdatedv1 KO: empty safe bl
     })"_json);
 }
 
-#ifdef notdef
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: EL config has the same CL config", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-    }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
+        }));
+
     EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, Bytes{string_view_to_byte_view(kChainConfig.to_json().dump())}};
     }));
@@ -544,9 +550,10 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: EL conf
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: terminal block number zero if not sent", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-    }));
+    EXPECT_CALL(*mock_backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
+        }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
@@ -582,9 +589,10 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: termina
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorrect terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-    }));
+    EXPECT_CALL(*mock_backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
+        }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
@@ -619,9 +627,10 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorre
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: EL does not have TTD", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-    }));
+    EXPECT_CALL(*mock_backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
+        }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
@@ -656,9 +665,10 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: EL does
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL sends wrong TTD", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-    }));
+    EXPECT_CALL(*mock_backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
+        }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
@@ -693,9 +703,10 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL sends wrong terminal block hash", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-    }));
+    EXPECT_CALL(*mock_backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
+        }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
@@ -730,9 +741,10 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: CL send
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: no matching terminal block number", "[silkworm][rpc][commands][engine_api]") {
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
-        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-    }));
+    EXPECT_CALL(*mock_backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
+        }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
@@ -764,7 +776,6 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 OK: no matc
         }
     })"_json);
 }
-#endif
 
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorrect params", "[silkworm][rpc][commands][engine_api]") {
     nlohmann::json reply;

@@ -31,6 +31,7 @@ using namespace silkworm::test_util;
 using PaginatedUint64 = PaginatedSequence<uint64_t>;
 using PaginatorUint64 = PaginatedUint64::Paginator;
 using PageUint64 = PaginatedUint64::Page;
+using PageUint64List = std::vector<PageUint64>;
 using PageResultUint64 = PaginatedUint64::PageResult;
 
 using PaginatedKV = PaginatedSequencePair<Bytes, Bytes>;
@@ -42,30 +43,48 @@ using PageResultKV = PaginatedKV::PageResult;
 struct PaginatedSequenceTest : public test_util::ContextTestBase {
 };
 
+struct TestPaginatorUint64 {
+    explicit TestPaginatorUint64(const PageUint64List& pages) : pages_(pages) {}
+
+    Task<PageResultUint64> operator()() {
+        if (count_ == 0 && pages_.empty()) {
+            co_return PageResultUint64{};  // has_more=false as default
+        }
+        if (count_ < pages_.size()) {
+            PageResultUint64 page_result{pages_[count_], /*has_more=*/(count_ != pages_.size() - 1)};
+            ++count_;
+            co_return page_result;
+        }
+        throw std::logic_error{"unexpected call to paginator"};
+    }
+
+  private:
+    const PageUint64List& pages_;
+    size_t count_{0};
+};
+
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: empty sequence", "[db][kv][api][paginated_sequence]") {
-    PaginatorUint64 paginator = []() -> Task<PageResultUint64> {
-        co_return PageResultUint64{};  // has_more=false as default
-    };
+    PageUint64List empty;
+    TestPaginatorUint64 paginator{empty};
     PaginatedUint64 paginated{paginator};
     CHECK(spawn_and_wait(paginated_to_vector(paginated)).empty());
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: non-empty sequence", "[db][kv][api][paginated_sequence]") {
-    PaginatorUint64 paginator = []() -> Task<PageResultUint64> {
-        static int count{0};
-        switch (++count) {
-            case 1:
-                co_return PageResultUint64{PageUint64{1, 2, 3}, /*has_more=*/true};
-            case 2:
-                co_return PageResultUint64{PageUint64{4, 5, 6}, /*has_more=*/true};
-            case 3:
-                co_return PageResultUint64{PageUint64{7}, /*has_more=*/false};
-            default:
-                throw std::logic_error{"unexpected call to paginator"};
-        }
+    const Fixtures<PageUint64List, std::vector<uint64_t>> fixtures{
+        {/*page_list=*/{}, /*expected_sequence=*/{}},
+        {/*page_list=*/{{1}}, /*expected_sequence=*/{1}},
+        {/*page_list=*/{{1, 2, 3}}, /*expected_sequence=*/{1, 2, 3}},
+        {/*page_list=*/{{1, 2, 3}, {4, 5, 6}, {7}}, /*expected_sequence=*/{1, 2, 3, 4, 5, 6, 7}},
     };
-    PaginatedUint64 paginated{paginator};
-    CHECK(spawn_and_wait(paginated_to_vector(paginated)) == std::vector<uint64_t>{1, 2, 3, 4, 5, 6, 7});
+    int i = 0;
+    for (const auto& [page_list, expected_sequence] : fixtures) {
+        SECTION("test vector: " + std::to_string(++i)) {
+            TestPaginatorUint64 paginator{page_list};
+            PaginatedUint64 paginated{paginator};
+            CHECK(spawn_and_wait(paginated_to_vector(paginated)) == expected_sequence);
+        }
+    }
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: error", "[db][kv][api][paginated_sequence]") {
@@ -115,8 +134,8 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: non-empty sequen
         }
     };
     PaginatedKV paginated{paginator};
-    CHECK(spawn_and_wait(paginated_to_vector(paginated)) == std::vector<KeyValue>{
-                                                                {kKey1, kValue1}, {kKey2, kValue2}, {kKey3, kValue3}, {kKey4, kValue4}, {kKey5, kValue5}, {kKey6, kValue6}});
+    CHECK(spawn_and_wait(paginated_to_vector(paginated)) ==
+          std::vector<KeyValue>{{kKey1, kValue1}, {kKey2, kValue2}, {kKey3, kValue3}, {kKey4, kValue4}, {kKey5, kValue5}, {kKey6, kValue6}});
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: error", "[db][kv][api][paginated_sequence]") {
@@ -137,33 +156,8 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: error", "[db][kv
     CHECK_THROWS_AS(spawn_and_wait(paginated_to_vector(paginated)), std::runtime_error);
 }
 
-struct PaginatedSetTest : public test_util::ContextTestBase {
-};
-
-using PageUint64Vector = std::vector<PageUint64>;
-
-struct TestPaginatorUint64 {
-    explicit TestPaginatorUint64(const PageUint64Vector& pages) : pages_(pages) {}
-
-    Task<PageResultUint64> operator()() {
-        if (count_ == 0 && pages_.empty()) {
-            co_return PageResultUint64{};
-        }
-        if (count_ < pages_.size()) {
-            PageResultUint64 page_result{pages_[count_], /*has_more=*/(count_ != pages_.size() - 1)};
-            ++count_;
-            co_return page_result;
-        }
-        throw std::logic_error{"unexpected call to paginator"};
-    }
-
-  private:
-    const PageUint64Vector& pages_;
-    size_t count_{0};
-};
-
-TEST_CASE_METHOD(PaginatedSetTest, "set_intersection", "[db][kv][api][paginated_sequence]") {
-    const Fixtures<std::pair<PageUint64Vector, PageUint64Vector>, std::vector<uint64_t>> fixtures{
+TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][paginated_sequence]") {
+    const Fixtures<std::pair<PageUint64List, PageUint64List>, std::vector<uint64_t>> fixtures{
         {{/*v1=*/{}, /*v2=*/{}}, /*v1_and_v2=*/{}},                                                // both empty => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_and_v2=*/{}},                    // one empty => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}}, /*v1_and_v2=*/{}},  // disjoint => empty
@@ -185,8 +179,8 @@ TEST_CASE_METHOD(PaginatedSetTest, "set_intersection", "[db][kv][api][paginated_
     }
 }
 
-TEST_CASE_METHOD(PaginatedSetTest, "set_union", "[db][kv][api][paginated_sequence]") {
-    const Fixtures<std::pair<PageUint64Vector, PageUint64Vector>, std::vector<uint64_t>> fixtures{
+TEST_CASE_METHOD(PaginatedSequenceTest, "set_union", "[db][kv][api][paginated_sequence]") {
+    const Fixtures<std::pair<PageUint64List, PageUint64List>, std::vector<uint64_t>> fixtures{
         {{/*v1=*/{}, /*v2=*/{}}, /*v1_or_v2=*/{}},                                                    // both empty => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},  // one empty => other
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13}},

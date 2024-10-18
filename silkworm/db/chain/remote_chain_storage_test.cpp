@@ -16,11 +16,10 @@
 
 #include "remote_chain_storage.hpp"
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/thread_pool.hpp>
-
 #include <string>
 
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <gmock/gmock.h>
@@ -31,7 +30,6 @@
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
-#include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 
 namespace silkworm::db::chain {
@@ -54,12 +52,11 @@ static Bytes kChainConfig{*from_hex(
     "30302c22697374616e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a31323936353030302c226d75697"
     "2476c6163696572426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a373238303030307d")};
 
-
 struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     test_util::MockTransaction transaction;
     RemoteChainStorage storage{transaction, Providers{}};
     rpc::test::BackEndMock backend;
-    //RemoteChainStorage storage{transaction, rpc::ethdb::kv::make_backend_providers(&backend)};
+    // RemoteChainStorage storage{transaction, rpc::ethdb::kv::make_backend_providers(&backend)};
 };
 
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
@@ -67,7 +64,7 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
                 co_return kBlockHash;
-        }));
+            }));
 
         EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kBlockHash;
@@ -86,7 +83,7 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
                 co_return kBlockHash;
-        }));
+            }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kInvalidJsonChainConfig;
         }));
@@ -97,7 +94,7 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
                 co_return kBlockHash;
-        }));
+            }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kChainConfig;
         }));

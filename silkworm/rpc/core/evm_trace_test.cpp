@@ -53,7 +53,7 @@ using testing::Unused;
 
 static const Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static const Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
-static const evmc::bytes32 kZeroHeader_bytes32{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
+static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 static const Bytes kConfigKey{kZeroHeader};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
 
@@ -99,7 +99,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -215,7 +215,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -259,7 +259,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -463,7 +463,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -604,7 +604,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -791,7 +791,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -956,7 +956,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1048,7 +1048,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1213,7 +1213,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     };
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-            co_return kZeroHeader_bytes32;
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1374,7 +1374,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     SECTION("callMany: failed with intrinsic gas too low") {
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1421,7 +1421,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-                co_return kZeroHeader_bytes32;
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1637,7 +1637,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     };
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-            co_return kZeroHeader_bytes32;
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -2110,7 +2110,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
         .Times(2)
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-            co_return kZeroHeader_bytes32;
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -2238,7 +2238,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     };
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-            co_return kZeroHeader_bytes32;
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -3216,7 +3216,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     };
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-            co_return kZeroHeader_bytes32;
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -3324,7 +3324,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
 
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
-            co_return kZeroHeader_bytes32;
+            co_return kZeroHeaderHash;
         }));
 
     // TransactionDatabase::get_one: TABLE CanonicalHeader

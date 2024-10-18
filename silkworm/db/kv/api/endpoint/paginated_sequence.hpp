@@ -33,11 +33,11 @@
 namespace silkworm::db::kv::api {
 
 //! Definition of asynchronous paginated iterator (a.k.a. stream)
-template <class I>
+template <typename I>
 concept PaginatedIterator =
     requires(I i) {
         typename I::value_type;
-        { i.has_next() } -> std::same_as<bool>;
+        { i.has_next() } -> std::same_as<Task<bool>>;
         { i.next() } -> std::same_as<Task<std::optional<typename std::iter_value_t<I>>>>;
     };
 
@@ -56,7 +56,7 @@ class PaginatedSequence {
       public:
         using value_type = T;
 
-        bool has_next() const { return it_ != current_.values.cend(); }
+        Task<bool> has_next() const { co_return it_ != current_.values.cend(); }
 
         Task<std::optional<T>> next() {
             if (it_ == current_.values.cend()) {
@@ -96,9 +96,9 @@ class PaginatedSequence {
     Paginator next_page_provider_;
 };
 
-template <PaginatedIterator I>
-Task<std::vector<typename I::value_type>> paginated_iterator_to_vector(I it) {
-    std::vector<typename I::value_type> all_values;
+template <PaginatedIterator I, typename R = typename I::value_type>
+Task<std::vector<R>> paginated_iterator_to_vector(I it) {
+    std::vector<R> all_values;
     while (const auto value = co_await it.next()) {
         all_values.emplace_back(*value);
     }
@@ -127,11 +127,11 @@ class PaginatedSequencePair {
       public:
         using value_type = std::pair<K, V>;
 
-        bool has_next() const {
+        Task<bool> has_next() const {
             const bool has_next_key = key_it_ != current_.keys.cend();
             const bool has_next_value = value_it_ != current_.values.cend();
             SILKWORM_ASSERT(has_next_key == has_next_value);
-            return has_next_key;
+            co_return has_next_key;
         }
 
         Task<std::optional<value_type>> next() {
@@ -188,7 +188,6 @@ Task<std::vector<KeyValue>> paginated_to_vector(PaginatedSequencePair<K, V>& pag
         all_values.emplace_back(*value);
     }
     co_return all_values;
-    // co_return co_await paginated_iterator_to_vector(co_await paginated.begin());
 }
 
 //! Paginated iterator implementing 'intersection' set operation between 2 paginated iterators
@@ -200,35 +199,54 @@ class IntersectionIterator {
     IntersectionIterator(I it1, I it2, size_t limit)
         : it1_(std::move(it1)), it2_(std::move(it2)), limit_(limit) {}
 
-    bool has_next() const { return false; }  // TODO(canepat) implement
+    Task<bool> has_next() {
+        if (!initialized_) {
+            initialized_ = true;
+            co_await advance();
+        }
+        co_return limit_ != 0 && next_v1_&& next_v2_;
+    }
 
     Task<std::optional<value_type>> next() {
         if (limit_ == 0) {
             co_return std::nullopt;
         }
         --limit_;
-        auto v1 = co_await it1_.next(), v2 = co_await it2_.next();
-        if (!v1 || !v2) {
-            co_return std::nullopt;
+        if (!initialized_) {
+            initialized_ = true;
+            co_await advance();
         }
-        while (v1.has_value() && v2.has_value()) {
-            if (*v1 < *v2) {
-                v1 = co_await it1_.next();
-                continue;
-            }
-            if (*v1 == *v2) {
-                co_return v1;  // *v1 and *v2 are equivalent
-            } else {
-                v2 = co_await it2_.next();
-                continue;
-            }
-        }
-        co_return std::nullopt;
+        const auto next_v1 = next_v1_;
+        co_await advance();
+        co_return next_v1;
     }
 
   private:
+    Task<std::optional<value_type>> advance() {
+        next_v1_ = co_await it1_.next();
+        next_v2_ = co_await it2_.next();
+        while (next_v1_ && next_v2_) {
+            if (*next_v1_ < *next_v2_) {
+                next_v1_ = co_await it1_.next();
+                continue;
+            }
+            if (*next_v1_ == *next_v2_) {
+                co_return next_v1_;  // *next_v2_ and *next_v2_ are equivalent
+            } else {
+                next_v2_ = co_await it2_.next();
+                continue;
+            }
+        }
+        next_v1_.reset();
+        next_v2_.reset();
+        co_return std::nullopt;
+    }
+
+    bool initialized_{false};
     I it1_;
     I it2_;
+    std::optional<value_type> next_v1_;
+    std::optional<value_type> next_v2_;
     size_t limit_;
 };
 
@@ -248,17 +266,19 @@ class UnionIterator {
     UnionIterator(I it1, I it2, bool ascending, size_t limit)
         : it1_(std::move(it1)), it2_(std::move(it2)), ascending_(ascending), limit_(limit) {}
 
-    bool has_next() const { return limit_ != 0 && (it1_.has_next() || it2_.has_next() || next_v1_ || next_v2_); }
+    Task<bool> has_next() const {
+        co_return limit_ != 0 && (co_await it1_.has_next() || co_await it2_.has_next() || next_v1_ || next_v2_);
+    }
 
     Task<std::optional<value_type>> next() {
         if (limit_ == 0) {
             co_return std::nullopt;
         }
         --limit_;
-        if (!next_v1_ && it1_.has_next()) {
+        if (!next_v1_ && co_await it1_.has_next()) {
             next_v1_ = co_await it1_.next();
         }
-        if (!next_v2_ && it2_.has_next()) {
+        if (!next_v2_ && co_await it2_.has_next()) {
             next_v2_ = co_await it2_.next();
         }
         if (!next_v1_ && !next_v2_) {

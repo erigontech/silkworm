@@ -67,7 +67,13 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: empty sequen
     PageUint64List empty;
     TestPaginatorUint64 paginator{empty};
     PaginatedUint64 paginated{paginator};
-    CHECK(spawn_and_wait(paginated_to_vector(paginated)).empty());
+    // We're using this lambda instead of built-in paginated_to_vector just to check Iterator::has_next
+    const auto paginated_it_to_vector = [](auto& ps) -> Task<std::vector<uint64_t>> {
+        auto it = co_await ps.begin();
+        CHECK(!co_await it.has_next());
+        co_return co_await paginated_iterator_to_vector(it);
+    };
+    CHECK(spawn_and_wait(paginated_it_to_vector(paginated)).empty());
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: non-empty sequence", "[db][kv][api][paginated_sequence]") {
@@ -110,7 +116,13 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: empty sequence",
         co_return PageResultKV{};  // has_more=false as default
     };
     PaginatedKV paginated{paginator};
-    CHECK(spawn_and_wait(paginated_to_vector(paginated)).empty());
+    // We're using this lambda instead of built-in paginated_to_vector just to check Iterator::has_next
+    const auto paginated_it_to_vector = [](auto& ps) -> Task<std::vector<KeyValue>> {
+        auto it = co_await ps.begin();
+        CHECK(!co_await it.has_next());
+        co_return co_await paginated_iterator_to_vector<PaginatedKV::Iterator, KeyValue>(it);
+    };
+    CHECK(spawn_and_wait(paginated_it_to_vector(paginated)).empty());
 }
 
 const Bytes kKey1{*from_hex("0011")}, kKey2{*from_hex("0022")}, kKey3{*from_hex("0033")};
@@ -170,8 +182,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][pagin
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
             PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
-            const auto async_intersection = [](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
+            const auto async_intersection = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
                 IntersectionIterator it = set_intersection(co_await ps1.begin(), co_await ps2.begin());
+                CHECK(co_await it.has_next() == !expected_intersection_set.empty());
                 co_return co_await paginated_iterator_to_vector(std::move(it));
             };
             CHECK(spawn_and_wait(async_intersection(paginated1, paginated2)) == expected_intersection_set);
@@ -193,8 +206,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_union", "[db][kv][api][paginated_se
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
             PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
-            const auto async_union = [](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
+            const auto async_union = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
                 UnionIterator<PaginatedUint64::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin());
+                CHECK(co_await it.has_next() == !expected_union_set.empty());
                 co_return co_await paginated_iterator_to_vector(std::move(it));
             };
             CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);

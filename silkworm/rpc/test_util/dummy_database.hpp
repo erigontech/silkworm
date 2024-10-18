@@ -33,16 +33,17 @@ namespace silkworm::rpc::test {
 class DummyDatabase : public ethdb::Database {
   public:
     explicit DummyDatabase(std::shared_ptr<db::kv::api::Cursor> cursor,
-                           std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort)
-        : DummyDatabase(0, 0, std::move(cursor), std::move(cursor_dup_sort)) {}
+                           std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort,
+                           test::BackEndMock* backend)
+        : DummyDatabase(0, 0, std::move(cursor), std::move(cursor_dup_sort), backend) {}
     DummyDatabase(uint64_t tx_id,
                   uint64_t view_id,
                   std::shared_ptr<db::kv::api::Cursor> cursor,
-                  std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort)
-        : tx_id_(tx_id), view_id_(view_id), cursor_(std::move(cursor)), cursor_dup_sort_(std::move(cursor_dup_sort)) {}
+                  std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort, test::BackEndMock* backend)
+        : tx_id_(tx_id), view_id_(view_id), cursor_(std::move(cursor)), cursor_dup_sort_(std::move(cursor_dup_sort)), backend_(backend) {}
 
     Task<std::unique_ptr<db::kv::api::Transaction>> begin() override {
-        co_return std::make_unique<DummyTransaction>(tx_id_, view_id_, cursor_, cursor_dup_sort_);
+        co_return std::make_unique<DummyTransaction>(tx_id_, view_id_, cursor_, cursor_dup_sort_, backend_);
     }
 
   private:
@@ -50,6 +51,7 @@ class DummyDatabase : public ethdb::Database {
     uint64_t view_id_;
     std::shared_ptr<db::kv::api::Cursor> cursor_;
     std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort_;
+    test::BackEndMock* backend_;
 };
 
 }  // namespace silkworm::rpc::test

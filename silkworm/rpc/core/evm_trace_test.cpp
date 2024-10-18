@@ -53,7 +53,7 @@ using testing::Unused;
 
 static const Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static const Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
-
+static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 static const Bytes kConfigKey{kZeroHeader};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
 
@@ -63,8 +63,8 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     test::MockBlockCache block_cache;
     StringWriter writer{4096};
     boost::asio::any_io_executor io_executor{io_context_.get_executor()};
-    std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();
-    RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(backend.get())};
+    test::BackEndMock backend;
+    RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};
 };
 
 #ifndef SILKWORM_SANITIZE
@@ -97,9 +97,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 1,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -213,9 +213,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     }));
 
     SECTION("Call: failed with intrinsic gas too low") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -257,9 +257,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .timestamp = 1,
         };
 
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -461,9 +461,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .timestamp = 1,
         };
 
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -602,9 +602,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .timestamp = 1,
         };
 
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -789,9 +789,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .timestamp = 1,
         };
 
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -954,9 +954,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .timestamp = 1,
         };
 
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1046,9 +1046,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 1,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1211,9 +1211,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 1,
     };
-    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-        .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kZeroHeader;
+    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1372,9 +1372,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     }));
 
     SECTION("callMany: failed with intrinsic gas too low") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1419,9 +1419,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 1,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1635,9 +1635,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 1,
     };
-    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-        .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kZeroHeader;
+    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -2107,9 +2107,10 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
         return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
-    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-        .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kZeroHeader;
+    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        .Times(2)
+        .WillRepeatedly(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -2235,9 +2236,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 1,
     };
-    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-        .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kZeroHeader;
+    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -3213,9 +3214,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 1,
     };
-    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-        .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kZeroHeader;
+    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -3321,9 +3322,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
-    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-        .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kZeroHeader;
+    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
         }));
 
     // TransactionDatabase::get_one: TABLE CanonicalHeader

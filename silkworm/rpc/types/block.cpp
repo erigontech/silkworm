@@ -54,7 +54,6 @@ std::ostream& operator<<(std::ostream& out, const Block& b) {
     out << " #transactions: " << block.transactions.size();
     out << " #ommers: " << block.ommers.size();
     out << " hash: " << to_hex(b.block_with_hash->hash);
-    out << " total_difficulty: " << silkworm::to_hex(silkworm::endian::to_big_compact(b.total_difficulty));
     out << " full_tx: " << b.full_tx;
     return out;
 }

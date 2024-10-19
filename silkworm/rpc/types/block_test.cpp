@@ -183,7 +183,6 @@ TEST_CASE("block_number_or_hash") {
 
 TEST_CASE("create empty block", "[rpc][types][block]") {
     Block b{};
-    CHECK(b.total_difficulty == 0);
     CHECK(b.full_tx == false);
 }
 

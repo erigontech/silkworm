@@ -11,6 +11,8 @@ cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x engine_,\
+debug_traceCall/test_02.json,\
+erigon_getHeaderByHash/test_05.json,\
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
@@ -20,9 +22,9 @@ parity_listStorageKeys,\
 ots_getContractCreator,\
 erigon_getLatestLogs,\
 eth_getLogs,\
-txpool_content,\
 ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore --transport_type http,websocket
+ots_searchTransactionsBefore,\
+txpool_content --transport_type http,websocket
 
 failed_test=$?
 

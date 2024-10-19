@@ -55,7 +55,7 @@ Task<BlockNum> RemoteChainStorage::highest_block_number() const {
 }
 
 Task<std::optional<BlockNum>> RemoteChainStorage::read_block_number(const Hash& hash) const {
-    co_return co_await read_header_number(tx_, hash);
+    co_return co_await providers_.block_number_from_hash(hash.bytes);
 }
 
 Task<bool> RemoteChainStorage::read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const {
@@ -67,7 +67,7 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, BlockNum number, Blo
 }
 
 Task<bool> RemoteChainStorage::read_block(const Hash& hash, Block& block) const {
-    const BlockNum block_number = co_await read_header_number(tx_, hash);
+    const BlockNum block_number = co_await providers_.block_number_from_hash(hash.bytes);
     co_return co_await providers_.block(block_number, hash.bytes, /*.read_senders=*/false, block);
 }
 
@@ -91,7 +91,7 @@ Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum number
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(const Hash& hash) const {
-    const auto number = co_await read_header_number(tx_, hash);
+    const auto number = co_await providers_.block_number_from_hash(hash.bytes);
     co_return co_await read_header(number, hash.bytes);
 }
 
@@ -116,7 +116,7 @@ Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockNum number, Bloc
 }
 
 Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockBody& body) const {
-    const auto number = co_await read_header_number(tx_, hash);
+    const auto number = co_await providers_.block_number_from_hash(hash.bytes);
     co_return co_await read_body(number, hash.bytes, /*.read_senders=*/false, body);
 }
 

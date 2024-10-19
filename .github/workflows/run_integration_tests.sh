@@ -22,9 +22,9 @@ parity_listStorageKeys,\
 ots_getContractCreator,\
 erigon_getLatestLogs,\
 eth_getLogs,\
-txpool_content,\
 ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore --transport_type http,websocket
+ots_searchTransactionsBefore,\
+txpool_content --transport_type http,websocket
 
 failed_test=$?
 

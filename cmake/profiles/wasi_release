@@ -5,8 +5,6 @@ compiler=clang
 compiler.version=14
 compiler.libcxx=libc++
 build_type=Release
-[options]
-[build_requires]
 [env]
 CC=/opt/wasi-sdk/bin/clang
 CXX=/opt/wasi-sdk/bin/clang++

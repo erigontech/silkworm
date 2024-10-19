@@ -1668,8 +1668,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 }
 
 Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& block_with_hash,
-                                                const evmc::address& address,
-                                                uint64_t block_size, intx::uint<256> total_difficulty,
+                                                const evmc::address& address, uint64_t block_size,
                                                 const std::vector<Receipt>& receipts,
                                                 TransactionsWithReceipts& results) {
     auto& block = block_with_hash.block;
@@ -1692,7 +1691,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
             executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
 
             if (tracer->found()) {
-                const BlockDetails block_details{block_size, hash, block.header, total_difficulty, block.transactions.size(), block.ommers};
+                const BlockDetails block_details{block_size, hash, block.header, block.transactions.size(), block.ommers};
                 results.transactions.push_back(txn);
                 results.receipts.push_back(receipts.at(i));
                 results.blocks.push_back(block_details);
@@ -1739,7 +1738,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
             stream.write_json_field("error", error);
             stream.close_object();
         } else {
-            const Block block{block_with_hash, {}, false};
+            const Block block{block_with_hash, false};
             SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
                        << " block_number: " << block_number - 1
                        << " block: " << block;

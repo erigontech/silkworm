@@ -16,9 +16,9 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-find_package(absl REQUIRED btree)
+find_package(absl REQUIRED COMPONENTS btree)
 # circular_buffer
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 

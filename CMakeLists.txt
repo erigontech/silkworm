@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-cmake_minimum_required(VERSION 3.19.0)
+cmake_minimum_required(VERSION 3.24.0)
 
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/evmone/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
@@ -33,6 +33,8 @@ if(NOT SILKWORM_HAS_PARENT)
     )
     include("${CMAKE_TOOLCHAIN_FILE}")
   endif()
+
+  include(cmake/conan.cmake)
 endif()
 
 project(silkworm)
@@ -57,10 +59,6 @@ option(SILKWORM_FUZZER "Build instrumentation for fuzzers" OFF)
 option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 option(SILKWORM_ALLOW_UNUSED_VAR_WARNINGS "Turn unused variable errors into warnings" OFF)
 
-if(NOT SILKWORM_HAS_PARENT)
-  include(cmake/conan.cmake)
-endif()
-
 set_property(
   DIRECTORY
   APPEND
@@ -77,7 +75,7 @@ if(NOT SILKWORM_CORE_ONLY)
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
   set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Honor visibility properties for all target types
 
-  find_package(Boost REQUIRED headers)
+  find_package(Boost REQUIRED COMPONENTS headers)
   # Define Boost::headers target if missing because libtorrent needs it
   if(NOT TARGET Boost::headers)
     add_library(Boost::headers INTERFACE IMPORTED)

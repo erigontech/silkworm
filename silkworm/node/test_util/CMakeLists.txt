@@ -16,7 +16,7 @@
 
 set(TARGET silkworm_node_test_util)
 
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(GTest REQUIRED)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")

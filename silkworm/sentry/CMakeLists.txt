@@ -17,7 +17,7 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(absl REQUIRED)
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(gRPC REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)

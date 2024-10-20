@@ -17,7 +17,7 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 # circular_buffer, iostreams (for fsync)
-find_package(Boost REQUIRED headers iostreams)
+find_package(Boost REQUIRED COMPONENTS headers iostreams)
 
 silkworm_library(
   silkworm_snapshots_seg

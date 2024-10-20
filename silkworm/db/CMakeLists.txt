@@ -21,7 +21,7 @@ add_subdirectory(test_util)
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)

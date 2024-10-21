@@ -37,7 +37,12 @@ namespace {
         std::optional<Account> get_account(const evmc::address& addr) const noexcept override {
             if (!state_.exists(addr))
                 return std::nullopt;
-            return Account{.nonce = state_.get_nonce(addr), .balance = state_.get_balance(addr), .code_hash = state_.get_code_hash(addr)};
+            return Account{
+                .nonce = state_.get_nonce(addr),
+                .balance = state_.get_balance(addr),
+                .code_hash = state_.get_code_hash(addr),
+                .has_storage = state_.has_storage(addr),
+            };
         }
 
         evmone::bytes get_account_code(const evmc::address& addr) const noexcept override {
@@ -158,7 +163,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     const CallResult vm_res = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
 
-    refund_gas(txn,effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
+    refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
 
     // award the fee recipient
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};

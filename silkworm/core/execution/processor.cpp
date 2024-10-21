@@ -47,6 +47,16 @@ namespace {
             return state_.get_original_storage(addr, key);
         }
     };
+
+    class BlockHashProvider : public evmone::state::BlockHashProvider {
+        EVM& evm_;
+
+      public:
+        explicit BlockHashProvider(EVM& evm) noexcept : evm_{evm} {}
+        evmc::bytes32 get_block_hash(int64_t block_number) const noexcept override {
+            return evm_.get_block_hash(block_number);
+        }
+    };
 }  // namespace
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state,

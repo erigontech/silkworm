@@ -88,9 +88,6 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
         for (const auto& w : *block.withdrawals)
             e1_block_.withdrawals.emplace_back(w.index, w.validator_index, w.address, w.amount);
     }
-    const auto min_block_number = std::max(e1_block_.number - 257, int64_t{0});
-    for (auto n = min_block_number; n < e1_block_.number; ++n)
-        e1_block_.known_block_hashes.insert({n, evm_.get_block_hash(n)});
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {

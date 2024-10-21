@@ -56,6 +56,7 @@ class RemoteBackEnd final : public BackEnd {
     Task<BlockNum> get_block_number_from_txn_hash(const HashAsSpan& hash) override;
     Task<BlockNum> get_block_number_from_hash(const HashAsSpan& hash) override;
     Task<evmc::bytes32> get_block_hash_from_block_number(uint64_t number) override;
+    virtual Task<std::string> canonical_body_for_storage(uint64_t number) override;
 
   private:
     static std::vector<Bytes> decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs);

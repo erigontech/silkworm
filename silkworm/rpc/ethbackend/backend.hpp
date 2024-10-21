@@ -45,6 +45,7 @@ class BackEnd {
     virtual Task<BlockNum> get_block_number_from_txn_hash(const HashAsSpan& hash) = 0;
     virtual Task<BlockNum> get_block_number_from_hash(const HashAsSpan& hash) = 0;
     virtual Task<evmc::bytes32> get_block_hash_from_block_number(uint64_t number) = 0;
+    virtual Task<std::string> canonical_body_for_storage(uint64_t number) = 0;
 };
 
 }  // namespace silkworm::rpc::ethbackend

@@ -208,6 +208,25 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_hash", "[silkwo
     }
 }
 
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::canonical_body_for_storage", "[silkworm][rpc][ethbackend][backend]") {
+    test::StrictMockAsyncResponseReader<::remote::CanonicalBodyForStorageReply> reader;
+    const uint64_t bn{0};
+    EXPECT_CALL(*stub_, AsyncCanonicalBodyForStorageRaw).WillOnce(testing::Return(&reader));
+
+    SECTION("call canonical_body_for_storage, and number") {
+        ::remote::CanonicalBodyForStorageReply response;
+        response.set_body("123");
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
+        const auto body = run<&ethbackend::RemoteBackEnd::canonical_body_for_storage>(bn);
+        CHECK(body == "123");
+    }
+
+    SECTION("call get_block_number_from_hash and get error") {
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::canonical_body_for_storage>(bn)), boost::system::system_error);
+    }
+}
+
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_hash_from_block_number", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::CanonicalHashReply> reader;
     const uint64_t bn{0};

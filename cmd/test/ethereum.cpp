@@ -42,7 +42,8 @@
 #include <silkworm/infra/common/terminal.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
-// See https://ethereum-tests.readthedocs.io
+// See EEST: https://ethereum.github.io/execution-spec-tests.
+// See legacy tests: https://ethereum-tests.readthedocs.io.
 
 using namespace silkworm;
 using namespace silkworm::protocol;
@@ -55,7 +56,10 @@ static const fs::path kBlockchainDir{"BlockchainTests"};
 
 static const fs::path kTransactionDir{"TransactionTests"};
 
-static const std::vector<fs::path> kSlowTests{
+/// The path to the blockchain tests in Execution Spec Tests (EEST) fixtures.
+static const fs::path kEESTBlockchainDir{"blockchain_tests"};
+
+static const std::array kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
@@ -466,7 +470,8 @@ int main(int argc, char* argv[]) {
 
     const fs::path root_dir{tests_path};
 
-    static const std::map<fs::path, RunnerFunc> kTestTypes{
+    const std::vector<std::pair<fs::path, RunnerFunc>> kTestTypes{
+        {kEESTBlockchainDir, blockchain_test},
         {kDifficultyDir, difficulty_tests},
         {kBlockchainDir, blockchain_test},
         {kTransactionDir, transaction_test},

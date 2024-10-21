@@ -90,6 +90,9 @@ class IntraBlockState {
 
     evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept;
 
+    /// Check if an account by the address has non-empty storage.
+    bool has_storage(const evmc::address& address) const noexcept;
+
     evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept;
 
     // https://eips.ethereum.org/EIPS/eip-2200

@@ -261,6 +261,14 @@ evmc_access_status IntraBlockState::access_storage(const evmc::address& address,
     return cold_read ? EVMC_ACCESS_COLD : EVMC_ACCESS_WARM;
 }
 
+bool IntraBlockState::has_storage(const evmc::address& address) const noexcept {
+    if (!is_zero(get_storage(address, evmc::bytes32{0}, true)))
+        return true;
+    if (!is_zero(get_storage(address, evmc::bytes32{1}, true)))
+        return true;
+    return false;
+}
+
 evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,
                                                    const evmc::bytes32& key) const noexcept {
     return get_storage(address, key, /*original=*/false);

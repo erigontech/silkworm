@@ -17,6 +17,7 @@
 #include "processor.hpp"
 
 #include <evmone/test/state/block.hpp>
+#include <evmone/test/state/state.hpp>
 #include <evmone/test/state/state_view.hpp>
 #include <evmone/test/state/transaction.hpp>
 
@@ -111,9 +112,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         e1_bi.known_block_hashes.insert({n, evm_.get_block_hash(n)});
 
     StateView sv{state_};
+    BlockHashProvider bhp{evm_};
 
     static const auto MAX_GAS = std::numeric_limits<int64_t>::max();
-    const auto e1_res = evmone::state::transition(sv, e1_bi, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
+    const auto e1_res = evmone::state::transition(sv, e1_bi, bhp, e1_tx, evm_.revision(), evm_.vm(), MAX_GAS, MAX_GAS);
     if (holds_alternative<std::error_code>(e1_res)) {
         std::cerr << "tx invalid: " << get<std::error_code>(e1_res).message() << "\n";
         SILKWORM_ASSERT(!"tx invalid");

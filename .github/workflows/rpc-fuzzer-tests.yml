@@ -35,7 +35,7 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm
         run: |
           # pip3 uninstall conan  --no-input
-          pip3 install --no-deps --upgrade --force-reinstall --no-cache-dir conan==1.64.1
+          sudo pip3 install --no-deps --upgrade --force-reinstall --no-cache-dir conan==1.64.1
           which conan
           pip3 show conan
           conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .

@@ -51,6 +51,7 @@ add_library(
   evmone/lib/evmone_precompiles/kzg.cpp
   evmone/lib/evmone_precompiles/bn254.cpp
   evmone/lib/evmone_precompiles/secp256k1.cpp
+  evmone/lib/evmone_precompiles/bls.cpp
   evmone/test/state/host.cpp
   evmone/test/state/precompiles.cpp
   evmone/test/state/state.cpp

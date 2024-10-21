@@ -31,14 +31,14 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
-      - name: Preinstall Conan packages
-        working-directory: ${{runner.workspace}}/silkworm
-        run: |
-          # pip3 uninstall conan  --no-input
-          # sudo pip3 install --no-deps --upgrade --force-reinstall --no-cache-dir conan==1.64.1
-          # which conan
-          # pip3 show conan
-          CC=clang-16 CXX=clang++-16 conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
+      # - name: Preinstall Conan packages
+      #   working-directory: ${{runner.workspace}}/silkworm
+      #   run: |
+      #     # pip3 uninstall conan  --no-input
+      #     # sudo pip3 install --no-deps --upgrade --force-reinstall --no-cache-dir conan==1.64.1
+      #     # which conan
+      #     # pip3 show conan
+      #     CC=clang-16 CXX=clang++-16 conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build

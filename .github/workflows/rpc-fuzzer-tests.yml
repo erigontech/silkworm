@@ -6,7 +6,7 @@ on:
     - cron: '0 0 * * 0'  # Runs every Sunday at 00:00 AM UTC
   push: 
     branches:
-      - fuzzer-github-actions
+      - fuzzer-oom-issue-fix
   
 jobs:
   fuzzer-test-suite:
@@ -31,14 +31,13 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
-      # Temporarily disabled, try to enable it if issues with building Conan packages (e.g. Boost) arise
-      # - name: Preinstall Conan packages
-      #   working-directory: ${{runner.workspace}}/silkworm
-      #   run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/linux_x64_clang_13_release .
+      - name: Preinstall Conan packages
+        working-directory: ${{runner.workspace}}/silkworm
+        run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+        run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=experimental/linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 
       - name: Build Silkworm Fuzzer Test
         working-directory: ${{runner.workspace}}/silkworm/build
@@ -57,6 +56,8 @@ jobs:
           for file in artifacts/*; do sed -i '2,$d' "$file"; done
           for file in artifacts/*; do sed -i 's/^>> //' "$file"; done
 
+          mkdir -p local-corpus
+
       - name: Pause the Erigon instance dedicated to db maintenance
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
@@ -65,11 +66,11 @@ jobs:
         timeout-minutes: 1440
         working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
         run: |
-          # Single thread execution
-          ./rpcdaemon_fuzzer_test -max_total_time=72000 -detect_leaks=0 -rss_limit_mb=98304 $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
+          # Create minimal corpus
+          ./rpcdaemon_fuzzer_test -merge=1 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
 
-          # Multi-thread execution
-          # ./rpcdaemon_fuzzer_test -max_total_time=86300 -detect_leaks=0 -jobs=3 -rss_limit_mb=10922 $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
+          # Single thread execution
+          ./rpcdaemon_fuzzer_test -max_total_time=600 local-corpus
 
       - name: Save Fuzzer Test Results
         if: always()
@@ -78,6 +79,10 @@ jobs:
           # Save failed results to the crash directory (ignore errors)
           cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
           cp leak-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+
+          # Save corpus to the persistent corpus directory
+          rm -rf $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus/*
+          cp -r local-corpus/* $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus/
 
       - name: Tear Down Build Environment
         if: always()

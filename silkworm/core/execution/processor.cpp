@@ -58,6 +58,18 @@ class StateView final : public evmone::state::StateView {
     }
 };
 
+namespace {
+    class BlockHashes final : public evmone::state::BlockHashes {
+        EVM& evm_;
+
+      public:
+        explicit BlockHashes(EVM& evm) noexcept : evm_{evm} {}
+        evmc::bytes32 get_block_hash(int64_t block_number) const noexcept override {
+            return evm_.get_block_hash(block_number);
+        }
+    };
+}  // namespace
+
 ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state,
                                        const ChainConfig& config)
     : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {

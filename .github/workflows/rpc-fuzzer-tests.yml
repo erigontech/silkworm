@@ -33,7 +33,9 @@ jobs:
 
       - name: Preinstall Conan packages
         working-directory: ${{runner.workspace}}/silkworm
-        run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
+        run: 
+          pip3 install --user conan==1.64.1 chardet
+          conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build

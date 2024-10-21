@@ -124,7 +124,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         std::cerr << "tx invalid: " << get<std::error_code>(e1_res).message() << "\n";
         SILKWORM_ASSERT(false && "tx invalid");
     }
-    auto e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
+    const auto& e1_receipt = get<evmone::state::TransactionReceipt>(e1_res);
     const auto gas_used = static_cast<uint64_t>(e1_receipt.gas_used);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.

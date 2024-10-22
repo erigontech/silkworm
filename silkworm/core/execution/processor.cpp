@@ -384,9 +384,13 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     receipts.resize(block.transactions.size());
     auto receipt_it{receipts.begin()};
 
-    for (const auto& txn : block.transactions) {
-        const ValidationResult err{protocol::validate_transaction(txn, state_, available_gas())};
+    for (size_t i = 0; i < block.transactions.size(); ++i) {
+        const auto& txn = block.transactions[i];
+        const auto agas = available_gas();
+        const ValidationResult err{protocol::validate_transaction(txn, state_, agas)};
         if (err != ValidationResult::kOk) {
+            std::cerr << "INVALID TX " << block.header.number << " " << i
+                      << " err: " << int(err) << " agas: " << agas << " " << txn.gas_limit << "\n";
             return err;
         }
         execute_transaction(txn, *receipt_it);

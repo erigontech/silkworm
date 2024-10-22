@@ -70,7 +70,11 @@ SnapshotSync::SnapshotSync(
     : settings_{std::move(settings)},
       snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
       chaindata_env_{std::move(chaindata_env)},
-      repository_{settings_, std::make_unique<SnapshotBundleFactoryImpl>()},
+      repository_{
+          settings_,
+          std::make_unique<snapshots::StepToBlockNumConverter>(),
+          std::make_unique<SnapshotBundleFactoryImpl>(),
+      },
       client_{settings_.bittorrent_settings},
       snapshot_freezer_{ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings_.keep_blocks},
       snapshot_merger_{repository_, std::move(tmp_dir_path)},
@@ -99,7 +103,7 @@ Task<void> SnapshotSync::setup_and_run() {
         co_return;
     }
 
-    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](BlockNumRange range) {
+    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](StepRange range) {
         this->seed_frozen_bundle(range);
     });
 
@@ -275,7 +279,8 @@ Task<void> SnapshotSync::build_missing_indexes() {
 void SnapshotSync::seed_frozen_local_snapshots() {
     for (auto& bundle_ptr : repository_.view_bundles()) {
         auto& bundle = *bundle_ptr;
-        bool is_frozen = bundle.block_range().size() >= kMaxMergerSnapshotSize;
+        auto block_range = bundle.step_range().to_block_num_range();
+        bool is_frozen = block_range.size() >= kMaxMergerSnapshotSize;
         const auto first_snapshot = bundle.segments()[0];
         // assume that if one snapshot in the bundle is preverified, then all of them are
         bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.get().path().filename());
@@ -285,10 +290,10 @@ void SnapshotSync::seed_frozen_local_snapshots() {
     }
 }
 
-void SnapshotSync::seed_frozen_bundle(BlockNumRange range) {
+void SnapshotSync::seed_frozen_bundle(StepRange range) {
     bool is_frozen = range.size() >= kMaxMergerSnapshotSize;
     auto bundle = repository_.find_bundle(range.start);
-    if (bundle && (bundle->block_range() == range) && is_frozen) {
+    if (bundle && (bundle->step_range() == range) && is_frozen) {
         seed_bundle(*bundle);
     }
 }

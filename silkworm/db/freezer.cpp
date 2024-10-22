@@ -107,8 +107,9 @@ static const SegmentCollation& get_collation(SnapshotType type) {
 std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& freezer_command = dynamic_cast<SegmentCollationCommand&>(*command);
     auto range = freezer_command.range;
+    auto step_range = StepRange::from_block_num_range(range);
 
-    auto bundle = snapshots_.bundle_factory().make(tmp_dir_path_, range);
+    auto bundle = snapshots_.bundle_factory().make(tmp_dir_path_, step_range);
     for (auto& segment_ref : bundle.segments()) {
         auto path = segment_ref.get().path();
         SegmentFileWriter file_writer{path, tmp_dir_path_};
@@ -134,7 +135,7 @@ void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& bundle = freezer_result.bundle;
     move_files(bundle.files(), snapshots_.path());
 
-    auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.block_range());
+    auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.step_range());
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
 }
 

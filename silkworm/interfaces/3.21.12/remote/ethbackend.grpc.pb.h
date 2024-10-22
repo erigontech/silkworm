@@ -109,6 +109,14 @@ class ETHBACKEND final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>> PrepareAsyncBlock(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>>(PrepareAsyncBlockRaw(context, request, cq));
     }
+    // High-level method - can read block body (only storage metadata) from db, snapshots or apply any other logic
+    virtual ::grpc::Status CanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::remote::CanonicalBodyForStorageReply* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>> AsyncCanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>>(AsyncCanonicalBodyForStorageRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>> PrepareAsyncCanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>>(PrepareAsyncCanonicalBodyForStorageRaw(context, request, cq));
+    }
     // High-level method - can find block hash by block number
     virtual ::grpc::Status CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::remote::CanonicalHashReply* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalHashReply>> AsyncCanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) {
@@ -198,6 +206,9 @@ class ETHBACKEND final {
       // Request fields are optional - it's ok to request block only by hash or only by number
       virtual void Block(::grpc::ClientContext* context, const ::remote::BlockRequest* request, ::remote::BlockReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void Block(::grpc::ClientContext* context, const ::remote::BlockRequest* request, ::remote::BlockReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // High-level method - can read block body (only storage metadata) from db, snapshots or apply any other logic
+      virtual void CanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest* request, ::remote::CanonicalBodyForStorageReply* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void CanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest* request, ::remote::CanonicalBodyForStorageReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // High-level method - can find block hash by block number
       virtual void CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
@@ -246,6 +257,8 @@ class ETHBACKEND final {
     virtual ::grpc::ClientAsyncReaderWriterInterface< ::remote::LogsFilterRequest, ::remote::SubscribeLogsReply>* PrepareAsyncSubscribeLogsRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>* AsyncBlockRaw(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>* PrepareAsyncBlockRaw(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>* AsyncCanonicalBodyForStorageRaw(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>* PrepareAsyncCanonicalBodyForStorageRaw(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalHashReply>* AsyncCanonicalHashRaw(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalHashReply>* PrepareAsyncCanonicalHashRaw(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::HeaderNumberReply>* AsyncHeaderNumberRaw(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -333,6 +346,13 @@ class ETHBACKEND final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::BlockReply>> PrepareAsyncBlock(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::BlockReply>>(PrepareAsyncBlockRaw(context, request, cq));
     }
+    ::grpc::Status CanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::remote::CanonicalBodyForStorageReply* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::CanonicalBodyForStorageReply>> AsyncCanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::CanonicalBodyForStorageReply>>(AsyncCanonicalBodyForStorageRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::CanonicalBodyForStorageReply>> PrepareAsyncCanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::CanonicalBodyForStorageReply>>(PrepareAsyncCanonicalBodyForStorageRaw(context, request, cq));
+    }
     ::grpc::Status CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::remote::CanonicalHashReply* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::CanonicalHashReply>> AsyncCanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::CanonicalHashReply>>(AsyncCanonicalHashRaw(context, request, cq));
@@ -408,6 +428,8 @@ class ETHBACKEND final {
       void SubscribeLogs(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::remote::LogsFilterRequest,::remote::SubscribeLogsReply>* reactor) override;
       void Block(::grpc::ClientContext* context, const ::remote::BlockRequest* request, ::remote::BlockReply* response, std::function<void(::grpc::Status)>) override;
       void Block(::grpc::ClientContext* context, const ::remote::BlockRequest* request, ::remote::BlockReply* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void CanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest* request, ::remote::CanonicalBodyForStorageReply* response, std::function<void(::grpc::Status)>) override;
+      void CanonicalBodyForStorage(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest* request, ::remote::CanonicalBodyForStorageReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       void CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response, std::function<void(::grpc::Status)>) override;
       void CanonicalHash(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       void HeaderNumber(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest* request, ::remote::HeaderNumberReply* response, std::function<void(::grpc::Status)>) override;
@@ -455,6 +477,8 @@ class ETHBACKEND final {
     ::grpc::ClientAsyncReaderWriter< ::remote::LogsFilterRequest, ::remote::SubscribeLogsReply>* PrepareAsyncSubscribeLogsRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::BlockReply>* AsyncBlockRaw(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::BlockReply>* PrepareAsyncBlockRaw(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::CanonicalBodyForStorageReply>* AsyncCanonicalBodyForStorageRaw(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::CanonicalBodyForStorageReply>* PrepareAsyncCanonicalBodyForStorageRaw(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::CanonicalHashReply>* AsyncCanonicalHashRaw(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::CanonicalHashReply>* PrepareAsyncCanonicalHashRaw(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::HeaderNumberReply>* AsyncHeaderNumberRaw(::grpc::ClientContext* context, const ::remote::HeaderNumberRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -480,6 +504,7 @@ class ETHBACKEND final {
     const ::grpc::internal::RpcMethod rpcmethod_Subscribe_;
     const ::grpc::internal::RpcMethod rpcmethod_SubscribeLogs_;
     const ::grpc::internal::RpcMethod rpcmethod_Block_;
+    const ::grpc::internal::RpcMethod rpcmethod_CanonicalBodyForStorage_;
     const ::grpc::internal::RpcMethod rpcmethod_CanonicalHash_;
     const ::grpc::internal::RpcMethod rpcmethod_HeaderNumber_;
     const ::grpc::internal::RpcMethod rpcmethod_TxnLookup_;
@@ -511,6 +536,8 @@ class ETHBACKEND final {
     // it doesn't provide consistency
     // Request fields are optional - it's ok to request block only by hash or only by number
     virtual ::grpc::Status Block(::grpc::ServerContext* context, const ::remote::BlockRequest* request, ::remote::BlockReply* response);
+    // High-level method - can read block body (only storage metadata) from db, snapshots or apply any other logic
+    virtual ::grpc::Status CanonicalBodyForStorage(::grpc::ServerContext* context, const ::remote::CanonicalBodyForStorageRequest* request, ::remote::CanonicalBodyForStorageReply* response);
     // High-level method - can find block hash by block number
     virtual ::grpc::Status CanonicalHash(::grpc::ServerContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response);
     // High-level method - can find block number by block hash
@@ -708,12 +735,32 @@ class ETHBACKEND final {
     }
   };
   template <class BaseClass>
+  class WithAsyncMethod_CanonicalBodyForStorage : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_CanonicalBodyForStorage() {
+      ::grpc::Service::MarkMethodAsync(9);
+    }
+    ~WithAsyncMethod_CanonicalBodyForStorage() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanonicalBodyForStorage(::grpc::ServerContext* /*context*/, const ::remote::CanonicalBodyForStorageRequest* /*request*/, ::remote::CanonicalBodyForStorageReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCanonicalBodyForStorage(::grpc::ServerContext* context, ::remote::CanonicalBodyForStorageRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::CanonicalBodyForStorageReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_CanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_CanonicalHash() {
-      ::grpc::Service::MarkMethodAsync(9);
+      ::grpc::Service::MarkMethodAsync(10);
     }
     ~WithAsyncMethod_CanonicalHash() override {
       BaseClassMustBeDerivedFromService(this);
@@ -724,7 +771,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCanonicalHash(::grpc::ServerContext* context, ::remote::CanonicalHashRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::CanonicalHashReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -733,7 +780,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_HeaderNumber() {
-      ::grpc::Service::MarkMethodAsync(10);
+      ::grpc::Service::MarkMethodAsync(11);
     }
     ~WithAsyncMethod_HeaderNumber() override {
       BaseClassMustBeDerivedFromService(this);
@@ -744,7 +791,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestHeaderNumber(::grpc::ServerContext* context, ::remote::HeaderNumberRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::HeaderNumberReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -753,7 +800,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_TxnLookup() {
-      ::grpc::Service::MarkMethodAsync(11);
+      ::grpc::Service::MarkMethodAsync(12);
     }
     ~WithAsyncMethod_TxnLookup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -764,7 +811,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestTxnLookup(::grpc::ServerContext* context, ::remote::TxnLookupRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::TxnLookupReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -773,7 +820,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodAsync(12);
+      ::grpc::Service::MarkMethodAsync(13);
     }
     ~WithAsyncMethod_NodeInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -784,7 +831,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestNodeInfo(::grpc::ServerContext* context, ::remote::NodesInfoRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::NodesInfoReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -793,7 +840,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Peers() {
-      ::grpc::Service::MarkMethodAsync(13);
+      ::grpc::Service::MarkMethodAsync(14);
     }
     ~WithAsyncMethod_Peers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -804,7 +851,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeers(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::remote::PeersReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -813,7 +860,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_AddPeer() {
-      ::grpc::Service::MarkMethodAsync(14);
+      ::grpc::Service::MarkMethodAsync(15);
     }
     ~WithAsyncMethod_AddPeer() override {
       BaseClassMustBeDerivedFromService(this);
@@ -824,7 +871,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestAddPeer(::grpc::ServerContext* context, ::remote::AddPeerRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::AddPeerReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -833,7 +880,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_PendingBlock() {
-      ::grpc::Service::MarkMethodAsync(15);
+      ::grpc::Service::MarkMethodAsync(16);
     }
     ~WithAsyncMethod_PendingBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -844,7 +891,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPendingBlock(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::remote::PendingBlockReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -853,7 +900,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_BorEvent() {
-      ::grpc::Service::MarkMethodAsync(16);
+      ::grpc::Service::MarkMethodAsync(17);
     }
     ~WithAsyncMethod_BorEvent() override {
       BaseClassMustBeDerivedFromService(this);
@@ -864,10 +911,10 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestBorEvent(::grpc::ServerContext* context, ::remote::BorEventRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::BorEventReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(17, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Etherbase<WithAsyncMethod_NetVersion<WithAsyncMethod_NetPeerCount<WithAsyncMethod_Version<WithAsyncMethod_ProtocolVersion<WithAsyncMethod_ClientVersion<WithAsyncMethod_Subscribe<WithAsyncMethod_SubscribeLogs<WithAsyncMethod_Block<WithAsyncMethod_CanonicalHash<WithAsyncMethod_HeaderNumber<WithAsyncMethod_TxnLookup<WithAsyncMethod_NodeInfo<WithAsyncMethod_Peers<WithAsyncMethod_AddPeer<WithAsyncMethod_PendingBlock<WithAsyncMethod_BorEvent<Service > > > > > > > > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_Etherbase<WithAsyncMethod_NetVersion<WithAsyncMethod_NetPeerCount<WithAsyncMethod_Version<WithAsyncMethod_ProtocolVersion<WithAsyncMethod_ClientVersion<WithAsyncMethod_Subscribe<WithAsyncMethod_SubscribeLogs<WithAsyncMethod_Block<WithAsyncMethod_CanonicalBodyForStorage<WithAsyncMethod_CanonicalHash<WithAsyncMethod_HeaderNumber<WithAsyncMethod_TxnLookup<WithAsyncMethod_NodeInfo<WithAsyncMethod_Peers<WithAsyncMethod_AddPeer<WithAsyncMethod_PendingBlock<WithAsyncMethod_BorEvent<Service > > > > > > > > > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_Etherbase : public BaseClass {
    private:
@@ -1103,18 +1150,45 @@ class ETHBACKEND final {
       ::grpc::CallbackServerContext* /*context*/, const ::remote::BlockRequest* /*request*/, ::remote::BlockReply* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithCallbackMethod_CanonicalBodyForStorage : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_CanonicalBodyForStorage() {
+      ::grpc::Service::MarkMethodCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::CanonicalBodyForStorageRequest, ::remote::CanonicalBodyForStorageReply>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::remote::CanonicalBodyForStorageRequest* request, ::remote::CanonicalBodyForStorageReply* response) { return this->CanonicalBodyForStorage(context, request, response); }));}
+    void SetMessageAllocatorFor_CanonicalBodyForStorage(
+        ::grpc::MessageAllocator< ::remote::CanonicalBodyForStorageRequest, ::remote::CanonicalBodyForStorageReply>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::CanonicalBodyForStorageRequest, ::remote::CanonicalBodyForStorageReply>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_CanonicalBodyForStorage() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanonicalBodyForStorage(::grpc::ServerContext* /*context*/, const ::remote::CanonicalBodyForStorageRequest* /*request*/, ::remote::CanonicalBodyForStorageReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CanonicalBodyForStorage(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::CanonicalBodyForStorageRequest* /*request*/, ::remote::CanonicalBodyForStorageReply* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithCallbackMethod_CanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_CanonicalHash() {
-      ::grpc::Service::MarkMethodCallback(9,
+      ::grpc::Service::MarkMethodCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::remote::CanonicalHashRequest, ::remote::CanonicalHashReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::remote::CanonicalHashRequest* request, ::remote::CanonicalHashReply* response) { return this->CanonicalHash(context, request, response); }));}
     void SetMessageAllocatorFor_CanonicalHash(
         ::grpc::MessageAllocator< ::remote::CanonicalHashRequest, ::remote::CanonicalHashReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::CanonicalHashRequest, ::remote::CanonicalHashReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1135,13 +1209,13 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_HeaderNumber() {
-      ::grpc::Service::MarkMethodCallback(10,
+      ::grpc::Service::MarkMethodCallback(11,
           new ::grpc::internal::CallbackUnaryHandler< ::remote::HeaderNumberRequest, ::remote::HeaderNumberReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::remote::HeaderNumberRequest* request, ::remote::HeaderNumberReply* response) { return this->HeaderNumber(context, request, response); }));}
     void SetMessageAllocatorFor_HeaderNumber(
         ::grpc::MessageAllocator< ::remote::HeaderNumberRequest, ::remote::HeaderNumberReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::HeaderNumberRequest, ::remote::HeaderNumberReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1162,13 +1236,13 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_TxnLookup() {
-      ::grpc::Service::MarkMethodCallback(11,
+      ::grpc::Service::MarkMethodCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::remote::TxnLookupRequest, ::remote::TxnLookupReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::remote::TxnLookupRequest* request, ::remote::TxnLookupReply* response) { return this->TxnLookup(context, request, response); }));}
     void SetMessageAllocatorFor_TxnLookup(
         ::grpc::MessageAllocator< ::remote::TxnLookupRequest, ::remote::TxnLookupReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(12);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::TxnLookupRequest, ::remote::TxnLookupReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1189,13 +1263,13 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodCallback(12,
+      ::grpc::Service::MarkMethodCallback(13,
           new ::grpc::internal::CallbackUnaryHandler< ::remote::NodesInfoRequest, ::remote::NodesInfoReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::remote::NodesInfoRequest* request, ::remote::NodesInfoReply* response) { return this->NodeInfo(context, request, response); }));}
     void SetMessageAllocatorFor_NodeInfo(
         ::grpc::MessageAllocator< ::remote::NodesInfoRequest, ::remote::NodesInfoReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(12);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(13);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::NodesInfoRequest, ::remote::NodesInfoReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1216,13 +1290,13 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_Peers() {
-      ::grpc::Service::MarkMethodCallback(13,
+      ::grpc::Service::MarkMethodCallback(14,
           new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::remote::PeersReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::remote::PeersReply* response) { return this->Peers(context, request, response); }));}
     void SetMessageAllocatorFor_Peers(
         ::grpc::MessageAllocator< ::google::protobuf::Empty, ::remote::PeersReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(13);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(14);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::remote::PeersReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1243,13 +1317,13 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_AddPeer() {
-      ::grpc::Service::MarkMethodCallback(14,
+      ::grpc::Service::MarkMethodCallback(15,
           new ::grpc::internal::CallbackUnaryHandler< ::remote::AddPeerRequest, ::remote::AddPeerReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::remote::AddPeerRequest* request, ::remote::AddPeerReply* response) { return this->AddPeer(context, request, response); }));}
     void SetMessageAllocatorFor_AddPeer(
         ::grpc::MessageAllocator< ::remote::AddPeerRequest, ::remote::AddPeerReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(14);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(15);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::AddPeerRequest, ::remote::AddPeerReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1270,13 +1344,13 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_PendingBlock() {
-      ::grpc::Service::MarkMethodCallback(15,
+      ::grpc::Service::MarkMethodCallback(16,
           new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::remote::PendingBlockReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::remote::PendingBlockReply* response) { return this->PendingBlock(context, request, response); }));}
     void SetMessageAllocatorFor_PendingBlock(
         ::grpc::MessageAllocator< ::google::protobuf::Empty, ::remote::PendingBlockReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(15);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(16);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::remote::PendingBlockReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1297,13 +1371,13 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_BorEvent() {
-      ::grpc::Service::MarkMethodCallback(16,
+      ::grpc::Service::MarkMethodCallback(17,
           new ::grpc::internal::CallbackUnaryHandler< ::remote::BorEventRequest, ::remote::BorEventReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::remote::BorEventRequest* request, ::remote::BorEventReply* response) { return this->BorEvent(context, request, response); }));}
     void SetMessageAllocatorFor_BorEvent(
         ::grpc::MessageAllocator< ::remote::BorEventRequest, ::remote::BorEventReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(16);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(17);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::BorEventRequest, ::remote::BorEventReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1318,7 +1392,7 @@ class ETHBACKEND final {
     virtual ::grpc::ServerUnaryReactor* BorEvent(
       ::grpc::CallbackServerContext* /*context*/, const ::remote::BorEventRequest* /*request*/, ::remote::BorEventReply* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_Etherbase<WithCallbackMethod_NetVersion<WithCallbackMethod_NetPeerCount<WithCallbackMethod_Version<WithCallbackMethod_ProtocolVersion<WithCallbackMethod_ClientVersion<WithCallbackMethod_Subscribe<WithCallbackMethod_SubscribeLogs<WithCallbackMethod_Block<WithCallbackMethod_CanonicalHash<WithCallbackMethod_HeaderNumber<WithCallbackMethod_TxnLookup<WithCallbackMethod_NodeInfo<WithCallbackMethod_Peers<WithCallbackMethod_AddPeer<WithCallbackMethod_PendingBlock<WithCallbackMethod_BorEvent<Service > > > > > > > > > > > > > > > > > CallbackService;
+  typedef WithCallbackMethod_Etherbase<WithCallbackMethod_NetVersion<WithCallbackMethod_NetPeerCount<WithCallbackMethod_Version<WithCallbackMethod_ProtocolVersion<WithCallbackMethod_ClientVersion<WithCallbackMethod_Subscribe<WithCallbackMethod_SubscribeLogs<WithCallbackMethod_Block<WithCallbackMethod_CanonicalBodyForStorage<WithCallbackMethod_CanonicalHash<WithCallbackMethod_HeaderNumber<WithCallbackMethod_TxnLookup<WithCallbackMethod_NodeInfo<WithCallbackMethod_Peers<WithCallbackMethod_AddPeer<WithCallbackMethod_PendingBlock<WithCallbackMethod_BorEvent<Service > > > > > > > > > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Etherbase : public BaseClass {
@@ -1474,12 +1548,29 @@ class ETHBACKEND final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_CanonicalBodyForStorage : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_CanonicalBodyForStorage() {
+      ::grpc::Service::MarkMethodGeneric(9);
+    }
+    ~WithGenericMethod_CanonicalBodyForStorage() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanonicalBodyForStorage(::grpc::ServerContext* /*context*/, const ::remote::CanonicalBodyForStorageRequest* /*request*/, ::remote::CanonicalBodyForStorageReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_CanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_CanonicalHash() {
-      ::grpc::Service::MarkMethodGeneric(9);
+      ::grpc::Service::MarkMethodGeneric(10);
     }
     ~WithGenericMethod_CanonicalHash() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1496,7 +1587,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_HeaderNumber() {
-      ::grpc::Service::MarkMethodGeneric(10);
+      ::grpc::Service::MarkMethodGeneric(11);
     }
     ~WithGenericMethod_HeaderNumber() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1513,7 +1604,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_TxnLookup() {
-      ::grpc::Service::MarkMethodGeneric(11);
+      ::grpc::Service::MarkMethodGeneric(12);
     }
     ~WithGenericMethod_TxnLookup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1530,7 +1621,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodGeneric(12);
+      ::grpc::Service::MarkMethodGeneric(13);
     }
     ~WithGenericMethod_NodeInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1547,7 +1638,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Peers() {
-      ::grpc::Service::MarkMethodGeneric(13);
+      ::grpc::Service::MarkMethodGeneric(14);
     }
     ~WithGenericMethod_Peers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1564,7 +1655,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_AddPeer() {
-      ::grpc::Service::MarkMethodGeneric(14);
+      ::grpc::Service::MarkMethodGeneric(15);
     }
     ~WithGenericMethod_AddPeer() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1581,7 +1672,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_PendingBlock() {
-      ::grpc::Service::MarkMethodGeneric(15);
+      ::grpc::Service::MarkMethodGeneric(16);
     }
     ~WithGenericMethod_PendingBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1598,7 +1689,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_BorEvent() {
-      ::grpc::Service::MarkMethodGeneric(16);
+      ::grpc::Service::MarkMethodGeneric(17);
     }
     ~WithGenericMethod_BorEvent() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1790,12 +1881,32 @@ class ETHBACKEND final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_CanonicalBodyForStorage : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_CanonicalBodyForStorage() {
+      ::grpc::Service::MarkMethodRaw(9);
+    }
+    ~WithRawMethod_CanonicalBodyForStorage() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanonicalBodyForStorage(::grpc::ServerContext* /*context*/, const ::remote::CanonicalBodyForStorageRequest* /*request*/, ::remote::CanonicalBodyForStorageReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCanonicalBodyForStorage(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_CanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_CanonicalHash() {
-      ::grpc::Service::MarkMethodRaw(9);
+      ::grpc::Service::MarkMethodRaw(10);
     }
     ~WithRawMethod_CanonicalHash() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1806,7 +1917,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCanonicalHash(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1815,7 +1926,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_HeaderNumber() {
-      ::grpc::Service::MarkMethodRaw(10);
+      ::grpc::Service::MarkMethodRaw(11);
     }
     ~WithRawMethod_HeaderNumber() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1826,7 +1937,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestHeaderNumber(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1835,7 +1946,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_TxnLookup() {
-      ::grpc::Service::MarkMethodRaw(11);
+      ::grpc::Service::MarkMethodRaw(12);
     }
     ~WithRawMethod_TxnLookup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1846,7 +1957,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestTxnLookup(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1855,7 +1966,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodRaw(12);
+      ::grpc::Service::MarkMethodRaw(13);
     }
     ~WithRawMethod_NodeInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1866,7 +1977,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestNodeInfo(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1875,7 +1986,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Peers() {
-      ::grpc::Service::MarkMethodRaw(13);
+      ::grpc::Service::MarkMethodRaw(14);
     }
     ~WithRawMethod_Peers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1886,7 +1997,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeers(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1895,7 +2006,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_AddPeer() {
-      ::grpc::Service::MarkMethodRaw(14);
+      ::grpc::Service::MarkMethodRaw(15);
     }
     ~WithRawMethod_AddPeer() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1906,7 +2017,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestAddPeer(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1915,7 +2026,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_PendingBlock() {
-      ::grpc::Service::MarkMethodRaw(15);
+      ::grpc::Service::MarkMethodRaw(16);
     }
     ~WithRawMethod_PendingBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1926,7 +2037,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPendingBlock(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(15, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1935,7 +2046,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_BorEvent() {
-      ::grpc::Service::MarkMethodRaw(16);
+      ::grpc::Service::MarkMethodRaw(17);
     }
     ~WithRawMethod_BorEvent() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1946,7 +2057,7 @@ class ETHBACKEND final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestBorEvent(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(16, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(17, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2149,12 +2260,34 @@ class ETHBACKEND final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_CanonicalBodyForStorage : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_CanonicalBodyForStorage() {
+      ::grpc::Service::MarkMethodRawCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->CanonicalBodyForStorage(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_CanonicalBodyForStorage() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanonicalBodyForStorage(::grpc::ServerContext* /*context*/, const ::remote::CanonicalBodyForStorageRequest* /*request*/, ::remote::CanonicalBodyForStorageReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CanonicalBodyForStorage(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_CanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_CanonicalHash() {
-      ::grpc::Service::MarkMethodRawCallback(9,
+      ::grpc::Service::MarkMethodRawCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->CanonicalHash(context, request, response); }));
@@ -2176,7 +2309,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_HeaderNumber() {
-      ::grpc::Service::MarkMethodRawCallback(10,
+      ::grpc::Service::MarkMethodRawCallback(11,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HeaderNumber(context, request, response); }));
@@ -2198,7 +2331,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_TxnLookup() {
-      ::grpc::Service::MarkMethodRawCallback(11,
+      ::grpc::Service::MarkMethodRawCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->TxnLookup(context, request, response); }));
@@ -2220,7 +2353,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodRawCallback(12,
+      ::grpc::Service::MarkMethodRawCallback(13,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->NodeInfo(context, request, response); }));
@@ -2242,7 +2375,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_Peers() {
-      ::grpc::Service::MarkMethodRawCallback(13,
+      ::grpc::Service::MarkMethodRawCallback(14,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Peers(context, request, response); }));
@@ -2264,7 +2397,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_AddPeer() {
-      ::grpc::Service::MarkMethodRawCallback(14,
+      ::grpc::Service::MarkMethodRawCallback(15,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->AddPeer(context, request, response); }));
@@ -2286,7 +2419,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_PendingBlock() {
-      ::grpc::Service::MarkMethodRawCallback(15,
+      ::grpc::Service::MarkMethodRawCallback(16,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->PendingBlock(context, request, response); }));
@@ -2308,7 +2441,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_BorEvent() {
-      ::grpc::Service::MarkMethodRawCallback(16,
+      ::grpc::Service::MarkMethodRawCallback(17,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->BorEvent(context, request, response); }));
@@ -2514,12 +2647,39 @@ class ETHBACKEND final {
     virtual ::grpc::Status StreamedBlock(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::BlockRequest,::remote::BlockReply>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_CanonicalBodyForStorage : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_CanonicalBodyForStorage() {
+      ::grpc::Service::MarkMethodStreamed(9,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::remote::CanonicalBodyForStorageRequest, ::remote::CanonicalBodyForStorageReply>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::remote::CanonicalBodyForStorageRequest, ::remote::CanonicalBodyForStorageReply>* streamer) {
+                       return this->StreamedCanonicalBodyForStorage(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_CanonicalBodyForStorage() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status CanonicalBodyForStorage(::grpc::ServerContext* /*context*/, const ::remote::CanonicalBodyForStorageRequest* /*request*/, ::remote::CanonicalBodyForStorageReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedCanonicalBodyForStorage(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::CanonicalBodyForStorageRequest,::remote::CanonicalBodyForStorageReply>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_CanonicalHash : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_CanonicalHash() {
-      ::grpc::Service::MarkMethodStreamed(9,
+      ::grpc::Service::MarkMethodStreamed(10,
         new ::grpc::internal::StreamedUnaryHandler<
           ::remote::CanonicalHashRequest, ::remote::CanonicalHashReply>(
             [this](::grpc::ServerContext* context,
@@ -2546,7 +2706,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_HeaderNumber() {
-      ::grpc::Service::MarkMethodStreamed(10,
+      ::grpc::Service::MarkMethodStreamed(11,
         new ::grpc::internal::StreamedUnaryHandler<
           ::remote::HeaderNumberRequest, ::remote::HeaderNumberReply>(
             [this](::grpc::ServerContext* context,
@@ -2573,7 +2733,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_TxnLookup() {
-      ::grpc::Service::MarkMethodStreamed(11,
+      ::grpc::Service::MarkMethodStreamed(12,
         new ::grpc::internal::StreamedUnaryHandler<
           ::remote::TxnLookupRequest, ::remote::TxnLookupReply>(
             [this](::grpc::ServerContext* context,
@@ -2600,7 +2760,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodStreamed(12,
+      ::grpc::Service::MarkMethodStreamed(13,
         new ::grpc::internal::StreamedUnaryHandler<
           ::remote::NodesInfoRequest, ::remote::NodesInfoReply>(
             [this](::grpc::ServerContext* context,
@@ -2627,7 +2787,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_Peers() {
-      ::grpc::Service::MarkMethodStreamed(13,
+      ::grpc::Service::MarkMethodStreamed(14,
         new ::grpc::internal::StreamedUnaryHandler<
           ::google::protobuf::Empty, ::remote::PeersReply>(
             [this](::grpc::ServerContext* context,
@@ -2654,7 +2814,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_AddPeer() {
-      ::grpc::Service::MarkMethodStreamed(14,
+      ::grpc::Service::MarkMethodStreamed(15,
         new ::grpc::internal::StreamedUnaryHandler<
           ::remote::AddPeerRequest, ::remote::AddPeerReply>(
             [this](::grpc::ServerContext* context,
@@ -2681,7 +2841,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_PendingBlock() {
-      ::grpc::Service::MarkMethodStreamed(15,
+      ::grpc::Service::MarkMethodStreamed(16,
         new ::grpc::internal::StreamedUnaryHandler<
           ::google::protobuf::Empty, ::remote::PendingBlockReply>(
             [this](::grpc::ServerContext* context,
@@ -2708,7 +2868,7 @@ class ETHBACKEND final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_BorEvent() {
-      ::grpc::Service::MarkMethodStreamed(16,
+      ::grpc::Service::MarkMethodStreamed(17,
         new ::grpc::internal::StreamedUnaryHandler<
           ::remote::BorEventRequest, ::remote::BorEventReply>(
             [this](::grpc::ServerContext* context,
@@ -2729,7 +2889,7 @@ class ETHBACKEND final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedBorEvent(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::BorEventRequest,::remote::BorEventReply>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_CanonicalHash<WithStreamedUnaryMethod_HeaderNumber<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_AddPeer<WithStreamedUnaryMethod_PendingBlock<WithStreamedUnaryMethod_BorEvent<Service > > > > > > > > > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_CanonicalBodyForStorage<WithStreamedUnaryMethod_CanonicalHash<WithStreamedUnaryMethod_HeaderNumber<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_AddPeer<WithStreamedUnaryMethod_PendingBlock<WithStreamedUnaryMethod_BorEvent<Service > > > > > > > > > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_Subscribe : public BaseClass {
    private:
@@ -2758,7 +2918,7 @@ class ETHBACKEND final {
     virtual ::grpc::Status StreamedSubscribe(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::remote::SubscribeRequest,::remote::SubscribeReply>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_Subscribe<Service > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithSplitStreamingMethod_Subscribe<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_CanonicalHash<WithStreamedUnaryMethod_HeaderNumber<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_AddPeer<WithStreamedUnaryMethod_PendingBlock<WithStreamedUnaryMethod_BorEvent<Service > > > > > > > > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithSplitStreamingMethod_Subscribe<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_CanonicalBodyForStorage<WithStreamedUnaryMethod_CanonicalHash<WithStreamedUnaryMethod_HeaderNumber<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_AddPeer<WithStreamedUnaryMethod_PendingBlock<WithStreamedUnaryMethod_BorEvent<Service > > > > > > > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace remote

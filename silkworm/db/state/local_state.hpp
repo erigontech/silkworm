@@ -33,8 +33,8 @@ namespace silkworm::db::state {
 
 class LocalState : public State {
   public:
-    explicit LocalState(BlockNum block_number, mdbx::env chaindata_env)
-        : block_number_{block_number}, txn_{std::move(chaindata_env)}, data_model_{txn_} {}
+    explicit LocalState(BlockNum block_number, db::ROTxn& txn)
+        : block_number_{block_number}, txn_{txn}, data_model_{txn_} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -90,7 +90,7 @@ class LocalState : public State {
 
   private:
     BlockNum block_number_;
-    mutable db::ROTxnManaged txn_;
+    db::ROTxn& txn_;
     db::DataModel data_model_;
 };
 

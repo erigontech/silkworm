@@ -76,13 +76,11 @@ TEST_CASE("Destruct and recreate", "[core][execution]") {
         IntraBlockState state{db};
 
         // First, create the contract and set one storage location to non-zero in a block
-        state.clear_journal_and_substate();
         REQUIRE(state.get_original_storage(to, {}) == evmc::bytes32{});
         REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{});
         state.create_contract(to);
         state.set_storage(to, {}, evmc::bytes32{1});
         REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{1});
-        state.finalize_transaction(EVMC_SHANGHAI);
         state.write_to_db(1);
         REQUIRE(db.state_root_hash() == 0xc2d663880f143c9bdd3c7bd2c282dc8d24e2bccf81bc779c058d18685a4a7386_bytes32);
     }
@@ -91,26 +89,19 @@ TEST_CASE("Destruct and recreate", "[core][execution]") {
         IntraBlockState state{db};
 
         // Then, in another block, destruct it
-        state.clear_journal_and_substate();
         REQUIRE(state.get_original_storage(to, {}) == evmc::bytes32{1});
         REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{1});
         REQUIRE(state.record_suicide(to));
-        state.destruct_suicides();
         REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{});
-        state.finalize_transaction(EVMC_SHANGHAI);
 
         // Add some balance to it
-        state.clear_journal_and_substate();
         state.add_to_balance(to, 1);
-        state.finalize_transaction(EVMC_SHANGHAI);
 
         // And recreate it: the storage location previously set to non-zero must be zeroed
-        state.clear_journal_and_substate();
         CHECK(state.get_original_storage(to, {}) == evmc::bytes32{});
         CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
         state.create_contract(to);
         CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
-        state.finalize_transaction(EVMC_SHANGHAI);
         state.write_to_db(2);
         CHECK(db.state_root_hash() == 0x8e723de3b34ef0632b5421f0f8ad8dfa6c981e99009141b5b7130c790f0d38c6_bytes32);
     }
@@ -128,7 +119,6 @@ TEST_CASE("Create contract, destruct and then recreate", "[core][execution]") {
         REQUIRE((state.get_nonce(to) == 0 && state.get_code_hash(to) == kEmptyHash));
         state.create_contract(to);
         state.set_code(to, *from_hex("30600155"));
-        state.finalize_transaction(EVMC_SHANGHAI);
 
         state.write_to_db(1);
 
@@ -140,10 +130,7 @@ TEST_CASE("Create contract, destruct and then recreate", "[core][execution]") {
         IntraBlockState state{db};
 
         // Then, in another block, destruct it
-        state.clear_journal_and_substate();
         REQUIRE(state.record_suicide(to));
-        state.destruct_suicides();
-        state.finalize_transaction(EVMC_SHANGHAI);
 
         state.write_to_db(2);
 
@@ -156,7 +143,6 @@ TEST_CASE("Create contract, destruct and then recreate", "[core][execution]") {
         // Finally, recreate the contract in another block
         state.create_contract(to);
         state.set_code(to, *from_hex("30600255"));
-        state.finalize_transaction(EVMC_SHANGHAI);
 
         state.write_to_db(3);
 
@@ -174,14 +160,11 @@ TEST_CASE("Create empty contract and recreate non-empty in same block", "[core][
     // First, create an empty contract in one transaction
     REQUIRE((state.get_nonce(to) == 0 && state.get_code_hash(to) == kEmptyHash));
     state.create_contract(to);
-    state.finalize_transaction(EVMC_SHANGHAI);
 
     // Then, recreate it adding some code in another transaction
-    state.clear_journal_and_substate();
     REQUIRE((state.get_nonce(to) == 0 && state.get_code_hash(to) == kEmptyHash));
     state.create_contract(to);
     state.set_code(to, *from_hex("30600055"));
-    state.finalize_transaction(EVMC_SHANGHAI);
 
     state.write_to_db(1);
 
@@ -1129,8 +1112,6 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
     CHECK(res1.status == EVMC_SUCCESS);
     CHECK(test_tracer.creation_completed_called());
 
-    state.finalize_transaction(EVMC_CONSTANTINOPLE);
-    state.clear_journal_and_substate();
 
     // 2nd tx destroys the contract triggering self-destruct, thus changing such account back to empty state
     Transaction txn2{};
@@ -1142,7 +1123,6 @@ TEST_CASE("State changes for creation+destruction of smart contract", "[core][ex
     CHECK(res2.status == EVMC_SUCCESS);
     CHECK(test_tracer.self_destruct_called());
 
-    state.finalize_transaction(EVMC_CONSTANTINOPLE);
     state.write_to_db(block.header.number);
 
     CHECK(!db.accounts().contains(contract_address));
@@ -1208,8 +1188,6 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
     CHECK(res1.status == EVMC_SUCCESS);
 
     state.set_code(caller_address, caller_code);
-    state.finalize_transaction(EVMC_CONSTANTINOPLE);
-    state.clear_journal_and_substate();
 
     // 2nd tx creates the code at callee_address
     Transaction txn2{};
@@ -1221,8 +1199,6 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
     CHECK(res2.status == EVMC_SUCCESS);
 
     state.set_code(callee_address, callee_code);
-    state.finalize_transaction(EVMC_CONSTANTINOPLE);
-    state.clear_journal_and_substate();
 
     // 3rd tx calls the code at caller_address which in turn delegate-calls the code at callee address
     Transaction txn3{};
@@ -1234,7 +1210,6 @@ TEST_CASE("Missing sender in call traces for DELEGATECALL", "[core][execution]")
     CHECK(res3.status == EVMC_SUCCESS);
     CHECK(res3.data.empty());
 
-    state.finalize_transaction(EVMC_CONSTANTINOPLE);
     state.write_to_db(block.header.number);
 
     evmc::bytes32 key0{};

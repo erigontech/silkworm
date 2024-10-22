@@ -38,7 +38,6 @@ void to_json(nlohmann::json& json, const Block& b) {
     json["receiptsRoot"] = header.receipts_root;
     json["miner"] = header.beneficiary;
     json["difficulty"] = to_quantity(silkworm::endian::to_big_compact(header.difficulty));
-    json["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.total_difficulty));
     json["extraData"] = "0x" + silkworm::to_hex(header.extra_data);
     json["mixHash"] = header.prev_randao;
     json["size"] = to_quantity(b.get_block_size());
@@ -94,7 +93,6 @@ struct GlazeJsonBlock {
     char gas_used[kInt64HexSize];
     char timestamp[kInt64HexSize];
     char difficulty[kInt256HexSize];
-    char total_difficulty[kInt256HexSize];
     char mix_hash[kHashHexSize];
     char extra_data[kDataSize];
 
@@ -130,7 +128,6 @@ struct GlazeJsonBlock {
             "parentBeaconBlockRoot", &T::parent_beacon_block_root,
             "timestamp", &T::timestamp,
             "difficulty", &T::difficulty,
-            "totalDifficulty", &T::total_difficulty,
             "mixHash", &T::mix_hash,
             "extraData", &T::extra_data,
             "baseFeePerGas", &T::base_fee_per_gas,
@@ -214,7 +211,6 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
     to_quantity(std::span(result.gas_limit), header.gas_limit);
     to_quantity(std::span(result.gas_used), header.gas_used);
     to_quantity(std::span(result.difficulty), header.difficulty);
-    to_quantity(std::span(result.total_difficulty), b.total_difficulty);
     to_hex(std::span(result.mix_hash), header.prev_randao.bytes);
     to_hex(std::span(result.extra_data), header.extra_data);
 

@@ -16,8 +16,8 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-find_package(absl REQUIRED strings)
-find_package(Boost REQUIRED headers url)
+find_package(absl REQUIRED COMPONENTS strings)
+find_package(Boost REQUIRED COMPONENTS headers url)
 find_package(GTest REQUIRED)
 find_package(LibtorrentRasterbar REQUIRED)
 find_package(magic_enum REQUIRED)

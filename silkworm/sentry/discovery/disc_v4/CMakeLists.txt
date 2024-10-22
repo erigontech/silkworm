@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 

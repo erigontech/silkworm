@@ -25,16 +25,14 @@ Copyright 2024 The Silkworm Authors
 
 namespace silkworm {
 
-static auto constexpr kBLSKeyLen = 48;
-static auto constexpr kBLSSignatureLen = 96;
+inline static size_t constexpr kBLSKeyLen = 48;
+inline static size_t constexpr kBLSSignatureLen = 96;
 
 using BLSKey = std::array<uint8_t, kBLSKeyLen>;
 using BLSSignature = std::array<uint8_t, kBLSSignatureLen>;
 
 struct Request;
 using RequestPtr = std::unique_ptr<Request>;
-
-std::vector<RequestPtr> extract_deposit_requests_from_logs(const std::vector<Log>& logs);
 
 struct Request {
     enum class RequestType {
@@ -45,39 +43,32 @@ struct Request {
 
     virtual ~Request() = default;
     virtual void encode(Bytes& to) const = 0;
-    virtual size_t length() const = 0;
     virtual DecodingResult decode(ByteView& from, rlp::Leftover mode) = 0;
 };
 
 struct DepositRequest final : Request {
-    BLSKey pub_key;
-    Hash withdrawal_credentials;
-    uint64_t amount = 0;
-    BLSSignature signature;
-    uint64_t index = 0;
+    static constexpr size_t kDepositRequestDataLen = 192;
+    std::array<uint8_t, kDepositRequestDataLen> request_data;
+
+    static std::vector<RequestPtr> extract_deposits_from_logs(const std::vector<Log>& logs);
 
     void encode(Bytes& to) const override;
-    size_t length() const override;
     DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
 };
 
 struct WithdrawalRequest final : Request {
-    evmc::address source_address;
-    BLSKey validator_pub_key;
-    uint64_t amount{};
+    static constexpr size_t kWithdrawalRequestDataLen = 76;
+    std::array<uint8_t, kWithdrawalRequestDataLen> request_data;
 
     void encode(Bytes& to) const override;
-    size_t length() const override;
     DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
 };
 
 struct ConsolidationRequest final : Request {
-    evmc::address source_address;
-    BLSKey source_pub_key;
-    BLSKey target_pub_key;
+    static constexpr size_t kConsolidationRequestDataLen = 116;
+    std::array<uint8_t, kConsolidationRequestDataLen> request_data;
 
     void encode(Bytes& to) const override;
-    size_t length() const override;
     DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
 };
 

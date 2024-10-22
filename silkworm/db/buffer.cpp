@@ -504,7 +504,7 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     if (auto it{headers_.find(key)}; it != headers_.end()) {
         return it->second;
     }
-    return access_layer_.read_header(block_number, block_hash.bytes);
+    return data_model_->read_header(block_number, Hash{block_hash.bytes});
 }
 
 bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
@@ -513,7 +513,7 @@ bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, B
         out = it->second;
         return true;
     }
-    return access_layer_.read_body(block_number, block_hash.bytes, /*read_senders=*/false, out);
+    return data_model_->read_body(block_number, block_hash.bytes, /*read_senders=*/false, out);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

@@ -29,7 +29,7 @@ GetBlockHeadersPacket66& OutboundGetBlockHeaders::packet() { return packet_; }
 std::vector<PeerPenalization>& OutboundGetBlockHeaders::penalties() { return penalizations_; }
 bool OutboundGetBlockHeaders::packet_present() const { return (packet_.request.amount != 0); }
 
-void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void OutboundGetBlockHeaders::execute(db::DataStoreRef, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     if (packet_present()) {
         try {
             auto send_outcome = send_packet(sentry);

@@ -23,7 +23,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/stages.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm {
@@ -39,6 +39,8 @@ TEST_CASE("BodiesStage - data model") {
     context.add_genesis_data();
     context.commit_txn();
 
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+
     auto& chain_config = context.chain_config();
 
     /* status:
@@ -48,6 +50,7 @@ TEST_CASE("BodiesStage - data model") {
      */
     SECTION("one invalid body after the genesis") {
         db::RWTxnManaged tx(context.env());
+        db::DataModel data_model{tx, repository};
 
         auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -63,7 +66,12 @@ TEST_CASE("BodiesStage - data model") {
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
         BlockNum bodies_stage_height = 0;
-        BodyDataModelForTest bm(tx, bodies_stage_height, chain_config);
+        BodyDataModelForTest bm{
+            tx,
+            data_model,
+            bodies_stage_height,
+            chain_config,
+        };
 
         REQUIRE(bm.initial_height() == 0);
         REQUIRE(bm.highest_height() == 0);
@@ -83,6 +91,7 @@ TEST_CASE("BodiesStage - data model") {
 
     SECTION("one valid body after the genesis") {
         db::RWTxnManaged tx(context.env());
+        db::DataModel data_model{tx, repository};
 
         auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -111,7 +120,12 @@ TEST_CASE("BodiesStage - data model") {
         REQUIRE(decoding_result);
 
         BlockNum bodies_stage_height = 0;
-        BodyDataModelForTest bm(tx, bodies_stage_height, chain_config);
+        BodyDataModelForTest bm{
+            tx,
+            data_model,
+            bodies_stage_height,
+            chain_config,
+        };
 
         // check internal status
         REQUIRE(bm.initial_height() == 0);

@@ -37,6 +37,7 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -78,18 +79,35 @@ class RequestHandlerForTest : public json_rpc::RequestHandler {
     }
 };
 
+class TestDataStoreBase : public db::test_util::TestDatabaseContext {
+  public:
+    explicit TestDataStoreBase()
+        : repository_{db::test_util::make_repository()},
+          data_store_{mdbx_env(), repository_} {}
+
+    db::DataStoreRef data_store() const { return data_store_; }
+
+  private:
+    snapshots::SnapshotRepository repository_;
+    db::DataStoreRef data_store_;
+};
+
 class LocalContextTestBase : public ServiceContextTestBase {
   public:
-    explicit LocalContextTestBase(db::kv::api::StateCache* state_cache, mdbx::env& chaindata_env) : ServiceContextTestBase() {
-        add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::file::LocalDatabase>(state_cache, chaindata_env));
+    explicit LocalContextTestBase(
+        db::DataStoreRef data_store,
+        db::kv::api::StateCache* state_cache) {
+        add_private_service<ethdb::Database>(
+            io_context_,
+            std::make_unique<ethdb::file::LocalDatabase>(std::move(data_store), state_cache));
     }
 };
 
 template <typename TestRequestHandler>
 class RpcApiTestBase : public LocalContextTestBase {
   public:
-    explicit RpcApiTestBase(mdbx::env& chaindata_env)
-        : LocalContextTestBase(&state_cache_, chaindata_env),
+    explicit RpcApiTestBase(db::DataStoreRef data_store)
+        : LocalContextTestBase{std::move(data_store), &state_cache_},
           workers_{1},
           socket_{io_context_},
           rpc_api_{io_context_, workers_},
@@ -111,9 +129,9 @@ class RpcApiTestBase : public LocalContextTestBase {
     db::kv::api::CoherentStateCache state_cache_;
 };
 
-class RpcApiE2ETest : public db::test_util::TestDatabaseContext, RpcApiTestBase<RequestHandlerForTest> {
+class RpcApiE2ETest : public TestDataStoreBase, RpcApiTestBase<RequestHandlerForTest> {
   public:
-    explicit RpcApiE2ETest() : RpcApiTestBase<RequestHandlerForTest>(mdbx_env()) {
+    explicit RpcApiE2ETest() : RpcApiTestBase{data_store()} {
         // Ensure JSON RPC spec has been loaded into the validator
         if (!jsonrpc_spec_loaded) {
             json_rpc::Validator::load_specification();

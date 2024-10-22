@@ -31,8 +31,13 @@ namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
 
-HeadersStage::HeaderDataModel::HeaderDataModel(RWTxn& tx, BlockNum headers_height)
-    : tx_(tx), data_model_(tx), previous_height_(headers_height) {
+HeadersStage::HeaderDataModel::HeaderDataModel(
+    RWTxn& tx,
+    DataModel data_model,
+    BlockNum headers_height)
+    : tx_(tx),
+      data_model_(data_model),
+      previous_height_(headers_height) {
     auto headers_hash = read_canonical_header_hash(tx, headers_height);
     ensure(headers_hash.has_value(),
            [&]() { return "Headers stage, inconsistent canonical table: not found hash at height " + std::to_string(headers_height); });
@@ -86,8 +91,11 @@ std::optional<BlockHeader> HeadersStage::HeaderDataModel::get_canonical_header(B
 }
 
 // HeadersStage
-HeadersStage::HeadersStage(SyncContext* sync_context)
-    : Stage(sync_context, stages::kHeadersKey) {
+HeadersStage::HeadersStage(
+    SyncContext* sync_context,
+    DataModelFactory data_model_factory)
+    : Stage{sync_context, stages::kHeadersKey},
+      data_model_factory_{std::move(data_model_factory)} {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
@@ -128,7 +136,11 @@ Stage::Result HeadersStage::forward(RWTxn& tx) {
                        "span", std::to_string(segment_width)});
         }
 
-        HeaderDataModel header_persistence(tx, current_height_);
+        HeaderDataModel header_persistence{
+            tx,
+            data_model_factory_(tx),
+            current_height_,
+        };
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(current_height_);

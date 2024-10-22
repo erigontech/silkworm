@@ -30,6 +30,7 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/execution/api/execution_engine.hpp>
@@ -38,7 +39,6 @@
 
 #include "forks/extending_fork.hpp"
 #include "forks/main_chain.hpp"
-#include "stages/stage_bodies_factory.hpp"
 #include "timer_factory.hpp"
 
 namespace silkworm::stagedsync {
@@ -60,8 +60,9 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     ExecutionEngine(
         std::optional<boost::asio::any_io_executor> executor,
         NodeSettings& ns,
+        db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
-        BodiesStageFactory bodies_stage_factory,
+        StageContainerFactory stages_factory,
         db::RWAccess dba);
     ~ExecutionEngine() override = default;
 

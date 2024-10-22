@@ -89,7 +89,7 @@ TEST_CASE("Stage History Index") {
         block.transactions[0].s = 1;  // dummy
         block.transactions[0].set_sender(sender);
 
-        Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         Account sender_account{};
         sender_account.balance = kEther;
         buffer.update_account(sender, std::nullopt, sender_account);
@@ -449,7 +449,7 @@ TEST_CASE("HistoryIndex + Account access_layer") {
     TempChainData context;
     RWTxn& txn{context.rw_txn()};
 
-    Buffer buffer{txn};
+    Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
 
     const evmc::address miner_a{0x00000000000000000000000000000000000000aa_address};
     const evmc::address miner_b{0x00000000000000000000000000000000000000bb_address};

@@ -304,7 +304,6 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     for (auto& tracer : evm_.tracers()) {
         tracer.get().on_reward_granted(result, state_);
     }
-    state_.finalize_transaction(evm_.revision());
 
     evm_.remove_tracers();
 
@@ -312,7 +311,6 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 }
 
 void ExecutionProcessor::reset() {
-    state_.clear_journal_and_substate();
 }
 
 uint64_t ExecutionProcessor::available_gas() const noexcept {
@@ -354,9 +352,7 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, const intx::uint
 }
 
 ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
-    const evmc_revision rev{evm_.revision()};
     rule_set_.initialize(evm_);
-    state_.finalize_transaction(rev);
 
     cumulative_gas_used_ = 0;
 
@@ -380,9 +376,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     for (const auto& receipt : receipts) {
         std::ranges::copy(receipt.logs, std::back_inserter(logs));
     }
-    state_.clear_journal_and_substate();
     const auto finalization_result = rule_set_.finalize(state_, block, evm_, logs);
-    state_.finalize_transaction(rev);
 
     notify_block_execution_end(block);
 

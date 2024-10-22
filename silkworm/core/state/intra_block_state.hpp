@@ -66,7 +66,6 @@ class IntraBlockState {
     void destruct(const evmc::address& address);
 
     bool record_suicide(const evmc::address& address) noexcept;
-    void destruct_suicides();
     void destruct_touched_dead();
 
     size_t number_of_self_destructs() const noexcept { return self_destructs_.size(); }
@@ -101,11 +100,6 @@ class IntraBlockState {
 
     Snapshot take_snapshot() const noexcept;
     void revert_to_snapshot(const Snapshot& snapshot) noexcept;
-
-    void finalize_transaction(evmc_revision rev);
-
-    // See Section 6.1 "Substate" of the Yellow Paper
-    void clear_journal_and_substate();
 
     void add_log(const Log& log) noexcept;
 

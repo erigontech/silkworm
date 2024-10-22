@@ -129,12 +129,6 @@ bool IntraBlockState::record_suicide(const evmc::address& address) noexcept {
     return inserted;
 }
 
-void IntraBlockState::destruct_suicides() {
-    for (const auto& address : self_destructs_) {
-        destruct(address);
-    }
-}
-
 void IntraBlockState::destruct_touched_dead() {
     for (const auto& address : touched_) {
         if (is_dead(address)) {
@@ -344,26 +338,6 @@ IntraBlockState::Snapshot IntraBlockState::take_snapshot() const noexcept {
 
 void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapshot) noexcept {
     logs_.resize(snapshot.log_size_);
-}
-
-void IntraBlockState::finalize_transaction(evmc_revision rev) {
-    destruct_suicides();
-    if (rev >= EVMC_SPURIOUS_DRAGON) {
-        destruct_touched_dead();
-    }
-}
-
-void IntraBlockState::clear_journal_and_substate() {
-    // and the substate
-    self_destructs_.clear();
-    logs_.clear();
-    touched_.clear();
-    created_.clear();
-    // EIP-2929
-    accessed_addresses_.clear();
-    accessed_storage_keys_.clear();
-
-    transient_storage_.clear();
 }
 
 void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }

@@ -273,7 +273,6 @@ void cleanup_error_block(Block& block, ExecutionProcessor& processor, const evmc
         processor.evm().state().access_account(block.header.beneficiary);
     }
     processor.evm().state().add_to_balance(block.header.beneficiary, 0);
-    processor.evm().state().finalize_transaction(rev);
     processor.evm().state().write_to_db(block.header.number);
 }
 

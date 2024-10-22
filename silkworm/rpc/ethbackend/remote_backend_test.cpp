@@ -24,6 +24,7 @@
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>
@@ -218,7 +219,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::canonical_body_for_storage", "[silkwo
         response.set_body("123");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto body = run<&ethbackend::RemoteBackEnd::canonical_body_for_storage>(bn);
-        CHECK(body == "123");
+        CHECK(body == string_to_bytes("123"));
     }
 
     SECTION("call get_block_number_from_hash and get error") {

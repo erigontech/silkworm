@@ -189,7 +189,7 @@ Task<BlockNum> RemoteBackEnd::get_block_number_from_hash(const HashAsSpan& hash)
     co_return bn;
 }
 
-Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(uint64_t number) {
+Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(BlockNum number) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalHash> canonical_hsh_rpc{*stub_, grpc_context_};
     ::remote::CanonicalHashRequest request;
@@ -202,15 +202,15 @@ Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(uint64_t num
     co_return hash;
 }
 
-Task<std::string> RemoteBackEnd::canonical_body_for_storage(uint64_t number) {
+Task<Bytes> RemoteBackEnd::canonical_body_for_storage(BlockNum number) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalBodyForStorage> canonical_body_for_storage_rpc{*stub_, grpc_context_};
     ::remote::CanonicalBodyForStorageRequest request;
     request.set_blocknumber(number);
     const auto reply = co_await canonical_body_for_storage_rpc.finish_on(executor_, request);
-    SILK_TRACE << "RemoteBackEnd::canonical_body_for_storage bn="
+    SILK_TRACE << "RemoteBackEnd::canonical_body_for_storage bn=" << number
                << " t=" << clock_time::since(start_time);
-    co_return reply.body();
+    co_return string_to_bytes(reply.body());
 }
 
 std::vector<Bytes> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs) {

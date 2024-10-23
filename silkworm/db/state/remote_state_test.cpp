@@ -66,11 +66,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
             co_return cursor;
         }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -90,11 +87,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
             co_return cursor;
         }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -117,11 +111,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
             co_return cursor;
         }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -143,11 +134,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
             co_return cursor;
         }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -298,11 +286,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
             co_return cursor;
         }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -320,11 +305,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
             co_return cursor;
         }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -343,11 +325,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
             co_return cursor;
         }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{

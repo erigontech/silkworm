@@ -85,7 +85,7 @@ commands:
           name: "Install Conan"
           command: |
             pip3 install --user --no-warn-script-location conan==1.64.1
-            conan_path=$(python -m site --user-base)/bin
+            conan_path="$(python -m site --user-base)/bin"
             echo "export \"PATH=$conan_path:\$PATH\"" >> "$BASH_ENV"
             "$conan_path/conan" --version
 

@@ -22,8 +22,8 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -143,13 +143,12 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         SILK_DEBUG << "handle_parity_list_storage_keys: from " << from << ", to " << to;
 
         db::kv::api::DomainRangeQuery query{
-                .table = db::table::kStorageDomain,
-                .from_key = from,
-                .to_key = to,
-                .timestamp = txn_number,
-                .ascending_order = true,
-                .limit = quantity
-         };
+            .table = db::table::kStorageDomain,
+            .from_key = from,
+            .to_key = to,
+            .timestamp = txn_number,
+            .ascending_order = true,
+            .limit = quantity};
         auto paginated_result = co_await tx->domain_range(std::move(query));
         auto it = co_await paginated_result.begin();
 

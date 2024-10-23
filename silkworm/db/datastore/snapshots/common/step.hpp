@@ -19,6 +19,8 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
+#include "timestamp.hpp"
+
 namespace silkworm::snapshots {
 
 //! Scale factor to convert from-to block number values in block snapshot file names
@@ -68,6 +70,48 @@ struct StepRange {
     TxnIdRange to_txn_id_range() const { return {start.to_txn_id(), end.to_txn_id()}; }
     static StepRange from_txn_id_range(TxnIdRange range) {
         return {Step::from_txn_id(range.start), Step::from_txn_id(range.end + kStepSizeForTemporalSnapshots - 1)};
+    }
+};
+
+struct StepToTimestampConverter {
+    virtual ~StepToTimestampConverter() = default;
+    virtual Step step_from_timestamp(Timestamp t) const = 0;
+    virtual Timestamp timestamp_from_step(Step s) const = 0;
+    virtual StepRange step_range_from_timestamp_range(TimestampRange range) const = 0;
+    virtual TimestampRange timestamp_range_from_step_range(StepRange range) const = 0;
+};
+
+struct StepToBlockNumConverter : public StepToTimestampConverter {
+    ~StepToBlockNumConverter() override = default;
+    Step step_from_timestamp(Timestamp t) const override {
+        return Step::from_block_num(t);
+    }
+    Timestamp timestamp_from_step(Step s) const override {
+        return s.to_block_num();
+    }
+    StepRange step_range_from_timestamp_range(TimestampRange range) const override {
+        return StepRange::from_block_num_range({range.start, range.end});
+    }
+    TimestampRange timestamp_range_from_step_range(StepRange range) const override {
+        auto r = range.to_block_num_range();
+        return {r.start, r.end};
+    }
+};
+
+struct StepToTxnIdConverter : public StepToTimestampConverter {
+    ~StepToTxnIdConverter() override = default;
+    Step step_from_timestamp(Timestamp t) const override {
+        return Step::from_txn_id(t);
+    }
+    Timestamp timestamp_from_step(Step s) const override {
+        return s.to_txn_id();
+    }
+    StepRange step_range_from_timestamp_range(TimestampRange range) const override {
+        return StepRange::from_txn_id_range({range.start, range.end});
+    }
+    TimestampRange timestamp_range_from_step_range(StepRange range) const override {
+        auto r = range.to_txn_id_range();
+        return {r.start, r.end};
     }
 };
 

@@ -2240,8 +2240,11 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
     snapshots::SnapshotSettings settings;
     settings.repository_dir = data_dir.snapshots().path();
     settings.no_downloader = true;
-    std::unique_ptr<snapshots::SnapshotBundleFactory> bundle_factory = std::make_unique<SnapshotBundleFactoryImpl>();
-    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};
+    snapshots::SnapshotRepository repository{
+        std::move(settings),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<SnapshotBundleFactoryImpl>(),
+    };
     repository.reopen_folder();
     DataModel::set_snapshot_repository(&repository);
 

@@ -29,7 +29,7 @@
 
 namespace silkworm::db::state {
 
-StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) : tx_(tx), block_number_(block_number), canonical_body_for_storage_provider_{canonical_body_for_storage_provider} {
+StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) : tx_(tx), block_number_(block_number), canonical_body_for_storage_provider_{std::move(canonical_body_for_storage_provider)} {
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {

@@ -33,7 +33,6 @@ namespace silkworm::rpc {
 
 struct Block {
     std::shared_ptr<BlockWithHash> block_with_hash{nullptr};
-    intx::uint256 total_difficulty{0};
     bool full_tx{false};
 
     uint64_t get_block_size() const;
@@ -89,7 +88,6 @@ struct BlockDetails {
     uint64_t block_size;
     evmc::bytes32 hash;
     silkworm::BlockHeader header;
-    intx::uint256 total_difficulty{0};
     uint64_t transaction_count{0};
     std::vector<silkworm::BlockHeader> ommers;
     std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};
@@ -111,7 +109,6 @@ struct BlockTransactionsResponse {
     uint64_t block_size{0};
     evmc::bytes32 hash;
     silkworm::BlockHeader header;
-    intx::uint256 total_difficulty{0};
     uint64_t transaction_count{0};
     std::vector<silkworm::BlockHeader> ommers;
     std::vector<silkworm::rpc::Receipt> receipts;

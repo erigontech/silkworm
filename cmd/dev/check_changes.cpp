@@ -110,8 +110,11 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
-        snapshots::SnapshotRepository repository{snapshots::SnapshotSettings{}, std::move(snapshot_bundle_factory)};
+        snapshots::SnapshotRepository repository{
+            snapshots::SnapshotSettings{},
+            std::make_unique<snapshots::StepToBlockNumConverter>(),
+            std::make_unique<db::SnapshotBundleFactoryImpl>(),
+        };
         repository.reopen_folder();
         db::DataModel::set_snapshot_repository(&repository);
         db::DataModel access_layer{txn};

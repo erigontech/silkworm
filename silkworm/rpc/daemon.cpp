@@ -141,8 +141,10 @@ int Daemon::run(const DaemonSettings& settings) {
             snapshots::SnapshotSettings snapshot_settings{
                 .repository_dir = data_folder.snapshots().path(),
             };
-            auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
-            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings), std::move(snapshot_bundle_factory));
+            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
+                std::move(snapshot_settings),
+                std::make_unique<snapshots::StepToBlockNumConverter>(),
+                std::make_unique<db::SnapshotBundleFactoryImpl>());
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());

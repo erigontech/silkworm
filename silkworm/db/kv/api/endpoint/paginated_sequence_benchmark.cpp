@@ -43,9 +43,8 @@ TSequence make_paginated_sequence(const size_t page_size, const size_t n) {
 Task<size_t> paginated_sequence_iteration(PaginatedUint64& paginated) {
     size_t accumulator{0};
     auto it = co_await paginated.begin();
-    while (it != paginated.end()) {
-        accumulator += *it;
-        co_await ++it;
+    while (const auto value = co_await it.next()) {
+        accumulator += *value;
     }
     co_return accumulator;
 }
@@ -78,8 +77,8 @@ BENCHMARK(benchmark_paginated_sequence_iteration)->Args({100'000, 100'001});
 BENCHMARK(benchmark_paginated_sequence_iteration)->Args({100'000, 1'000'001});
 
 // Modified version of PaginatedSequence to check performance tradeoffs w/ different impl
-// - PaginatedSequence: async operator++ (more convenient at call site)
-// - PaginatedSequence2: sync operator++ plus async next_page
+// - PaginatedSequence::Iterator async next() method (more convenient at call site)
+// - PaginatedSequence2::Iterator sync operator++ plus async next_page
 template <typename T>
 class PaginatedSequence2 {
   public:

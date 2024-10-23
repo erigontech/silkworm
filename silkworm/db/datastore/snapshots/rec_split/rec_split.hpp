@@ -75,9 +75,9 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "../common/bitmask_operators.hpp"
-#include "../common/encoding/elias_fano.hpp"
-#include "../common/encoding/golomb_rice.hpp"
+#include "../common/util/bitmask_operators.hpp"
+#include "../elias_fano/elias_fano.hpp"
+#include "golomb_rice.hpp"
 #include "murmur_hash3.hpp"
 
 #pragma GCC diagnostic push
@@ -211,9 +211,9 @@ template <size_t LEAF_SIZE>
 class RecSplit {
   public:
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
-    using GolombRiceBuilder = encoding::GolombRiceVector::Builder;
-    using EliasFano = encoding::EliasFanoList32;
-    using DoubleEliasFano = encoding::DoubleEliasFanoList16;
+    using GolombRiceBuilder = GolombRiceVector::Builder;
+    using EliasFano = elias_fano::EliasFanoList32;
+    using DoubleEliasFano = elias_fano::DoubleEliasFanoList16;
 
     //! The base class for RecSplit building strategies
     struct BuildingStrategy {
@@ -222,8 +222,12 @@ class RecSplit {
         virtual void setup(const RecSplitSettings& settings, size_t bucket_count) = 0;
 
         virtual void add_key(uint64_t bucket_id, uint64_t bucket_key, uint64_t offset) = 0;
-        virtual bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes,
-                                     uint16_t& golomb_param_max_index, DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) = 0;
+        virtual bool build_mph_index(
+            std::ofstream& index_output_stream,
+            GolombRiceVector& golomb_rice_codes,
+            uint16_t& golomb_param_max_index,
+            DoubleEliasFano& double_ef_index,
+            uint8_t bytes_per_record) = 0;
         virtual void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) = 0;
         virtual void clear() = 0;
 
@@ -958,7 +962,7 @@ class RecSplit {
     size_t bucket_count_;
 
     //! The Golomb-Rice (GR) codes of splitting and bijection indices
-    encoding::GolombRiceVector golomb_rice_codes_;
+    GolombRiceVector golomb_rice_codes_;
 
     //! Double Elias-Fano (EF) index for bucket cumulative keys and bit positions
     DoubleEliasFano double_ef_index_;

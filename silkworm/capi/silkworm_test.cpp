@@ -26,9 +26,8 @@
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
-#include <silkworm/db/datastore/snapshots/index.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
@@ -808,54 +807,54 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
-    snapshot_test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};
-    auto& header_snapshot_path = header_snapshot_file.path();
-    snapshot_test::SampleBodySnapshotFile body_snapshot_file{tmp_dir.path()};
-    auto& body_snapshot_path = body_snapshot_file.path();
-    snapshot_test::SampleTransactionSnapshotFile tx_snapshot_file{tmp_dir.path()};
-    auto& tx_snapshot_path = tx_snapshot_file.path();
+    snapshot_test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};
+    auto& header_segment_path = header_segment_file.path();
+    snapshot_test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};
+    auto& body_segment_path = body_segment_file.path();
+    snapshot_test::SampleTransactionSnapshotFile txn_segment_file{tmp_dir.path()};
+    auto& txn_segment_path = txn_segment_file.path();
 
-    auto header_index_builder = snapshots::HeaderIndex::make(header_snapshot_path);
-    header_index_builder.set_base_data_id(header_snapshot_file.block_num_range().start);
+    auto header_index_builder = snapshots::HeaderIndex::make(header_segment_path);
+    header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    snapshots::Snapshot header_snapshot{header_snapshot_path};
-    header_snapshot.reopen_segment();
-    snapshots::Index idx_header_hash{header_snapshot_path.index_file()};
+    snapshots::SegmentFileReader header_segment{header_segment_path};
+    header_segment.reopen_segment();
+    snapshots::Index idx_header_hash{header_segment_path.index_file()};
     idx_header_hash.reopen_index();
 
-    auto body_index_builder = snapshots::BodyIndex::make(body_snapshot_path);
-    body_index_builder.set_base_data_id(body_snapshot_file.block_num_range().start);
+    auto body_index_builder = snapshots::BodyIndex::make(body_segment_path);
+    body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    snapshots::Snapshot body_snapshot{body_snapshot_path};
-    body_snapshot.reopen_segment();
-    snapshots::Index idx_body_number{body_snapshot_path.index_file()};
+    snapshots::SegmentFileReader body_segment{body_segment_path};
+    body_segment.reopen_segment();
+    snapshots::Index idx_body_number{body_segment_path.index_file()};
     idx_body_number.reopen_index();
 
-    auto tx_index_builder = snapshots::TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index_builder = snapshots::TransactionIndex::make(body_segment_path, txn_segment_path);
     tx_index_builder.build();
-    auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path, tx_snapshot_file.block_num_range().start);
+    auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start);
     tx_index_hash_to_block_builder.build();
-    snapshots::Snapshot tx_snapshot{tx_snapshot_path};
-    tx_snapshot.reopen_segment();
-    snapshots::Index idx_txn_hash{tx_snapshot_path.index_file()};
+    snapshots::SegmentFileReader txn_segment{txn_segment_path};
+    txn_segment.reopen_segment();
+    snapshots::Index idx_txn_hash{txn_segment_path.index_file()};
     idx_txn_hash.reopen_index();
     snapshots::Index idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
     idx_txn_hash_2_block.reopen_index();
 
-    const auto header_snapshot_path_string{header_snapshot_path.path().string()};
+    const auto header_segment_path_string{header_segment_path.path().string()};
     const auto header_index_path_string{idx_header_hash.path().path().string()};
-    const auto body_snapshot_path_string{body_snapshot_path.path().string()};
+    const auto body_segment_path_string{body_segment_path.path().string()};
     const auto body_index_path_string{idx_body_number.path().path().string()};
-    const auto tx_snapshot_path_string{tx_snapshot_path.path().string()};
+    const auto txn_segment_path_string{txn_segment_path.path().string()};
     const auto tx_hash_index_path_string{idx_txn_hash.path().path().string()};
     const auto tx_hash2block_index_path_string{idx_txn_hash_2_block.path().path().string()};
 
     // Prepare templates for valid header/body/transaction C data structures
     SilkwormHeadersSnapshot valid_shs{
         .segment = SilkwormMemoryMappedFile{
-            .file_path = header_snapshot_path_string.c_str(),
-            .memory_address = header_snapshot.memory_file_region().data(),
-            .memory_length = header_snapshot.memory_file_region().size(),
+            .file_path = header_segment_path_string.c_str(),
+            .memory_address = header_segment.memory_file_region().data(),
+            .memory_length = header_segment.memory_file_region().size(),
         },
         .header_hash_index = SilkwormMemoryMappedFile{
             .file_path = header_index_path_string.c_str(),
@@ -865,9 +864,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     };
     SilkwormBodiesSnapshot valid_sbs{
         .segment = SilkwormMemoryMappedFile{
-            .file_path = body_snapshot_path_string.c_str(),
-            .memory_address = body_snapshot.memory_file_region().data(),
-            .memory_length = body_snapshot.memory_file_region().size(),
+            .file_path = body_segment_path_string.c_str(),
+            .memory_address = body_segment.memory_file_region().data(),
+            .memory_length = body_segment.memory_file_region().size(),
         },
         .block_num_index = SilkwormMemoryMappedFile{
             .file_path = body_index_path_string.c_str(),
@@ -877,9 +876,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     };
     SilkwormTransactionsSnapshot valid_sts{
         .segment = SilkwormMemoryMappedFile{
-            .file_path = tx_snapshot_path_string.c_str(),
-            .memory_address = tx_snapshot.memory_file_region().data(),
-            .memory_length = tx_snapshot.memory_file_region().size(),
+            .file_path = txn_segment_path_string.c_str(),
+            .memory_address = txn_segment.memory_file_region().data(),
+            .memory_length = txn_segment.memory_file_region().size(),
         },
         .tx_hash_index = SilkwormMemoryMappedFile{
             .file_path = tx_hash_index_path_string.c_str(),

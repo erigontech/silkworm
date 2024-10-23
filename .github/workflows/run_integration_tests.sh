@@ -33,7 +33,7 @@ erigon_getLatestLogs,\
 eth_getLogs,\
 txpool_content,\
 ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore
+ots_searchTransactionsBefore 
 
 failed_test=$?
 

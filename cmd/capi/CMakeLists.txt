@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 
 # Target 'execute' is used to exercise the Silkworm C API library even if using C++ main
 add_executable(execute execute.cpp)

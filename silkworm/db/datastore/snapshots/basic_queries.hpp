@@ -21,30 +21,29 @@
 
 #include <silkworm/core/types/hash.hpp>
 
-#include "index.hpp"
-#include "snapshot_and_index.hpp"
-#include "snapshot_reader.hpp"
+#include "segment/segment_reader.hpp"
+#include "segment_and_index.hpp"
 
 namespace silkworm::snapshots {
 
-template <SnapshotReaderConcept TSnapshotReader>
+template <SegmentReaderConcept TSegmentReader>
 class BasicQuery {
   public:
     explicit BasicQuery(
-        const SnapshotAndIndex snapshot_and_index)
-        : reader_{snapshot_and_index.snapshot},
-          index_{snapshot_and_index.index} {}
+        const SegmentAndIndex segment_and_index)
+        : reader_{segment_and_index.segment},
+          index_{segment_and_index.index} {}
 
   protected:
-    TSnapshotReader reader_;
+    TSegmentReader reader_;
     const Index& index_;
 };
 
-template <SnapshotReaderConcept TSnapshotReader>
-struct FindByIdQuery : public BasicQuery<TSnapshotReader> {
-    using BasicQuery<TSnapshotReader>::BasicQuery;
+template <SegmentReaderConcept TSegmentReader>
+struct FindByIdQuery : public BasicQuery<TSegmentReader> {
+    using BasicQuery<TSegmentReader>::BasicQuery;
 
-    std::optional<typename TSnapshotReader::Iterator::value_type> exec(uint64_t id) {
+    std::optional<typename TSegmentReader::Iterator::value_type> exec(uint64_t id) {
         auto offset = this->index_.lookup_by_data_id(id);
         if (!offset) {
             return std::nullopt;
@@ -54,11 +53,11 @@ struct FindByIdQuery : public BasicQuery<TSnapshotReader> {
     }
 };
 
-template <SnapshotReaderConcept TSnapshotReader>
-struct FindByHashQuery : public BasicQuery<TSnapshotReader> {
-    using BasicQuery<TSnapshotReader>::BasicQuery;
+template <SegmentReaderConcept TSegmentReader>
+struct FindByHashQuery : public BasicQuery<TSegmentReader> {
+    using BasicQuery<TSegmentReader>::BasicQuery;
 
-    std::optional<typename TSnapshotReader::Iterator::value_type> exec(const Hash& hash) {
+    std::optional<typename TSegmentReader::Iterator::value_type> exec(const Hash& hash) {
         auto offset = this->index_.lookup_by_hash(hash);
         if (!offset) {
             return std::nullopt;
@@ -75,11 +74,11 @@ struct FindByHashQuery : public BasicQuery<TSnapshotReader> {
     }
 };
 
-template <SnapshotReaderConcept TSnapshotReader>
-struct RangeFromIdQuery : public BasicQuery<TSnapshotReader> {
-    using BasicQuery<TSnapshotReader>::BasicQuery;
+template <SegmentReaderConcept TSegmentReader>
+struct RangeFromIdQuery : public BasicQuery<TSegmentReader> {
+    using BasicQuery<TSegmentReader>::BasicQuery;
 
-    std::vector<typename TSnapshotReader::Iterator::value_type> exec_into_vector(uint64_t first_id, uint64_t count) {
+    std::vector<typename TSegmentReader::Iterator::value_type> exec_into_vector(uint64_t first_id, uint64_t count) {
         auto offset = this->index_.lookup_by_data_id(first_id);
         if (!offset) {
             return {};

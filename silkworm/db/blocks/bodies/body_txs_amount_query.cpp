@@ -18,17 +18,17 @@
 
 #include <stdexcept>
 
-#include "body_snapshot.hpp"
+#include "body_segment.hpp"
 
 namespace silkworm::snapshots {
 
 BodyTxsAmountQuery::Result BodyTxsAmountQuery::exec() {
-    size_t body_count = snapshot_.item_count();
+    size_t body_count = segment_.item_count();
     if (body_count == 0) {
-        throw std::runtime_error("BodyTxsAmountQuery empty body snapshot: " + snapshot_.path().path().string());
+        throw std::runtime_error("BodyTxsAmountQuery empty body snapshot: " + segment_.path().path().string());
     }
 
-    BodySnapshotReader reader{snapshot_};
+    BodySegmentReader reader{segment_};
     auto it = reader.begin();
     uint64_t first_tx_id = it->base_txn_id;
 

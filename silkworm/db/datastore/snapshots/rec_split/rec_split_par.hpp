@@ -116,7 +116,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         std::vector<uint64_t> values_;  // mike: current_bucket_offsets_; -> values_
 
         //! Helper to build GR codes of splitting and bijection indices, local to current bucket
-        encoding::GolombRiceVector::LazyBuilder gr_builder_;
+        GolombRiceVector::LazyBuilder gr_builder_;
 
         //! The local max index used in Golomb parameter array
         uint16_t golomb_param_max_index_{0};
@@ -167,8 +167,12 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         ++keys_added_;
     }
 
-    bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
-                         DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) override {
+    bool build_mph_index(
+        std::ofstream& index_output_stream,
+        GolombRiceVector& golomb_rice_codes,
+        uint16_t& golomb_param_max_index,
+        DoubleEliasFano& double_ef_index,
+        uint8_t bytes_per_record) override {
         // Find splitting trees for each bucket
         std::atomic_bool collision{false};
         for (auto& bucket : buckets_) {

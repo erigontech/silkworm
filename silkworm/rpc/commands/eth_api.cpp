@@ -195,10 +195,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
-            BlockNum block_number = block_with_hash->block.header.number;
-            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
-            const Block extended_block{block_with_hash, *total_difficulty, full_tx};
+            const Block extended_block{block_with_hash, full_tx};
             make_glaze_json_content(request, extended_block, reply);
         } else {
             make_glaze_json_null_content(request, reply);
@@ -236,9 +233,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
-            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
-            const Block extended_block{block_with_hash, *total_difficulty, full_tx};
+            const Block extended_block{block_with_hash, full_tx};
 
             make_glaze_json_content(request, extended_block, reply);
         } else {
@@ -357,15 +352,12 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
                 SILK_WARN << "invalid_argument: index not found processing request: " << request.dump();
                 make_glaze_json_null_content(request, reply);
             } else {
-                const auto block_number = block_with_hash->block.header.number;
-                const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_hash, block_number);
-                ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
                 const auto& uncle = ommers[idx];
 
                 auto uncle_block_with_hash = std::make_shared<BlockWithHash>();
                 uncle_block_with_hash->block.ommers.push_back(uncle);
                 uncle_block_with_hash->hash = uncle.hash();
-                const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
+                const Block uncle_block_with_hash_and_td{uncle_block_with_hash};
 
                 make_glaze_json_content(request, uncle_block_with_hash_and_td, reply);
             }
@@ -413,14 +405,12 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(const 
                 SILK_WARN << "invalid_argument: index not found processing request: " << request.dump();
                 make_glaze_json_null_content(request, reply);
             } else {
-                const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
-                ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
                 const auto& uncle = ommers[idx];
 
                 auto uncle_block_with_hash = std::make_shared<BlockWithHash>();
                 uncle_block_with_hash->block.ommers.push_back(uncle);
                 uncle_block_with_hash->hash = uncle.hash();
-                const Block uncle_block_with_hash_and_td{uncle_block_with_hash, *total_difficulty};
+                const Block uncle_block_with_hash_and_td{uncle_block_with_hash};
 
                 make_glaze_json_content(request, uncle_block_with_hash_and_td, reply);
             }

@@ -160,9 +160,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         // Lookup and return the matching block
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         ensure(block_with_hash != nullptr, [&]() { return "block " + std::to_string(block_number) + " not found"; });
-        const auto total_difficulty = co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number);
-        ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block " + std::to_string(block_number); });
-        const Block extended_block{block_with_hash, *total_difficulty, full_tx};
+        const Block extended_block{block_with_hash, full_tx};
 
         make_glaze_json_content(request, extended_block, reply);
     } catch (const std::exception& e) {

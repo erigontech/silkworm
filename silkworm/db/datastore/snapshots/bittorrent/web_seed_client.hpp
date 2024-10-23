@@ -20,6 +20,8 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include <boost/asio/io_context.hpp>
@@ -34,7 +36,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include "../config.hpp"
 #include "web_session.hpp"
 
 namespace silkworm::snapshots::bittorrent {
@@ -47,19 +48,22 @@ inline auto torrent_info_compare = [](const TorrentInfoPtr& lhs, const TorrentIn
     return lhs->name() < rhs->name();
 };
 using TorrentInfoPtrList = std::set<TorrentInfoPtr, decltype(torrent_info_compare)>;
+using Whitelist = std::vector<std::pair<std::string_view, std::string_view>>;
 
 class WebSeedClient {
   public:
-    WebSeedClient(std::vector<std::string> url_seeds, const PreverifiedList& preverified);
-    WebSeedClient(std::unique_ptr<WebSession> web_session,
-                  std::vector<std::string> url_seeds,
-                  const PreverifiedList& preverified);
+    WebSeedClient(
+        std::vector<std::string> url_seeds,
+        Whitelist whitelist);
+    WebSeedClient(
+        std::unique_ptr<WebSession> web_session,
+        std::vector<std::string> url_seeds,
+        Whitelist whitelist);
 
     Task<TorrentInfoPtrList> discover_torrents(bool fail_fast = false);
 
   protected:
-    static bool is_caplin_segment(std::string_view file_name);
-
+    WebSession& web_session() { return *web_session_; }
     Task<void> build_list_of_torrents(bool fail_fast);
     Task<void> build_list_of_torrents(std::string_view provider_url);
     Task<TorrentInfoPtrList> download_and_filter_all_torrents();
@@ -73,7 +77,7 @@ class WebSeedClient {
 
     boost::asio::io_context io_ctx_;
     std::vector<std::string> url_seeds_;
-    const PreverifiedList& preverified_;
+    Whitelist whitelist_;
     std::unique_ptr<WebSession> web_session_;
     TorrentsByProvider torrents_by_provider_;
     bool throw_not_whitelisted_{false};

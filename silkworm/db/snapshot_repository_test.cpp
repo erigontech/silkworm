@@ -24,6 +24,7 @@
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_queries.hpp>
@@ -35,18 +36,15 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
+using db::test_util::make_repository;
 using silkworm::test_util::SetLogVerbosityGuard;
-
-static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
-    return std::make_unique<db::SnapshotBundleFactoryImpl>();
-}
 
 #define CHECK_FIRST(x) CHECK((x).first)
 #define CHECK_FALSE_FIRST(x) CHECK_FALSE((x).first)
 
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}, bundle_factory()});
+    CHECK_NOTHROW(make_repository(SnapshotSettings{}));
 }
 
 TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][snapshot]") {
@@ -57,7 +55,7 @@ TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][
     test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
     test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings, bundle_factory()};
+    auto repository = make_repository(settings);
     repository.reopen_folder();
     CHECK(repository.bundles_count() == 0);
     CHECK(repository.max_block_available() == 0);
@@ -68,7 +66,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     TemporaryDirectory tmp_dir;
 
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings, bundle_factory()};
+    auto repository = make_repository(settings);
 
     SECTION("no snapshots") {
         repository.reopen_folder();
@@ -143,13 +141,13 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings, bundle_factory()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
     SECTION("header w/o index") {
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'011));
@@ -170,16 +168,16 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'014));
     }
 
-    auto header_index = HeaderIndex::make(header_snapshot.path());
-    header_index.set_base_data_id(header_snapshot.block_num_range().start);
+    auto header_index = HeaderIndex::make(header_segment.path());
+    header_index.set_base_data_id(header_segment.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
-    auto& body_snapshot_path = body_snapshot.path();
-    auto body_index = BodyIndex::make(body_snapshot_path);
-    body_index.set_base_data_id(body_snapshot.block_num_range().start);
+    auto& body_segment_path = body_segment.path();
+    auto body_index = BodyIndex::make(body_segment_path);
+    body_index.set_base_data_id(body_segment.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
-    auto& txn_snapshot_path = txn_snapshot.path();
-    REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start).build());
+    auto& txn_segment_path = txn_segment.path();
+    REQUIRE_NOTHROW(TransactionIndex::make(body_segment_path, txn_segment_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment.block_num_range().start).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 
@@ -210,24 +208,24 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings, bundle_factory()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
-    auto header_index = HeaderIndex::make(header_snapshot.path());
-    header_index.set_base_data_id(header_snapshot.block_num_range().start);
+    auto header_index = HeaderIndex::make(header_segment.path());
+    header_index.set_base_data_id(header_segment.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
-    auto& body_snapshot_path = body_snapshot.path();
-    auto body_index = BodyIndex::make(body_snapshot_path);
-    body_index.set_base_data_id(body_snapshot.block_num_range().start);
+    auto& body_segment_path = body_segment.path();
+    auto body_index = BodyIndex::make(body_segment_path);
+    body_index.set_base_data_id(body_segment.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
-    auto& txn_snapshot_path = txn_snapshot.path();
-    REQUIRE_NOTHROW(TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start).build());
+    auto& txn_segment_path = txn_segment.path();
+    REQUIRE_NOTHROW(TransactionIndex::make(body_segment_path, txn_segment_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment.block_num_range().start).build());
 
     REQUIRE_NOTHROW(repository.reopen_folder());
 
@@ -260,15 +258,15 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     SnapshotSettings settings{tmp_dir.path()};
-    SnapshotRepository repository{settings, bundle_factory()};
+    auto repository = make_repository(settings);
 
     // create a snapshot file
-    test::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir.path()};
-    auto& header_snapshot_path = header_snapshot_file.path();
+    test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};
+    auto& header_segment_path = header_segment_file.path();
 
     // build an index
-    auto index_builder = HeaderIndex::make(header_snapshot_path);
-    index_builder.set_base_data_id(header_snapshot_file.block_num_range().start);
+    auto index_builder = HeaderIndex::make(header_segment_path);
+    index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(index_builder.build());
     auto index_path = index_builder.path().path();
 
@@ -277,7 +275,7 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
     CHECK(std::filesystem::exists(index_path));
 
     // move the snapshot last write time 1 hour to the future to make its index "stale"
-    const auto last_write_time_diff = move_last_write_time(header_snapshot_path.path(), 1h);
+    const auto last_write_time_diff = move_last_write_time(header_segment_path.path(), 1h);
     CHECK((last_write_time_diff.count() > 0));
 
     // the index is stale

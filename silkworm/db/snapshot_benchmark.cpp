@@ -21,7 +21,7 @@
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/seg/decompressor.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
@@ -32,6 +32,7 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
+using db::test_util::make_repository;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 
@@ -69,24 +70,20 @@ static void open_snapshot(benchmark::State& state) {
 }
 BENCHMARK(open_snapshot);
 
-static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
-    return std::make_unique<db::SnapshotBundleFactoryImpl>();
-}
-
 static void build_header_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    SnapshotSettings settings{tmp_dir.path()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
-        auto header_index = HeaderIndex::make(header_snapshot.path());
-        header_index.set_base_data_id(header_snapshot.block_num_range().start);
+        auto header_index = HeaderIndex::make(header_segment.path());
+        header_index.set_base_data_id(header_segment.block_num_range().start);
         header_index.build();
     }
 }
@@ -94,16 +91,16 @@ BENCHMARK(build_header_index);
 
 static void build_body_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    SnapshotSettings settings{tmp_dir.path()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
-        auto body_index = BodyIndex::make(body_snapshot.path());
-        body_index.set_base_data_id(body_snapshot.block_num_range().start);
+        auto body_index = BodyIndex::make(body_segment.path());
+        body_index.set_base_data_id(body_segment.block_num_range().start);
         body_index.build();
     }
 }
@@ -111,24 +108,24 @@ BENCHMARK(build_body_index);
 
 static void build_tx_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    SnapshotSettings settings{tmp_dir.path()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
-        auto& body_snapshot_path = body_snapshot.path();
-        auto body_index = snapshots::BodyIndex::make(body_snapshot_path);
-        body_index.set_base_data_id(body_snapshot.block_num_range().start);
+        auto& body_segment_path = body_segment.path();
+        auto body_index = snapshots::BodyIndex::make(body_segment_path);
+        body_index.set_base_data_id(body_segment.block_num_range().start);
         body_index.build();
 
-        auto& txn_snapshot_path = txn_snapshot.path();
-        auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
+        auto& txn_segment_path = txn_segment.path();
+        auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
         tx_index.build();
-        auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start);
+        auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment.block_num_range().start);
         tx_index_hash_to_block.build();
     }
 }
@@ -138,27 +135,27 @@ static void reopen_folder(benchmark::State& state) {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
-    test::SampleHeaderSnapshotFile header_snapshot{tmp_dir.path()};
-    test::SampleBodySnapshotFile body_snapshot{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_snapshot{tmp_dir.path()};
+    test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
+    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
+    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
-    auto header_index = HeaderIndex::make(header_snapshot.path());
-    header_index.set_base_data_id(header_snapshot.block_num_range().start);
+    auto header_index = HeaderIndex::make(header_segment.path());
+    header_index.set_base_data_id(header_segment.block_num_range().start);
     header_index.build();
 
-    auto& body_snapshot_path = body_snapshot.path();
-    auto body_index = BodyIndex::make(body_snapshot_path);
-    body_index.set_base_data_id(body_snapshot.block_num_range().start);
+    auto& body_segment_path = body_segment.path();
+    auto body_index = BodyIndex::make(body_segment_path);
+    body_index.set_base_data_id(body_segment.block_num_range().start);
     body_index.build();
 
-    auto& txn_snapshot_path = txn_snapshot.path();
-    auto tx_index = TransactionIndex::make(body_snapshot_path, txn_snapshot_path);
+    auto& txn_segment_path = txn_segment.path();
+    auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     tx_index.build();
-    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path, txn_snapshot.block_num_range().start);
+    auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment.block_num_range().start);
     tx_index_hash_to_block.build();
 
     for ([[maybe_unused]] auto _ : state) {

@@ -48,7 +48,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     SILK_TRACE << "read_balance_changes: block_number: " << block_number;
 
-    StateReader state_reader{transaction_, block_number + 1};
+    StateReader state_reader{transaction_, block_number + 1, db::chain::CanonicalBodyForStorageProvider{}};
 
     co_await load_addresses(block_number, balance_changes);
     BalanceChanges::iterator it;

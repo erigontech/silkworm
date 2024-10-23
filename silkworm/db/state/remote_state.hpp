@@ -38,7 +38,7 @@ namespace silkworm::db::state {
 class AsyncRemoteState {
   public:
     explicit AsyncRemoteState(kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number, chain::Providers providers)
-        : storage_(storage), state_reader_(tx, block_number + 1), providers_{providers} {}
+        : storage_(storage), state_reader_(tx, block_number + 1, providers.canonical_body_for_storage) {}
 
     Task<std::optional<Account>> read_account(const evmc::address& address) const noexcept;
 
@@ -65,7 +65,6 @@ class AsyncRemoteState {
 
     const chain::ChainStorage& storage_;
     StateReader state_reader_;
-    chain::Providers providers_;
 };
 
 class RemoteState : public State {
@@ -128,7 +127,7 @@ class RemoteState : public State {
   private:
     boost::asio::any_io_executor executor_;
     AsyncRemoteState async_state_;
-    chain::Providers& providers_;
+    chain::Providers providers_;
 };
 
 std::ostream& operator<<(std::ostream& out, const RemoteState& s);

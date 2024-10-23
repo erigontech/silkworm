@@ -78,7 +78,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
 
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     SECTION("precompiled contract failure") {
@@ -209,7 +209,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
 
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     SECTION("Call: failed with intrinsic gas too low") {
@@ -1027,7 +1027,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
     auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     SECTION("Call: TO present") {
@@ -1193,7 +1193,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -1368,7 +1368,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     SECTION("callMany: failed with intrinsic gas too low") {
@@ -1617,7 +1617,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -2105,7 +2105,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
         .timestamp = 1,
     };
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
     EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -2217,7 +2217,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -3195,7 +3195,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
     auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -3318,7 +3318,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
     }));
 
     EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))

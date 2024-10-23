@@ -94,7 +94,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
 
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     SECTION("precompiled contract failure") {
@@ -191,7 +191,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     SECTION("Call: failed with intrinsic gas too low") {
@@ -945,7 +945,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     SECTION("Call: TO present") {
@@ -1043,7 +1043,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     db::kv::api::DomainPointQuery query1{

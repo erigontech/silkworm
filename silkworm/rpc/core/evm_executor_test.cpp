@@ -63,7 +63,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};
-    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number)};
+    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number, db::chain::Providers{})};
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 };
 

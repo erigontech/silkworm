@@ -10,7 +10,8 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x engine_,\
+python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 --transport_type http,websocket \
+-x engine_,\
 debug_traceCall/test_02.json,\
 debug_accountAt,\
 debug_traceBlockByHash,\
@@ -27,13 +28,12 @@ debug_getModifiedAccounts,\
 debug_storageRangeAt,\
 erigon_getBalanceChangesInBlock,\
 ots_getTransactionBySenderAndNonce,\
-parity_listStorageKeys,\
 ots_getContractCreator,\
 erigon_getLatestLogs,\
 eth_getLogs,\
 txpool_content,\
 ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore --transport_type http,websocket 
+ots_searchTransactionsBefore
 
 failed_test=$?
 

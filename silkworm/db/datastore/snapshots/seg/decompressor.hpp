@@ -29,7 +29,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "../common/bitmask_operators.hpp"
+#include "compression_kind.hpp"
 
 namespace silkworm::snapshots::seg {
 
@@ -38,7 +38,7 @@ class DecodingTable {
     //! The max bit length for tables (we don't use tables larger than 2^9)
     constexpr static size_t kMaxTableBitLength{9};
 
-    [[nodiscard]] size_t bit_length() const { return bit_length_; }
+    size_t bit_length() const { return bit_length_; }
 
   protected:
     explicit DecodingTable(size_t max_depth);
@@ -55,11 +55,11 @@ class CodeWord {
     explicit CodeWord(uint16_t code, uint8_t length, ByteView pattern);
     explicit CodeWord(uint16_t code, uint8_t length, ByteView pattern, std::unique_ptr<PatternTable> table, CodeWord* next);
 
-    [[nodiscard]] uint16_t code() const { return code_; }
-    [[nodiscard]] uint8_t code_length() const { return code_length_; }
-    [[nodiscard]] ByteView pattern() const { return pattern_; }
-    [[nodiscard]] PatternTable* table() const { return table_.get(); }
-    [[nodiscard]] CodeWord* next() const { return next_; }
+    uint16_t code() const { return code_; }
+    uint8_t code_length() const { return code_length_; }
+    ByteView pattern() const { return pattern_; }
+    PatternTable* table() const { return table_.get(); }
+    CodeWord* next() const { return next_; }
 
     void reset_content(uint16_t code, uint8_t length, ByteView pattern);
 
@@ -97,13 +97,13 @@ class PatternTable : public DecodingTable {
 
     explicit PatternTable(size_t max_depth);
 
-    [[nodiscard]] const CodeWord* codeword(size_t code) const {
+    const CodeWord* codeword(size_t code) const {
         return code < codewords_.size() ? codewords_[code] : nullptr;
     }
 
-    [[nodiscard]] size_t num_codewords() const { return codewords_.size(); }
+    size_t num_codewords() const { return codewords_.size(); }
 
-    [[nodiscard]] const CodeWord* search_condensed(uint16_t code) const;
+    const CodeWord* search_condensed(uint16_t code) const;
 
     size_t build_condensed(std::span<Pattern> patterns);
 
@@ -111,7 +111,7 @@ class PatternTable : public DecodingTable {
     static const WordDistances kWordDistances;
     static size_t condensed_table_bit_length_threshold_;
 
-    [[nodiscard]] static bool check_distance(size_t power, int distance);
+    static bool check_distance(size_t power, int distance);
 
     size_t build_condensed(
         std::span<Pattern> patterns,
@@ -138,17 +138,17 @@ class PositionTable : public DecodingTable {
   public:
     explicit PositionTable(size_t max_depth);
 
-    [[nodiscard]] size_t num_positions() const { return positions_.size(); }
+    size_t num_positions() const { return positions_.size(); }
 
-    [[nodiscard]] uint64_t position(size_t code) const {
+    uint64_t position(size_t code) const {
         return code < positions_.size() ? positions_[code] : 0;
     }
 
-    [[nodiscard]] uint8_t length(size_t code) const {
+    uint8_t length(size_t code) const {
         return code < lengths_.size() ? lengths_[code] : 0;
     }
 
-    [[nodiscard]] PositionTable* child(size_t code) const {
+    PositionTable* child(size_t code) const {
         return code < children_.size() ? children_[code].get() : nullptr;
     }
 
@@ -168,16 +168,6 @@ class PositionTable : public DecodingTable {
 
     friend std::ostream& operator<<(std::ostream& out, const PositionTable& pt);
 };
-
-enum class CompressionKind : uint8_t {
-    kNone = 0b0,
-    kKeys = 0b1,
-    kValues = 0b10,
-};
-
-consteval void enable_bitmask_operator_and(CompressionKind);
-consteval void enable_bitmask_operator_or(CompressionKind);
-consteval void enable_bitmask_operator_not(CompressionKind);
 
 //! Snapshot decoder using modified Condensed Huffman Table (CHT) algorithm
 class Decompressor {
@@ -201,13 +191,13 @@ class Decompressor {
       public:
         Iterator(const Decompressor* decoder, std::shared_ptr<ReadModeGuard> read_mode_guard);
 
-        [[nodiscard]] size_t data_size() const { return decoder_->words_length_; }
+        size_t data_size() const { return decoder_->words_length_; }
 
         //! Check if any next word is present in the data stream
-        [[nodiscard]] bool has_next() const { return word_offset_ < decoder_->words_length_; }
+        bool has_next() const { return word_offset_ < decoder_->words_length_; }
 
         //! Check if the word at the current offset has the specified prefix (this does not move offset to the next)
-        [[nodiscard]] bool has_prefix(ByteView prefix);
+        bool has_prefix(ByteView prefix);
 
         //! Extract one *compressed* word from current offset in the file and append it to buffer
         //! After extracting current word, move at the beginning of the next one
@@ -226,6 +216,10 @@ class Decompressor {
         //! Move at the offset of the next *uncompressed* word skipping current one
         //! @return the next word position
         uint64_t skip_uncompressed();
+
+        //! Move at the offset of the next word skipping current one using skip() or skip_uncompressed() as necessary
+        //! @return the next word position
+        uint64_t skip_auto();
 
         //! Reset to the specified offset in the data stream
         void reset(uint64_t data_offset);
@@ -254,16 +248,18 @@ class Decompressor {
 
       private:
         //! View on the whole data stream.
-        [[nodiscard]] inline ByteView data() const;
+        inline ByteView data() const;
 
         //! Read the next pattern from the data stream
-        [[nodiscard]] ByteView next_pattern();
+        ByteView next_pattern();
 
         //! Read the next position from the data stream
-        [[nodiscard]] uint64_t next_position(bool clean);
+        uint64_t next_position(bool clean);
 
         //! Read next code from the data stream
-        [[nodiscard]] inline uint16_t next_code(size_t bit_length);
+        inline uint16_t next_code(size_t bit_length);
+
+        bool is_next_word_compressed() const;
 
         //! The decoder on which iterator works
         const Decompressor* decoder_;
@@ -288,34 +284,35 @@ class Decompressor {
 
     static_assert(std::input_or_output_iterator<Iterator>);
 
-    explicit Decompressor(std::filesystem::path compressed_path,
-                          std::optional<MemoryMappedRegion> compressed_region = {},
-                          CompressionKind compression = CompressionKind::kKeys | CompressionKind::kValues);
+    explicit Decompressor(
+        std::filesystem::path compressed_path,
+        std::optional<MemoryMappedRegion> compressed_region = {},
+        CompressionKind compression_kind = CompressionKind::kAll);
     ~Decompressor();
 
     Decompressor(Decompressor&&) = default;
     Decompressor& operator=(Decompressor&&) = default;
 
-    [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
+    const std::filesystem::path& compressed_path() const { return compressed_path_; }
 
-    [[nodiscard]] std::string compressed_filename() const { return compressed_path_.filename().string(); }
+    std::string compressed_filename() const { return compressed_path_.filename().string(); }
 
-    [[nodiscard]] uint64_t words_count() const { return words_count_; }
+    uint64_t words_count() const { return words_count_; }
 
-    [[nodiscard]] uint64_t empty_words_count() const { return empty_words_count_; }
+    uint64_t empty_words_count() const { return empty_words_count_; }
 
-    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
+    std::filesystem::file_time_type last_write_time() const {
         return compressed_file_->last_write_time();
     }
 
-    [[nodiscard]] bool is_open() const { return compressed_file_ != nullptr; }
+    bool is_open() const { return compressed_file_ != nullptr; }
 
-    [[nodiscard]] const MemoryMappedFile* memory_file() const { return compressed_file_.get(); }
+    const MemoryMappedFile* memory_file() const { return compressed_file_.get(); }
 
     void open();
 
     //! Get an iterator to the compressed data
-    [[nodiscard]] Iterator make_iterator() const { return Iterator{this, {}}; }
+    Iterator make_iterator() const { return Iterator{this, {}}; }
 
     //! Begin reading the words, expected to read in sequential order
     Iterator begin() const;
@@ -341,7 +338,7 @@ class Decompressor {
     std::optional<MemoryMappedRegion> compressed_region_;
 
     //! The type of compression for this segment
-    CompressionKind compression_;
+    CompressionKind compression_kind_;
 
     //! The memory-mapped compressed file
     std::unique_ptr<MemoryMappedFile> compressed_file_;

@@ -43,11 +43,11 @@ class HelloMessage {
         explicit Capability(const std::pair<std::string, uint8_t>& info)
             : Capability(info.first, info.second) {}
 
-        [[nodiscard]] std::string_view name() const {
+        std::string_view name() const {
             return byte_view_to_string_view(name_bytes);
         }
 
-        [[nodiscard]] std::string to_string() const;
+        std::string to_string() const;
 
         Bytes name_bytes;
         uint8_t version{0};
@@ -65,27 +65,27 @@ class HelloMessage {
           listen_port_(listen_port),
           node_id_bytes_(node_id.serialized()) {}
 
-    [[nodiscard]] std::string_view client_id() const {
+    std::string_view client_id() const {
         return byte_view_to_string_view(client_id_bytes_);
     }
 
-    [[nodiscard]] const std::vector<Capability>& capabilities() const { return capabilities_; }
+    const std::vector<Capability>& capabilities() const { return capabilities_; }
 
-    [[nodiscard]] bool contains_capability(const Capability& capability) const;
+    bool contains_capability(const Capability& capability) const;
 
-    [[nodiscard]] std::string capabilities_description();
+    std::string capabilities_description();
 
-    [[nodiscard]] uint16_t listen_port() const { return listen_port_; }
+    uint16_t listen_port() const { return listen_port_; }
 
-    [[nodiscard]] EccPublicKey node_id() const {
+    EccPublicKey node_id() const {
         return EccPublicKey::deserialize(node_id_bytes_);
     }
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static HelloMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static HelloMessage rlp_decode(ByteView data);
 
-    [[nodiscard]] Message to_message() const;
-    [[nodiscard]] static HelloMessage from_message(const Message& message);
+    Message to_message() const;
+    static HelloMessage from_message(const Message& message);
 
     static const uint8_t kId;
     static const uint8_t kProtocolVersion;

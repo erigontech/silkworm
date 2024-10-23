@@ -48,7 +48,7 @@ using namespace snapshots::seg;
 class DecodingTableForTest : public DecodingTable {
   public:
     explicit DecodingTableForTest(size_t max_depth) : DecodingTable(max_depth) {}
-    [[nodiscard]] size_t max_depth() const { return max_depth_; }
+    size_t max_depth() const { return max_depth_; }
 };
 
 //! set_condensed_table_bit_length_threshold
@@ -199,23 +199,25 @@ TEST_CASE("PositionTable::operator<<", "[silkworm][node][seg][decompressor]") {
     CHECK_NOTHROW(null_stream() << table);
 }
 
-static test::TemporarySnapshotFile create_snapshot_file(std::vector<test::SnapshotPattern>&& patterns,
-                                                        std::vector<test::SnapshotPosition>&& positions) {
-    const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
+static test::TemporarySnapshotFile create_snapshot_file(
+    const TemporaryDirectory& tmp_dir,
+    std::vector<test::SnapshotPattern> patterns,
+    std::vector<test::SnapshotPosition> positions) {
     test::SnapshotHeader header{
         .words_count = 0,
         .empty_words_count = 0,
         .patterns = std::move(patterns),
-        .positions = std::move(positions)};
-    return test::TemporarySnapshotFile{tmp_file_path.parent_path(), tmp_file_path.filename().string(), header};
+        .positions = std::move(positions),
+    };
+    return test::TemporarySnapshotFile{tmp_dir.path(), test::SampleHeaderSnapshotFile::kHeadersSnapshotFileName, header};
 }
 
-static test::TemporarySnapshotFile create_empty_snapshot_file() {
-    return create_snapshot_file({}, {});
+static test::TemporarySnapshotFile create_empty_snapshot_file(const TemporaryDirectory& tmp_dir) {
+    return create_snapshot_file(tmp_dir, {}, {});
 }
 
-static test::TemporarySnapshotFile create_nonempty_snapshot_file() {
-    return create_snapshot_file({{0, {}}}, {{0, 1}});
+static test::TemporarySnapshotFile create_nonempty_snapshot_file(const TemporaryDirectory& tmp_dir) {
+    return create_snapshot_file(tmp_dir, {{0, {}}}, {{0, 1}});
 }
 
 TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][seg][decompressor]") {
@@ -229,11 +231,12 @@ TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][seg][decompr
 
 TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
-    MemoryMappedFile mmf{tmp_snapshot.path()};
-    Decompressor decoder_from_memory{tmp_snapshot.path(), mmf.region()};
+    TemporaryDirectory tmp_dir;
+    test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
+    MemoryMappedFile mmf{tmp_snapshot.fs_path()};
+    Decompressor decoder_from_memory{tmp_snapshot.fs_path(), mmf.region()};
     CHECK(!decoder_from_memory.is_open());
-    CHECK(decoder_from_memory.compressed_path() == tmp_snapshot.path());
+    CHECK(decoder_from_memory.compressed_path() == tmp_snapshot.fs_path());
     CHECK(decoder_from_memory.words_count() == 0);
     CHECK(decoder_from_memory.empty_words_count() == 0);
 }
@@ -291,37 +294,52 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]
     TemporaryDirectory tmp_dir;
 
     std::map<std::string, test::SnapshotHeader> header_tests{
-        {"zero patterns and zero positions",
-         test::SnapshotHeader{}},
-        {"one pattern and zero positions",
-         test::SnapshotHeader{
-             .words_count = 0,
-             .empty_words_count = 0,
-             .patterns = std::vector<test::SnapshotPattern>{{12, {0x11, 0x22}}},
-             .positions = std::vector<test::SnapshotPosition>{}}},
-        {"zero patterns and one position",
-         test::SnapshotHeader{
-             .words_count = 0,
-             .empty_words_count = 0,
-             .patterns = std::vector<test::SnapshotPattern>{},
-             .positions = std::vector<test::SnapshotPosition>{{0, 22}}}},
-        {"one pattern and one position",
-         test::SnapshotHeader{
-             .words_count = 0,
-             .empty_words_count = 0,
-             .patterns = std::vector<test::SnapshotPattern>{{12, {}}},
-             .positions = std::vector<test::SnapshotPosition>{{13, 22}}}},
-        {"two patterns and one position",
-         test::SnapshotHeader{
-             .words_count = 0,
-             .empty_words_count = 0,
-             .patterns = std::vector<test::SnapshotPattern>{{1, {}}, {2, {}}},
-             .positions = std::vector<test::SnapshotPosition>{{0, 22}}}}};
+        {
+            "zero patterns and zero positions",
+            test::SnapshotHeader{},
+        },
+        {
+            "one pattern and zero positions",
+            test::SnapshotHeader{
+                .words_count = 0,
+                .empty_words_count = 0,
+                .patterns = std::vector<test::SnapshotPattern>{{12, {0x11, 0x22}}},
+                .positions = std::vector<test::SnapshotPosition>{},
+            },
+        },
+        {
+            "zero patterns and one position",
+            test::SnapshotHeader{
+                .words_count = 0,
+                .empty_words_count = 0,
+                .patterns = std::vector<test::SnapshotPattern>{},
+                .positions = std::vector<test::SnapshotPosition>{{0, 22}},
+            },
+        },
+        {
+            "one pattern and one position",
+            test::SnapshotHeader{
+                .words_count = 0,
+                .empty_words_count = 0,
+                .patterns = std::vector<test::SnapshotPattern>{{12, {}}},
+                .positions = std::vector<test::SnapshotPosition>{{13, 22}},
+            },
+        },
+        {
+            "two patterns and one position",
+            test::SnapshotHeader{
+                .words_count = 0,
+                .empty_words_count = 0,
+                .patterns = std::vector<test::SnapshotPattern>{{1, {}}, {2, {}}},
+                .positions = std::vector<test::SnapshotPosition>{{0, 22}},
+            },
+        },
+    };
 
     for (auto& [test_name, header] : header_tests) {
         SECTION(test_name) {
-            test::TemporarySnapshotFile tmp_snapshot{tmp_dir.path(), test_name, header};
-            Decompressor decoder{tmp_snapshot.path()};
+            test::TemporarySnapshotFile tmp_snapshot{tmp_dir.path(), test::SampleHeaderSnapshotFile::kHeadersSnapshotFileName, header};
+            Decompressor decoder{tmp_snapshot.fs_path()};
             CHECK_NOTHROW(decoder.open());
             CHECK(decoder.is_open());
         }
@@ -330,8 +348,9 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]
 
 TEST_CASE("Decompressor::begin", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
-    Decompressor decoder{tmp_snapshot.path()};
+    TemporaryDirectory tmp_dir;
+    test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
+    Decompressor decoder{tmp_snapshot.fs_path()};
     CHECK_NOTHROW(decoder.open());
 
     SECTION("failure after close") {
@@ -342,8 +361,9 @@ TEST_CASE("Decompressor::begin", "[silkworm][node][seg][decompressor]") {
 
 TEST_CASE("Decompressor::close", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporarySnapshotFile tmp_snapshot{create_nonempty_snapshot_file()};
-    Decompressor decoder{tmp_snapshot.path()};
+    TemporaryDirectory tmp_dir;
+    test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
+    Decompressor decoder{tmp_snapshot.fs_path()};
     REQUIRE_NOTHROW(decoder.open());
     REQUIRE(decoder.is_open());
 
@@ -360,8 +380,9 @@ TEST_CASE("Decompressor::close", "[silkworm][node][seg][decompressor]") {
 
 TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    test::TemporarySnapshotFile tmp_snapshot{create_empty_snapshot_file()};
-    Decompressor decoder{tmp_snapshot.path()};
+    TemporaryDirectory tmp_dir;
+    test::TemporarySnapshotFile tmp_snapshot = create_empty_snapshot_file(tmp_dir);
+    Decompressor decoder{tmp_snapshot.fs_path()};
     CHECK_NOTHROW(decoder.open());
 
     SECTION("data_size") {

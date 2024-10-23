@@ -42,6 +42,9 @@ class MockETHBACKENDStub : public ETHBACKEND::StubInterface {
   MOCK_METHOD3(Block, ::grpc::Status(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::remote::BlockReply* response));
   MOCK_METHOD3(AsyncBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>*(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BlockReply>*(::grpc::ClientContext* context, const ::remote::BlockRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(CanonicalBodyForStorage, ::grpc::Status(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::remote::CanonicalBodyForStorageReply* response));
+  MOCK_METHOD3(AsyncCanonicalBodyForStorageRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>*(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncCanonicalBodyForStorageRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalBodyForStorageReply>*(::grpc::ClientContext* context, const ::remote::CanonicalBodyForStorageRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(CanonicalHash, ::grpc::Status(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::remote::CanonicalHashReply* response));
   MOCK_METHOD3(AsyncCanonicalHashRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalHashReply>*(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncCanonicalHashRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::CanonicalHashReply>*(::grpc::ClientContext* context, const ::remote::CanonicalHashRequest& request, ::grpc::CompletionQueue* cq));

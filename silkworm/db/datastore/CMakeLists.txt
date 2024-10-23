@@ -20,7 +20,7 @@ add_subdirectory(etl)
 add_subdirectory(mdbx)
 add_subdirectory(snapshots)
 
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 
 # cmake-format: off
 set(LIBS_PUBLIC

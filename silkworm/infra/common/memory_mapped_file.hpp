@@ -85,19 +85,19 @@ class MemoryMappedFile {
     MemoryMappedFile(MemoryMappedFile&& source) noexcept = default;
     MemoryMappedFile& operator=(MemoryMappedFile&& other) noexcept = default;
 
-    [[nodiscard]] std::filesystem::path path() const {
+    std::filesystem::path path() const {
         return path_;
     }
 
-    [[nodiscard]] MemoryMappedRegion region() const {
+    MemoryMappedRegion region() const {
         return region_;
     }
 
-    [[nodiscard]] size_t size() const {
+    size_t size() const {
         return region_.size();
     }
 
-    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
+    std::filesystem::file_time_type last_write_time() const {
         return std::filesystem::last_write_time(path_);
     }
 

@@ -50,7 +50,7 @@ class MemoryOverlay {
     MemoryOverlay(MemoryOverlay&& other) noexcept = default;
     MemoryOverlay& operator=(MemoryOverlay&&) noexcept = default;
 
-    [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
+    db::ROTxn* external_txn() const { return txn_; }
     void update_txn(ROTxn* txn);
 
     ::mdbx::txn_managed start_rw_txn();
@@ -76,12 +76,12 @@ class MemoryMutation : public RWTxnManaged {
 
     ~MemoryMutation() override;
 
-    [[nodiscard]] bool is_table_cleared(const std::string& table) const;
-    [[nodiscard]] bool is_entry_deleted(const std::string& table, const Slice& key) const;
-    [[nodiscard]] bool is_dup_deleted(const std::string& table, const Slice& key, const Slice& value) const;
-    [[nodiscard]] bool has_map(const std::string& bucket_name) const;
+    bool is_table_cleared(const std::string& table) const;
+    bool is_entry_deleted(const std::string& table, const Slice& key) const;
+    bool is_dup_deleted(const std::string& table, const Slice& key, const Slice& value) const;
+    bool has_map(const std::string& bucket_name) const;
 
-    [[nodiscard]] db::ROTxn* external_txn() const { return overlay_.external_txn(); }
+    db::ROTxn* external_txn() const { return overlay_.external_txn(); }
 
     void update_txn(ROTxn* txn);
 

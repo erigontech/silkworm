@@ -22,25 +22,24 @@
 #include <vector>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/base.hpp>
 
-#include "index.hpp"
-#include "snapshot_and_index.hpp"
-#include "snapshot_path.hpp"
-#include "snapshot_reader.hpp"
+#include "common/snapshot_path.hpp"
+#include "rec_split_index/index.hpp"
+#include "segment/segment_reader.hpp"
+#include "segment_and_index.hpp"
 
 namespace silkworm::snapshots {
 
 struct SnapshotBundleData {
-    Snapshot header_snapshot;
+    SegmentFileReader header_segment;
     //! Index header_hash -> block_num -> headers_segment_offset
     Index idx_header_hash;
 
-    Snapshot body_snapshot;
+    SegmentFileReader body_segment;
     //! Index block_num -> bodies_segment_offset
     Index idx_body_number;
 
-    Snapshot txn_snapshot;
+    SegmentFileReader txn_segment;
     //! Index transaction_hash -> txn_id -> transactions_segment_offset
     Index idx_txn_hash;
     //! Index transaction_hash -> block_num
@@ -51,17 +50,19 @@ struct SnapshotBundleData {
 };
 
 struct SnapshotBundle : public SnapshotBundleData {
-    explicit SnapshotBundle(SnapshotBundleData bundle) : SnapshotBundleData(std::move(bundle)) {}
+    explicit SnapshotBundle(StepRange step_range, SnapshotBundleData bundle)
+        : SnapshotBundleData{std::move(bundle)},
+          step_range_{step_range} {}
     virtual ~SnapshotBundle();
 
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
-    std::array<std::reference_wrapper<Snapshot>, kSnapshotsCount> snapshots() {
+    std::array<std::reference_wrapper<SegmentFileReader>, kSnapshotsCount> segments() {
         return {
-            header_snapshot,
-            body_snapshot,
-            txn_snapshot,
+            header_segment,
+            body_segment,
+            txn_segment,
         };
     }
 
@@ -91,18 +92,18 @@ struct SnapshotBundle : public SnapshotBundleData {
         };
     }
 
-    const Snapshot& snapshot(SnapshotType type) const {
+    const SegmentFileReader& segment(SnapshotType type) const {
         switch (type) {
             case headers:
-                return header_snapshot;
+                return header_segment;
             case bodies:
-                return body_snapshot;
+                return body_segment;
             case transactions:
             case transactions_to_block:
-                return txn_snapshot;
+                return txn_segment;
         }
         SILKWORM_ASSERT(false);
-        return header_snapshot;
+        return header_segment;
     }
 
     const Index& index(SnapshotType type) const {
@@ -120,15 +121,11 @@ struct SnapshotBundle : public SnapshotBundleData {
         return idx_header_hash;
     }
 
-    SnapshotAndIndex snapshot_and_index(SnapshotType type) const {
-        return {snapshot(type), index(type)};
+    SegmentAndIndex segment_and_index(SnapshotType type) const {
+        return {segment(type), index(type)};
     }
 
-    // assume that all snapshots have the same block range, and use one of them
-    BlockNum block_from() const { return header_snapshot.block_from(); }
-    BlockNum block_to() const { return header_snapshot.block_to(); }
-    BlockNumRange block_range() const { return {block_from(), block_to()}; }
-    size_t block_count() const { return block_range().size(); }
+    StepRange step_range() const { return step_range_; }
 
     std::vector<std::filesystem::path> files();
     std::vector<SnapshotPath> snapshot_paths();
@@ -141,6 +138,7 @@ struct SnapshotBundle : public SnapshotBundleData {
     }
 
   private:
+    StepRange step_range_;
     std::function<void(SnapshotBundle&)> on_close_callback_;
 };
 

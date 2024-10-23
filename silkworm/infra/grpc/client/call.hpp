@@ -43,7 +43,7 @@ class GrpcStatusError : public std::runtime_error {
     explicit GrpcStatusError(grpc::Status status)
         : std::runtime_error(status.error_message()), status_(std::move(status)) {}
 
-    [[nodiscard]] const grpc::Status& status() const { return status_; }
+    const grpc::Status& status() const { return status_; }
 
   private:
     grpc::Status status_;

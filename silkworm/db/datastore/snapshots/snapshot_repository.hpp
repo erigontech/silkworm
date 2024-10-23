@@ -27,14 +27,12 @@
 #include <utility>
 #include <vector>
 
-#include <silkworm/core/common/base.hpp>
-
-#include "common/iterator/map_values_view.hpp"
+#include "common/snapshot_path.hpp"
+#include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
-#include "snapshot_and_index.hpp"
+#include "segment_and_index.hpp"
 #include "snapshot_bundle.hpp"
 #include "snapshot_bundle_factory.hpp"
-#include "snapshot_path.hpp"
 #include "snapshot_settings.hpp"
 
 namespace silkworm::snapshots {
@@ -43,7 +41,6 @@ struct IndexBuilder;
 
 //! Read-only repository for all snapshot files.
 //! @details Some simplifications are currently in place:
-//! - it opens snapshots only on startup and they are immutable
 //! - all snapshots of given blocks range must exist (to make such range available)
 //! - gaps in blocks range are not allowed
 //! - segments have [from:to) semantic
@@ -51,12 +48,13 @@ class SnapshotRepository {
   public:
     explicit SnapshotRepository(
         SnapshotSettings settings,
+        std::unique_ptr<StepToTimestampConverter> step_converter,
         std::unique_ptr<SnapshotBundleFactory> bundle_factory);
     ~SnapshotRepository();
 
-    [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
-    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
-    [[nodiscard]] const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
+    const SnapshotSettings& settings() const { return settings_; }
+    std::filesystem::path path() const { return settings_.repository_dir; }
+    const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
 
     void reopen_folder();
     void close();
@@ -66,20 +64,19 @@ class SnapshotRepository {
     //! Replace bundles whose ranges are contained within the given bundle
     void replace_snapshot_bundles(SnapshotBundle bundle);
 
-    [[nodiscard]] size_t bundles_count() const;
-    [[nodiscard]] size_t total_snapshots_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
-    [[nodiscard]] size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
+    size_t bundles_count() const;
+    size_t total_segments_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
+    size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
 
     //! All types of .seg and .idx files are available up to this block number
-    [[nodiscard]] BlockNum max_block_available() const;
+    BlockNum max_block_available() const;
+    Timestamp max_timestamp_available() const;
 
-    [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
-
-    [[nodiscard]] std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
+    std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
     void build_indexes(SnapshotBundle& bundle) const;
 
-    using Bundles = std::map<BlockNum, std::shared_ptr<SnapshotBundle>>;
+    using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;
 
     template <class TBaseView>
     class BundlesView : public std::ranges::view_interface<BundlesView<TBaseView>> {
@@ -108,24 +105,31 @@ class SnapshotRepository {
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
-    [[nodiscard]] std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, BlockNum number) const;
-    std::shared_ptr<SnapshotBundle> find_bundle(BlockNum number) const;
+    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, Timestamp t) const;
+    std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;
+
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const;
 
   private:
-    [[nodiscard]] SnapshotPathList get_segment_files() const {
+    Step max_end_step() const;
+
+    SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);
     }
 
-    [[nodiscard]] SnapshotPathList get_idx_files() const {
+    SnapshotPathList get_idx_files() const {
         return get_files(kIdxExtension);
     }
 
-    [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
+    SnapshotPathList get_files(const std::string& ext) const;
 
     SnapshotPathList stale_index_paths() const;
 
     //! The configuration settings for snapshots
     SnapshotSettings settings_;
+
+    //! Converts timestamp units to steps
+    std::unique_ptr<StepToTimestampConverter> step_converter_;
 
     //! SnapshotBundle factory
     std::unique_ptr<SnapshotBundleFactory> bundle_factory_;

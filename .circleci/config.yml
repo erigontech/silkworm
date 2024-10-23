@@ -82,13 +82,12 @@ commands:
   install_conan:
     steps:
       - run:
-          name: "Ensure pipx"
-          command: |
-            sudo apt-get update
-            sudo apt install -y pipx
-      - run:
           name: "Install Conan"
-          command: pipx install conan==1.64.1
+          command: |
+            pip3 install --user --no-warn-script-location conan==1.64.1
+            conan_path="$(python -m site --user-base)/bin"
+            echo "export \"PATH=$conan_path:\$PATH\"" >> "$BASH_ENV"
+            "$conan_path/conan" --version
 
   build_using_conan:
     parameters:
@@ -205,7 +204,7 @@ jobs:
           name: "Format"
           working_directory: ~/project
           command: |
-            sudo pip install cmake-format==0.6.13
+            sudo pip3 install cmake-format==0.6.13
             make fmt
             if ! git diff --exit-code
             then

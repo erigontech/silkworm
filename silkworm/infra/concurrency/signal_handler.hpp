@@ -32,7 +32,7 @@ class SignalHandler {
     static void handle(int sig_code);
 
     //! Whether any signal has been intercepted or not
-    [[nodiscard]] static bool signalled() { return signalled_; }
+    static bool signalled() { return signalled_; }
 
     //! Reset to un-signalled state (restore previous signal handlers)
     static void reset();

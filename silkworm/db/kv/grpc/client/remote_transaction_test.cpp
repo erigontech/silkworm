@@ -574,8 +574,6 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
         remote::Pair tx_id_pair{make_fake_tx_created_pair()};
-        remote::Pair cursor_id_pair;
-        cursor_id_pair.set_cursor_id(0x23);
         EXPECT_CALL(reader_writer_, Read)
             .WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
@@ -670,8 +668,6 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
         remote::Pair tx_id_pair{make_fake_tx_created_pair()};
-        remote::Pair cursor_id_pair;
-        cursor_id_pair.set_cursor_id(0x23);
         EXPECT_CALL(reader_writer_, Read)
             .WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
@@ -756,8 +752,6 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
         remote::Pair tx_id_pair{make_fake_tx_created_pair()};
-        remote::Pair cursor_id_pair;
-        cursor_id_pair.set_cursor_id(0x23);
         EXPECT_CALL(reader_writer_, Read)
             .WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds

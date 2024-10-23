@@ -46,7 +46,7 @@ class BorRuleSet : public RuleSet {
     ValidationResult validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
-    [[nodiscard]] const bor::Config& config() const;
+    const bor::Config& config() const;
 };
 
 }  // namespace silkworm::protocol

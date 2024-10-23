@@ -29,20 +29,20 @@ class OutboundGetBlockHeaders : public OutboundMessage {
     OutboundGetBlockHeaders() = default;
     explicit OutboundGetBlockHeaders(GetBlockHeadersPacket66 packet) : packet_(packet) {}
 
-    [[nodiscard]] std::string name() const override { return "OutboundGetBlockHeaders"; }
-    [[nodiscard]] std::string content() const override;
+    std::string name() const override { return "OutboundGetBlockHeaders"; }
+    std::string content() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
-    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+    silkworm::sentry::eth::MessageId eth_message_id() const override {
         return silkworm::sentry::eth::MessageId::kGetBlockHeaders;
     }
 
-    [[nodiscard]] Bytes message_data() const override;
+    Bytes message_data() const override;
 
     GetBlockHeadersPacket66& packet();
     std::vector<PeerPenalization>& penalties();
-    [[nodiscard]] bool packet_present() const;
+    bool packet_present() const;
 
   private:
     std::vector<PeerId> send_packet(SentryClient&);

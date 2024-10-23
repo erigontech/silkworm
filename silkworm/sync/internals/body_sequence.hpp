@@ -78,16 +78,16 @@ class BodySequence {
     Blocks withdraw_ready_bodies();
 
     //! minor functionalities
-    [[nodiscard]] bool has_completed() const;
-    [[nodiscard]] BlockNum highest_block_in_output() const;
-    [[nodiscard]] BlockNum highest_block_in_memory() const;
-    [[nodiscard]] BlockNum lowest_block_in_memory() const;
-    [[nodiscard]] BlockNum target_height() const;
-    [[nodiscard]] size_t outstanding_requests(time_point_t tp) const;
-    [[nodiscard]] size_t ready_bodies() const;
-    [[nodiscard]] size_t requests() const;
+    bool has_completed() const;
+    BlockNum highest_block_in_output() const;
+    BlockNum highest_block_in_memory() const;
+    BlockNum lowest_block_in_memory() const;
+    BlockNum target_height() const;
+    size_t outstanding_requests(time_point_t tp) const;
+    size_t ready_bodies() const;
+    size_t requests() const;
 
-    [[nodiscard]] const DownloadStatistics& statistics() const;
+    const DownloadStatistics& statistics() const;
 
     // downloading process tuning parameters
     static constexpr size_t kMaxInMemoryRequests = 400000;
@@ -131,8 +131,8 @@ class BodySequence {
         std::list<Iter> find_by_request_id(uint64_t request_id);
         Iter find_by_hash(Hash oh, Hash tr);
 
-        [[nodiscard]] BlockNum lowest_block() const;
-        [[nodiscard]] BlockNum highest_block() const;
+        BlockNum lowest_block() const;
+        BlockNum highest_block() const;
     };
 
     IncreasingHeightOrderedRequestContainer body_requests_;

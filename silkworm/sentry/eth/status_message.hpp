@@ -27,11 +27,11 @@
 namespace silkworm::sentry::eth {
 
 struct StatusMessage {
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static StatusMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static StatusMessage rlp_decode(ByteView data);
 
-    [[nodiscard]] Message to_message() const;
-    [[nodiscard]] static StatusMessage from_message(const Message& message);
+    Message to_message() const;
+    static StatusMessage from_message(const Message& message);
 
     uint8_t version{0};
     uint64_t network_id{0};

@@ -42,9 +42,10 @@ class WebSession {
     //! \param web_url the URL address of the web server
     //! \param target_file the relative path of the requested file
     //! \param custom_fields the custom fields to add to the header of HTTPS requests, if any
-    [[nodiscard]] virtual Task<StringResponse> https_get(const boost::urls::url& web_url,
-                                                         std::string_view target_file,
-                                                         const HeaderFields& custom_fields) const;
+    virtual Task<StringResponse> https_get(
+        const boost::urls::url& web_url,
+        std::string_view target_file,
+        const HeaderFields& custom_fields) const;
 
   protected:
     using EmptyRequest = boost::beast::http::request<boost::beast::http::empty_body>;

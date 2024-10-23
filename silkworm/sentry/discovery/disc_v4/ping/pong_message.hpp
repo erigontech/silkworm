@@ -31,8 +31,8 @@ struct PongMessage {
     std::chrono::time_point<std::chrono::system_clock> expiration;
     std::optional<uint64_t> enr_seq_num;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static PongMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static PongMessage rlp_decode(ByteView data);
 
     static const uint8_t kId;
 };

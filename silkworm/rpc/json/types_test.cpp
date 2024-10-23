@@ -383,7 +383,7 @@ TEST_CASE("serialize block with hydrated transactions", "[rpc][to_json]") {
 
     auto block_with_hash_shared = std::make_shared<BlockWithHash>();
     *block_with_hash_shared = block_with_hash;
-    silkworm::rpc::Block rpc_block{block_with_hash_shared, /* total_difficulty */ intx::uint256{0x4e33ae}, /* full_tx */ true};
+    silkworm::rpc::Block rpc_block{block_with_hash_shared, /* full_tx */ true};
 
     nlohmann::json rpc_block_json = rpc_block;
     CHECK(rpc_block_json == R"({
@@ -412,7 +412,6 @@ TEST_CASE("serialize block with hydrated transactions", "[rpc][to_json]") {
         "size":"0x485",
         "stateRoot":"0x8add6cb86a4b4a4e5758ce21c8d156e4355917d29eae7c19f56d4a38f384401d",
         "timestamp":"0x5f7cd33d",
-        "totalDifficulty":"0x4e33ae",
         "transactions":[
             {
                 "blockHash":"0xc9e65d063911aa583e17bbb7070893482203217caf6d9fbb50265c72e7bf73e5",
@@ -516,7 +515,6 @@ TEST_CASE("serialize block body with ommers", "[rpc][to_json]") {
         "size":"0x40c",
         "stateRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "timestamp":"0x0",
-        "totalDifficulty":"0x0",
         "transactions":[],
         "transactionsRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "uncles":["0x5cd50096dbb856a6d1befa6de8f9c20decb299f375154427d90761dc0b101109"]
@@ -739,7 +737,7 @@ TEST_CASE("serialize PayloadStatusV1", "[silkworm::json][to_json]") {
 }
 
 TEST_CASE("make empty json content", "[silkworm::json][make_json_content]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":0
     })"_json;
     const auto j = make_json_content(request, {});
@@ -751,7 +749,7 @@ TEST_CASE("make empty json content", "[silkworm::json][make_json_content]") {
 }
 
 TEST_CASE("make json content", "[silkworm::json][make_json_content]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":123
     })"_json;
     nlohmann::json json_result = {{"currency", "ETH"}, {"value", 4.2}};
@@ -764,7 +762,7 @@ TEST_CASE("make json content", "[silkworm::json][make_json_content]") {
 }
 
 TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":0
     })"_json;
     const auto j = make_json_error(request, 0, "");
@@ -776,7 +774,7 @@ TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":0
     })"_json;
     const auto j = make_json_error(request, {{0, ""}, silkworm::Bytes{}});
@@ -788,7 +786,7 @@ TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make json error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":123
     })"_json;
 
@@ -801,7 +799,7 @@ TEST_CASE("make json error", "[silkworm::json][make_json_error]") {
 }
 
 TEST_CASE("make json revert error", "[silkworm::json][make_json_error]") {
-    const auto request = R"({
+    const nlohmann::json request = R"({
         "id":123
     })"_json;
 

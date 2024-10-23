@@ -27,11 +27,11 @@ namespace silkworm::rpc {
 // NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor)
 class GrpcStatusCodeErrorCategory final : public boost::system::error_category {
   public:
-    [[nodiscard]] const char* name() const noexcept override {
+    const char* name() const noexcept override {
         return "rpc::GrpcStatusCodeErrorCategory";
     };
 
-    [[nodiscard]] std::string message(int ev) const override {
+    std::string message(int ev) const override {
         switch (static_cast<::grpc::StatusCode>(ev)) {
             case ::grpc::StatusCode::CANCELLED:
                 return "the operation was cancelled (typically by the caller)";

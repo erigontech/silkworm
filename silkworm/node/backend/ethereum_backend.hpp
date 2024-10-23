@@ -42,12 +42,12 @@ class EthereumBackEnd {
     EthereumBackEnd(const EthereumBackEnd&) = delete;
     EthereumBackEnd& operator=(const EthereumBackEnd&) = delete;
 
-    [[nodiscard]] mdbx::env* chaindata_env() const noexcept { return chaindata_env_; }
-    [[nodiscard]] const std::string& node_name() const noexcept { return node_name_; }
-    [[nodiscard]] std::optional<uint64_t> chain_id() const noexcept { return chain_id_; }
-    [[nodiscard]] std::optional<evmc::address> etherbase() const noexcept { return node_settings_.etherbase; }
-    [[nodiscard]] std::shared_ptr<sentry::api::SentryClient> sentry_client() const noexcept { return sentry_client_; }
-    [[nodiscard]] StateChangeCollection* state_change_source() const noexcept { return state_change_collection_.get(); }
+    mdbx::env* chaindata_env() const noexcept { return chaindata_env_; }
+    const std::string& node_name() const noexcept { return node_name_; }
+    std::optional<uint64_t> chain_id() const noexcept { return chain_id_; }
+    std::optional<evmc::address> etherbase() const noexcept { return node_settings_.etherbase; }
+    std::shared_ptr<sentry::api::SentryClient> sentry_client() const noexcept { return sentry_client_; }
+    StateChangeCollection* state_change_source() const noexcept { return state_change_collection_.get(); }
 
     void set_node_name(const std::string& node_name) noexcept;
 

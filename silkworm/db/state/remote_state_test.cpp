@@ -27,13 +27,13 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_chain_storage.hpp>
+#include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 
 namespace silkworm::db::state {
 
-using kv::api::KeyValue;
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -46,6 +46,7 @@ struct RemoteStateTest : public silkworm::test_util::ContextTestBase {
 };
 
 TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buffer]") {
+    auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     const evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
 
     SECTION("read_code for empty hash") {
@@ -61,25 +62,49 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 
     SECTION("read_code for non-empty hash") {
         static const Bytes kCode{*from_hex("0x0608")};
-        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kCode;
-            }));
+
+        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
+            co_return cursor;
+        }));
+        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = kCode};
+            co_return response;
+        }));
+
         const BlockNum block_number = 1'000'000;
         AsyncRemoteState state{transaction, chain_storage, block_number};
-        const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read == ByteView{kCode});
     }
 
     SECTION("read_code with empty response from db") {
+        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
+            co_return cursor;
+        }));
+        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = Bytes{}};
+            co_return response;
+        }));
         std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return Bytes{};
-            }));
         const BlockNum block_number = 1'000'000;
-        const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState state(current_executor, transaction, chain_storage, block_number);
         const auto code_read = state.read_code(address, code_hash);
         CHECK(code_read.empty());
@@ -89,16 +114,23 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 
     SECTION("read_storage with empty response from db") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, get(table::kStorageHistoryName, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-                co_return KeyValue{Bytes{}, Bytes{}};
-            }));
-        EXPECT_CALL(transaction, get_both_range(table::kPlainStateName, _, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
-                co_return Bytes{};
-            }));
+        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
+            co_return cursor;
+        }));
+        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = Bytes{}};
+            co_return response;
+        }));
         const BlockNum block_number = 1'000'000;
-        const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto storage_read = remote_state.read_storage(address, 0, location);
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
@@ -108,14 +140,21 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 
     SECTION("read_account with empty response from db") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, get(table::kAccountHistoryName, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-                co_return KeyValue{Bytes{}, Bytes{}};
-            }));
-        EXPECT_CALL(transaction, get_one(table::kPlainStateName, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return Bytes{};
-            }));
+        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
+            co_return cursor;
+        }));
+        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = false,
+                .value = Bytes{}};
+            co_return response;
+        }));
         const BlockNum block_number = 1'000'000;
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto account_read = remote_state.read_account(address);
@@ -211,7 +250,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             Bytes code{*from_hex("0x0608")};
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
-            const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+            const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
             RemoteState remote_state(io_context, transaction, storage, block_number);
             auto ret_code = remote_state.read_code(code_hash);
@@ -229,7 +268,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
             evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
-            const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+            const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
             RemoteState remote_state(io_context, transaction, storage, block_number);
             auto ret_storage = remote_state.read_storage(address, 0, location);
@@ -256,14 +295,21 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     */
 
     SECTION("AsyncRemoteState::read_account for empty response from db") {
-        EXPECT_CALL(transaction, get(table::kAccountHistoryName, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-                co_return KeyValue{Bytes{}, Bytes{}};
-            }));
-        EXPECT_CALL(transaction, get_one(table::kPlainStateName, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return Bytes{};
-            }));
+        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
+            co_return cursor;
+        }));
+        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = false,
+                .value = Bytes{}};
+            co_return response;
+        }));
         const BlockNum block_number = 1'000'000;
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto account_read{spawn_and_wait(state.read_account(address))};
@@ -271,28 +317,46 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_code with empty response from db") {
-        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return Bytes{};
-            }));
+        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
+            co_return cursor;
+        }));
+        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = Bytes{}};
+            co_return response;
+        }));
         const BlockNum block_number = 1'000'000;
-        const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read.empty());
     }
 
     SECTION("AsyncRemoteState::read_storage with empty response from db") {
-        EXPECT_CALL(transaction, get(table::kStorageHistoryName, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-                co_return KeyValue{Bytes{}, Bytes{}};
-            }));
-        EXPECT_CALL(transaction, get_both_range(table::kPlainStateName, _, _))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<Bytes>> {
-                co_return Bytes{};
-            }));
+        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
+            co_return cursor;
+        }));
+        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return *from_hex("0000000000000000");
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = Bytes{}};
+            co_return response;
+        }));
         const BlockNum block_number = 1'000'000;
-        const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+        const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto storage_read{spawn_and_wait(state.read_storage(address, 0, location))};
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);

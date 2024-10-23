@@ -106,8 +106,8 @@ static inline std::pair<const char*, const char*> get_level_settings(Level level
 struct SeparateThousands : std::numpunct<char> {
     char separator;
     explicit SeparateThousands(char sep) : separator(sep) {}
-    [[nodiscard]] char do_thousands_sep() const override { return separator; }
-    [[nodiscard]] string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
+    char do_thousands_sep() const override { return separator; }
+    string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
 };
 
 void prepare_for_logging(std::ostream& ss) {

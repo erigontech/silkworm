@@ -32,7 +32,6 @@
 #include <silkworm/db/kv/api/direct_client.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/state/version.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
@@ -142,8 +141,10 @@ int Daemon::run(const DaemonSettings& settings) {
             snapshots::SnapshotSettings snapshot_settings{
                 .repository_dir = data_folder.snapshots().path(),
             };
-            auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
-            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_settings), std::move(snapshot_bundle_factory));
+            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
+                std::move(snapshot_settings),
+                std::make_unique<snapshots::StepToBlockNumConverter>(),
+                std::make_unique<db::SnapshotBundleFactoryImpl>());
             snapshot_repository->reopen_folder();
 
             db::DataModel::set_snapshot_repository(snapshot_repository.get());
@@ -249,9 +250,6 @@ Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
-
-    // Specify if Erigon3 data storage model must be used or not
-    db::state::set_data_format_v3(settings_.use_erigon3_data_format);
 
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();

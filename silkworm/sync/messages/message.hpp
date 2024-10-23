@@ -28,7 +28,7 @@ class SentryClient;
 
 class Message {
   public:
-    [[nodiscard]] virtual std::string name() const = 0;
+    virtual std::string name() const = 0;
 
     // execute: inbound message send a reply, outbound message send a request
     virtual void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) = 0;

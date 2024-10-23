@@ -49,10 +49,10 @@ class BlockAmount {
 
     explicit BlockAmount(Type type, BlockNum value) : value_{value}, enabled_{true}, type_{type} {}
 
-    [[nodiscard]] bool enabled() const { return enabled_; }
-    [[nodiscard]] Type type() const { return type_; };
-    [[nodiscard]] BlockNum value() const;
-    [[nodiscard]] BlockNum value_from_head(BlockNum stage_head) const;
+    bool enabled() const { return enabled_; }
+    Type type() const { return type_; };
+    BlockNum value() const;
+    BlockNum value_from_head(BlockNum stage_head) const;
 
     void to_string(std::string& short_form, std::string& long_form, char prefix) const;
 
@@ -76,13 +76,13 @@ class PruneMode {
           tx_index_{tx_index},
           call_traces_{call_traces} {}
 
-    [[nodiscard]] const BlockAmount& history() const { return history_; }
-    [[nodiscard]] const BlockAmount& receipts() const { return receipts_; }
-    [[nodiscard]] const BlockAmount& senders() const { return senders_; }
-    [[nodiscard]] const BlockAmount& tx_index() const { return tx_index_; }
-    [[nodiscard]] const BlockAmount& call_traces() const { return call_traces_; }
+    const BlockAmount& history() const { return history_; }
+    const BlockAmount& receipts() const { return receipts_; }
+    const BlockAmount& senders() const { return senders_; }
+    const BlockAmount& tx_index() const { return tx_index_; }
+    const BlockAmount& call_traces() const { return call_traces_; }
 
-    [[nodiscard]] std::string to_string() const;
+    std::string to_string() const;
 
     friend bool operator==(const PruneMode&, const PruneMode&) = default;
 

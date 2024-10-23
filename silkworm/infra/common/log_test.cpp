@@ -35,7 +35,7 @@ class LogBufferForTest : public LogBuffer<level> {
     explicit LogBufferForTest() : LogBuffer<level>() {}
     explicit LogBufferForTest(std::string_view msg, Args args) : LogBuffer<level>(msg, args) {}
 
-    [[nodiscard]] std::string content() const { return LogBuffer<level>::ss_.str(); }
+    std::string content() const { return LogBuffer<level>::ss_.str(); }
 };
 
 //! Utility test function enforcing that log buffered content *IS* empty

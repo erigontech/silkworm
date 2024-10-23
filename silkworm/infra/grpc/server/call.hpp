@@ -63,7 +63,7 @@ namespace server {
         }
 
         //! Returns a unique identifier of the RPC client for this call.
-        [[nodiscard]] std::string peer() const { return server_context_.peer(); }
+        std::string peer() const { return server_context_.peer(); }
 
       protected:
         //! Used to access the options and current status of the RPC.
@@ -133,7 +133,7 @@ namespace server {
         explicit CallException(grpc::Status&& status)
             : std::runtime_error(status.error_message()), status_(std::move(status)) {}
 
-        [[nodiscard]] grpc::Status status() const { return status_; }
+        grpc::Status status() const { return status_; }
 
       private:
         grpc::Status status_;

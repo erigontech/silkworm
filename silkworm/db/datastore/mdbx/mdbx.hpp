@@ -87,26 +87,26 @@ class ROCursor {
     virtual void bind(ROTxn& txn, const MapConfig& config) = 0;
 
     //! \brief Returns the size of the underlying table
-    [[nodiscard]] virtual size_t size() const = 0;
+    virtual size_t size() const = 0;
 
     //! \brief Returns whether the underlying table is empty
-    [[nodiscard]] bool empty() const { return size() == 0; }
+    bool empty() const { return size() == 0; }
 
     //! \brief Flag indicating if table is single-value or multi-value
-    [[nodiscard]] virtual bool is_multi_value() const = 0;
+    virtual bool is_multi_value() const = 0;
 
     //! \brief Flag indicating if cursor has been positioned or not
-    [[nodiscard]] virtual bool is_dangling() const = 0;
+    virtual bool is_dangling() const = 0;
 
     //! \brief Escape hatch returning the underlying MDBX map handle
-    [[nodiscard]] virtual ::mdbx::map_handle map() const = 0;
+    virtual ::mdbx::map_handle map() const = 0;
 
     virtual CursorResult to_first() = 0;
     virtual CursorResult to_first(bool throw_notfound) = 0;
     virtual CursorResult to_previous() = 0;
     virtual CursorResult to_previous(bool throw_notfound) = 0;
-    [[nodiscard]] virtual CursorResult current() const = 0;
-    [[nodiscard]] virtual CursorResult current(bool throw_notfound) const = 0;
+    virtual CursorResult current() const = 0;
+    virtual CursorResult current(bool throw_notfound) const = 0;
     virtual CursorResult to_next() = 0;
     virtual CursorResult to_next(bool throw_notfound) = 0;
     virtual CursorResult to_last() = 0;
@@ -118,9 +118,9 @@ class ROCursor {
     virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;
     virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
     virtual bool seek(const Slice& key) = 0;
-    [[nodiscard]] virtual bool eof() const = 0;
-    [[nodiscard]] virtual bool on_first() const = 0;
-    [[nodiscard]] virtual bool on_last() const = 0;
+    virtual bool eof() const = 0;
+    virtual bool on_first() const = 0;
+    virtual bool on_last() const = 0;
 };
 
 //! \brief Read-only key-value cursor for multi-value tables
@@ -147,7 +147,7 @@ class ROCursorDupSort : public virtual ROCursor {
     MoveResult move(MoveOperation operation, bool throw_notfound) override = 0;
     MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override = 0;
     virtual MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
-    [[nodiscard]] virtual size_t count_multivalue() const = 0;
+    virtual size_t count_multivalue() const = 0;
 };
 
 //! \brief Read-write key-value cursor for single-value tables
@@ -207,9 +207,9 @@ class ROTxn {
     mdbx::txn* operator->() { return &txn_ref_; }
     operator mdbx::txn&() { return txn_ref_; }  // NOLINT(google-explicit-constructor, hicpp-explicit-conversions)
 
-    [[nodiscard]] uint64_t id() const { return txn_ref_.id(); }
-    [[nodiscard]] virtual bool is_open() const { return txn_ref_.txn::operator bool(); }
-    [[nodiscard]] virtual mdbx::env db() const { return txn_ref_.env(); }
+    uint64_t id() const { return txn_ref_.id(); }
+    virtual bool is_open() const { return txn_ref_.txn::operator bool(); }
+    virtual mdbx::env db() const { return txn_ref_.env(); }
 
     virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config);
     virtual std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config);
@@ -269,7 +269,7 @@ class RWTxn : public ROTxn {
   public:
     ~RWTxn() override = default;
 
-    [[nodiscard]] bool commit_disabled() const { return commit_disabled_; }
+    bool commit_disabled() const { return commit_disabled_; }
 
     void disable_commit() { commit_disabled_ = true; }
     void enable_commit() { commit_disabled_ = false; }
@@ -445,28 +445,28 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     void close();
 
     //! \brief Returns stat info of underlying dbi
-    [[nodiscard]] MDBX_stat get_map_stat() const;
+    MDBX_stat get_map_stat() const;
 
     //! \brief Returns flags of underlying dbi
-    [[nodiscard]] MDBX_db_flags_t get_map_flags() const;
+    MDBX_db_flags_t get_map_flags() const;
 
     //! \brief Returns the size of the underlying table
-    [[nodiscard]] size_t size() const override;
+    size_t size() const override;
 
     using ::mdbx::cursor::operator bool;
 
-    [[nodiscard]] bool is_multi_value() const override;
+    bool is_multi_value() const override;
 
-    [[nodiscard]] bool is_dangling() const override;
+    bool is_dangling() const override;
 
-    [[nodiscard]] ::mdbx::map_handle map() const override;
+    ::mdbx::map_handle map() const override;
 
     CursorResult to_first() override;
     CursorResult to_first(bool throw_notfound) override;
     CursorResult to_previous() override;
     CursorResult to_previous(bool throw_notfound) override;
-    [[nodiscard]] CursorResult current() const override;
-    [[nodiscard]] CursorResult current(bool throw_notfound) const override;
+    CursorResult current() const override;
+    CursorResult current(bool throw_notfound) const override;
     CursorResult to_next() override;
     CursorResult to_next(bool throw_notfound) override;
     CursorResult to_last() override;
@@ -478,9 +478,9 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     MoveResult move(MoveOperation operation, bool throw_notfound) override;
     MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override;
     bool seek(const Slice& key) override;
-    [[nodiscard]] bool eof() const override;
-    [[nodiscard]] bool on_first() const override;
-    [[nodiscard]] bool on_last() const override;
+    bool eof() const override;
+    bool on_first() const override;
+    bool on_last() const override;
     CursorResult to_previous_last_multi() override;
     CursorResult to_previous_last_multi(bool throw_notfound) override;
     CursorResult to_current_first_multi() override;
@@ -498,7 +498,7 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
     MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
-    [[nodiscard]] size_t count_multivalue() const override;
+    size_t count_multivalue() const override;
     MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept override;
     void insert(const Slice& key, Slice value) override;
     void upsert(const Slice& key, const Slice& value) override;

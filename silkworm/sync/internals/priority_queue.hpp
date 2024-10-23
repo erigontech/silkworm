@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <map>
 #include <queue>
 #include <set>
 #include <vector>
@@ -29,15 +30,15 @@ class SetBasedPriorityQueue {  // use boost::priority_queue instead?
     impl_t elements_;
 
   public:
-    [[nodiscard]] const T& top() const { return *elements_.begin(); }
+    const T& top() const { return *elements_.begin(); }
     void pop() { elements_.erase(elements_.begin()); }
     void push(const T& element) { elements_.insert(element); }
     void push(T&& element) { elements_.insert(std::move(element)); }
     size_t erase(const T& element) { return elements_.erase(element); }
     void clear() { elements_.clear(); }
-    [[nodiscard]] size_t size() const { return elements_.size(); }
-    [[nodiscard]] bool empty() const { return elements_.empty(); }
-    [[nodiscard]] bool contains(const T& element) { return elements_.find(element) != elements_.end(); }
+    size_t size() const { return elements_.size(); }
+    bool empty() const { return elements_.empty(); }
+    bool contains(const T& element) { return elements_.find(element) != elements_.end(); }
 
     bool update(const T& element, std::function<void(T& element)> apply_change) {
         auto node = elements_.extract(element);
@@ -79,13 +80,13 @@ class MapBasedPriorityQueue {
     impl_t elements_;
 
   public:
-    [[nodiscard]] const T& top() const { return elements_.begin()->second; }
+    const T& top() const { return elements_.begin()->second; }
     void pop() { elements_.erase(elements_.begin()); }
     void push(const T& element) { elements_.insert({MbpqKey<T>::value(element), element}); }
     size_t erase(const T& element) { return elements_.erase(MbpqKey<T>::value(element)); }
-    [[nodiscard]] size_t size() const { return elements_.size(); }
-    [[nodiscard]] size_t empty() const { return elements_.empty(); }
-    [[nodiscard]] bool contains(const T& element) { return elements_.find(MbpqKey<T>::value(element)) != elements_.end(); }
+    size_t size() const { return elements_.size(); }
+    size_t empty() const { return elements_.empty(); }
+    bool contains(const T& element) { return elements_.find(MbpqKey<T>::value(element)) != elements_.end(); }
 
     /*typename impl_t::iterator begin() { return elements_.begin(); }
     typename impl_t::iterator end() { return elements_.end(); }*/

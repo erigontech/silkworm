@@ -36,26 +36,26 @@ class ForkId {
 
     ForkId() : ForkId(0, 0) {}
 
-    [[nodiscard]] uint32_t hash() const;
+    uint32_t hash() const;
 
-    [[nodiscard]] BlockNum next() const { return next_; }
-    [[nodiscard]] BlockNum& next() { return next_; }
+    BlockNum next() const { return next_; }
+    BlockNum& next() { return next_; }
 
-    [[nodiscard]] ByteView hash_bytes() const { return hash_bytes_; }
-    [[nodiscard]] Bytes& hash_bytes() { return hash_bytes_; }
+    ByteView hash_bytes() const { return hash_bytes_; }
+    Bytes& hash_bytes() { return hash_bytes_; }
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static ForkId rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static ForkId rlp_decode(ByteView data);
 
     /**
      * Encode ForkId for EnrRecord.eth1_fork_id_data.
      * It expects to be wrapped in an extra RLP list: RLP([RLP(this)]),
      * because in geth forkid.ID struct is contained within an enrEntry struct and each struct forms a list.
      */
-    [[nodiscard]] Bytes rlp_encode_enr_entry() const;
-    [[nodiscard]] static ForkId rlp_decode_enr_entry(ByteView data);
+    Bytes rlp_encode_enr_entry() const;
+    static ForkId rlp_decode_enr_entry(ByteView data);
 
-    [[nodiscard]] bool is_compatible_with(
+    bool is_compatible_with(
         ByteView genesis_hash,
         const std::vector<BlockNum>& fork_block_numbers,
         const std::vector<BlockTime>& fork_block_times,

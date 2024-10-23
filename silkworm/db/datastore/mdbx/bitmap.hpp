@@ -76,7 +76,7 @@ class IndexLoader {
     void prune_bitmaps32(RWTxn& txn, BlockNum threshold);
 
     //! \brief Returns the hex representation of currently processed key
-    [[nodiscard]] std::string get_current_key() const {
+    std::string get_current_key() const {
         std::scoped_lock lock{log_mtx_};
         return current_key_;
     }

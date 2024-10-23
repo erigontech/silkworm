@@ -29,8 +29,8 @@ struct NeighborsMessage {
     std::map<EccPublicKey, NodeAddress> node_addresses;
     std::chrono::time_point<std::chrono::system_clock> expiration;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static NeighborsMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static NeighborsMessage rlp_decode(ByteView data);
 
     static const uint8_t kId;
 };

@@ -63,7 +63,7 @@ class SentryClientImpl final : public api::Service {
     SentryClientImpl(const SentryClientImpl&) = delete;
     SentryClientImpl& operator=(const SentryClientImpl&) = delete;
 
-    [[nodiscard]] bool is_ready() {
+    bool is_ready() {
         auto state = channel_->GetState(false);
         return (state == GRPC_CHANNEL_READY) || (state == GRPC_CHANNEL_IDLE);
     }

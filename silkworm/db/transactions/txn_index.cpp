@@ -17,9 +17,9 @@
 #include "txn_index.hpp"
 
 #include <silkworm/db/blocks/bodies/body_txs_amount_query.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 
-#include "txn_snapshot_word_serializer.hpp"
+#include "txn_segment_word_codec.hpp"
 
 namespace silkworm::snapshots {
 
@@ -27,21 +27,12 @@ Bytes TransactionKeyFactory::make(ByteView key_data, uint64_t i) {
     return Bytes{tx_buffer_hash(key_data, first_tx_id_ + i)};
 }
 
-SnapshotPath TransactionIndex::bodies_segment_path(const SnapshotPath& segment_path) {
-    return SnapshotPath::from(
-        segment_path.path().parent_path(),
-        segment_path.version(),
-        segment_path.block_from(),
-        segment_path.block_to(),
-        SnapshotType::bodies);
-}
-
 std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount(
     SnapshotPath bodies_segment_path,
     std::optional<MemoryMappedRegion> bodies_segment_region) {
-    Snapshot bodies_snapshot{std::move(bodies_segment_path), bodies_segment_region};
-    bodies_snapshot.reopen_segment();
-    auto result = BodyTxsAmountQuery{bodies_snapshot}.exec();
+    SegmentFileReader body_segment{std::move(bodies_segment_path), bodies_segment_region};
+    body_segment.reopen_segment();
+    auto result = BodyTxsAmountQuery{body_segment}.exec();
     return {result.first_tx_id, result.count};
 }
 

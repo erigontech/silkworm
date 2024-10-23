@@ -31,8 +31,8 @@ struct EnrResponseMessage {
     Bytes request_hash;
     EnrRecord record;
 
-    [[nodiscard]] Bytes rlp_encode(const EccKeyPair& key_pair) const;
-    [[nodiscard]] static EnrResponseMessage rlp_decode(ByteView data);
+    Bytes rlp_encode(const EccKeyPair& key_pair) const;
+    static EnrResponseMessage rlp_decode(ByteView data);
 
     static const uint8_t kId;
 

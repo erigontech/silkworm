@@ -49,7 +49,6 @@ struct DaemonSettings {
     bool use_websocket{false};
     bool ws_compression{false};
     bool http_compression{true};
-    bool use_erigon3_data_format{false};
 };
 
 }  // namespace silkworm::rpc

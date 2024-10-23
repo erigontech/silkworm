@@ -33,7 +33,7 @@ namespace silkworm {
 /**
  * @brief A fast, lightweight, and easy-to-use C++17 thread pool.
  */
-class [[nodiscard]] ThreadPool {
+class ThreadPool {
   public:
     // ============================
     // Constructors and destructors
@@ -76,7 +76,7 @@ class [[nodiscard]] ThreadPool {
      *
      * @return The total number of tasks.
      */
-    [[nodiscard]] size_t get_tasks_total() const {
+    size_t get_tasks_total() const {
         return tasks_total_;
     }
 
@@ -85,7 +85,7 @@ class [[nodiscard]] ThreadPool {
      *
      * @return The number of threads.
      */
-    [[nodiscard]] unsigned get_thread_count() const {
+    unsigned get_thread_count() const {
         return thread_count_;
     }
 
@@ -94,7 +94,7 @@ class [[nodiscard]] ThreadPool {
      *
      * @return true if the pool is paused, false if it is not paused.
      */
-    [[nodiscard]] bool is_paused() const {
+    bool is_paused() const {
         return paused_;
     }
 

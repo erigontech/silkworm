@@ -21,6 +21,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/core/common/base.hpp>
+
 #include "../kv/api/transaction.hpp"
 
 namespace silkworm::db::txn {
@@ -28,7 +30,7 @@ namespace silkworm::db::txn {
 //! TxNum represents the monotonically increasing unique numbering of blockchain transactions in range [0, inf)
 //! TxNum is contiguous (no holes) and canonical, i.e. universal among all client nodes
 //! \see txnum.go in Erigon
-using TxNum = uint64_t;
+using TxNum = TxnId;
 
 //! Return the maximum TxNum in specified \code block_number
 Task<TxNum> max_tx_num(kv::api::Transaction& tx, BlockNum block_number);

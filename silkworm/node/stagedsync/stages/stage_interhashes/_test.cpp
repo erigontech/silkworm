@@ -385,13 +385,13 @@ TEST_CASE("Account and storage trie") {
 
     HashBuilder hb;
 
-    const auto key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const evmc::bytes32 key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a1{0, 3 * kEther};
     hashed_accounts.upsert(to_slice(key1), to_slice(a1.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key1.bytes), a1.rlp(/*storage_root=*/kEmptyRoot));
 
     // Some address whose hash starts with 0xB040
-    const auto address2{0x7db3e81b72d2695e19764583f6d219dbee0f35ca_address};
+    const evmc::address address2{0x7db3e81b72d2695e19764583f6d219dbee0f35ca_address};
     const auto key2{keccak256(address2)};
     REQUIRE((key2.bytes[0] == 0xB0 && key2.bytes[1] == 0x40));
     const Account a2{0, 1 * kEther};
@@ -399,10 +399,10 @@ TEST_CASE("Account and storage trie") {
     hb.add_leaf(unpack_nibbles(key2.bytes), a2.rlp(/*storage_root=*/kEmptyRoot));
 
     // Some address whose hash starts with 0xB041
-    const auto address3{0x16b07afd1c635f77172e842a000ead9a2a222459_address};
+    const evmc::address address3{0x16b07afd1c635f77172e842a000ead9a2a222459_address};
     const auto key3{keccak256(address3)};
     REQUIRE((key3.bytes[0] == 0xB0 && key3.bytes[1] == 0x41));
-    const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
+    const evmc::bytes32 code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
     const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
     hashed_accounts.upsert(to_slice(key3.bytes), to_slice(a3.encode_for_storage()));
 
@@ -411,17 +411,17 @@ TEST_CASE("Account and storage trie") {
 
     hb.add_leaf(unpack_nibbles(key3.bytes), a3.rlp(storage_root));
 
-    const auto key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const evmc::bytes32 key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a4a{0, 4 * kEther};
     hashed_accounts.upsert(to_slice(key4a), to_slice(a4a.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key4a.bytes), a4a.rlp(/*storage_root=*/kEmptyRoot));
 
-    const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const evmc::bytes32 key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a5{0, 8 * kEther};
     hashed_accounts.upsert(to_slice(key5), to_slice(a5.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key5.bytes), a5.rlp(/*storage_root=*/kEmptyRoot));
 
-    const auto key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const evmc::bytes32 key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a6{0, 1 * kEther};
     hashed_accounts.upsert(to_slice(key6), to_slice(a6.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key6.bytes), a6.rlp(/*storage_root=*/kEmptyRoot));
@@ -486,7 +486,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     // Some address whose hash starts with 0xB1
-    const auto address4b{0x4f61f2d5ebd991b85aa1677db97307caf5215c91_address};
+    const evmc::address address4b{0x4f61f2d5ebd991b85aa1677db97307caf5215c91_address};
     const auto key4b{keccak256(address4b)};
     REQUIRE(key4b.bytes[0] == key4a.bytes[0]);
 
@@ -779,8 +779,8 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
         incarnation2,                                                                // incarnation
     };
 
-    const auto address1{0x1000000000000000000000000000000000000000_address};
-    const auto address2{0x2000000000000000000000000000000000000000_address};
+    const evmc::address address1{0x1000000000000000000000000000000000000000_address};
+    const evmc::address address2{0x2000000000000000000000000000000000000000_address};
 
     const auto hashed_address1{keccak256(address1)};
     const auto hashed_address2{keccak256(address2)};

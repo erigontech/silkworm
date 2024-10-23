@@ -60,7 +60,7 @@ struct ChainTest : public silkworm::test_util::ContextTestBase {
 TEST_CASE_METHOD(ChainTest, "read_header_number") {
     SECTION("existent hash") {
         EXPECT_CALL(transaction, get_one(table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> { co_return kNumber; }));
-        const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
+        const evmc::bytes32 block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
         const auto header_number = spawn_and_wait(read_header_number(transaction, block_hash));
         CHECK(header_number == 4'000'000);
     }
@@ -69,7 +69,7 @@ TEST_CASE_METHOD(ChainTest, "read_header_number") {
         EXPECT_CALL(transaction, get_one(table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
-        const auto block_hash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+        const evmc::bytes32 block_hash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
         auto result = spawn(read_header_number(transaction, block_hash));
 #ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(result.get(), std::invalid_argument);

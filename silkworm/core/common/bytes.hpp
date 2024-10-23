@@ -53,7 +53,7 @@ class ByteView : public evmc::bytes_view {
     constexpr ByteView(std::span<const uint8_t, Extent> span) noexcept
         : evmc::bytes_view{span.data(), span.size()} {}
 
-    [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
+    bool is_null() const noexcept { return data() == nullptr; }
 };
 
 template <size_t Extent>

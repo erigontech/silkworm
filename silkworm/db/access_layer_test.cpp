@@ -86,8 +86,8 @@ static BlockBody sample_block_body() {
 
 // https://etherscan.io/block/17035047
 static BlockBody block_body_17035047() {
-    constexpr auto kRecipient1{0x40458B394D1C2A9aA095dd169a6EB43a73949fa3_address};
-    constexpr auto kRecipient2{0xEdA2B3743d37a2a5bD4EB018d515DC47B7802EB4_address};
+    constexpr evmc::address kRecipient1{0x40458B394D1C2A9aA095dd169a6EB43a73949fa3_address};
+    constexpr evmc::address kRecipient2{0xEdA2B3743d37a2a5bD4EB018d515DC47B7802EB4_address};
     BlockBody body;
     body.withdrawals = std::vector<Withdrawal>{};
     body.withdrawals->reserve(16);
@@ -581,17 +581,17 @@ TEST_CASE("Storage", "[db][access_layer]") {
 
     PooledCursor table{txn, table::kPlainState};
 
-    const auto addr{0xb000000000000000000000000000000000000008_address};
+    const evmc::address addr{0xb000000000000000000000000000000000000008_address};
     const Bytes key{storage_prefix(addr, kDefaultIncarnation)};
 
-    const auto loc1{0x000000000000000000000000000000000000a000000000000000000000000037_bytes32};
-    const auto loc2{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
-    const auto loc3{0xff00000000000000000000000000000000000000000000000000000000000017_bytes32};
-    const auto loc4{0x00000000000000000000000000000000000000000000000000000000000f3128_bytes32};
+    const evmc::bytes32 loc1{0x000000000000000000000000000000000000a000000000000000000000000037_bytes32};
+    const evmc::bytes32 loc2{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const evmc::bytes32 loc3{0xff00000000000000000000000000000000000000000000000000000000000017_bytes32};
+    const evmc::bytes32 loc4{0x00000000000000000000000000000000000000000000000000000000000f3128_bytes32};
 
-    const auto val1{0x00000000000000000000000000000000000000000000000000000000c9b131a4_bytes32};
-    const auto val2{0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
-    const auto val3{0x4400000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const evmc::bytes32 val1{0x00000000000000000000000000000000000000000000000000000000c9b131a4_bytes32};
+    const evmc::bytes32 val2{0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
+    const evmc::bytes32 val3{0x4400000000000000000000000000000000000000000000000000000000000000_bytes32};
 
     upsert_storage_value(table, key, loc1.bytes, val1.bytes);
     upsert_storage_value(table, key, loc2.bytes, val2.bytes);
@@ -612,7 +612,7 @@ TEST_CASE("Account history", "[db][access_layer]") {
     AccountChanges changes{read_account_changes(txn, block_num)};
     CHECK(changes.empty());
 
-    const auto account_address{0x63c696931d3d3fd7cd83472febd193488266660d_address};
+    const evmc::address account_address{0x63c696931d3d3fd7cd83472febd193488266660d_address};
     const Account account{
         .nonce = 21,
         .balance = 1 * kEther,

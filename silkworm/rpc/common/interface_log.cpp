@@ -30,11 +30,11 @@ class InterfaceLogImpl final {
         flush();
     }
 
-    [[nodiscard]] bool dump_response() const {
+    bool dump_response() const {
         return dump_response_;
     }
 
-    [[nodiscard]] std::filesystem::path path() const {
+    std::filesystem::path path() const {
         return file_path_;
     }
 

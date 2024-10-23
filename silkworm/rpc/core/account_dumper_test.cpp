@@ -49,7 +49,7 @@ class DummyCursor : public CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
 
-    [[nodiscard]] uint32_t cursor_id() const override {
+    uint32_t cursor_id() const override {
         return 0;
     }
 
@@ -175,8 +175,8 @@ class DummyTransaction : public BaseTransaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json) : BaseTransaction(nullptr), json_{json} {}
 
-    [[nodiscard]] uint64_t tx_id() const override { return 0; }
-    [[nodiscard]] uint64_t view_id() const override { return 0; }
+    uint64_t tx_id() const override { return 0; }
+    uint64_t view_id() const override { return 0; }
 
     Task<void> open() override {
         co_return;

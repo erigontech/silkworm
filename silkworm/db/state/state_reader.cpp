@@ -19,6 +19,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
@@ -90,7 +91,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
 }
 
 Task<txn::TxNum> StateReader::first_txn_num_in_block() const {
-    const auto min_txn_num = co_await txn::min_tx_num(tx_, block_number_);
+    const auto min_txn_num = co_await txn::min_tx_num(tx_, block_number_, canonical_body_for_storage_provider_);
     co_return min_txn_num + /*txn_index*/ 0;
 }
 

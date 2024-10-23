@@ -24,7 +24,6 @@ erigon_getLatestLogs,\
 eth_getLogs,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
-eth_estimateGas,\
 txpool_content --transport_type http,websocket
 
 failed_test=$?

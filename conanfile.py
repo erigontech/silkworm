@@ -17,7 +17,7 @@ from conan import ConanFile
 
 class SilkwormRecipe(ConanFile):
     settings = 'os', 'compiler', 'build_type', 'arch'
-    generators = 'cmake_find_package'
+    generators = 'CMakeDeps'
 
     def requirements(self):
         self.requires('catch2/3.6.0')
@@ -32,7 +32,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('abseil/20230125.3')
         self.requires('asio-grpc/2.9.2')
         self.requires('benchmark/1.6.1')
-        self.requires('boost/1.83.0')
+        self.requires('boost/1.83.0', override=True)
         self.requires('cli11/2.2.0')
         self.requires('gmp/6.2.1')
         self.requires('grpc/1.54.3')
@@ -58,6 +58,9 @@ class SilkwormRecipe(ConanFile):
         # The same applies also for boost with option asio_no_deprecated, so we skip configuration entirely on Windows.
         if self.settings.os == 'Windows':
             return
+
+        if (self.settings.os == 'Linux') and (self.settings.compiler == 'clang'):
+            self.options['grpc'].with_libsystemd = False
 
         # Disable Catch2 version 3.x.x signal handling on WASM
         if self.settings.arch == 'wasm':

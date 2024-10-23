@@ -49,22 +49,29 @@ function(guess_conan_profile)
   )
 endfunction()
 
-set(CONAN_BINARY_DIR "${CMAKE_BINARY_DIR}/conan")
-list(APPEND CMAKE_MODULE_PATH ${CONAN_BINARY_DIR})
-list(APPEND CMAKE_PREFIX_PATH ${CONAN_BINARY_DIR})
+function(get_conan_build_type profile_path var)
+  file(READ "${profile_path}" CONTENTS)
+  string(REGEX MATCH "build_type=[A-Za-z0-9]+" VALUE "${CONTENTS}")
+  string(SUBSTRING "${VALUE}" 11 -1 VALUE)
+  set(${var}
+      "${VALUE}"
+      PARENT_SCOPE
+  )
+endfunction()
 
-# disable verbose logging from FindXXX.cmake files
-set(CONAN_CMAKE_SILENT_OUTPUT ON)
+find_program(CONAN_COMMAND "conan" PATHS ~/.local/bin REQUIRED)
+# set(CONAN_COMMAND "/Users/daniel/Desktop/conan2/bin/conan")
 
-include("${CMAKE_SOURCE_DIR}/third_party/cmake-conan/conan.cmake")
-
-# provide a static conanfile.py instead of generating it with conan_cmake_configure()
-file(COPY "${CMAKE_SOURCE_DIR}/conanfile.py" DESTINATION "${CONAN_BINARY_DIR}")
+set(CONAN_BINARY_DIR "${CMAKE_BINARY_DIR}/conan2")
 
 if(NOT DEFINED CONAN_PROFILE)
   guess_conan_profile()
 endif()
 message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
+set(CONAN_PROFILE_PATH "${CMAKE_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}")
+set(CONAN_HOST_PROFILE "${CONAN_PROFILE_PATH}")
+set(CONAN_BUILD_PROFILE "${CONAN_PROFILE_PATH}")
+get_conan_build_type("${CONAN_PROFILE_PATH}" CONAN_BUILD_TYPE)
 
 set(CONAN_BUILD "missing")
 set(CONAN_CXXFLAGS_ARG)
@@ -77,7 +84,7 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
     list(APPEND CONAN_CXXFLAGS "-mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
   endif()
 
-  list(JOIN CONAN_CXXFLAGS "\", \"" CONAN_CXXFLAGS_STR)
+  list(JOIN CONAN_CXXFLAGS "\",\"" CONAN_CXXFLAGS_STR)
   set(CONAN_CXXFLAGS_STR "[\"${CONAN_CXXFLAGS_STR}\"]")
   set(CONAN_CXXFLAGS_ARG "tools.build:cxxflags=${CONAN_CXXFLAGS_STR}")
 
@@ -85,7 +92,7 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
 
   # libraries that needs to be rebuilt with sanitize flags
   # cmake-format: off
-  set(CONAN_BUILD
+  list(APPEND CONAN_BUILD
       abseil
       boost
       grpc
@@ -104,11 +111,22 @@ if(SILKWORM_USE_MIMALLOC)
   endif()
 endif()
 
-conan_cmake_install(
-  PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
-  INSTALL_FOLDER "${CONAN_BINARY_DIR}"
-  BUILD ${CONAN_BUILD}
-  OPTIONS ${CONAN_OPTIONS}
-  PROFILE "${CMAKE_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}"
-  CONF "${CONAN_CXXFLAGS_ARG}"
+set(CONAN_INSTALL_ARGS
+    --output-folder "${CONAN_BINARY_DIR}"
+    # https://github.com/conan-io/cmake-conan/issues/607
+    --settings:all "&:build_type=${CMAKE_BUILD_TYPE}"
 )
+
+foreach(VALUE IN LISTS CONAN_BUILD)
+  list(APPEND CONAN_INSTALL_ARGS --build=${VALUE})
+endforeach()
+
+foreach(VALUE IN LISTS CONAN_OPTIONS)
+  list(APPEND CONAN_INSTALL_ARGS --options:all=${VALUE})
+endforeach()
+
+if(CONAN_CXXFLAGS_ARG)
+  list(APPEND CONAN_INSTALL_ARGS --conf:all=${CONAN_CXXFLAGS_ARG})
+endif()
+
+set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES "${CMAKE_SOURCE_DIR}/third_party/cmake-conan/conan_provider.cmake")

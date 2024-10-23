@@ -34,7 +34,7 @@ jobs:
       # Temporarily disabled, try to enable it if issues with building Conan packages (e.g. Boost) arise
       # - name: Preinstall Conan packages
       #   working-directory: ${{runner.workspace}}/silkworm
-      #   run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/linux_x64_clang_13_release .
+      #   run: conan install --output-folder=build/conan --build=missing --profile:all=cmake/profiles/linux_x64_clang_13_release .
 
       - name: Configure CMake
         working-directory: ${{runner.workspace}}/silkworm/build

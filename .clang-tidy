@@ -72,6 +72,7 @@ Checks: >
   performance-*,
   -performance-avoid-endl,
   -performance-enum-size,
+  -performance-unnecessary-value-param,
   portability-*,
   readability-*,
   -readability-braces-around-statements,

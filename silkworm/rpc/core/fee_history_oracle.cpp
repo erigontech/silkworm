@@ -147,9 +147,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
             fee_history.gas_used_ratio[index] = block_fees.gas_used_ratio;
         } else {
             // Getting no block and no error means we are requesting into the future (might happen because of a reorg)
-            if (index < first_missing) {
-                first_missing = index;
-            }
+            first_missing = std::min(first_missing, index);
         }
     }
     if (first_missing == 0) {
@@ -188,9 +186,7 @@ Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, ui
     }
 
     // Ensure not trying to retrieve before genesis
-    if (block_count > newest_block + 1) {
-        block_count = newest_block + 1;
-    }
+    block_count = std::min(block_count, newest_block + 1);
 
     const auto receipts = co_await receipts_provider_(*block_with_hash);
 

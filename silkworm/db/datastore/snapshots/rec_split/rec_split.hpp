@@ -61,6 +61,7 @@
 #include <utility>
 #include <vector>
 
+#include <absl/functional/function_ref.h>
 #include <gsl/narrow>
 #include <gsl/util>
 
@@ -533,7 +534,7 @@ class RecSplit {
         return false;
     }
 
-    void build_without_collisions(std::function<void(RecSplit<LEAF_SIZE>&)> populate) {
+    void build_without_collisions(absl::FunctionRef<void(RecSplit<LEAF_SIZE>&)> populate) {
         for (uint64_t iteration = 0; iteration < 10; ++iteration) {
             populate(*this);
 

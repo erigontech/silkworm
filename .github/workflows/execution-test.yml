@@ -46,16 +46,7 @@ jobs:
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
 
-      - name: Start Silkworm
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd
-        run: |
-          echo "Silkworm RpcDaemon starting..."
-          ./silkworm --datadir $ERIGON_DATA_DIR --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt ./jwt.hex --skip_protocol_check --ws &
-          SILKWORM_PID=$!
-          echo "SILKWORM_PID=$SILKWORM_PID" >> $GITHUB_ENV
-          echo "Silkworm started"
-
-      - name: Run RPC Integration Tests
+      - name: Run Execution Test
         id: test_step
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
@@ -63,7 +54,7 @@ jobs:
           
           # Run Erigon, wait sync and check ability to maintain sync
           python3 $ERIGON_QA_PATH/test_system/qa-tests/silkworm/run_and_check_execution.py \
-          ${{runner.workspace}}/silkworm/build/cmd ${{runner.workspace}}/silkworm_datadir $ERIGON_DATA_DIR $TRACKING_TIME_SECONDS $TOTAL_TIME_SECONDS $CHAIN
+          ${{runner.workspace}}/silkworm/build/cmd ${{runner.workspace}}/silkworm_datadir $TRACKING_TIME_SECONDS $TOTAL_TIME_SECONDS $CHAIN
           
           # Capture monitoring script exit status
           test_exit_status=$?
@@ -78,18 +69,6 @@ jobs:
           else
             echo "error detected during tests"
             echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"            
-          fi
-
-      - name: Stop Silkworm
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd
-        run: |
-          # Clean up silkworm process if it's still running
-          if kill -0 $SILKWORM_PID 2> /dev/null; then
-            echo "Silkworm stopping..."
-            kill $SILKWORM_PID
-            echo "Silkworm stopped"
-          else
-            echo "Silkworm has already terminated"
           fi
 
       - name: Resume the Erigon instance dedicated to db maintenance

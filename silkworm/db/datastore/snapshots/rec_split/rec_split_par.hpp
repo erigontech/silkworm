@@ -44,6 +44,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -146,9 +148,7 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
             SILK_TRACE << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
         }
 
-        if (offset > max_offset_) {
-            max_offset_ = offset;
-        }
+        max_offset_ = std::max(max_offset_, offset);
 
         Bucket& bucket = buckets_[bucket_id];
 

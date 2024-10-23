@@ -920,9 +920,9 @@ class RecSplit {
 
     friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE>& rs) {
         size_t leaf_size = LEAF_SIZE;
-        os.write(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
-        os.write(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
-        os.write(reinterpret_cast<char*>(&rs.key_count_), sizeof(rs.key_count_));
+        os.write(reinterpret_cast<const char*>(&leaf_size), sizeof(leaf_size));
+        os.write(reinterpret_cast<const char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
+        os.write(reinterpret_cast<const char*>(&rs.key_count_), sizeof(rs.key_count_));
         os << rs.golomb_rice_codes_;
         os << rs.double_ef_index_;
         return os;

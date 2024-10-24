@@ -2,8 +2,10 @@ name: QA - RPC Fuzzer Common Steps
   
 runs:
   using: "composite"
+  timeout-minutes: 1440
   steps:
     - name: Sanity Check
+      shell: bash
       run: | 
         echo "Sanity Check"
         echo "RPC_PAST_TEST_DIR: $RPC_PAST_TEST_DIR"
@@ -11,27 +13,34 @@ runs:
         echo "SILKWORM_SANITIZE_OPTION: $SILKWORM_SANITIZE_OPTION"
   
     - name: Install Compiler
+      shell: bash
       run: cmake/setup/compiler_install.sh clang 16
 
     - name: Clean Build Directory
+      shell: bash
       run: rm -rf ${{runner.workspace}}/silkworm/build
 
     - name: Create Build Environment
+      shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
     - name: Preinstall Conan packages
+      shell: bash
       working-directory: ${{runner.workspace}}/silkworm
       run: CC=clang-16 CXX=clang++-16 conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
 
     - name: Configure CMake
+      shell: bash
       working-directory: ${{runner.workspace}}/silkworm/build
       run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=experimental/linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_SANITIZE=$SILKWORM_SANITIZE_OPTION
 
     - name: Build Silkworm Fuzzer Test
+      shell: bash
       working-directory: ${{runner.workspace}}/silkworm/build
       run: CC=clang-16 CXX=clang++-16 cmake  --build . --target rpcdaemon_fuzzer_test -j 8
 
     - name: Prepare Corpus Directories
+      shell: bash
       working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
       run: |
         echo "Ensure persistent directories for fuzzing corpus are created"
@@ -47,11 +56,12 @@ runs:
         mkdir -p local-corpus
 
     - name: Pause the Erigon instance dedicated to db maintenance
+      shell: bash
       run: |
         python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
 
     - name: Execute Silkworm Fuzzer Test
-      timeout-minutes: 1440
+      shell: bash
       working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
       run: |
         # Create minimal corpus
@@ -62,6 +72,7 @@ runs:
         ./rpcdaemon_fuzzer_test -max_total_time=600 local-corpus
 
     - name: Save Fuzzer Test Results
+      shell: bash
       if: always()
       working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
       run: |
@@ -74,6 +85,7 @@ runs:
         cp -r local-corpus/* $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus/
 
     - name: Tear Down Build Environment
+      shell: bash
       if: always()
       run: |
         # Reset compiler paths
@@ -84,4 +96,3 @@ runs:
         
         # Resume the Erigon instance dedicated to db maintenance
         python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
-

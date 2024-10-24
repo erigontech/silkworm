@@ -28,6 +28,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/etl/collector.hpp>
 #include <silkworm/db/datastore/etl/collector_settings.hpp>
 #include <silkworm/db/prune_mode.hpp>
@@ -52,6 +53,7 @@ class Senders final : public Stage {
   public:
     Senders(
         SyncContext* sync_context,
+        db::DataModelFactory data_model_factory,
         const ChainConfig& chain_config,
         size_t batch_size,
         db::etl::CollectorSettings etl_settings,
@@ -77,6 +79,7 @@ class Senders final : public Stage {
     void increment_total_processed_blocks();
     void increment_total_collected_transactions(size_t delta);
 
+    db::DataModelFactory data_model_factory_;
     const ChainConfig& chain_config_;
     db::BlockAmount prune_mode_senders_;
 

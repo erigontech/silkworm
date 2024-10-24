@@ -16,11 +16,14 @@
 
 #pragma once
 
-#include "../datastore/snapshots/snapshot_repository.hpp"
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 
-namespace silkworm::db::test_util {
+namespace silkworm::db {
 
-snapshots::SnapshotRepository make_repository(std::filesystem::path dir_path);
-snapshots::SnapshotRepository make_repository();
+struct DataStoreRef {
+    mdbx::env chaindata_env;
+    snapshots::SnapshotRepository& repository;
+};
 
-}  // namespace silkworm::db::test_util
+}  // namespace silkworm::db

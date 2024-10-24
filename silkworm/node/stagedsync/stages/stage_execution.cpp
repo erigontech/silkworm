@@ -162,7 +162,7 @@ void Execution::prefetch_blocks(RWTxn& txn, const BlockNum from, const BlockNum 
     const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};
 
-    DataModel data_model{txn};
+    DataModel data_model = data_model_factory_(txn);
     auto canonicals = txn.ro_cursor(table::kCanonicalHashes);
     Bytes starting_key{block_key(from)};
     if (canonicals->seek(to_slice(starting_key))) {
@@ -209,7 +209,10 @@ Stage::Result Execution::execute_batch(RWTxn& txn, BlockNum max_block_num, Analy
     auto log_time{std::chrono::steady_clock::now()};
 
     try {
-        Buffer buffer{txn};
+        Buffer buffer{
+            txn,
+            std::make_unique<BufferFullDataModel>(data_model_factory_(txn)),
+        };
         buffer.set_prune_history_threshold(prune_history_threshold);
         buffer.set_memory_limit(batch_size_);
 

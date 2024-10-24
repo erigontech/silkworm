@@ -261,14 +261,11 @@ void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash);
 
 class DataModel {
   public:
-    static void set_snapshot_repository(snapshots::SnapshotRepository* repository);
-
-    explicit DataModel(ROTxn& txn);
-    ~DataModel() = default;
-
-    // Not copyable nor movable
-    DataModel(const DataModel&) = delete;
-    DataModel& operator=(const DataModel&) = delete;
+    DataModel(
+        ROTxn& txn,
+        snapshots::SnapshotRepository& repository)
+        : txn_{txn},
+          repository_{repository} {}
 
     //! Retrieve the chain configuration for which database is populated
     std::optional<ChainConfig> read_chain_config() const;
@@ -280,7 +277,7 @@ class DataModel {
     BlockNum highest_block_number() const;
 
     //! Get the highest block number frozen into snapshots
-    static BlockNum highest_frozen_block_number();
+    BlockNum highest_frozen_block_number() const;
 
     //! Read block header with the specified key (block number, hash)
     std::optional<BlockHeader> read_header(BlockNum block_number, HashAsArray hash) const;
@@ -294,6 +291,9 @@ class DataModel {
     //! Read block header with the specified block number
     std::optional<BlockHeader> read_header(BlockNum block_number) const;
 
+    //! Reads the highest header hash from table::kHeadHeader and a corresponding header
+    std::pair<std::optional<BlockHeader>, std::optional<Hash>> read_head_header_and_hash() const;
+
     //! Read block number from hash
     std::optional<BlockNum> read_block_number(const Hash& block_hash) const;
 
@@ -306,7 +306,7 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
     //! Read block body for storage from the snapshot repository
-    static std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum height);
+    std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum height) const;
 
     //! Read the canonical block header at specified height
     std::optional<Hash> read_canonical_header_hash(BlockNum height) const;
@@ -343,19 +343,20 @@ class DataModel {
     void for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const;
 
   private:
-    static bool read_block_from_snapshot(BlockNum height, Block& block);
-    static std::optional<BlockHeader> read_header_from_snapshot(BlockNum height);
-    static std::optional<BlockHeader> read_header_from_snapshot(const Hash& hash);
-    static bool read_body_from_snapshot(BlockNum height, BlockBody& body);
-    static bool is_body_in_snapshot(BlockNum height);
-    static bool read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs);
-    static bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs);
+    bool read_block_from_snapshot(BlockNum height, Block& block) const;
+    std::optional<BlockHeader> read_header_from_snapshot(BlockNum height) const;
+    std::optional<BlockHeader> read_header_from_snapshot(const Hash& hash) const;
+    bool read_body_from_snapshot(BlockNum height, BlockBody& body) const;
+    bool is_body_in_snapshot(BlockNum height) const;
+    bool read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) const;
+    bool read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) const;
     std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
-    static std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash);
-
-    static inline snapshots::SnapshotRepository* repository_{nullptr};
+    std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
 
     ROTxn& txn_;
+    snapshots::SnapshotRepository& repository_;
 };
+
+using DataModelFactory = std::function<DataModel(ROTxn& tx)>;
 
 }  // namespace silkworm::db

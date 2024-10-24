@@ -24,16 +24,19 @@
 
 namespace silkworm::stagedsync {
 
-CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
+CanonicalChain::CanonicalChain(
+    db::RWTxn& tx,
+    db::DataModelFactory data_model_factory,
+    size_t cache_size)
     : tx_{tx},
-      data_model_{tx_},  // todo: put an header cache into the data_model_ and share the data_model_ with the owner
+      data_model_factory_{std::move(data_model_factory)},
       canonical_hash_cache_{std::make_unique<LruCache<BlockNum, Hash>>(cache_size)} {
     open();
 }
 
 CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
     : tx_{new_tx},
-      data_model_{tx_},
+      data_model_factory_{copy.data_model_factory_},
       initial_head_{copy.initial_head_},
       current_head_{copy.current_head_},
       canonical_hash_cache_{std::make_unique<LruCache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
@@ -42,7 +45,7 @@ CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
 
 CanonicalChain::CanonicalChain(CanonicalChain&& orig) noexcept
     : tx_{orig.tx_},
-      data_model_{tx_},
+      data_model_factory_{std::move(orig.data_model_factory_)},
       initial_head_{orig.initial_head_},
       current_head_{orig.current_head_},
       canonical_hash_cache_{std::move(orig.canonical_hash_cache_)} {
@@ -67,7 +70,7 @@ BlockId CanonicalChain::current_head() const { return current_head_; }
 bool CanonicalChain::cache_enabled() const { return canonical_hash_cache_->max_size() > 0; }
 
 BlockId CanonicalChain::find_forking_point(Hash header_hash) const {
-    std::optional<BlockHeader> header = data_model_.read_header(header_hash);
+    std::optional<BlockHeader> header = data_model().read_header(header_hash);
     if (!header) throw std::logic_error("find_forking_point precondition violation, header not found");
 
     return find_forking_point(*header, header_hash);
@@ -90,7 +93,7 @@ BlockId CanonicalChain::find_forking_point(const BlockHeader& header, Hash heade
 
     // Going further back
     else {
-        auto parent = data_model_.read_header(height - 1, parent_hash);
+        auto parent = data_model().read_header(height - 1, parent_hash);
         ensure_invariant(parent.has_value(),
                          [&]() { return "canonical chain could not find parent with hash " + to_hex(parent_hash) +
                                         " and height " + std::to_string(height - 1); });
@@ -99,8 +102,8 @@ BlockId CanonicalChain::find_forking_point(const BlockHeader& header, Hash heade
         auto ancestor_height = height - 2;
 
         std::optional<Hash> canon_hash;
-        while ((canon_hash = get_hash(ancestor_height)) && canon_hash != ancestor_hash) {
-            auto ancestor = data_model_.read_header(ancestor_height, ancestor_hash);
+        while ((canon_hash = get_hash(ancestor_height)).has_value() && (canon_hash != ancestor_hash)) {
+            auto ancestor = data_model().read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             --ancestor_height;
         }
@@ -138,7 +141,7 @@ void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be 
         db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
         if (cache_enabled()) canonical_hash_cache_->put(ancestor_height, ancestor_hash);
 
-        auto ancestor = data_model_.read_header(ancestor_height, ancestor_hash);
+        auto ancestor = data_model().read_header(ancestor_height, ancestor_hash);
         ensure_invariant(ancestor.has_value(),
                          [&]() { return "fix canonical chain failed at ancestor= " + std::to_string(ancestor_height) +
                                         " hash=" + ancestor_hash.to_hex(); });
@@ -181,7 +184,7 @@ std::optional<Hash> CanonicalChain::get_hash(BlockNum height) const {
 }
 
 bool CanonicalChain::has(Hash block_hash) const {
-    auto header = data_model_.read_header(block_hash);
+    auto header = data_model().read_header(block_hash);
     if (!header) return false;
     auto canonical_hash_at_same_height = get_hash(header->number);
     return canonical_hash_at_same_height == block_hash;

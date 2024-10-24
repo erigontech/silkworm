@@ -70,9 +70,10 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
             fork_ = std::make_unique<Fork>(
                 forking_point_,
                 db::ROTxnManaged(main_chain_.tx().db()),
+                main_chain_.data_model_factory(),
                 main_chain_.log_timer_factory(),
-                main_chain_.bodies_stage_factory(),
-                main_chain_.node_settings());
+                main_chain_.stages_factory(),
+                main_chain_.node_settings().data_directory->forks().path());
             fork_->extend_with(blocks_);
             ensure(fork_->current_head() == new_head, "fork head mismatch");
         } catch (...) {

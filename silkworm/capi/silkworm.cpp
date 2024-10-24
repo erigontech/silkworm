@@ -223,11 +223,11 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     log::init(log_settings);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
+    auto data_dir_path = parse_path(settings->data_dir_path);
     auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
-        snapshots::SnapshotSettings{},
+        DataDirectory{data_dir_path}.snapshots().path(),
         std::make_unique<snapshots::StepToBlockNumConverter>(),
         std::make_unique<db::SnapshotBundleFactoryImpl>());
-    db::DataModel::set_snapshot_repository(snapshot_repository.get());
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
@@ -235,7 +235,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         .context_pool_settings = {
             .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : silkworm::concurrency::kDefaultNumContexts,
         },
-        .data_dir_path = parse_path(settings->data_dir_path),
+        .data_dir_path = std::move(data_dir_path),
         .node_settings = {},
         .snapshot_repository = std::move(snapshot_repository),
         .rpcdaemon = {},
@@ -406,16 +406,18 @@ class BlockProvider {
 
   public:
     BlockProvider(BoundedBuffer<std::optional<Block>>* block_buffer,
-                  mdbx::env env,
+                  db::ROAccess db_access,
+                  db::DataModelFactory data_model_factory,
                   BlockNum start_block, BlockNum max_block)
         : block_buffer_{block_buffer},
-          env_{std::move(env)},
+          db_access_{std::move(db_access)},
+          data_model_factory_{std::move(data_model_factory)},
           start_block_{start_block},
           max_block_{max_block} {}
 
     void operator()() {
-        db::ROTxnManaged txn{env_};
-        db::DataModel access_layer{txn};
+        db::ROTxnManaged txn = db_access_.start_ro_tx();
+        db::DataModel access_layer = data_model_factory_(txn);
 
         BlockNum current_block{start_block_};
         size_t refresh_counter{kTxnRefreshThreshold};
@@ -433,11 +435,11 @@ class BlockProvider {
 
                 if (--refresh_counter == 0) {
                     txn.abort();
-                    txn = db::ROTxnManaged{env_};
+                    txn = db_access_.start_ro_tx();
                     refresh_counter = kTxnRefreshThreshold;
                 }
             }
-        } catch (const boost::thread_interrupted& ti) {
+        } catch (const boost::thread_interrupted&) {
             SILK_TRACE << "thread_interrupted in block provider thread";
         } catch (const std::exception& ex) {
             SILK_WARN << "unexpected exception in block provider thread: what=" << ex.what();
@@ -448,7 +450,8 @@ class BlockProvider {
 
   private:
     BoundedBuffer<std::optional<Block>>* block_buffer_;
-    mdbx::env env_;
+    db::ROAccess db_access_;
+    db::DataModelFactory data_model_factory_;
     BlockNum start_block_;
     BlockNum max_block_;
 };
@@ -488,7 +491,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
     try {
         auto txn = db::RWTxnUnmanaged{mdbx_txn};
 
-        db::Buffer state_buffer{txn};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->snapshot_repository})};
         state_buffer.set_memory_limit(batch_size);
 
         const size_t max_batch_size{batch_size};
@@ -497,7 +500,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         BlockNum block_number{start_block};
         BlockNum batch_start_block_number{start_block};
         BlockNum last_block_number = 0;
-        db::DataModel da_layer{txn};
+        db::DataModel da_layer{txn, *handle->snapshot_repository};
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
@@ -607,12 +610,23 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         auto txn = db::RWTxnManaged{unmanaged_env};
         const auto env_path = unmanaged_env.get_path();
 
-        db::Buffer state_buffer{txn};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->snapshot_repository})};
         state_buffer.set_memory_limit(batch_size);
 
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
-        BlockProvider block_provider{&block_buffer, unmanaged_env, start_block, max_block};
+
+        db::DataModelFactory data_model_factory = [handle](db::ROTxn& tx) {
+            return db::DataModel{tx, *handle->snapshot_repository};
+        };
+
+        BlockProvider block_provider{
+            &block_buffer,
+            db::ROAccess{unmanaged_env},
+            std::move(data_model_factory),
+            start_block,
+            max_block,
+        };
         boost::strict_scoped_thread<boost::interrupt_and_join_if_joinable> block_provider_thread(block_provider);
 
         const size_t max_batch_size{batch_size};

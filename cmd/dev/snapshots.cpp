@@ -295,9 +295,9 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
     SILK_INFO << "Decode snapshot elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
-static SnapshotRepository make_repository(SnapshotSettings settings) {
+static SnapshotRepository make_repository(const SnapshotSettings& settings) {
     return SnapshotRepository{
-        std::move(settings),
+        settings.repository_dir,
         std::make_unique<snapshots::StepToBlockNumConverter>(),
         std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>(),
     };
@@ -1056,10 +1056,27 @@ void sync(const SnapshotSettings& settings) {
     TemporaryDirectory tmp_dir;
     db::EnvConfig chaindata_env_config{tmp_dir.path()};
     auto chaindata_env = db::open_env(chaindata_env_config);
+
+    SnapshotRepository repository{
+        settings.repository_dir,
+        std::make_unique<StepToBlockNumConverter>(),
+        std::make_unique<db::SnapshotBundleFactoryImpl>(),
+    };
+
+    db::DataStoreRef data_store{
+        chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
+        repository,
+    };
+
     test_util::TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;
-    // NOLINTNEXTLINE(cppcoreguidelines-slicing)
-    db::SnapshotSync snapshot_sync{settings, kMainnetConfig.chain_id, chaindata_env, tmp_dir.path(), stage_scheduler};
+    db::SnapshotSync snapshot_sync{
+        settings,
+        kMainnetConfig.chain_id,
+        data_store,
+        tmp_dir.path(),
+        stage_scheduler,
+    };
     runner.run(snapshot_sync.download_snapshots());
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
 

@@ -75,18 +75,19 @@ using execution::api::VerificationResult;
 MainChain::MainChain(
     boost::asio::any_io_executor executor,
     NodeSettings& ns,
+    db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
-    BodiesStageFactory bodies_stage_factory,
+    StageContainerFactory stages_factory,
     db::RWAccess dba)
     : executor_{std::move(executor)},
       node_settings_{ns},
+      data_model_factory_{std::move(data_model_factory)},
       log_timer_factory_{std::move(log_timer_factory)},
-      bodies_stage_factory_{std::move(bodies_stage_factory)},
+      stages_factory_{std::move(stages_factory)},
       db_access_{std::move(dba)},
       tx_{db_access_.start_rw_tx()},
-      data_model_{tx_},
-      pipeline_{&ns, log_timer_factory_, bodies_stage_factory_},
-      interim_canonical_chain_(tx_) {
+      pipeline_{data_model_factory_, log_timer_factory_, stages_factory_},
+      interim_canonical_chain_{tx_, data_model_factory_} {
     // We commit and close the one-and-only RW txn here because it must be reopened below in MainChain::open
     tx_.commit_and_stop();
 }
@@ -149,10 +150,6 @@ db::RWTxn& MainChain::tx() {
     return tx_;
 }
 
-const BodiesStageFactory& MainChain::bodies_stage_factory() const {
-    return bodies_stage_factory_;
-}
-
 const std::optional<TimerFactory>& MainChain::log_timer_factory() const {
     return log_timer_factory_;
 }
@@ -204,7 +201,7 @@ void MainChain::insert_body(const Block& block, const Hash& block_hash) {
     // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
-    if (data_model_.has_body(block_num, block_hash)) return;
+    if (data_model().has_body(block_num, block_hash)) return;
 
     db::write_body(tx_, block, block_hash, block_num);
 }
@@ -438,7 +435,7 @@ std::optional<BlockHeader> MainChain::get_header(Hash header_hash) const {
     // if (cached) {
     //     return *cached;
     // }
-    return data_model_.read_header(header_hash);
+    return data_model().read_header(header_hash);
 }
 
 std::optional<BlockHeader> MainChain::get_header(BlockNum header_height, Hash header_hash) const {
@@ -447,7 +444,7 @@ std::optional<BlockHeader> MainChain::get_header(BlockNum header_height, Hash he
     // if (cached) {
     //     return *cached;
     // }
-    std::optional<BlockHeader> header = data_model_.read_header(header_height, header_hash);
+    std::optional<BlockHeader> header = data_model().read_header(header_height, header_hash);
     return header;
 }
 
@@ -472,21 +469,21 @@ std::optional<TotalDifficulty> MainChain::get_header_td(Hash header_hash) const 
 std::optional<BlockBody> MainChain::get_body(Hash header_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     BlockBody body;
-    bool found = data_model_.read_body(header_hash, body);
+    bool found = data_model().read_body(header_hash, body);
     if (!found) return {};
     return body;
 }
 
 BlockNum MainChain::get_block_progress() const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return data_model_.highest_block_number();
+    return data_model().highest_block_number();
 }
 
 std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     std::vector<BlockHeader> headers;
 
-    data_model_.for_last_n_headers(limit, [&headers](BlockHeader&& header) {
+    data_model().for_last_n_headers(limit, [&headers](BlockHeader&& header) {
         headers.emplace_back(std::move(header));
     });
 
@@ -495,7 +492,11 @@ std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
 
 std::optional<BlockNum> MainChain::get_block_number(Hash header_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return data_model_.read_block_number(header_hash);
+    return data_model().read_block_number(header_hash);
+}
+
+BlockNum MainChain::highest_frozen_block_number() const {
+    return data_model().highest_frozen_block_number();
 }
 
 bool MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const {

@@ -17,6 +17,7 @@
 #include "block_exchange.hpp"
 
 #include <chrono>
+#include <utility>
 
 #include <boost/signals2.hpp>
 
@@ -31,15 +32,14 @@
 namespace silkworm {
 
 BlockExchange::BlockExchange(
+    db::DataStoreRef data_store,
     SentryClient& sentry,
-    db::ROAccess dba,
     const ChainConfig& chain_config,
     bool use_preverified_hashes)
-    : db_access_{std::move(dba)},
+    : data_store_{std::move(data_store)},
       sentry_{sentry},
       chain_config_{chain_config},
-      header_chain_{chain_config, use_preverified_hashes},
-      body_sequence_{} {
+      header_chain_{chain_config, use_preverified_hashes} {
 }
 
 BlockExchange::~BlockExchange() {
@@ -99,7 +99,7 @@ void BlockExchange::execution_loop() {
 
             // process an external message (replay to remote peers) or an internal message
             if (present) {
-                message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+                message->execute(data_store_, header_chain_, body_sequence_, sentry_);
                 ++statistics_.processed_msgs;
             }
 
@@ -162,7 +162,7 @@ size_t BlockExchange::request_headers(time_point_t tp, size_t max_requests) {
 
         if (!request_message) break;
 
-        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+        request_message->execute(data_store_, header_chain_, body_sequence_, sentry_);
 
         statistics_.sent_msgs += request_message->sent_requests();
         statistics_.nack_msgs += request_message->nack_requests();
@@ -187,7 +187,7 @@ size_t BlockExchange::request_bodies(time_point_t tp, size_t max_requests) {
 
         if (!request_message) break;
 
-        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+        request_message->execute(data_store_, header_chain_, body_sequence_, sentry_);
 
         statistics_.sent_msgs += request_message->sent_requests();
         statistics_.nack_msgs += request_message->nack_requests();

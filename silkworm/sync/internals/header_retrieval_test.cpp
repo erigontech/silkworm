@@ -18,6 +18,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm {
@@ -26,7 +27,13 @@ TEST_CASE("HeaderRetrieval") {
     db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
-    HeaderRetrieval header_retrieval{db::ROAccess{context.env()}};
+
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+
+    db::ROTxnManaged tx = db::ROAccess{context.env()}.start_ro_tx();
+    db::DataModel data_model{tx, repository};
+
+    HeaderRetrieval header_retrieval{data_model};
 
     SECTION("recover_by_hash") {
         const auto headers{header_retrieval.recover_by_hash({}, 1, 0, false)};

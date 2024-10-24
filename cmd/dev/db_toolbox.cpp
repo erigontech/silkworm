@@ -62,7 +62,9 @@
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
+#include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 
 #include "../common/common.hpp"
 
@@ -562,6 +564,29 @@ void do_stage_set(EnvConfig& config, const std::string& stage_name, uint32_t new
     std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n\n";
 }
 
+static silkworm::stagedsync::BodiesStageFactory make_bodies_stage_factory(
+    const silkworm::ChainConfig& chain_config,
+    silkworm::db::DataModelFactory data_model_factory) {
+    return [chain_config, data_model_factory = std::move(data_model_factory)](silkworm::stagedsync::SyncContext* sync_context) {
+        return std::make_unique<silkworm::stagedsync::BodiesStage>(
+            sync_context,
+            chain_config,
+            data_model_factory,
+            [] { return 0; });
+    };
+};
+
+static silkworm::stagedsync::StageContainerFactory make_stages_factory(
+    const silkworm::NodeSettings& node_settings,
+    silkworm::db::DataModelFactory data_model_factory) {
+    auto bodies_stage_factory = make_bodies_stage_factory(*node_settings.chain_config, data_model_factory);
+    return silkworm::stagedsync::StagesFactoryImpl::to_factory({
+        node_settings,
+        std::move(data_model_factory),
+        std::move(bodies_stage_factory),
+    });
+}
+
 void unwind(EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
@@ -572,25 +597,29 @@ void unwind(EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     auto chain_config{read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
+    auto data_directory = std::make_unique<DataDirectory>();
+    snapshots::SnapshotRepository repository{
+        data_directory->snapshots().path(),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<SnapshotBundleFactoryImpl>(),
+    };
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+
     boost::asio::io_context io_context;
 
     NodeSettings settings{
-        .data_directory = std::make_unique<DataDirectory>(),
+        .data_directory = std::move(data_directory),
         .chaindata_env_config = config,
         .chain_config = chain_config};
-
-    stagedsync::BodiesStageFactory bodies_stage_factory = [&](stagedsync::SyncContext* sync_context) {
-        return std::make_unique<stagedsync::BodiesStage>(sync_context, *settings.chain_config, [] { return 0; });
-    };
 
     stagedsync::TimerFactory log_timer_factory = [&](std::function<bool()> callback) {
         return std::make_shared<Timer>(io_context.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
     };
 
     stagedsync::ExecutionPipeline stage_pipeline{
-        &settings,
+        data_model_factory,
         std::move(log_timer_factory),
-        std::move(bodies_stage_factory),
+        make_stages_factory(settings, data_model_factory),
     };
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
 
@@ -2237,16 +2266,12 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
     auto env = open_env(config);
     StageSchedulerAdapter stage_scheduler{RWAccess{env}};
 
-    snapshots::SnapshotSettings settings;
-    settings.repository_dir = data_dir.snapshots().path();
-    settings.no_downloader = true;
     snapshots::SnapshotRepository repository{
-        std::move(settings),
+        data_dir.snapshots().path(),
         std::make_unique<snapshots::StepToBlockNumConverter>(),
         std::make_unique<SnapshotBundleFactoryImpl>(),
     };
     repository.reopen_folder();
-    DataModel::set_snapshot_repository(&repository);
 
     Freezer freezer{ROAccess{env}, repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
 

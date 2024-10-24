@@ -61,11 +61,11 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
 }
 
 std::shared_ptr<State> LocalTransaction::create_state(boost::asio::any_io_executor&, const chain::ChainStorage&, BlockNum block_number) {
-    return std::make_shared<state::LocalState>(block_number, chaindata_env_);
+    return std::make_shared<state::LocalState>(block_number, data_store_);
 }
 
 std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
-    return std::make_shared<chain::LocalChainStorage>(txn_);
+    return std::make_shared<chain::LocalChainStorage>(DataModel{txn_, data_store_.repository});
 }
 
 // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)

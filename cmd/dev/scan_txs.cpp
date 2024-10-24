@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            db::Buffer buffer{txn};
+            db::Buffer buffer{txn, std::make_unique<db::BufferROTxDataModel>(txn)};
             buffer.set_historical_block(block_num);
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};

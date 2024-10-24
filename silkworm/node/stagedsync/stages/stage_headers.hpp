@@ -61,7 +61,9 @@ namespace silkworm::stagedsync {
  */
 class HeadersStage : public Stage {
   public:
-    explicit HeadersStage(SyncContext*);
+    HeadersStage(
+        SyncContext* sync_context,
+        db::DataModelFactory data_model_factory);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
 
@@ -71,14 +73,18 @@ class HeadersStage : public Stage {
 
   protected:
     std::vector<std::string> get_log_progress() override;  // thread safe
-    std::atomic<BlockNum> current_height_{0};
 
+    db::DataModelFactory data_model_factory_;
+    std::atomic<BlockNum> current_height_{0};
     std::optional<BlockNum> forced_target_block_;
 
     // HeaderDataModel has the responsibility to update headers related tables
     class HeaderDataModel {
       public:
-        explicit HeaderDataModel(db::RWTxn& tx, BlockNum headers_height);
+        HeaderDataModel(
+            db::RWTxn& tx,
+            db::DataModel data_model,
+            BlockNum headers_height);
 
         void update_tables(const BlockHeader&);  // update header related tables
 

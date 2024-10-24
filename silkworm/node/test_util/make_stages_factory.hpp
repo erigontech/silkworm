@@ -16,11 +16,16 @@
 
 #pragma once
 
-#include "../datastore/snapshots/snapshot_repository.hpp"
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/access_layer.hpp>
 
-namespace silkworm::db::test_util {
+#include "../common/node_settings.hpp"
+#include "../stagedsync/execution_pipeline.hpp"
+#include "../stagedsync/stages/stage_bodies_factory.hpp"
 
-snapshots::SnapshotRepository make_repository(std::filesystem::path dir_path);
-snapshots::SnapshotRepository make_repository();
+namespace silkworm::stagedsync::test_util {
 
-}  // namespace silkworm::db::test_util
+BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_config, db::DataModelFactory data_model_factory);
+StageContainerFactory make_stages_factory(const NodeSettings& node_settings, db::DataModelFactory data_model_factory);
+
+}  // namespace silkworm::stagedsync::test_util

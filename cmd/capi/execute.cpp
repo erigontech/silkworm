@@ -430,15 +430,11 @@ int main(int argc, char* argv[]) {
             return init_status_code;
         }
 
-        // Add snapshots to Silkworm API library
-        SnapshotSettings snapshot_settings{};
-        snapshot_settings.repository_dir = data_dir.snapshots().path();
-
         int status_code = -1;
         if (settings.execute_blocks_settings) {
             // Execute specified block range using Silkworm API library
             SnapshotRepository repository{
-                snapshot_settings,
+                data_dir.snapshots().path(),
                 std::make_unique<StepToBlockNumConverter>(),
                 std::make_unique<db::SnapshotBundleFactoryImpl>(),
             };

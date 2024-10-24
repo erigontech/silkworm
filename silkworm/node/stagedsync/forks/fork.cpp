@@ -48,20 +48,21 @@ static db::MemoryOverlay create_memory_db(const std::filesystem::path& base_path
 
 Fork::Fork(
     BlockId forking_point,
-    db::ROTxnManaged&& main_chain_tx,
+    db::ROTxnManaged main_tx,
+    db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
-    BodiesStageFactory bodies_stage_factory,
-    NodeSettings& ns)
-    : main_tx_{std::move(main_chain_tx)},
-      memory_db_{create_memory_db(ns.data_directory->forks().path(), main_tx_)},
+    const StageContainerFactory& stages_factory,
+    const std::filesystem::path& forks_dir_path)
+    : main_tx_{std::move(main_tx)},
+      memory_db_{create_memory_db(forks_dir_path, main_tx_)},
       memory_tx_{memory_db_},
-      data_model_{memory_tx_},
+      data_model_factory_{std::move(data_model_factory)},
       pipeline_{
-          &ns,
+          data_model_factory_,
           std::move(log_timer_factory),
-          std::move(bodies_stage_factory),
+          stages_factory,
       },
-      canonical_chain_(memory_tx_),
+      canonical_chain_{memory_tx_, data_model_factory_},
       current_head_{forking_point}  // actual head
 {
     // go down if needed
@@ -136,7 +137,7 @@ void Fork::insert_body(const Block& block, const Hash& block_hash) {
     // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
-    if (!data_model_.has_body(block_num, block_hash)) {
+    if (!data_model().has_body(block_num, block_hash)) {
         db::write_body(memory_tx_, block, block_hash, block_num);
     }
 }
@@ -302,7 +303,7 @@ std::set<Hash> Fork::collect_bad_headers(InvalidChain& invalid_chain) {
 }
 
 std::optional<BlockHeader> Fork::get_header(Hash header_hash) const {
-    std::optional<BlockHeader> header = data_model_.read_header(header_hash);
+    std::optional<BlockHeader> header = data_model().read_header(header_hash);
     return header;
 }
 

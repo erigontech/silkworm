@@ -27,12 +27,13 @@ class BodyRetrieval {
     static const int kSoftResponseLimit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
     static const int kMaxBodiesServe = 1024;                // Amount of block bodies to be fetched per retrieval request
 
-    explicit BodyRetrieval(db::ROAccess db_access);
+    explicit BodyRetrieval(db::ROTxn& db_tx)
+        : db_tx_{db_tx} {}
 
     std::vector<BlockBody> recover(std::vector<Hash>);
 
   protected:
-    db::ROTxnManaged db_tx_;
+    db::ROTxn& db_tx_;
 };
 
 }  // namespace silkworm

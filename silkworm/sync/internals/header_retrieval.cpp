@@ -22,8 +22,6 @@
 
 namespace silkworm {
 
-HeaderRetrieval::HeaderRetrieval(db::ROAccess db_access) : db_tx_{db_access.start_ro_tx()}, data_model_{db_tx_} {}
-
 std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse) {
     using std::optional;
     uint64_t max_non_canonical = 100;
@@ -127,9 +125,9 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
     }
 
     while (ancestor_delta != 0) {
-        auto h = db::read_canonical_header_hash(db_tx_, block_num);
+        auto h = data_model_.read_canonical_header_hash(block_num);
         if (h == hash) {
-            auto ancestorHash = db::read_canonical_header_hash(db_tx_, block_num - ancestor_delta);
+            auto ancestorHash = data_model_.read_canonical_header_hash(block_num - ancestor_delta);
             if (!ancestorHash) {
                 return {Hash{}, 0};
             }

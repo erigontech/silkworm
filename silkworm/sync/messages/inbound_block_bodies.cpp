@@ -29,7 +29,7 @@ InboundBlockBodies::InboundBlockBodies(ByteView data, PeerId peer_id)
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void InboundBlockBodies::execute(db::DataStoreRef, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     SILK_TRACE << "Processing message " << *this;
 
     Penalty penalty = bs.accept_requested_bodies(packet_, peer_id_);

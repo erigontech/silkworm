@@ -111,13 +111,12 @@ int main(int argc, char* argv[]) {
         }
 
         snapshots::SnapshotRepository repository{
-            snapshots::SnapshotSettings{},
+            data_dir.snapshots().path(),
             std::make_unique<snapshots::StepToBlockNumConverter>(),
             std::make_unique<db::SnapshotBundleFactoryImpl>(),
         };
         repository.reopen_folder();
-        db::DataModel::set_snapshot_repository(&repository);
-        db::DataModel access_layer{txn};
+        db::DataModel access_layer{txn, repository};
 
         AnalysisCache analysis_cache{/*max_size=*/5'000};
         std::vector<Receipt> receipts;
@@ -130,7 +129,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            db::Buffer buffer{txn};
+            db::Buffer buffer{txn, std::make_unique<db::BufferFullDataModel>(access_layer)};
             buffer.set_historical_block(block_num);
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};

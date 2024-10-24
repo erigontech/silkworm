@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
@@ -31,7 +32,9 @@ using db::kv::api::StateCache;
 
 class LocalDatabase : public Database {
   public:
-    explicit LocalDatabase(StateCache* state_cache, mdbx::env chaindata_env);
+    explicit LocalDatabase(
+        db::DataStoreRef data_store,
+        StateCache* state_cache);
 
     ~LocalDatabase() override;
 
@@ -41,8 +44,8 @@ class LocalDatabase : public Database {
     Task<std::unique_ptr<db::kv::api::Transaction>> begin() override;
 
   private:
+    db::DataStoreRef data_store_;
     StateCache* state_cache_;
-    mdbx::env chaindata_env_;
 };
 
 }  // namespace silkworm::rpc::ethdb::file

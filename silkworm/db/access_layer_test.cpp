@@ -452,8 +452,6 @@ TEST_CASE("Difficulty", "[db][access_layer]") {
 
     write_total_difficulty(txn, block_num, hash, difficulty);
     CHECK(read_total_difficulty(txn, block_num, hash) == difficulty);
-    DataModel model{txn};
-    CHECK(model.read_total_difficulty(block_num, hash) == difficulty);
 }
 
 TEST_CASE("Headers and bodies", "[db][access_layer]") {

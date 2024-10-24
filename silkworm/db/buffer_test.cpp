@@ -54,7 +54,7 @@ TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
     upsert_storage_value(*state, key, location_a.bytes, value_a1.bytes);
     upsert_storage_value(*state, key, location_b.bytes, value_b.bytes);
 
-    Buffer buffer{txn};
+    Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
 
     SECTION("Reads storage by address and location") {
         CHECK(buffer.read_storage(address, kDefaultIncarnation, location_a) == value_a1);
@@ -251,7 +251,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         Account current_account;
         current_account.balance = kEther;
 
-        Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/std::nullopt, current_account);
         REQUIRE(!buffer.account_changes().empty());
@@ -284,7 +284,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         current_account.nonce = 2;
         current_account.balance = kEther;
 
-        Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/initial_account, current_account);
         REQUIRE(!buffer.account_changes().empty());
@@ -316,7 +316,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         account.incarnation = kDefaultIncarnation;
         account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
 
-        Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/account, /*current=*/std::nullopt);
         REQUIRE(!buffer.account_changes().empty());
@@ -338,7 +338,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
 
         // Block 1: create contract account
-        Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/std::nullopt, /*current=*/account);
         REQUIRE(!buffer.account_changes().empty());
@@ -369,7 +369,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         current_account.nonce = 2;
         current_account.balance = kEther;
 
-        Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         buffer.begin_block(1, 1);
         buffer.update_account(address, /*initial=*/initial_account, current_account);
         REQUIRE(buffer.account_changes().empty());

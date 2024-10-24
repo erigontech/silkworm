@@ -20,8 +20,6 @@
 
 namespace silkworm {
 
-BodyRetrieval::BodyRetrieval(db::ROAccess db_access) : db_tx_{db_access.start_ro_tx()} {}
-
 std::vector<BlockBody> BodyRetrieval::recover(std::vector<Hash> request) {
     std::vector<BlockBody> response;
     size_t bytes = 0;

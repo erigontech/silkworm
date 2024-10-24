@@ -16,26 +16,11 @@
 
 #include "execution_pipeline.hpp"
 
-#include <memory>
-
 #include <absl/strings/str_format.h>
 #include <magic_enum.hpp>
 
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
-#include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
-#include <silkworm/node/stagedsync/stages/stage_execution.hpp>
-#include <silkworm/node/stagedsync/stages/stage_finish.hpp>
-#include <silkworm/node/stagedsync/stages/stage_hashstate.hpp>
-#include <silkworm/node/stagedsync/stages/stage_headers.hpp>
-#include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
-#include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
-#include <silkworm/node/stagedsync/stages/stage_log_index.hpp>
-#include <silkworm/node/stagedsync/stages/stage_senders.hpp>
-#include <silkworm/node/stagedsync/stages/stage_triggers.hpp>
-#include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -48,13 +33,13 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
 ExecutionPipeline::ExecutionPipeline(
-    silkworm::NodeSettings* node_settings,
+    db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
-    BodiesStageFactory bodies_stage_factory)
-    : node_settings_{node_settings},
+    const StageContainerFactory& stages_factory)
+    : data_model_factory_{std::move(data_model_factory)},
       log_timer_factory_{std::move(log_timer_factory)},
-      bodies_stage_factory_{std::move(bodies_stage_factory)},
-      sync_context_{std::make_unique<SyncContext>()} {
+      sync_context_{std::make_unique<SyncContext>()},
+      stages_{stages_factory(*sync_context_)} {
     load_stages();
 }
 
@@ -91,31 +76,6 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
  */
 
 void ExecutionPipeline::load_stages() {
-    stages_.emplace(kHeadersKey,
-                    std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
-    stages_.emplace(kBlockBodiesKey, bodies_stage_factory_(sync_context_.get()));
-    stages_.emplace(kBlockHashesKey,
-                    std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(kSendersKey,
-                    std::make_unique<stagedsync::Senders>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.senders()));
-    stages_.emplace(kExecutionKey,
-                    std::make_unique<stagedsync::Execution>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->prune_mode));
-    stages_.emplace(kHashStateKey,
-                    std::make_unique<stagedsync::HashState>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(kIntermediateHashesKey,
-                    std::make_unique<stagedsync::InterHashes>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(kHistoryIndexKey,
-                    std::make_unique<stagedsync::HistoryIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
-    stages_.emplace(kLogIndexKey,
-                    std::make_unique<stagedsync::LogIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
-    stages_.emplace(kCallTracesKey,
-                    std::make_unique<stagedsync::CallTraceIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.call_traces()));
-    stages_.emplace(kTxLookupKey,
-                    std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
-    stages_.emplace(kTriggersStageKey,
-                    std::make_unique<stagedsync::TriggersStage>(sync_context_.get()));
-    stages_.emplace(kFinishKey,
-                    std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info.build_description));
     current_stage_ = stages_.begin();
 
     stages_forward_order_.insert(stages_forward_order_.begin(),
@@ -236,8 +196,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             }
         }
 
-        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
-        const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
+        db::DataModel data_model = data_model_factory_(cycle_txn);
+        const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
+        head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
         if (head_header_number_ != target_height) {
@@ -300,8 +261,9 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             }
         }
 
-        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
-        const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
+        db::DataModel data_model = data_model_factory_(cycle_txn);
+        const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
+        head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
         if (head_header_number_ != unwind_point) {
@@ -359,8 +321,9 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
             }
         }
 
-        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
-        const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
+        db::DataModel data_model = data_model_factory_(cycle_txn);
+        const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
+        head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
 

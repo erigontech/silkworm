@@ -44,7 +44,7 @@ using silkworm::test_util::SetLogVerbosityGuard;
 
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    CHECK_NOTHROW(make_repository(SnapshotSettings{}));
+    CHECK_NOTHROW(make_repository());
 }
 
 TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][snapshot]") {
@@ -54,8 +54,7 @@ TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][
     test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
     test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
     test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
     repository.reopen_folder();
     CHECK(repository.bundles_count() == 0);
     CHECK(repository.max_block_available() == 0);
@@ -65,8 +64,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     SECTION("no snapshots") {
         repository.reopen_folder();
@@ -140,8 +138,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -207,8 +204,7 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
 TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -257,8 +253,7 @@ TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot
 
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     // create a snapshot file
     test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};

@@ -21,6 +21,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stage.hpp>
 
@@ -30,10 +31,12 @@ class Execution final : public Stage {
   public:
     Execution(
         SyncContext* sync_context,
+        db::DataModelFactory data_model_factory,
         const ChainConfig& chain_config,
         size_t batch_size,
         db::PruneMode prune_mode)
         : Stage(sync_context, db::stages::kExecutionKey),
+          data_model_factory_(std::move(data_model_factory)),
           chain_config_(chain_config),
           batch_size_(batch_size),
           prune_mode_(prune_mode),
@@ -49,6 +52,7 @@ class Execution final : public Stage {
   private:
     static constexpr size_t kMaxPrefetchedBlocks{10240};
 
+    db::DataModelFactory data_model_factory_;
     const ChainConfig& chain_config_;
     size_t batch_size_;
     db::PruneMode prune_mode_;

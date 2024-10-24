@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/data_store.hpp>
 
 namespace silkworm {
 
@@ -31,7 +31,7 @@ class Message {
     virtual std::string name() const = 0;
 
     // execute: inbound message send a reply, outbound message send a request
-    virtual void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) = 0;
+    virtual void execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) = 0;
 
     virtual ~Message() = default;
 };

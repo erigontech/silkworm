@@ -36,11 +36,13 @@ using namespace silkworm::db;
 
 Senders::Senders(
     SyncContext* sync_context,
+    DataModelFactory data_model_factory,
     const ChainConfig& chain_config,
     size_t batch_size,
     etl::CollectorSettings etl_settings,
     BlockAmount prune_mode_senders)
     : Stage(sync_context, stages::kSendersKey),
+      data_model_factory_(std::move(data_model_factory)),
       chain_config_(chain_config),
       prune_mode_senders_(prune_mode_senders),
       max_batch_size_{batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
@@ -265,7 +267,7 @@ Stage::Result Senders::parallel_recover(RWTxn& txn) {
     results_.clear();
 
     try {
-        DataModel data_model{txn};
+        DataModel data_model = data_model_factory_(txn);
 
         // Check stage boundaries using previous execution of current stage and current execution of previous stage
         auto previous_progress{stages::read_stage_progress(txn, stages::kSendersKey)};

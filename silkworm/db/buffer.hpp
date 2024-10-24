@@ -17,6 +17,7 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <vector>
@@ -37,11 +38,49 @@
 
 namespace silkworm::db {
 
+struct BufferDataModel {
+    virtual ~BufferDataModel() = default;
+    virtual std::optional<BlockHeader> read_header(BlockNum block_num, const Hash& block_hash) const = 0;
+    [[nodiscard]] virtual bool read_body(BlockNum block_num, HashAsArray hash, bool read_senders, BlockBody& body) const = 0;
+};
+
+class BufferROTxDataModel : public BufferDataModel {
+  public:
+    explicit BufferROTxDataModel(ROTxn& tx) : tx_{tx} {}
+    ~BufferROTxDataModel() override = default;
+    std::optional<BlockHeader> read_header(BlockNum block_num, const Hash& block_hash) const override {
+        return db::read_header(tx_, block_num, block_hash);
+    }
+    [[nodiscard]] bool read_body(BlockNum block_num, HashAsArray hash, bool read_senders, BlockBody& body) const override {
+        return db::read_body(tx_, block_num, hash, read_senders, body);
+    }
+
+  private:
+    ROTxn& tx_;
+};
+
+class BufferFullDataModel : public BufferDataModel {
+  public:
+    explicit BufferFullDataModel(DataModel data_model) : data_model_{data_model} {}
+    ~BufferFullDataModel() override = default;
+    std::optional<BlockHeader> read_header(BlockNum block_num, const Hash& block_hash) const override {
+        return data_model_.read_header(block_num, block_hash);
+    }
+    [[nodiscard]] bool read_body(BlockNum block_num, HashAsArray hash, bool read_senders, BlockBody& body) const override {
+        return data_model_.read_body(block_num, hash, read_senders, body);
+    }
+
+  private:
+    DataModel data_model_;
+};
+
 class Buffer : public State {
   public:
-    explicit Buffer(RWTxn& txn)
+    explicit Buffer(
+        RWTxn& txn,
+        std::unique_ptr<BufferDataModel> data_model)
         : txn_{txn},
-          access_layer_{txn_} {}
+          data_model_{std::move(data_model)} {}
 
     /** @name Settings */
     //!@{
@@ -161,7 +200,7 @@ class Buffer : public State {
 
   private:
     RWTxn& txn_;
-    DataModel access_layer_;
+    std::unique_ptr<BufferDataModel> data_model_;
 
     // Settings
 

@@ -29,7 +29,7 @@ InboundBlockHeaders::InboundBlockHeaders(ByteView data, PeerId peer_id)
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void InboundBlockHeaders::execute(db::DataStoreRef, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;

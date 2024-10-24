@@ -1011,13 +1011,6 @@ void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash) {
     write_last_fcu_field(txn, kFinalizedBlockHash, hash);
 }
 
-void DataModel::set_snapshot_repository(snapshots::SnapshotRepository* repository) {
-    ensure(repository, "DataModel::set_snapshot_repository: repository is null");
-    repository_ = repository;
-}
-
-DataModel::DataModel(ROTxn& txn) : txn_{txn} {}
-
 std::optional<ChainConfig> DataModel::read_chain_config() const {
     return db::read_chain_config(txn_);
 }
@@ -1045,12 +1038,12 @@ BlockNum DataModel::highest_block_number() const {
     }
 
     // If none is found on db, then ask the snapshot repository (if any) for highest block
-    return repository_ ? repository_->max_block_available() : 0;
+    return repository_.max_block_available();
 }
 
-BlockNum DataModel::highest_frozen_block_number() {
+BlockNum DataModel::highest_frozen_block_number() const {
     // Ask the snapshot repository (if any) for highest block
-    return repository_ ? repository_->max_block_available() : 0;
+    return repository_.max_block_available();
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, HashAsArray block_hash) const {
@@ -1058,7 +1051,8 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, HashAsA
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const Hash& block_hash) const {
-    if (repository_ && repository_->max_block_available() && block_number <= repository_->max_block_available()) {
+    BlockNum repository_max_block_num = repository_.max_block_available();
+    if ((repository_max_block_num > 0) && (block_number <= repository_max_block_num)) {
         auto header = read_header_from_snapshot(block_number);
         if (header && header->hash() == block_hash) {  // reading using hash avoid this heavy hash calculation
             return header;
@@ -1069,7 +1063,8 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const H
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number) const {
-    if (repository_ && repository_->max_block_available() && block_number <= repository_->max_block_available()) {
+    BlockNum repository_max_block_num = repository_.max_block_available();
+    if ((repository_max_block_num > 0) && (block_number <= repository_max_block_num)) {
         return read_header_from_snapshot(block_number);
     }
     auto hash = db::read_canonical_header_hash(txn_, block_number);
@@ -1083,6 +1078,14 @@ std::optional<BlockHeader> DataModel::read_header(const Hash& block_hash) const 
 
     // Then search for it in the snapshots (if any)
     return read_header_from_snapshot(block_hash);
+}
+
+std::pair<std::optional<BlockHeader>, std::optional<Hash>> DataModel::read_head_header_and_hash() const {
+    auto hash_opt = read_head_header_hash(txn_);
+    if (!hash_opt) return {std::nullopt, std::nullopt};
+    Hash hash{*hash_opt};
+    auto header = read_header(hash);
+    return {std::move(header), hash};
 }
 
 std::optional<BlockNum> DataModel::read_block_number(const Hash& block_hash) const {
@@ -1215,10 +1218,10 @@ void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&
         return;
     }
 
-    auto block_number_in_snapshots = repository_ ? repository_->max_block_available() : 0;
+    auto block_number_in_snapshots = repository_.max_block_available();
 
     // We've reached the first header in db but still need to read more from snapshots
-    if (repository_ && last_read_number_from_db > 0) {
+    if (last_read_number_from_db > 0) {
         ensure(*last_read_number_from_db == block_number_in_snapshots + 1,
                "db and snapshot block numbers are not contiguous");
     }
@@ -1241,11 +1244,7 @@ bool DataModel::read_block(BlockNum number, bool read_senders, Block& block) con
     return read_block(hash->bytes, number, read_senders, block);
 }
 
-bool DataModel::read_block_from_snapshot(BlockNum height, Block& block) {
-    if (!repository_) {
-        return false;
-    }
-
+bool DataModel::read_block_from_snapshot(BlockNum height, Block& block) const {
     auto block_header{read_header_from_snapshot(height)};
     if (!block_header) return false;
 
@@ -1254,28 +1253,20 @@ bool DataModel::read_block_from_snapshot(BlockNum height, Block& block) {
     return read_body_from_snapshot(height, block);
 }
 
-std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height) {
-    if (!repository_) {
-        return {};
-    }
-
+std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height) const {
     std::optional<BlockHeader> block_header;
     // We know the header snapshot in advance: find it based on target block number
-    const auto [segment_and_index, _] = repository_->find_segment(SnapshotType::headers, height);
+    const auto [segment_and_index, _] = repository_.find_segment(SnapshotType::headers, height);
     if (segment_and_index) {
         block_header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(height);
     }
     return block_header;
 }
 
-std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash) {
-    if (!repository_) {
-        return {};
-    }
-
+std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash) const {
     std::optional<BlockHeader> block_header;
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
-    for (const auto& bundle_ptr : repository_->view_bundles_reverse()) {
+    for (const auto& bundle_ptr : repository_.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_index(SnapshotType::headers);
         block_header = HeaderFindByHashQuery{segment_and_index}.exec(hash);
@@ -1284,20 +1275,11 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
     return block_header;
 }
 
-std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum height) {
-    if (!repository_) {
-        return std::nullopt;
-    }
-
-    // We know the body snapshot in advance: find it based on target block number
-    const auto [segment_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
-    if (!segment_and_index) return std::nullopt;
-
-    auto stored_body = BodyFindByBlockNumQuery{*segment_and_index}.exec(height);
-    return stored_body;
+std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum height) const {
+    return BodyFindByBlockNumMultiQuery{repository_}.exec(height);
 }
 
-bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
+bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) const {
     auto stored_body = read_body_for_storage_from_snapshot(height);
     if (!stored_body) return false;
 
@@ -1315,13 +1297,9 @@ bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) {
     return true;
 }
 
-bool DataModel::is_body_in_snapshot(BlockNum height) {
-    if (!repository_) {
-        return false;
-    }
-
+bool DataModel::is_body_in_snapshot(BlockNum height) const {
     // We know the body snapshot in advance: find it based on target block number
-    const auto [segment_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
+    const auto [segment_and_index, _] = repository_.find_segment(SnapshotType::bodies, height);
     if (segment_and_index) {
         const auto stored_body = BodyFindByBlockNumQuery{*segment_and_index}.exec(height);
         return stored_body.has_value();
@@ -1330,12 +1308,12 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
     return false;
 }
 
-bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) {
+bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) const {
     if (txn_count == 0) {
         return true;
     }
 
-    const auto [segment_and_index, _] = repository_->find_segment(SnapshotType::transactions, height);
+    const auto [segment_and_index, _] = repository_.find_segment(SnapshotType::transactions, height);
     if (!segment_and_index) return false;
 
     txs = TransactionRangeFromIdQuery{*segment_and_index}.exec_into_vector(base_txn_id, txn_count);
@@ -1343,8 +1321,8 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
     return true;
 }
 
-bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) {
-    const auto [body_segment_and_index, _] = repository_->find_segment(SnapshotType::bodies, height);
+bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) const {
+    const auto [body_segment_and_index, _] = repository_.find_segment(SnapshotType::bodies, height);
     if (body_segment_and_index) {
         auto stored_body = BodyFindByBlockNumQuery{*body_segment_and_index}.exec(height);
         if (!stored_body) return false;
@@ -1355,7 +1333,7 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector
 
         if (txn_count == 0) return true;
 
-        const auto [tx_segment_and_index, _2] = repository_->find_segment(SnapshotType::transactions, height);
+        const auto [tx_segment_and_index, _2] = repository_.find_segment(SnapshotType::transactions, height);
         if (!tx_segment_and_index) return false;
 
         rlp_txs = TransactionPayloadRlpRangeFromIdQuery{*tx_segment_and_index}.exec_into_vector(base_txn_id, txn_count);
@@ -1391,12 +1369,8 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
     return std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) {
-    if (!repository_) {
-        return {};
-    }
-
-    TransactionBlockNumByTxnHashRepoQuery query{repository_->view_bundles_reverse()};
+std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
+    TransactionBlockNumByTxnHashRepoQuery query{repository_.view_bundles_reverse()};
     return query.exec(tx_hash);
 }
 

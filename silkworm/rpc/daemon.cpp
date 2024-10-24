@@ -125,6 +125,7 @@ int Daemon::run(const DaemonSettings& settings) {
         // Activate the local chaindata and snapshot access (if required)
         std::optional<mdbx::env_managed> chaindata_env;
         std::unique_ptr<snapshots::SnapshotRepository> snapshot_repository;
+        std::optional<db::DataStoreRef> data_store;
         if (settings.datadir) {
             DataDirectory data_folder{*settings.datadir};
 
@@ -138,27 +139,30 @@ int Daemon::run(const DaemonSettings& settings) {
             *chaindata_env = silkworm::db::open_env(db_config);
 
             // Create a new snapshot repository
-            snapshots::SnapshotSettings snapshot_settings{
-                .repository_dir = data_folder.snapshots().path(),
-            };
             snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
-                std::move(snapshot_settings),
+                data_folder.snapshots().path(),
                 std::make_unique<snapshots::StepToBlockNumConverter>(),
                 std::make_unique<db::SnapshotBundleFactoryImpl>());
             snapshot_repository->reopen_folder();
 
-            db::DataModel::set_snapshot_repository(snapshot_repository.get());
-
             // At startup check that chain configuration is valid
             db::ROTxnManaged ro_txn{*chaindata_env};
-            db::DataModel data_access{ro_txn};
+            db::DataModel data_access{ro_txn, *snapshot_repository};
             if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
                 throw std::runtime_error{"invalid chain configuration"};
             }
+
+            data_store.emplace(db::DataStoreRef{
+                *chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
+                *snapshot_repository,
+            });
         }
 
         // Create the one-and-only Silkrpc daemon
-        Daemon rpc_daemon{settings, chaindata_env};
+        Daemon rpc_daemon{
+            settings,
+            std::move(data_store),
+        };
 
         // Check protocol version compatibility with Core Services
         if (!settings.skip_protocol_check) {
@@ -224,19 +228,17 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
     };
 }
 
-Daemon::Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env)
+Daemon::Daemon(
+    DaemonSettings settings,
+    std::optional<db::DataStoreRef> data_store)
     : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
-      worker_pool_{settings_.num_workers} {
+      worker_pool_{settings_.num_workers},
+      data_store_{std::move(data_store)} {
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_file) {
         jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);
-    }
-
-    if (chaindata_env) {
-        // Use the existing chaindata environment
-        chaindata_env_ = std::move(chaindata_env);
     }
 
     // Create shared and private state in execution contexts: order *matters* (e.g. for state cache)
@@ -270,8 +272,8 @@ void Daemon::add_private_services() {
         auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
         auto miner{std::make_unique<txpool::Miner>(io_context, grpc_channel, grpc_context)};
         std::unique_ptr<ethdb::Database> database;
-        if (chaindata_env_) {
-            database = std::make_unique<ethdb::file::LocalDatabase>(state_cache, *chaindata_env_);
+        if (data_store_) {
+            database = std::make_unique<ethdb::file::LocalDatabase>(*data_store_, state_cache);
         } else {
             database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), state_cache, grpc_context, grpc_channel);
         }
@@ -318,7 +320,7 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
     db::kv::api::StateChangeRunner runner{io_context.get_executor()};
     db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
     return std::make_unique<db::kv::api::DirectClient>(
-        std::make_shared<db::kv::api::DirectService>(router, *chaindata_env_, state_cache));
+        std::make_shared<db::kv::api::DirectService>(router, *data_store_, state_cache));
 }
 
 void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::ExecutionEngine>>& engines) {
@@ -364,8 +366,8 @@ void Daemon::start() {
 
     // Put the interface logs into the data folder
     std::filesystem::path data_folder{};
-    if (chaindata_env_) {
-        auto chaindata_path{chaindata_env_->get_path()};
+    if (data_store_) {
+        auto chaindata_path = data_store_->chaindata_env.get_path();
         // Trick to remove any empty filename because MDBX chaindata path ends with '/'
         if (chaindata_path.filename().empty()) {
             chaindata_path = chaindata_path.parent_path();

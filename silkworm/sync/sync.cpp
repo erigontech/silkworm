@@ -16,6 +16,8 @@
 
 #include "sync.hpp"
 
+#include <utility>
+
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 
 #include "sync_pos.hpp"
@@ -24,14 +26,14 @@
 namespace silkworm::chainsync {
 
 Sync::Sync(const boost::asio::any_io_executor& executor,
-           mdbx::env chaindata_env,
+           db::DataStoreRef data_store,
            execution::api::Client& execution,
-           const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
+           const std::shared_ptr<sentry::api::SentryClient>& sentry_client,
            const ChainConfig& config,
            bool use_preverified_hashes,
            const EngineRpcSettings& rpc_settings)
     : sync_sentry_client_{executor, sentry_client},
-      block_exchange_{sync_sentry_client_, db::ROAccess{chaindata_env}, config, use_preverified_hashes} {
+      block_exchange_{data_store, sync_sentry_client_, config, use_preverified_hashes} {
     // If terminal total difficulty is present in chain config, the network will use Proof-of-Stake sooner or later
     if (config.terminal_total_difficulty.has_value()) {
         // Configure and activate the Execution Layer Engine API RPC server
@@ -51,7 +53,7 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
             .num_workers = 1,  // single-client so just one worker should be OK
             .jwt_secret_file = rpc_settings.jwt_secret_file,
         };
-        engine_rpc_server_ = std::make_unique<rpc::Daemon>(engine_rpc_settings, chaindata_env);
+        engine_rpc_server_ = std::make_unique<rpc::Daemon>(engine_rpc_settings, data_store);
 
         // Create the synchronization algorithm based on Casper + LMD-GHOST, i.e. PoS
         auto pos_sync = std::make_shared<PoSSync>(block_exchange_, execution);

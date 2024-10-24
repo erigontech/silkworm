@@ -38,7 +38,7 @@ InboundNewBlockHashes::InboundNewBlockHashes(ByteView data, PeerId peer_id)
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void InboundNewBlockHashes::execute(db::DataStoreRef, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;

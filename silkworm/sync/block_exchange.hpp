@@ -17,14 +17,13 @@
 #pragma once
 
 #include <memory>
-#include <variant>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
-#include <silkworm/sentry/api/common/message_from_peer.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
@@ -37,8 +36,8 @@ class SentryClient;
 class BlockExchange : public ActiveComponent {
   public:
     BlockExchange(
+        db::DataStoreRef data_store,
         SentryClient& sentry,
-        db::ROAccess dba,
         const ChainConfig& chain_config,
         bool use_preverified_hashes);
     ~BlockExchange() override;
@@ -83,7 +82,8 @@ class BlockExchange : public ActiveComponent {
     void collect_bodies();
     void log_status();
 
-    db::ROAccess db_access_;  // only to reply remote peer's requests
+    // only to reply remote peer's requests
+    db::DataStoreRef data_store_;
     SentryClient& sentry_;
     const ChainConfig& chain_config_;
     HeaderChain header_chain_;

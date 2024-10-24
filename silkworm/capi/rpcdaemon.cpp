@@ -101,10 +101,13 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
     }
 
     auto daemon_settings = make_daemon_settings(handle, *settings);
-    db::EnvUnmanaged unmanaged_env{env};
+    db::DataStoreRef data_store{
+        db::EnvUnmanaged{env},
+        *handle->snapshot_repository,
+    };
 
     // Create the one-and-only Silkrpc daemon
-    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, std::make_optional<mdbx::env>(unmanaged_env));
+    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, data_store);
 
     // Check protocol version compatibility with Core Services
     if (!daemon_settings.skip_protocol_check) {

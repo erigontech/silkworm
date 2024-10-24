@@ -30,7 +30,7 @@ std::vector<PeerPenalization>& OutboundGetBlockBodies::penalties() { return pena
 BlockNum& OutboundGetBlockBodies::min_block() { return min_block_; }
 bool OutboundGetBlockBodies::packet_present() const { return !packet_.request.empty(); }
 
-void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void OutboundGetBlockBodies::execute(db::DataStoreRef, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     if (packet_present()) {
         try {
             auto send_outcome = send_packet(sentry);

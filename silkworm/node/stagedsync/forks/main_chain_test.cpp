@@ -25,10 +25,11 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/test_util/make_stages_factory.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
@@ -42,6 +43,7 @@ using namespace intx;  // just for literals
 using execution::api::InvalidChain;
 using execution::api::ValidationError;
 using execution::api::ValidChain;
+using silkworm::stagedsync::test_util::make_stages_factory;
 
 class MainChainForTest : public stagedsync::MainChain {
   public:
@@ -52,12 +54,6 @@ class MainChainForTest : public stagedsync::MainChain {
     using stagedsync::MainChain::MainChain;
     using stagedsync::MainChain::pipeline_;
     using stagedsync::MainChain::tx_;
-};
-
-static BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_config) {
-    return [chain_config](SyncContext* sync_context) {
-        return std::make_unique<BodiesStage>(sync_context, chain_config, [] { return 0; });
-    };
 };
 
 TEST_CASE("MainChain transaction handling") {
@@ -74,6 +70,9 @@ TEST_CASE("MainChain transaction handling") {
             context.add_genesis_data();
             context.commit_txn();
 
+            snapshots::SnapshotRepository repository = db::test_util::make_repository();
+            db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+
             Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
             NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
@@ -82,8 +81,9 @@ TEST_CASE("MainChain transaction handling") {
             MainChainForTest main_chain{
                 io.get_executor(),
                 node_settings,
+                data_model_factory,
                 /* log_timer_factory = */ std::nullopt,
-                make_bodies_stage_factory(*node_settings.chain_config),
+                make_stages_factory(node_settings, data_model_factory),
                 db_access,
             };
             main_chain.open();
@@ -171,6 +171,9 @@ TEST_CASE("MainChain") {
     context.add_genesis_data();
     context.commit_txn();
 
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
@@ -178,8 +181,9 @@ TEST_CASE("MainChain") {
     MainChainForTest main_chain{
         io.get_executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        make_bodies_stage_factory(*node_settings.chain_config),
+        make_stages_factory(node_settings, data_model_factory),
         db_access,
     };
     main_chain.open();
@@ -469,8 +473,9 @@ TEST_CASE("MainChain") {
         MainChainForTest main_chain2{
             io.get_executor(),
             node_settings,
+            main_chain.data_model_factory(),
             /* log_timer_factory = */ std::nullopt,
-            main_chain.bodies_stage_factory(),
+            main_chain.stages_factory(),
             db_access,
         };
         main_chain2.open();

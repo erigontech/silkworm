@@ -72,8 +72,7 @@ BENCHMARK(open_snapshot);
 
 static void build_header_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -91,8 +90,7 @@ BENCHMARK(build_header_index);
 
 static void build_body_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -108,8 +106,7 @@ BENCHMARK(build_body_index);
 
 static void build_tx_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -134,8 +131,7 @@ BENCHMARK(build_tx_index);
 static void reopen_folder(benchmark::State& state) {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    snapshots::SnapshotSettings settings{tmp_dir.path()};
-    auto repository = make_repository(settings);
+    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)

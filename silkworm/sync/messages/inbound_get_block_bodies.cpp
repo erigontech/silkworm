@@ -32,7 +32,7 @@ InboundGetBlockBodies::InboundGetBlockBodies(ByteView data, PeerId peer_id)
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void InboundGetBlockBodies::execute(db::DataStoreRef db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
@@ -40,7 +40,8 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     if (bs.highest_block_in_output() == 0)
         return;
 
-    BodyRetrieval body_retrieval(db);
+    db::ROTxnManaged tx = db::ROAccess{db.chaindata_env}.start_ro_tx();
+    BodyRetrieval body_retrieval{tx};
 
     BlockBodiesPacket66 reply;
     reply.request_id = packet_.request_id;

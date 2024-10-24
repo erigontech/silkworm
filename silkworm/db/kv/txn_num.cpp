@@ -35,18 +35,10 @@ static Task<TxNum> last_tx_num_for_block(Transaction& tx, BlockNum block_number,
     const auto block_number_key = block_key(block_number);
     auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
     if (key_value.value.empty()) {
-        /* START temporary for E3 alpha2 */
-        if (canonical_body_for_storage_provider) {
-            Bytes block_body_data = co_await canonical_body_for_storage_provider(block_number);
-            ByteView block_body_data_view{block_body_data};
-            const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data_view))};
-            co_return stored_body.base_txn_id + stored_body.txn_count - 1;
-        }
-        /* END temporary for E3 alpha2 */
-        key_value = co_await max_tx_num_cursor->last();
-        if (key_value.value.empty()) {
-            co_return 0;
-        }
+        Bytes block_body_data = co_await canonical_body_for_storage_provider(block_number);
+        ByteView block_body_data_view{block_body_data};
+        const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data_view))};
+        co_return stored_body.base_txn_id + stored_body.txn_count - 1;
     }
     if (key_value.value.size() != sizeof(TxNum)) {
         throw std::length_error("Bad TxNum value size " + std::to_string(key_value.value.size()) + " in db");

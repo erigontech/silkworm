@@ -15,6 +15,11 @@ jobs:
       SILKWORM_SANITIZE_OPTION: address,leak,undefined
     timeout-minutes: 1440
     steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "1" # Fetch only the last commit, not the entire history
       - name: Common Steps
         uses: ./.github/workflows/rpc-fuzzer-steps.yml
 
@@ -25,6 +30,11 @@ jobs:
       SILKWORM_SANITIZE_OPTION: thread
     timeout-minutes: 1440
     steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "1" # Fetch only the last commit, not the entire history
       - name: Common Steps
         uses: ./.github/workflows/rpc-fuzzer-steps.yml
   
@@ -35,6 +45,11 @@ jobs:
       SILKWORM_SANITIZE_OPTION: OFF
     timeout-minutes: 1440
     steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "1" # Fetch only the last commit, not the entire history
       - name: Common Steps
         uses: ./.github/workflows/rpc-fuzzer-steps.yml
 

@@ -3,19 +3,13 @@ name: QA - RPC Fuzzer Tests
 on:
     workflow_dispatch:
   
-jobs:
+runs:
   common-steps:
     runs-on: self-hosted
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa
     steps:
-      - name: Checkout Silkworm Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: "1" # Fetch only the last commit, not the entire history
-
       - name: Sanity Check
         run: | 
           echo "Sanity Check"

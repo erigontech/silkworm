@@ -9,91 +9,44 @@ on:
       - fuzzer-oom-issue-fix
   
 jobs:
-  fuzzer-test-suite:
+  fuzzer-test-address-sanitizer:
     runs-on: self-hosted
     env:
-      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
-      ERIGON_QA_PATH: /opt/erigon-qa
+      SILKWORM_SANITIZE_OPTION: address,leak,undefined
     timeout-minutes: 1440
     steps:
-      - name: Checkout Silkworm Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: "1" # Fetch only the last commit, not the entire history
+      - name: Common Steps
+        uses: ./rpc-fuzzer-steps.yml
 
-      - name: Install Compiler
-        run: cmake/setup/compiler_install.sh clang 16
+  fuzzer-test-thread-sanitizer:
+    needs: fuzzer-test-address-sanitizer
+    runs-on: self-hosted
+    env:
+      SILKWORM_SANITIZE_OPTION: thread
+    timeout-minutes: 1440
+    steps:
+      - name: Common Steps
+        uses: ./rpc-fuzzer-steps.yml
+  
+  fuzzer-test-no-sanitizer:
+    needs: fuzzer-test-thread-sanitizer
+    runs-on: self-hosted
+    env:
+      SILKWORM_SANITIZE_OPTION: OFF
+    timeout-minutes: 1440
+    steps:
+      - name: Common Steps
+        uses: ./rpc-fuzzer-steps.yml
 
-      - name: Clean Build Directory
-        run: rm -rf ${{runner.workspace}}/silkworm/build
-
-      - name: Create Build Environment
-        run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
-
-      - name: Preinstall Conan packages
-        working-directory: ${{runner.workspace}}/silkworm
-        run: CC=clang-16 CXX=clang++-16 conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
-
-      - name: Configure CMake
-        working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=experimental/linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
-
-      - name: Build Silkworm Fuzzer Test
-        working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-16 CXX=clang++-16 cmake  --build . --target rpcdaemon_fuzzer_test -j 8
-
-      - name: Prepare Corpus Directories
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
-        run: |
-          echo "Ensure persistent directories for fuzzing corpus are created"
-          mkdir -p $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus
-          mkdir -p $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes
-
-          echo "Create corpus artifacts from execution-api specification"
-          mkdir -p artifacts
-          for file in ../../../third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" artifacts; done
-          for file in artifacts/*; do sed -i '2,$d' "$file"; done
-          for file in artifacts/*; do sed -i 's/^>> //' "$file"; done
-
-          mkdir -p local-corpus
-
-      - name: Pause the Erigon instance dedicated to db maintenance
-        run: |
-          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
-
-      - name: Execute Silkworm Fuzzer Test
-        timeout-minutes: 1440
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
-        run: |
-          # Create minimal corpus
-          ./rpcdaemon_fuzzer_test -merge=1 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
-
-          # Single thread execution
-          ./rpcdaemon_fuzzer_test -max_total_time=25200 local-corpus
-
-      - name: Save Fuzzer Test Results
-        if: always()
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
-        run: |
-          # Save failed results to the crash directory (ignore errors)
-          cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
-          cp leak-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
-
-          # Save corpus to the persistent corpus directory
-          rm -rf $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus/*
-          cp -r local-corpus/* $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus/
-
-      - name: Tear Down Build Environment
-        if: always()
-        run: |
-          # Reset compiler paths
-          sudo update-alternatives --remove cc /usr/bin/clang
-          sudo update-alternatives --remove c++ /usr/bin/clang++
-          sudo rm -f /usr/bin/clang
-          sudo rm -f /usr/bin/clang++
-          
-          # Resume the Erigon instance dedicated to db maintenance
-          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
-
-
+  # Meomory sanitizer disabled due to the following build error:
+  # [cmake] SUMMARY: MemorySanitizer: use-of-uninitialized-value (./.conan/data/protobuf/3.21.12/_/_/package/9af2e4074bd0472b64aa0667b6df63750a9ff7bb/bin/protoc-3.21.12.0+0x613e7e) 
+  # in bool google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolCompare::operator()<google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry, google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry>(google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry const&, google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry const&) const
+  # fuzzer-test-memory-sanitizer:
+  #   needs: fuzzer-test-thread-sanitizer
+  #   runs-on: self-hosted
+  #   env:
+  #     SILKWORM_SANITIZE_OPTION: memory
+  #   timeout-minutes: 1440
+  #   steps:
+  #     - name: Common Steps
+  #       uses: ./rpc-fuzzer-steps.yml

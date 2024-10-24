@@ -38,41 +38,28 @@ if(SILKWORM_CORE_ONLY)
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)
-  # Enable fuzzing tests for Clang sanitizer builds only
+
+  # Enable fuzzing tests for Clang builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
-
-    if(NOT DEFINED SILKWORM_FUZZER_SANITIZER)
-      set(SILKWORM_FUZZER_SANITIZER "address,leak,undefined")
-    endif()
-    message(STATUS "Fuzzer sanitizer: ${SILKWORM_FUZZER_SANITIZER}")
-
     # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
-    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=${SILKWORM_FUZZER_SANITIZER},fuzzer)
-    target_link_libraries(
-      rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-                                    -fsanitize=${SILKWORM_FUZZER_SANITIZER}
-    )
+    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
+    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util)
     if(SILKWORM_FUZZER_LIBFUZZER_PATH)
-      target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH} -fsanitize=${SILKWORM_FUZZER_SANITIZER} )
+      target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
     else()
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     endif()
-
     # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
-    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=${SILKWORM_FUZZER_SANITIZER})
-    target_link_libraries(
-      rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-                                           CLI11::CLI11 -fsanitize=${SILKWORM_FUZZER_SANITIZER}
-    )
+    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util CLI11::CLI11)
   endif()
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)
   find_package(CLI11 REQUIRED)
   add_executable(ethereum ethereum.cpp)
   target_compile_definitions(
-    ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/ethereum-tests"
+    ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR= "${SILKWORM_MAIN_DIR}/third_party/ethereum-tests"
   )
   target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11 magic_enum::magic_enum)
 

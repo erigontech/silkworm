@@ -2,7 +2,6 @@ name: QA - RPC Fuzzer Common Steps
   
 runs:
   using: "composite"
-  timeout-minutes: 1440
   steps:
     - name: Sanity Check
       shell: bash

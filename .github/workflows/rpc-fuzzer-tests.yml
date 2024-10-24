@@ -23,6 +23,7 @@ jobs:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
       - uses: ./.github/actions/fuzzer-common-steps
+        timeout-minutes: 1440
 
   fuzzer-test-thread-sanitizer:
     needs: fuzzer-test-address-sanitizer
@@ -39,6 +40,7 @@ jobs:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
       - uses: ./.github/actions/fuzzer-common-steps
+        timeout-minutes: 1440
   
   fuzzer-test-no-sanitizer:
     needs: fuzzer-test-thread-sanitizer
@@ -55,6 +57,7 @@ jobs:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
       - uses: ./.github/actions/fuzzer-common-steps
+        timeout-minutes: 1440
 
   # Meomory sanitizer disabled due to the following build error:
   # [cmake] SUMMARY: MemorySanitizer: use-of-uninitialized-value (./.conan/data/protobuf/3.21.12/_/_/package/9af2e4074bd0472b64aa0667b6df63750a9ff7bb/bin/protoc-3.21.12.0+0x613e7e) 

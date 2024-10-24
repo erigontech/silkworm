@@ -27,6 +27,7 @@ jobs:
 
   fuzzer-test-thread-sanitizer:
     needs: fuzzer-test-address-sanitizer
+    if: always()
     runs-on: self-hosted
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
@@ -44,6 +45,7 @@ jobs:
   
   fuzzer-test-no-sanitizer:
     needs: fuzzer-test-thread-sanitizer
+    if: always()
     runs-on: self-hosted
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
@@ -64,10 +66,18 @@ jobs:
   # in bool google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolCompare::operator()<google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry, google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry>(google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry const&, google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry const&) const
   # fuzzer-test-memory-sanitizer:
   #   needs: fuzzer-test-thread-sanitizer
+  #   if: always()
   #   runs-on: self-hosted
   #   env:
+  #     RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+  #     ERIGON_QA_PATH: /opt/erigon-qa
   #     SILKWORM_SANITIZE_OPTION: memory
   #   timeout-minutes: 1440
   #   steps:
-  #     - name: Common Steps
-  #       uses: ./.github/workflows/rpc-fuzzer-steps.yml
+  #     - name: Checkout Silkworm Repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: "1" # Fetch only the last commit, not the entire history
+  #     - uses: ./.github/actions/fuzzer-common-steps
+  #       timeout-minutes: 1440

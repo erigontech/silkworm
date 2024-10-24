@@ -11,17 +11,6 @@ cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x engine_,\
-erigon_getHeaderByHash/test_05.json,\
-debug_accountAt,\
-debug_traceBlockByHash,\
-erigon_getBlockReceiptsByBlockHash,\
-erigon_getHeaderByHash,\
-erigon_getLogsByHash,\
-eth_getBlockByHash,\
-eth_getBlockTransactionCountByHash,\
-eth_getRawTransactionByBlockHashAndIndex,\
-eth_getTransactionByBlockHashAndIndex,\
-eth_getUncleCountByBlockHash,\
 eth_getBalance,\
 debug_traceCall/test_02.json,\
 eth_getCode,\
@@ -33,6 +22,8 @@ eth_getStorageAt/test_03.json,\
 eth_getTransactionCount/test_01.json,\
 eth_getTransactionCount/test_06.json,\
 eth_createAccessList/test_16.json,\
+erigon_getHeaderByHash/test_05.json,\
+debug_traceCall/test_02.json,\
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\

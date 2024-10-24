@@ -38,40 +38,25 @@ if(SILKWORM_CORE_ONLY)
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)
-  # Enable fuzzing tests for Clang sanitizer builds only
-  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
-    # macOS on 64-bit ARM does not support option -fsanitize=leak
-    if(CMAKE_SYSTEM_NAME MATCHES "Darwin" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL arm64)
-      set(FUZZER_TEST_COMPILE_SANITIZE address,undefined,fuzzer)
-      set(FUZZER_TEST_LINK_SANITIZE address,undefined)
-      set(FUZZER_DIAG_COMPILE_SANITIZE address,undefined)
-      set(FUZZER_DIAG_LINK_SANITIZE address,undefined)
-    else()
-      set(FUZZER_TEST_COMPILE_SANITIZE address,leak,undefined,fuzzer)
-      set(FUZZER_TEST_LINK_SANITIZE address,leak,undefined)
-      set(FUZZER_DIAG_COMPILE_SANITIZE address,leak,undefined)
-      set(FUZZER_DIAG_LINK_SANITIZE address,leak,undefined)
-    endif()
 
+  # Enable fuzzing tests for Clang builds only
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
     # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
-    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=${FUZZER_TEST_COMPILE_SANITIZE})
+    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     target_link_libraries(
       rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-                                    -fsanitize=${FUZZER_TEST_LINK_SANITIZE}
     )
     if(SILKWORM_FUZZER_LIBFUZZER_PATH)
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
     else()
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     endif()
-
     # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
-    target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=${FUZZER_DIAG_COMPILE_SANITIZE})
     target_link_libraries(
       rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-                                           CLI11::CLI11 -fsanitize=${FUZZER_DIAG_LINK_SANITIZE}
+                                           CLI11::CLI11
     )
   endif()
 

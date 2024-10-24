@@ -35,14 +35,14 @@ static Task<TxNum> last_tx_num_for_block(Transaction& tx, BlockNum block_number,
     const auto block_number_key = block_key(block_number);
     auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
     if (key_value.value.empty()) {
-        if (canonical_body_for_storage_provider) { /* temporary for aplha2 */
-            SILKWORM_ASSERT(canonical_body_for_storage_provider);
+        /* START temporary for E3 alpha2 */
+        if (canonical_body_for_storage_provider) {
             Bytes block_body_data = co_await canonical_body_for_storage_provider(block_number);
             ByteView block_body_data_view{block_body_data};
             const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data_view))};
             co_return stored_body.base_txn_id + stored_body.txn_count - 1;
         }
-        /* temporary for aplha2 */
+        /* END temporary for E3 alpha2 */
         key_value = co_await max_tx_num_cursor->last();
         if (key_value.value.empty()) {
             co_return 0;

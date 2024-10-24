@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <gmock/gmock.h>
@@ -35,7 +37,8 @@ using testing::_;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
 
-static Bytes kBlockHash{*from_hex("439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff")};
+static const evmc::bytes32 kBlockHash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
+
 static Bytes kInvalidJsonChainConfig{*from_hex("000102")};
 static Bytes kChainConfig{*from_hex(
     "7b226265726c696e426c6f636b223a31323234343030302c2262797a6"
@@ -45,16 +48,22 @@ static Bytes kChainConfig{*from_hex(
     "30302c22697374616e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a31323936353030302c226d75697"
     "2476c6163696572426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a373238303030307d")};
 
+chain::BlockProvider block_provider{
+    [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
+chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
+    [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
+    [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
+    [](BlockNum) -> Task<evmc::bytes32> { co_return kBlockHash; }};
+
 struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     test_util::MockTransaction transaction;
-    RemoteChainStorage storage{transaction, Providers{}};
+    RemoteChainStorage storage{transaction, {block_provider, block_number_from_txn_hash_provider, block_number_from_block_hash_provider, canonical_block_hash_from_number_provider}};
 };
 
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
     SECTION("empty chain data") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kBlockHash;
-        }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
@@ -66,9 +75,6 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
     }
 
     SECTION("invalid JSON chain data") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kBlockHash;
-        }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kInvalidJsonChainConfig;
         }));
@@ -76,9 +82,6 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
     }
 
     SECTION("valid JSON chain data") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kBlockHash;
-        }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kChainConfig;
         }));

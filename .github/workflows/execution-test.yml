@@ -5,15 +5,15 @@ on:
     inputs:
       stop_at_block:
         description: 'Block number to stop at; none for all'
-        required: true
+        required: false
       stop_at_stage:
         description: 'Stage to stop at; none for all; sample values: "Execution", "IntermediateHashes", "HashState", "HistoryIndex"'
         required: false
         type: string
 
 jobs:
-  integration-test-suite:
-    runs-on: self-hosted
+  execution-test-suite:
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
     env:
       ERIGON_QA_PATH: /opt/erigon-qa
       CHAIN: mainnet

@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 1440
     steps:
       - name: Common Steps
-        uses: ./rpc-fuzzer-steps.yml
+        uses: ./.github/workflows/rpc-fuzzer-steps.yml
 
   fuzzer-test-thread-sanitizer:
     needs: fuzzer-test-address-sanitizer
@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 1440
     steps:
       - name: Common Steps
-        uses: ./rpc-fuzzer-steps.yml
+        uses: ./.github/workflows/rpc-fuzzer-steps.yml
   
   fuzzer-test-no-sanitizer:
     needs: fuzzer-test-thread-sanitizer
@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 1440
     steps:
       - name: Common Steps
-        uses: ./rpc-fuzzer-steps.yml
+        uses: ./.github/workflows/rpc-fuzzer-steps.yml
 
   # Meomory sanitizer disabled due to the following build error:
   # [cmake] SUMMARY: MemorySanitizer: use-of-uninitialized-value (./.conan/data/protobuf/3.21.12/_/_/package/9af2e4074bd0472b64aa0667b6df63750a9ff7bb/bin/protoc-3.21.12.0+0x613e7e) 
@@ -49,4 +49,4 @@ jobs:
   #   timeout-minutes: 1440
   #   steps:
   #     - name: Common Steps
-  #       uses: ./rpc-fuzzer-steps.yml
+  #       uses: ./.github/workflows/rpc-fuzzer-steps.yml

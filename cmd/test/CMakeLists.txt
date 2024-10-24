@@ -44,7 +44,9 @@ if(NOT SILKWORM_CORE_ONLY)
     # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
-    target_link_libraries(rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util)
+    target_link_libraries(
+      rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
+    )
     if(SILKWORM_FUZZER_LIBFUZZER_PATH)
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
     else()
@@ -52,7 +54,10 @@ if(NOT SILKWORM_CORE_ONLY)
     endif()
     # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
-    target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util CLI11::CLI11)
+    target_link_libraries(
+      rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
+                                           CLI11::CLI11
+    )
   endif()
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)

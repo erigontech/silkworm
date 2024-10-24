@@ -10,6 +10,12 @@ jobs:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa
     steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "1" # Fetch only the last commit, not the entire history
+
       - name: Sanity Check
         run: | 
           echo "Sanity Check"
@@ -17,12 +23,6 @@ jobs:
           echo "ERIGON_QA_PATH: $ERIGON_QA_PATH"
           echo "SILKWORM_SANITIZE_OPTION: $SILKWORM_SANITIZE_OPTION"
     
-      - name: Checkout Silkworm Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: "1" # Fetch only the last commit, not the entire history
-
       - name: Install Compiler
         run: cmake/setup/compiler_install.sh clang 16
 

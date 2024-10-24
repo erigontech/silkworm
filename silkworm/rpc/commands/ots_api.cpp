@@ -273,6 +273,41 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
     auto tx = co_await database_->begin();
 
     try {
+        auto key = db::code_domain_key(sender);
+
+        db::kv::api::IndexRangeQuery query{
+                .table = "AccountsHistoryIdx", //db::table::kStorageDomain,
+                .key = key,
+                .from_timestamp = -1,
+                .to_timestamp = -1,
+                .ascending_order = true};
+        auto paginated_result = co_await tx->index_range(std::move(query));
+        auto it = co_await paginated_result.begin();
+
+        std::vector<std::string> keys;
+        std::int64_t count = 0;
+        while (const auto value = co_await it.next()) {
+            if (count++ % 4096 != 0) {
+                continue;
+            }
+            const auto txnId = *value;
+            SILK_LOG << "txnId: " << txnId;
+            db::kv::api::HistoryPointQuery hpq {
+                .table = "",
+                .key = key,
+                .timestamp = txnId
+            };
+            auto result = co_await tx->history_seek(std::move(hpq));
+            if (!result.success) {
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
+                co_return;
+            }
+
+
+        }
+        reply = make_json_content(request, nlohmann::detail::value_t::null);
+
+        /*
         auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);
         auto account_change_set_cursor = co_await tx->cursor_dup_sort(table::kAccountChangeSetName);
         const ByteView sender_byte_view{sender.bytes};
@@ -353,6 +388,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         } else {
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
+         */
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request, nlohmann::detail::value_t::null);

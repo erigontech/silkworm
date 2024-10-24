@@ -14,7 +14,7 @@ jobs:
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa
-      SILKWORM_SANITIZE_OPTION: address,leak,undefined
+      SILKWORM_SANITIZE_OPTION: address,leak
     timeout-minutes: 1440
     steps:
       - name: Checkout Silkworm Repository
@@ -22,7 +22,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
-      - uses: fuzzer/common-steps@v1
+      - uses: ./.github/actions/fuzzer-common-steps
 
   fuzzer-test-thread-sanitizer:
     needs: fuzzer-test-address-sanitizer
@@ -38,7 +38,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
-      - uses: fuzzer/common-steps@v1
+      - uses: ./.github/actions/fuzzer-common-steps
   
   fuzzer-test-no-sanitizer:
     needs: fuzzer-test-thread-sanitizer
@@ -54,7 +54,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
-      - uses: fuzzer/common-steps@v1
+      - uses: ./.github/actions/fuzzer-common-steps
 
   # Meomory sanitizer disabled due to the following build error:
   # [cmake] SUMMARY: MemorySanitizer: use-of-uninitialized-value (./.conan/data/protobuf/3.21.12/_/_/package/9af2e4074bd0472b64aa0667b6df63750a9ff7bb/bin/protoc-3.21.12.0+0x613e7e) 

@@ -23,11 +23,14 @@ on:
 jobs:
   execution-test-suite:
     runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
+    timeout-minutes: 7200  # 5 days
     env:
       ERIGON_QA_PATH: /opt/erigon-qa
       CHAIN: mainnet
       STOP_AT_BLOCK: ${{github.event.inputs.stop_at_block}}
       STOP_AT_STAGE: ${{github.event.inputs.stop_at_stage}}
+      TRACKING_TIME_SECONDS: 431400  # 5 days minus 10 minutes
+      TOTAL_TIME_SECONDS: 431400
 
     steps:
       - name: Checkout Silkworm Repository

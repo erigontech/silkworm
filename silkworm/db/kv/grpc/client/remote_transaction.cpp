@@ -16,6 +16,7 @@
 
 #include "remote_transaction.hpp"
 
+#include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/errors.hpp>

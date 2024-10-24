@@ -18,10 +18,11 @@
 
 #include <functional>
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types//block.hpp>
-#include <silkworm/core/types//hash.hpp>
 #include <silkworm/infra/concurrency/task.hpp>
+
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/hash.hpp>
 
 namespace silkworm::db::chain {
 

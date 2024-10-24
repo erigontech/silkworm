@@ -25,7 +25,6 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db::state {
 

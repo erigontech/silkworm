@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 

@@ -41,11 +41,11 @@ static Task<TxNum> last_tx_num_for_block(Transaction& tx, BlockNum block_number,
             ByteView block_body_data_view{block_body_data};
             const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data_view))};
             co_return stored_body.base_txn_id + stored_body.txn_count - 1;
-        }  
+        }
         /* temporary for aplha2 */
         key_value = co_await max_tx_num_cursor->last();
         if (key_value.value.empty()) {
-           co_return 0;
+            co_return 0;
         }
     }
     if (key_value.value.size() != sizeof(TxNum)) {

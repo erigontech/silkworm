@@ -16,29 +16,12 @@
 
 #pragma once
 
-#include <functional>
-
-#include <agrpc/grpc_context.hpp>
-
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 
 #include "chain_storage.hpp"
 
 namespace silkworm::db::chain {
-
-using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, Block&)>;
-using BlockNumberFromTxnHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
-using BlockNumberFromBlockHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
-using CanonicalBlockHashFromNumberProvider = std::function<Task<evmc::bytes32>(BlockNum)>;
-using CanonicalBodyForStorageProvider = std::function<Task<Bytes>(BlockNum)>;
-
-struct Providers {
-    BlockProvider block;
-    BlockNumberFromTxnHashProvider block_number_from_txn_hash;
-    BlockNumberFromBlockHashProvider block_number_from_hash;
-    CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number;
-    CanonicalBodyForStorageProvider canonical_body_for_storage;
-};
 
 //! RemoteChainStorage must be used when blockchain data is remote with respect to the running component, i.e. it is
 //! in remote database (accessed via gRPC KV I/F) or remote snapshot files (accessed via gRPC ETHBACKEND I/F)

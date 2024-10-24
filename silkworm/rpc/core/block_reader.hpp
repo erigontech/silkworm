@@ -20,9 +20,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>

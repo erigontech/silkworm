@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
@@ -29,7 +28,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 

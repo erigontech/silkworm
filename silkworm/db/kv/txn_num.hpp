@@ -22,7 +22,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
 
 #include "../kv/api/transaction.hpp"
 

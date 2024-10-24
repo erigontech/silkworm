@@ -17,7 +17,6 @@
 #include "override_state.hpp"
 
 #include <bit>
-#include <unordered_map>
 
 #include <ethash/keccak.hpp>
 

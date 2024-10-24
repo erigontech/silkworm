@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 
 namespace silkworm::rpc::ethdb::kv {

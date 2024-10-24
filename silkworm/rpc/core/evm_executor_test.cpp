@@ -63,7 +63,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};
-    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number)};
+    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number, db::chain::Providers{})};
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 };
 
@@ -116,10 +116,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -148,10 +145,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -189,10 +183,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{

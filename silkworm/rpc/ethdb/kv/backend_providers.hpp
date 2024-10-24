@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
@@ -45,12 +45,19 @@ inline db::chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from
     };
 }
 
+inline db::chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider(ethbackend::BackEnd* backend) {
+    return [backend](BlockNum number) -> Task<Bytes> {
+        co_return co_await backend->canonical_body_for_storage(number);
+    };
+}
+
 inline db::chain::Providers make_backend_providers(ethbackend::BackEnd* backend) {
     return {
         ethdb::kv::block_provider(backend),
         ethdb::kv::block_number_from_txn_hash_provider(backend),
         ethdb::kv::block_number_from_block_hash_provider(backend),
-        ethdb::kv::canonical_block_hash_from_number_provider(backend)};
+        ethdb::kv::canonical_block_hash_from_number_provider(backend),
+        ethdb::kv::canonical_body_for_storage_provider(backend)};
 }
 
 }  // namespace silkworm::rpc::ethdb::kv

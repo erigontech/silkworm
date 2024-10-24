@@ -20,7 +20,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
@@ -29,10 +28,8 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/types/call.hpp>
-#include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
 

@@ -19,16 +19,16 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db::state {
 
-StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_number) : tx_(tx), block_number_(block_number) {
+StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) : tx_(tx), block_number_(block_number), canonical_body_for_storage_provider_{std::move(canonical_body_for_storage_provider)} {
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
@@ -90,7 +90,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
 }
 
 Task<txn::TxNum> StateReader::first_txn_num_in_block() const {
-    const auto min_txn_num = co_await txn::min_tx_num(tx_, block_number_);
+    const auto min_txn_num = co_await txn::min_tx_num(tx_, block_number_, canonical_body_for_storage_provider_);
     co_return min_txn_num + /*txn_index*/ 0;
 }
 

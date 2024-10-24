@@ -21,7 +21,6 @@
 #include <unordered_map>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/core/common/util.hpp>

@@ -21,7 +21,7 @@
 
 #include <agrpc/detail/forward.hpp>
 
-#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 

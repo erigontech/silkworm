@@ -22,7 +22,6 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <nlohmann/json.hpp>
 
 #include <silkworm/db/kv/api/transaction.hpp>
 

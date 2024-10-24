@@ -903,7 +903,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         };
 
         rpc::AccountReader account_reader = [&tx](const evmc::address& address, BlockNum block_number) -> Task<std::optional<Account>> {
-            StateReader state_reader{*tx, block_number + 1};
+            StateReader state_reader{*tx, block_number + 1, db::chain::CanonicalBodyForStorageProvider{}};
             co_return co_await state_reader.read_account(address);
         };
 
@@ -951,7 +951,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
         const auto [block_number, is_latest_block] = co_await core::get_block_number(bnoh, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_number + 1};
+        StateReader state_reader{*tx, block_number + 1, db::chain::CanonicalBodyForStorageProvider{}};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         reply = make_json_content(request, "0x" + (account ? intx::hex(account->balance) : "0"));
@@ -985,7 +985,7 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, *tx, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_number + 1};
+        StateReader state_reader{*tx, block_number + 1, db::chain::CanonicalBodyForStorageProvider{}};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -1024,7 +1024,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, *tx, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_number + 1};
+        StateReader state_reader{*tx, block_number + 1, db::chain::CanonicalBodyForStorageProvider{}};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -1070,7 +1070,7 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, *tx, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_number + 1};
+        StateReader state_reader{*tx, block_number + 1, db::chain::CanonicalBodyForStorageProvider{}};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -1279,7 +1279,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         const bool is_latest_block = co_await core::get_latest_executed_block_number(*tx) == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
-        StateReader state_reader{*tx, block_with_hash->block.header.number + 1};
+        StateReader state_reader{*tx, block_with_hash->block.header.number + 1, db::chain::CanonicalBodyForStorageProvider{}};
 
         std::optional<uint64_t> nonce = std::nullopt;
         evmc::address to{};

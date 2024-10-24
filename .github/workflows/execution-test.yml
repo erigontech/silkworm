@@ -62,7 +62,7 @@ jobs:
           set +e # Disable exit on error
           
           # Run Erigon, wait sync and check ability to maintain sync
-          python3 $ERIGON_QA_PATH/test_system/qa-tests/silkworm/run_and_check_execution.py \
+          python3 $ERIGON_QA_PATH/test_system/qa-tests/silkworm-execution/run_and_check_execution.py \
           ${{runner.workspace}}/silkworm/build/cmd ${{runner.workspace}}/silkworm_datadir $TRACKING_TIME_SECONDS $TOTAL_TIME_SECONDS $CHAIN
           
           # Capture monitoring script exit status

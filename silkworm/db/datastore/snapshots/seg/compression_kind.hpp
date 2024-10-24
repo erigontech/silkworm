@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,25 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(TARGET silkworm_node_test_util)
+#pragma once
 
-find_package(Boost REQUIRED COMPONENTS headers)
-find_package(GTest REQUIRED)
+#include <cstdint>
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+#include "../common/util/bitmask_operators.hpp"
 
-add_library(${TARGET} ${SRC})
+namespace silkworm::snapshots::seg {
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_infra silkworm_node
-  PRIVATE silkworm_db_test_util Boost::headers glaze::glaze GTest::gmock
-)
+enum class CompressionKind : uint8_t {
+    kNone = 0b0,
+    kKeys = 0b1,
+    kValues = 0b10,
+    kAll = 0b11,
+};
+
+consteval void enable_bitmask_operator_and(CompressionKind);
+consteval void enable_bitmask_operator_or(CompressionKind);
+consteval void enable_bitmask_operator_not(CompressionKind);
+
+}  // namespace silkworm::snapshots::seg

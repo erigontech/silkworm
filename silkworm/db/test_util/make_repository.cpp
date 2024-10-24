@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,22 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(TARGET silkworm_node_test_util)
+#include "make_repository.hpp"
 
-find_package(Boost REQUIRED COMPONENTS headers)
-find_package(GTest REQUIRED)
+#include "../snapshot_bundle_factory_impl.hpp"
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+namespace silkworm::db::test_util {
 
-add_library(${TARGET} ${SRC})
+using namespace silkworm::snapshots;
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_infra silkworm_node
-  PRIVATE silkworm_db_test_util Boost::headers glaze::glaze GTest::gmock
-)
+SnapshotRepository make_repository(SnapshotSettings settings) {
+    return SnapshotRepository{
+        std::move(settings),
+        std::make_unique<StepToBlockNumConverter>(),
+        std::make_unique<SnapshotBundleFactoryImpl>(),
+    };
+}
+
+}  // namespace silkworm::db::test_util

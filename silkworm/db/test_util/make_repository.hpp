@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,15 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(TARGET silkworm_node_test_util)
+#pragma once
 
-find_package(Boost REQUIRED COMPONENTS headers)
-find_package(GTest REQUIRED)
+#include "../datastore/snapshots/snapshot_repository.hpp"
+#include "../datastore/snapshots/snapshot_settings.hpp"
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+namespace silkworm::db::test_util {
 
-add_library(${TARGET} ${SRC})
+snapshots::SnapshotRepository make_repository(snapshots::SnapshotSettings settings);
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_infra silkworm_node
-  PRIVATE silkworm_db_test_util Boost::headers glaze::glaze GTest::gmock
-)
+}  // namespace silkworm::db::test_util

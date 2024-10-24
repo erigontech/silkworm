@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,31 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(TARGET silkworm_node_test_util)
+#pragma once
 
-find_package(Boost REQUIRED COMPONENTS headers)
-find_package(GTest REQUIRED)
+#include <string>
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+#include <silkworm/core/common/bytes_to_string.hpp>
 
-add_library(${TARGET} ${SRC})
+#include "../common/codec.hpp"
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_infra silkworm_node
-  PRIVATE silkworm_db_test_util Boost::headers glaze::glaze GTest::gmock
-)
+namespace silkworm::snapshots {
+
+struct StringCodec : public Encoder, public Decoder {
+    std::string value;
+    Bytes word;
+
+    ~StringCodec() override = default;
+
+    ByteView encode_word() override {
+        word = string_to_bytes(value);
+        return word;
+    }
+    void decode_word(ByteView input_word) override {
+        value = byte_view_to_string_view(input_word);
+    }
+};
+
+}  // namespace silkworm::snapshots

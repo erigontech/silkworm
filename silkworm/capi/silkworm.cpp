@@ -223,8 +223,10 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     log::init(log_settings);
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
-    auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
-    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(snapshots::SnapshotSettings{}, std::move(snapshot_bundle_factory));
+    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
+        snapshots::SnapshotSettings{},
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<db::SnapshotBundleFactoryImpl>());
     db::DataModel::set_snapshot_repository(snapshot_repository.get());
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
@@ -377,17 +379,20 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     snapshots::Index idx_txn_hash{transactions_segment_path->related_path(snapshots::SnapshotType::transactions, snapshots::kIdxExtension), make_region(ts.tx_hash_index)};
     snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(snapshots::SnapshotType::transactions_to_block, snapshots::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
 
-    snapshots::SnapshotBundle bundle{{
-        .header_segment = std::move(header_segment),
-        .idx_header_hash = std::move(idx_header_hash),
+    snapshots::SnapshotBundle bundle{
+        headers_segment_path->step_range(),
+        {
+            .header_segment = std::move(header_segment),
+            .idx_header_hash = std::move(idx_header_hash),
 
-        .body_segment = std::move(body_segment),
-        .idx_body_number = std::move(idx_body_number),
+            .body_segment = std::move(body_segment),
+            .idx_body_number = std::move(idx_body_number),
 
-        .txn_segment = std::move(txn_segment),
-        .idx_txn_hash = std::move(idx_txn_hash),
-        .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-    }};
+            .txn_segment = std::move(txn_segment),
+            .idx_txn_hash = std::move(idx_txn_hash),
+            .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
+        },
+    };
     handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }

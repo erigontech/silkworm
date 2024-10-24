@@ -22,7 +22,6 @@
 #include <vector>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/base.hpp>
 
 #include "common/snapshot_path.hpp"
 #include "rec_split_index/index.hpp"
@@ -51,7 +50,9 @@ struct SnapshotBundleData {
 };
 
 struct SnapshotBundle : public SnapshotBundleData {
-    explicit SnapshotBundle(SnapshotBundleData bundle) : SnapshotBundleData(std::move(bundle)) {}
+    explicit SnapshotBundle(StepRange step_range, SnapshotBundleData bundle)
+        : SnapshotBundleData{std::move(bundle)},
+          step_range_{step_range} {}
     virtual ~SnapshotBundle();
 
     SnapshotBundle(SnapshotBundle&&) = default;
@@ -124,9 +125,7 @@ struct SnapshotBundle : public SnapshotBundleData {
         return {segment(type), index(type)};
     }
 
-    // assume that all snapshots have the same block range, and use one of them
-    BlockNumRange block_range() const { return header_segment.path().step_range().to_block_num_range(); }
-    size_t block_count() const { return block_range().size(); }
+    StepRange step_range() const { return step_range_; }
 
     std::vector<std::filesystem::path> files();
     std::vector<SnapshotPath> snapshot_paths();
@@ -139,6 +138,7 @@ struct SnapshotBundle : public SnapshotBundleData {
     }
 
   private:
+    StepRange step_range_;
     std::function<void(SnapshotBundle&)> on_close_callback_;
 };
 

@@ -295,8 +295,12 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
     SILK_INFO << "Decode snapshot elapsed: " << as_milliseconds(elapsed) << " msec";
 }
 
-static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
-    return std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
+static SnapshotRepository make_repository(SnapshotSettings settings) {
+    return SnapshotRepository{
+        std::move(settings),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>(),
+    };
 }
 
 using BodyCounters = std::pair<int, uint64_t>;
@@ -324,7 +328,7 @@ BodyCounters count_bodies_in_one(const SnapshotSubcommandSettings& settings, con
 }
 
 BodyCounters count_bodies_in_all(const SnapshotSubcommandSettings& settings) {
-    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings.settings);
     snapshot_repository.reopen_folder();
     int num_bodies = 0;
     uint64_t num_txns = 0;
@@ -374,7 +378,7 @@ int count_headers_in_one(const SnapshotSubcommandSettings& settings, const Segme
 }
 
 int count_headers_in_all(const SnapshotSubcommandSettings& settings) {
-    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings.settings);
     snapshot_repository.reopen_folder();
     int num_headers{0};
     for (const auto& bundle_ptr : snapshot_repository.view_bundles()) {
@@ -721,7 +725,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
 
     std::optional<SnapshotPath> matching_snapshot_path;
     std::optional<BlockHeader> matching_header;
-    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings.settings);
     snapshot_repository.reopen_folder();
     for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
@@ -751,7 +755,7 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Lookup header number: " << block_number;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings.settings);
     snapshot_repository.reopen_folder();
     const auto [segment_and_index, _] = snapshot_repository.find_segment(SnapshotType::headers, block_number);
     if (segment_and_index) {
@@ -811,7 +815,7 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
 }
 
 void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum block_number) {
-    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings.settings);
     snapshot_repository.reopen_folder();
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -918,7 +922,7 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
 }
 
 void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const Hash& hash) {
-    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings.settings);
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot_path;
@@ -983,7 +987,7 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
 }
 
 void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_t txn_id) {
-    SnapshotRepository snapshot_repository{settings.settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings.settings);
     snapshot_repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot_path;
@@ -1029,7 +1033,7 @@ void lookup_transaction(const SnapshotSubcommandSettings& settings) {
 }
 
 void merge(const SnapshotSettings& settings) {
-    SnapshotRepository snapshot_repository{settings, bundle_factory()};
+    auto snapshot_repository = make_repository(settings);
     snapshot_repository.reopen_folder();
     TemporaryDirectory tmp_dir;
     db::SnapshotMerger merger{snapshot_repository, tmp_dir.path()};

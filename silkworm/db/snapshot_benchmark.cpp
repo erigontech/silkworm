@@ -21,7 +21,7 @@
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/seg/decompressor.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
@@ -32,6 +32,7 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
+using db::test_util::make_repository;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 
@@ -69,14 +70,10 @@ static void open_snapshot(benchmark::State& state) {
 }
 BENCHMARK(open_snapshot);
 
-static std::unique_ptr<SnapshotBundleFactory> bundle_factory() {
-    return std::make_unique<db::SnapshotBundleFactoryImpl>();
-}
-
 static void build_header_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    SnapshotSettings settings{tmp_dir.path()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -94,8 +91,8 @@ BENCHMARK(build_header_index);
 
 static void build_body_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    SnapshotSettings settings{tmp_dir.path()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -111,8 +108,8 @@ BENCHMARK(build_body_index);
 
 static void build_tx_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    SnapshotSettings settings{tmp_dir.path()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -138,7 +135,7 @@ static void reopen_folder(benchmark::State& state) {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     snapshots::SnapshotSettings settings{tmp_dir.path()};
-    snapshots::SnapshotRepository repository{settings, bundle_factory()};
+    auto repository = make_repository(settings);
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)

@@ -22,6 +22,7 @@ eth_getStorageAt/test_03.json,\
 eth_getTransactionCount/test_01.json,\
 eth_getTransactionCount/test_06.json,\
 eth_createAccessList/test_16.json,\
+erigon_getHeaderByHash/test_05.json,\
 debug_traceCall/test_02.json,\
 debug_accountRange,\
 debug_getModifiedAccounts,\

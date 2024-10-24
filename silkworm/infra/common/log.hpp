@@ -124,7 +124,7 @@ template <Level level>
 class LogBuffer : public BufferBase {
   public:
     explicit LogBuffer() : BufferBase(level) {}
-    explicit LogBuffer(std::string_view msg, Args args = {}) : BufferBase(level, msg, args) {}
+    explicit LogBuffer(std::string_view msg, const Args& args = {}) : BufferBase(level, msg, args) {}
 };
 
 using Trace = LogBuffer<Level::kTrace>;

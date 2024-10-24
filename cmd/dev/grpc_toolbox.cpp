@@ -252,7 +252,6 @@ int ethbackend_coroutines(const std::string& target) {
 
         // Etherbase
         ethbackend::RemoteBackEnd eth_backend{*io_context, channel, *grpc_context};
-        // NOLINTNEXTLINE(performance-unnecessary-value-param)
         boost::asio::co_spawn(*io_context, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
             context_pool.stop();
         });
@@ -991,7 +990,6 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
                                                   ethdb::kv::make_backend_providers(&eth_backend)};
         auto kv_service = client.service();
 
-        // NOLINTNEXTLINE(performance-unnecessary-value-param)
         boost::asio::co_spawn(*io_context, query_func(kv_service, std::forward<Q>(query), verbose), [&](std::exception_ptr) {
             context_pool.stop();
         });

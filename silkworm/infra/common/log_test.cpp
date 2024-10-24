@@ -33,7 +33,7 @@ template <Level level>
 class LogBufferForTest : public LogBuffer<level> {
   public:
     explicit LogBufferForTest() : LogBuffer<level>() {}
-    explicit LogBufferForTest(std::string_view msg, Args args) : LogBuffer<level>(msg, args) {}
+    explicit LogBufferForTest(std::string_view msg, const Args& args) : LogBuffer<level>(msg, args) {}
 
     std::string content() const { return LogBuffer<level>::ss_.str(); }
 };

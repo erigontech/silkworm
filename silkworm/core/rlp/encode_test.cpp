@@ -22,7 +22,7 @@
 namespace silkworm {
 
 template <typename T>
-static Bytes encoded(T x) {
+static Bytes encoded(const T& x) {
     Bytes s{};
     silkworm::rlp::encode(s, x);
     return s;

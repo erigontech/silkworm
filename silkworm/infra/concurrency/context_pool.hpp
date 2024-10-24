@@ -188,7 +188,7 @@ class ContextPool : public ExecutorPool {
         return contexts_[num_contexts];
     }
 
-    static void termination_handler(std::exception_ptr) {  // NOLINT(performance-unnecessary-value-param)
+    static void termination_handler(std::exception_ptr) {
         std::terminate();
     }
 

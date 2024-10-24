@@ -16,6 +16,7 @@
 
 #include "execution_engine.hpp"
 
+#include <algorithm>
 #include <future>
 
 #include <silkworm/db/access_layer.hpp>
@@ -95,7 +96,7 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block>& block) {
     if (block_cache_.get(header_hash)) return true;  // ignore repeated blocks
     block_cache_.put(header_hash, block);
 
-    if (block_progress_ < block->header.number) block_progress_ = block->header.number;
+    block_progress_ = std::max(block_progress_, block->header.number);
 
     // if we are not tracking forks, just insert the block into the main chain
     if (!fork_tracking_active_) {

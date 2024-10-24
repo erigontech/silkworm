@@ -20,6 +20,7 @@
 
 namespace silkworm::sentry::discovery::disc_v4 {
 
+// NOLINTNEXTLINE(readability-enum-initial-value)
 enum class PacketType : uint8_t {
     kPing = 1,
     kPong,

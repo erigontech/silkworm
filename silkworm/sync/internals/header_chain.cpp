@@ -209,9 +209,7 @@ Headers HeaderChain::withdraw_stable_headers() {
         stable_headers.push_back(link->header);  // will be persisted by HeaderPersistence
 
         // Update persisted height, and state
-        if (link->block_height > highest_in_db_) {
-            highest_in_db_ = link->block_height;
-        }
+        highest_in_db_ = std::max(highest_in_db_, link->block_height);
         link->persisted = true;
         persisted_link_queue_.push(link);
 
@@ -387,8 +385,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     }
 
     BlockNum length = (next_target - highest_in_db_) / kStride;
-
-    if (length > kMaxLen) length = kMaxLen;
+    length = std::min(length, kMaxLen);
 
     if (length == 0) {
         skeleton_condition_ = "low";

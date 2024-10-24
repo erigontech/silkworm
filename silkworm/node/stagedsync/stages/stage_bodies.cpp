@@ -16,6 +16,7 @@
 
 #include "stage_bodies.hpp"
 
+#include <algorithm>
 #include <thread>
 
 #include <magic_enum.hpp>
@@ -76,9 +77,7 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
         return;
     }
 
-    if (block_num > highest_height_) {
-        highest_height_ = block_num;
-    }
+    highest_height_ = std::max(highest_height_, block_num);
 }
 
 void BodiesStage::BodyDataModel::close() {

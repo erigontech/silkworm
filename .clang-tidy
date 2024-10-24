@@ -4,6 +4,7 @@ WarningsAsErrors: '*'
 Checks: >
   abseil-*,
   boost-*,
+  -boost-use-ranges,
   bugprone-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-empty-catch,
@@ -65,10 +66,13 @@ Checks: >
   -modernize-avoid-c-arrays,
   -modernize-use-designated-initializers,
   -modernize-use-nodiscard,
+  -modernize-use-ranges,
+  -modernize-use-std-format,
   -modernize-use-trailing-return-type,
   performance-*,
   -performance-avoid-endl,
   -performance-enum-size,
+  -performance-unnecessary-value-param,
   portability-*,
   readability-*,
   -readability-braces-around-statements,
@@ -86,6 +90,7 @@ Checks: >
   -readability-suspicious-call-argument,
   -readability-uppercase-literal-suffix
 CheckOptions:
+  performance-unnecessary-value-param.AllowedTypes: std::exception_ptr
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.ClassIgnoredRegexp: buildinfo|glaze
   readability-identifier-naming.ClassMethodCase: lower_case

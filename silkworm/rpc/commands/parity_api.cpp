@@ -90,7 +90,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
 }
 
 void increment(Bytes& array) {
-    for (unsigned char & it : std::ranges::reverse_view(array)) {
+    for (unsigned char& it : std::ranges::reverse_view(array)) {
         if (it < 0xFF) {
             ++it;
             break;

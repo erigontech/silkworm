@@ -43,7 +43,7 @@ ots_getContractCreator,\
 ots_hasCode,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
-parity_listStorageKeys/test_12.json \
+parity_listStorageKeys/test_12.json,\
 txpool_content
 
 failed_test=$?

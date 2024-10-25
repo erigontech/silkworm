@@ -7,7 +7,7 @@ on:
   
 jobs:
   fuzzer-test-address-sanitizer:
-    runs-on: self-hosted
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
     timeout-minutes: 1440
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
@@ -25,7 +25,7 @@ jobs:
 
   fuzzer-test-no-sanitizer:
     needs: fuzzer-test-thread-sanitizer
-    runs-on: self-hosted
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
     timeout-minutes: 1440
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
@@ -41,7 +41,7 @@ jobs:
 
   fuzzer-test-memory-sanitizer:
     needs: fuzzer-test-no-sanitizer
-    runs-on: self-hosted
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
     timeout-minutes: 1440
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
@@ -59,7 +59,7 @@ jobs:
 
   fuzzer-test-thread-sanitizer:
     needs: fuzzer-test-address-sanitizer
-    runs-on: self-hosted
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
     timeout-minutes: 1440
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests

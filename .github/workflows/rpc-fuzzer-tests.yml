@@ -9,22 +9,24 @@ on:
       - fuzzer-oom-issue-fix
   
 jobs:
-  temp-cleanup:
-    runs-on: self-hosted
-    steps:
-      - name: Checkout Silkworm Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: "1" # Fetch only the last commit, not the entire history
-      - name: Cleanup
-        run: |
-          conan remove -f '*'
-
+  # temp-cleanup:
+  #   runs-on: self-hosted
+  #   steps:
+  #     - name: Checkout Silkworm Repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: "1" # Fetch only the last commit, not the entire history
+  #     - name: Cleanup
+  #       run: |
+  #         conan remove -f '*'
   fuzzer-test-address-sanitizer:
-    needs: temp-cleanup
+    # needs: temp-cleanup
     runs-on: self-hosted
     timeout-minutes: 1440
+    env:
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
     steps:
       - name: Checkout Silkworm Repository
         uses: actions/checkout@v4
@@ -41,6 +43,9 @@ jobs:
     if: always()
     runs-on: self-hosted
     timeout-minutes: 1440
+    env:
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
     steps:
       - name: Checkout Silkworm Repository
         uses: actions/checkout@v4
@@ -57,6 +62,9 @@ jobs:
     if: always()
     runs-on: self-hosted
     timeout-minutes: 1440
+    env:
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
     steps:
       - name: Checkout Silkworm Repository
         uses: actions/checkout@v4
@@ -76,6 +84,9 @@ jobs:
     if: always()
     runs-on: self-hosted
     timeout-minutes: 1440
+    env:
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
     steps:
       - name: Checkout Silkworm Repository
         uses: actions/checkout@v4

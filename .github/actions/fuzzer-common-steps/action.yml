@@ -65,8 +65,7 @@ runs:
         ./rpcdaemon_fuzzer_test -merge=1 -max_total_time=60 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
 
         # Single thread execution
-        # ./rpcdaemon_fuzzer_test -max_total_time=25200 -rss_limit_mb=10922 local-corpus
-        ./rpcdaemon_fuzzer_test -max_total_time=60 -rss_limit_mb=10922 artifacts
+        ./rpcdaemon_fuzzer_test -max_total_time=25200 -rss_limit_mb=10922 local-corpus
         
     - name: Save Fuzzer Test Results
       shell: bash

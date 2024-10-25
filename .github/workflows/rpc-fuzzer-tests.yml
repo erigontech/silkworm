@@ -9,19 +9,7 @@ on:
       - fuzzer-oom-issue-fix
   
 jobs:
-  # temp-cleanup:
-  #   runs-on: self-hosted
-  #   steps:
-  #     - name: Checkout Silkworm Repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #         fetch-depth: "1" # Fetch only the last commit, not the entire history
-  #     - name: Cleanup
-  #       run: |
-  #         conan remove -f '*'
   fuzzer-test-address-sanitizer:
-    # needs: temp-cleanup
     runs-on: self-hosted
     timeout-minutes: 1440
     env:
@@ -73,11 +61,6 @@ jobs:
           fetch-depth: "1" # Fetch only the last commit, not the entire history
       - uses: ./.github/actions/fuzzer-common-steps
         timeout-minutes: 1440
-
-  # Note:
-  # Meomory sanitizer disabled due to the following build error:
-  # [cmake] SUMMARY: MemorySanitizer: use-of-uninitialized-value (./.conan/data/protobuf/3.21.12/_/_/package/9af2e4074bd0472b64aa0667b6df63750a9ff7bb/bin/protoc-3.21.12.0+0x613e7e) 
-  # in bool google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolCompare::operator()<google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry, google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry>(google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry const&, google::protobuf::EncodedDescriptorDatabase::DescriptorIndex::SymbolEntry const&) const
 
   fuzzer-test-memory-sanitizer:
     needs: fuzzer-test-no-sanitizer

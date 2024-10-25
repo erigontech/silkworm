@@ -42,7 +42,7 @@ Stage::Result InterHashes::forward(RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        DataModel data_model{txn};
+        DataModel data_model = data_model_factory_(txn);
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
@@ -135,7 +135,7 @@ Stage::Result InterHashes::unwind(RWTxn& txn) {
 
     try {
         throw_if_stopping();
-        DataModel data_model{txn};
+        DataModel data_model = data_model_factory_(txn);
 
         BlockNum previous_progress{get_progress(txn)};
         if (to >= previous_progress) {

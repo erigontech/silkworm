@@ -34,6 +34,7 @@ class BodiesStage : public Stage {
     BodiesStage(
         SyncContext* sync_context,
         const ChainConfig& chain_config,
+        db::DataModelFactory data_model_factory,
         std::function<BlockNum()> last_pre_validated_block);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
@@ -45,7 +46,9 @@ class BodiesStage : public Stage {
 
   private:
     std::vector<std::string> get_log_progress() override;  // thread safe
+
     const ChainConfig& chain_config_;
+    db::DataModelFactory data_model_factory_;
     std::function<BlockNum()> last_pre_validated_block_;
     std::atomic<BlockNum> current_height_{0};
 
@@ -53,7 +56,11 @@ class BodiesStage : public Stage {
     // BodyDataModel has the responsibility to update bodies related tables
     class BodyDataModel {
       public:
-        explicit BodyDataModel(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
+        explicit BodyDataModel(
+            db::RWTxn& tx,
+            db::DataModel data_model,
+            BlockNum bodies_stage_height,
+            const ChainConfig& chain_config);
         ~BodyDataModel() = default;
 
         void update_tables(const Block&);  // make a pre-verification of the body and update body related tables
@@ -74,7 +81,6 @@ class BodiesStage : public Stage {
         void set_preverified_height(BlockNum height);
 
       private:
-        db::RWTxn& tx_;
         db::DataModel data_model_;
         const ChainConfig& chain_config_;
         protocol::RuleSetPtr rule_set_;

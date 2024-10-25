@@ -18,6 +18,7 @@
 
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/etl/collector.hpp>
 #include <silkworm/db/datastore/etl/collector_settings.hpp>
 #include <silkworm/db/stage.hpp>
@@ -27,8 +28,12 @@ namespace silkworm::stagedsync {
 
 class InterHashes final : public Stage {
   public:
-    explicit InterHashes(SyncContext* sync_context, db::etl::CollectorSettings etl_settings)
+    InterHashes(
+        SyncContext* sync_context,
+        db::DataModelFactory data_model_factory,
+        db::etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kIntermediateHashesKey),
+          data_model_factory_(std::move(data_model_factory)),
           etl_settings_(std::move(etl_settings)) {}
     ~InterHashes() override = default;
 
@@ -111,6 +116,8 @@ class InterHashes final : public Stage {
 
     // The loader which (re)builds the trees
     std::unique_ptr<trie::TrieLoader> trie_loader_;
+
+    db::DataModelFactory data_model_factory_;
 
     db::etl::CollectorSettings etl_settings_;
 

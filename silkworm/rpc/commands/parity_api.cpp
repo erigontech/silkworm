@@ -90,7 +90,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
 }
 
 void increment(Bytes& array) {
-    for (unsigned char& it : std::ranges::reverse_view(array)) {
+    for (auto& it : std::ranges::reverse_view(array)) {
         if (it < 0xFF) {
             ++it;
             break;
@@ -132,7 +132,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         std::optional<Account> account = co_await state_reader.read_account(address);
         if (!account) throw std::domain_error{"account not found"};
 
-        const auto txn_number = co_await db::txn::min_tx_num(*tx, block_number, db::chain::CanonicalBodyForStorageProvider{});
+        const auto txn_number = co_await tx->first_txn_num_in_block(block_number);
         auto from = db::code_domain_key(address);
 
         if (offset) {

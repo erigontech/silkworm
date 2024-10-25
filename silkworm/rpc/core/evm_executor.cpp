@@ -246,7 +246,7 @@ ExecutionResult EVMExecutor::call(
         return convert_validated_precheck(result, block, txn, evm);
     }
 
-    const auto owned_funds = execution_processor_.get_ibs_state().get_balance(*txn.sender());
+    const auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
 
     if (const auto result = protocol::validate_call_funds(txn, evm, owned_funds, bailout);
         result != ValidationResult::kOk) {
@@ -274,7 +274,7 @@ ExecutionResult EVMExecutor::call_with_receipt(
 
     const auto exec_result = call(block, txn, tracers, refund, gas_bailout);
 
-    const auto& logs = execution_processor_.get_ibs_state().logs();
+    const auto& logs = execution_processor_.intra_block_state().logs();
 
     receipt.success = exec_result.success();
     receipt.bloom = logs_bloom(logs);

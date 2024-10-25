@@ -55,7 +55,9 @@ class ExecutionProcessor {
 
     EVM& evm() noexcept { return evm_; }
     const EVM& evm() const noexcept { return evm_; }
-    IntraBlockState& get_ibs_state() { return state_; }
+    IntraBlockState& intra_block_state() { return state_; }
+    const IntraBlockState& intra_block_state() const { return state_; }
+
     void reset();
 
   private:

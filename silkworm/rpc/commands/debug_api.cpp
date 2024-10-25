@@ -327,7 +327,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                 executor.call(block, txn);
             }
 
-            const auto& ibs = executor.get_ibs_state();
+            const auto& ibs = executor.intra_block_state();
 
             nlohmann::json json_result;
             if (ibs.exists(address)) {

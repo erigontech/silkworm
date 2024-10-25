@@ -202,6 +202,10 @@ class DummyTransaction : public BaseTransaction {
         return nullptr;
     }
 
+    Task<TxnId> first_txn_num_in_block(BlockNum /*block_num*/) override {
+        co_return 0;
+    }
+
     Task<void> close() override {
         co_return;
     }

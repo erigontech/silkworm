@@ -93,7 +93,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
         }));
 
     SECTION("precompiled contract failure") {

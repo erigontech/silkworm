@@ -91,7 +91,7 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
 void increment(Bytes& array) {
     for (auto it = array.rbegin(); it != array.rend(); ++it) {
         if (*it < 0xFF) {
-            (*it)++;
+            ++(*it);
             break;
         }
         *it = 0x00;

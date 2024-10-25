@@ -47,7 +47,7 @@ if(NOT SILKWORM_CORE_ONLY)
     target_link_libraries(
       rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
     )
-    
+
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     if(SILKWORM_FUZZER_LIBFUZZER_PATH)
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
@@ -59,7 +59,7 @@ if(NOT SILKWORM_CORE_ONLY)
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
     target_link_libraries(
       rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-      CLI11::CLI11
+                                           CLI11::CLI11
     )
 
     if(SILKWORM_FUZZER_SANITIZERS)

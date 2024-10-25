@@ -77,7 +77,7 @@ class TestDebugExecutor : DebugExecutor {
 
 #ifndef SILKWORM_SANITIZE
 static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
-static const Bytes kConfigKey{kZeroHeaderHash.bytes};
+static const Bytes kConfigKey{kZeroHeaderHash.bytes, kHashLength};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {

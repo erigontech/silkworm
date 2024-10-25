@@ -16,6 +16,8 @@
 
 #include "remote_transaction.hpp"
 
+#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/errors.hpp>
@@ -113,6 +115,11 @@ std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::an
 
 std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {
     return std::make_shared<chain::RemoteChainStorage>(*this, providers_);
+}
+
+Task<TxnId> RemoteTransaction::first_txn_num_in_block(BlockNum block_num) {
+    const auto min_txn_num = co_await txn::min_tx_num(*this, block_num, providers_.canonical_body_for_storage);
+    co_return min_txn_num + /*txn_index*/ 0;
 }
 
 Task<api::DomainPointResult> RemoteTransaction::domain_get(api::DomainPointQuery&& query) {  // NOLINT(*-rvalue-reference-param-not-moved)

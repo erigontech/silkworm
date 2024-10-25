@@ -29,7 +29,6 @@
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/stream.hpp>
-#include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::json_rpc {
 class RequestHandler;

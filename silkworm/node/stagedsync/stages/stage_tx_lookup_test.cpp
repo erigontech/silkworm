@@ -19,6 +19,7 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
@@ -32,9 +33,11 @@ using silkworm::test_util::SetLogVerbosityGuard;
 
 stagedsync::TxLookup make_tx_lookup_stage(
     stagedsync::SyncContext* sync_context,
+    snapshots::SnapshotRepository& repository,
     const TempChainData& chain_data) {
     return stagedsync::TxLookup{
         sync_context,
+        [&](ROTxn& tx) { return DataModel{tx, repository}; },
         etl::CollectorSettings{chain_data.dir().temp().path(), 256_Mebi},
         chain_data.prune_mode().tx_index(),
     };
@@ -49,6 +52,8 @@ TEST_CASE("Stage Transaction Lookups") {
     TempChainData context;
     RWTxn& txn{context.rw_txn()};
     txn.disable_commit();
+
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
 
     PooledCursor canonicals(txn, table::kCanonicalHashes);
     PooledCursor bodies_table(txn, table::kBlockBodies);
@@ -89,7 +94,7 @@ TEST_CASE("Stage Transaction Lookups") {
     SECTION("Forward checks and unwind") {
         // Execute stage forward
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, context);
+        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, repository, context);
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         PooledCursor lookup_table(txn, table::kTxLookup);
@@ -140,7 +145,7 @@ TEST_CASE("Stage Transaction Lookups") {
 
         // Execute stage forward
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, context);
+        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, repository, context);
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         // Only leave block 2 alive

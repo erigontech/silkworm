@@ -33,8 +33,9 @@ using execution::api::VerificationResult;
 ExecutionEngine::ExecutionEngine(
     std::optional<boost::asio::any_io_executor> executor,
     NodeSettings& ns,
+    db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
-    BodiesStageFactory bodies_stage_factory,
+    StageContainerFactory stages_factory,
     db::RWAccess dba)
     : context_pool_{executor ? std::unique_ptr<concurrency::ContextPool<>>{} : std::make_unique<concurrency::ContextPool<>>(1)},
       executor_{executor ? std::move(*executor) : context_pool_->any_executor()},
@@ -42,8 +43,9 @@ ExecutionEngine::ExecutionEngine(
       main_chain_{
           executor_,
           ns,
+          std::move(data_model_factory),
           std::move(log_timer_factory),
-          std::move(bodies_stage_factory),
+          std::move(stages_factory),
           std::move(dba),
       },
       block_cache_{kDefaultCacheSize} {}
@@ -78,7 +80,7 @@ BlockId ExecutionEngine::last_safe_block() const {
 }
 
 BlockNum ExecutionEngine::highest_frozen_block_number() const {
-    return db::DataModel::highest_frozen_block_number();
+    return main_chain_.highest_frozen_block_number();
 }
 
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {

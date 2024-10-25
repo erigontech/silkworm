@@ -32,7 +32,7 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(ByteView data, PeerId peer_id)
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void InboundGetBlockHeaders::execute(db::DataStoreRef db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
@@ -40,7 +40,9 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
     if (bs.highest_block_in_output() == 0)  // skip requests in the first sync even if we already saved some headers
         return;
 
-    HeaderRetrieval header_retrieval(db);
+    db::ROTxnManaged tx = db::ROAccess{db.chaindata_env}.start_ro_tx();
+    db::DataModel data_model{tx, db.repository};
+    HeaderRetrieval header_retrieval(data_model);
 
     BlockHeadersPacket66 reply;
     reply.request_id = packet_.request_id;

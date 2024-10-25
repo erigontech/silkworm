@@ -24,10 +24,11 @@
 #include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/test_util/make_stages_factory.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 #include "main_chain.hpp"
@@ -40,6 +41,7 @@ using namespace stagedsync;
 using namespace intx;  // just for literals
 
 using execution::api::ValidChain;
+using silkworm::stagedsync::test_util::make_stages_factory;
 
 class ForkForTest : public Fork {
   public:
@@ -59,6 +61,9 @@ TEST_CASE("Fork") {
     context.add_genesis_data();
     context.commit_txn();
 
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
@@ -67,15 +72,12 @@ TEST_CASE("Fork") {
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     db::RWAccess db_access{context.env()};
 
-    BodiesStageFactory bodies_stage_factory = [&](SyncContext* sync_context) {
-        return std::make_unique<BodiesStage>(sync_context, *node_settings.chain_config, [] { return 0; });
-    };
-
     MainChain main_chain{
         io.get_executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        std::move(bodies_stage_factory),
+        make_stages_factory(node_settings, data_model_factory),
         db_access,
     };
 
@@ -130,9 +132,10 @@ TEST_CASE("Fork") {
                 ForkForTest fork{
                     forking_point,
                     db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                    data_model_factory,
                     /* log_timer_factory = */ std::nullopt,
-                    main_chain.bodies_stage_factory(),
-                    node_settings,
+                    main_chain.stages_factory(),
+                    node_settings.data_directory->forks().path(),
                 };
 
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);

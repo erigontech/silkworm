@@ -26,7 +26,6 @@
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/state/remote_state.hpp>
-#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 
@@ -54,8 +53,9 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     explicit DummyTransaction(uint64_t tx_id,
                               uint64_t view_id,
                               std::shared_ptr<db::kv::api::Cursor> cursor,
-                              std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort)
-        : BaseTransaction(nullptr), tx_id_(tx_id), view_id_(view_id), cursor_(std::move(cursor)), cursor_dup_sort_(std::move(cursor_dup_sort)) {}
+                              std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort,
+                              test::BackEndMock* backend)
+        : BaseTransaction(nullptr), tx_id_(tx_id), view_id_(view_id), cursor_(std::move(cursor)), cursor_dup_sort_(std::move(cursor_dup_sort)), backend_(backend) {}
 
     uint64_t tx_id() const override { return tx_id_; }
     uint64_t view_id() const override { return view_id_; }
@@ -75,7 +75,11 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     }
 
     std::shared_ptr<db::chain::ChainStorage> create_storage() override {
-        return std::make_shared<db::chain::RemoteChainStorage>(*this, ethdb::kv::make_backend_providers(&backend_));
+        return std::make_shared<db::chain::RemoteChainStorage>(*this, ethdb::kv::make_backend_providers(backend_));
+    }
+
+    Task<TxnId> first_txn_num_in_block(BlockNum /*block_num*/) override {
+        co_return 0;
     }
 
     Task<void> close() override { co_return; }
@@ -110,7 +114,7 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     uint64_t view_id_;
     std::shared_ptr<db::kv::api::Cursor> cursor_;
     std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort_;
-    test::BackEndMock backend_;
+    test::BackEndMock* backend_;
 };
 
 }  // namespace silkworm::rpc::test

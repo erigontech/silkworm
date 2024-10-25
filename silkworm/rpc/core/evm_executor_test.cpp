@@ -29,7 +29,6 @@
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/state/remote_state.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -44,10 +43,6 @@
 namespace silkworm::rpc {
 
 using db::chain::RemoteChainStorage;
-using db::kv::api::KeyValue;
-using testing::_;
-using testing::Invoke;
-using testing::Unused;
 
 struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     EVMExecutorTest() {
@@ -68,6 +63,10 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
 };
 
 #ifndef SILKWORM_SANITIZE
+using testing::_;
+using testing::Invoke;
+using testing::Unused;
+
 TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     SECTION("failed if gas_limit < intrinsic_gas") {
         silkworm::Transaction txn{};
@@ -112,14 +111,8 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
     SECTION("failed if transaction cost greater user amount") {
         auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
-        EXPECT_CALL(transaction, cursor(db::table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<db::kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -144,14 +137,8 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {
         auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
-        EXPECT_CALL(transaction, cursor(db::table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<db::kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -185,14 +172,8 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
     SECTION("call returns SUCCESS") {
         auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
-        EXPECT_CALL(transaction, cursor(db::table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<db::kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<db::kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{

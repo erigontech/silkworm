@@ -28,12 +28,15 @@
 
 namespace silkworm::stagedsync {
 
-BodiesStage::BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
-    : tx_(tx),
-      data_model_(tx_),
+BodiesStage::BodyDataModel::BodyDataModel(
+    db::RWTxn& tx,
+    db::DataModel data_model,
+    BlockNum bodies_stage_height,
+    const ChainConfig& chain_config)
+    : data_model_(data_model),
       chain_config_{chain_config},
       rule_set_{protocol::rule_set_factory(chain_config)},
-      chain_state_{tx},
+      chain_state_{tx, std::make_unique<db::BufferFullDataModel>(data_model)},
       initial_height_{bodies_stage_height},
       highest_height_{bodies_stage_height} {
 }
@@ -96,9 +99,11 @@ bool BodiesStage::BodyDataModel::get_canonical_block(BlockNum height, Block& blo
 BodiesStage::BodiesStage(
     SyncContext* sync_context,
     const ChainConfig& chain_config,
+    db::DataModelFactory data_model_factory,
     std::function<BlockNum()> last_pre_validated_block)
     : Stage(sync_context, db::stages::kBlockBodiesKey),
       chain_config_(chain_config),
+      data_model_factory_(std::move(data_model_factory)),
       last_pre_validated_block_(std::move(last_pre_validated_block)) {}
 
 Stage::Result BodiesStage::forward(db::RWTxn& tx) {
@@ -131,8 +136,12 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
                        "to", std::to_string(target_height),
                        "span", std::to_string(target_height - current_height_)});
         }
-
-        BodyDataModel body_persistence(tx, current_height_, chain_config_);
+        BodyDataModel body_persistence{
+            tx,
+            data_model_factory_(tx),
+            current_height_,
+            chain_config_,
+        };
         body_persistence.set_preverified_height(last_pre_validated_block_());
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve

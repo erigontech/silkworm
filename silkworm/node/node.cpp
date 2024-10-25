@@ -22,6 +22,8 @@
 
 #include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/chain_head.hpp>
+#include <silkworm/db/data_store.hpp>
+#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/execution/api/active_direct_service.hpp>
 #include <silkworm/execution/api/direct_client.hpp>
@@ -34,6 +36,7 @@
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
+#include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 #include <silkworm/sentry/eth/status_data_provider.hpp>
 #include <silkworm/sentry/sentry_client_factory.hpp>
 #include <silkworm/sync/sync.hpp>
@@ -63,6 +66,16 @@ class NodeImpl final {
     BlockNum last_pre_validated_block() const { return chain_sync_.last_pre_validated_block(); }
 
   private:
+    db::DataStoreRef data_store() {
+        return {
+            chaindata_env_,  // NOLINT(cppcoreguidelines-slicing)
+            repository_,
+        };
+    }
+    db::DataModelFactory data_model_factory() {
+        return [this](db::ROTxn& tx) { return db::DataModel{tx, repository_}; };
+    }
+
     Task<void> run_execution_service();
     Task<void> run_execution_server();
     Task<void> run_backend_kv_grpc_server();
@@ -74,6 +87,8 @@ class NodeImpl final {
     mdbx::env_managed chaindata_env_;
 
     ChainConfig& chain_config_;
+
+    snapshots::SnapshotRepository repository_;
 
     //! The execution layer server engine
     boost::asio::io_context execution_context_;
@@ -140,14 +155,28 @@ static stagedsync::TimerFactory make_log_timer_factory(
 
 static stagedsync::BodiesStageFactory make_bodies_stage_factory(
     const ChainConfig& chain_config,
+    db::DataModelFactory data_model_factory,
     const NodeImpl& node) {
-    return [&](stagedsync::SyncContext* sync_context) {
+    return [&chain_config, data_model_factory = std::move(data_model_factory), &node](stagedsync::SyncContext* sync_context) {
         return std::make_unique<stagedsync::BodiesStage>(
             sync_context,
             chain_config,
+            data_model_factory,
             [&node]() { return node.last_pre_validated_block(); });
     };
 };
+
+static stagedsync::StageContainerFactory make_stages_factory(
+    const NodeSettings& node_settings,
+    db::DataModelFactory data_model_factory,
+    const NodeImpl& node) {
+    auto bodies_stage_factory = make_bodies_stage_factory(*node_settings.chain_config, data_model_factory, node);
+    return stagedsync::StagesFactoryImpl::to_factory({
+        node_settings,
+        std::move(data_model_factory),
+        std::move(bodies_stage_factory),
+    });
+}
 
 static sentry::SessionSentryClient::StatusDataProvider make_sentry_eth_status_data_provider(
     db::ROAccess db_access,
@@ -165,11 +194,17 @@ NodeImpl::NodeImpl(
     : settings_{settings},
       chaindata_env_{init_chain_data_db(settings.node_settings)},
       chain_config_{*settings_.node_settings.chain_config},
+      repository_{
+          settings_.snapshot_settings.repository_dir,
+          std::make_unique<snapshots::StepToBlockNumConverter>(),
+          std::make_unique<db::SnapshotBundleFactoryImpl>(),
+      },
       execution_engine_{
           execution_context_.get_executor(),
           settings_.node_settings,
+          data_model_factory(),
           make_log_timer_factory(context_pool.any_executor(), settings_.node_settings.sync_loop_log_interval_seconds),
-          make_bodies_stage_factory(chain_config_, *this),
+          make_stages_factory(settings_.node_settings, data_model_factory(), *this),
           db::RWAccess{chaindata_env_},
       },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
@@ -178,7 +213,7 @@ NodeImpl::NodeImpl(
       snapshot_sync_{
           settings.snapshot_settings,
           chain_config_.chain_id,
-          chaindata_env_,  // NOLINT(cppcoreguidelines-slicing)
+          data_store(),
           settings_.node_settings.data_directory->temp().path(),
           execution_engine_.stage_scheduler(),
       },
@@ -191,7 +226,7 @@ NodeImpl::NodeImpl(
               make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, chain_config_))},
       chain_sync_{
           context_pool.any_executor(),
-          chaindata_env_,  // NOLINT(cppcoreguidelines-slicing)
+          data_store(),
           execution_direct_client_,
           std::get<0>(sentry_),
           chain_config_,

@@ -28,6 +28,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
@@ -46,9 +47,11 @@ static ethash::hash256 keccak256(const evmc::address& address) {
 
 static stagedsync::Execution make_execution_stage(
     stagedsync::SyncContext* sync_context,
-    const NodeSettings& node_settings) {
+    const NodeSettings& node_settings,
+    db::DataModelFactory data_model_factory) {
     return stagedsync::Execution{
         sync_context,
+        std::move(data_model_factory),
         *node_settings.chain_config,
         node_settings.batch_size,
         node_settings.prune_mode,
@@ -82,7 +85,7 @@ TEST_CASE("Sync Stages") {
                          std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
                          std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto chaindata_env{open_env(node_settings.chaindata_env_config)};
     RWTxnManaged txn(chaindata_env);
@@ -98,6 +101,9 @@ TEST_CASE("Sync Stages") {
     node_settings.chain_config = read_chain_config(txn);
     const auto tx_sequence_after_genesis{read_map_sequence(txn, table::kBlockTransactions.name)};
     REQUIRE(tx_sequence_after_genesis == 2);  // 2 system txs for genesis
+
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
 
     SECTION("BlockHashes") {
         SECTION("Forward/Unwind/Prune args validation") {
@@ -235,6 +241,7 @@ TEST_CASE("Sync Stages") {
         stagedsync::SyncContext sync_context{};
         stagedsync::Senders stage{
             &sync_context,
+            data_model_factory,
             *node_settings.chain_config,
             node_settings.batch_size,
             node_settings.etl(),
@@ -345,7 +352,7 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].s = 1;  // dummy
         block.transactions[0].set_sender(sender);
 
-        Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<db::BufferFullDataModel>(data_model_factory(txn))};
         Account sender_account{};
         sender_account.balance = kEther;
         buffer.update_account(sender, std::nullopt, sender_account);
@@ -425,10 +432,10 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             stagedsync::SyncContext sync_context{};
             sync_context.unwind_point.emplace(2);
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
-            Buffer buffer2{txn};
+            Buffer buffer2{txn, std::make_unique<db::BufferFullDataModel>(data_model_factory(txn))};
 
             std::optional<Account> contract_account{buffer2.read_account(contract_address)};
             REQUIRE(contract_account.has_value());
@@ -482,7 +489,7 @@ TEST_CASE("Sync Stages") {
             // Unwind 4th block and checks if state corresponds to 3rd block
             stagedsync::SyncContext sync_context{};
             sync_context.unwind_point.emplace(3);
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
             plain_state_cursor = txn.ro_cursor(table::kPlainState);
@@ -501,7 +508,7 @@ TEST_CASE("Sync Stages") {
         SECTION("Execution Prune Default") {
             log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
             stagedsync::SyncContext sync_context{};
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
             // With default settings nothing should be pruned
@@ -532,7 +539,7 @@ TEST_CASE("Sync Stages") {
             log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
             REQUIRE(node_settings.prune_mode.history().enabled());
             stagedsync::SyncContext sync_context{};
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
             PooledCursor account_changeset_table(txn, table::kAccountChangeSet);
@@ -651,7 +658,7 @@ TEST_CASE("Sync Stages") {
 
         stagedsync::SyncContext sync_context{};
         sync_context.target_height = 1;
-        stagedsync::Execution stage_execution = make_execution_stage(&sync_context, node_settings);
+        stagedsync::Execution stage_execution = make_execution_stage(&sync_context, node_settings, data_model_factory);
         CHECK(stage_execution.forward(txn) == StageResult::kSuccess);
 
         // Post-condition: CallTraceSet table

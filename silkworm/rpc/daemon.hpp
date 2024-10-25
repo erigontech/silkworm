@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/kv/api/client.hpp>
@@ -46,7 +47,9 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings);
 
-    explicit Daemon(DaemonSettings settings, std::optional<mdbx::env> chaindata_env = {});
+    explicit Daemon(
+        DaemonSettings settings,
+        std::optional<db::DataStoreRef> data_store);
 
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
@@ -82,8 +85,8 @@ class Daemon {
     //! The pool of workers for long-running tasks.
     WorkerPool worker_pool_;
 
-    //! The chaindata MDBX environment or \code std::nullopt if working remotely
-    std::optional<mdbx::env> chaindata_env_;
+    //! The data store or std::nullopt if working remotely
+    std::optional<db::DataStoreRef> data_store_;
 
     //! The JSON RPC API services.
     std::vector<std::unique_ptr<http::Server>> rpc_services_;

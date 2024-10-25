@@ -26,6 +26,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>

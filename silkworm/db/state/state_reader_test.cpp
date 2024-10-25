@@ -51,9 +51,11 @@ class StateReaderTest : public silkworm::test_util::ContextTestBase {
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
+    EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
+        co_return 0;
+    }));
+
     SECTION("no account for history empty and current state empty") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = false,
@@ -68,8 +70,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     }
 
     SECTION("account found in current state") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
@@ -90,8 +90,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     }
 
     SECTION("account found in history") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get call on kAccountHistory returns the account bitmap
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
@@ -113,9 +111,11 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 }
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
+    EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
+        co_return 0;
+    }));
+
     SECTION("empty storage for history empty and current state empty") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = false,
@@ -130,8 +130,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     }
 
     SECTION("storage found in current state") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
@@ -145,8 +143,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     }
 
     SECTION("storage found in history") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get call on kStorageHistory returns the storage bitmap
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
@@ -170,8 +166,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     }
 
     SECTION("empty code found for code hash") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get_one call on kCode returns the binary code
+        EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
+        }));
+
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
@@ -189,8 +187,10 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     }
 
     SECTION("non-empty code found for code hash") {
-        // Set the call expectations:
-        // 1. DatabaseReader::get_one call on kCode returns the binary code
+        EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
+        }));
+
         EXPECT_CALL(transaction_, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,

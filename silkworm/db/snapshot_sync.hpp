@@ -32,6 +32,7 @@
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
 #include "access_layer.hpp"
+#include "data_store.hpp"
 #include "datastore/mdbx/mdbx.hpp"
 #include "datastore/snapshot_merger.hpp"
 #include "datastore/snapshots/bittorrent/client.hpp"
@@ -50,7 +51,7 @@ class SnapshotSync {
     SnapshotSync(
         snapshots::SnapshotSettings settings,
         ChainId chain_id,
-        mdbx::env chaindata_env,
+        db::DataStoreRef data_store,
         std::filesystem::path tmp_dir_path,
         stagedsync::StageScheduler& stage_scheduler);
 
@@ -81,7 +82,7 @@ class SnapshotSync {
     const snapshots::Config snapshots_config_;
     mdbx::env chaindata_env_;
 
-    snapshots::SnapshotRepository repository_;
+    snapshots::SnapshotRepository& repository_;
 
     snapshots::bittorrent::BitTorrentClient client_;
 

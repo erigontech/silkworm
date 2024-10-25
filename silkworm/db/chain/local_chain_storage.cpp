@@ -18,12 +18,9 @@
 
 #include <bit>
 
-#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::db::chain {
-
-LocalChainStorage::LocalChainStorage(ROTxn& txn) : data_model_{txn} {}
 
 Task<ChainConfig> LocalChainStorage::read_chain_config() const {
     const auto chain_config{data_model_.read_chain_config()};

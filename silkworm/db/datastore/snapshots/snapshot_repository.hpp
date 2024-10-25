@@ -33,7 +33,6 @@
 #include "segment_and_index.hpp"
 #include "snapshot_bundle.hpp"
 #include "snapshot_bundle_factory.hpp"
-#include "snapshot_settings.hpp"
 
 namespace silkworm::snapshots {
 
@@ -46,14 +45,13 @@ struct IndexBuilder;
 //! - segments have [from:to) semantic
 class SnapshotRepository {
   public:
-    explicit SnapshotRepository(
-        SnapshotSettings settings,
+    SnapshotRepository(
+        std::filesystem::path dir_path,
         std::unique_ptr<StepToTimestampConverter> step_converter,
         std::unique_ptr<SnapshotBundleFactory> bundle_factory);
     ~SnapshotRepository();
 
-    const SnapshotSettings& settings() const { return settings_; }
-    std::filesystem::path path() const { return settings_.repository_dir; }
+    const std::filesystem::path& path() const { return dir_path_; }
     const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
 
     void reopen_folder();
@@ -125,8 +123,8 @@ class SnapshotRepository {
 
     SnapshotPathList stale_index_paths() const;
 
-    //! The configuration settings for snapshots
-    SnapshotSettings settings_;
+    //! Path to the snapshots directory
+    std::filesystem::path dir_path_;
 
     //! Converts timestamp units to steps
     std::unique_ptr<StepToTimestampConverter> step_converter_;

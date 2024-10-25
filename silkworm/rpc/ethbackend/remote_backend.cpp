@@ -192,7 +192,7 @@ Task<std::optional<BlockNum>> RemoteBackEnd::get_block_number_from_hash(const Ha
     co_return bn;
 }
 
-Task<evmc::bytes32> RemoteBackEnd::get_block_hash_from_block_number(BlockNum number) {
+Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_number(BlockNum number) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalHash> canonical_hsh_rpc{*stub_, grpc_context_};
     ::remote::CanonicalHashRequest request;

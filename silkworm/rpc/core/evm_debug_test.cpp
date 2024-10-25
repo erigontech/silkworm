@@ -45,9 +45,11 @@ using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
+using namespace evmc::literals;
 
 static const Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static const Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
+static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 
 static const Bytes kConfigKey{kZeroHeader};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
@@ -94,28 +96,28 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
 
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     SECTION("precompiled contract failure") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -125,10 +127,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
@@ -191,13 +190,13 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     SECTION("Call: failed with intrinsic gas too low") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -232,22 +231,22 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
 
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -257,10 +256,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -357,21 +353,21 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -381,10 +377,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -473,21 +466,21 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -497,10 +490,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -594,21 +584,21 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -618,10 +608,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -716,21 +703,21 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -740,10 +727,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -825,21 +809,21 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -849,10 +833,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -945,28 +926,28 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     SECTION("Call: TO present") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-            .timestamp = 1,
+            .timestamp = 244087591818873,
         };
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-            .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-                co_return kZeroHeader;
+        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+                co_return kZeroHeaderHash;
             }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -976,10 +957,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
             co_return cursor;
         }));
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -1043,27 +1021,27 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _))
         .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
         }));
 
     db::kv::api::DomainPointQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-        .timestamp = 1,
+        .timestamp = 244087591818873,
     };
     db::kv::api::DomainPointQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-        .timestamp = 1,
+        .timestamp = 244087591818873,
     };
     db::kv::api::DomainPointQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-        .timestamp = 1,
+        .timestamp = 244087591818873,
     };
-    EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
-        .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return kZeroHeader;
+    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<evmc::bytes32> {
+            co_return kZeroHeaderHash;
         }));
     EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -1073,10 +1051,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
         co_return cursor;
     }));
     EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return *from_hex("0000000000000000");
-    }));
-    EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-        co_return *from_hex("0000000000000000");
+        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
     }));
     EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{

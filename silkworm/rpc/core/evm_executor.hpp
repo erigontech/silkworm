@@ -23,7 +23,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/impl/execution_context.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/chain/config.hpp>
@@ -34,10 +33,8 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 

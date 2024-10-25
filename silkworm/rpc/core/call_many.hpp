@@ -33,9 +33,7 @@
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
-#include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
-#include <silkworm/rpc/types/transaction.hpp>
 
 namespace silkworm::rpc::call {
 

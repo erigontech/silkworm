@@ -24,7 +24,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/kv/api/base_transaction.hpp>

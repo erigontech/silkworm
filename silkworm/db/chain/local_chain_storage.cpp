@@ -18,7 +18,6 @@
 
 #include <bit>
 
-#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::db::chain {

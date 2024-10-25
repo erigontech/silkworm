@@ -889,10 +889,9 @@ Task<void> kv_index_range_query(const std::shared_ptr<Service>& kv_service,
         std::cout << "KV IndexRange <- #timestamps: ";
         int count{0};
         ListOfTimestamp timestamps;
-        while (it != paginated_result.end()) {
-            timestamps.emplace_back(*it);
+        while (const auto value = co_await it.next()) {
+            timestamps.emplace_back(*value);
             ++count;
-            co_await ++it;
         }
         std::cout << count << "\n";
         if (verbose) {
@@ -917,10 +916,9 @@ Task<void> kv_history_range_query(const std::shared_ptr<Service>& kv_service,
         std::cout << "KV HistoryRange <- #keys and #values: ";
         int count{0};
         std::vector<KeyValue> keys_and_values;
-        while (it != paginated_result.end()) {
-            keys_and_values.emplace_back(*it);
+        while (const auto key_value = co_await it.next()) {
+            keys_and_values.emplace_back(*key_value);
             ++count;
-            co_await ++it;
         }
         std::cout << count << "\n";
         if (verbose) {
@@ -945,10 +943,9 @@ Task<void> kv_domain_range_query(const std::shared_ptr<Service>& kv_service,
         std::cout << "KV DomainRange <- #keys and #values: ";
         int count{0};
         std::vector<KeyValue> keys_and_values;
-        while (it != paginated_result.end()) {
-            keys_and_values.emplace_back(*it);
+        while (const auto key_value = co_await it.next()) {
+            keys_and_values.emplace_back(*key_value);
             ++count;
-            co_await ++it;
         }
         std::cout << count << "\n";
         if (verbose) {

@@ -141,17 +141,20 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     Index idx_txn_hash_2_block{txn_segment_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
 
     // Add a sample Snapshot bundle to the repository
-    SnapshotBundle bundle{{
-        .header_segment = std::move(header_segment),
-        .idx_header_hash = std::move(idx_header_hash),
+    SnapshotBundle bundle{
+        header_segment_path.step_range(),
+        {
+            .header_segment = std::move(header_segment),
+            .idx_header_hash = std::move(idx_header_hash),
 
-        .body_segment = std::move(body_segment),
-        .idx_body_number = std::move(idx_body_number),
+            .body_segment = std::move(body_segment),
+            .idx_body_number = std::move(idx_body_number),
 
-        .txn_segment = std::move(txn_segment),
-        .idx_txn_hash = std::move(idx_txn_hash),
-        .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-    }};
+            .txn_segment = std::move(txn_segment),
+            .idx_txn_hash = std::move(idx_txn_hash),
+            .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
+        },
+    };
     auto& repository = snapshot_sync.repository();
     repository.add_snapshot_bundle(std::move(bundle));
 

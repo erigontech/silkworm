@@ -47,7 +47,7 @@ static const evmc::bytes32 kCodeHash{0xef722d9baf50b9983c2fce6329c5a43a15b8d5ba7
 class StateReaderTest : public silkworm::test_util::ContextTestBase {
   protected:
     db::test_util::MockTransaction transaction_;
-    StateReader state_reader_{transaction_, kEarliestBlockNumber};
+    StateReader state_reader_{transaction_, kEarliestBlockNumber, db::chain::CanonicalBodyForStorageProvider{}};
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {

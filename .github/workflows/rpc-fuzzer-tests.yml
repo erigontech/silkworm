@@ -10,7 +10,7 @@ on:
   
 jobs:
   fuzzer-test-suite:
-    runs-on: self-hosted
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa

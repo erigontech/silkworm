@@ -16,6 +16,7 @@
 
 #include "parity_api.hpp"
 
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -89,12 +90,12 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
 }
 
 void increment(Bytes& array) {
-    for (auto it = array.rbegin(); it != array.rend(); ++it) {
-        if (*it < 0xFF) {
-            ++(*it);
+    for (unsigned char & it : std::ranges::reverse_view(array)) {
+        if (it < 0xFF) {
+            ++it;
             break;
         }
-        *it = 0x00;
+        it = 0x00;
     }
 }
 

@@ -69,7 +69,6 @@ class TestDebugExecutor : DebugExecutor {
 };
 
 #ifndef SILKWORM_SANITIZE
-using kv::api::KeyValue;
 using silkworm::db::state::RemoteState;
 using testing::_;
 using testing::Invoke;

@@ -55,7 +55,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 co_return Bytes{};
             }));
         const BlockNum block_number = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto code_read{spawn_and_wait(state.read_code(address, kEmptyHash))};
         CHECK(code_read.empty());
     }
@@ -63,11 +63,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("read_code for non-empty hash") {
         static const Bytes kCode{*from_hex("0x0608")};
 
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -77,18 +74,15 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         }));
 
         const BlockNum block_number = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read == ByteView{kCode});
     }
 
     SECTION("read_code with empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -99,7 +93,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
         const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        RemoteState state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState state(current_executor, transaction, chain_storage, block_number);
         const auto code_read = state.read_code(address, code_hash);
         CHECK(code_read.empty());
         io_context_.stop();
@@ -107,12 +101,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_storage with empty response from db") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -120,9 +110,10 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
+        std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
         const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto storage_read = remote_state.read_storage(address, 0, location);
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
         io_context_.stop();
@@ -130,12 +121,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_account with empty response from db") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -143,8 +130,9 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
+        std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto account_read = remote_state.read_account(address);
         CHECK(account_read == std::nullopt);
         io_context_.stop();
@@ -157,7 +145,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         EXPECT_CALL(chain_storage, read_header(block_number, block_hash))
             .WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<BlockHeader>> { co_return std::nullopt; }));
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto header_read = remote_state.read_header(block_number, block_hash);
         CHECK(header_read == std::nullopt);
         io_context_.stop();
@@ -171,7 +159,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         BlockBody body;
         EXPECT_CALL(chain_storage, read_body(block_hash, block_number, body))
             .WillOnce(Invoke([](Unused, Unused, Unused) -> Task<bool> { co_return true; }));
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto success = remote_state.read_body(block_number, block_hash, body);
         CHECK(success);
         CHECK(body == BlockBody{});
@@ -183,7 +171,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         EXPECT_CALL(chain_storage, read_total_difficulty(block_hash, block_number))
             .WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<intx::uint256>> { co_return std::nullopt; }));
         const auto total_difficulty = remote_state.total_difficulty(block_number, block_hash);
@@ -195,7 +183,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("previous_incarnation returns ok") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto prev_incarnation = remote_state.previous_incarnation(address);
         CHECK(prev_incarnation == 0);
         io_context_.stop();
@@ -205,7 +193,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("current_canonical_block throws not implemented") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         CHECK_THROWS_AS(remote_state.current_canonical_block(), std::logic_error);
         io_context_.stop();
         io_context_thread.join();
@@ -214,7 +202,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("canonical_hash throws not implemented") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         CHECK_THROWS_AS(remote_state.canonical_hash(block_number), std::logic_error);
         io_context_.stop();
         io_context_thread.join();
@@ -223,7 +211,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("state_root_hash throws not implemented") {
         std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
-        RemoteState remote_state(current_executor, transaction, chain_storage, block_number, db::chain::Providers{});
+        RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         CHECK_THROWS_AS(remote_state.state_root_hash(), std::logic_error);
         io_context_.stop();
         io_context_thread.join();
@@ -240,7 +228,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             const BlockNum block_number = 1'000'000;
             const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
-            RemoteState remote_state(io_context, transaction, storage, block_number, db::chain::Providers{});
+            RemoteState remote_state(io_context, transaction, storage, block_number);
             auto ret_code = remote_state.read_code(code_hash);
             CHECK(ret_code == ByteView{});
             io_context.stop();
@@ -258,7 +246,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
             const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
-            RemoteState remote_state(io_context, transaction, storage, block_number, db::chain::Providers{});
+            RemoteState remote_state(io_context, transaction, storage, block_number);
             auto ret_storage = remote_state.read_storage(address, 0, location);
             CHECK(ret_storage == evmc::bytes32{});
             io_context.stop();
@@ -274,7 +262,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             const BlockNum block_number = 1'000'000;
             evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
             const RemoteChainStorage storage{transaction, backend.get()};
-            RemoteState remote_state(io_context, transaction, storage, block_number, db::chain::Providers{});
+            RemoteState remote_state(io_context, transaction, storage, block_number);
             auto account = remote_state.read_account(address);
             CHECK(account == std::nullopt);
             io_context.stop();
@@ -283,11 +271,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     */
 
     SECTION("AsyncRemoteState::read_account for empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -296,17 +281,14 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             co_return response;
         }));
         const BlockNum block_number = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto account_read{spawn_and_wait(state.read_account(address))};
         CHECK(account_read == std::nullopt);
     }
 
     SECTION("AsyncRemoteState::read_code with empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -316,17 +298,14 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         }));
         const BlockNum block_number = 1'000'000;
         const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read.empty());
     }
 
     SECTION("AsyncRemoteState::read_storage with empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -336,28 +315,28 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         }));
         const BlockNum block_number = 1'000'000;
         const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto storage_read{spawn_and_wait(state.read_storage(address, 0, location))};
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
     }
 
     SECTION("AsyncRemoteState::previous_incarnation returns ok") {
         const BlockNum block_number = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto prev_incarnation{spawn_and_wait(state.previous_incarnation(address))};
         CHECK(prev_incarnation == 0);
     }
 
     SECTION("AsyncRemoteState::state_root_hash returns ok") {
         const BlockNum block_number = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto state_root_hash{spawn_and_wait(state.state_root_hash())};
         CHECK(state_root_hash == evmc::bytes32{});
     }
 
     SECTION("AsyncRemoteState::current_canonical_block returns ok") {
         const BlockNum block_number = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto current_canonical_block{spawn_and_wait(state.current_canonical_block())};
         CHECK(current_canonical_block == 0);
     }
@@ -365,7 +344,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("AsyncRemoteState::total_difficulty with empty response from chain storage") {
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         EXPECT_CALL(chain_storage, read_total_difficulty(block_hash, block_number))
             .WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<intx::uint256>> { co_return std::nullopt; }));
         const auto total_difficulty{spawn_and_wait(state.total_difficulty(block_number, block_hash))};
@@ -375,7 +354,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("AsyncRemoteState::read_header with empty response from chain storage") {
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         EXPECT_CALL(chain_storage, read_header(block_number, block_hash))
             .WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<BlockHeader>> { co_return std::nullopt; }));
         const auto block_header{spawn_and_wait(state.read_header(block_number, block_hash))};
@@ -385,7 +364,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("AsyncRemoteState::read_body with empty response from from chain storage") {
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         BlockBody body;
         EXPECT_CALL(chain_storage, read_body(block_hash, block_number, body))
             .WillOnce(Invoke([](Unused, Unused, Unused) -> Task<bool> { co_return true; }));
@@ -402,7 +381,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         const BlockNum block_number = 1'000'000;
         EXPECT_CALL(chain_storage, read_canonical_header_hash(block_number))
             .WillOnce(Invoke([](Unused) -> Task<std::optional<Hash>> { co_return std::nullopt; }));
-        AsyncRemoteState state{transaction, chain_storage, block_number, db::chain::Providers{}};
+        AsyncRemoteState state{transaction, chain_storage, block_number};
         const auto canonical_hash{spawn_and_wait(state.canonical_hash(block_number))};
         CHECK(canonical_hash == std::nullopt);
     }
@@ -411,7 +390,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
-    RemoteState remote_state(current_executor, transaction, chain_storage, 0, db::chain::Providers{});
+    RemoteState remote_state(current_executor, transaction, chain_storage, 0);
 
     SECTION("overridden write methods do nothing") {
         CHECK_NOTHROW(remote_state.insert_block(Block{}, evmc::bytes32{}));

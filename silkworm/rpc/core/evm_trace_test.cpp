@@ -30,7 +30,6 @@
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -51,7 +50,6 @@ using testing::Invoke;
 using testing::InvokeWithoutArgs;
 using testing::Unused;
 
-static const Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static const Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
 static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 static const Bytes kConfigKey{kZeroHeader};
@@ -74,11 +72,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
     static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
-
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("precompiled contract failure") {
@@ -105,17 +100,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(10'336'007)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
@@ -199,11 +185,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
-
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("Call: failed with intrinsic gas too low") {
@@ -259,17 +242,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -457,17 +431,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -592,17 +557,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -773,17 +729,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -932,11 +879,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor1;
-        }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -991,10 +935,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
     static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("Call: TO present") {
@@ -1021,17 +963,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(4'417'197)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -1151,10 +1084,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -1180,17 +1111,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                       co_return cursor1;
-                                                                   }))
-        .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor2;
-        }));
-    EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-    }));
-    EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+    EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+        co_return 244087591818873;
     }));
     EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
@@ -1320,10 +1242,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     SECTION("callMany: failed with intrinsic gas too low") {
@@ -1382,11 +1302,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor1;
-        }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -1566,10 +1483,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     static Bytes kAccountHistoryValue3{*silkworm::from_hex("0008028ded68c33d14010000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -1595,17 +1510,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                       co_return cursor1;
-                                                                   }))
-        .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor2;
-        }));
-    EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-    }));
-    EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+    EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+        co_return 244087591818873;
     }));
     EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
@@ -2032,8 +1938,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     static Bytes kAccountHistoryValue3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
 
     db::kv::api::DomainPointQuery query1{
         .table = table::kAccountDomain,
@@ -2051,7 +1955,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
         .timestamp = 244087591818873,
     };
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
         .Times(2)
@@ -2062,17 +1966,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                       co_return cursor1;
-                                                                   }))
-        .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor2;
-        }));
-    EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-    }));
-    EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+    EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+        co_return 244087591818873;
     }));
     EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
@@ -2155,10 +2050,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     static Bytes kAccountHistoryValue3{*silkworm::from_hex("0008028ded68c33d14010000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -2212,11 +2105,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     block_with_hash.block.transactions.push_back(txn);
 
     SECTION("Call: only vmTrace") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor1;
-        }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -2553,17 +2443,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     }
 
     SECTION("Call: only trace") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -2614,17 +2495,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         })"_json);
     }
     SECTION("Call: only stateDiff") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -2698,17 +2570,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         })"_json);
     }
     SECTION("Call: full output") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                           co_return cursor1;
-                                                                       }))
-            .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                co_return cursor2;
-            }));
-        EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-        }));
-        EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, domain_get(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -3112,10 +2975,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     static Bytes kAccountHistoryValue3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
     auto& tx = transaction;
-    auto cursor1 = std::make_shared<silkworm::db::test_util::MockCursor>();
-    auto cursor2 = std::make_shared<silkworm::db::test_util::MockCursor>();
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     db::kv::api::DomainPointQuery query1{
@@ -3141,17 +3002,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).Times(2).WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-                                                                       co_return cursor1;
-                                                                   }))
-        .WillOnce(Invoke([=](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor2;
-        }));
-    EXPECT_CALL(*cursor1, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
-    }));
-    EXPECT_CALL(*cursor2, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-        co_return KeyValue{*silkworm::from_hex("0000000000000000"), *silkworm::from_hex("0000ddff12345678")};
+    EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+        co_return 244087591818873;
     }));
     EXPECT_CALL(transaction, domain_get(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult rsp1{
@@ -3232,7 +3084,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_number, db::chain::Providers{});
+        return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))

@@ -15,6 +15,7 @@
 ]]
 
 include(${CMAKE_CURRENT_LIST_DIR}/compiler_settings_sanitize.cmake)
+include(CheckCXXCompilerFlag)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
@@ -87,6 +88,11 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     endif()
     link_libraries(c++)
     link_libraries(c++abi)
+  endif()
+
+  check_cxx_compiler_flag("-fuse-ld=lld" HAS_LLD)
+  if(HAS_LLD)
+    add_link_options(-fuse-ld=lld)
   endif()
 
 else()

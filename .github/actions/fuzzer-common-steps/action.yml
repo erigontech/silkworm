@@ -64,10 +64,11 @@ runs:
       working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
       run: |
         # Create minimal corpus
-        ./rpcdaemon_fuzzer_test -merge=1 -max_total_time=600 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
+        # ./rpcdaemon_fuzzer_test -merge=1 -max_total_time=600 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
 
         # Single thread execution
-        ./rpcdaemon_fuzzer_test -max_total_time=25200 -rss_limit_mb=10922 local-corpus
+        # ./rpcdaemon_fuzzer_test -max_total_time=25200 -rss_limit_mb=10922 local-corpus
+        ./rpcdaemon_fuzzer_test -max_total_time=600 -rss_limit_mb=10922 artifacts
         
     - name: Save Fuzzer Test Results
       shell: bash

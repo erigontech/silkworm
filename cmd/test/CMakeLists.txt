@@ -41,6 +41,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Enable fuzzing tests for Clang builds only
   if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND SILKWORM_FUZZER)
+
     # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
     target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
@@ -52,12 +53,20 @@ if(NOT SILKWORM_CORE_ONLY)
     else()
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     endif()
+    
     # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
     target_link_libraries(
       rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-                                           CLI11::CLI11
+                                           CLI11::CLI11 
     )
+
+    # Fixup for dependant libraries when not using sanitizers: link with AddressSanitizer only where needed
+    if(NOT SILKWORM_SANITIZE)
+      target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=address)
+      target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address)
+    endif()
+
   endif()
 
   # Ethereum EL Tests (https://github.com/ethereum/tests)

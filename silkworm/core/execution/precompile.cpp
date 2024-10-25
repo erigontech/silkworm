@@ -246,7 +246,7 @@ std::optional<Bytes> expmod_run(ByteView input_view) noexcept {
     // export as little-endian
     mpz_export(out.data(), nullptr, -1, 1, 0, 0, result);
     // and convert to big-endian
-    std::reverse(out.begin(), out.end());
+    std::ranges::reverse(out);
 
     mpz_clear(result);
     mpz_clear(modulus);
@@ -368,7 +368,7 @@ static Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
     std::memcpy(&out[0], y.data, 32);
     std::memcpy(&out[32], x.data, 32);
 
-    std::reverse(out.begin(), out.end());
+    std::ranges::reverse(out);
     return out;
 }
 

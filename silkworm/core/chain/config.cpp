@@ -249,8 +249,8 @@ std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
 
     std::vector<uint64_t> points;
     points.resize(numbers.size() + times.size());
-    std::move(numbers.begin(), numbers.end(), points.begin());
-    std::move(times.begin(), times.end(), points.begin() + (numbers.end() - numbers.begin()));
+    std::ranges::move(numbers, points.begin());
+    std::ranges::move(times, points.begin() + (numbers.end() - numbers.begin()));
 
     return points;
 }

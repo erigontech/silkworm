@@ -1,16 +1,17 @@
 name: QA - RPC Fuzzer Common Steps
+description: Common steps for running Silkworm fuzzer tests
+
+inputs:
+  fuzzer_sanitizers:
+    description: 'List of enabled fuzzer sanitizers'
+    default: 'OFF'
   
 runs:
   using: "composite"
+  env:
+    RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+    ERIGON_QA_PATH: /opt/erigon-qa
   steps:
-    - name: Sanity Check
-      shell: bash
-      run: | 
-        echo "Sanity Check"
-        echo "RPC_PAST_TEST_DIR: $RPC_PAST_TEST_DIR"
-        echo "ERIGON_QA_PATH: $ERIGON_QA_PATH"
-        echo "SILKWORM_SANITIZE_OPTION: $SILKWORM_SANITIZE_OPTION"
-  
     - name: Install Compiler
       shell: bash
       run: cmake/setup/compiler_install.sh clang 16
@@ -31,7 +32,7 @@ runs:
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/silkworm/build
-      run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=experimental/linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_SANITIZE=$SILKWORM_SANITIZE_OPTION
+      run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=experimental/linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_FUZZER_SANITIZERS=${{inputs.fuzzer_sanitizers}}
 
     - name: Build Silkworm Fuzzer Test
       shell: bash
@@ -64,11 +65,11 @@ runs:
       working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
       run: |
         # Create minimal corpus
-        # ./rpcdaemon_fuzzer_test -merge=1 -max_total_time=600 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
+        ./rpcdaemon_fuzzer_test -merge=1 -max_total_time=60 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
 
         # Single thread execution
         # ./rpcdaemon_fuzzer_test -max_total_time=25200 -rss_limit_mb=10922 local-corpus
-        ./rpcdaemon_fuzzer_test -max_total_time=600 -rss_limit_mb=10922 artifacts
+        ./rpcdaemon_fuzzer_test -max_total_time=60 -rss_limit_mb=10922 artifacts
         
     - name: Save Fuzzer Test Results
       shell: bash

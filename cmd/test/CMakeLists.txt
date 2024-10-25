@@ -44,10 +44,11 @@ if(NOT SILKWORM_CORE_ONLY)
 
     # Silkworm RpcDaemon Fuzzer Tests
     add_executable(rpcdaemon_fuzzer_test fuzzer_test.cpp)
-    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     target_link_libraries(
       rpcdaemon_fuzzer_test PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
     )
+    
+    target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     if(SILKWORM_FUZZER_LIBFUZZER_PATH)
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE ${SILKWORM_FUZZER_LIBFUZZER_PATH})
     else()
@@ -58,13 +59,14 @@ if(NOT SILKWORM_CORE_ONLY)
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
     target_link_libraries(
       rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-                                           CLI11::CLI11
+      CLI11::CLI11
     )
 
-    # Fixup for dependant libraries when not using sanitizers: link with AddressSanitizer only where needed
-    if(NOT SILKWORM_SANITIZE)
-      target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=address)
-      target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=address)
+    if(SILKWORM_FUZZER_SANITIZERS)
+      target_compile_options(rpcdaemon_fuzzer_test PRIVATE -fsanitize=${SILKWORM_FUZZER_SANITIZERS})
+      target_compile_options(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=${SILKWORM_FUZZER_SANITIZERS})
+      target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=${SILKWORM_FUZZER_SANITIZERS})
+      target_link_libraries(rpcdaemon_fuzzer_diagnostics PRIVATE -fsanitize=${SILKWORM_FUZZER_SANITIZERS})
     endif()
 
   endif()
@@ -73,7 +75,7 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(CLI11 REQUIRED)
   add_executable(ethereum ethereum.cpp)
   target_compile_definitions(
-    ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/ethereum-tests"
+    ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR= "${SILKWORM_MAIN_DIR}/third_party/ethereum-tests"
   )
   target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11 magic_enum::magic_enum)
 

@@ -29,6 +29,7 @@ engine_,\
 erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
 eth_feeHistory,\
+eth_getBalance/test_05.json,\
 eth_getLogs,\
 ots_getTransactionBySenderAndNonce,\
 ots_getContractCreator,\

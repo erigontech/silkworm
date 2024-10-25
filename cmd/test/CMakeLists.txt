@@ -75,7 +75,7 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(CLI11 REQUIRED)
   add_executable(ethereum ethereum.cpp)
   target_compile_definitions(
-    ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR= "${SILKWORM_MAIN_DIR}/third_party/ethereum-tests"
+    ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/ethereum-tests"
   )
   target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11 magic_enum::magic_enum)
 

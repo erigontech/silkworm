@@ -196,13 +196,15 @@ TEST_CASE("Cursor") {
 
     // Force exceed of cache size
     std::vector<PooledCursor> cursors;
-    for (size_t i = 0; i < original_cache_size + 5; ++i) {
+    const size_t new_cache_size = original_cache_size + 5;
+    cursors.reserve(new_cache_size);
+    for (size_t i = 0; i < new_cache_size; ++i) {
         cursors.emplace_back(txn, map_config);
     }
     REQUIRE(PooledCursor::handles_cache().empty() == true);
     cursors.clear();
     REQUIRE(PooledCursor::handles_cache().empty() == false);
-    REQUIRE(PooledCursor::handles_cache().size() == original_cache_size + 5);
+    REQUIRE(PooledCursor::handles_cache().size() == new_cache_size);
 
     PooledCursor cursor2(PooledCursor(txn, {"test"}));
     REQUIRE(cursor2.operator bool() == true);

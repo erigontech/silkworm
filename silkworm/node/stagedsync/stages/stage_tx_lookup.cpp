@@ -16,6 +16,7 @@
 
 #include "stage_tx_lookup.hpp"
 
+#include <algorithm>
 #include <stdexcept>
 
 #include <magic_enum.hpp>
@@ -127,9 +128,7 @@ Stage::Result TxLookup::unwind(RWTxn& txn) {
         // Snapshots already have TxLookup index, so we must stop before max frozen block here
         DataModel data_model = data_model_factory_(txn);
         const auto highest_frozen_block_number{data_model.highest_frozen_block_number()};
-        if (highest_frozen_block_number > to) {
-            to = highest_frozen_block_number;
-        }
+        to = std::max(to, highest_frozen_block_number);
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};

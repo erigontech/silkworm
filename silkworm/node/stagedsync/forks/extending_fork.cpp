@@ -157,7 +157,6 @@ ForkContainer::iterator find_fork_to_extend(ForkContainer& forks, const BlockHea
     return find_fork_by_head(forks, header.parent_hash);
 }
 
-// NOLINTNEXTLINE(performance-unnecessary-value-param)
 void ExtendingFork::save_exception(std::exception_ptr e) {
     exception_ = e;  // save exception to rethrow it later
 }

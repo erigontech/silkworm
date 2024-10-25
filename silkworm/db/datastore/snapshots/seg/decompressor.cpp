@@ -335,10 +335,13 @@ class Decompressor::ReadModeGuard {
     Decompressor::ReadMode old_mode_;
 };
 
-Decompressor::Decompressor(std::filesystem::path compressed_path,
-                           std::optional<MemoryMappedRegion> compressed_region,
-                           CompressionKind compression)
-    : compressed_path_(std::move(compressed_path)), compressed_region_{compressed_region}, compression_(compression) {}
+Decompressor::Decompressor(
+    std::filesystem::path compressed_path,
+    std::optional<MemoryMappedRegion> compressed_region,
+    CompressionKind compression_kind)
+    : compressed_path_{std::move(compressed_path)},
+      compressed_region_{compressed_region},
+      compression_kind_{compression_kind} {}
 
 Decompressor::~Decompressor() {
     close();
@@ -539,7 +542,7 @@ ByteView Decompressor::Iterator::data() const {
     return ByteView{decoder_->words_start_, decoder_->words_length_};
 }
 
-[[nodiscard]] bool Decompressor::Iterator::has_prefix(ByteView prefix) {
+bool Decompressor::Iterator::has_prefix(ByteView prefix) {
     const auto prefix_size{prefix.size()};
 
     const auto start_offset = word_offset_;
@@ -862,14 +865,19 @@ uint16_t Decompressor::Iterator::next_code(size_t bit_length) {
     return code;
 }
 
+bool Decompressor::Iterator::is_next_word_compressed() const {
+    CompressionKind next_word_compression_kind = is_next_value_ ? CompressionKind::kValues : CompressionKind::kKeys;
+    return (decoder_->compression_kind_ & next_word_compression_kind) != CompressionKind::kNone;
+}
+
 Decompressor::Iterator& Decompressor::Iterator::operator++() {
     if (has_next()) {
         current_word_offset_ = word_offset_;
         current_word_.clear();
 
-        const auto compression = is_next_value_ ? CompressionKind::kValues : CompressionKind::kKeys;
+        bool is_next_word_compressed = this->is_next_word_compressed();
         is_next_value_ = !is_next_value_;
-        if ((decoder_->compression_ & compression) != CompressionKind::kNone) {
+        if (is_next_word_compressed) {
             next(current_word_);
         } else {
             next_uncompressed(current_word_);
@@ -878,6 +886,12 @@ Decompressor::Iterator& Decompressor::Iterator::operator++() {
         *this = make_end(decoder_);
     }
     return *this;
+}
+
+uint64_t Decompressor::Iterator::skip_auto() {
+    bool is_next_word_compressed = this->is_next_word_compressed();
+    is_next_value_ = !is_next_value_;
+    return is_next_word_compressed ? skip() : skip_uncompressed();
 }
 
 bool operator==(const Decompressor::Iterator& lhs, const Decompressor::Iterator& rhs) {

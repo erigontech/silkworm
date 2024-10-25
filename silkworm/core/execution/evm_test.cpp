@@ -556,17 +556,17 @@ class TestTracer : public EvmTracer {
         result_ = {};
     }
 
-    [[nodiscard]] bool execution_start_called() const { return execution_start_called_; }
-    [[nodiscard]] bool execution_end_called() const { return execution_end_called_; }
-    [[nodiscard]] bool creation_completed_called() const { return creation_completed_called_; }
-    [[nodiscard]] bool self_destruct_called() const { return self_destruct_called_; }
-    [[nodiscard]] const Bytes& bytecode() const { return bytecode_; }
-    [[nodiscard]] const evmc_revision& rev() const { return rev_; }
-    [[nodiscard]] const std::vector<evmc_message>& msg_stack() const { return msg_stack_; }
-    [[nodiscard]] const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
-    [[nodiscard]] const std::map<uint32_t, size_t>& memory_size_stack() const { return memory_size_stack_; }
-    [[nodiscard]] const std::map<uint32_t, evmc::bytes32>& storage_stack() const { return storage_stack_; }
-    [[nodiscard]] const CallResult& result() const { return result_; }
+    bool execution_start_called() const { return execution_start_called_; }
+    bool execution_end_called() const { return execution_end_called_; }
+    bool creation_completed_called() const { return creation_completed_called_; }
+    bool self_destruct_called() const { return self_destruct_called_; }
+    const Bytes& bytecode() const { return bytecode_; }
+    const evmc_revision& rev() const { return rev_; }
+    const std::vector<evmc_message>& msg_stack() const { return msg_stack_; }
+    const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
+    const std::map<uint32_t, size_t>& memory_size_stack() const { return memory_size_stack_; }
+    const std::map<uint32_t, evmc::bytes32>& storage_stack() const { return storage_stack_; }
+    const CallResult& result() const { return result_; }
 
   private:
     bool execution_start_called_{false};

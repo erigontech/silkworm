@@ -114,12 +114,12 @@ class LruCache {
         return true;
     }
 
-    [[nodiscard]] size_t size() const noexcept {
+    size_t size() const noexcept {
         SILKWORM_LRU_CACHE_GUARD
         return cache_items_map_.size();
     }
 
-    [[nodiscard]] size_t max_size() const noexcept {
+    size_t max_size() const noexcept {
         return max_size_;
     }
 

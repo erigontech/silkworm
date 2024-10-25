@@ -25,7 +25,7 @@ namespace silkworm {
 
 class CancellationToken {
   public:
-    [[nodiscard]] bool is_cancelled() const { return cancelled_; }
+    bool is_cancelled() const { return cancelled_; }
 
     template <typename CancellationHandler>
     bool assign(CancellationHandler&& handler) {

@@ -41,7 +41,7 @@ enum class Leftover {
 
 // Consumes an RLP header unless it's a single byte in the [0x00, 0x7f] range,
 // in which case the byte is put back.
-[[nodiscard]] tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept;
+tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept;
 
 DecodingResult decode(ByteView& from, Bytes& to, Leftover mode = Leftover::kProhibit) noexcept;
 

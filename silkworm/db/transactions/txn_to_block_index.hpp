@@ -21,8 +21,8 @@
 #include <optional>
 
 #include <silkworm/db/datastore/etl/collector.hpp>
+#include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_path.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "txn_index.hpp"

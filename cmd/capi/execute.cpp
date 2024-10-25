@@ -56,7 +56,7 @@ struct ExecuteBlocksSettings {
 };
 
 struct BuildIndexesSettings {
-    std::vector<std::string> snapshot_names;
+    std::vector<std::string> segment_file_names;
 };
 
 struct Settings {
@@ -113,7 +113,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, Settings& setting
     auto cmd_build_indexes = app.add_subcommand("build_indexes", "Build indexes");
 
     BuildIndexesSettings build_indexes_settings;
-    cmd_build_indexes->add_option("--snapshot_names", build_indexes_settings.snapshot_names, "Snapshot to index")->delimiter(',')->required();
+    cmd_build_indexes->add_option("--filenames", build_indexes_settings.segment_file_names, "Segment file names to index")->delimiter(',')->required();
 
     // rpcdaemon sub-command
     auto cmd_rpcdaemon = app.add_subcommand("rpcdaemon", "Start RPC Daemon");
@@ -146,7 +146,7 @@ const char* make_path(const snapshots::SnapshotPath& p) {
     return path;
 }
 
-std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& snapshot_repository) {
+std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepository& snapshot_repository) {
     std::vector<SilkwormHeadersSnapshot> headers_snapshot_sequence;
     std::vector<SilkwormBodiesSnapshot> bodies_snapshot_sequence;
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
@@ -157,9 +157,9 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
             {
                 SilkwormHeadersSnapshot raw_headers_snapshot{
                     .segment{
-                        .file_path = make_path(bundle.header_snapshot.path()),
-                        .memory_address = bundle.header_snapshot.memory_file_region().data(),
-                        .memory_length = bundle.header_snapshot.memory_file_region().size(),
+                        .file_path = make_path(bundle.header_segment.path()),
+                        .memory_address = bundle.header_segment.memory_file_region().data(),
+                        .memory_length = bundle.header_segment.memory_file_region().size(),
                     },
                     .header_hash_index{
                         .file_path = make_path(bundle.idx_header_hash.path()),
@@ -172,9 +172,9 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
             {
                 SilkwormBodiesSnapshot raw_bodies_snapshot{
                     .segment{
-                        .file_path = make_path(bundle.body_snapshot.path()),
-                        .memory_address = bundle.body_snapshot.memory_file_region().data(),
-                        .memory_length = bundle.body_snapshot.memory_file_region().size(),
+                        .file_path = make_path(bundle.body_segment.path()),
+                        .memory_address = bundle.body_segment.memory_file_region().data(),
+                        .memory_length = bundle.body_segment.memory_file_region().size(),
                     },
                     .block_num_index{
                         .file_path = make_path(bundle.idx_body_number.path()),
@@ -187,9 +187,9 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(SnapshotRepository& sna
             {
                 SilkwormTransactionsSnapshot raw_transactions_snapshot{
                     .segment{
-                        .file_path = make_path(bundle.txn_snapshot.path()),
-                        .memory_address = bundle.txn_snapshot.memory_file_region().data(),
-                        .memory_length = bundle.txn_snapshot.memory_file_region().size(),
+                        .file_path = make_path(bundle.txn_segment.path()),
+                        .memory_address = bundle.txn_segment.memory_file_region().data(),
+                        .memory_length = bundle.txn_segment.memory_file_region().size(),
                     },
                     .tx_hash_index{
                         .file_path = make_path(bundle.idx_txn_hash.path()),
@@ -321,32 +321,32 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, Snapsh
 }
 
 int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const DataDirectory& data_dir) {
-    SILK_INFO << "Building indexes for snapshots: " << settings.snapshot_names;
+    SILK_INFO << "Building indexes for segments: " << settings.segment_file_names;
 
-    std::vector<Snapshot> snapshots;
-    std::vector<SilkwormMemoryMappedFile*> snapshot_files;
+    std::vector<SegmentFileReader> segments;
+    std::vector<SilkwormMemoryMappedFile*> segment_mmap_files;
     // Parse snapshot paths and create memory mapped files
-    for (auto& snapshot_name : settings.snapshot_names) {
-        auto raw_snapshot_path = data_dir.snapshots().path() / snapshot_name;
+    for (auto& file_name : settings.segment_file_names) {
+        auto raw_snapshot_path = data_dir.snapshots().path() / file_name;
         auto snapshot_path = SnapshotPath::parse(raw_snapshot_path);
         if (!snapshot_path.has_value())
             throw std::runtime_error("Invalid snapshot path");
 
-        Snapshot& snapshot = snapshots.emplace_back(*snapshot_path);
-        snapshot.reopen_segment();
+        SegmentFileReader& segment = segments.emplace_back(*snapshot_path);
+        segment.reopen_segment();
 
         auto mmf = new SilkwormMemoryMappedFile{
             .file_path = make_path(*snapshot_path),
-            .memory_address = snapshot.memory_file_region().data(),
-            .memory_length = snapshot.memory_file_region().size(),
+            .memory_address = segment.memory_file_region().data(),
+            .memory_length = segment.memory_file_region().size(),
         };
-        snapshot_files.push_back(mmf);
+        segment_mmap_files.push_back(mmf);
     }
 
     // Call api to build indexes
     const auto start_time{std::chrono::high_resolution_clock::now()};
 
-    const int status_code = silkworm_build_recsplit_indexes(handle, snapshot_files.data(), snapshot_files.size());
+    const int status_code = silkworm_build_recsplit_indexes(handle, segment_mmap_files.data(), segment_mmap_files.size());
     if (status_code != SILKWORM_OK) return status_code;
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start_time;
@@ -354,9 +354,9 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
               << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms";
 
     // Free memory mapped files
-    for (auto mmf : snapshot_files) {
-        delete[] mmf->file_path;
-        delete mmf;
+    for (auto mmap_file : segment_mmap_files) {
+        delete[] mmap_file->file_path;
+        delete mmap_file;
     }
 
     return SILKWORM_OK;
@@ -437,7 +437,11 @@ int main(int argc, char* argv[]) {
         int status_code = -1;
         if (settings.execute_blocks_settings) {
             // Execute specified block range using Silkworm API library
-            SnapshotRepository repository{snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>()};
+            SnapshotRepository repository{
+                snapshot_settings,
+                std::make_unique<StepToBlockNumConverter>(),
+                std::make_unique<db::SnapshotBundleFactoryImpl>(),
+            };
             repository.reopen_folder();
             status_code = execute_blocks(handle, *settings.execute_blocks_settings, repository, data_dir);
         } else if (settings.build_indexes_settings) {

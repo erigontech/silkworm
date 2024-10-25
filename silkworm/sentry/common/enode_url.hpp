@@ -35,12 +35,12 @@ class EnodeUrl {
           port_disc_(port_disc),
           port_rlpx_(port_rlpx) {}
 
-    [[nodiscard]] const EccPublicKey& public_key() const { return public_key_; }
-    [[nodiscard]] const boost::asio::ip::address& ip() const { return ip_; }
-    [[nodiscard]] uint16_t port_disc() const { return port_disc_; }
-    [[nodiscard]] uint16_t port_rlpx() const { return port_rlpx_; }
+    const EccPublicKey& public_key() const { return public_key_; }
+    const boost::asio::ip::address& ip() const { return ip_; }
+    uint16_t port_disc() const { return port_disc_; }
+    uint16_t port_rlpx() const { return port_rlpx_; }
 
-    [[nodiscard]] std::string to_string() const;
+    std::string to_string() const;
 
     bool operator<(const EnodeUrl& other) const;
     friend bool operator==(const EnodeUrl&, const EnodeUrl&) = default;

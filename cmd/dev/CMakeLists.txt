@@ -15,7 +15,7 @@
 ]]
 
 find_package(absl REQUIRED)
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)

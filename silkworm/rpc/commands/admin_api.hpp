@@ -23,8 +23,6 @@
 
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
-#include <silkworm/rpc/json/types.hpp>
-#include <silkworm/rpc/types/log.hpp>
 
 namespace silkworm::rpc::json_rpc {
 class RequestHandler;

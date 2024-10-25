@@ -30,11 +30,11 @@ class EccKeyPair {
     EccKeyPair();
     explicit EccKeyPair(Bytes private_key_data);
 
-    [[nodiscard]] EccPublicKey public_key() const;
+    EccPublicKey public_key() const;
 
-    [[nodiscard]] ByteView private_key() const { return private_key_; }
+    ByteView private_key() const { return private_key_; }
 
-    [[nodiscard]] std::string private_key_hex() const;
+    std::string private_key_hex() const;
 
   private:
     Bytes private_key_;

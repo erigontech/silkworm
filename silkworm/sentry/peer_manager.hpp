@@ -88,7 +88,7 @@ class PeerManager {
     Task<void> enumerate_peers_in_strand(EnumeratePeersCallback callback);
     Task<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);
 
-    [[nodiscard]] std::list<std::shared_ptr<PeerManagerObserver>> observers();
+    std::list<std::shared_ptr<PeerManagerObserver>> observers();
     void on_peer_added(const std::shared_ptr<rlpx::Peer>& peer);
     void on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer);
     void on_peer_connect_error(const EnodeUrl& peer_url);

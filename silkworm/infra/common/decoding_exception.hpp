@@ -27,7 +27,7 @@ class DecodingException : public std::runtime_error {
   public:
     explicit DecodingException(DecodingError err, const std::string& message = "");
 
-    [[nodiscard]] DecodingError err() const noexcept { return err_; }
+    DecodingError err() const noexcept { return err_; }
 
   private:
     DecodingError err_;

@@ -142,7 +142,7 @@ class Server {
     }
 
     //! Returns the number of server contexts.
-    [[nodiscard]] size_t num_contexts() const {
+    size_t num_contexts() const {
         return context_pool_ ? context_pool_->size() : 0;
     }
 

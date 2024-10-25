@@ -22,7 +22,6 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <evmc/evmc.hpp>
-#include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
@@ -31,7 +30,6 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/split_cursor.hpp>
-#include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc {
 

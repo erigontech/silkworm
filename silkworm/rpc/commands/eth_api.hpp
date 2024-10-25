@@ -19,11 +19,9 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/io_context.hpp>
-#include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
-#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
@@ -34,9 +32,6 @@
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/txpool/miner.hpp>
 #include <silkworm/rpc/txpool/transaction_pool.hpp>
-#include <silkworm/rpc/types/filter.hpp>
-#include <silkworm/rpc/types/log.hpp>
-#include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::json_rpc {
 class RequestHandler;

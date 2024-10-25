@@ -25,8 +25,8 @@ namespace silkworm::sentry::rlpx::framing {
 
 class MessageFrameCodec {
   public:
-    [[nodiscard]] Bytes encode(const Message& message) const;
-    [[nodiscard]] Message decode(ByteView frame_data) const;
+    Bytes encode(const Message& message) const;
+    Message decode(ByteView frame_data) const;
 
     void enable_compression() { is_compression_enabled_ = true; }
 

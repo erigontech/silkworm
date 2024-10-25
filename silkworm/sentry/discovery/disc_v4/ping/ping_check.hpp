@@ -43,11 +43,11 @@ struct PingCheckResult {
 
     Task<void> save(node_db::NodeDb& db) const;
 
-    [[nodiscard]] bool is_skipped() const {
+    bool is_skipped() const {
         return !next_ping_time.has_value();
     }
 
-    [[nodiscard]] bool is_success() const {
+    bool is_success() const {
         return pong_time.has_value();
     }
 };

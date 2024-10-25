@@ -60,8 +60,8 @@ class TaskRunner {
         }
     }
 
-    [[nodiscard]] boost::asio::io_context& context() { return io_context_; }
-    [[nodiscard]] boost::asio::any_io_executor executor() { return io_context_.get_executor(); }
+    boost::asio::io_context& context() { return io_context_; }
+    boost::asio::any_io_executor executor() { return io_context_.get_executor(); }
 
   protected:
     virtual void restart_context() { io_context_.restart(); }

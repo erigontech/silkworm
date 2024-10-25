@@ -27,9 +27,9 @@ class InboundBlockBodies : public InboundMessage {
   public:
     InboundBlockBodies(ByteView data, PeerId peer_id);
 
-    [[nodiscard]] std::string name() const override { return "InboundBlockBodies"; }
-    [[nodiscard]] std::string content() const override;
-    [[nodiscard]] uint64_t req_id() const override;
+    std::string name() const override { return "InboundBlockBodies"; }
+    std::string content() const override;
+    uint64_t req_id() const override;
 
     void execute(db::ROAccess db, HeaderChain&, BodySequence&, SentryClient&) override;
 

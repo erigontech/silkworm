@@ -29,8 +29,10 @@ namespace fs = std::filesystem;
 
 SnapshotRepository::SnapshotRepository(
     SnapshotSettings settings,
+    std::unique_ptr<StepToTimestampConverter> step_converter,
     std::unique_ptr<SnapshotBundleFactory> bundle_factory)
     : settings_(std::move(settings)),
+      step_converter_(std::move(step_converter)),
       bundle_factory_(std::move(bundle_factory)),
       bundles_(std::make_shared<Bundles>()) {}
 
@@ -51,11 +53,11 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
 
     std::erase_if(*bundles, [&](const auto& entry) {
         const SnapshotBundle& it = *entry.second;
-        return bundle.block_range().contains_range(it.block_range());
+        return bundle.step_range().contains_range(it.step_range());
     });
 
-    BlockNum block_from = bundle.block_range().start;
-    bundles->insert_or_assign(block_from, std::make_shared<SnapshotBundle>(std::move(bundle)));
+    Step key = bundle.step_range().start;
+    bundles->insert_or_assign(key, std::make_shared<SnapshotBundle>(std::move(bundle)));
 
     bundles_ = bundles;
 }
@@ -72,20 +74,31 @@ void SnapshotRepository::close() {
 }
 
 BlockNum SnapshotRepository::max_block_available() const {
+    Step end_step = max_end_step();
+    if (end_step.value == 0) return 0;
+    return end_step.to_block_num() - 1;
+}
+
+Timestamp SnapshotRepository::max_timestamp_available() const {
+    Step end_step = max_end_step();
+    if (end_step.value == 0) return 0;
+    return step_converter_->timestamp_from_step(end_step) - 1;
+}
+
+Step SnapshotRepository::max_end_step() const {
     std::scoped_lock lock(bundles_mutex_);
     if (bundles_->empty())
-        return 0;
+        return Step{0};
 
     // a bundle with the max block range is last in the sorted bundles map
     auto& bundle = *bundles_->rbegin()->second;
-    BlockNumRange block_num_range = bundle.block_range();
-    return (block_num_range.size() > 0) ? block_num_range.end - 1 : block_num_range.start;
+    return bundle.step_range().end;
 }
 
-std::pair<std::optional<SnapshotAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, BlockNum number) const {
-    auto bundle = find_bundle(number);
+std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, Timestamp t) const {
+    auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
     if (bundle) {
-        return {bundle->snapshot_and_index(type), bundle};
+        return {bundle->segment_and_index(type), bundle};
     }
     return {std::nullopt, {}};
 }
@@ -105,21 +118,21 @@ void SnapshotRepository::reopen_folder() {
     SnapshotPathList all_snapshot_paths = get_segment_files();
     SnapshotPathList all_index_paths = get_idx_files();
 
-    std::map<BlockNum, std::map<bool, std::map<SnapshotType, size_t>>> groups;
+    std::map<Step, std::map<bool, std::map<SnapshotType, size_t>>> groups;
 
     for (size_t i = 0; i < all_snapshot_paths.size(); ++i) {
         auto& path = all_snapshot_paths[i];
-        auto& group = groups[path.step_range().to_block_num_range().start][false];
+        auto& group = groups[path.step_range().start][false];
         group[path.type()] = i;
     }
 
     for (size_t i = 0; i < all_index_paths.size(); ++i) {
         auto& path = all_index_paths[i];
-        auto& group = groups[path.step_range().to_block_num_range().start][true];
+        auto& group = groups[path.step_range().start][true];
         group[path.type()] = i;
     }
 
-    BlockNum num = 0;
+    Step num{0};
     if (!groups.empty()) {
         num = groups.begin()->first;
     }
@@ -146,8 +159,8 @@ void SnapshotRepository::reopen_folder() {
 
         auto& bundle = *bundles->at(num);
 
-        if (num < bundle.block_range().end) {
-            num = bundle.block_range().end;
+        if (num < bundle.step_range().end) {
+            num = bundle.step_range().end;
         } else {
             break;
         }
@@ -157,28 +170,27 @@ void SnapshotRepository::reopen_folder() {
     lock.unlock();
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
-              << " snapshots: " << total_snapshots_count()
+              << " segments: " << total_segments_count()
               << " indexes: " << total_indexes_count()
               << " max block available: " << max_block_available();
 }
 
-std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(BlockNum number) const {
+std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Step step) const {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     for (const auto& bundle_ptr : this->view_bundles_reverse()) {
         auto& bundle = *bundle_ptr;
-        // We're looking for the segment containing the target block number in its block range
-        if (bundle.block_range().contains(number) ||
-            ((bundle.block_range().start == number) && (bundle.block_range().size() == 0))) {
+        if (bundle.step_range().contains(step) ||
+            ((bundle.step_range().start == step) && (bundle.step_range().size() == 0))) {
             return bundle_ptr;
         }
     }
     return {};
 }
 
-std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_range(BlockNumRange range) const {
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_range(StepRange range) const {
     std::vector<std::shared_ptr<SnapshotBundle>> bundles;
     for (const auto& bundle : view_bundles()) {
-        if (range.contains_range(bundle->block_range())) {
+        if (range.contains_range(bundle->step_range())) {
             bundles.push_back(bundle);
         }
     }

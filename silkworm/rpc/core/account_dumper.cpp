@@ -23,7 +23,6 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -88,7 +87,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 }
 
 Task<void> AccountDumper::load_accounts(BlockNum block_number, const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
-    StateReader state_reader{transaction_, block_number};
+    StateReader state_reader{transaction_, block_number, db::chain::CanonicalBodyForStorageProvider{}};
     for (const auto& kv : collected_data) {
         const auto address = bytes_to_address(kv.key);
 

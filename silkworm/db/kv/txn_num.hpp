@@ -22,6 +22,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/db/chain/providers.hpp>
 
 #include "../kv/api/transaction.hpp"
 
@@ -33,10 +34,10 @@ namespace silkworm::db::txn {
 using TxNum = TxnId;
 
 //! Return the maximum TxNum in specified \code block_number
-Task<TxNum> max_tx_num(kv::api::Transaction& tx, BlockNum block_number);
+Task<TxNum> max_tx_num(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider);
 
 //! Return the minimum TxNum in specified \code block_number
-Task<TxNum> min_tx_num(kv::api::Transaction& tx, BlockNum block_number);
+Task<TxNum> min_tx_num(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider);
 
 using BlockNumAndTxnNumber = std::pair<BlockNum, TxNum>;
 

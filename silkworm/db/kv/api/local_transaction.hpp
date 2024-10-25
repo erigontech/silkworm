@@ -40,8 +40,8 @@ class LocalTransaction : public BaseTransaction {
 
     ~LocalTransaction() override = default;
 
-    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
-    [[nodiscard]] uint64_t view_id() const override { return txn_.id(); }
+    uint64_t tx_id() const override { return tx_id_; }
+    uint64_t view_id() const override { return txn_.id(); }
 
     Task<void> open() override;
 

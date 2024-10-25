@@ -106,8 +106,12 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         ++keys_added_;
     }
 
-    bool build_mph_index(std::ofstream& index_output_stream, encoding::GolombRiceVector& golomb_rice_codes, uint16_t& golomb_param_max_index,
-                         DoubleEliasFano& double_ef_index, uint8_t bytes_per_record) override {
+    bool build_mph_index(
+        std::ofstream& index_output_stream,
+        GolombRiceVector& golomb_rice_codes,
+        uint16_t& golomb_param_max_index,
+        DoubleEliasFano& double_ef_index,
+        uint8_t bytes_per_record) override {
         current_bucket_id_ = std::numeric_limits<uint64_t>::max();  // To make sure 0 bucket is detected
 
         [[maybe_unused]] auto _ = gsl::finally([&]() { bucket_collector_->clear(); });

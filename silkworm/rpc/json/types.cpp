@@ -328,7 +328,6 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["size"] = to_quantity(b.block.block_size);
     json["block"]["stateRoot"] = b.block.header.state_root;
     json["block"]["timestamp"] = to_quantity(b.block.header.timestamp);
-    json["block"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.total_difficulty));
     json["block"]["transactionCount"] = b.block.transaction_count;  // to_quantity(b.block.transaction_count);
     json["block"]["transactionsRoot"] = b.block.header.transactions_root;
     if (b.block.header.base_fee_per_gas.has_value()) {
@@ -390,7 +389,6 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     json["fullblock"]["size"] = to_quantity(b.block_size);
     json["fullblock"]["stateRoot"] = b.header.state_root;
     json["fullblock"]["timestamp"] = to_quantity(b.header.timestamp);
-    json["fullblock"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.total_difficulty));
     json["fullblock"]["transactionCount"] = b.transaction_count;
     if (b.header.base_fee_per_gas) {
         json["fullblock"]["baseFeePerGas"] = rpc::to_quantity(b.header.base_fee_per_gas.value_or(0));

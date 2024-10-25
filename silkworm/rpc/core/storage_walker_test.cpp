@@ -24,7 +24,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/kv/api/base_transaction.hpp>
@@ -48,7 +47,7 @@ class DummyCursor : public CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
 
-    [[nodiscard]] uint32_t cursor_id() const override {
+    uint32_t cursor_id() const override {
         return 0;
     }
 
@@ -174,8 +173,8 @@ class DummyTransaction : public BaseTransaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json) : BaseTransaction(nullptr), json_{json} {}
 
-    [[nodiscard]] uint64_t tx_id() const override { return 0; }
-    [[nodiscard]] uint64_t view_id() const override { return 0; }
+    uint64_t tx_id() const override { return 0; }
+    uint64_t view_id() const override { return 0; }
 
     Task<void> open() override {
         co_return;

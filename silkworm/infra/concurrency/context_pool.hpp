@@ -38,8 +38,8 @@ class Context {
     explicit Context(size_t context_id);
     virtual ~Context() = default;
 
-    [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
-    [[nodiscard]] size_t id() const noexcept { return context_id_; }
+    boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
+    size_t id() const noexcept { return context_id_; }
 
     //! Execute the scheduler loop until stopped.
     virtual void execute_loop();
@@ -165,11 +165,11 @@ class ContextPool : public ExecutorPool {
     }
 
     // ExecutorPool
-    [[nodiscard]] boost::asio::any_io_executor any_executor() override {
+    boost::asio::any_io_executor any_executor() override {
         return this->next_io_context().get_executor();
     }
 
-    [[nodiscard]] ExecutorPool& as_executor_pool() {
+    ExecutorPool& as_executor_pool() {
         return *this;
     }
 

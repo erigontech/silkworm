@@ -59,7 +59,7 @@ TEST_CASE_METHOD(TxNumText, "max_tx_num", "[db][txn][tx_num]") {
             EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
                 co_return key_value;
             }));
-            CHECK(spawn_and_wait(max_tx_num(transaction, block_number)) == expected_max_tx_num);
+            CHECK(spawn_and_wait(max_tx_num(transaction, block_number, chain::CanonicalBodyForStorageProvider{})) == expected_max_tx_num);
         }
     }
 }
@@ -85,7 +85,7 @@ TEST_CASE_METHOD(TxNumText, "min_tx_num", "[db][txn][tx_num]") {
                     co_return key_value;
                 }));
             }
-            CHECK(spawn_and_wait(min_tx_num(transaction, block_number)) == expected_max_tx_num);
+            CHECK(spawn_and_wait(min_tx_num(transaction, block_number, chain::CanonicalBodyForStorageProvider{})) == expected_max_tx_num);
         }
     }
 }

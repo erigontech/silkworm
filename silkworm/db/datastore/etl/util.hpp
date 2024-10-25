@@ -47,7 +47,7 @@ struct Entry {
     Bytes key;
     Bytes value;
 
-    [[nodiscard]] size_t size() const noexcept { return key.size() + value.size(); }
+    size_t size() const noexcept { return key.size() + value.size(); }
 };
 
 inline bool operator<(const Entry& a, const Entry& b) {

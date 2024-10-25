@@ -22,7 +22,6 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
-#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>

@@ -35,7 +35,7 @@ class Cursor {
     Cursor(const Cursor&) = delete;
     Cursor& operator=(const Cursor&) = delete;
 
-    [[nodiscard]] virtual uint32_t cursor_id() const = 0;
+    virtual uint32_t cursor_id() const = 0;
 
     virtual Task<void> open_cursor(const std::string& table_name, bool is_dup_sorted) = 0;
 

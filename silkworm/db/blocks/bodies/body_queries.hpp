@@ -18,10 +18,10 @@
 
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 
-#include "body_snapshot.hpp"
+#include "body_segment.hpp"
 
 namespace silkworm::snapshots {
 
-using BodyFindByBlockNumQuery = FindByIdQuery<BodySnapshotReader>;
+using BodyFindByBlockNumQuery = FindByIdQuery<BodySegmentReader>;
 
 }  // namespace silkworm::snapshots

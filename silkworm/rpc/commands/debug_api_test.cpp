@@ -54,7 +54,7 @@ class DummyCursor : public CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {};
 
-    [[nodiscard]] uint32_t cursor_id() const override {
+    uint32_t cursor_id() const override {
         return 0;
     }
 
@@ -181,11 +181,11 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     explicit DummyTransaction(const nlohmann::json& json)
         : BaseTransaction(nullptr), json_{json}, tx_id_{next_tx_id++}, view_id_{next_view_id++} {};
 
-    [[nodiscard]] uint64_t tx_id() const override {
+    uint64_t tx_id() const override {
         return tx_id_;
     }
 
-    [[nodiscard]] uint64_t view_id() const override {
+    uint64_t view_id() const override {
         return view_id_;
     }
 

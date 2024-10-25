@@ -87,12 +87,12 @@ struct UnsignedTransaction {
     std::vector<Authorization> authorizations;
 
     //! \brief Maximum possible cost of normal and data (EIP-4844) gas
-    [[nodiscard]] intx::uint512 maximum_gas_cost() const;
+    intx::uint512 maximum_gas_cost() const;
 
-    [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
-    [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
+    intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
+    intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
 
-    [[nodiscard]] uint64_t total_blob_gas() const;  // EIP-4844
+    uint64_t total_blob_gas() const;  // EIP-4844
 
     void encode_for_signing(Bytes& into) const;
 
@@ -104,10 +104,10 @@ class Transaction : public UnsignedTransaction {
     bool odd_y_parity{false};
     intx::uint256 r{0}, s{0};  // signature
 
-    [[nodiscard]] intx::uint256 v() const;  // EIP-155
+    intx::uint256 v() const;  // EIP-155
 
     //! \brief Returns false if v is not acceptable (v != 27 && v != 28 && v < 35, see EIP-155)
-    [[nodiscard]] bool set_v(const intx::uint256& v);
+    bool set_v(const intx::uint256& v);
 
     //! \brief Sender recovered from the signature.
     //! \see Yellow Paper, Appendix F "Signing Transactions",
@@ -118,7 +118,7 @@ class Transaction : public UnsignedTransaction {
 
     void set_sender(const evmc::address& sender);
 
-    [[nodiscard]] evmc::bytes32 hash() const;
+    evmc::bytes32 hash() const;
 
     //! Reset the computed values
     void reset();

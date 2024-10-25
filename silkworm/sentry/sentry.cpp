@@ -63,7 +63,7 @@ class SentryImpl final {
 
     Task<void> run();
 
-    [[nodiscard]] std::shared_ptr<api::Service> service() { return direct_service_; }
+    std::shared_ptr<api::Service> service() { return direct_service_; }
 
   private:
     void setup_node_key();
@@ -81,14 +81,14 @@ class SentryImpl final {
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     std::unique_ptr<rlpx::Client> make_client();
     std::function<std::unique_ptr<rlpx::Client>()> client_factory();
-    [[nodiscard]] std::string client_id() const;
-    [[nodiscard]] EnodeUrl make_node_url() const;
-    [[nodiscard]] api::NodeInfo make_node_info() const;
-    [[nodiscard]] discovery::enr::EnrRecord make_node_record();
-    [[nodiscard]] std::function<api::NodeInfo()> node_info_provider() const;
-    [[nodiscard]] std::function<EccKeyPair()> node_key_provider() const;
-    [[nodiscard]] std::function<EnodeUrl()> node_url_provider() const;
-    [[nodiscard]] std::function<discovery::enr::EnrRecord()> node_record_provider();
+    std::string client_id() const;
+    EnodeUrl make_node_url() const;
+    api::NodeInfo make_node_info() const;
+    discovery::enr::EnrRecord make_node_record();
+    std::function<api::NodeInfo()> node_info_provider() const;
+    std::function<EccKeyPair()> node_key_provider() const;
+    std::function<EnodeUrl()> node_url_provider() const;
+    std::function<discovery::enr::EnrRecord()> node_record_provider();
 
     Settings settings_;
     std::optional<NodeKey> node_key_;

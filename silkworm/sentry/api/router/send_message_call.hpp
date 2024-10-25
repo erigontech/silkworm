@@ -44,8 +44,8 @@ class SendMessageCall final {
 
     SendMessageCall() = default;
 
-    [[nodiscard]] const sentry::Message& message() const { return message_; }
-    [[nodiscard]] const PeerFilter& peer_filter() const { return peer_filter_; }
+    const sentry::Message& message() const { return message_; }
+    const PeerFilter& peer_filter() const { return peer_filter_; }
 
     Task<PeerKeys> result() {
         auto future = result_promise_->get_future();

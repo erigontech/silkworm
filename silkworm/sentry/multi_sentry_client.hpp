@@ -32,7 +32,7 @@ class MultiSentryClient : public api::SentryClient {
 
     Task<std::shared_ptr<api::Service>> service() override;
 
-    [[nodiscard]] bool is_ready() override;
+    bool is_ready() override;
     void on_disconnect(std::function<Task<void>()> callback) override;
     Task<void> reconnect() override;
 

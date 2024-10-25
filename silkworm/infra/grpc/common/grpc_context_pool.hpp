@@ -22,7 +22,7 @@ namespace silkworm::rpc {
 
 struct GrpcContextPool {
     virtual ~GrpcContextPool() = default;
-    [[nodiscard]] virtual agrpc::GrpcContext& any_grpc_context() = 0;
+    virtual agrpc::GrpcContext& any_grpc_context() = 0;
 };
 
 }  // namespace silkworm::rpc

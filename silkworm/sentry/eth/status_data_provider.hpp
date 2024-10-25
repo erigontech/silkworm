@@ -36,7 +36,7 @@ class StatusDataProvider {
           chain_config_(chain_config) {}
 
     using StatusData = silkworm::sentry::eth::StatusData;
-    [[nodiscard]] StatusData get_status_data(uint8_t eth_version);
+    StatusData get_status_data(uint8_t eth_version);
 
     using StatusDataProviderFactory = std::function<Task<StatusData>(uint8_t eth_version)>;
     static StatusDataProviderFactory to_factory_function(StatusDataProvider provider);

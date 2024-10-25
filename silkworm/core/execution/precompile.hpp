@@ -89,6 +89,6 @@ inline constexpr std::optional<SupportedContract> kContracts[]{
     SupportedContract{{point_evaluation_gas, point_evaluation_run}, EVMC_CANCUN},  // 0x0a
 };
 
-[[nodiscard]] bool is_precompile(const evmc::address&, evmc_revision) noexcept;
+bool is_precompile(const evmc::address&, evmc_revision) noexcept;
 
 }  // namespace silkworm::precompile

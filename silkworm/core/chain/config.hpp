@@ -90,23 +90,23 @@ struct ChainConfig {
     protocol::PreMergeRuleSetConfig rule_set_config{protocol::NoPreMergeConfig{}};
 
     // The Shanghai hard fork has withdrawals, but Agra does not
-    [[nodiscard]] bool withdrawals_activated(BlockTime block_time) const noexcept;
-    [[nodiscard]] bool is_london(BlockNum block_number) const noexcept;
+    bool withdrawals_activated(BlockTime block_time) const noexcept;
+    bool is_london(BlockNum block_number) const noexcept;
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
     //! returns whether specific HF have occurred
-    [[nodiscard]] evmc_revision revision(BlockNum block_number, uint64_t block_time) const noexcept;
+    evmc_revision revision(BlockNum block_number, uint64_t block_time) const noexcept;
 
-    [[nodiscard]] std::vector<BlockNum> distinct_fork_numbers() const;
-    [[nodiscard]] std::vector<BlockTime> distinct_fork_times() const;
-    [[nodiscard]] std::vector<uint64_t> distinct_fork_points() const;
+    std::vector<BlockNum> distinct_fork_numbers() const;
+    std::vector<BlockTime> distinct_fork_times() const;
+    std::vector<uint64_t> distinct_fork_points() const;
 
     //! \brief Check invariant on pre-Merge config validity
-    [[nodiscard]] bool valid_pre_merge_config() const noexcept;
+    bool valid_pre_merge_config() const noexcept;
 
     //! \brief Return the JSON representation of this object
-    [[nodiscard]] nlohmann::json to_json() const noexcept;
+    nlohmann::json to_json() const noexcept;
 
     /*Sample JSON input:
     {

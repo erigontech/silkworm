@@ -16,7 +16,7 @@
 
 set(TARGET silkworm_infra_test_util)
 
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 

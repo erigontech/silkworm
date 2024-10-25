@@ -127,7 +127,7 @@ void populate_blocks(RWTxn& txn, const std::filesystem::path& tests_dir, InMemor
         // FIX 4b: populate receipts and logs table
         std::vector<silkworm::Receipt> receipts;
         ExecutionProcessor processor{block, *ruleSet, state_buffer, *chain_config};
-        Buffer db_buffer{txn};
+        Buffer db_buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         for (auto& block_txn : block.transactions) {
             silkworm::Receipt receipt{};
             processor.execute_transaction(block_txn, receipt);

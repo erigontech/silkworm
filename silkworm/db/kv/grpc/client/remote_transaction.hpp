@@ -27,7 +27,7 @@
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/db/chain/remote_chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
@@ -57,6 +57,8 @@ class RemoteTransaction : public api::BaseTransaction {
     std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) override;
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
+
+    Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;
 
     Task<void> close() override;
 

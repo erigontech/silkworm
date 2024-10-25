@@ -16,12 +16,7 @@
 
 #include "local_state.hpp"
 
-#include <future>
-#include <unordered_map>
-#include <utility>
-
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db::state {
 

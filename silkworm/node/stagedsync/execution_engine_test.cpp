@@ -27,13 +27,14 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/test_util/make_stages_factory.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
@@ -45,6 +46,7 @@ using execution::api::InvalidChain;
 using execution::api::ValidationError;
 using execution::api::ValidChain;
 
+using silkworm::stagedsync::test_util::make_stages_factory;
 using silkworm::test_util::generate_sample_child_blocks;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
@@ -56,18 +58,16 @@ class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::main_chain_;
 };
 
-static BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_config) {
-    return [chain_config](SyncContext* sync_context) {
-        return std::make_unique<BodiesStage>(sync_context, chain_config, [] { return 0; });
-    };
-};
-
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
     SetLogVerbosityGuard log_guard(log::Level::kNone);
     TaskRunner runner;
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     auto db_context = db::test_util::TestDatabaseContext();
+
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](ROTxn& tx) { return DataModel{tx, repository}; };
+
     auto node_settings = NodeSettings{
         .data_directory = std::make_unique<DataDirectory>(db_context.mdbx_env().get_path(), false),
         .chaindata_env_config = db_context.get_env_config(),
@@ -81,8 +81,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     ExecutionEngineForTest exec_engine{
         runner.executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        make_bodies_stage_factory(*node_settings.chain_config),
+        make_stages_factory(node_settings, data_model_factory),
         db_access,
     };
     exec_engine.open();
@@ -766,7 +767,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         tx2.abort();
     }
 
-    // TODO: temoporarily disabled, to be fixed (JG)
+    // TODO: temporarily disabled, to be fixed (JG)
     // SECTION("updates storage") {
     //     static constexpr evmc::address kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     //     auto block1 = generate_sample_child_blocks(current_head);
@@ -822,16 +823,20 @@ TEST_CASE("ExecutionEngine") {
     context.add_genesis_data();
     context.commit_txn();
 
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](ROTxn& tx) { return DataModel{tx, repository}; };
+
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    RWAccess db_access{context.env()};
+
     ExecutionEngineForTest exec_engine{
         runner.executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        make_bodies_stage_factory(*node_settings.chain_config),
-        db_access,
+        make_stages_factory(node_settings, data_model_factory),
+        RWAccess{context.env()},
     };
     exec_engine.open();
 

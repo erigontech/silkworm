@@ -63,14 +63,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("read_code for non-empty hash") {
         static const Bytes kCode{*from_hex("0x0608")};
 
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -87,14 +81,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_code with empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -113,15 +101,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_storage with empty response from db") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -129,6 +110,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
+        std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
         const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
@@ -139,15 +121,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_account with empty response from db") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -155,6 +130,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
+        std::thread io_context_thread{[&]() { io_context_.run(); }};
         const BlockNum block_number = 1'000'000;
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto account_read = remote_state.read_account(address);
@@ -295,14 +271,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     */
 
     SECTION("AsyncRemoteState::read_account for empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -317,14 +287,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_code with empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
@@ -340,14 +304,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_storage with empty response from db") {
-        EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
-            co_return cursor;
-        }));
-        EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
-        }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return *from_hex("0000000000000000");
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 0;
         }));
         EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{

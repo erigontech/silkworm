@@ -18,7 +18,6 @@
 
 #include <string>
 
-#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/core/blocks.hpp>

@@ -27,13 +27,13 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/memory_mutation.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
-#include "../stages/stage_bodies_factory.hpp"
 #include "../timer_factory.hpp"
 #include "canonical_chain.hpp"
 
@@ -47,8 +47,9 @@ class MainChain {
     explicit MainChain(
         boost::asio::any_io_executor executor,
         NodeSettings& ns,
+        db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
-        BodiesStageFactory bodies_stage_factory,
+        StageContainerFactory stages_factory,
         db::RWAccess dba);
 
     void open();  // needed to circumvent mdbx threading model limitations
@@ -92,14 +93,17 @@ class MainChain {
     std::optional<TotalDifficulty> get_header_td(Hash) const;
     std::optional<BlockBody> get_body(Hash) const;
     std::optional<BlockNum> get_block_number(Hash) const;
+    BlockNum highest_frozen_block_number() const;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
+    const db::DataModelFactory& data_model_factory() const { return data_model_factory_; }
     const std::optional<TimerFactory>& log_timer_factory() const;
-    const BodiesStageFactory& bodies_stage_factory() const;
+    const StageContainerFactory& stages_factory() const { return stages_factory_; }
     StageScheduler& stage_scheduler() const;
 
   protected:
+    db::DataModel data_model() const { return data_model_factory_(tx_); }
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
     void forward(BlockNum head_height, const Hash& head_hash);
@@ -112,11 +116,11 @@ class MainChain {
 
     boost::asio::any_io_executor executor_;
     NodeSettings& node_settings_;
+    db::DataModelFactory data_model_factory_;
     std::optional<TimerFactory> log_timer_factory_;
-    BodiesStageFactory bodies_stage_factory_;
+    StageContainerFactory stages_factory_;
     mutable db::RWAccess db_access_;
     mutable db::RWTxnManaged tx_;
-    db::DataModel data_model_;
     bool is_first_sync_{true};
 
     ExecutionPipeline pipeline_;

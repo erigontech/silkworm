@@ -23,7 +23,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/impl/execution_context.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/chain/config.hpp>
@@ -34,10 +33,8 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
@@ -138,7 +135,7 @@ class EVMExecutor {
 
     void call_first_n(const silkworm::Block& block, uint64_t n, const Tracers& tracers = {}, bool refund = true, bool gas_bailout = false);
 
-    const IntraBlockState& get_ibs_state() { return execution_processor_.get_ibs_state(); }
+    const IntraBlockState& intra_block_state() const { return execution_processor_.intra_block_state(); }
 
   private:
     struct PreCheckResult {

@@ -16,15 +16,10 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
-#include <absl/strings/match.h>
-#include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/db/test_util/test_database_context.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {

@@ -25,11 +25,8 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/execution/api/client.hpp>
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>
 
@@ -43,9 +40,9 @@ namespace silkworm::chainsync {
 class Sync {
   public:
     Sync(const boost::asio::any_io_executor& executor,
-         mdbx::env chaindata_env,
+         db::DataStoreRef data_store,
          execution::api::Client& execution,
-         const std::shared_ptr<silkworm::sentry::api::SentryClient>& sentry_client,
+         const std::shared_ptr<sentry::api::SentryClient>& sentry_client,
          const ChainConfig& config,
          bool use_preverified_hashes,
          const EngineRpcSettings& rpc_settings = {});

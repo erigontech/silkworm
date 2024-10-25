@@ -46,13 +46,6 @@ using testing::InvokeWithoutArgs;
 using testing::Unused;
 using namespace evmc::literals;
 
-static const Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
-static const Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
-static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
-
-static const Bytes kConfigKey{kZeroHeader};
-static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
-
 struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     test::MockBlockCache cache;
     db::test_util::MockTransaction transaction;
@@ -83,6 +76,10 @@ class TestDebugExecutor : DebugExecutor {
 };
 
 #ifndef SILKWORM_SANITIZE
+static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
+static const Bytes kConfigKey{kZeroHeaderHash.bytes};
+static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
+
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     static Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df7030")};
     static Bytes kAccountHistoryKey2{*silkworm::from_hex("0000000000000000000000000000000000000009")};

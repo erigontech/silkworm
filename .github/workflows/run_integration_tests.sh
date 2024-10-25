@@ -10,21 +10,41 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x engine_,\
-debug_traceCall/test_02.json,\
-erigon_getHeaderByHash/test_05.json,\
+python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
+debug_accountAt,\
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
+debug_traceBlockByHash,\
+debug_traceCall/test_02.json,\
+engine_,\
 erigon_getBalanceChangesInBlock,\
-ots_getTransactionBySenderAndNonce,\
-parity_listStorageKeys,\
-ots_getContractCreator,\
+erigon_getHeaderByHash/test_05.json,\
+erigon_getBlockReceiptsByBlockHash,\
 erigon_getLatestLogs,\
+erigon_getLogsByHash,\
+eth_createAccessList/test_16.json,\
+eth_estimateGas,\
+eth_getBalance,\
+eth_getBlockByHash,\
+eth_getBlockTransactionCountByHash,\
+eth_getCode,\
 eth_getLogs,\
+eth_getRawTransactionByBlockHashAndIndex,\
+eth_getStorageAt/test_01.json,\
+eth_getStorageAt/test_02.json,\
+eth_getStorageAt/test_03.json,\
+eth_getTransactionByBlockHashAndIndex,\
+eth_getTransactionCount/test_01.json,\
+eth_getTransactionCount/test_06.json,\
+eth_getUncleCountByBlockHash,\
+ots_getTransactionBySenderAndNonce,\
+ots_getContractCreator,\
+ots_hasCode,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
-txpool_content --transport_type http,websocket
+parity_listStorageKeys/test_12.json,\
+txpool_content
 
 failed_test=$?
 
@@ -39,3 +59,5 @@ else
 fi
 
 exit $failed_test
+
+

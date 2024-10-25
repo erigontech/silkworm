@@ -178,12 +178,15 @@ Task<BlockNum> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& h
     co_return bn;
 }
 
-Task<BlockNum> RemoteBackEnd::get_block_number_from_hash(const HashAsSpan& hash) {
+Task<std::optional<BlockNum>> RemoteBackEnd::get_block_number_from_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncHeaderNumber> header_number_rpc{*stub_, grpc_context_};
     ::remote::HeaderNumberRequest request;
     request.set_allocated_hash(h256_from_bytes(hash).release());
     const auto reply = co_await header_number_rpc.finish_on(executor_, request);
+    if (!reply.has_number()) {
+        co_return std::nullopt;
+    }
     auto bn = reply.number();
     SILK_TRACE << "RemoteBackEnd::get_block_number_from_hash bn=" << bn << " t=" << clock_time::since(start_time);
     co_return bn;

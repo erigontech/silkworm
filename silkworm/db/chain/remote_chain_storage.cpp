@@ -67,8 +67,11 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, BlockNum number, Blo
 }
 
 Task<bool> RemoteChainStorage::read_block(const Hash& hash, Block& block) const {
-    const BlockNum block_number = co_await providers_.block_number_from_hash(hash.bytes);
-    co_return co_await providers_.block(block_number, hash.bytes, /*.read_senders=*/false, block);
+    const auto block_number = co_await providers_.block_number_from_hash(hash.bytes);
+    if (!block_number) {
+        co_return false;
+    }
+    co_return co_await providers_.block(*block_number, hash.bytes, /*.read_senders=*/false, block);
 }
 
 Task<bool> RemoteChainStorage::read_block(BlockNum number, bool read_senders, Block& block) const {
@@ -92,7 +95,11 @@ Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum number
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(const Hash& hash) const {
     const auto number = co_await providers_.block_number_from_hash(hash.bytes);
-    co_return co_await read_header(number, hash.bytes);
+    if (!number) {
+        co_return std::nullopt;
+    }
+    std::cout << "RemoteChainStorage::read_header: " << silkworm::to_hex(hash) << " number: " << *number << "\n";
+    co_return co_await read_header(*number, hash.bytes);
 }
 
 Task<std::vector<BlockHeader>> RemoteChainStorage::read_sibling_headers(BlockNum /*number*/) const {
@@ -117,7 +124,10 @@ Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockNum number, Bloc
 
 Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockBody& body) const {
     const auto number = co_await providers_.block_number_from_hash(hash.bytes);
-    co_return co_await read_body(number, hash.bytes, /*.read_senders=*/false, body);
+    if (!number) {
+        co_return false;
+    }
+    co_return co_await read_body(*number, hash.bytes, /*.read_senders=*/false, body);
 }
 
 Task<std::optional<Hash>> RemoteChainStorage::read_canonical_header_hash(BlockNum number) const {

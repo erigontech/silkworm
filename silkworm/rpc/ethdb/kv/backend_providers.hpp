@@ -34,7 +34,7 @@ inline db::chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_prov
 }
 
 inline db::chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider(ethbackend::BackEnd* backend) {
-    return [backend](HashAsSpan hash) -> Task<BlockNum> {
+    return [backend](HashAsSpan hash) -> Task<std::optional<BlockNum>> {
         co_return co_await backend->get_block_number_from_hash(hash);
     };
 }

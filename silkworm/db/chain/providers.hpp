@@ -28,7 +28,7 @@ namespace silkworm::db::chain {
 
 using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, Block&)>;
 using BlockNumberFromTxnHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
-using BlockNumberFromBlockHashProvider = std::function<Task<BlockNum>(HashAsSpan)>;
+using BlockNumberFromBlockHashProvider = std::function<Task<std::optional<BlockNum>>(HashAsSpan)>;
 using CanonicalBlockHashFromNumberProvider = std::function<Task<evmc::bytes32>(BlockNum)>;
 using CanonicalBodyForStorageProvider = std::function<Task<Bytes>(BlockNum)>;
 

@@ -43,12 +43,6 @@ namespace silkworm::rpc::trace {
 
 using namespace silkworm::db;
 using chain::RemoteChainStorage;
-using kv::api::KeyValue;
-using silkworm::db::state::RemoteState;
-using testing::_;
-using testing::Invoke;
-using testing::InvokeWithoutArgs;
-using testing::Unused;
 
 struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     db::test_util::MockTransaction transaction;
@@ -61,6 +55,13 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
 };
 
 #ifndef SILKWORM_SANITIZE
+using kv::api::KeyValue;
+using silkworm::db::state::RemoteState;
+using testing::_;
+using testing::Invoke;
+using testing::InvokeWithoutArgs;
+using testing::Unused;
+
 static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 static const Bytes kConfigKey{kZeroHeaderHash.bytes, kHashLength};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)

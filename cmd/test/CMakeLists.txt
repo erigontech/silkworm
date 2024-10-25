@@ -53,12 +53,12 @@ if(NOT SILKWORM_CORE_ONLY)
     else()
       target_link_libraries(rpcdaemon_fuzzer_test PRIVATE -fsanitize=fuzzer)
     endif()
-    
+
     # Silkworm RpcDaemon Fuzzer Diagnostic
     add_executable(rpcdaemon_fuzzer_diagnostics fuzzer_diagnostics.cpp)
     target_link_libraries(
       rpcdaemon_fuzzer_diagnostics PRIVATE silkworm_rpcdaemon silkworm_infra_test_util silkworm_rpcdaemon_test_util
-                                           CLI11::CLI11 
+                                           CLI11::CLI11
     )
 
     # Fixup for dependant libraries when not using sanitizers: link with AddressSanitizer only where needed

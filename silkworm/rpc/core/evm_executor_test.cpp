@@ -43,10 +43,6 @@
 namespace silkworm::rpc {
 
 using db::chain::RemoteChainStorage;
-using db::kv::api::KeyValue;
-using testing::_;
-using testing::Invoke;
-using testing::Unused;
 
 struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     EVMExecutorTest() {
@@ -67,6 +63,10 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
 };
 
 #ifndef SILKWORM_SANITIZE
+using testing::_;
+using testing::Invoke;
+using testing::Unused;
+
 TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     SECTION("failed if gas_limit < intrinsic_gas") {
         silkworm::Transaction txn{};

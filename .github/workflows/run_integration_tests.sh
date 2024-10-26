@@ -10,41 +10,39 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
+
+# debug_traceTransaction: modify expected response according erigon and makes silkworm fix
+# trace_filter/test_16.json: modify expected response according erigon and makes silkworm fix
+# debug_traceCall/test_02.json: modify expected response according erigon and makes silkworm fix
+# erigon_getHeaderByNumber: modify expected response according erigon and makes silkworm fix
+# erigon_getHeaderByHash: modify expected response according erigon and makes silkworm fix
+# eth_feeHistory: modify expected response according erigon and makes silkworm fix
+# trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
+# trace_rawTransaction: different implementation
+
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
-debug_accountAt,\
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
-debug_traceBlockByHash,\
 debug_traceCall/test_02.json,\
+debug_traceTransaction,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
-erigon_getHeaderByHash/test_05.json,\
-erigon_getBlockReceiptsByBlockHash,\
+erigon_getHeaderByHash,\
+erigon_getHeaderByNumber,\
 erigon_getLatestLogs,\
-erigon_getLogsByHash,\
-eth_createAccessList/test_16.json,\
-eth_estimateGas,\
-eth_getBalance,\
-eth_getBlockByHash,\
-eth_getBlockTransactionCountByHash,\
-eth_getCode,\
+eth_feeHistory,\
 eth_getLogs,\
-eth_getRawTransactionByBlockHashAndIndex,\
-eth_getStorageAt/test_01.json,\
-eth_getStorageAt/test_02.json,\
-eth_getStorageAt/test_03.json,\
-eth_getTransactionByBlockHashAndIndex,\
-eth_getTransactionCount/test_01.json,\
-eth_getTransactionCount/test_06.json,\
-eth_getUncleCountByBlockHash,\
+eth_getBalance/test_05.json,\
 ots_getTransactionBySenderAndNonce,\
 ots_getContractCreator,\
 ots_hasCode,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
-txpool_content
+trace_rawTransaction,\
+trace_filter/test_16.json,\
+txpool_content -- http,websocket
 
 failed_test=$?
 

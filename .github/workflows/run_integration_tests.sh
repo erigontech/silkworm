@@ -25,7 +25,16 @@ debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
 debug_traceCall/test_02.json,\
-debug_traceTransaction,\
+debug_traceTransaction/test_25.json,\
+debug_traceTransaction/test_36.json,\
+debug_traceTransaction/test_62.json,\
+debug_traceTransaction/test_74.tar,\
+debug_traceTransaction/test_75.tar,\
+debug_traceTransaction/test_77.json,\
+debug_traceTransaction/test_90.tar,\
+debug_traceTransaction/test_91.tar,\
+debug_traceTransaction/test_92.tar,\
+debug_traceTransaction/test_96.json,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
 erigon_getHeaderByHash,\

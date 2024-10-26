@@ -66,7 +66,9 @@ struct DebugLog {
     std::int64_t gas{0};
     std::int64_t gas_cost{0};
     std::int32_t depth{0};
-    bool error{false};
+//    std::optional<evmc_status_code> result_code; // present only in execution failure cas
+    std::string error;
+    int stack_height{0};
     std::vector<std::string> memory;
     std::vector<std::string> stack;
     Storage storage;

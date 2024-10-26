@@ -14,7 +14,6 @@ rm -rf ./mainnet/results/
 # debug_traceTransaction: modify expected response according erigon and makes silkworm fix
 # trace_filter/test_16.json: modify expected response according erigon and makes silkworm fix
 # debug_traceCall/test_02.json: modify expected response according erigon and makes silkworm fix
-# erigon_getHeaderByHash: modify expected response according erigon and makes silkworm fix
 # eth_feeHistory: modify expected response according erigon and makes silkworm fix
 # trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
 # trace_rawTransaction: different implementation

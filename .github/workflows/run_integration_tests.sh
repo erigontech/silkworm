@@ -25,6 +25,12 @@ debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
 debug_traceCall/test_02.json,\
+debug_traceBlockByNumber/test_05.tar,\
+debug_traceBlockByNumber/test_08.tar,\
+debug_traceBlockByNumber/test_09.tar,\
+debug_traceBlockByNumber/test_10.tar,\
+debug_traceBlockByNumber/test_11.tar,\
+debug_traceBlockByNumber/test_12.tar,\
 debug_traceTransaction/test_25.json,\
 debug_traceTransaction/test_36.json,\
 debug_traceTransaction/test_62.json,\

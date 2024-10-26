@@ -1731,13 +1731,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     }
 
     while (block_number <= trace_filter.to_block.number()) {
-        if (!block_with_hash) {
-            stream.open_object();
-            const std::string error_msg = "could not find block " + std::to_string(block_number);
-            const Error error{-32000, error_msg};
-            stream.write_json_field("error", error);
-            stream.close_object();
-        } else {
+        if (block_with_hash) {
             const Block block{block_with_hash, false};
             SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
                        << " block_number: " << block_number - 1

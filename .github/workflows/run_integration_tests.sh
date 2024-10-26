@@ -11,6 +11,7 @@ cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
 
+# new API BlobBaseFee and BaseFee
 # debug_traceTransaction: modify expected response according erigon and makes silkworm fix
 # trace_filter/test_16.json: modify expected response according erigon and makes silkworm fix
 # debug_traceCall/test_02.json: modify expected response according erigon and makes silkworm fix
@@ -39,8 +40,7 @@ ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
 trace_rawTransaction,\
-trace_filter/test_16.json,\
-txpool_content -- http,websocket
+trace_filter/test_16.json -- http,websocket
 
 failed_test=$?
 

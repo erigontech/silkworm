@@ -443,7 +443,11 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
-        oss << "block " << block_number_or_hash.number() << "(" << silkworm::to_hex(block_number_or_hash.hash()) << ") not found";
+        if (block_number_or_hash.hash())
+           oss << "block " << silkworm::to_hex(block_number_or_hash.hash()) << " not found";
+        else {
+           oss << "block " << block_number_or_hash.number() << " not found";
+        }
         const Error error{kServerError, oss.str()};
         stream.write_json_field("error", error);
     } catch (...) {

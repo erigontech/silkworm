@@ -42,6 +42,8 @@ struct FeeHistory {
     std::vector<intx::uint256> base_fees_per_gas;
     std::vector<double> gas_used_ratio;
     std::vector<Rewards> rewards;
+    std::vector<double> blob_gas_used_ratio;
+    std::vector<intx::uint256> blob_base_fees_per_gas;
     std::optional<std::string> error{std::nullopt};
 };
 
@@ -62,7 +64,10 @@ struct BlockFees {
     Rewards rewards;
     intx::uint256 base_fee;
     intx::uint256 next_base_fee;
+    intx::uint256 blob_base_fee;
+    intx::uint256 next_blob_base_fee;
     double gas_used_ratio{0};
+    double blob_gas_used_ratio{0};
 };
 
 class FeeHistoryOracle {

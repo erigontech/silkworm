@@ -40,6 +40,11 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     } else {
         json["gasUsedRatio"] = fh.gas_used_ratio;
     }
+    if (fh.blob_gas_used_ratio.empty()) {
+        json["blobGasUsedRatio"] = nullptr;
+    } else {
+        json["blobGasUsedRatio"] = fh.blob_gas_used_ratio;
+    }
     json["oldestBlock"] = to_quantity(fh.oldest_block);
 
     if (!fh.base_fees_per_gas.empty()) {
@@ -49,6 +54,15 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
             fee_string_list.push_back(to_quantity(fee));
         }
         json["baseFeePerGas"] = fee_string_list;
+    }
+
+    if (!fh.blob_base_fees_per_gas.empty()) {
+        std::vector<std::string> blob_fee_string_list;
+        blob_fee_string_list.reserve(fh.blob_base_fees_per_gas.size());
+        for (const auto& fee : fh.blob_base_fees_per_gas) {
+            blob_fee_string_list.push_back(to_quantity(fee));
+        }
+        json["baseFeePerBlobGas"] = blob_fee_string_list;
     }
 
     if (!fh.rewards.empty()) {
@@ -102,7 +116,9 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
     }
     fee_history.rewards.resize(block_range.num_blocks);
     fee_history.base_fees_per_gas.resize(block_range.num_blocks + 1);
+    fee_history.blob_base_fees_per_gas.resize(block_range.num_blocks + 1);
     fee_history.gas_used_ratio.resize(block_range.num_blocks);
+    fee_history.blob_gas_used_ratio.resize(block_range.num_blocks);
 
     const auto oldest_block_number = block_range.last_block_number + 1 - block_range.num_blocks;
     auto first_missing = block_range.num_blocks;
@@ -143,8 +159,11 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
         if (block_fees.block_header) {
             fee_history.rewards[index] = block_fees.rewards;
             fee_history.base_fees_per_gas[index] = block_fees.base_fee;
+            fee_history.blob_base_fees_per_gas[index] = block_fees.blob_base_fee;
             fee_history.base_fees_per_gas[index + 1] = block_fees.next_base_fee;
+            fee_history.blob_base_fees_per_gas[index + 1] = block_fees.next_blob_base_fee;
             fee_history.gas_used_ratio[index] = block_fees.gas_used_ratio;
+            fee_history.blob_gas_used_ratio[index] = block_fees.blob_gas_used_ratio;
         } else {
             // Getting no block and no error means we are requesting into the future (might happen because of a reorg)
             first_missing = std::min(first_missing, index);
@@ -159,7 +178,9 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
         fee_history.rewards.clear();
     }
     fee_history.base_fees_per_gas.resize(first_missing + 1);
+    fee_history.blob_base_fees_per_gas.resize(first_missing + 1);
     fee_history.gas_used_ratio.resize(first_missing);
+    fee_history.blob_gas_used_ratio.resize(first_missing);
     fee_history.oldest_block = oldest_block_number;
 
     co_return fee_history;
@@ -202,17 +223,31 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     auto next_block_number = header.number + 1;
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
 
-    block_fees.gas_used_ratio = static_cast<double>(header.gas_used) / static_cast<double>(header.gas_limit);
-
     if (config_.is_london(next_block_number)) {
         block_fees.next_base_fee = protocol::expected_base_fee_per_gas(header);
     } else {
         block_fees.next_base_fee = 0;
     }
 
+    // EIP-4844 blob gas cost (calc_data_fee)
+    block_fees.blob_base_fee = header.blob_gas_price().value_or(0);
+
+    if (config_.is_london(next_block_number)) {
+        block_fees.next_blob_base_fee = protocol::calc_excess_blob_gas(header);
+    } else {
+        block_fees.next_blob_base_fee = 0;
+    }
+
+    block_fees.gas_used_ratio = static_cast<double>(header.gas_used) / static_cast<double>(header.gas_limit);
+
     if (reward_percentiles.empty()) {
         co_return;  // rewards were not requested, return
     }
+
+    if (header.blob_gas_used && block_fees.block->block.header.excess_blob_gas) {
+        block_fees.blob_gas_used_ratio = static_cast<double>(*(header.blob_gas_used)) / static_cast<double>(*(block_fees.block->block.header.excess_blob_gas));
+    }
+
     if (block_fees.receipts.size() != block_fees.block->block.transactions.size()) {
         co_return;
     }

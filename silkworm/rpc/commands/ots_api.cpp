@@ -257,6 +257,25 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
+using TestFunc = std::function<Task<bool>(int64_t)>;
+Task<int64_t> ots_binary_search(int64_t n, TestFunc& func) {
+    int64_t left = 0;
+    int64_t right = n;
+
+    SILK_LOG << "ots_binary_search [0,  " << right << "]";
+
+    while (left < right) {
+        int64_t mid = (left + right) >> 1;
+
+        if (! co_await func(mid)) {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+    co_return left;
+}
+
 Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
@@ -276,7 +295,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto key = db::code_domain_key(sender);
 
         db::kv::api::IndexRangeQuery query{
-                .table = "AccountsHistoryIdx", //db::table::kStorageDomain,
+                .table = "AccountsHistoryIdx", // TODO insert in tables.hpp
                 .key = key,
                 .from_timestamp = -1,
                 .to_timestamp = -1,
@@ -285,15 +304,18 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto it = co_await paginated_result.begin();
 
         std::vector<std::string> keys;
-        std::int64_t count = 0;
+        std::uint64_t count = 0;
+        std::int64_t prevTxnId = 0;
+        std::int64_t nextTxnId = 0;
         while (const auto value = co_await it.next()) {
+            const auto txnId = *value;
             if (count++ % 4096 != 0) {
+                nextTxnId = txnId;
                 continue;
             }
-            const auto txnId = *value;
-            SILK_LOG << "txnId: " << txnId;
+            SILK_LOG << "count: " << count << ", txnId: " << txnId;
             db::kv::api::HistoryPointQuery hpq {
-                .table = "",
+                .table = "AccountsHistory", // TODO insert in tables.hpp
                 .key = key,
                 .timestamp = txnId
             };
@@ -302,10 +324,64 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_return;
             }
-
-
+            if (result.value.empty()) {
+                prevTxnId = txnId;
+                continue;
+            }
+            auto account = Account::from_encoded_storage_v3(result.value);
+            if (account.has_value() && account.value().nonce > nonce) {
+                break;
+            }
+            prevTxnId = txnId;
         }
+        SILK_LOG << "range -> prevTxnId: " << prevTxnId << ", nextTxnId: " << nextTxnId;
+
         reply = make_json_content(request, nlohmann::detail::value_t::null);
+        if (nextTxnId == 0) {
+            nextTxnId = prevTxnId + 1;
+        }
+
+        std::int64_t creationTxnId = 0;
+        TestFunc func = [&](int64_t i) -> Task<bool> {
+            auto txnId = i + prevTxnId;
+
+            SILK_LOG << "searching for txnId: " << txnId << ", i: " << i;
+            db::kv::api::HistoryPointQuery hpq {
+                    .table = "AccountsHistory", // TODO insert in tables.hpp
+                    .key = key,
+                    .timestamp = txnId
+            };
+            auto result = co_await tx->history_seek(std::move(hpq));
+            if (!result.success) {
+                co_return false;
+            }
+            if (result.value.empty()) {
+                creationTxnId = txnId;
+                co_return false;
+            }
+            const auto account {Account::from_encoded_storage_v3(result.value)};
+//            if (account.has_value()) {
+//                co_return false;
+//            }
+            SILK_LOG << "account.nonce: " << account->nonce << ", nonce: " << nonce;
+            if (account->nonce <= nonce) {
+                creationTxnId = std::max(creationTxnId, txnId);
+                co_return false;
+            }
+
+            co_return true;
+        };
+
+        auto index = co_await ots_binary_search((nextTxnId - prevTxnId), func);
+        SILK_LOG << "after search -> index: " << index << " creationTxnId: " << creationTxnId;
+
+        if (creationTxnId == 0) {
+            SILK_LOG << "binary search in [" << prevTxnId << ", " << nextTxnId << "] found nothing";
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
+        } else {
+
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
+        }
 
         /*
         auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);

@@ -12,13 +12,13 @@ rm -rf ./mainnet/results/
  
 
 # new API BlobBaseFee and BaseFee
-# debug_traceTransaction: modify expected response according erigon and makes silkworm fix
-# trace_filter/test_16.json: modify expected response according erigon and makes silkworm fix
-# debug_traceCall/test_02.json: modify expected response according erigon and makes silkworm fix
+# debug_traceTransaction: modify expected response according erigon(report evm error) and makes silkworm fix
+# debug_traceCall/test_02.json: requests is_latest fix to support ethbackend 
 # erigon_getHeaderByNumber: modify expected response according erigon and makes silkworm fix
 # erigon_getHeaderByHash: modify expected response according erigon and makes silkworm fix
-# trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
+# debug_accountRange, debug_getModifiedAccountsm, debug_storageRangeAt, erigon_getBalanceChangesInBlock, ots_getTransactionBySenderAndNonce, ots_getContractCreator, ots_searchTransactionsAfter, ots_searchTransactionsBefore, erigon_getLatestLogs, eth_getLogs: new algo using tkv
 # trace_rawTransaction: different implementation
+# trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
 debug_accountRange,\
@@ -39,8 +39,7 @@ ots_hasCode,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
-trace_rawTransaction,\
-trace_filter/test_16.json -- http,websocket
+trace_rawTransaction --transport_type http,websocket
 
 failed_test=$?
 

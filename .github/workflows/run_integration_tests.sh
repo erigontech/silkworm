@@ -37,7 +37,7 @@ ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
 trace_rawTransaction,\
 trace_filter/test_16.json,\
-txpool_content -- http,websocket
+txpool_content --transport_type http,websocket
 
 failed_test=$?
 

@@ -21,6 +21,10 @@ runs:
       shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
+    - name: Temporary step - conan cache cleanup - to be executed only once per runner
+      shell: bash
+      run: conan remove "*" --force
+
     - name: Preinstall Conan packages
       shell: bash
       working-directory: ${{runner.workspace}}/silkworm

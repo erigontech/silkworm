@@ -83,7 +83,7 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-static inline tl::expected<uint8_t, DecodingError> validate_encoded_head(ByteView& encoded_payload) noexcept {
+static tl::expected<uint8_t, DecodingError> validate_encoded_head(ByteView& encoded_payload) noexcept {
     if (encoded_payload.empty()) {
         return 0;
     }

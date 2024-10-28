@@ -82,7 +82,7 @@ class SegmentFileReader {
 
     static_assert(std::input_iterator<Iterator>);
 
-    static inline const auto kPageSize{os::page_size()};
+    static inline const size_t kPageSize{os::page_size()};
 
     explicit SegmentFileReader(
         SnapshotPath path,

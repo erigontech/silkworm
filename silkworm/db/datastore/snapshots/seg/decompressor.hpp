@@ -36,7 +36,7 @@ namespace silkworm::snapshots::seg {
 class DecodingTable {
   public:
     //! The max bit length for tables (we don't use tables larger than 2^9)
-    constexpr static size_t kMaxTableBitLength{9};
+    static constexpr size_t kMaxTableBitLength{9};
 
     size_t bit_length() const { return bit_length_; }
 
@@ -83,9 +83,9 @@ struct Pattern {
 class PatternTable : public DecodingTable {
   public:
     //! The default bit length threshold after which tables are condensed (default: all NOT condensed)
-    constexpr static size_t kDefaultCondensedTableBitLengthThreshold = kMaxTableBitLength;
-    constexpr static int kNumPowers{10};
-    constexpr static int kMaxPower{512};
+    static constexpr size_t kDefaultCondensedTableBitLengthThreshold{kMaxTableBitLength};
+    static constexpr int kNumPowers{10};
+    static constexpr int kMaxPower{512};
     using WordDistances = std::array<std::vector<int>, kNumPowers>;
 
     //! @brief Set the bit length threshold after which tables will be condensed.
@@ -173,10 +173,10 @@ class PositionTable : public DecodingTable {
 class Decompressor {
   public:
     //! The max number of patterns in decoding tables
-    constexpr static size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 510;
+    static constexpr size_t kMaxTablePatterns{(1 << DecodingTable::kMaxTableBitLength) * 510};
 
     //! The max number of positions in decoding tables
-    constexpr static size_t kMaxTablePositions = (1 << DecodingTable::kMaxTableBitLength) * 100;
+    static constexpr size_t kMaxTablePositions{(1 << DecodingTable::kMaxTableBitLength) * 100};
 
     enum class ReadMode : uint8_t {
         kNormal,

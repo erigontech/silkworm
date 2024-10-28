@@ -46,7 +46,7 @@
 namespace silkworm::node {
 
 //! Custom stack size for thread running block execution on EVM
-constexpr uint64_t kExecutionThreadStackSize{16'777'216};  // 16MiB
+static constexpr uint64_t kExecutionThreadStackSize{16'777'216};  // 16MiB
 
 using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 

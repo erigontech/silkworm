@@ -29,7 +29,7 @@ namespace silkworm::rpc {
 struct AsyncTaskTest : test_util::ServiceContextTestBase {
 };
 
-const static std::vector<std::pair<size_t, size_t>> kTestData = {
+static const std::vector<std::pair<size_t, size_t>> kTestData{
     {0, 1},
     {1, 1},
     {9, 362'880},

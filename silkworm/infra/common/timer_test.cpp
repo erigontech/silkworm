@@ -31,7 +31,7 @@ struct TimerTest {
 };
 
 TEST_CASE_METHOD(TimerTest, "Periodic timer", "[infra][common][timer]") {
-    constexpr static size_t kExpectedExpirations{2};
+    static constexpr size_t kExpectedExpirations{2};
     size_t expired_count{0};  // The lambda capture-list content *must* outlive the scheduler execution loop
     for (const auto interval : kIntervals) {
         Timer periodic_timer{io_context.get_executor(), interval, [&]() -> bool {

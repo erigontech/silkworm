@@ -43,7 +43,7 @@ namespace silkworm::rpc::commands {
 using namespace silkworm::db;
 using db::state::StateReader;
 
-constexpr int kCurrentApiLevel{8};
+static constexpr int kCurrentApiLevel{8};
 
 Task<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
     reply = make_json_content(request, kCurrentApiLevel);

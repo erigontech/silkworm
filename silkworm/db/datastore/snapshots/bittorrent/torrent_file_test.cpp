@@ -75,7 +75,7 @@ TEST_CASE("TorrentFile") {
     ByteView expected{v1_000000_000500_bodies_seg_torrent, v1_000000_000500_bodies_seg_torrent_len};
     // libtorrent reorders "announce-list", "created by" and "creation date" might be different,
     // so we compare only the part after the "info" key
-    static const char kInfoKeyPrefix[] = "4:infod";
+    static constexpr char kInfoKeyPrefix[] = "4:infod";
     size_t expected_offset = expected.find(byte_ptr_cast(kInfoKeyPrefix));
 
     auto file = TorrentFile::from_source_file(kInputFilePath, 1718974348);

@@ -45,13 +45,13 @@ namespace silkworm::db::kv::grpc::server {
 api::Version higher_version_ignoring_patch(api::Version lhs, api::Version rhs);
 
 //! Current DB schema version.
-constexpr auto kDbSchemaVersion = api::Version{3, 0, 0};
+inline constexpr api::Version kDbSchemaVersion{3, 0, 0};
 
 //! The max life duration for MDBX transactions (long-lived transactions are discouraged).
-constexpr std::chrono::milliseconds kMaxTxDuration{60'000};
+inline constexpr std::chrono::milliseconds kMaxTxDuration{60'000};
 
 //! The max number of opened cursors for each remote transaction (arbitrary limit on this KV implementation).
-constexpr size_t kMaxTxCursors{100};
+inline constexpr size_t kMaxTxCursors = 100;
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
 //! rpc Version(google.protobuf.Empty) returns (types.VersionReply);

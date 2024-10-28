@@ -22,7 +22,7 @@
 namespace silkworm::concurrency {
 
 //! Default number of threads to use for I/O tasks
-inline const auto kDefaultNumContexts{std::thread::hardware_concurrency() / 2};
+inline const uint32_t kDefaultNumContexts{std::thread::hardware_concurrency() / 2};
 
 //! The configuration settings for \refitem ContextPool
 struct ContextPoolSettings {

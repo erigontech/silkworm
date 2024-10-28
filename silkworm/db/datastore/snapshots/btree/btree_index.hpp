@@ -31,7 +31,7 @@ namespace silkworm::snapshots::btree {
 
 class BTreeIndex {
   public:
-    static constexpr auto kDefaultFanout{256};
+    static constexpr uint64_t kDefaultFanout{256};
 
     using DataIndex = BTree::DataIndex;
     using DataIterator = BTree::DataIterator;

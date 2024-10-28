@@ -33,8 +33,11 @@ using namespace evmone::baseline;
 namespace {
 //! Copy of evmone::check_requirements: not exported
 template <Opcode Op>
-inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t& gas_left,
-                                           const uint256* stack_top, const uint256* stack_bottom) noexcept {
+evmc_status_code check_requirements(
+    const CostTable& cost_table,
+    int64_t& gas_left,
+    const uint256* stack_top,
+    const uint256* stack_bottom) noexcept {
     static_assert(
         !instr::has_const_gas_cost(Op) || instr::gas_costs[EVMC_FRONTIER][Op] != instr::undefined,
         "undefined instructions must not be handled by check_requirements()");
@@ -59,7 +62,7 @@ inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t&
     }
     if constexpr (instr::traits[Op].stack_height_required > 0) {
         // Check stack underflow using pointer comparison <= (better optimization).
-        static constexpr auto kMinOffset = instr::traits[Op].stack_height_required - 1;
+        static constexpr int kMinOffset = instr::traits[Op].stack_height_required - 1;
         if (INTX_UNLIKELY(stack_top <= stack_bottom + kMinOffset))
             return EVMC_STACK_UNDERFLOW;
     }
@@ -72,7 +75,7 @@ inline evmc_status_code check_requirements(const CostTable& cost_table, int64_t&
 }
 
 //! Adaptation of evmone::grow_memory: we need just to check gas requirements w/o growing memory
-inline int64_t check_memory_gas(int64_t gas_left, Memory& memory, uint64_t new_size) noexcept {
+int64_t check_memory_gas(int64_t gas_left, Memory& memory, uint64_t new_size) noexcept {
     const auto new_words = static_cast<int64_t>(silkworm::num_words(new_size));
     const auto current_words = static_cast<int64_t>(memory.size() / word_size);
     const auto new_cost = 3 * new_words + new_words * new_words / 512;
@@ -88,7 +91,7 @@ inline int64_t check_memory_gas(int64_t gas_left, Memory& memory, uint64_t new_s
 }
 
 //! Adaptation of evmone::check_memory: we need just to check gas requirements w/o growing memory
-inline bool check_memory_gas(int64_t& gas_left, Memory& memory, const uint256& offset, uint64_t size) noexcept {
+bool check_memory_gas(int64_t& gas_left, Memory& memory, const uint256& offset, uint64_t size) noexcept {
     if (((offset[3] | offset[2] | offset[1]) != 0) || (offset[0] > max_buffer_size))
         return false;
 

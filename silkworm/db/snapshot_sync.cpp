@@ -37,7 +37,6 @@
 #include "datastore/mdbx/etl_mdbx_collector.hpp"
 #include "datastore/snapshots/bittorrent/torrent_file.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
-#include "snapshot_bundle_factory_impl.hpp"
 #include "stages.hpp"
 
 namespace silkworm::db {
@@ -64,17 +63,13 @@ static bool snapshot_file_is_fully_merged(std::string_view file_name) {
 SnapshotSync::SnapshotSync(
     snapshots::SnapshotSettings settings,
     ChainId chain_id,
-    mdbx::env chaindata_env,
+    db::DataStoreRef data_store,
     std::filesystem::path tmp_dir_path,
     stagedsync::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
       snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
-      chaindata_env_{std::move(chaindata_env)},
-      repository_{
-          settings_,
-          std::make_unique<snapshots::StepToBlockNumConverter>(),
-          std::make_unique<SnapshotBundleFactoryImpl>(),
-      },
+      chaindata_env_{std::move(data_store.chaindata_env)},
+      repository_{data_store.repository},
       client_{settings_.bittorrent_settings},
       snapshot_freezer_{ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings_.keep_blocks},
       snapshot_merger_{repository_, std::move(tmp_dir_path)},
@@ -136,9 +131,6 @@ Task<void> SnapshotSync::setup() {
     RWTxnManaged rw_txn{chaindata_env_};
     update_database(rw_txn, repository_.max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
-
-    // Set snapshot repository into snapshot-aware database access
-    DataModel::set_snapshot_repository(&repository_);
 
     seed_frozen_local_snapshots();
 

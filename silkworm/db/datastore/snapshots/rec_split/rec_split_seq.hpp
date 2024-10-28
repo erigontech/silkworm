@@ -44,6 +44,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -83,9 +85,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
             SILK_DEBUG << "[index] add key hash: bucket_id=" << bucket_id << " bucket_key=" << bucket_key << " offset=" << offset;
         }
 
-        if (offset > max_offset_) {
-            max_offset_ = offset;
-        }
+        max_offset_ = std::max(max_offset_, offset);
 
         Bytes collector_key(16, '\0');
         endian::store_big_u64(collector_key.data(), bucket_id);

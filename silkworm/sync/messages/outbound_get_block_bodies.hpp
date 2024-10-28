@@ -31,7 +31,7 @@ class OutboundGetBlockBodies : public OutboundMessage {
     std::string name() const override { return "OutboundGetBlockBodies"; }
     std::string content() const override;
 
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) override;
 
     silkworm::sentry::eth::MessageId eth_message_id() const override {
         return silkworm::sentry::eth::MessageId::kGetBlockBodies;

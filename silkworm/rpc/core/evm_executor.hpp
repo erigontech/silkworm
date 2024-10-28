@@ -135,7 +135,7 @@ class EVMExecutor {
 
     void call_first_n(const silkworm::Block& block, uint64_t n, const Tracers& tracers = {}, bool refund = true, bool gas_bailout = false);
 
-    const IntraBlockState& get_ibs_state() { return execution_processor_.get_ibs_state(); }
+    const IntraBlockState& intra_block_state() const { return execution_processor_.intra_block_state(); }
 
   private:
     struct PreCheckResult {

@@ -19,21 +19,18 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
 namespace silkworm::db::state {
 
-StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) : tx_(tx), block_number_(block_number), canonical_body_for_storage_provider_{std::move(canonical_body_for_storage_provider)} {
-}
+StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_number) : tx_(tx), block_number_(block_number) {}
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
     if (!txn_number_) {
-        txn_number_ = co_await first_txn_num_in_block();
+        txn_number_ = co_await tx_.first_txn_num_in_block(block_number_);
     }
 
     db::kv::api::DomainPointQuery query{
@@ -54,7 +51,7 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
                                               uint64_t /* incarnation */,
                                               const evmc::bytes32& location_hash) const {
     if (!txn_number_) {
-        txn_number_ = co_await first_txn_num_in_block();
+        txn_number_ = co_await tx_.first_txn_num_in_block(block_number_);
     }
 
     db::kv::api::DomainPointQuery query{
@@ -74,7 +71,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
         co_return std::nullopt;
     }
     if (!txn_number_) {
-        txn_number_ = co_await first_txn_num_in_block();
+        txn_number_ = co_await tx_.first_txn_num_in_block(block_number_);
     }
 
     db::kv::api::DomainPointQuery query{
@@ -87,11 +84,6 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
         co_return std::nullopt;
     }
     co_return result.value;
-}
-
-Task<txn::TxNum> StateReader::first_txn_num_in_block() const {
-    const auto min_txn_num = co_await txn::min_tx_num(tx_, block_number_, canonical_body_for_storage_provider_);
-    co_return min_txn_num + /*txn_index*/ 0;
 }
 
 }  // namespace silkworm::db::state

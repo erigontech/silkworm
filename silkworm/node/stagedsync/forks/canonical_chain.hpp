@@ -35,8 +35,11 @@ class CanonicalChain {
   public:
     static constexpr size_t kNoCache = 0;
 
-    explicit CanonicalChain(db::RWTxn&, size_t cache_size = kDefaultCacheSize);
-    CanonicalChain(CanonicalChain&) = delete;           // tx is not copiable
+    explicit CanonicalChain(
+        db::RWTxn& tx,
+        db::DataModelFactory data_model_factory,
+        size_t cache_size = kDefaultCacheSize);
+    CanonicalChain(CanonicalChain&) = delete;           // tx is not copyable
     CanonicalChain(const CanonicalChain&, db::RWTxn&);  // we can copy a CanonicalChain giving a new tx
     CanonicalChain(CanonicalChain&&) noexcept;
 
@@ -46,7 +49,7 @@ class CanonicalChain {
     BlockId find_forking_point(const BlockHeader& header, Hash header_hash) const;
 
     void advance(BlockNum height, Hash header_hash);
-    void update_up_to(BlockNum height, Hash header_hash);
+    void update_up_to(BlockNum height, Hash hash);
     void delete_down_to(BlockNum unwind_point);
     void set_current_head(BlockId);
 
@@ -57,8 +60,10 @@ class CanonicalChain {
     bool has(Hash block_hash) const;
 
   private:
+    db::DataModel data_model() const { return data_model_factory_(tx_); }
+
     db::RWTxn& tx_;
-    db::DataModel data_model_;
+    db::DataModelFactory data_model_factory_;
 
     BlockId initial_head_{};
     BlockId current_head_{};

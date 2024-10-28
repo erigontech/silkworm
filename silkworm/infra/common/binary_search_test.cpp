@@ -27,8 +27,8 @@
 namespace silkworm {
 
 static void check_binary_find_if(const std::vector<int>& vec, const int value) {
-    SILKWORM_ASSERT(std::is_sorted(vec.begin(), vec.end()));
-    const auto res1{std::upper_bound(vec.begin(), vec.end(), value)};
+    SILKWORM_ASSERT(std::ranges::is_sorted(vec));
+    const auto res1{std::ranges::upper_bound(vec, value)};
     const auto res2{std::ranges::find_if(vec, [&](int x) { return x > value; })};
     CHECK(res1 == res2);
     const auto res3{binary_find_if(vec.size(), [&](size_t i) { return vec[i] > value; })};

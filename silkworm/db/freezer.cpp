@@ -26,6 +26,7 @@
 #include <silkworm/infra/common/log.hpp>
 
 #include "access_layer.hpp"
+#include "blocks/bodies/body_queries.hpp"
 #include "blocks/bodies/body_segment_collation.hpp"
 #include "blocks/headers/header_segment_collation.hpp"
 #include "datastore/segment_collation.hpp"
@@ -57,8 +58,8 @@ static BlockNum get_first_stored_header_num(ROTxn& txn) {
     return num_opt.value_or(0);
 }
 
-static std::optional<uint64_t> get_next_base_txn_id(BlockNum number) {
-    auto body = DataModel::read_body_for_storage_from_snapshot(number);
+static std::optional<uint64_t> get_next_base_txn_id(SnapshotRepository& repository, BlockNum number) {
+    auto body = BodyFindByBlockNumMultiQuery{repository}.exec(number);
     if (!body) return std::nullopt;
     return body->base_txn_id + body->txn_count;
 }
@@ -73,9 +74,9 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
         return get_tip_num(db_tx);
     }();
 
-    uint64_t base_txn_id = [last_frozen]() -> uint64_t {
+    uint64_t base_txn_id = [this, last_frozen]() -> uint64_t {
         if (last_frozen == 0) return 0;
-        auto id = get_next_base_txn_id(last_frozen);
+        auto id = get_next_base_txn_id(snapshots_, last_frozen);
         SILKWORM_ASSERT(id.has_value());
         return *id;
     }();

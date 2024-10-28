@@ -28,10 +28,10 @@ namespace silkworm::snapshots {
 namespace fs = std::filesystem;
 
 SnapshotRepository::SnapshotRepository(
-    SnapshotSettings settings,
+    std::filesystem::path dir_path,
     std::unique_ptr<StepToTimestampConverter> step_converter,
     std::unique_ptr<SnapshotBundleFactory> bundle_factory)
-    : settings_(std::move(settings)),
+    : dir_path_(std::move(dir_path)),
       step_converter_(std::move(step_converter)),
       bundle_factory_(std::move(bundle_factory)),
       bundles_(std::make_shared<Bundles>()) {}
@@ -68,7 +68,7 @@ size_t SnapshotRepository::bundles_count() const {
 }
 
 void SnapshotRepository::close() {
-    SILK_TRACE << "Close snapshot repository folder: " << settings_.repository_dir.string();
+    SILK_TRACE << "Close snapshot repository folder: " << dir_path_.string();
     std::scoped_lock lock(bundles_mutex_);
     bundles_ = std::make_shared<Bundles>();
 }
@@ -114,7 +114,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
 }
 
 void SnapshotRepository::reopen_folder() {
-    SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
+    SILK_INFO << "Reopen snapshot repository folder: " << dir_path_.string();
     SnapshotPathList all_snapshot_paths = get_segment_files();
     SnapshotPathList all_index_paths = get_idx_files();
 
@@ -198,14 +198,14 @@ std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_rang
 }
 
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
-    ensure(fs::exists(settings_.repository_dir),
-           [&]() { return "SnapshotRepository: " + settings_.repository_dir.string() + " does not exist"; });
-    ensure(fs::is_directory(settings_.repository_dir),
-           [&]() { return "SnapshotRepository: " + settings_.repository_dir.string() + " is a not folder"; });
+    ensure(fs::exists(dir_path_),
+           [&]() { return "SnapshotRepository: " + dir_path_.string() + " does not exist"; });
+    ensure(fs::is_directory(dir_path_),
+           [&]() { return "SnapshotRepository: " + dir_path_.string() + " is a not folder"; });
 
     // Load the resulting files w/ desired extension ensuring they are snapshots
     SnapshotPathList snapshot_files;
-    for (const auto& file : fs::directory_iterator{settings_.repository_dir}) {
+    for (const auto& file : fs::directory_iterator{dir_path_}) {
         if (!fs::is_regular_file(file.path()) || file.path().extension().string() != ext) {
             continue;
         }

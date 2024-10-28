@@ -22,11 +22,11 @@
 
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/db/kv/txn_num.hpp>
 
 #include "version.hpp"
 
@@ -34,7 +34,7 @@ namespace silkworm::db::state {
 
 class StateReader {
   public:
-    StateReader(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider);
+    StateReader(kv::api::Transaction& tx, BlockNum block_number);
 
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
@@ -48,11 +48,9 @@ class StateReader {
     Task<std::optional<Bytes>> read_code(const evmc::address& address, const evmc::bytes32& code_hash) const;
 
   private:
-    Task<txn::TxNum> first_txn_num_in_block() const;
     kv::api::Transaction& tx_;
     BlockNum block_number_;
-    mutable std::optional<txn::TxNum> txn_number_;
-    chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider_;
+    mutable std::optional<TxnId> txn_number_;
 };
 
 }  // namespace silkworm::db::state

@@ -20,20 +20,41 @@ Copyright 2022 The Silkworm Authors
 
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
-#include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/address.hpp>
 
 namespace silkworm {
 
-std::vector<RequestPtr> DepositRequest::extract_deposits_from_logs(const std::vector<Log>& logs) {
+Bytes extract_deposit(const Bytes& data) {
+    const ByteView input{data};
+
+    Bytes result;
+
+    // The format of deposit data is: (bytes, bytes, bytes, bytes, bytes)
+    size_t offset_index = 0;
+    for (size_t i = 0; i < 5; ++i) {
+        const auto offset = static_cast<uint64_t>(intx::be::unsafe::load<intx::uint256>(input.substr(offset_index).data()));
+        const auto size = static_cast<uint64_t>(intx::be::unsafe::load<intx::uint256>(input.substr(offset).data()));
+
+        if (size > 0) {
+            const auto bytes = input.substr(offset + 32, size);
+            std::ranges::copy(bytes, std::back_inserter(result));
+        }
+
+        offset_index += 32;
+    }
+
+    return result;
+}
+
+Bytes DepositRequest::extract_deposits_from_logs(const std::vector<Log>& logs) {
+    Bytes result;
     for (const auto& log : logs) {
-        if (log.address != protocol::kDepositContractAddress) {
-            continue;
+        if (log.address == protocol::kDepositContractAddress) {
+            auto bytes = extract_deposit(log.data);
+            result.append(std::move(bytes));
         }
     }
-    std::vector<RequestPtr> requests;
-
-    return requests;
+    return result;
 }
 
 void DepositRequest::encode(Bytes& to) const {

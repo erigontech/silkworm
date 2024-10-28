@@ -50,7 +50,7 @@ struct DepositRequest final : Request {
     static constexpr size_t kDepositRequestDataLen = 192;
     std::array<uint8_t, kDepositRequestDataLen> request_data;
 
-    static std::vector<RequestPtr> extract_deposits_from_logs(const std::vector<Log>& logs);
+    static Bytes extract_deposits_from_logs(const std::vector<Log>& logs);
 
     void encode(Bytes& to) const override;
     DecodingResult decode(ByteView& from, rlp::Leftover mode) override;

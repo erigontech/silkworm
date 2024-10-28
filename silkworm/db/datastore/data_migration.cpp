@@ -24,23 +24,23 @@
 namespace silkworm::db {
 
 Task<bool> DataMigration::exec() {
-    log::Debug(name()) << "START";
-    log::Debug(name()) << "pre-cleanup";
+    SILK_DEBUG_M(name()) << "START";
+    SILK_DEBUG_M(name()) << "pre-cleanup";
     co_await cleanup();
     auto command = next_command();
     if (!command) {
-        log::Debug(name()) << "END noop";
+        SILK_DEBUG_M(name()) << "END noop";
         co_return false;
     }
-    log::Debug(name()) << "migrate " << command->description();
+    SILK_DEBUG_M(name()) << "migrate " << command->description();
     auto result = migrate(std::move(command));
-    log::Debug(name()) << "index";
+    SILK_DEBUG_M(name()) << "index";
     index(result);
-    log::Debug(name()) << "commit";
+    SILK_DEBUG_M(name()) << "commit";
     commit(result);
-    log::Debug(name()) << "post-cleanup";
+    SILK_DEBUG_M(name()) << "post-cleanup";
     co_await cleanup();
-    log::Debug(name()) << "END";
+    SILK_DEBUG_M(name()) << "END";
     co_return true;
 }
 

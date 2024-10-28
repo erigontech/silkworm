@@ -71,9 +71,10 @@ Task<size_t> find_neighbors(
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled)
             throw;
-        log::Debug("disc_v4") << "find_neighbors failed to send_find_node"
-                              << " to " << endpoint
-                              << " due to exception: " << ex.what();
+        SILK_DEBUG_M("disc_v4")
+            << "find_neighbors failed to send_find_node"
+            << " to " << endpoint
+            << " due to exception: " << ex.what();
         co_return 0;
     }
 

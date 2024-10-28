@@ -141,13 +141,15 @@ Task<PingCheckResult> ping_check(
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled)
             throw;
-        log::Debug("disc_v4") << "ping_check failed to send_ping"
-                              << " to " << endpoint
-                              << " due to exception: " << ex.what();
+        SILK_DEBUG_M("disc_v4")
+            << "ping_check failed to send_ping"
+            << " to " << endpoint
+            << " due to exception: " << ex.what();
     } catch (const IPV6UnsupportedError& ex) {
-        log::Debug("disc_v4") << "ping_check failed to send_ping"
-                              << " to " << endpoint
-                              << " due to exception: " << ex.what();
+        SILK_DEBUG_M("disc_v4")
+            << "ping_check failed to send_ping"
+            << " to " << endpoint
+            << " due to exception: " << ex.what();
     }
 
     bool is_pong_received = false;

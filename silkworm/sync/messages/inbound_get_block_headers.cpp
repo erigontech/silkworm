@@ -56,7 +56,7 @@ void InboundGetBlockHeaders::execute(db::DataStoreRef db, HeaderChain&, BodySequ
     }
 
     if (reply.request.empty()) {
-        log::Trace() << "[WARNING] Not replying to " << identify(*this) << ", no headers found";
+        SILK_TRACE << "[WARNING] Not replying to " << identify(*this) << ", no headers found";
         return;
     }
 

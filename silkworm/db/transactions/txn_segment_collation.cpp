@@ -59,7 +59,7 @@ void TransactionSegmentCollation::prune(RWTxn& txn, BlockNumRange range) const {
         }
 
         if ((count > 10000) && ((count % 10000) == 0)) {
-            log::Debug("TransactionSegmentCollation") << "cleaned up until block " << i;
+            SILK_DEBUG_M("TransactionSegmentCollation") << "cleaned up until block " << i;
         }
     }
 }

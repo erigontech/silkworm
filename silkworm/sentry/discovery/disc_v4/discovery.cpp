@@ -174,9 +174,10 @@ class DiscoveryImpl : private MessageHandler {
 
         auto local_node_url = node_url_();
         if (node_id == local_node_url.public_key()) {
-            log::Warning("sentry") << "disc_v4::DiscoveryImpl::ping_check: "
-                                   << "ignoring an attempt to ping the local node, "
-                                   << "please delete it from the NodeDb by node_id=" << node_id.hex();
+            SILK_WARN_M("sentry")
+                << "disc_v4::DiscoveryImpl::ping_check: "
+                << "ignoring an attempt to ping the local node, "
+                << "please delete it from the NodeDb by node_id=" << node_id.hex();
             co_return;
         }
 
@@ -211,9 +212,9 @@ class DiscoveryImpl : private MessageHandler {
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled)
                 throw;
-            log::Error("sentry") << "disc_v4::DiscoveryImpl::ping_check node_id=" << node_id.hex() << " system_error: " << ex.what();
+            SILK_ERROR_M("sentry") << "disc_v4::DiscoveryImpl::ping_check node_id=" << node_id.hex() << " system_error: " << ex.what();
         } catch (const std::exception& ex) {
-            log::Error("sentry") << "disc_v4::DiscoveryImpl::ping_check node_id=" << node_id.hex() << " exception: " << ex.what();
+            SILK_ERROR_M("sentry") << "disc_v4::DiscoveryImpl::ping_check node_id=" << node_id.hex() << " exception: " << ex.what();
         }
     }
 
@@ -242,7 +243,7 @@ Discovery::Discovery(
     : p_impl_(std::make_unique<DiscoveryImpl>(executor, server_port, std::move(node_key), std::move(node_url), std::move(node_record), node_db)) {}
 
 Discovery::~Discovery() {
-    log::Trace("sentry") << "silkworm::sentry::discovery::disc_v4::Discovery::~Discovery";
+    SILK_TRACE_M("sentry") << "silkworm::sentry::discovery::disc_v4::Discovery::~Discovery";
 }
 
 Task<void> Discovery::run() {

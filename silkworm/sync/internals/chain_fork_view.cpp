@@ -60,7 +60,7 @@ TotalDifficulty ChainForkView::add(const BlockHeader& header) {
             " hash= " + to_hex(header.parent_hash) +
             " height= " + std::to_string(header.number - 1) +
             " for header= " + to_hex(header.hash());
-        log::Error("Consensus") << error_message;
+        SILK_ERROR_M("chainsync::ChainForkView") << error_message;
         throw std::logic_error(error_message);  // unexpected condition, bug?  /* clang-format on */
     }
     return add(header, *parent_td);

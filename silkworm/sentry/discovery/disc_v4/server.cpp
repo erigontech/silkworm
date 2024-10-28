@@ -74,7 +74,7 @@ class ServerImpl {
     void setup() {
         auto endpoint = listen_endpoint();
         socket_.bind(endpoint);
-        log::Info("sentry") << "disc_v4::Server is listening at " << endpoint;
+        SILK_INFO_M("sentry") << "disc_v4::Server is listening at " << endpoint;
     }
 
     Task<void> run() {
@@ -89,14 +89,14 @@ class ServerImpl {
             try {
                 envelope = MessageCodec::decode(packet_data);
             } catch (const std::runtime_error& ex) {
-                log::Warning("sentry") << "disc_v4::Server received a bad packet from " << sender_endpoint << " : " << ex.what();
+                SILK_WARN_M("sentry") << "disc_v4::Server received a bad packet from " << sender_endpoint << " : " << ex.what();
                 continue;
             }
 
             auto packet_type = static_cast<PacketType>(envelope->message.id);
             ByteView data = envelope->message.data;
 
-            log::Trace("sentry") << "disc_v4::Server received a packet " << static_cast<int>(packet_type);
+            SILK_TRACE_M("sentry") << "disc_v4::Server received a packet " << static_cast<int>(packet_type);
 
             try {
                 switch (packet_type) {
@@ -136,11 +136,11 @@ class ServerImpl {
                         break;
                 }
             } catch (const find::FindNodeMessage::DecodeTargetPublicKeyError& ex) {
-                log::Debug("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
+                SILK_DEBUG_M("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             } catch (const enr::EnrResponseMessage::DecodeEnrRecordError& ex) {
-                log::Debug("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
+                SILK_DEBUG_M("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             } catch (const DecodingException& ex) {
-                log::Warning("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
+                SILK_WARN_M("sentry") << "disc_v4::Server received a bad message from " << sender_endpoint << " : " << ex.what();
             }
         }
     }
@@ -193,7 +193,7 @@ Server::Server(
     : p_impl_(std::make_unique<ServerImpl>(executor, port, std::move(node_key), handler)) {}
 
 Server::~Server() {
-    log::Trace("sentry") << "silkworm::sentry::discovery::disc_v4::Server::~Server";
+    SILK_TRACE_M("sentry") << "silkworm::sentry::discovery::disc_v4::Server::~Server";
 }
 
 void Server::setup() {

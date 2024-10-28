@@ -142,9 +142,9 @@ void BlockExchange::execution_loop() {
             }
         }
 
-        log::Debug("BlockExchange") << "execution_loop is stopping...";
+        SILK_DEBUG_M("BlockExchange") << "execution_loop is stopping...";
     } catch (std::exception& e) {
-        log::Critical("BlockExchange") << "execution loop aborted due to exception: " << e.what();
+        SILK_CRIT_M("BlockExchange") << "execution loop aborted due to exception: " << e.what();
     }
 
     stop();
@@ -223,37 +223,40 @@ void BlockExchange::log_status() {
     static NetworkStatistics prev_statistic{};
     auto now = std::chrono::system_clock::now();
 
-    log::Debug() << "BlockExchange         peers: " << sentry_.active_peers();
-    log::Debug() << "BlockExchange      messages: " << std::setfill('_') << std::right
-                 << "in-queue:" << std::setw(5) << messages_.size()
-                 //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
-                 << IntervalNetworkStatistics{prev_statistic, statistics_, kIntervalForStats};
+    SILK_DEBUG << "BlockExchange         peers: " << sentry_.active_peers();
+    SILK_DEBUG
+        << "BlockExchange      messages: " << std::setfill('_') << std::right
+        << "in-queue:" << std::setw(5) << messages_.size()
+        //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
+        << IntervalNetworkStatistics{prev_statistic, statistics_, kIntervalForStats};
 
     auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
-    log::Debug() << "BlockExchange header queues: " << std::setfill('_') << std::right
-                 << "links= " << std::setw(7) << header_chain_.pending_links()
-                 << ", anchors= " << std::setw(3) << header_chain_.anchors()
-                 << ", db-height= " << std::setw(10) << header_chain_.highest_block_in_db()
-                 << ", mem-height= " << std::setw(10) << min_anchor_height
-                 << "~" << std::setw(10) << max_anchor_height
-                 << " (#" << std::setw(7) << std::showpos
-                 << max_anchor_height - min_anchor_height << ")"
-                 << ", net-height= " << std::setw(10) << header_chain_.top_seen_block_height();
+    SILK_DEBUG
+        << "BlockExchange header queues: " << std::setfill('_') << std::right
+        << "links= " << std::setw(7) << header_chain_.pending_links()
+        << ", anchors= " << std::setw(3) << header_chain_.anchors()
+        << ", db-height= " << std::setw(10) << header_chain_.highest_block_in_db()
+        << ", mem-height= " << std::setw(10) << min_anchor_height
+        << "~" << std::setw(10) << max_anchor_height
+        << " (#" << std::setw(7) << std::showpos
+        << max_anchor_height - min_anchor_height << ")"
+        << ", net-height= " << std::setw(10) << header_chain_.top_seen_block_height();
 
-    log::Debug() << "BlockExchange   body queues: " << std::setfill('_') << std::right
-                 << "outst= " << std::setw(7)
-                 << body_sequence_.outstanding_requests(now) * BodySequence::kMaxBlocksPerMessage
-                 << ", ready= " << std::setw(5) << body_sequence_.ready_bodies()
-                 << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_output()
-                 << ", mem-height= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
-                 << "~" << std::setw(10) << body_sequence_.highest_block_in_memory()
-                 << " (#" << std::setw(7) << std::showpos
-                 << body_sequence_.highest_block_in_memory() - body_sequence_.lowest_block_in_memory() << ")"
-                 << ", net-height= " << std::setw(10) << body_sequence_.target_height();
+    SILK_DEBUG
+        << "BlockExchange   body queues: " << std::setfill('_') << std::right
+        << "outst= " << std::setw(7)
+        << body_sequence_.outstanding_requests(now) * BodySequence::kMaxBlocksPerMessage
+        << ", ready= " << std::setw(5) << body_sequence_.ready_bodies()
+        << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_output()
+        << ", mem-height= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
+        << "~" << std::setw(10) << body_sequence_.highest_block_in_memory()
+        << " (#" << std::setw(7) << std::showpos
+        << body_sequence_.highest_block_in_memory() - body_sequence_.lowest_block_in_memory() << ")"
+        << ", net-height= " << std::setw(10) << body_sequence_.target_height();
 
-    log::Debug() << "BlockExchange  header stats: " << header_chain_.statistics();
+    SILK_DEBUG << "BlockExchange  header stats: " << header_chain_.statistics();
 
-    log::Debug() << "BlockExchange    body stats: " << body_sequence_.statistics();
+    SILK_DEBUG << "BlockExchange    body stats: " << body_sequence_.statistics();
 
     prev_statistic.inaccurate_copy(statistics_);  // save values
 }

@@ -47,7 +47,7 @@ bool Protocol::is_compatible_enr_entry(std::string_view name, ByteView data) {
             auto my_status = status_provider_();
             return is_compatible_fork_id(fork_id, my_status);
         } catch (const DecodingException& ex) {
-            log::Debug("sentry") << "eth::Protocol::is_compatible_enr_entry failed to decode eth entry data: " << ex.what();
+            SILK_DEBUG_M("sentry") << "eth::Protocol::is_compatible_enr_entry failed to decode eth entry data: " << ex.what();
             return false;
         }
     }

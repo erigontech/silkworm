@@ -18,6 +18,7 @@
 
 #include <algorithm>
 
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -43,7 +44,16 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     if (fh.blob_gas_used_ratio.empty()) {
         json["blobGasUsedRatio"] = nullptr;
     } else {
-        json["blobGasUsedRatio"] = fh.blob_gas_used_ratio;
+        auto json1 = nlohmann::json::array();
+        for (size_t k{0}; k < fh.blob_gas_used_ratio.size(); ++k) {
+            auto& value{fh.blob_gas_used_ratio[k]};
+            if (value == 0) {
+                json1.push_back(0);
+            } else {
+                json1.push_back(value);
+            }
+        }
+        json["blobGasUsedRatio"] = json1;
     }
     json["oldestBlock"] = to_quantity(fh.oldest_block);
 
@@ -226,14 +236,14 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     if (config_.is_london(next_block_number)) {
         block_fees.next_base_fee = protocol::expected_base_fee_per_gas(header);
     } else {
-        block_fees.next_base_fee = 0;
+        block_fees.next_base_fee = 0;  // EIP-4844 blob gas cost (calc_data_fee)block_fees.next_blob_base_fee
     }
 
-    // EIP-4844 blob gas cost (calc_data_fee)
     block_fees.blob_base_fee = header.blob_gas_price().value_or(0);
 
-    if (config_.is_london(next_block_number)) {
-        block_fees.next_blob_base_fee = protocol::calc_excess_blob_gas(header);
+    if (header.excess_blob_gas) {
+        block_fees.next_blob_base_fee = calc_blob_gas_price(protocol::calc_excess_blob_gas(header));
+
     } else {
         block_fees.next_blob_base_fee = 0;
     }
@@ -244,9 +254,12 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         co_return;  // rewards were not requested, return
     }
 
-    if (header.blob_gas_used && block_fees.block->block.header.excess_blob_gas) {
-        block_fees.blob_gas_used_ratio = static_cast<double>(*(header.blob_gas_used)) / static_cast<double>(*(block_fees.block->block.header.excess_blob_gas));
+    // in erigon is chainConfig param and not configured so ratio is not calculated
+    /*
+    if (header.blob_gas_used &&  protocol::kMaxBlobGasPerBlock) {
+        block_fees.blob_gas_used_ratio = static_cast<double>(*(header.blob_gas_used)) / static_cast<double>(protocol::kMaxBlobGasPerBlock);
     }
+    */
 
     if (block_fees.receipts.size() != block_fees.block->block.transactions.size()) {
         co_return;

@@ -14,6 +14,7 @@
    limitations under the License.
 ]]
 
+find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(tl-expected REQUIRED)
@@ -46,6 +47,7 @@ set(SILKWORM_CORE_PUBLIC_LIBS
     evmc
     evmone
     intx::intx
+    magic_enum::magic_enum
     Microsoft.GSL::GSL
     nlohmann_json::nlohmann_json
     secp256k1

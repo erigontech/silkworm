@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Silkworm Authors
+Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ Copyright 2022 The Silkworm Authors
    limitations under the License.
 */
 
-#include "request.hpp"
+#include "eip_7685_requests.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -66,8 +66,16 @@ TEST_CASE("Request RLP methods and signature derivation") {
 
         const std::vector logs = {Log{.address = protocol::kDepositContractAddress, .topics = {}, .data = encoded_event}};
 
-        const auto decoded_bytes = DepositRequest::extract_deposits_from_logs(logs);
+        const auto decoded_bytes = FlatRequests::extract_deposits_from_logs(logs);
         CHECK(decoded_bytes == from_hex("54fcd2f87d667cba6cd5641c6ebe081fa0f2ccddac66b88a93f2b96110193dcfab55b4a7ef5678b18291f5f820b1a02be476e5493f10afb1406727558873018d2002b8929776df9737d2cf6487deabf0f8ecaa1f1af05df8663ee539be24c2b806030eaf5a87a64a15ae45752b94f6d8b291051dcc373ed7776dcca66eb2bffe37ead57b580c0c99fbc4830167e2d8c093cf78c6ef76993c7ad39d9b12f8a583b4014d"));
+
+        FlatRequests requests;
+        requests.add_request(FlatRequestType::kDepositRequest, decoded_bytes);
+        requests.add_request(FlatRequestType::kWithdrawalRequest, from_hex("54fcd2f87d667cba6cd5641c6ebe081fa0f2ccddac66b88a93f2b96110193dcfab55b4a7ef5678b18291f5f820b1a02be476e5493f10afb1406727558873018d2002b8929776df9737d2cf6487deab").value());
+        requests.add_request(FlatRequestType::kConsolidationRequest, from_hex("a0f2ccddac66b88a93f2b96110193dcfab55b4a7ef5678b18291f5f820b1a02be476e5493f10afb1406727558873018d2002b89").value());
+
+        const auto hash = requests.calculate_sha256();
+        CHECK(hash == Hash{from_hex("fb11d3d094091e34794c99218a862850a4a85dc1e128ce8c85f2a2bcbcc899ef").value()});
     }
 
     SECTION("DepositRequest rlp and signature") {

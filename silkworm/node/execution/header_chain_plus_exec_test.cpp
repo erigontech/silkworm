@@ -22,12 +22,13 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/test_util/make_stages_factory.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
@@ -38,6 +39,7 @@ using namespace stagedsync;
 using namespace silkworm::db;
 
 using silkworm::execution::api::ValidChain;
+using silkworm::stagedsync::test_util::make_stages_factory;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
 
@@ -85,19 +87,19 @@ TEST_CASE("Headers receiving and saving") {
     context.add_genesis_data();
     context.commit_txn();
 
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     RWAccess db_access{context.env()};
-
-    BodiesStageFactory bodies_stage_factory = [&](SyncContext* sync_context) {
-        return std::make_unique<BodiesStage>(sync_context, *node_settings.chain_config, [] { return 0; });
-    };
 
     // creating the ExecutionEngine
     ExecutionEngineForTest exec_engine{
         runner.executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        std::move(bodies_stage_factory),
+        make_stages_factory(node_settings, data_model_factory),
         db_access,
     };
     exec_engine.open();

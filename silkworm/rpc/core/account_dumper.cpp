@@ -87,7 +87,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 }
 
 Task<void> AccountDumper::load_accounts(BlockNum block_number, const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
-    StateReader state_reader{transaction_, block_number, db::chain::CanonicalBodyForStorageProvider{}};
+    StateReader state_reader{transaction_, block_number};
     for (const auto& kv : collected_data) {
         const auto address = bytes_to_address(kv.key);
 

@@ -58,6 +58,8 @@ class RemoteTransaction : public api::BaseTransaction {
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 
+    Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;
+
     Task<void> close() override;
 
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);

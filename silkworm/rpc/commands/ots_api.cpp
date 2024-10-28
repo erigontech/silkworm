@@ -71,7 +71,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         tx->set_state_cache_enabled(is_latest_block);
 
         const auto block_number = co_await core::get_block_number(block_id, *tx);
-        StateReader state_reader{*tx, block_number + 1, db::chain::CanonicalBodyForStorageProvider{}};
+        StateReader state_reader{*tx, block_number + 1};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {

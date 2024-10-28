@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -25,22 +26,25 @@
 #include <boost/asio/any_io_executor.hpp>
 
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/infra/common/timer.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 
-#include "stages/stage_bodies_factory.hpp"
 #include "timer_factory.hpp"
 
 namespace silkworm::stagedsync {
 
+using StageContainer = std::map<const char*, std::unique_ptr<Stage>>;
+using StageContainerFactory = std::function<StageContainer(SyncContext&)>;
+
 class ExecutionPipeline : public Stoppable {
   public:
-    explicit ExecutionPipeline(
-        NodeSettings* node_settings,
+    ExecutionPipeline(
+        db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
-        BodiesStageFactory bodies_stage_factory);
+        const StageContainerFactory& stages_factory);
     ~ExecutionPipeline() override = default;
 
     Stage::Result forward(db::RWTxn&, BlockNum target_height);
@@ -57,12 +61,10 @@ class ExecutionPipeline : public Stoppable {
     StageScheduler& stage_scheduler() const;
 
   private:
-    silkworm::NodeSettings* node_settings_;
+    db::DataModelFactory data_model_factory_;
     std::optional<TimerFactory> log_timer_factory_;
-    BodiesStageFactory bodies_stage_factory_;
     std::unique_ptr<SyncContext> sync_context_;  // context shared across stages
 
-    using StageContainer = std::map<const char*, std::unique_ptr<stagedsync::Stage>>;
     StageContainer stages_;
     StageContainer::iterator current_stage_;
 

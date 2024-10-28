@@ -18,7 +18,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
+#include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -80,11 +80,28 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
     handle->node_settings.keep_db_txn_open = false;                // Ensure that the transaction is closed after each request, Erigon manages transactions differently
 }
 
-static silkworm::stagedsync::BodiesStageFactory make_bodies_stage_factory(const silkworm::ChainConfig& chain_config) {
-    return [chain_config](silkworm::stagedsync::SyncContext* sync_context) {
-        return std::make_unique<silkworm::stagedsync::BodiesStage>(sync_context, chain_config, [] { return 0; });
+static silkworm::stagedsync::BodiesStageFactory make_bodies_stage_factory(
+    const silkworm::ChainConfig& chain_config,
+    silkworm::db::DataModelFactory data_model_factory) {
+    return [chain_config, data_model_factory = std::move(data_model_factory)](silkworm::stagedsync::SyncContext* sync_context) {
+        return std::make_unique<silkworm::stagedsync::BodiesStage>(
+            sync_context,
+            chain_config,
+            data_model_factory,
+            [] { return 0; });
     };
 };
+
+static silkworm::stagedsync::StageContainerFactory make_stages_factory(
+    const silkworm::NodeSettings& node_settings,
+    silkworm::db::DataModelFactory data_model_factory) {
+    auto bodies_stage_factory = make_bodies_stage_factory(*node_settings.chain_config, data_model_factory);
+    return silkworm::stagedsync::StagesFactoryImpl::to_factory({
+        node_settings,
+        std::move(data_model_factory),
+        std::move(bodies_stage_factory),
+    });
+}
 
 SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_env* mdbx_env, const struct SilkwormForkValidatorSettings* settings) SILKWORM_NOEXCEPT {
     if (!handle) {
@@ -111,11 +128,16 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
 
     silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
     silkworm::db::RWAccess rw_access{unmanaged_env};
+    silkworm::db::DataModelFactory data_model_factory = [handle](silkworm::db::ROTxn& tx) {
+        return silkworm::db::DataModel{tx, *handle->snapshot_repository};
+    };
+
     handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(
         /* executor = */ std::nullopt,  // ExecutionEngine manages an internal io_context
         handle->node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        make_bodies_stage_factory(*handle->node_settings.chain_config),
+        make_stages_factory(handle->node_settings, data_model_factory),
         rw_access);
 
     silkworm::log::Info("Execution engine created");

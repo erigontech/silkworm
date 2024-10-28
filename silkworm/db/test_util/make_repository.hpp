@@ -17,10 +17,10 @@
 #pragma once
 
 #include "../datastore/snapshots/snapshot_repository.hpp"
-#include "../datastore/snapshots/snapshot_settings.hpp"
 
 namespace silkworm::db::test_util {
 
-snapshots::SnapshotRepository make_repository(snapshots::SnapshotSettings settings);
+snapshots::SnapshotRepository make_repository(std::filesystem::path dir_path);
+snapshots::SnapshotRepository make_repository();
 
 }  // namespace silkworm::db::test_util

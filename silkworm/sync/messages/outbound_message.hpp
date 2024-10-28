@@ -27,7 +27,7 @@ namespace silkworm {
 
 class OutboundMessage : public Message {
   public:
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
+    void execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) override = 0;
 
     size_t sent_requests() const;
     size_t nack_requests() const;

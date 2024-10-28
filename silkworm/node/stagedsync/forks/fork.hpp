@@ -24,11 +24,11 @@
 #include <vector>
 
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/memory_mutation.hpp>
 #include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
-#include "../stages/stage_bodies_factory.hpp"
 #include "../timer_factory.hpp"
 #include "canonical_chain.hpp"
 
@@ -40,10 +40,11 @@ class Fork {
   public:
     explicit Fork(
         BlockId forking_point,
-        db::ROTxnManaged&& main_chain_tx,
+        db::ROTxnManaged main_tx,
+        db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
-        BodiesStageFactory bodies_stage_factory,
-        NodeSettings&);
+        const StageContainerFactory& stages_factory,
+        const std::filesystem::path& forks_dir_path);
     Fork(const Fork&) = delete;
 
     void close();
@@ -77,6 +78,7 @@ class Fork {
     std::optional<BlockHeader> get_header(Hash) const;
 
   protected:
+    db::DataModel data_model() const { return data_model_factory_(memory_tx_); }
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
 
@@ -85,7 +87,7 @@ class Fork {
     db::ROTxnManaged main_tx_;
     db::MemoryOverlay memory_db_;
     mutable db::MemoryMutation memory_tx_;
-    db::DataModel data_model_;
+    db::DataModelFactory data_model_factory_;
 
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;

@@ -36,8 +36,8 @@ namespace silkworm::db::state {
 
 class AsyncRemoteState {
   public:
-    explicit AsyncRemoteState(kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number, chain::Providers providers)
-        : storage_(storage), state_reader_(tx, block_number + 1, std::move(providers.canonical_body_for_storage)) {}
+    explicit AsyncRemoteState(kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number)
+        : storage_(storage), state_reader_(tx, block_number + 1) {}
 
     Task<std::optional<Account>> read_account(const evmc::address& address) const noexcept;
 
@@ -68,8 +68,8 @@ class AsyncRemoteState {
 
 class RemoteState : public State {
   public:
-    explicit RemoteState(boost::asio::any_io_executor& executor, kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number, chain::Providers providers)
-        : executor_(executor), async_state_{tx, storage, block_number, providers}, providers_{std::move(providers)} {}
+    explicit RemoteState(boost::asio::any_io_executor& executor, kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number)
+        : executor_(executor), async_state_{tx, storage, block_number} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -126,7 +126,6 @@ class RemoteState : public State {
   private:
     boost::asio::any_io_executor executor_;
     AsyncRemoteState async_state_;
-    chain::Providers providers_;
 };
 
 std::ostream& operator<<(std::ostream& out, const RemoteState& s);

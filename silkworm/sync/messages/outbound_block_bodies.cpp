@@ -22,7 +22,7 @@
 
 namespace silkworm {
 
-void OutboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) {
+void OutboundBlockBodies::execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) {
 }
 
 Bytes OutboundBlockBodies::message_data() const {

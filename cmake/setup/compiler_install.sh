@@ -23,7 +23,7 @@ function install_clang {
 
 	if [[ -n "$package_available" ]]; then
 		echo "The package llvm-$CLANG_VERSION is available in apt repositories"
-		sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
+		sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION lld-$CLANG_VERSION
 	else
 		echo "Package llvm-$CLANG_VERSION not available, attempting to install using llvm.sh script"
 		sudo ../../third_party/llvm/llvm.sh $CLANG_VERSION

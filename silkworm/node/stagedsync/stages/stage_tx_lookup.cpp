@@ -16,6 +16,7 @@
 
 #include "stage_tx_lookup.hpp"
 
+#include <algorithm>
 #include <stdexcept>
 
 #include <magic_enum.hpp>
@@ -50,7 +51,8 @@ Stage::Result TxLookup::forward(RWTxn& txn) {
         }
 
         // Snapshots already have TxLookup index, so we must start after max frozen block here
-        const auto highest_frozen_block_number{DataModel::highest_frozen_block_number()};
+        DataModel data_model = data_model_factory_(txn);
+        const auto highest_frozen_block_number{data_model.highest_frozen_block_number()};
         if (highest_frozen_block_number > previous_progress) {
             previous_progress = std::min(highest_frozen_block_number, target_progress);
             // If pruning is enabled, make it start from max frozen block as well
@@ -124,10 +126,9 @@ Stage::Result TxLookup::unwind(RWTxn& txn) {
         }
 
         // Snapshots already have TxLookup index, so we must stop before max frozen block here
-        const auto highest_frozen_block_number{DataModel::highest_frozen_block_number()};
-        if (highest_frozen_block_number > to) {
-            to = highest_frozen_block_number;
-        }
+        DataModel data_model = data_model_factory_(txn);
+        const auto highest_frozen_block_number{data_model.highest_frozen_block_number()};
+        to = std::max(to, highest_frozen_block_number);
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
@@ -338,7 +339,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(RWTxn& txn,
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    DataModel data_model{txn};
+    DataModel data_model = data_model_factory_(txn);
 
     BlockNum target_block_num{std::max(from, to)};
     BlockNum start_block_num{std::min(from, to) + 1};

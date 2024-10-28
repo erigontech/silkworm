@@ -17,7 +17,6 @@
 #pragma once
 
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 #include "chain_storage.hpp"
 
@@ -27,7 +26,8 @@ namespace silkworm::db::chain {
 //! in local database (accessed via MDBX API) or local snapshot files (accessed via custom snapshot API)
 class LocalChainStorage : public ChainStorage {
   public:
-    explicit LocalChainStorage(db::ROTxn& txn);
+    explicit LocalChainStorage(db::DataModel data_model)
+        : data_model_{data_model} {}
     ~LocalChainStorage() override = default;
 
     Task<ChainConfig> read_chain_config() const override;

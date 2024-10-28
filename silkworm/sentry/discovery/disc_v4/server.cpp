@@ -146,12 +146,12 @@ class ServerImpl {
     }
 
     template <class TMessage>
-    Task<void> send_message(TMessage message, ip::udp::endpoint recipient) {
+    Task<void> send_message(const TMessage& message, ip::udp::endpoint recipient) {
         return send_message(Message{TMessage::kId, message.rlp_encode()}, std::move(recipient));
     }
 
     template <std::same_as<enr::EnrResponseMessage> TMessage>
-    Task<void> send_message(TMessage message, ip::udp::endpoint recipient) {
+    Task<void> send_message(const TMessage& message, ip::udp::endpoint recipient) {
         return send_message(Message{enr::EnrResponseMessage::kId, message.rlp_encode(node_key_())}, std::move(recipient));
     }
 
@@ -205,19 +205,19 @@ Task<void> Server::run() {
 }
 
 Task<void> Server::send_ping(ping::PingMessage message, ip::udp::endpoint recipient) {
-    return p_impl_->send_message(std::move(message), std::move(recipient));
+    return p_impl_->send_message(message, std::move(recipient));
 }
 
 Task<void> Server::send_pong(ping::PongMessage message, ip::udp::endpoint recipient) {
-    return p_impl_->send_message(std::move(message), std::move(recipient));
+    return p_impl_->send_message(message, std::move(recipient));
 }
 
 Task<void> Server::send_find_node(find::FindNodeMessage message, ip::udp::endpoint recipient) {
-    return p_impl_->send_message(std::move(message), std::move(recipient));
+    return p_impl_->send_message(message, std::move(recipient));
 }
 
 Task<void> Server::send_neighbors(find::NeighborsMessage message, ip::udp::endpoint recipient) {
-    return p_impl_->send_message(std::move(message), std::move(recipient));
+    return p_impl_->send_message(message, std::move(recipient));
 }
 
 Task<void> Server::send_enr_request(enr::EnrRequestMessage message, ip::udp::endpoint recipient) {
@@ -225,7 +225,7 @@ Task<void> Server::send_enr_request(enr::EnrRequestMessage message, ip::udp::end
 }
 
 Task<void> Server::send_enr_response(enr::EnrResponseMessage message, ip::udp::endpoint recipient) {
-    return p_impl_->send_message(std::move(message), std::move(recipient));
+    return p_impl_->send_message(message, std::move(recipient));
 }
 
 }  // namespace silkworm::sentry::discovery::disc_v4

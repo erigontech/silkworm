@@ -54,6 +54,7 @@ option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports"
 option(SILKWORM_CLANG_TIDY "Clang-Tidy linter" OFF)
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 option(SILKWORM_FUZZER "Build instrumentation for fuzzers" OFF)
+option(SILKWORM_FUZZER_SANITIZERS "CLang sanitizer options for fuzzers" OFF)
 option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 option(SILKWORM_ALLOW_UNUSED_VAR_WARNINGS "Turn unused variable errors into warnings" OFF)
 

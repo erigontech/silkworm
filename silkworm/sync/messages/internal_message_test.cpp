@@ -18,6 +18,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 
@@ -27,7 +28,9 @@ namespace silkworm {
 [[clang::no_sanitize("null")]] TEST_CASE("internal message") {
     db::test_util::TempChainData context;
     // not used in the test execution
-    db::ROAccess dba(context.env());
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    // not used in the test execution
+    db::DataStoreRef data_store{context.env(), repository};
     // not used in the test execution
     HeaderChain hc(kMainnetConfig, /* use_preverified_hashes = */ false);
     // not used in the test execution
@@ -43,7 +46,7 @@ namespace silkworm {
 
     REQUIRE(!command->completed_and_read());
 
-    command->execute(dba, hc, bs, *sc);
+    command->execute(data_store, hc, bs, *sc);
 
     REQUIRE(!command->completed_and_read());
 

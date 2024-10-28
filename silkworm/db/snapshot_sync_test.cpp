@@ -21,6 +21,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
@@ -53,6 +54,7 @@ struct SnapshotSyncTest {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     db::test_util::TempChainData context;
+    SnapshotRepository repository{db::test_util::make_repository(tmp_dir.path())};
     TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;
 };
@@ -84,7 +86,7 @@ struct SnapshotSyncForTest : public SnapshotSync {
         : SnapshotSync{
               make_settings(test.tmp_dir.path(), overrides),
               kMainnetConfig.chain_id,
-              test.context.env(),
+              db::DataStoreRef{test.context.env(), test.repository},
               test.tmp_dir.path(),
               test.stage_scheduler} {}
 };

@@ -21,6 +21,8 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/asio/any_io_executor.hpp>
@@ -36,7 +38,7 @@
 
 namespace silkworm::stagedsync {
 
-using StageContainer = std::map<const char*, std::unique_ptr<Stage>>;
+using StageContainer = std::map<std::string_view, std::unique_ptr<Stage>>;
 using StageContainerFactory = std::function<StageContainer(SyncContext&)>;
 
 class ExecutionPipeline : public Stoppable {
@@ -68,7 +70,7 @@ class ExecutionPipeline : public Stoppable {
     StageContainer stages_;
     StageContainer::iterator current_stage_;
 
-    using StageNames = std::vector<const char*>;
+    using StageNames = std::vector<std::string_view>;
     StageNames stages_forward_order_;
     StageNames stages_unwind_order_;
     std::atomic<size_t> current_stages_count_{0};
@@ -77,9 +79,8 @@ class ExecutionPipeline : public Stoppable {
     BlockNum head_header_number_{0};
     Hash head_header_hash_;
 
-    void load_stages();  // Fills the vector with stages
-
-    std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
+    // Returns the current log lines prefix on behalf of current stage
+    std::string get_log_prefix(const std::string_view& stage_name) const;
 
     std::shared_ptr<Timer> make_log_timer();
     bool log_timer_expired();

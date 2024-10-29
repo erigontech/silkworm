@@ -233,6 +233,7 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
         json["Verkle"] = false;
         json["VerkleKeyVals"] = nullptr;
         json["VerkleProof"] = nullptr;
+        json["requestsHash"] = nullptr;
     }
     if (header.blob_gas_used) {
         json["blobGasUsed"] = rpc::to_quantity(*header.blob_gas_used);

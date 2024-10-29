@@ -68,6 +68,9 @@ struct BlockHeader {
     std::optional<uint64_t> excess_blob_gas{std::nullopt};                // EIP-4844
     std::optional<evmc::bytes32> parent_beacon_block_root{std::nullopt};  // EIP-4788
 
+    // Added in Prague
+    std::optional<evmc::bytes32> requests_hash{std::nullopt};  // EIP-7685
+
     evmc::bytes32 hash(bool for_sealing = false, bool exclude_extra_data_sig = false) const;
 
     //! \brief Calculates header's boundary. This is described by Equation(50) by the Yellow Paper.

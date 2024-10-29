@@ -106,6 +106,9 @@ namespace rlp {
         if (header.parent_beacon_block_root) {
             rlp_head.payload_length += kHashLength + 1;
         }
+        if (header.requests_hash) {
+            rlp_head.payload_length += kHashLength + 1;
+        }
 
         return rlp_head;
     }
@@ -154,6 +157,9 @@ namespace rlp {
         }
         if (header.parent_beacon_block_root) {
             encode(to, *header.parent_beacon_block_root);
+        }
+        if (header.requests_hash) {
+            encode(to, *header.requests_hash);
         }
     }
 
@@ -213,7 +219,7 @@ namespace rlp {
             to.excess_blob_gas = 0;
             to.parent_beacon_block_root = evmc::bytes32{};
             if (DecodingResult res{decode_items(from, *to.blob_gas_used, *to.excess_blob_gas,
-                                                *to.parent_beacon_block_root)};
+                                                *to.parent_beacon_block_root, *to.requests_hash)};
                 !res) {
                 return res;
             }
@@ -221,6 +227,7 @@ namespace rlp {
             to.blob_gas_used = std::nullopt;
             to.excess_blob_gas = std::nullopt;
             to.parent_beacon_block_root = std::nullopt;
+            to.requests_hash = std::nullopt;
         }
 
         if (from.length() != leftover) {

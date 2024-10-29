@@ -87,18 +87,20 @@ void MergeRuleSet::initialize(EVM& evm) {
         return;
     }
 
-    if (evm.revision() < EVMC_CANCUN) {
-        return;
+    if (evm.revision() >= EVMC_CANCUN) {
+        // EIP-4788: Beacon block root in the EVM
+        SILKWORM_ASSERT(header.parent_beacon_block_root);
+        Transaction system_txn{};
+        system_txn.type = TransactionType::kSystem;
+        system_txn.to = kBeaconRootsAddress;
+        system_txn.data = Bytes{ByteView{*header.parent_beacon_block_root}};
+        system_txn.set_sender(kSystemAddress);
+        evm.execute(system_txn, kSystemCallGasLimit);
     }
 
-    // EIP-4788: Beacon block root in the EVM
-    SILKWORM_ASSERT(header.parent_beacon_block_root);
-    Transaction system_txn{};
-    system_txn.type = TransactionType::kSystem;
-    system_txn.to = kBeaconRootsAddress;
-    system_txn.data = Bytes{ByteView{*header.parent_beacon_block_root}};
-    system_txn.set_sender(kSystemAddress);
-    evm.execute(system_txn, kSystemCallGasLimit);
+    if (evm.revision() >= EVMC_PRAGUE) {
+        // (bzawisto) TODO
+    }
 }
 
 void MergeRuleSet::finalize(IntraBlockState& state, const Block& block) {

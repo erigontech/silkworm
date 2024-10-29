@@ -33,7 +33,9 @@ RemoteChainStorage::RemoteChainStorage(kv::api::Transaction& tx, Providers provi
 
 Task<ChainConfig> RemoteChainStorage::read_chain_config() const {
     const auto genesis_block_hash{co_await providers_.canonical_block_hash_from_number(kEarliestBlockNumber)};
-    SILKWORM_ASSERT(genesis_block_hash);
+    if (!genesis_block_hash) {
+        throw std::runtime_error{"cannot read genesis block hash in read_chain_config"};
+    }
     SILK_DEBUG << "rawdb::read_chain_config genesis_block_hash: " << to_hex(genesis_block_hash->bytes);
     const ByteView genesis_block_hash_bytes{genesis_block_hash->bytes, kHashLength};
     const auto data{co_await tx_.get_one(db::table::kConfigName, genesis_block_hash_bytes)};

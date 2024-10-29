@@ -23,7 +23,6 @@
 #include <silkworm/core/common/base.hpp>
 
 namespace silkworm::protocol {
-
 // Gas fee schedule—see Appendix G of the Yellow Paper
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
@@ -84,7 +83,10 @@ inline constexpr auto kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Be
 inline constexpr auto kDepositContractAddress{0x00000000219ab540356cbb839cbe05303d7705fa_address};
 
 // EIP-7002
-inline constexpr auto kWithdrawalRequestPredeployAddress{0x00A3ca265EBcb825B45F985A16CEFB49958cE017_address};
+inline constexpr auto kWithdrawalRequestAddress{0x09Fc772D0857550724b07B850a4323f39112aAaA_address};
+
+// EIP-7251
+inline constexpr auto kConsolidationRequestAddress{0x01aBEa29659e5e97C95107F20bb753cD3e09bBBb_address};
 
 // Used in Bor
 inline constexpr size_t kExtraSealSize{65};

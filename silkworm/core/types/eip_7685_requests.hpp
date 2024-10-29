@@ -38,47 +38,14 @@ enum class FlatRequestType : uint8_t {
 };
 
 struct FlatRequests {
-    static Bytes extract_deposits_from_logs(const std::vector<Log>& logs);
+    void extract_deposits_from_logs(const std::vector<Log>& logs);
     void add_request(FlatRequestType type, Bytes data);
     Hash calculate_sha256() const;
+    ByteView preview_data_by_type(FlatRequestType type) const;
 
   private:
     static constexpr size_t kTypesCount = magic_enum::enum_count<FlatRequestType>();
     std::array<Bytes, kTypesCount> requests_;
 };
-
-// struct DepositRequest final : FlatRequest {
-//     static constexpr size_t kDepositRequestDataLen = 192;
-//     std::array<uint8_t, kDepositRequestDataLen> request_data;
-//
-//     static Bytes extract_deposits_from_logs(const std::vector<Log>& logs);
-//
-//     void encode(Bytes& to) const override;
-//     DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
-// };
-//
-// struct WithdrawalRequest final : FlatRequest {
-//     static constexpr size_t kWithdrawalRequestDataLen = 76;
-//     std::array<uint8_t, kWithdrawalRequestDataLen> request_data;
-//
-//     void encode(Bytes& to) const override;
-//     DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
-// };
-//
-// struct ConsolidationRequest final : FlatRequest {
-//     static constexpr size_t kConsolidationRequestDataLen = 116;
-//     std::array<uint8_t, kConsolidationRequestDataLen> request_data;
-//
-//     void encode(Bytes& to) const override;
-//     DecodingResult decode(ByteView& from, rlp::Leftover mode) override;
-// };
-
-namespace rlp {
-    // size_t length(const FlatRequest&);
-    // void encode(Bytes& to, const FlatRequest&);
-    // void encode(Bytes& to, const std::vector<RequestPtr>&);
-    // DecodingResult decode(ByteView& from, FlatRequest& to, Leftover mode = Leftover::kProhibit) noexcept;
-    // DecodingResult decode(ByteView& from, std::vector<RequestPtr>& to, Leftover mode = Leftover::kAllow) noexcept;
-}  // namespace rlp
 
 }  // namespace silkworm

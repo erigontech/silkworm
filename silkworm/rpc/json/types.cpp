@@ -254,6 +254,11 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     } else {
         json["withdrawalsRoot"] = nullptr;
     }
+    if (header.requests_hash) {
+        json["requestsHash"] = "0x" + to_hex(*header.requests_hash);
+    } else {
+        json["requestsHash"] = nullptr;
+    }
 }
 
 }  // namespace silkworm
@@ -369,6 +374,9 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     if (b.block.withdrawals) {
         json["block"]["withdrawals"] = *b.block.withdrawals;
     }
+    if (b.block.header.requests_hash) {
+        json["block"]["requestsHash"] = *b.block.header.requests_hash;
+    }
 }
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
@@ -409,6 +417,9 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     }
     if (b.header.parent_beacon_block_root) {
         json["fullblock"]["parentBeaconBlockRoot"] = silkworm::to_hex(*b.header.parent_beacon_block_root, /* with_prefix = */ true);
+    }
+    if (b.header.requests_hash) {
+        json["fullblock"]["requestsHash"] = silkworm::to_hex(*b.header.requests_hash, /* with_prefix = */ true);
     }
 
     json["fullblock"]["transactions"] = b.transactions;

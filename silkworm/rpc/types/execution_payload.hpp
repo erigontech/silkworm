@@ -83,8 +83,7 @@ struct PayloadAttributes {
     enum Version : uint8_t {
         kV1 = 1,
         kV2 = 2,
-        kV3 = 3,
-
+        kV3 = 3
     } version{kV1};
 
     uint64_t timestamp{0};

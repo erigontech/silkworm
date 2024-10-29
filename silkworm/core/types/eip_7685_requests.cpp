@@ -47,19 +47,21 @@ Bytes extract_deposit(const Bytes& data) {
     return result;
 }
 
-Bytes FlatRequests::extract_deposits_from_logs(const std::vector<Log>& logs) {
-    Bytes result;
+void FlatRequests::extract_deposits_from_logs(const std::vector<Log>& logs) {
     for (const auto& log : logs) {
         if (log.address == protocol::kDepositContractAddress) {
             auto bytes = extract_deposit(log.data);
-            result.append(std::move(bytes));
+            requests_[magic_enum::enum_integer(FlatRequestType::kDepositRequest)].append(std::move(bytes));
         }
     }
-    return result;
 }
 
 void FlatRequests::add_request(FlatRequestType type, Bytes data) {
     requests_[magic_enum::enum_integer(type)].append(std::move(data));
+}
+
+ByteView FlatRequests::preview_data_by_type(FlatRequestType type) const {
+    return {requests_[magic_enum::enum_integer(type)]};
 }
 
 Hash FlatRequests::calculate_sha256() const {
@@ -75,74 +77,5 @@ Hash FlatRequests::calculate_sha256() const {
     const auto final = precompile::sha256_run(intermediate).value();
     return Hash{final};
 }
-
-// void DepositRequest::encode(Bytes& to) const {
-//     using underlying = std::underlying_type_t<Request::RequestType>;
-//     to.push_back(static_cast<underlying>(Request::RequestType::kDepositRequestType));
-//     to.insert(std::end(to), std::begin(request_data), std::end(request_data));
-// }
-//
-// DecodingResult DepositRequest::decode(ByteView& from, rlp::Leftover mode) {
-//     from.remove_prefix(1);
-//     std::ranges::copy_n(std::begin(from), kDepositRequestDataLen, std::begin(request_data));
-//     from.remove_prefix(kDepositRequestDataLen);
-//     if (mode != rlp::Leftover::kAllow && !from.empty()) {
-//         return tl::unexpected{DecodingError::kInputTooLong};
-//     }
-//     return {};
-// }
-//
-// void WithdrawalRequest::encode(Bytes& to) const {
-//     using underlying = std::underlying_type_t<Request::RequestType>;
-//     to.push_back(static_cast<underlying>(Request::RequestType::kDepositRequestType));
-//     to.insert(std::end(to), std::begin(request_data), std::end(request_data));
-// }
-//
-// DecodingResult WithdrawalRequest::decode(ByteView& from, rlp::Leftover mode) {
-//     from.remove_prefix(1);
-//     std::ranges::copy_n(std::begin(from), kWithdrawalRequestDataLen, std::begin(request_data));
-//     from.remove_prefix(kWithdrawalRequestDataLen);
-//     if (mode != rlp::Leftover::kAllow && !from.empty()) {
-//         return tl::unexpected{DecodingError::kInputTooLong};
-//     }
-//     return {};
-// }
-//
-// void ConsolidationRequest::encode(Bytes& to) const {
-//     using underlying = std::underlying_type_t<Request::RequestType>;
-//     to.push_back(static_cast<underlying>(Request::RequestType::kConsolidationRequestType));
-//     to.insert(std::end(to), std::begin(request_data), std::end(request_data));
-// }
-//
-// DecodingResult ConsolidationRequest::decode(ByteView& from, rlp::Leftover mode) {
-//     from.remove_prefix(1);
-//     std::ranges::copy_n(std::begin(from), kConsolidationRequestDataLen, std::begin(request_data));
-//     from.remove_prefix(kConsolidationRequestDataLen);
-//     if (mode != rlp::Leftover::kAllow && !from.empty()) {
-//         return tl::unexpected{DecodingError::kInputTooLong};
-//     }
-//     return {};
-// }
-
-namespace rlp {
-    // void encode(Bytes& to, const Request& request) {
-    //     request.encode(to);
-    // }
-    //
-    // void encode(Bytes& to, const std::vector<RequestPtr>& requests) {
-    //     std::vector<RlpBytes> encoded_elements;
-    //     for (const auto& request : requests) {
-    //         Bytes encoded_request;
-    //         encode(encoded_request, *request);
-    //         encoded_elements.push_back(RlpBytes{std::move(encoded_request)});
-    //     }
-    //     encode(to, std::span<const RlpBytes>{encoded_elements.data(), encoded_elements.size()});
-    // }
-    //
-    // DecodingResult decode(ByteView& input, Request& to, Leftover mode) noexcept {
-    //     return to.decode(input, mode);
-    // }
-
-}  // namespace rlp
 
 }  // namespace silkworm

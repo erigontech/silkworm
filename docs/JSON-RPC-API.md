@@ -21,6 +21,8 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_gasPrice                               |     Yes      |                                           |     Yes     |             |
 | eth_maxPriorityFeePerGas                   |     Yes      |                                           |     Yes     |             |
 | eth_feeHistory                             |     Yes      |                                           |     Yes     |             |
+| eth_baseFee                                |     Yes      |                                           |     Yes     |             |
+| eth_blobBaseFee                            |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
 | eth_getBlockByHash                         |     Yes      |                                           |     Yes     |     Yes     |
 | eth_getBlockByNumber                       |     Yes      |                                           |     Yes     |     Yes     |

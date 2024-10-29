@@ -53,9 +53,9 @@ chain::BlockProvider block_provider{
 chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
     [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
 chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
-    [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+    [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return std::nullopt; }};
 chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
-    [](BlockNum) -> Task<evmc::bytes32> { co_return kBlockHash; }};
+    [](BlockNum) -> Task<std::optional<evmc::bytes32>> { co_return kBlockHash; }};
 
 struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     test_util::MockTransaction transaction;

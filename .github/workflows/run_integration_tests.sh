@@ -14,8 +14,6 @@ rm -rf ./mainnet/results/
 # debug_traceTransaction: modify expected response according erigon and makes silkworm fix
 # trace_filter/test_16.json: modify expected response according erigon and makes silkworm fix
 # debug_traceCall/test_02.json: modify expected response according erigon and makes silkworm fix
-# erigon_getHeaderByNumber: modify expected response according erigon and makes silkworm fix
-# erigon_getHeaderByHash: modify expected response according erigon and makes silkworm fix
 # eth_feeHistory: modify expected response according erigon and makes silkworm fix
 # trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
 # trace_rawTransaction: different implementation
@@ -28,12 +26,9 @@ debug_traceCall/test_02.json,\
 debug_traceTransaction,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
-erigon_getHeaderByHash,\
-erigon_getHeaderByNumber,\
 erigon_getLatestLogs,\
 eth_feeHistory,\
 eth_getLogs,\
-eth_getBalance/test_05.json,\
 ots_getTransactionBySenderAndNonce,\
 ots_getContractCreator,\
 ots_hasCode,\
@@ -42,7 +37,7 @@ ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
 trace_rawTransaction,\
 trace_filter/test_16.json,\
-txpool_content -- http,websocket
+txpool_content --transport_type http,websocket
 
 failed_test=$?
 

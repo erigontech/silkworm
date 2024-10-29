@@ -957,7 +957,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
         reply = make_json_content(request, "0x" + (account ? intx::hex(account->balance) : "0"));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, kInternalError, e.what());
+        reply = make_json_content(request, "0x0");
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request, kServerError, "unexpected exception");

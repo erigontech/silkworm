@@ -51,8 +51,8 @@ static chain::Providers make_null_providers() {
     return {
         .block = [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; },
         .block_number_from_txn_hash = [](HashAsSpan) -> Task<BlockNum> { co_return 0; },
-        .block_number_from_hash = [](HashAsSpan) -> Task<BlockNum> { co_return 0; },
-        .canonical_block_hash_from_number = [](BlockNum) -> Task<evmc::bytes32> { co_return kBlockHash; },
+        .block_number_from_hash = [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return 0; },
+        .canonical_block_hash_from_number = [](BlockNum) -> Task<std::optional<evmc::bytes32>> { co_return kBlockHash; },
     };
 }
 

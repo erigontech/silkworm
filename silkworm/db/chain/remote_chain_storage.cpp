@@ -104,7 +104,7 @@ Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(const Hash& has
     if (!number) {
         co_return std::nullopt;
     }
-    std::cout << "RemoteChainStorage::read_header: " << silkworm::to_hex(hash) << " number: " << *number << "\n";
+    SILK_DEBUG << "RemoteChainStorage::read_header: " << silkworm::to_hex(hash) << " number: " << *number;
     co_return co_await read_header(*number, hash.bytes);
 }
 

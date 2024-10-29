@@ -30,6 +30,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/state/state_reader.hpp>
@@ -2049,6 +2050,90 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
         } else {
             reply = make_json_content(request, fee_history);
         }
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+Task<void> EthereumRpcApi::handle_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 0) {
+        const auto error_msg = "invalid eth_baseFee params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, 100, error_msg);
+        co_return;
+    }
+
+    auto tx = co_await database_->begin();
+
+    try {
+        intx::uint256 base_fee{0};
+        const auto chain_storage{tx->create_storage()};
+        const auto chain_config = co_await chain_storage->read_chain_config();
+        const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, *tx);
+        const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_number);
+        if (!latest_block_with_hash) {
+            reply = make_json_content(request, to_quantity(base_fee));
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+        auto& header = latest_block_with_hash->block.header;
+
+        if (chain_config.is_london(header.number + 1)) {
+            base_fee = protocol::expected_base_fee_per_gas(header);
+        } else {
+            base_fee = 0;  // EIP-4844 blob gas cost (calc_data_fee)block_fees.next_blob_base_fee
+        }
+
+        reply = make_json_content(request, to_quantity(base_fee));
+
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+Task<void> EthereumRpcApi::handle_blob_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 0) {
+        const auto error_msg = "invalid eth_blobBaseFee params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, 100, error_msg);
+        co_return;
+    }
+
+    auto tx = co_await database_->begin();
+
+    try {
+        intx::uint256 blob_base_fee{0};
+        const auto chain_storage{tx->create_storage()};
+        const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, *tx);
+        const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_number);
+        if (!latest_block_with_hash) {
+            reply = make_json_content(request, to_quantity(blob_base_fee));
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+        auto& header = latest_block_with_hash->block.header;
+
+        if (header.excess_blob_gas) {
+            blob_base_fee = calc_blob_gas_price(protocol::calc_excess_blob_gas(header));
+        } else {
+            blob_base_fee = 0;
+        }
+        reply = make_json_content(request, to_quantity(blob_base_fee));
+
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

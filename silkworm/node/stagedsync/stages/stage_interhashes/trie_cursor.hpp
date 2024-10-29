@@ -20,8 +20,8 @@
 
 #include <silkworm/core/trie/node.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
-#include <silkworm/db/etl/collector.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/etl/collector.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 namespace silkworm::trie {
 
@@ -34,14 +34,14 @@ class SubNode : public Node {
     SubNode(const SubNode&) = delete;
     SubNode& operator=(const SubNode&) = delete;
 
-    [[nodiscard]] bool has_tree() const noexcept;   // Whether current child_id has bit set in tree mask
-    [[nodiscard]] bool has_hash() const noexcept;   // Whether current child_id has bit set in hash mask
-    [[nodiscard]] bool has_state() const noexcept;  // Whether current child_id has bit set in state mask
+    bool has_tree() const noexcept;   // Whether current child_id has bit set in tree mask
+    bool has_hash() const noexcept;   // Whether current child_id has bit set in hash mask
+    bool has_state() const noexcept;  // Whether current child_id has bit set in state mask
 
-    void reset();                                   // Resets node to default values
-    void parse(ByteView k, ByteView v);             // Parses node data contents from db (may throw)
-    [[nodiscard]] Bytes full_key() const noexcept;  // Returns full key to child node (i.e. key + child_id)
-    [[nodiscard]] const evmc::bytes32& hash();      // Returns hash of child node (i.e. key + child_id)
+    void reset();                        // Resets node to default values
+    void parse(ByteView k, ByteView v);  // Parses node data contents from db (may throw)
+    Bytes full_key() const noexcept;     // Returns full key to child node (i.e. key + child_id)
+    const evmc::bytes32& hash();         // Returns hash of child node (i.e. key + child_id)
 
     ByteView key{};            // Key retrieved from db (if any) Is nibbled
     ByteView value{};          // Value retrieved from db (if any)
@@ -80,7 +80,7 @@ class TrieCursor {
     TrieCursor& operator=(const TrieCursor&) = delete;
 
     //! \brief Represent the data returned after a move operation (to_prefix or to_next)
-    struct MoveOperationResult {
+    struct [[nodiscard]] MoveOperationResult {
         std::optional<Bytes> key{};              // Nibbled key of node
         std::optional<evmc::bytes32> hash{};     // Hash of node
         bool children_in_trie{false};            // Whether there are children in trie
@@ -88,10 +88,10 @@ class TrieCursor {
     };
 
     //! \brief Acquires the prefix and position the cursor to the first occurrence
-    [[nodiscard]] MoveOperationResult to_prefix(ByteView prefix);
+    MoveOperationResult to_prefix(ByteView prefix);
 
     //! \brief Moves the cursor to next relevant position
-    [[nodiscard]] MoveOperationResult to_next();
+    MoveOperationResult to_next();
 
   private:
     uint32_t level_{0};                      // Depth level in sub_nodes_

@@ -27,14 +27,16 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+
+#include "../data_store.hpp"
 
 namespace silkworm::db::state {
 
 class LocalState : public State {
   public:
-    explicit LocalState(BlockNum block_number, mdbx::env chaindata_env)
-        : block_number_{block_number}, txn_{std::move(chaindata_env)}, data_model_{txn_} {}
+    explicit LocalState(BlockNum block_number, DataStoreRef data_store)
+        : block_number_{block_number}, txn_{data_store.chaindata_env}, data_model_{txn_, data_store.repository} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 

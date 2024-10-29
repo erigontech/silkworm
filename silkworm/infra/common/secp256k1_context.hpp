@@ -43,7 +43,7 @@ class SecP256K1Context final {
     // escape hatch
     secp256k1_context* raw() { return context_; }
 
-    [[nodiscard]] bool verify_private_key_data(const ByteView& data) const {
+    bool verify_private_key_data(const ByteView& data) const {
         return secp256k1_ec_seckey_verify(context_, data.data());
     }
 

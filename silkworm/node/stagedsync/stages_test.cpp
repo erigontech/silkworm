@@ -28,6 +28,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
@@ -37,6 +38,7 @@
 #include <silkworm/node/stagedsync/stages/stage_senders.hpp>
 
 using namespace silkworm;
+using namespace silkworm::db;
 using namespace evmc::literals;
 
 static ethash::hash256 keccak256(const evmc::address& address) {
@@ -45,9 +47,11 @@ static ethash::hash256 keccak256(const evmc::address& address) {
 
 static stagedsync::Execution make_execution_stage(
     stagedsync::SyncContext* sync_context,
-    const NodeSettings& node_settings) {
+    const NodeSettings& node_settings,
+    db::DataModelFactory data_model_factory) {
     return stagedsync::Execution{
         sync_context,
+        std::move(data_model_factory),
         *node_settings.chain_config,
         node_settings.batch_size,
         node_settings.prune_mode,
@@ -77,26 +81,29 @@ TEST_CASE("Sync Stages") {
     node_settings.chaindata_env_config.create = true;
     node_settings.chaindata_env_config.exclusive = true;
     node_settings.prune_mode =
-        db::parse_prune_mode("",
-                             std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
-                             std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
+        parse_prune_mode("",
+                         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                         std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
-    db::RWTxnManaged txn(chaindata_env);
-    db::table::check_or_create_chaindata_tables(txn);
+    auto chaindata_env{open_env(node_settings.chaindata_env_config)};
+    RWTxnManaged txn(chaindata_env);
+    table::check_or_create_chaindata_tables(txn);
     txn.commit_and_renew();
-    const auto initial_tx_sequence{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+    const auto initial_tx_sequence{read_map_sequence(txn, table::kBlockTransactions.name)};
     REQUIRE(initial_tx_sequence == 0);  // no txs at start
 
     auto source_data{read_genesis_data(node_settings.network_id)};
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
-    db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
+    initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
     txn.commit_and_renew();
-    node_settings.chain_config = db::read_chain_config(txn);
-    const auto tx_sequence_after_genesis{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+    node_settings.chain_config = read_chain_config(txn);
+    const auto tx_sequence_after_genesis{read_map_sequence(txn, table::kBlockTransactions.name)};
     REQUIRE(tx_sequence_after_genesis == 2);  // 2 system txs for genesis
+
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
 
     SECTION("BlockHashes") {
         SECTION("Forward/Unwind/Prune args validation") {
@@ -118,13 +125,13 @@ TEST_CASE("Sync Stages") {
                 0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32,
                 0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
-            db::PooledCursor canonical_table(txn, db::table::kCanonicalHashes);
+            PooledCursor canonical_table(txn, table::kCanonicalHashes);
             BlockNum block_num{1};
             for (const auto& hash : block_hashes) {
                 Bytes block_key{db::block_key(block_num++)};
-                canonical_table.insert(db::to_slice(block_key), db::to_slice(hash));
+                canonical_table.insert(to_slice(block_key), to_slice(hash));
             }
-            db::stages::write_stage_progress(txn, db::stages::kHeadersKey, 3);
+            stages::write_stage_progress(txn, stages::kHeadersKey, 3);
             REQUIRE_NOTHROW(txn.commit_and_renew());
 
             stagedsync::SyncContext sync_context{};
@@ -137,7 +144,7 @@ TEST_CASE("Sync Stages") {
 
             {
                 // Verify written data is consistent
-                db::PooledCursor target_table{txn, db::table::kHeaderNumbers};
+                PooledCursor target_table{txn, table::kHeaderNumbers};
 
                 REQUIRE(txn->get_map_stat(target_table.map()).ms_entries ==
                         block_hashes.size() + 1);  // +1 cause block 0 is genesis
@@ -148,7 +155,7 @@ TEST_CASE("Sync Stages") {
                     auto written_hash{to_bytes32(key)};
                     written_data.emplace_back(written_hash, written_block_num);
                 };
-                db::cursor_for_each(target_table, walk_func);
+                cursor_for_each(target_table, walk_func);
 
                 REQUIRE(written_data.size() == block_hashes.size() + 1);
                 for (const auto& [written_hash, written_block_num] : written_data) {
@@ -165,9 +172,9 @@ TEST_CASE("Sync Stages") {
             REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
             {
                 // Verify written data is consistent
-                db::PooledCursor target_table(txn, db::table::kHeaderNumbers);
+                PooledCursor target_table(txn, table::kHeaderNumbers);
                 REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == 4);
-                REQUIRE(target_table.seek(db::to_slice(block_hashes.back())));
+                REQUIRE(target_table.seek(to_slice(block_hashes.back())));
             }
         }
     }
@@ -190,19 +197,19 @@ TEST_CASE("Sync Stages") {
         // First block - 1 transaction
         Block b1 = block;
         b1.header.number = 1;
-        REQUIRE_NOTHROW(db::write_header(txn, b1.header));
+        REQUIRE_NOTHROW(write_header(txn, b1.header));
         const auto b1_hash = b1.header.hash();
-        REQUIRE_NOTHROW(db::write_body(txn, b1, b1_hash, b1.header.number));
-        const auto tx_sequence_after_block1{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+        REQUIRE_NOTHROW(write_body(txn, b1, b1_hash, b1.header.number));
+        const auto tx_sequence_after_block1{read_map_sequence(txn, table::kBlockTransactions.name)};
         REQUIRE(tx_sequence_after_block1 == 5);  // 1 tx + 2 system txs for block 1
 
         // Second block - 1 transaction
         Block b2 = block;
         b2.header.number = 2;
-        REQUIRE_NOTHROW(db::write_header(txn, b2.header));
+        REQUIRE_NOTHROW(write_header(txn, b2.header));
         const auto b2_hash = b2.header.hash();
-        REQUIRE_NOTHROW(db::write_body(txn, b2, b2_hash, b2.header.number));
-        const auto tx_sequence_after_block2{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+        REQUIRE_NOTHROW(write_body(txn, b2, b2_hash, b2.header.number));
+        const auto tx_sequence_after_block2{read_map_sequence(txn, table::kBlockTransactions.name)};
         REQUIRE(tx_sequence_after_block2 == 8);  // 1 tx + 2 system txs for block 2
 
         // Third block - 0 transactions
@@ -210,30 +217,31 @@ TEST_CASE("Sync Stages") {
         b3.header.number = 3;
         b3.header.transactions_root = kEmptyRoot;
         b3.transactions.clear();
-        REQUIRE_NOTHROW(db::write_header(txn, b3.header));
+        REQUIRE_NOTHROW(write_header(txn, b3.header));
         const auto b3_hash = b3.header.hash();
-        REQUIRE_NOTHROW(db::write_body(txn, b3, b3_hash, b3.header.number));
+        REQUIRE_NOTHROW(write_body(txn, b3, b3_hash, b3.header.number));
 
         // Write canonical hashes
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, b1_hash.bytes, 1));
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, b2_hash.bytes, 2));
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, b3_hash.bytes, 3));
+        REQUIRE_NOTHROW(write_canonical_header_hash(txn, b1_hash.bytes, 1));
+        REQUIRE_NOTHROW(write_canonical_header_hash(txn, b2_hash.bytes, 2));
+        REQUIRE_NOTHROW(write_canonical_header_hash(txn, b3_hash.bytes, 3));
 
         // Update progresses
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, 3));
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, 3));
+        REQUIRE_NOTHROW(stages::write_stage_progress(txn, stages::kBlockBodiesKey, 3));
+        REQUIRE_NOTHROW(stages::write_stage_progress(txn, stages::kBlockHashesKey, 3));
 
         // Commit
         REQUIRE_NOTHROW(txn.commit_and_renew());
 
         // Verify sequence for transactions has been incremented properly
-        const auto last_tx_sequence{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
+        const auto last_tx_sequence{read_map_sequence(txn, table::kBlockTransactions.name)};
         REQUIRE(last_tx_sequence == 10);  // 2 system txs for block 3
 
         // Prepare stage
         stagedsync::SyncContext sync_context{};
         stagedsync::Senders stage{
             &sync_context,
+            data_model_factory,
             *node_settings.chain_config,
             node_settings.batch_size,
             node_settings.etl(),
@@ -258,20 +266,20 @@ TEST_CASE("Sync Stages") {
 
         REQUIRE_NOTHROW(txn.commit_and_renew());
 
-        constexpr auto kExpectedSender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
+        constexpr evmc::address kExpectedSender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
         {
-            auto senders_map{txn->open_map(db::table::kSenders.name)};
+            auto senders_map{txn->open_map(table::kSenders.name)};
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 2);
 
-            auto written_senders{db::read_senders(txn, 1, b1_hash.bytes)};
+            auto written_senders{read_senders(txn, 1, b1_hash.bytes)};
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == kExpectedSender);
 
-            written_senders = db::read_senders(txn, 2, b2_hash.bytes);
+            written_senders = read_senders(txn, 2, b2_hash.bytes);
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == kExpectedSender);
 
-            written_senders = db::read_senders(txn, 3, b3_hash.bytes);
+            written_senders = read_senders(txn, 3, b3_hash.bytes);
             REQUIRE(written_senders.empty());
         }
 
@@ -281,26 +289,26 @@ TEST_CASE("Sync Stages") {
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
 
         {
-            auto senders_map{txn->open_map(db::table::kSenders.name)};
+            auto senders_map{txn->open_map(table::kSenders.name)};
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 1);
 
-            auto written_senders{db::read_senders(txn, 1, b1_hash.bytes)};
+            auto written_senders{read_senders(txn, 1, b1_hash.bytes)};
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == kExpectedSender);
 
-            written_senders = db::read_senders(txn, 2, b2_hash.bytes);
+            written_senders = read_senders(txn, 2, b2_hash.bytes);
             REQUIRE(written_senders.empty());
 
-            written_senders = db::read_senders(txn, 3, b3_hash.bytes);
+            written_senders = read_senders(txn, 3, b3_hash.bytes);
             REQUIRE(written_senders.empty());
         }
 
         // Check prune works
         // Override prune mode and issue pruning
-        stage.set_prune_mode_senders(db::BlockAmount(db::BlockAmount::Type::kBefore, 2));
+        stage.set_prune_mode_senders(BlockAmount(BlockAmount::Type::kBefore, 2));
         stage_result = stage.prune(txn);
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
-        auto written_senders{db::read_senders(txn, 1, b1_hash.bytes)};
+        auto written_senders{read_senders(txn, 1, b1_hash.bytes)};
         REQUIRE(written_senders.empty());
     }
 
@@ -315,7 +323,7 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
 
         uint64_t block_number{1};
-        const auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+        const evmc::address miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
         Block block{};
         block.header.number = block_number;
@@ -344,7 +352,7 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].s = 1;  // dummy
         block.transactions[0].set_sender(sender);
 
-        db::Buffer buffer{txn};
+        Buffer buffer{txn, std::make_unique<db::BufferFullDataModel>(data_model_factory(txn))};
         Account sender_account{};
         sender_account.balance = kEther;
         buffer.update_account(sender, std::nullopt, sender_account);
@@ -403,20 +411,20 @@ TEST_CASE("Sync Stages") {
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         REQUIRE_NOTHROW(buffer.write_to_db());
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3));
+        REQUIRE_NOTHROW(stages::write_stage_progress(txn, stages::kExecutionKey, 3));
         REQUIRE_NOTHROW(txn.commit_and_renew());
 
         // Check state after 3rd block in database
-        auto plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
-        REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+        auto plain_state_cursor = txn.ro_cursor(table::kPlainState);
+        REQUIRE(plain_state_cursor->seek(to_slice(sender)));
         auto current_record = plain_state_cursor->current(/*throw_notfound=*/false);
         REQUIRE(current_record);
-        REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
-        auto decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+        REQUIRE(from_slice(current_record.key) == ByteView{sender.bytes});
+        auto decoded_account = Account::from_encoded_storage(from_slice(current_record.value));
         REQUIRE(decoded_account);
         REQUIRE(decoded_account->nonce == 3);
-        auto receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
-        REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(3))));
+        auto receipts_cursor = txn.ro_cursor(table::kBlockReceipts);
+        REQUIRE(receipts_cursor->seek(to_slice(block_key(3))));
 
         SECTION("Execution Unwind") {
             // ---------------------------------------
@@ -424,10 +432,10 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             stagedsync::SyncContext sync_context{};
             sync_context.unwind_point.emplace(2);
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
-            db::Buffer buffer2{txn};
+            Buffer buffer2{txn, std::make_unique<db::BufferFullDataModel>(data_model_factory(txn))};
 
             std::optional<Account> contract_account{buffer2.read_account(contract_address)};
             REQUIRE(contract_account.has_value());
@@ -446,16 +454,16 @@ TEST_CASE("Sync Stages") {
             CHECK(storage0 == 0x000000000000000000000000000000000000000000000000000000000000003e_bytes32);
 
             // Check state after unwind of the 3rd block in database
-            plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
-            REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+            plain_state_cursor = txn.ro_cursor(table::kPlainState);
+            REQUIRE(plain_state_cursor->seek(to_slice(sender)));
             current_record = plain_state_cursor->current(/*throw_notfound=*/false);
             REQUIRE(current_record);
-            REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
-            decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+            REQUIRE(from_slice(current_record.key) == ByteView{sender.bytes});
+            decoded_account = Account::from_encoded_storage(from_slice(current_record.value));
             REQUIRE(decoded_account);
             REQUIRE(decoded_account->nonce == 2);
-            receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
-            REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(2))));
+            receipts_cursor = txn.ro_cursor(table::kBlockReceipts);
+            REQUIRE(receipts_cursor->seek(to_slice(block_key(2))));
         }
 
         SECTION("Execution failure and unwind") {
@@ -472,8 +480,8 @@ TEST_CASE("Sync Stages") {
             // Execution stage *must* flush state+progress updates and commit even in case of kInvalidBlock error
             REQUIRE_NOTHROW(buffer.insert_receipts(block_number, block_receipts));
             REQUIRE_NOTHROW(buffer.write_to_db());
-            REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 4));  // this was missing after PR #1511
-            txn.commit_and_renew();                                                                // this was missing after PR #1511
+            REQUIRE_NOTHROW(stages::write_stage_progress(txn, stages::kExecutionKey, 4));  // this was missing after PR #1511
+            txn.commit_and_renew();                                                        // this was missing after PR #1511
 
             // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
             REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kWrongNonce)));
@@ -481,66 +489,66 @@ TEST_CASE("Sync Stages") {
             // Unwind 4th block and checks if state corresponds to 3rd block
             stagedsync::SyncContext sync_context{};
             sync_context.unwind_point.emplace(3);
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
-            plain_state_cursor = txn.ro_cursor(db::table::kPlainState);
-            REQUIRE(plain_state_cursor->seek(db::to_slice(sender)));
+            plain_state_cursor = txn.ro_cursor(table::kPlainState);
+            REQUIRE(plain_state_cursor->seek(to_slice(sender)));
             current_record = plain_state_cursor->current(/*throw_notfound=*/false);
             REQUIRE(current_record);
-            REQUIRE(db::from_slice(current_record.key) == ByteView{sender.bytes});
-            decoded_account = Account::from_encoded_storage(db::from_slice(current_record.value));
+            REQUIRE(from_slice(current_record.key) == ByteView{sender.bytes});
+            decoded_account = Account::from_encoded_storage(from_slice(current_record.value));
             REQUIRE(decoded_account);
             REQUIRE(decoded_account->nonce == 3);
-            receipts_cursor = txn.ro_cursor(db::table::kBlockReceipts);
-            REQUIRE(receipts_cursor->seek(db::to_slice(db::block_key(3))));
-            REQUIRE(!receipts_cursor->seek(db::to_slice(db::block_key(4))));  // <- this fails after PR #1511
+            receipts_cursor = txn.ro_cursor(table::kBlockReceipts);
+            REQUIRE(receipts_cursor->seek(to_slice(block_key(3))));
+            REQUIRE(!receipts_cursor->seek(to_slice(block_key(4))));  // <- this fails after PR #1511
         }
 
         SECTION("Execution Prune Default") {
             log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
             stagedsync::SyncContext sync_context{};
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
             // With default settings nothing should be pruned
-            db::PooledCursor account_changeset_table(txn, db::table::kAccountChangeSet);
+            PooledCursor account_changeset_table(txn, table::kAccountChangeSet);
             auto data{account_changeset_table.to_first(false)};
             REQUIRE(data.done);
             BlockNum expected_block_num{0};  // We have account changes from genesis
-            auto actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
+            auto actual_block_num = endian::load_big_u64(from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
 
-            db::PooledCursor storage_changeset_table(txn, db::table::kStorageChangeSet);
+            PooledCursor storage_changeset_table(txn, table::kStorageChangeSet);
             data = storage_changeset_table.to_first(false);
             REQUIRE(data.done);
             expected_block_num = 1;  // First storage change is at block 1
-            actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
+            actual_block_num = endian::load_big_u64(from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
 
             // There is no pruning setting enabled hence no pruning occurred
-            REQUIRE(db::stages::read_stage_prune_progress(txn, db::stages::kExecutionKey) == 0);
+            REQUIRE(stages::read_stage_prune_progress(txn, stages::kExecutionKey) == 0);
         }
 
         SECTION("Execution Prune History") {
             // Override prune mode and issue pruning
             node_settings.prune_mode =
-                db::parse_prune_mode("", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, 2,
-                                     std::nullopt, std::nullopt, std::nullopt, std::nullopt);
+                parse_prune_mode("", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, 2,
+                                 std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
             log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
             REQUIRE(node_settings.prune_mode.history().enabled());
             stagedsync::SyncContext sync_context{};
-            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings);
+            stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
-            db::PooledCursor account_changeset_table(txn, db::table::kAccountChangeSet);
+            PooledCursor account_changeset_table(txn, table::kAccountChangeSet);
             auto data{account_changeset_table.to_first(false)};
             REQUIRE(data.done);
             BlockNum expected_block_num = 2;  // We've pruned history *before* 2 so the last is 2
-            BlockNum actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
+            BlockNum actual_block_num = endian::load_big_u64(from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
-            REQUIRE(db::stages::read_stage_prune_progress(txn, db::stages::kExecutionKey) == 3);
+            REQUIRE(stages::read_stage_prune_progress(txn, stages::kExecutionKey) == 3);
         }
 
         SECTION("HashState") {
@@ -549,16 +557,16 @@ TEST_CASE("Sync Stages") {
             auto actual_stage_result = stage.forward(txn);
             // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
             REQUIRE((enum_name(actual_stage_result) == enum_name(StageResult::kSuccess)));
-            REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHashStateKey) == 3);
+            REQUIRE(stages::read_stage_progress(txn, stages::kHashStateKey) == 3);
 
             // ---------------------------------------
             // Check hashed account
             // ---------------------------------------
-            db::PooledCursor hashed_accounts_table(txn, db::table::kHashedAccounts);
+            PooledCursor hashed_accounts_table(txn, table::kHashedAccounts);
             auto hashed_sender{keccak256(sender)};
-            REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
+            REQUIRE(hashed_accounts_table.seek(to_slice(hashed_sender.bytes)));
             {
-                auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
+                auto account_encoded{from_slice(hashed_accounts_table.current().value)};
                 auto account{Account::from_encoded_storage(account_encoded)};
                 CHECK(account->nonce == 3);
                 CHECK(account->balance < kEther);
@@ -567,26 +575,26 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             // Check hashed storage
             // ---------------------------------------
-            db::PooledCursor hashed_storage_table(txn, db::table::kHashedStorage);
+            PooledCursor hashed_storage_table(txn, table::kHashedStorage);
             auto hashed_contract{keccak256(contract_address)};
-            Bytes storage_key{db::storage_prefix(hashed_contract.bytes, kDefaultIncarnation)};
-            REQUIRE(hashed_storage_table.find(db::to_slice(storage_key)));
+            Bytes storage_key{storage_prefix(hashed_contract.bytes, kDefaultIncarnation)};
+            REQUIRE(hashed_storage_table.find(to_slice(storage_key)));
             REQUIRE(hashed_storage_table.count_multivalue() == 2);
 
             // location 0
             auto hashed_loc0{keccak256((0x0000000000000000000000000000000000000000000000000000000000000000_bytes32).bytes)};
             hashed_storage_table.to_current_first_multi();
             mdbx::slice db_val{hashed_storage_table.current().value};
-            REQUIRE(db_val.starts_with(db::to_slice(hashed_loc0.bytes)));
-            ByteView value{db::from_slice(db_val).substr(kHashLength)};
+            REQUIRE(db_val.starts_with(to_slice(hashed_loc0.bytes)));
+            ByteView value{from_slice(db_val).substr(kHashLength)};
             REQUIRE(to_hex(value) == to_hex(zeroless_view(new_val.bytes)));
 
             // location 1
             auto hashed_loc1{keccak256((0x0000000000000000000000000000000000000000000000000000000000000001_bytes32).bytes)};
             hashed_storage_table.to_current_next_multi();
             db_val = hashed_storage_table.current().value;
-            CHECK(db_val.starts_with(db::to_slice(hashed_loc1.bytes)));
-            value = db::from_slice(db_val).substr(kHashLength);
+            CHECK(db_val.starts_with(to_slice(hashed_loc1.bytes)));
+            value = from_slice(db_val).substr(kHashLength);
             // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
             CHECK((to_hex(value) == "01c9"));
 
@@ -596,14 +604,14 @@ TEST_CASE("Sync Stages") {
             actual_stage_result = stage.unwind(txn);
             // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
             REQUIRE((enum_name(actual_stage_result) == enum_name(StageResult::kSuccess)));
-            hashed_accounts_table.bind(txn, db::table::kHashedAccounts);
-            REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
+            hashed_accounts_table.bind(txn, table::kHashedAccounts);
+            REQUIRE(hashed_accounts_table.seek(to_slice(hashed_sender.bytes)));
             {
-                auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
+                auto account_encoded{from_slice(hashed_accounts_table.current().value)};
                 auto account{Account::from_encoded_storage(account_encoded)};
                 CHECK(account->nonce == 1);
                 CHECK(account->balance == kEther);
-                CHECK(db::stages::read_stage_progress(txn, db::stages::kHashStateKey) == unwind_to);
+                CHECK(stages::read_stage_progress(txn, stages::kHashStateKey) == unwind_to);
             }
         }
     }
@@ -613,9 +621,9 @@ TEST_CASE("Sync Stages") {
         using StageResult = stagedsync::Stage::Result;
 
         // Prepare block 1
-        const auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
-        const auto sender{0x9b9e32061f64f6c3f570a63b97a178d84e961db1_address};
-        const auto receiver{miner};
+        const evmc::address miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+        const evmc::address sender{0x9b9e32061f64f6c3f570a63b97a178d84e961db1_address};
+        const evmc::address receiver{miner};
 
         Block block{};
         block.header.number = 1;
@@ -641,21 +649,21 @@ TEST_CASE("Sync Stages") {
             intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
         block.transactions[0].value = 0;
 
-        db::write_header(txn, block.header, /*with_header_numbers=*/true);
-        db::write_body(txn, block, block.header.hash(), block.header.number);
-        db::write_canonical_header_hash(txn, block.header.hash().bytes, block.header.number);
+        write_header(txn, block.header, /*with_header_numbers=*/true);
+        write_body(txn, block, block.header.hash(), block.header.number);
+        write_canonical_header_hash(txn, block.header.hash().bytes, block.header.number);
 
         // Stage Execution up to block 1
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kSendersKey, 1));
+        REQUIRE_NOTHROW(stages::write_stage_progress(txn, stages::kSendersKey, 1));
 
         stagedsync::SyncContext sync_context{};
         sync_context.target_height = 1;
-        stagedsync::Execution stage_execution = make_execution_stage(&sync_context, node_settings);
+        stagedsync::Execution stage_execution = make_execution_stage(&sync_context, node_settings, data_model_factory);
         CHECK(stage_execution.forward(txn) == StageResult::kSuccess);
 
         // Post-condition: CallTraceSet table
         {
-            auto call_traces_cursor{txn.ro_cursor(db::table::kCallTraceSet)};
+            auto call_traces_cursor{txn.ro_cursor(table::kCallTraceSet)};
             REQUIRE(call_traces_cursor->size() == 2);
             const auto call_traces_record1{call_traces_cursor->to_next(/*throw_notfound=*/false)};
             REQUIRE(call_traces_record1.done);
@@ -677,38 +685,38 @@ TEST_CASE("Sync Stages") {
 
         // Stage CallTraceIndex up to block 1
         stagedsync::CallTraceIndex stage_call_traces = make_call_traces_stage(&sync_context, node_settings);
-        REQUIRE(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == 0);
+        REQUIRE(stages::read_stage_progress(txn, stages::kCallTracesKey) == 0);
         const auto forward_result{stage_call_traces.forward(txn)};
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         CHECK((enum_name(forward_result) == enum_name(StageResult::kSuccess)));
-        CHECK(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == 1);
+        CHECK(stages::read_stage_progress(txn, stages::kCallTracesKey) == 1);
 
         // Post-condition: CallFromIndex table
         {
-            auto call_from_cursor{txn.ro_cursor(db::table::kCallFromIndex)};
+            auto call_from_cursor{txn.ro_cursor(table::kCallFromIndex)};
             REQUIRE(call_from_cursor->size() == 1);
             const auto call_from_record{call_from_cursor->to_next(/*throw_notfound=*/false)};
             REQUIRE(call_from_record.done);
-            const auto address_data{db::from_slice(call_from_record.key)};
+            const auto address_data{from_slice(call_from_record.key)};
             REQUIRE(address_data.size() == kAddressLength + sizeof(uint64_t));
             CHECK(bytes_to_address(address_data.substr(0, kAddressLength)) == sender);
-            const auto bitmap_encoded{byte_view_to_string_view(db::from_slice(call_from_record.value))};
-            const auto bitmap{db::bitmap::parse(bitmap_encoded)};
-            CHECK(db::bitmap::seek(bitmap, 1));
+            const auto bitmap_encoded{byte_view_to_string_view(from_slice(call_from_record.value))};
+            const auto bitmap{bitmap::parse(bitmap_encoded)};
+            CHECK(bitmap::seek(bitmap, 1));
         }
 
         // Post-condition: CallToIndex table
         {
-            auto call_to_cursor{txn.ro_cursor(db::table::kCallToIndex)};
+            auto call_to_cursor{txn.ro_cursor(table::kCallToIndex)};
             REQUIRE(call_to_cursor->size() == 1);
             const auto call_to_record{call_to_cursor->to_next(/*throw_notfound=*/false)};
             REQUIRE(call_to_record.done);
-            const auto address_data{db::from_slice(call_to_record.key)};
+            const auto address_data{from_slice(call_to_record.key)};
             REQUIRE(address_data.size() == kAddressLength + sizeof(uint64_t));
             CHECK(bytes_to_address(address_data.substr(0, kAddressLength)) == receiver);
-            const auto bitmap_encoded{byte_view_to_string_view(db::from_slice(call_to_record.value))};
-            const auto bitmap{db::bitmap::parse(bitmap_encoded)};
-            CHECK(db::bitmap::seek(bitmap, 1));
+            const auto bitmap_encoded{byte_view_to_string_view(from_slice(call_to_record.value))};
+            const auto bitmap{bitmap::parse(bitmap_encoded)};
+            CHECK(bitmap::seek(bitmap, 1));
         }
 
         // Unwind the stage down to block 0 (i.e. block 0 *is* applied)
@@ -717,10 +725,10 @@ TEST_CASE("Sync Stages") {
         const auto unwind_result{stage_call_traces.unwind(txn)};
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         CHECK((enum_name(unwind_result) == enum_name(StageResult::kSuccess)));
-        CHECK(db::stages::read_stage_progress(txn, db::stages::kCallTracesKey) == unwind_to);
-        auto call_from_cursor{txn.ro_cursor(db::table::kCallFromIndex)};
+        CHECK(stages::read_stage_progress(txn, stages::kCallTracesKey) == unwind_to);
+        auto call_from_cursor{txn.ro_cursor(table::kCallFromIndex)};
         CHECK(call_from_cursor->empty());
-        auto call_to_cursor{txn.ro_cursor(db::table::kCallToIndex)};
+        auto call_to_cursor{txn.ro_cursor(table::kCallToIndex)};
         CHECK(call_to_cursor->empty());
     }
 }

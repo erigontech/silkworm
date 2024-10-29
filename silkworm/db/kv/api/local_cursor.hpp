@@ -26,7 +26,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 #include "cursor.hpp"
 
@@ -36,7 +36,7 @@ class LocalCursor : public CursorDupSort {
   public:
     LocalCursor(mdbx::txn& txn, uint32_t cursor_id) : cursor_id_{cursor_id}, txn_{txn} {}
 
-    [[nodiscard]] uint32_t cursor_id() const override { return cursor_id_; };
+    uint32_t cursor_id() const override { return cursor_id_; };
 
     Task<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override;
 

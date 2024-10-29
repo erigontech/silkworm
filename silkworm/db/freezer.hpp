@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "data_migration.hpp"
-#include "mdbx/mdbx.hpp"
-#include "snapshots/snapshot_repository.hpp"
-#include "stage_scheduler.hpp"
+#include "datastore/data_migration.hpp"
+#include "datastore/mdbx/mdbx.hpp"
+#include "datastore/snapshots/snapshot_repository.hpp"
+#include "datastore/stage_scheduler.hpp"
 
 namespace silkworm::db {
 
@@ -47,7 +47,7 @@ class Freezer : public DataMigration {
     void commit(std::shared_ptr<DataMigrationResult> result) override;
     Task<void> cleanup() override;
     BlockNumRange cleanup_range();
-    void cleanup(RWTxn& db_tx, BlockNumRange range) const;
+    void prune_collations(RWTxn& db_tx, BlockNumRange range) const;
 
     db::ROAccess db_access_;
     snapshots::SnapshotRepository& snapshots_;

@@ -28,19 +28,21 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/freezer.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/snapshot_merger.hpp>
-#include <silkworm/db/snapshots/bittorrent/client.hpp>
-#include <silkworm/db/snapshots/config.hpp>
-#include <silkworm/db/snapshots/snapshot_bundle.hpp>
-#include <silkworm/db/snapshots/snapshot_path.hpp>
-#include <silkworm/db/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
-#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
+
+#include "access_layer.hpp"
+#include "data_store.hpp"
+#include "datastore/mdbx/mdbx.hpp"
+#include "datastore/snapshot_merger.hpp"
+#include "datastore/snapshots/bittorrent/client.hpp"
+#include "datastore/snapshots/common/snapshot_path.hpp"
+#include "datastore/snapshots/config/config.hpp"
+#include "datastore/snapshots/snapshot_bundle.hpp"
+#include "datastore/snapshots/snapshot_repository.hpp"
+#include "datastore/snapshots/snapshot_settings.hpp"
+#include "datastore/stage_scheduler.hpp"
+#include "freezer.hpp"
 
 namespace silkworm::db {
 
@@ -49,7 +51,7 @@ class SnapshotSync {
     SnapshotSync(
         snapshots::SnapshotSettings settings,
         ChainId chain_id,
-        mdbx::env chaindata_env,
+        db::DataStoreRef data_store,
         std::filesystem::path tmp_dir_path,
         stagedsync::StageScheduler& stage_scheduler);
 
@@ -65,7 +67,7 @@ class SnapshotSync {
     Task<void> build_missing_indexes();
 
     void seed_frozen_local_snapshots();
-    void seed_frozen_bundle(BlockNumRange range);
+    void seed_frozen_bundle(snapshots::StepRange range);
     void seed_bundle(snapshots::SnapshotBundle& bundle);
     void seed_snapshot(const snapshots::SnapshotPath& path);
 
@@ -80,7 +82,7 @@ class SnapshotSync {
     const snapshots::Config snapshots_config_;
     mdbx::env chaindata_env_;
 
-    snapshots::SnapshotRepository repository_;
+    snapshots::SnapshotRepository& repository_;
 
     snapshots::bittorrent::BitTorrentClient client_;
 

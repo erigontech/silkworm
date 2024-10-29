@@ -24,8 +24,8 @@ namespace silkworm::db {
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
-constexpr auto kZeroAddress = 0x0000000000000000000000000000000000000000_address;
-constexpr auto kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+constexpr evmc::address kZeroAddress = 0x0000000000000000000000000000000000000000_address;
+constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 TEST_CASE("all-zero storage prefix", "[core][util]") {
     const auto address_composite_key{storage_prefix(kZeroAddress, 0)};
@@ -48,7 +48,7 @@ TEST_CASE("all-zero composite key", "[rpc][core][rawdb][util]") {
 }
 
 TEST_CASE("non-zero address composite key", "[rpc][core][rawdb][util]") {
-    const auto address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
+    const evmc::address address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
     const auto key{composite_storage_key(address, 0, kZeroHash.bytes)};
     CHECK(key == from_hex("79a4d418f7887dd4d5123a41b6c8c186686ae8cb"
                           "0000000000000000"
@@ -63,7 +63,7 @@ TEST_CASE("non-zero incarnation composite key", "[rpc][core][rawdb][util]") {
 }
 
 TEST_CASE("non-zero hash composite key", "[rpc][core][rawdb][util]") {
-    const auto hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
+    const evmc::bytes32 hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
     const auto key{composite_storage_key(kZeroAddress, 0, hash.bytes)};
     CHECK(key == from_hex("0000000000000000000000000000000000000000"
                           "0000000000000000"
@@ -71,8 +71,8 @@ TEST_CASE("non-zero hash composite key", "[rpc][core][rawdb][util]") {
 }
 
 TEST_CASE("non-zero composite key", "[rpc][core][rawdb][util]") {
-    const auto address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
-    const auto hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
+    const evmc::address address = 0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address;
+    const evmc::bytes32 hash = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32;
     const auto key{composite_storage_key(address, 37, hash.bytes)};
     CHECK(key == from_hex("79a4d418f7887dd4d5123a41b6c8c186686ae8cb"
                           "0000000000000025"

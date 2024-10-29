@@ -30,7 +30,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/empty_hashes.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
@@ -116,7 +116,7 @@ class MockSentryClient
     Task<std::shared_ptr<silkworm::sentry::api::Service>> service() override {
         co_return shared_from_this();
     }
-    [[nodiscard]] bool is_ready() override { return true; }
+    bool is_ready() override { return true; }
     void on_disconnect(std::function<Task<void>()> /*callback*/) override {}
     Task<void> reconnect() override { co_return; }
 
@@ -216,7 +216,7 @@ class TestableEthereumBackEnd : public EthereumBackEnd {
               std::make_unique<TestableStateChangeCollection>(),
           } {}
 
-    [[nodiscard]] TestableStateChangeCollection* state_change_source_for_test() const noexcept {
+    TestableStateChangeCollection* state_change_source_for_test() const noexcept {
         return dynamic_cast<TestableStateChangeCollection*>(EthereumBackEnd::state_change_source());
     }
 };

@@ -160,7 +160,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     sw.start();
 
     if (!block_account_changes_.empty() && write_change_sets) {
-        auto account_change_table{db::open_cursor(txn_, table::kAccountChangeSet)};
+        auto account_change_table{open_cursor(txn_, table::kAccountChangeSet)};
         Bytes change_key(sizeof(BlockNum), '\0');
         Bytes change_value(kAddressLength + 128 /* see comment*/,
                            '\0');  // Max size of encoded value is 85. We allocate - once - some byte more for safety
@@ -190,7 +190,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
         Bytes change_key(sizeof(BlockNum) + kPlainStoragePrefixLength, '\0');
         Bytes change_value(kHashLength + 128, '\0');  // Se comment above (account changes) for explanation about 128
 
-        auto storage_change_table{db::open_cursor(txn_, table::kStorageChangeSet)};
+        auto storage_change_table{open_cursor(txn_, table::kStorageChangeSet)};
         for (const auto& [block_num, storage_changes] : block_storage_changes_) {
             endian::store_big_u64(&change_key[0], block_num);
             written_size += sizeof(BlockNum);
@@ -221,7 +221,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     block_storage_changes_.clear();
 
     if (!receipts_.empty()) {
-        auto receipt_table{db::open_cursor(txn_, table::kBlockReceipts)};
+        auto receipt_table{open_cursor(txn_, table::kBlockReceipts)};
         for (const auto& [block_key, receipts] : receipts_) {
             auto k{to_slice(block_key)};
             auto v{to_slice(receipts)};
@@ -238,7 +238,7 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     }
 
     if (!logs_.empty()) {
-        auto log_table{db::open_cursor(txn_, table::kLogs)};
+        auto log_table{open_cursor(txn_, table::kLogs)};
         for (const auto& [log_key, value] : logs_) {
             auto k{to_slice(log_key)};
             auto v{to_slice(value)};
@@ -297,7 +297,7 @@ void Buffer::write_state_to_db() {
     sw.start();
 
     if (!incarnations_.empty()) {
-        auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
+        auto incarnation_table{open_cursor(txn_, table::kIncarnationMap)};
         Bytes data(kIncarnationLength, '\0');
         for (const auto& [address, incarnation] : incarnations_) {
             endian::store_big_u64(&data[0], incarnation);
@@ -314,7 +314,7 @@ void Buffer::write_state_to_db() {
     }
 
     if (!hash_to_code_.empty()) {
-        auto code_table{db::open_cursor(txn_, table::kCode)};
+        auto code_table{open_cursor(txn_, table::kCode)};
         for (const auto& entry : hash_to_code_) {
             code_table.upsert(to_slice(entry.first), to_slice(entry.second));
             written_size += kHashLength + entry.second.length();
@@ -329,7 +329,7 @@ void Buffer::write_state_to_db() {
     }
 
     if (!storage_prefix_to_code_hash_.empty()) {
-        auto code_hash_table{db::open_cursor(txn_, table::kPlainCodeHash)};
+        auto code_hash_table{open_cursor(txn_, table::kPlainCodeHash)};
         for (const auto& entry : storage_prefix_to_code_hash_) {
             code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
             written_size += kAddressLength + kIncarnationLength + kHashLength;
@@ -504,7 +504,7 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     if (auto it{headers_.find(key)}; it != headers_.end()) {
         return it->second;
     }
-    return access_layer_.read_header(block_number, block_hash.bytes);
+    return data_model_->read_header(block_number, Hash{block_hash.bytes});
 }
 
 bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
@@ -513,7 +513,7 @@ bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, B
         out = it->second;
         return true;
     }
-    return access_layer_.read_body(block_number, block_hash.bytes, /*read_senders=*/false, out);
+    return data_model_->read_body(block_number, block_hash.bytes, /*read_senders=*/false, out);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

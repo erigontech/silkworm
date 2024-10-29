@@ -21,6 +21,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
@@ -43,8 +44,8 @@ class Transaction {
 
     virtual ~Transaction() = default;
 
-    [[nodiscard]] virtual uint64_t tx_id() const = 0;
-    [[nodiscard]] virtual uint64_t view_id() const = 0;
+    virtual uint64_t tx_id() const = 0;
+    virtual uint64_t view_id() const = 0;
 
     virtual void set_state_cache_enabled(bool cache_enabled) = 0;
 
@@ -65,6 +66,9 @@ class Transaction {
     virtual Task<Bytes> get_one(const std::string& table, ByteView key) = 0;
 
     virtual Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) = 0;
+
+    // Temporarily here waiting for a better place
+    virtual Task<TxnId> first_txn_num_in_block(BlockNum block_num) = 0;
 
     /** Temporal Point Queries **/
 

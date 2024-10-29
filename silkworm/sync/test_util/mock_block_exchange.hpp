@@ -25,7 +25,6 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/messages/message.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -35,8 +34,8 @@ namespace silkworm::chainsync::test_util {
 //! \brief MockBlockExchange is the gMock mock class for BlockExchange.
 class MockBlockExchange : public BlockExchange {
   public:
-    MockBlockExchange(SentryClient& client, const db::ROAccess& dba, const ChainConfig& config)
-        : BlockExchange(client, dba, config, /* use_preverified_hashes = */ false) {}
+    MockBlockExchange(db::DataStoreRef data_store, SentryClient& client, const ChainConfig& config)
+        : BlockExchange{std::move(data_store), client, config, /* use_preverified_hashes = */ false} {}
 
     MOCK_METHOD((void), initial_state, (std::vector<BlockHeader>));
 

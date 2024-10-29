@@ -42,8 +42,20 @@ template <class T>
 concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::uint128> ||
                            std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
+using TxnId = uint64_t;
+
+struct TxnIdRange {
+    TxnId start;
+    TxnId end;
+    TxnIdRange(TxnId start1, TxnId end1) : start(start1), end(end1) {}
+    friend bool operator==(const TxnIdRange&, const TxnIdRange&) = default;
+    bool contains(TxnId num) const { return (start <= num) && (num < end); }
+    bool contains_range(TxnIdRange range) const { return (start <= range.start) && (range.end <= end); }
+    TxnId size() const { return end - start; }
+    std::string to_string() const { return std::string("[") + std::to_string(start) + ", " + std::to_string(end) + ")"; }
+};
+
 using BlockNum = uint64_t;
-using BlockTime = uint64_t;
 
 struct BlockNumRange {
     BlockNum start;
@@ -51,9 +63,12 @@ struct BlockNumRange {
     BlockNumRange(BlockNum start1, BlockNum end1) : start(start1), end(end1) {}
     friend bool operator==(const BlockNumRange&, const BlockNumRange&) = default;
     bool contains(BlockNum num) const { return (start <= num) && (num < end); }
+    bool contains_range(BlockNumRange range) const { return (start <= range.start) && (range.end <= end); }
     BlockNum size() const { return end - start; }
     std::string to_string() const { return std::string("[") + std::to_string(start) + ", " + std::to_string(end) + ")"; }
 };
+
+using BlockTime = uint64_t;
 
 inline constexpr BlockNum kEarliestBlockNumber{0ul};
 

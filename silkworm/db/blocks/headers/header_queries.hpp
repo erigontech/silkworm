@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <silkworm/db/snapshots/basic_queries.hpp>
+#include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 
-#include "header_snapshot.hpp"
+#include "header_segment.hpp"
 
 namespace silkworm::snapshots {
 
-using HeaderFindByBlockNumQuery = FindByIdQuery<HeaderSnapshotReader>;
-using HeaderFindByHashQuery = FindByHashQuery<HeaderSnapshotReader>;
+using HeaderFindByBlockNumQuery = FindByIdQuery<HeaderSegmentReader>;
+using HeaderFindByHashQuery = FindByHashQuery<HeaderSegmentReader>;
 
 }  // namespace silkworm::snapshots

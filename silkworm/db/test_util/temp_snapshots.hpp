@@ -21,8 +21,8 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/snapshots/seg/common/varint.hpp>
-#include <silkworm/db/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/datastore/snapshots/seg/common/varint.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
 namespace silkworm::snapshots::test_util {
@@ -80,7 +80,7 @@ struct SnapshotHeader {
     }
 
   private:
-    [[nodiscard]] uint64_t compute_patterns_size() const {
+    uint64_t compute_patterns_size() const {
         uint64_t patterns_size{0};
         Bytes temp_buffer{};
         for (const auto& pattern : patterns) {
@@ -91,7 +91,7 @@ struct SnapshotHeader {
         return patterns_size;
     }
 
-    [[nodiscard]] uint64_t compute_positions_size() const {
+    uint64_t compute_positions_size() const {
         uint64_t positions_size{0};
         Bytes temp_buffer{};
         for (const auto& position : positions) {
@@ -113,26 +113,57 @@ struct SnapshotBody {
 //! Temporary snapshot file
 class TemporarySnapshotFile {
   public:
-    TemporarySnapshotFile(const std::filesystem::path& tmp_dir,
-                          const std::string& filename,
-                          const SnapshotHeader& header = {},
-                          const SnapshotBody& body = {})
-        : file_(tmp_dir, filename) {
-        Bytes data{};
-        header.encode(data);
-        body.encode(data);
+    TemporarySnapshotFile(
+        const std::filesystem::path& tmp_dir,
+        const std::string& filename,
+        const SnapshotHeader& header = {},
+        const SnapshotBody& body = {})
+        : TemporarySnapshotFile{
+              parse_path_or_die(tmp_dir, filename),
+              encode_header_and_body(header, body),
+          } {}
+
+    TemporarySnapshotFile(
+        const std::filesystem::path& tmp_dir,
+        const std::string& filename,
+        ByteView data)
+        : TemporarySnapshotFile{
+              parse_path_or_die(tmp_dir, filename),
+              data,
+          } {}
+
+    TemporarySnapshotFile(
+        SnapshotPath path,
+        ByteView data)
+        : file_{path.path().parent_path(), path.filename()},
+          path_{std::move(path)} {
         file_.write(data);
     }
 
-    TemporarySnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename, ByteView data)
-        : file_(tmp_dir, filename) {
-        file_.write(data);
-    }
-
-    const std::filesystem::path& path() const { return file_.path(); }
+    const SnapshotPath& path() const { return path_; }
+    const std::filesystem::path& fs_path() const { return file_.path(); }
 
   private:
+    static Bytes encode_header_and_body(
+        const SnapshotHeader& header,
+        const SnapshotBody& body) {
+        Bytes data;
+        header.encode(data);
+        body.encode(data);
+        return data;
+    }
+
+    static SnapshotPath parse_path_or_die(
+        const std::filesystem::path& tmp_dir,
+        const std::string& filename) {
+        auto path = SnapshotPath::parse(tmp_dir / filename);
+        if (!path)
+            throw std::runtime_error{"TemporarySnapshotFile: invalid snapshot filename: " + filename};
+        return std::move(*path);
+    }
+
     silkworm::test_util::TemporaryFile file_;
+    SnapshotPath path_;
 };
 
 //! HelloWorld snapshot file: it contains just one word: "hello, world" w/o any patterns
@@ -166,15 +197,19 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
 // - PaTS (PaT Size): size of pattern table in bytes
 // - PoTS (PoT Size): size of position table in bytes
 
+inline const BlockNumRange kSampleSnapshotBlockRange{1'500'012, 1'500'014};
+
 //! Sample Headers snapshot file: it contains the mainnet block headers in range [1'500'012, 1'500'013]
 //! At least 2 blocks are required because RecSplit key set must have at least *2* keys
 class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001500-headers.seg"};
+    static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001501-headers.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleHeaderSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
         : TemporarySnapshotFile{tmp_dir, kHeadersSnapshotFileName, *from_hex(hex)} {}
+
+    BlockNumRange block_num_range() const { return kSampleSnapshotBlockRange; }
 
     //! This ctor captures the correct sample snapshot content once for all
     explicit SampleHeaderSnapshotFile(const std::filesystem::path& tmp_dir)
@@ -212,11 +247,13 @@ class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
 //! Sample Bodies snapshot file: it contains the mainnet block bodies in range [1'500'012, 1'500'013]
 class SampleBodySnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001500-bodies.seg"};
+    static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001501-bodies.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleBodySnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
         : TemporarySnapshotFile{tmp_dir, kBodiesSnapshotFileName, *from_hex(hex)} {}
+
+    BlockNumRange block_num_range() const { return kSampleSnapshotBlockRange; }
 
     //! This empty ctor captures the correct sample snapshot content once for all
     explicit SampleBodySnapshotFile(const std::filesystem::path& tmp_dir)
@@ -253,11 +290,13 @@ class SampleBodySnapshotFile : public TemporarySnapshotFile {
 //! Sample Transactions snapshot file: it contains the mainnet block transactions in range [1'500'012, 1'500'013]
 class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001500-transactions.seg"};
+    static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001501-transactions.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleTransactionSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
         : TemporarySnapshotFile{tmp_dir, kTransactionsSnapshotFileName, *from_hex(hex)} {}
+
+    BlockNumRange block_num_range() const { return kSampleSnapshotBlockRange; }
 
     //! This empty ctor captures the correct sample snapshot content once for all
     explicit SampleTransactionSnapshotFile(const std::filesystem::path& tmp_dir)
@@ -336,33 +375,6 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
               "0679FA90B5A028A6D676D77923B19506C7AAAE5F1DC2F2244855AABB6672401C"
               "1B55B0D844FF"  // Txn position 0 block 1'500'013 END
               "03") {}
-};
-
-class SampleSnapshotPath : public SnapshotPath {
-  public:
-    SampleSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to, SnapshotType type)
-        : SnapshotPath(std::move(path), /*.version=*/1, from, to, type) {}
-};
-
-//! Sample Header snapshot path injecting custom from/to blocks to override 500'000 block range
-class SampleHeaderSnapshotPath : public SampleSnapshotPath {
-  public:
-    explicit SampleHeaderSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), 1'500'012, 1'500'014, SnapshotType::headers) {}
-};
-
-//! Sample Body snapshot path injecting custom from/to blocks to override 500'000 block range
-class SampleBodySnapshotPath : public SampleSnapshotPath {
-  public:
-    explicit SampleBodySnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), 1'500'012, 1'500'014, SnapshotType::bodies) {}
-};
-
-//! Sample Transaction snapshot path injecting custom from/to blocks to override 500'000 block range
-class SampleTransactionSnapshotPath : public SampleSnapshotPath {
-  public:
-    explicit SampleTransactionSnapshotPath(std::filesystem::path path)
-        : SampleSnapshotPath(std::move(path), 1'500'012, 1'500'014, SnapshotType::transactions) {}
 };
 
 }  // namespace silkworm::snapshots::test_util

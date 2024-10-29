@@ -64,7 +64,7 @@ class Handshake {
         explicit DisconnectError(DisconnectReason reason)
             : std::runtime_error("rlpx::auth::Handshake: Disconnect received"),
               reason_(reason) {}
-        [[nodiscard]] DisconnectReason reason() const { return reason_; }
+        DisconnectReason reason() const { return reason_; }
 
       private:
         DisconnectReason reason_;

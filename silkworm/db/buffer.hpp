@@ -17,6 +17,7 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <vector>
@@ -32,16 +33,54 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::db {
 
+struct BufferDataModel {
+    virtual ~BufferDataModel() = default;
+    virtual std::optional<BlockHeader> read_header(BlockNum block_num, const Hash& block_hash) const = 0;
+    [[nodiscard]] virtual bool read_body(BlockNum block_num, HashAsArray hash, bool read_senders, BlockBody& body) const = 0;
+};
+
+class BufferROTxDataModel : public BufferDataModel {
+  public:
+    explicit BufferROTxDataModel(ROTxn& tx) : tx_{tx} {}
+    ~BufferROTxDataModel() override = default;
+    std::optional<BlockHeader> read_header(BlockNum block_num, const Hash& block_hash) const override {
+        return db::read_header(tx_, block_num, block_hash);
+    }
+    [[nodiscard]] bool read_body(BlockNum block_num, HashAsArray hash, bool read_senders, BlockBody& body) const override {
+        return db::read_body(tx_, block_num, hash, read_senders, body);
+    }
+
+  private:
+    ROTxn& tx_;
+};
+
+class BufferFullDataModel : public BufferDataModel {
+  public:
+    explicit BufferFullDataModel(DataModel data_model) : data_model_{data_model} {}
+    ~BufferFullDataModel() override = default;
+    std::optional<BlockHeader> read_header(BlockNum block_num, const Hash& block_hash) const override {
+        return data_model_.read_header(block_num, block_hash);
+    }
+    [[nodiscard]] bool read_body(BlockNum block_num, HashAsArray hash, bool read_senders, BlockBody& body) const override {
+        return data_model_.read_body(block_num, hash, read_senders, body);
+    }
+
+  private:
+    DataModel data_model_;
+};
+
 class Buffer : public State {
   public:
-    explicit Buffer(RWTxn& txn)
+    explicit Buffer(
+        RWTxn& txn,
+        std::unique_ptr<BufferDataModel> data_model)
         : txn_{txn},
-          access_layer_{txn_} {}
+          data_model_{std::move(data_model)} {}
 
     /** @name Settings */
     //!@{
@@ -63,30 +102,36 @@ class Buffer : public State {
     /** @name Readers */
     //!@{
 
-    [[nodiscard]] std::optional<Account> read_account(const evmc::address& address) const noexcept override;
+    std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
-    [[nodiscard]] ByteView read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept override;
+    ByteView read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept override;
 
-    [[nodiscard]] evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                                             const evmc::bytes32& location) const noexcept override;
+    evmc::bytes32 read_storage(
+        const evmc::address& address,
+        uint64_t incarnation,
+        const evmc::bytes32& location) const noexcept override;
 
     /** Previous non-zero incarnation of an account; 0 if none exists. */
-    [[nodiscard]] uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
+    uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    [[nodiscard]] std::optional<BlockHeader> read_header(uint64_t block_number,
-                                                         const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockHeader> read_header(
+        uint64_t block_number,
+        const evmc::bytes32& block_hash) const noexcept override;
 
-    [[nodiscard]] bool read_body(uint64_t block_number, const evmc::bytes32& block_hash,
-                                 BlockBody& out) const noexcept override;
+    [[nodiscard]] bool read_body(
+        uint64_t block_number,
+        const evmc::bytes32& block_hash,
+        BlockBody& out) const noexcept override;
 
-    [[nodiscard]] std::optional<intx::uint256> total_difficulty(
-        uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<intx::uint256> total_difficulty(
+        uint64_t block_number,
+        const evmc::bytes32& block_hash) const noexcept override;
 
-    [[nodiscard]] evmc::bytes32 state_root_hash() const override;
+    evmc::bytes32 state_root_hash() const override;
 
-    [[nodiscard]] uint64_t current_canonical_block() const override;
+    uint64_t current_canonical_block() const override;
 
-    [[nodiscard]] std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
     //!@}
 
@@ -124,17 +169,17 @@ class Buffer : public State {
     //!@}
 
     //! Account (backward) changes per block
-    [[nodiscard]] const absl::btree_map<uint64_t, AccountChanges>& account_changes() const {
+    const absl::btree_map<uint64_t, AccountChanges>& account_changes() const {
         return block_account_changes_;
     }
 
     //! Storage (backward) changes per block
-    [[nodiscard]] const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const {
+    const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const {
         return block_storage_changes_;
     }
 
     //! \brief Approximate size of accrued state in bytes.
-    [[nodiscard]] size_t current_batch_state_size() const noexcept { return batch_state_size_; }
+    size_t current_batch_state_size() const noexcept { return batch_state_size_; }
 
     //! \brief Persists *all* accrued contents into db
     //! \remarks write_history_to_db is implicitly called
@@ -155,7 +200,7 @@ class Buffer : public State {
 
   private:
     RWTxn& txn_;
-    db::DataModel access_layer_;
+    std::unique_ptr<BufferDataModel> data_model_;
 
     // Settings
 

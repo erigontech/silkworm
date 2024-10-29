@@ -64,7 +64,7 @@ if(NOT SILKWORM_CORE_ONLY)
   set(RPCDAEMON_CMD_SRC rpcdaemon.cpp common/rpcdaemon_options.cpp common/rpcdaemon_options.hpp)
   set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon absl::flags_parse cmd_common)
   if(SILKWORM_USE_MIMALLOC)
-    list(APPEND RPCDAEMON_LIBRARIES mimalloc::mimalloc)
+    list(APPEND RPCDAEMON_LIBRARIES mimalloc-static)
   endif()
 
   add_executable(rpcdaemon "${RPCDAEMON_CMD_SRC}")

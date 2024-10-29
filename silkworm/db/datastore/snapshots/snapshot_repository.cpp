@@ -1,0 +1,255 @@
+/*
+   Copyright 2022 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "snapshot_repository.hpp"
+
+#include <algorithm>
+#include <iterator>
+#include <utility>
+
+#include <silkworm/infra/common/ensure.hpp>
+#include <silkworm/infra/common/log.hpp>
+
+namespace silkworm::snapshots {
+
+namespace fs = std::filesystem;
+
+SnapshotRepository::SnapshotRepository(
+    std::filesystem::path dir_path,
+    std::unique_ptr<StepToTimestampConverter> step_converter,
+    std::unique_ptr<SnapshotBundleFactory> bundle_factory)
+    : dir_path_(std::move(dir_path)),
+      step_converter_(std::move(step_converter)),
+      bundle_factory_(std::move(bundle_factory)),
+      bundles_(std::make_shared<Bundles>()) {}
+
+SnapshotRepository::~SnapshotRepository() {
+    close();
+}
+
+void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
+    replace_snapshot_bundles(std::move(bundle));
+}
+
+void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
+    bundle.reopen();
+
+    std::scoped_lock lock(bundles_mutex_);
+    // copy bundles prior to modification
+    auto bundles = std::make_shared<Bundles>(*bundles_);
+
+    std::erase_if(*bundles, [&](const auto& entry) {
+        const SnapshotBundle& it = *entry.second;
+        return bundle.step_range().contains_range(it.step_range());
+    });
+
+    Step key = bundle.step_range().start;
+    bundles->insert_or_assign(key, std::make_shared<SnapshotBundle>(std::move(bundle)));
+
+    bundles_ = bundles;
+}
+
+size_t SnapshotRepository::bundles_count() const {
+    std::scoped_lock lock(bundles_mutex_);
+    return bundles_->size();
+}
+
+void SnapshotRepository::close() {
+    SILK_TRACE << "Close snapshot repository folder: " << dir_path_.string();
+    std::scoped_lock lock(bundles_mutex_);
+    bundles_ = std::make_shared<Bundles>();
+}
+
+BlockNum SnapshotRepository::max_block_available() const {
+    Step end_step = max_end_step();
+    if (end_step.value == 0) return 0;
+    return end_step.to_block_num() - 1;
+}
+
+Timestamp SnapshotRepository::max_timestamp_available() const {
+    Step end_step = max_end_step();
+    if (end_step.value == 0) return 0;
+    return step_converter_->timestamp_from_step(end_step) - 1;
+}
+
+Step SnapshotRepository::max_end_step() const {
+    std::scoped_lock lock(bundles_mutex_);
+    if (bundles_->empty())
+        return Step{0};
+
+    // a bundle with the max block range is last in the sorted bundles map
+    auto& bundle = *bundles_->rbegin()->second;
+    return bundle.step_range().end;
+}
+
+std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(SnapshotType type, Timestamp t) const {
+    auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
+    if (bundle) {
+        return {bundle->segment_and_index(type), bundle};
+    }
+    return {std::nullopt, {}};
+}
+
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
+    SnapshotPathList segment_files = get_segment_files();
+    auto index_builders = bundle_factory_->index_builders(segment_files);
+
+    std::erase_if(index_builders, [&](const auto& builder) {
+        return builder->path().exists();
+    });
+    return index_builders;
+}
+
+void SnapshotRepository::reopen_folder() {
+    SILK_INFO << "Reopen snapshot repository folder: " << dir_path_.string();
+    SnapshotPathList all_snapshot_paths = get_segment_files();
+    SnapshotPathList all_index_paths = get_idx_files();
+
+    std::map<Step, std::map<bool, std::map<SnapshotType, size_t>>> groups;
+
+    for (size_t i = 0; i < all_snapshot_paths.size(); ++i) {
+        auto& path = all_snapshot_paths[i];
+        auto& group = groups[path.step_range().start][false];
+        group[path.type()] = i;
+    }
+
+    for (size_t i = 0; i < all_index_paths.size(); ++i) {
+        auto& path = all_index_paths[i];
+        auto& group = groups[path.step_range().start][true];
+        group[path.type()] = i;
+    }
+
+    Step num{0};
+    if (!groups.empty()) {
+        num = groups.begin()->first;
+    }
+
+    std::unique_lock lock(bundles_mutex_);
+    // copy bundles prior to modification
+    auto bundles = std::make_shared<Bundles>(*bundles_);
+
+    while (groups.contains(num) &&
+           (groups[num][false].size() == SnapshotBundle::kSnapshotsCount) &&
+           (groups[num][true].size() == SnapshotBundle::kIndexesCount)) {
+        if (!bundles->contains(num)) {
+            auto snapshot_path = [&](SnapshotType type) {
+                return all_snapshot_paths[groups[num][false][type]];
+            };
+            auto index_path = [&](SnapshotType type) {
+                return all_index_paths[groups[num][true][type]];
+            };
+            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path);
+            bundle.reopen();
+
+            bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
+        }
+
+        auto& bundle = *bundles->at(num);
+
+        if (num < bundle.step_range().end) {
+            num = bundle.step_range().end;
+        } else {
+            break;
+        }
+    }
+
+    bundles_ = bundles;
+    lock.unlock();
+
+    SILK_INFO << "Total reopened bundles: " << bundles_count()
+              << " segments: " << total_segments_count()
+              << " indexes: " << total_indexes_count()
+              << " max block available: " << max_block_available();
+}
+
+std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Step step) const {
+    // Search for target segment in reverse order (from the newest segment to the oldest one)
+    for (const auto& bundle_ptr : this->view_bundles_reverse()) {
+        auto& bundle = *bundle_ptr;
+        if (bundle.step_range().contains(step) ||
+            ((bundle.step_range().start == step) && (bundle.step_range().size() == 0))) {
+            return bundle_ptr;
+        }
+    }
+    return {};
+}
+
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_range(StepRange range) const {
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles;
+    for (const auto& bundle : view_bundles()) {
+        if (range.contains_range(bundle->step_range())) {
+            bundles.push_back(bundle);
+        }
+    }
+    return bundles;
+}
+
+SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
+    ensure(fs::exists(dir_path_),
+           [&]() { return "SnapshotRepository: " + dir_path_.string() + " does not exist"; });
+    ensure(fs::is_directory(dir_path_),
+           [&]() { return "SnapshotRepository: " + dir_path_.string() + " is a not folder"; });
+
+    // Load the resulting files w/ desired extension ensuring they are snapshots
+    SnapshotPathList snapshot_files;
+    for (const auto& file : fs::directory_iterator{dir_path_}) {
+        if (!fs::is_regular_file(file.path()) || file.path().extension().string() != ext) {
+            continue;
+        }
+        SILK_TRACE << "Path: " << file.path() << " name: " << file.path().filename();
+        const auto snapshot_file = SnapshotPath::parse(file);
+        if (snapshot_file) {
+            snapshot_files.push_back(snapshot_file.value());
+        } else {
+            SILK_TRACE << "unexpected format for file: " << file.path().filename() << ", skipped";
+        }
+    }
+
+    // Order snapshot files by version/block-range/type
+    std::sort(snapshot_files.begin(), snapshot_files.end());
+
+    return snapshot_files;
+}
+
+bool is_stale_index_path(const SnapshotPath& index_path) {
+    SnapshotType snapshot_type = (index_path.type() == SnapshotType::transactions_to_block)
+                                     ? SnapshotType::transactions
+                                     : index_path.type();
+    SnapshotPath snapshot_path = index_path.related_path(snapshot_type, kSegmentExtension);
+    return (fs::last_write_time(index_path.path()) < fs::last_write_time(snapshot_path.path()));
+}
+
+SnapshotPathList SnapshotRepository::stale_index_paths() const {
+    SnapshotPathList results;
+    auto all_files = this->get_idx_files();
+    std::copy_if(all_files.begin(), all_files.end(), std::back_inserter(results), is_stale_index_path);
+    return results;
+}
+
+void SnapshotRepository::remove_stale_indexes() const {
+    for (auto& path : stale_index_paths()) {
+        const bool removed = fs::remove(path.path());
+        ensure(removed, [&]() { return "SnapshotRepository::remove_stale_indexes: cannot remove index file " + path.path().string(); });
+    }
+}
+
+void SnapshotRepository::build_indexes(SnapshotBundle& bundle) const {
+    for (auto& builder : bundle_factory_->index_builders(bundle.snapshot_paths())) {
+        builder->build();
+    }
+}
+
+}  // namespace silkworm::snapshots

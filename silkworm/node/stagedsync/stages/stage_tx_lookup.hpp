@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <silkworm/db/etl/collector_settings.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/datastore/etl/collector_settings.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stage.hpp>
 
@@ -27,9 +28,11 @@ class TxLookup : public Stage {
   public:
     TxLookup(
         SyncContext* sync_context,
+        db::DataModelFactory data_model_factory,
         db::etl::CollectorSettings etl_settings,
         db::BlockAmount prune_mode_tx_index)
         : Stage(sync_context, db::stages::kTxLookupKey),
+          data_model_factory_(std::move(data_model_factory)),
           etl_settings_(std::move(etl_settings)),
           prune_mode_tx_index_(prune_mode_tx_index) {}
     TxLookup(const TxLookup&) = delete;  // not copyable
@@ -42,6 +45,7 @@ class TxLookup : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
+    db::DataModelFactory data_model_factory_;
     db::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_tx_index_;
 

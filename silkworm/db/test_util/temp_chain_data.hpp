@@ -19,7 +19,7 @@
 #include <memory>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
@@ -36,25 +36,25 @@ class TempChainData {
     TempChainData(const TempChainData&) = delete;
     TempChainData& operator=(const TempChainData&) = delete;
 
-    [[nodiscard]] const ChainConfig& chain_config() const { return chain_config_; }
+    const ChainConfig& chain_config() const { return chain_config_; }
 
     void add_genesis_data() const;
 
-    [[nodiscard]] const DataDirectory& dir() const { return data_dir_; }
+    const DataDirectory& dir() const { return data_dir_; }
 
-    [[nodiscard]] const db::EnvConfig& chaindata_env_config() const { return chaindata_env_config_; }
+    const db::EnvConfig& chaindata_env_config() const { return chaindata_env_config_; }
 
-    [[nodiscard]] mdbx::env& env() { return env_; }
+    mdbx::env& env() { return env_; }
 
-    [[nodiscard]] mdbx::txn& txn() const { return *txn_; }
+    mdbx::txn& txn() const { return *txn_; }
 
-    [[nodiscard]] db::RWTxn& rw_txn() const { return *txn_; }
+    db::RWTxn& rw_txn() const { return *txn_; }
 
     void commit_txn() const { txn_->commit_and_stop(); }
 
     void commit_and_renew_txn() const { txn_->commit_and_renew(); }
 
-    [[nodiscard]] const db::PruneMode& prune_mode() const { return prune_mode_; }
+    const db::PruneMode& prune_mode() const { return prune_mode_; }
     void set_prune_mode(const db::PruneMode& prune_mode) { prune_mode_ = prune_mode; }
 
   private:

@@ -29,6 +29,7 @@
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/state/remote_state.hpp>
+#include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
@@ -42,9 +43,6 @@
 namespace silkworm::rpc {
 
 using db::chain::RemoteChainStorage;
-using db::kv::api::KeyValue;
-using testing::_;
-using testing::InvokeWithoutArgs;
 
 struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     EVMExecutorTest() {
@@ -65,6 +63,10 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
 };
 
 #ifndef SILKWORM_SANITIZE
+using testing::_;
+using testing::Invoke;
+using testing::Unused;
+
 TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     SECTION("failed if gas_limit < intrinsic_gas") {
         silkworm::Transaction txn{};
@@ -108,8 +110,16 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     }
 
     SECTION("failed if transaction cost greater user amount") {
-        EXPECT_CALL(transaction, get(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        EXPECT_CALL(transaction, get_one(_, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
+        auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
+        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = Bytes{}};
+            co_return response;
+        }));
 
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x1;
@@ -126,8 +136,16 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     }
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {
-        EXPECT_CALL(transaction, get(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        EXPECT_CALL(transaction, get_one(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
+        auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
+        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = Bytes{}};
+            co_return response;
+        }));
 
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x1;
@@ -153,8 +171,16 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     };
 
     SECTION("call returns SUCCESS") {
-        EXPECT_CALL(transaction, get(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        EXPECT_CALL(transaction, get_one(_, _)).WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> { co_return Bytes{}; }));
+        auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
+        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
+        }));
+        EXPECT_CALL(transaction, domain_get(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+            db::kv::api::DomainPointResult response{
+                .success = true,
+                .value = Bytes{}};
+            co_return response;
+        }));
 
         silkworm::Block block{};
         block.header.number = block_number;

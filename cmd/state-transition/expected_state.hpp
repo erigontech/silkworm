@@ -42,15 +42,16 @@ class ExpectedState {
     std::string fork_name_;
 
   public:
-    explicit ExpectedState(const nlohmann::json& data, const std::string& name) noexcept {
-        state_data_ = data;
-        fork_name_ = name;
-    }
+    ExpectedState(
+        nlohmann::json state_data,
+        std::string fork_name)
+        : state_data_{std::move(state_data)},
+          fork_name_{std::move(fork_name)} {}
 
-    [[nodiscard]] ChainConfig get_config() const;
+    ChainConfig get_config() const;
 
     std::vector<ExpectedSubState> get_sub_states();
 
-    [[nodiscard]] std::string fork_name() const { return fork_name_; };
+    std::string fork_name() const { return fork_name_; };
 };
 };  // namespace silkworm::cmd::state_transition

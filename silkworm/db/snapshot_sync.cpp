@@ -26,18 +26,18 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/blocks/headers/header_snapshot.hpp>
-#include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/bittorrent/torrent_file.hpp>
-#include <silkworm/db/snapshots/snapshot_path.hpp>
-#include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
+
+#include "blocks/headers/header_segment.hpp"
+#include "datastore/mdbx/etl_mdbx_collector.hpp"
+#include "datastore/snapshots/bittorrent/torrent_file.hpp"
+#include "datastore/snapshots/common/snapshot_path.hpp"
+#include "stages.hpp"
 
 namespace silkworm::db {
 
@@ -53,18 +53,25 @@ struct PathHasher {
     }
 };
 
+static bool snapshot_file_is_fully_merged(std::string_view file_name) {
+    const auto path = SnapshotPath::parse(std::filesystem::path{file_name});
+    return path.has_value() &&
+           (path->extension() == kSegmentExtension) &&
+           (path->step_range().to_block_num_range().size() >= kMaxMergerSnapshotSize);
+}
+
 SnapshotSync::SnapshotSync(
     snapshots::SnapshotSettings settings,
     ChainId chain_id,
-    mdbx::env chaindata_env,
+    db::DataStoreRef data_store,
     std::filesystem::path tmp_dir_path,
     stagedsync::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
-      snapshots_config_{Config::lookup_known_config(chain_id)},
-      chaindata_env_{std::move(chaindata_env)},
-      repository_{settings_, std::make_unique<db::SnapshotBundleFactoryImpl>()},
+      snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
+      chaindata_env_{std::move(data_store.chaindata_env)},
+      repository_{data_store.repository},
       client_{settings_.bittorrent_settings},
-      snapshot_freezer_{db::ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings_.keep_blocks},
+      snapshot_freezer_{ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings_.keep_blocks},
       snapshot_merger_{repository_, std::move(tmp_dir_path)},
       is_stopping_latch_{1} {
 }
@@ -91,7 +98,7 @@ Task<void> SnapshotSync::setup_and_run() {
         co_return;
     }
 
-    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](BlockNumRange range) {
+    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](StepRange range) {
         this->seed_frozen_bundle(range);
     });
 
@@ -121,12 +128,9 @@ Task<void> SnapshotSync::setup() {
     repository_.reopen_folder();
 
     // Update chain and stage progresses in database according to available snapshots
-    db::RWTxnManaged rw_txn{chaindata_env_};
+    RWTxnManaged rw_txn{chaindata_env_};
     update_database(rw_txn, repository_.max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
-
-    // Set snapshot repository into snapshot-aware database access
-    db::DataModel::set_snapshot_repository(&repository_);
 
     seed_frozen_local_snapshots();
 
@@ -154,10 +158,7 @@ Task<void> SnapshotSync::download_snapshots_if_needed() {
 }
 
 Task<void> SnapshotSync::download_snapshots() {
-    const auto missing_block_ranges = repository_.missing_block_ranges();
-    if (!missing_block_ranges.empty()) {
-        SILK_INFO << "SnapshotSync: downloading missing snapshots";
-    }
+    SILK_INFO << "SnapshotSync: downloading missing snapshots if needed";
 
     const auto& snapshot_config = snapshots_config_;
     if (snapshot_config.preverified_snapshots().empty()) {
@@ -167,8 +168,8 @@ Task<void> SnapshotSync::download_snapshots() {
     const size_t num_snapshots = snapshot_config.preverified_snapshots().size();
     SILK_INFO << "SnapshotSync: download started: [0/" << num_snapshots << "]";
 
-    auto log_added = [](const std::filesystem::path& snapshot_file) {
-        SILK_TRACE << "SnapshotSync: download started for: " << snapshot_file.filename().string();
+    auto log_added = [](const std::filesystem::path& path) {
+        SILK_TRACE << "SnapshotSync: download started for: " << path.filename().string();
     };
     boost::signals2::scoped_connection added_subscription{client_.added_subscription.connect(log_added)};
 
@@ -197,8 +198,8 @@ Task<void> SnapshotSync::download_snapshots() {
     auto executor = co_await boost::asio::this_coro::executor;
     // make the buffer bigger so that try_send always succeeds in case of duplicate files (see snapshot_set below)
     concurrency::Channel<std::filesystem::path> completed_channel{executor, num_snapshots * 2};
-    auto log_completed = [&](const std::filesystem::path& snapshot_file) {
-        completed_channel.try_send(snapshot_file);
+    auto log_completed = [&](const std::filesystem::path& path) {
+        completed_channel.try_send(path);
     };
     boost::signals2::scoped_connection completed_subscription{client_.completed_subscription.connect(log_completed)};
 
@@ -220,7 +221,7 @@ Task<void> SnapshotSync::download_snapshots() {
         const auto [_, inserted] = snapshot_set.insert(snapshot_file);
         SILKWORM_ASSERT(inserted);
         SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
-                  << " blocks " << SnapshotPath::parse(snapshot_file)->block_range().to_string()
+                  << " steps " << SnapshotPath::parse(snapshot_file)->step_range().to_string()
                   << " [" << (completed + 1) << "/" << num_snapshots << "]";
     }
 }
@@ -270,18 +271,21 @@ Task<void> SnapshotSync::build_missing_indexes() {
 void SnapshotSync::seed_frozen_local_snapshots() {
     for (auto& bundle_ptr : repository_.view_bundles()) {
         auto& bundle = *bundle_ptr;
-        bool is_frozen = bundle.block_range().size() >= kMaxMergerSnapshotSize;
-        bool is_preverified = bundle.block_to() <= snapshots_config_.max_block_number() + 1;
+        auto block_range = bundle.step_range().to_block_num_range();
+        bool is_frozen = block_range.size() >= kMaxMergerSnapshotSize;
+        const auto first_snapshot = bundle.segments()[0];
+        // assume that if one snapshot in the bundle is preverified, then all of them are
+        bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.get().path().filename());
         if (is_frozen && !is_preverified) {
             seed_bundle(bundle);
         }
     }
 }
 
-void SnapshotSync::seed_frozen_bundle(BlockNumRange range) {
+void SnapshotSync::seed_frozen_bundle(StepRange range) {
     bool is_frozen = range.size() >= kMaxMergerSnapshotSize;
     auto bundle = repository_.find_bundle(range.start);
-    if (bundle && (bundle->block_range() == range) && is_frozen) {
+    if (bundle && (bundle->step_range() == range) && is_frozen) {
         seed_bundle(*bundle);
     }
 }
@@ -293,7 +297,7 @@ void SnapshotSync::seed_bundle(SnapshotBundle& bundle) {
 }
 
 void SnapshotSync::seed_snapshot(const SnapshotPath& path) {
-    std::filesystem::path torrent_path = path.path().concat(".torrent");
+    std::filesystem::path torrent_path = std::filesystem::path{path.path()}.concat(".torrent");
     auto torrent_file =
         std::filesystem::exists(torrent_path)
             ? bittorrent::TorrentFile{torrent_path}
@@ -304,16 +308,16 @@ void SnapshotSync::seed_snapshot(const SnapshotPath& path) {
     client_.add_info_hash(path.path().filename().string(), torrent_file.info_hash());
 }
 
-void SnapshotSync::update_database(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping) {
+void SnapshotSync::update_database(RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping) {
     update_block_headers(txn, max_block_available, is_stopping);
     update_block_bodies(txn, max_block_available);
     update_block_hashes(txn, max_block_available);
     update_block_senders(txn, max_block_available);
 }
 
-void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping) {
+void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available, const std::function<bool()>& is_stopping) {
     // Check if Headers stage progress has already reached the max block in snapshots
-    const auto last_progress{db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
+    const auto last_progress{stages::read_stage_progress(txn, stages::kHeadersKey)};
     if (last_progress >= max_block_available) {
         return;
     }
@@ -321,13 +325,13 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     SILK_INFO << "SnapshotSync: database update started";
 
     // Iterate on block header snapshots and write header-related tables
-    db::etl_mdbx::Collector hash2bn_collector{};
+    etl_mdbx::Collector hash2bn_collector{};
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
 
     for (const auto& bundle_ptr : repository_.view_bundles()) {
         const auto& bundle = *bundle_ptr;
-        for (const BlockHeader& header : HeaderSnapshotReader{bundle.header_snapshot}) {
+        for (const BlockHeader& header : HeaderSegmentReader{bundle.header_segment}) {
             SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
             const auto block_number = header.number;
             if (block_number > max_block_available) continue;
@@ -336,10 +340,10 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
 
             // Write block header into kDifficulty table
             total_difficulty += header.difficulty;
-            db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
+            write_total_difficulty(txn, block_number, block_hash, total_difficulty);
 
             // Write block header into kCanonicalHashes table
-            db::write_canonical_hash(txn, block_number, block_hash);
+            write_canonical_hash(txn, block_number, block_hash);
 
             // Collect entries for later loading kHeaderNumbers table
             Bytes block_hash_bytes{block_hash.bytes, kHashLength};
@@ -354,49 +358,49 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
         }
     }
 
-    db::PooledCursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
+    PooledCursor header_numbers_cursor{txn, table::kHeaderNumbers};
     hash2bn_collector.load(header_numbers_cursor);
     SILK_INFO << "SnapshotSync: database table HeaderNumbers updated";
 
     // Update head block header in kHeadHeader table
-    const auto canonical_hash{db::read_canonical_header_hash(txn, max_block_available)};
+    const auto canonical_hash{read_canonical_header_hash(txn, max_block_available)};
     ensure(canonical_hash.has_value(), "SnapshotSync: no canonical head hash found");
-    db::write_head_header_hash(txn, *canonical_hash);
+    write_head_header_hash(txn, *canonical_hash);
     SILK_INFO << "SnapshotSync: database table HeadHeader updated";
 
     // Update Headers stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
     const auto stop_at_block = Environment::get_stop_at_block();
     const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
-    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, stage_progress);
+    stages::write_stage_progress(txn, stages::kHeadersKey, stage_progress);
 
     SILK_INFO << "SnapshotSync: database Headers stage progress updated [" << stage_progress << "]";
 }
 
-void SnapshotSync::update_block_bodies(db::RWTxn& txn, BlockNum max_block_available) {
+void SnapshotSync::update_block_bodies(RWTxn& txn, BlockNum max_block_available) {
     // Check if BlockBodies stage progress has already reached the max block in snapshots
-    const auto last_progress{db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey)};
+    const auto last_progress{stages::read_stage_progress(txn, stages::kBlockBodiesKey)};
     if (last_progress >= max_block_available) {
         return;
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto [tx_snapshot, _] = repository_.find_segment(SnapshotType::transactions, max_block_available);
-    ensure(tx_snapshot.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
-    const auto last_tx_id = tx_snapshot->index.base_data_id() + tx_snapshot->snapshot.item_count();
-    db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
+    const auto [txn_segment, _] = repository_.find_segment(SnapshotType::transactions, max_block_available);
+    ensure(txn_segment.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
+    const auto last_tx_id = txn_segment->index.base_data_id() + txn_segment->segment.item_count();
+    reset_map_sequence(txn, table::kBlockTransactions.name, last_tx_id + 1);
     SILK_INFO << "SnapshotSync: database table BlockTransactions sequence reset";
 
     // Update BlockBodies stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
     const auto stop_at_block = Environment::get_stop_at_block();
     const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
-    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, stage_progress);
+    stages::write_stage_progress(txn, stages::kBlockBodiesKey, stage_progress);
 
     SILK_INFO << "SnapshotSync: database BlockBodies stage progress updated [" << stage_progress << "]";
 }
 
-void SnapshotSync::update_block_hashes(db::RWTxn& txn, BlockNum max_block_available) {
+void SnapshotSync::update_block_hashes(RWTxn& txn, BlockNum max_block_available) {
     // Check if BlockHashes stage progress has already reached the max block in snapshots
-    const auto last_progress{db::stages::read_stage_progress(txn, db::stages::kBlockHashesKey)};
+    const auto last_progress{stages::read_stage_progress(txn, stages::kBlockHashesKey)};
     if (last_progress >= max_block_available) {
         return;
     }
@@ -404,14 +408,14 @@ void SnapshotSync::update_block_hashes(db::RWTxn& txn, BlockNum max_block_availa
     // Update BlockHashes stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
     const auto stop_at_block = Environment::get_stop_at_block();
     const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
-    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, stage_progress);
+    stages::write_stage_progress(txn, stages::kBlockHashesKey, stage_progress);
 
     SILK_INFO << "SnapshotSync: database BlockHashes stage progress updated [" << stage_progress << "]";
 }
 
-void SnapshotSync::update_block_senders(db::RWTxn& txn, BlockNum max_block_available) {
+void SnapshotSync::update_block_senders(RWTxn& txn, BlockNum max_block_available) {
     // Check if Senders stage progress has already reached the max block in snapshots
-    const auto last_progress{db::stages::read_stage_progress(txn, db::stages::kSendersKey)};
+    const auto last_progress{stages::read_stage_progress(txn, stages::kSendersKey)};
     if (last_progress >= max_block_available) {
         return;
     }
@@ -419,7 +423,7 @@ void SnapshotSync::update_block_senders(db::RWTxn& txn, BlockNum max_block_avail
     // Update Senders stage progress to the max block in snapshots (w/ STOP_AT_BLOCK support)
     const auto stop_at_block = Environment::get_stop_at_block();
     const BlockNum stage_progress{stop_at_block ? *stop_at_block : max_block_available};
-    db::stages::write_stage_progress(txn, db::stages::kSendersKey, stage_progress);
+    stages::write_stage_progress(txn, stages::kSendersKey, stage_progress);
 
     SILK_INFO << "SnapshotSync: database Senders stage progress updated [" << stage_progress << "]";
 }

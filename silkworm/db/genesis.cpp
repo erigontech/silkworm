@@ -26,6 +26,7 @@
 #include "tables.hpp"
 
 namespace silkworm::db {
+
 std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::json& genesis_json) {
     std::pair<bool, std::vector<std::string>> ret{true, {}};
     if (genesis_json.is_discarded()) {
@@ -173,23 +174,23 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
         const BlockHeader header{read_genesis_header(genesis_json, state_root_hash)};
 
         auto block_hash{header.hash()};
-        auto block_hash_key{db::block_key(header.number, block_hash.bytes)};
-        db::write_header(txn, header, /*with_header_numbers=*/true);            // Write table::kHeaders and table::kHeaderNumbers
-        db::write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
-        db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
+        auto block_hash_key{block_key(header.number, block_hash.bytes)};
+        write_header(txn, header, /*with_header_numbers=*/true);            // Write table::kHeaders and table::kHeaderNumbers
+        write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
+        write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
 
-        db::write_body(txn, BlockBody(), block_hash.bytes, header.number);  // Write block body (empty)
-        db::write_head_header_hash(txn, block_hash.bytes);                  // Update head header in config
+        write_body(txn, BlockBody(), block_hash.bytes, header.number);  // Write block body (empty)
+        write_head_header_hash(txn, block_hash.bytes);                  // Update head header in config
 
         // TODO(Andrea) verify how receipts are stored (see buffer.cpp)
         const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
-        db::open_cursor(txn, db::table::kBlockReceipts)
-            .upsert(db::to_slice(block_hash_key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
+        open_cursor(txn, table::kBlockReceipts)
+            .upsert(to_slice(block_hash_key).safe_middle(0, 8), to_slice(Bytes(genesis_null_receipts, 1)));
 
         // Write Chain Settings
         auto config_data{genesis_json["config"].dump()};
-        db::open_cursor(txn, db::table::kConfig)
-            .upsert(db::to_slice(block_hash), mdbx::slice{config_data.data()});
+        open_cursor(txn, table::kConfig)
+            .upsert(to_slice(block_hash), mdbx::slice{config_data.data()});
 
         return true;
 

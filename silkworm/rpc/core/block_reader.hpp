@@ -20,9 +20,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
@@ -47,10 +44,10 @@ class BlockReader {
     BlockReader(const BlockReader&) = delete;
     BlockReader& operator=(const BlockReader&) = delete;
 
-    [[nodiscard]] Task<void> read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const;
+    Task<void> read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const;
 
   private:
-    [[nodiscard]] Task<void> load_addresses(BlockNum block_number, BalanceChanges& balance_changes) const;
+    Task<void> load_addresses(BlockNum block_number, BalanceChanges& balance_changes) const;
 
     const db::chain::ChainStorage& chain_storage_;
     db::kv::api::Transaction& transaction_;

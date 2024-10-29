@@ -96,49 +96,49 @@ namespace silkworm::db {
 TEST_CASE("Environment opening") {
     SECTION("Default page size on creation") {
         const TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{
+        EnvConfig db_config{
             .path = tmp_dir.path().string(),
             .create = true,
             .in_memory = true,
         };
         REQUIRE(db_config.page_size == os::page_size());
-        const auto env{db::open_env(db_config)};
+        const auto env{open_env(db_config)};
         CHECK(env.get_pagesize() == db_config.page_size);
     }
 
     SECTION("Non default page size on creation") {
         const TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{
+        EnvConfig db_config{
             .path = tmp_dir.path().string(),
             .create = true,
             .in_memory = true,
             .page_size = os::page_size() / 2,
         };
-        const auto env{db::open_env(db_config)};
+        const auto env{open_env(db_config)};
         CHECK(env.get_pagesize() == db_config.page_size);
     }
 
     SECTION("Read page size on opening") {
         const TemporaryDirectory tmp_dir;
         {
-            db::EnvConfig db_config{
+            EnvConfig db_config{
                 .path = tmp_dir.path().string(),
                 .create = true,
                 .in_memory = true,
                 .page_size = os::page_size() / 2,
             };
-            (void)db::open_env(db_config);
+            (void)open_env(db_config);
         }
 
         {
             // Try to reopen same db with another page size
-            db::EnvConfig db_config{
+            EnvConfig db_config{
                 .path = tmp_dir.path().string(),
                 .create = false,
                 .in_memory = true,
                 .page_size = os::page_size() * 2,
             };
-            const auto env{db::open_env(db_config)};
+            const auto env{open_env(db_config)};
             CHECK(env.get_pagesize() == os::page_size() / 2);
         }
     }
@@ -146,21 +146,21 @@ TEST_CASE("Environment opening") {
 
 TEST_CASE("Cursor") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
-    auto env{db::open_env(db_config)};
+    EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
+    auto env{open_env(db_config)};
 
-    const db::MapConfig map_config{"GeneticCode"};
+    const MapConfig map_config{"GeneticCode"};
 
     {
         auto rw_txn{env.start_write()};
-        CHECK(db::list_maps(rw_txn).empty());
-        (void)db::open_map(rw_txn, map_config);
+        CHECK(list_maps(rw_txn).empty());
+        (void)open_map(rw_txn, map_config);
         rw_txn.commit();
     }
 
     auto txn{env.start_read()};
 
-    const auto& map_names = db::list_maps(txn);
+    const auto& map_names = list_maps(txn);
     CHECK(map_names.size() == 1);
     CHECK(map_names[0] == "GeneticCode");
 
@@ -168,16 +168,16 @@ TEST_CASE("Cursor") {
     // Cursors cache may get polluted by previous tests or is empty
     // in case this is the only test being executed. So we can't rely
     // on empty() property rather we must evaluate deltas.
-    size_t original_cache_size{db::PooledCursor::handles_cache().size()};
+    size_t original_cache_size{PooledCursor::handles_cache().size()};
 
     {
-        db::PooledCursor cursor1(txn, map_config);
+        PooledCursor cursor1(txn, map_config);
         if (original_cache_size) {
             // One handle pulled from cache
-            REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size - 1);
+            REQUIRE(PooledCursor::handles_cache().size() == original_cache_size - 1);
         } else {
             // A new handle has been created
-            REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size);
+            REQUIRE(PooledCursor::handles_cache().size() == original_cache_size);
         }
         REQUIRE(cursor1.get_map_stat().ms_entries == 0);
     }
@@ -185,28 +185,30 @@ TEST_CASE("Cursor") {
     // After destruction of previous cursor cache has increased by one if it was originally empty, otherwise it is
     // restored to its original size
     if (!original_cache_size) {
-        REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size + 1);
+        REQUIRE(PooledCursor::handles_cache().size() == original_cache_size + 1);
     } else {
-        REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size);
+        REQUIRE(PooledCursor::handles_cache().size() == original_cache_size);
     }
 
     txn.abort();
     txn = env.start_write();
-    db::PooledCursor broken(txn, {"Test"});
+    PooledCursor broken(txn, {"Test"});
 
     // Force exceed of cache size
-    std::vector<db::PooledCursor> cursors;
-    for (size_t i = 0; i < original_cache_size + 5; ++i) {
+    std::vector<PooledCursor> cursors;
+    const size_t new_cache_size = original_cache_size + 5;
+    cursors.reserve(new_cache_size);
+    for (size_t i = 0; i < new_cache_size; ++i) {
         cursors.emplace_back(txn, map_config);
     }
-    REQUIRE(db::PooledCursor::handles_cache().empty() == true);
+    REQUIRE(PooledCursor::handles_cache().empty() == true);
     cursors.clear();
-    REQUIRE(db::PooledCursor::handles_cache().empty() == false);
-    REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size + 5);
+    REQUIRE(PooledCursor::handles_cache().empty() == false);
+    REQUIRE(PooledCursor::handles_cache().size() == new_cache_size);
 
-    db::PooledCursor cursor2(db::PooledCursor(txn, {"test"}));
+    PooledCursor cursor2(PooledCursor(txn, {"test"}));
     REQUIRE(cursor2.operator bool() == true);
-    db::PooledCursor cursor3 = std::move(cursor2);
+    PooledCursor cursor3 = std::move(cursor2);
     // REQUIRE(cursor2.operator bool() == false);
     REQUIRE(cursor3.operator bool() == true);
 
@@ -217,14 +219,14 @@ TEST_CASE("Cursor") {
     std::atomic<size_t> other_thread_size2{0};
     std::thread t([&other_thread_size1, &other_thread_size2, &env]() {
         auto thread_txn{env.start_write()};
-        { db::PooledCursor cursor(thread_txn, {"Test"}); }
-        other_thread_size1 = db::PooledCursor::handles_cache().size();
+        { PooledCursor cursor(thread_txn, {"Test"}); }
+        other_thread_size1 = PooledCursor::handles_cache().size();
 
         // Pull a handle from the pool and close the cursor directly
         // so is not returned to the pool
-        db::PooledCursor cursor(thread_txn, {"Test"});
+        PooledCursor cursor(thread_txn, {"Test"});
         cursor.close();
-        other_thread_size2 = db::PooledCursor::handles_cache().size();
+        other_thread_size2 = PooledCursor::handles_cache().size();
     });
     t.join();
     REQUIRE(other_thread_size1 == 1);
@@ -233,25 +235,25 @@ TEST_CASE("Cursor") {
 
 TEST_CASE("ROAccess/RWAccess ::mdbx::env lifecycle") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
-    auto env{db::open_env(db_config)};
+    EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
+    auto env{open_env(db_config)};
 
     SECTION("ROAccess") {
-        std::unique_ptr<db::ROAccess> access;
+        std::unique_ptr<ROAccess> access;
         {
             // Create ROAccess with env_copy lvalue that gets destroyed immediately after
             ::mdbx::env env_copy{env};  // NOLINT(cppcoreguidelines-slicing)
-            access = std::make_unique<db::ROAccess>(env_copy);
+            access = std::make_unique<ROAccess>(env_copy);
         }
         // env is still alive so using access *must* be safe
         CHECK(access->operator*().get_path() == env.get_path());
     }
     SECTION("RWAccess") {
-        std::unique_ptr<db::RWAccess> access;
+        std::unique_ptr<RWAccess> access;
         {
             // Create RWAccess with env_copy lvalue that gets destroyed immediately after
             ::mdbx::env env_copy{env};  // NOLINT(cppcoreguidelines-slicing)
-            access = std::make_unique<db::RWAccess>(env_copy);
+            access = std::make_unique<RWAccess>(env_copy);
         }
         // env is still alive so using access *must* be safe
         CHECK(access->operator*().get_path() == env.get_path());
@@ -260,14 +262,14 @@ TEST_CASE("ROAccess/RWAccess ::mdbx::env lifecycle") {
 
 TEST_CASE("RWTxn") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
-    auto env{db::open_env(db_config)};
+    EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
+    auto env{open_env(db_config)};
     static const char* kTableName{"GeneticCode"};
 
     SECTION("Managed: commit_and_renew") {
         {
-            auto tx{db::RWTxnManaged(env)};
-            db::PooledCursor table_cursor(*tx, {kTableName});
+            auto tx{RWTxnManaged(env)};
+            PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -278,14 +280,14 @@ TEST_CASE("RWTxn") {
         }
 
         auto tx{env.start_read()};
-        db::PooledCursor table_cursor(tx, {kTableName});
+        PooledCursor table_cursor(tx, {kTableName});
         REQUIRE(table_cursor.empty() == false);
     }
 
     SECTION("Managed: commit_and_stop") {
         {
-            auto tx{db::RWTxnManaged(env)};
-            db::PooledCursor table_cursor(*tx, {kTableName});
+            auto tx{RWTxnManaged(env)};
+            PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -296,7 +298,7 @@ TEST_CASE("RWTxn") {
         }
 
         auto tx{env.start_read()};
-        db::PooledCursor table_cursor(tx, {kTableName});
+        PooledCursor table_cursor(tx, {kTableName});
         REQUIRE(table_cursor.empty() == false);
     }
 
@@ -309,7 +311,7 @@ TEST_CASE("RWTxn") {
         }
         tx.abort();
         RWTxnManaged tx2{env};
-        REQUIRE(db::has_map(tx2, kTableName) == false);
+        REQUIRE(has_map(tx2, kTableName) == false);
     }
 
     SECTION("External: commit_and_stop") {
@@ -321,12 +323,12 @@ TEST_CASE("RWTxn") {
         }
         tx.abort();
         RWTxnManaged tx2{env};
-        REQUIRE(db::has_map(tx2, kTableName) == false);
+        REQUIRE(has_map(tx2, kTableName) == false);
     }
 
     SECTION("Cursor from RWTxn") {
-        auto tx{db::RWTxnManaged(env)};
-        db::PooledCursor table_cursor(tx, {kTableName});
+        auto tx{RWTxnManaged(env)};
+        PooledCursor table_cursor(tx, {kTableName});
         REQUIRE(table_cursor.empty());
         REQUIRE_NOTHROW(table_cursor.bind(tx, {kTableName}));
         table_cursor.close();
@@ -338,8 +340,8 @@ TEST_CASE("RWTxn") {
             ::MDBX_txn* rw_txn{nullptr};
             ::mdbx::error::success_or_throw(::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &rw_txn));
 
-            auto tx{db::RWTxnUnmanaged(rw_txn)};
-            db::PooledCursor table_cursor(*tx, {kTableName});
+            auto tx{RWTxnUnmanaged(rw_txn)};
+            PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -351,7 +353,7 @@ TEST_CASE("RWTxn") {
             ::mdbx::error::success_or_throw(::mdbx_txn_commit(rw_txn));
         }
         auto ro_txn{env.start_read()};
-        db::PooledCursor cursor(ro_txn, {kTableName});
+        PooledCursor cursor(ro_txn, {kTableName});
         CHECK(cursor.empty() == false);
     }
 
@@ -360,8 +362,8 @@ TEST_CASE("RWTxn") {
             ::MDBX_txn* rw_txn{nullptr};
             ::mdbx::error::success_or_throw(::mdbx_txn_begin(env, nullptr, MDBX_TXN_READWRITE, &rw_txn));
 
-            auto tx{db::RWTxnUnmanaged(rw_txn)};
-            db::PooledCursor table_cursor(*tx, {kTableName});
+            auto tx{RWTxnUnmanaged(rw_txn)};
+            PooledCursor table_cursor(*tx, {kTableName});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -373,20 +375,20 @@ TEST_CASE("RWTxn") {
             ::mdbx::error::success_or_throw(::mdbx_txn_commit(rw_txn));
         }
         auto ro_txn{env.start_read()};
-        db::PooledCursor cursor(ro_txn, {kTableName});
+        PooledCursor cursor(ro_txn, {kTableName});
         CHECK(cursor.empty() == false);
     }
 }
 
 TEST_CASE("Cursor walk") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
-    auto env{db::open_env(db_config)};
+    EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
+    auto env{open_env(db_config)};
     auto txn{env.start_write()};
 
     static const char* kTableName{"GeneticCode"};
 
-    db::PooledCursor table_cursor(txn, {kTableName});
+    PooledCursor table_cursor(txn, {kTableName});
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
@@ -609,38 +611,38 @@ static size_t max_multivalue_size_for_leaf_page(const mdbx::txn& txn) {
 }
 
 TEST_CASE("OF pages") {
-    db::test_util::TempChainData context;
-    db::RWTxn& txn = context.rw_txn();
+    test_util::TempChainData context;
+    RWTxn& txn = context.rw_txn();
 
     SECTION("Single-value map: No overflow") {
-        db::PooledCursor target(txn, db::table::kAccountHistory);
+        PooledCursor target(txn, table::kAccountHistory);
         Bytes key(20, '\0');
-        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()), '\0');
-        target.insert(db::to_slice(key), db::to_slice(value));
+        Bytes value(max_value_size_for_leaf_page(*txn, key.size()), '\0');
+        target.insert(to_slice(key), to_slice(value));
         txn.commit_and_renew();
-        target.bind(txn, db::table::kAccountHistory);
+        target.bind(txn, table::kAccountHistory);
         auto stats{target.get_map_stat()};
         CHECK(stats.ms_overflow_pages == 0);
     }
 
     SECTION("Single-value map: Let's overflow") {
-        db::PooledCursor target(txn, db::table::kAccountHistory);
+        PooledCursor target(txn, table::kAccountHistory);
         Bytes key(20, '\0');
-        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value*/ 1, '\0');
-        target.insert(db::to_slice(key), db::to_slice(value));
+        Bytes value(max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value*/ 1, '\0');
+        target.insert(to_slice(key), to_slice(value));
         txn.commit_and_renew();
-        target.bind(txn, db::table::kAccountHistory);
+        target.bind(txn, table::kAccountHistory);
         auto stats{target.get_map_stat()};
         CHECK(stats.ms_overflow_pages > 0);
     }
 
     SECTION("Multi-value map: No overflow, value size OK") {
-        db::PooledCursor target(txn, db::table::kPlainState);
+        PooledCursor target(txn, table::kPlainState);
         Bytes key(20, '\0');
-        Bytes value(db::max_multivalue_size_for_leaf_page(txn), '\0');
-        target.insert(db::to_slice(key), db::to_slice(value));
+        Bytes value(max_multivalue_size_for_leaf_page(txn), '\0');
+        target.insert(to_slice(key), to_slice(value));
         txn.commit_and_renew();
-        target.bind(txn, db::table::kPlainState);
+        target.bind(txn, table::kPlainState);
         auto stats{target.get_map_stat()};
         CHECK(stats.ms_overflow_pages == 0);
     }
@@ -648,10 +650,10 @@ TEST_CASE("OF pages") {
     // Skip the following section in debug as too big data size in multi-value map will assert
 #ifdef NDEBUG
     SECTION("Multi-value map: No overflow, error for value too big") {
-        db::PooledCursor target(txn, db::table::kPlainState);
+        PooledCursor target(txn, table::kPlainState);
         Bytes key(20, '\0');
-        Bytes value(db::max_multivalue_size_for_leaf_page(txn) + /*any extra value*/ 1, '\0');
-        CHECK_THROWS_AS(target.insert(db::to_slice(key), db::to_slice(value)), ::mdbx::exception);
+        Bytes value(max_multivalue_size_for_leaf_page(txn) + /*any extra value*/ 1, '\0');
+        CHECK_THROWS_AS(target.insert(to_slice(key), to_slice(value)), ::mdbx::exception);
     }
 #endif  // NDEBUG
 }
@@ -669,9 +671,9 @@ static uint64_t get_free_pages(const ::mdbx::env& env) {
         auto data = free_cursor.to_first(false);
         while (data.done) {
             size_t tx_id{0};
-            std::memcpy(&tx_id, db::from_slice(data.key).data(), sizeof(size_t));
+            std::memcpy(&tx_id, from_slice(data.key).data(), sizeof(size_t));
             uint32_t tx_free_pages{0};
-            std::memcpy(&tx_free_pages, db::from_slice(data.value).data(), sizeof(uint32_t));
+            std::memcpy(&tx_free_pages, from_slice(data.value).data(), sizeof(uint32_t));
             free_pages += tx_free_pages;
             data = free_cursor.to_next(false);
         }
@@ -683,14 +685,14 @@ static uint64_t get_free_pages(const ::mdbx::env& env) {
 TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
     TemporaryDirectory tmp_dir{};
     auto data_directory{std::make_unique<DataDirectory>(tmp_dir.path(), /*create=*/true)};
-    db::EnvConfig env_config{
+    EnvConfig env_config{
         .path = data_directory->chaindata().path().string(),
         .create = true,
         .readonly = false,
         .exclusive = false,
         .in_memory = true,
     };
-    auto env{db::open_env(env_config)};
+    auto env{open_env(env_config)};
 
     constexpr size_t kKeySize{20};  // just to copycat account address size
     const Bytes key(kKeySize, '\0');
@@ -698,7 +700,7 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
     // Initialize the map content w/ one max-size value [scope needed to limit rw_txn lifecycle]
     {
         auto rw_txn{env.start_write()};
-        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_map{open_map(rw_txn, table::kCode)};
         auto code_stats{rw_txn.get_map_stat(code_map)};
         REQUIRE(code_stats.ms_entries == 0);
         REQUIRE(code_stats.ms_depth == 0);
@@ -706,8 +708,8 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
         REQUIRE(code_stats.ms_leaf_pages == 0);
         REQUIRE(code_stats.ms_overflow_pages == 0);
         auto code_cursor{rw_txn.open_cursor(code_map)};
-        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
-        code_cursor.insert(db::to_slice(key), db::to_slice(value));  // insert or upsert equivalent here
+        Bytes value(max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+        code_cursor.insert(to_slice(key), to_slice(value));  // insert or upsert equivalent here
         code_stats = rw_txn.get_map_stat(code_map);
         REQUIRE(code_stats.ms_entries == 1);  // we have 1 value here
         REQUIRE(code_stats.ms_depth == 1);
@@ -720,11 +722,11 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
 
     SECTION("upsert same value does not cause any free page") {
         auto rw_txn{env.start_write()};
-        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_map{open_map(rw_txn, table::kCode)};
         auto code_cursor{rw_txn.open_cursor(code_map)};
-        auto key_slice{db::to_slice(key)};
-        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
-        auto value_slice{db::to_slice(value)};
+        auto key_slice{to_slice(key)};
+        Bytes value(max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+        auto value_slice{to_slice(value)};
         code_cursor.upsert(key_slice, value_slice);
         auto code_stats{rw_txn.get_map_stat(code_map)};
         REQUIRE(code_stats.ms_entries == 1);
@@ -738,12 +740,12 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
 
     SECTION("erase + upsert same value causes two free pages") {
         auto rw_txn{env.start_write()};
-        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_map{open_map(rw_txn, table::kCode)};
         auto code_cursor{rw_txn.open_cursor(code_map)};
-        auto key_slice{db::to_slice(key)};
+        auto key_slice{to_slice(key)};
         CHECK(code_cursor.erase(key_slice));
-        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
-        auto value_slice{db::to_slice(value)};
+        Bytes value(max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+        auto value_slice{to_slice(value)};
         code_cursor.upsert(key_slice, value_slice);
         auto code_stats{rw_txn.get_map_stat(code_map)};
         REQUIRE(code_stats.ms_entries == 1);
@@ -757,11 +759,11 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
 
     SECTION("upsert different value causes two free pages") {
         auto rw_txn{env.start_write()};
-        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_map{open_map(rw_txn, table::kCode)};
         auto code_cursor{rw_txn.open_cursor(code_map)};
-        auto key_slice{db::to_slice(key)};
-        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(11));
-        auto value_slice{db::to_slice(value)};
+        auto key_slice{to_slice(key)};
+        Bytes value(max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(11));
+        auto value_slice{to_slice(value)};
         code_cursor.upsert(key_slice, value_slice);
         auto code_stats{rw_txn.get_map_stat(code_map)};
         REQUIRE(code_stats.ms_entries == 1);  // we have 1 value here since table is single-value
@@ -775,12 +777,12 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
 
     SECTION("erase + upsert different value causes two free pages") {
         auto rw_txn{env.start_write()};
-        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_map{open_map(rw_txn, table::kCode)};
         auto code_cursor{rw_txn.open_cursor(code_map)};
-        auto key_slice{db::to_slice(key)};
+        auto key_slice{to_slice(key)};
         CHECK(code_cursor.erase(key_slice, true));
-        Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(11));
-        auto value_slice{db::to_slice(value)};
+        Bytes value(max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(11));
+        auto value_slice{to_slice(value)};
         code_cursor.upsert(key_slice, value_slice);
         auto code_stats{rw_txn.get_map_stat(code_map)};
         REQUIRE(code_stats.ms_entries == 1);
@@ -794,9 +796,9 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
 
     SECTION("erase causes two free pages") {
         auto rw_txn{env.start_write()};
-        auto code_map{db::open_map(rw_txn, db::table::kCode)};
+        auto code_map{open_map(rw_txn, table::kCode)};
         auto code_cursor{rw_txn.open_cursor(code_map)};
-        auto key_slice{db::to_slice(key)};
+        auto key_slice{to_slice(key)};
         CHECK(code_cursor.erase(key_slice));
         auto code_stats{rw_txn.get_map_stat(code_map)};
         REQUIRE(code_stats.ms_entries == 0);
@@ -811,9 +813,9 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
     SECTION("erase + upsert same value w/ 2 commits causes two free pages") {
         {
             auto rw_txn{env.start_write()};
-            auto code_map{db::open_map(rw_txn, db::table::kCode)};
+            auto code_map{open_map(rw_txn, table::kCode)};
             auto code_cursor{rw_txn.open_cursor(code_map)};
-            auto key_slice{db::to_slice(key)};
+            auto key_slice{to_slice(key)};
             CHECK(code_cursor.erase(key_slice));
             auto code_stats{rw_txn.get_map_stat(code_map)};
             REQUIRE(code_stats.ms_entries == 0);
@@ -826,11 +828,11 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
         }
         {
             auto rw_txn{env.start_write()};
-            auto code_map{db::open_map(rw_txn, db::table::kCode)};
+            auto code_map{open_map(rw_txn, table::kCode)};
             auto code_cursor{rw_txn.open_cursor(code_map)};
-            auto key_slice{db::to_slice(key)};
-            Bytes value(db::max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
-            auto value_slice{db::to_slice(value)};
+            auto key_slice{to_slice(key)};
+            Bytes value(max_value_size_for_leaf_page(rw_txn, key.size()), static_cast<uint8_t>(10));
+            auto value_slice{to_slice(value)};
             code_cursor.upsert(key_slice, value_slice);
             auto code_stats{rw_txn.get_map_stat(code_map)};
             REQUIRE(code_stats.ms_entries == 1);
@@ -847,20 +849,20 @@ TEST_CASE("Single-value erase+upsert w/ same value increases free pages") {
 TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
     TemporaryDirectory tmp_dir{};
     auto data_directory{std::make_unique<DataDirectory>(tmp_dir.path(), /*create=*/true)};
-    db::EnvConfig env_config{
+    EnvConfig env_config{
         .path = data_directory->chaindata().path().string(),
         .create = true,
         .readonly = false,
         .exclusive = false,
         .in_memory = true,
     };
-    auto env{db::open_env(env_config)};
+    auto env{open_env(env_config)};
 
     // We need to split max multi-value data size between key and value
     constexpr size_t kKeySize{20};  // just to copycat account address size
     const size_t kMaxNonInitialValueSize{[&env]() {
         auto ro_txn{env.start_read()};
-        return db::max_multivalue_size_for_leaf_page(ro_txn);
+        return max_multivalue_size_for_leaf_page(ro_txn);
     }()};
     const size_t kMaxFirstValueSize{kMaxNonInitialValueSize - kKeySize};  // we need to take key size into account once
     const Bytes key(kKeySize, '\0');
@@ -868,7 +870,7 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
     // Initialize the map content w/ one max-size value [scope needed to limit rw_txn lifecycle]
     {
         auto rw_txn{env.start_write()};
-        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_map{open_map(rw_txn, table::kPlainState)};
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
         REQUIRE(plain_state_stats.ms_entries == 0);
         REQUIRE(plain_state_stats.ms_depth == 0);
@@ -877,7 +879,7 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
         REQUIRE(plain_state_stats.ms_overflow_pages == 0);
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
         Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
-        plain_state_cursor.insert(db::to_slice(key), db::to_slice(value));  // insert or upsert equivalent here
+        plain_state_cursor.insert(to_slice(key), to_slice(value));  // insert or upsert equivalent here
         plain_state_stats = rw_txn.get_map_stat(plain_state_map);
         REQUIRE(plain_state_stats.ms_entries == 1);  // we have 1 value here
         REQUIRE(plain_state_stats.ms_depth == 1);
@@ -890,11 +892,11 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
 
     SECTION("upsert same value does not cause any free page") {
         auto rw_txn{env.start_write()};
-        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_map{open_map(rw_txn, table::kPlainState)};
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
-        auto key_slice{db::to_slice(key)};
+        auto key_slice{to_slice(key)};
         Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
-        auto value_slice{db::to_slice(value)};
+        auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
         REQUIRE(plain_state_stats.ms_entries == 1);
@@ -908,12 +910,12 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
 
     SECTION("erase + upsert same value causes two free pages") {
         auto rw_txn{env.start_write()};
-        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_map{open_map(rw_txn, table::kPlainState)};
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
-        auto key_slice{db::to_slice(key)};
+        auto key_slice{to_slice(key)};
         CHECK(plain_state_cursor.erase(key_slice, /*whole_multivalue=*/true));
         Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
-        auto value_slice{db::to_slice(value)};
+        auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
         REQUIRE(plain_state_stats.ms_entries == 1);
@@ -927,11 +929,11 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
 
     SECTION("upsert different value causes two free pages") {
         auto rw_txn{env.start_write()};
-        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_map{open_map(rw_txn, table::kPlainState)};
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
-        auto key_slice{db::to_slice(key)};
+        auto key_slice{to_slice(key)};
         Bytes value(kMaxNonInitialValueSize, static_cast<uint8_t>(11));
-        auto value_slice{db::to_slice(value)};
+        auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
         REQUIRE(plain_state_stats.ms_entries == 2);  // we have 2 values here since table is multi-value
@@ -945,12 +947,12 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
 
     SECTION("erase + upsert different value causes two free pages") {
         auto rw_txn{env.start_write()};
-        auto plain_state_map{db::open_map(rw_txn, db::table::kPlainState)};
+        auto plain_state_map{open_map(rw_txn, table::kPlainState)};
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
-        auto key_slice{db::to_slice(key)};
+        auto key_slice{to_slice(key)};
         CHECK(plain_state_cursor.erase(key_slice, /*whole_multivalue=*/true));
         Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(11));
-        auto value_slice{db::to_slice(value)};
+        auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
         REQUIRE(plain_state_stats.ms_entries == 1);

@@ -27,11 +27,11 @@ class InboundNewBlock : public InboundMessage {
   public:
     InboundNewBlock(ByteView data, PeerId peer_id);
 
-    [[nodiscard]] std::string name() const override { return "InboundNewBlock"; }
-    [[nodiscard]] std::string content() const override;
-    [[nodiscard]] uint64_t req_id() const override;
+    std::string name() const override { return "InboundNewBlock"; }
+    std::string content() const override;
+    uint64_t req_id() const override;
 
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     PeerId peer_id_;

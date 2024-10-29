@@ -35,8 +35,8 @@ class ServerContext : public concurrency::Context {
   public:
     ServerContext(size_t context_id, ServerCompletionQueuePtr server_queue);
 
-    [[nodiscard]] agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
-    [[nodiscard]] agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }
+    agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
+    agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop() override;

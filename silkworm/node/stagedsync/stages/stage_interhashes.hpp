@@ -18,8 +18,9 @@
 
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
-#include <silkworm/db/etl/collector.hpp>
-#include <silkworm/db/etl/collector_settings.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/datastore/etl/collector.hpp>
+#include <silkworm/db/datastore/etl/collector_settings.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 
@@ -27,8 +28,12 @@ namespace silkworm::stagedsync {
 
 class InterHashes final : public Stage {
   public:
-    explicit InterHashes(SyncContext* sync_context, db::etl::CollectorSettings etl_settings)
+    InterHashes(
+        SyncContext* sync_context,
+        db::DataModelFactory data_model_factory,
+        db::etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kIntermediateHashesKey),
+          data_model_factory_(std::move(data_model_factory)),
           etl_settings_(std::move(etl_settings)) {}
     ~InterHashes() override = default;
 
@@ -52,14 +57,18 @@ class InterHashes final : public Stage {
     //! \brief Erigon's RegenerateIntermediateHashes
     //! \remarks might throw WrongRoot
     //! \return the state root
-    [[nodiscard]] Stage::Result regenerate_intermediate_hashes(db::RWTxn& txn,
-                                                               const evmc::bytes32* expected_root = nullptr);
+    Stage::Result regenerate_intermediate_hashes(
+        db::RWTxn& txn,
+        const evmc::bytes32* expected_root = nullptr);
 
     //! \brief Erigon's IncrementIntermediateHashes
     //! \remarks might throw
     //! \return the state root
-    [[nodiscard]] Stage::Result increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                              const evmc::bytes32* expected_root = nullptr);
+    Stage::Result increment_intermediate_hashes(
+        db::RWTxn& txn,
+        BlockNum from,
+        BlockNum to,
+        const evmc::bytes32* expected_root = nullptr);
 
     //! \brief Persists in TrieAccount and TrieStorage the collected nodes (and respective deletions if any)
     void flush_collected_nodes(db::RWTxn& txn);
@@ -107,6 +116,8 @@ class InterHashes final : public Stage {
 
     // The loader which (re)builds the trees
     std::unique_ptr<trie::TrieLoader> trie_loader_;
+
+    db::DataModelFactory data_model_factory_;
 
     db::etl::CollectorSettings etl_settings_;
 

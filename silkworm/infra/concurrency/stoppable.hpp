@@ -33,7 +33,7 @@ class Stoppable {
     }
 
     //! \brief Whether a stop request has been issued
-    [[nodiscard]] bool is_stopping() { return stopping_.load() || SignalHandler::signalled(); }
+    bool is_stopping() { return stopping_.load() || SignalHandler::signalled(); }
 
     virtual ~Stoppable() = default;
 

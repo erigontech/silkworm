@@ -16,12 +16,15 @@
 
 #include "parity_api.hpp"
 
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -86,6 +89,16 @@ Task<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& 
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
+void increment(Bytes& array) {
+    for (auto& it : std::ranges::reverse_view(array)) {
+        if (it < 0xFF) {
+            ++it;
+            break;
+        }
+        it = 0x00;
+    }
+}
+
 Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() < 2) {
@@ -95,10 +108,11 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         co_return;
     }
     const auto address = params[0].get<evmc::address>();
-    const auto quantity = params[1].get<uint64_t>();
+    const auto quantity = params[1].get<int64_t>();
     std::optional<Bytes> offset = std::nullopt;
     if (params.size() >= 3 && !params[2].is_null()) {
-        offset = std::make_optional(params[2].get<Bytes>());
+        auto value = params[2].get<std::string>();
+        offset = silkworm::from_hex(value);
     }
     std::string block_id = core::kLatestBlockId;
     if (params.size() >= 4) {
@@ -118,23 +132,30 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         std::optional<Account> account = co_await state_reader.read_account(address);
         if (!account) throw std::domain_error{"account not found"};
 
-        Bytes seek_bytes = db::storage_prefix(address.bytes, account->incarnation);
-        const auto cursor = co_await tx->cursor_dup_sort(db::table::kPlainStateName);
-        SILK_TRACE << "ParityRpcApi::handle_parity_list_storage_keys cursor id: " << cursor->cursor_id();
-        Bytes seek_val = offset ? offset.value() : Bytes{};
+        const auto txn_number = co_await tx->first_txn_num_in_block(block_number);
+        auto from = db::code_domain_key(address);
 
-        std::vector<evmc::bytes32> keys;
-        auto v = co_await cursor->seek_both(seek_bytes, seek_val);
-        // We look for keys until we have the quantity we want or the key is invalid/empty
-        while (v.size() >= kHashLength && keys.size() != quantity) {
-            auto value = bytes32_from_hex(silkworm::to_hex(v));
-            keys.push_back(value);
-            const auto kv_pair = co_await cursor->next_dup();
+        if (offset) {
+            from.append(offset.value());
+        }
+        auto to = db::code_domain_key(address);
+        increment(to);
+        SILK_DEBUG << "handle_parity_list_storage_keys: from " << from << ", to " << to;
 
-            if (kv_pair.key != seek_bytes) {
-                break;
-            }
-            v = kv_pair.value;
+        db::kv::api::DomainRangeQuery query{
+            .table = db::table::kStorageDomain,
+            .from_key = from,
+            .to_key = to,
+            .timestamp = txn_number,
+            .ascending_order = true,
+            .limit = quantity};
+        auto paginated_result = co_await tx->domain_range(std::move(query));
+        auto it = co_await paginated_result.begin();
+
+        std::vector<std::string> keys;
+        while (const auto value = co_await it.next()) {
+            const auto key = value->first.substr(20);
+            keys.push_back(silkworm::to_hex(key, /*with_prefix=*/true));
         }
         reply = make_json_content(request, keys);
     } catch (const std::invalid_argument& iv) {

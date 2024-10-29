@@ -22,12 +22,13 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/test_util/make_stages_factory.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
@@ -35,8 +36,12 @@
 namespace silkworm {
 
 using namespace stagedsync;
+using namespace silkworm::db;
 
 using silkworm::execution::api::ValidChain;
+using silkworm::stagedsync::test_util::make_stages_factory;
+using silkworm::test_util::SetLogVerbosityGuard;
+using silkworm::test_util::TaskRunner;
 
 class HeaderChainForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
@@ -74,27 +79,27 @@ class DummyRuleSet : public protocol::RuleSet {
 };
 
 TEST_CASE("Headers receiving and saving") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    SetLogVerbosityGuard log_guard(log::Level::kNone);
 
-    test_util::TaskRunner runner;
+    TaskRunner runner;
 
     db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 
-    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    db::RWAccess db_access{context.env()};
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
 
-    BodiesStageFactory bodies_stage_factory = [&](SyncContext* sync_context) {
-        return std::make_unique<BodiesStage>(sync_context, *node_settings.chain_config, [] { return 0; });
-    };
+    NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
+    RWAccess db_access{context.env()};
 
     // creating the ExecutionEngine
     ExecutionEngineForTest exec_engine{
         runner.executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        std::move(bodies_stage_factory),
+        make_stages_factory(node_settings, data_model_factory),
         db_access,
     };
     exec_engine.open();
@@ -117,11 +122,11 @@ TEST_CASE("Headers receiving and saving") {
     auto request_id = header_chain.generate_request_id();
 
     // reading genesis
-    auto header0 = db::read_canonical_header(tx, 0);
+    auto header0 = read_canonical_header(tx, 0);
     REQUIRE(header0.has_value());
     auto header0_hash = header0->hash();
 
-    auto td = db::read_total_difficulty(tx, 0, header0_hash);
+    auto td = read_total_difficulty(tx, 0, header0_hash);
     REQUIRE(td.has_value());
 
     // creating the chain-fork-view to simulate a bit of the HeaderStage
@@ -135,7 +140,7 @@ TEST_CASE("Headers receiving and saving") {
     CHECK(chain_fork_view.head() == head);
 
     // stop execution pipeline at early stages because we use dummy headers without bodies
-    Environment::set_stop_before_stage(db::stages::kBlockHashesKey);
+    Environment::set_stop_before_stage(stages::kBlockHashesKey);
 
     /* status:
      *         h0 (persisted)
@@ -199,13 +204,13 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
-        auto header1_in_db = db::read_header(tx, header1_hash);
+        auto header1_in_db = read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = db::read_header(tx, header2_hash);
+        auto header2_in_db = read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
-        auto header1b_in_db = db::read_header(tx, header1b_hash);
+        auto header1b_in_db = read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -216,20 +221,20 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(2, header2_hash));
 
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1_hash);
-        REQUIRE(db::read_canonical_header_hash(tx, 2) == header2_hash);
+        REQUIRE(read_canonical_header_hash(tx, 1) == header1_hash);
+        REQUIRE(read_canonical_header_hash(tx, 2) == header2_hash);
 
         // update the fork choice
         exec_engine.notify_fork_choice_update(header2_hash, {}, {});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(2, header2_hash));
     }
 
     /* status:
@@ -279,10 +284,10 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
-        auto header1_in_db = db::read_header(tx, header1_hash);
+        auto header1_in_db = read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = db::read_header(tx, header2_hash);
+        auto header2_in_db = read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
 
@@ -293,8 +298,8 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
         // receiving a new header that is a fork
         BlockHeader header1b;
@@ -323,7 +328,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
-        auto header1b_in_db = db::read_header(tx, header1b_hash);
+        auto header1b_in_db = read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -334,20 +339,20 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(2, header2_hash));
 
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1_hash);
-        REQUIRE(db::read_canonical_header_hash(tx, 2) == header2_hash);
+        REQUIRE(read_canonical_header_hash(tx, 1) == header1_hash);
+        REQUIRE(read_canonical_header_hash(tx, 2) == header2_hash);
 
         // update the fork choice
         exec_engine.notify_fork_choice_update(header2_hash, {}, {});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(2, header2_hash));
     }
 
     /* status:
@@ -397,10 +402,10 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
-        auto header1_in_db = db::read_header(tx, header1_hash);
+        auto header1_in_db = read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = db::read_header(tx, header2_hash);
+        auto header2_in_db = read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
 
@@ -411,8 +416,8 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
         // receiving a new header that is a fork
         BlockHeader header1b;
@@ -444,7 +449,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header1b_hash);
 
         // check db content
-        auto header1b_in_db = db::read_header(tx, header1b_hash);
+        auto header1b_in_db = read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -456,23 +461,23 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(valid_chain.current_head == BlockId{1, header1b_hash});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(1, header1b_hash));  // there was an unwind op
+        REQUIRE(read_head_header_hash(tx) == header1b_hash);
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(1, header1b_hash));  // there was an unwind op
 
-        REQUIRE(db::read_total_difficulty(tx, 1, header1b.hash()) == new_expected_td);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
+        REQUIRE(read_total_difficulty(tx, 1, header1b.hash()) == new_expected_td);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1b_hash);
-        REQUIRE(db::read_canonical_header_hash(tx, 2).has_value() == false);
+        REQUIRE(read_canonical_header_hash(tx, 1) == header1b_hash);
+        REQUIRE(read_canonical_header_hash(tx, 2).has_value() == false);
 
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(1, header1b_hash));
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(1, header1b_hash));
 
         // update the fork choice
         exec_engine.notify_fork_choice_update(header1b_hash, {}, {});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(1, header1b_hash));
+        REQUIRE(read_head_header_hash(tx) == header1b_hash);
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(1, header1b_hash));
     }
 
     /* status:
@@ -516,7 +521,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header1b_hash);
 
         // check db content
-        auto header1b_in_db = db::read_header(tx, header1b_hash);
+        auto header1b_in_db = read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -527,8 +532,8 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(valid_chain.current_head == BlockId{1, header1b_hash});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
-        REQUIRE(db::read_total_difficulty(tx, 1, header1b.hash()) == expected_td);
+        REQUIRE(read_head_header_hash(tx) == header1b_hash);
+        REQUIRE(read_total_difficulty(tx, 1, header1b.hash()) == expected_td);
 
         // receiving 2 header that changes the canonical chain
         BlockHeader header1;
@@ -566,13 +571,13 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db
-        auto header1_in_db = db::read_header(tx, header1_hash);
+        auto header1_in_db = read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = db::read_header(tx, header2_hash);
+        auto header2_in_db = read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
-        header1b_in_db = db::read_header(tx, header1b_hash);
+        header1b_in_db = read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -583,20 +588,20 @@ TEST_CASE("Headers receiving and saving") {
         valid_chain = std::get<ValidChain>(verification);
         REQUIRE(valid_chain.current_head == BlockId{2, header2_hash});
 
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td_bis);
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td_bis);
 
-        REQUIRE(db::read_canonical_header_hash(tx, 1) == header1_hash);
-        REQUIRE(db::read_canonical_header_hash(tx, 2) == header2_hash);
+        REQUIRE(read_canonical_header_hash(tx, 1) == header1_hash);
+        REQUIRE(read_canonical_header_hash(tx, 2) == header2_hash);
 
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(2, header2_hash));
 
         // update the fork choice
         exec_engine.notify_fork_choice_update(header2_hash, {}, {});
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
+        REQUIRE(read_head_header_hash(tx) == header2_hash);
+        REQUIRE(read_canonical_head(tx) == std::make_tuple(2, header2_hash));
     }
 
     /* status:

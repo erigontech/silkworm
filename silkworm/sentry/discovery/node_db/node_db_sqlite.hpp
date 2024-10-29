@@ -35,7 +35,7 @@ class NodeDbSqlite {
     void setup(const std::filesystem::path& db_dir_path);
     void setup_in_memory();
 
-    [[nodiscard]] NodeDb& interface();
+    NodeDb& interface();
 
   private:
     std::unique_ptr<NodeDbSqliteImpl> p_impl_;

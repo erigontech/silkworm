@@ -43,7 +43,18 @@ struct DomainPointQuery {
     Bytes key;
     std::optional<Timestamp> timestamp;  // not present means 'latest state' (no history lookup)
     Bytes sub_key;
+
+    // TODO(canepat) we need clang >= 17 to use spaceship operator instead of hand-made operator== below
+    // auto operator<=>(const DomainPointQuery&) const = default;
 };
+
+inline bool operator==(const DomainPointQuery& lhs, const DomainPointQuery& rhs) {
+    return (lhs.tx_id == rhs.tx_id) &&
+           (lhs.table == rhs.table) &&
+           (lhs.key == rhs.key) &&
+           (lhs.timestamp == rhs.timestamp) &&
+           (lhs.sub_key == rhs.sub_key);
+}
 
 using DomainPointResult = PointResult;
 

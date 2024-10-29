@@ -21,9 +21,9 @@
 #include <optional>
 
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/db/etl/collector.hpp>
-#include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/snapshot_path.hpp>
+#include <silkworm/db/datastore/etl/collector.hpp>
+#include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
+#include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {
@@ -59,7 +59,6 @@ class TransactionIndex {
         return IndexBuilder{std::move(descriptor), std::move(query)};
     }
 
-    static SnapshotPath bodies_segment_path(const SnapshotPath& segment_path);
     static std::pair<uint64_t, uint64_t> compute_txs_amount(
         SnapshotPath bodies_segment_path,
         std::optional<MemoryMappedRegion> bodies_segment_region);

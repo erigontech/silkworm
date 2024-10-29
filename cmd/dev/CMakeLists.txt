@@ -15,7 +15,7 @@
 ]]
 
 find_package(absl REQUIRED)
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
@@ -65,7 +65,7 @@ target_include_directories(grpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(grpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::libprotobuf silkworm_rpcdaemon)
 
 add_executable(kzg_g2_uncompress kzg_g2_uncompress.cpp)
-target_link_libraries(kzg_g2_uncompress silkworm_core blst)
+target_link_libraries(kzg_g2_uncompress silkworm_core blst::blst)
 
 add_executable(scan_txs scan_txs.cpp)
 target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)

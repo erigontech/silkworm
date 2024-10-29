@@ -18,23 +18,11 @@
 
 #include <string>
 
-#include <silkworm/infra/concurrency/task.hpp>
-
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/asio/use_future.hpp>
-#include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
-#include <gmock/gmock.h>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/types/block.hpp>
-#include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc::core::rawdb {
 

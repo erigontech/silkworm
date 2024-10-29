@@ -37,7 +37,7 @@ class ClientContext : public concurrency::Context {
   public:
     explicit ClientContext(size_t context_id);
 
-    [[nodiscard]] agrpc::GrpcContext* grpc_context() const noexcept { return grpc_context_.get(); }
+    agrpc::GrpcContext* grpc_context() const noexcept { return grpc_context_.get(); }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop() override;
@@ -66,7 +66,7 @@ class ClientContextPool : public concurrency::ContextPool<ClientContext>, public
 
     void start() override;
 
-    [[nodiscard]] agrpc::GrpcContext& any_grpc_context() override;
+    agrpc::GrpcContext& any_grpc_context() override;
 };
 
 }  // namespace silkworm::rpc

@@ -4,91 +4,73 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'  # Runs every Sunday at 00:00 AM UTC
-  push: 
-    branches:
-      - fuzzer-github-actions
   
 jobs:
-  fuzzer-test-suite:
-    runs-on: self-hosted
+  fuzzer-test-address-sanitizer:
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
+    timeout-minutes: 1440
     env:
       RPC_PAST_TEST_DIR: /opt/rpc-past-tests
       ERIGON_QA_PATH: /opt/erigon-qa
-    timeout-minutes: 1440
     steps:
       - name: Checkout Silkworm Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: "1" # Fetch only the last commit, not the entire history
-
-      - name: Install Compiler
-        run: cmake/setup/compiler_install.sh clang 16
-
-      - name: Clean Build Directory
-        run: rm -rf ${{runner.workspace}}/silkworm/build
-
-      - name: Create Build Environment
-        run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
-
-      # Temporarily disabled, try to enable it if issues with building Conan packages (e.g. Boost) arise
-      # - name: Preinstall Conan packages
-      #   working-directory: ${{runner.workspace}}/silkworm
-      #   run: conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/linux_x64_clang_13_release .
-
-      - name: Configure CMake
-        working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
-
-      - name: Build Silkworm Fuzzer Test
-        working-directory: ${{runner.workspace}}/silkworm/build
-        run: CC=clang-16 CXX=clang++-16 cmake  --build . --target rpcdaemon_fuzzer_test -j 8
-
-      - name: Prepare Corpus Directories
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
-        run: |
-          echo "Ensure persistent directories for fuzzing corpus are created"
-          mkdir -p $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus
-          mkdir -p $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes
-
-          echo "Create corpus artifacts from execution-api specification"
-          mkdir -p artifacts
-          for file in ../../../third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" artifacts; done
-          for file in artifacts/*; do sed -i '2,$d' "$file"; done
-          for file in artifacts/*; do sed -i 's/^>> //' "$file"; done
-
-      - name: Pause the Erigon instance dedicated to db maintenance
-        run: |
-          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
-
-      - name: Execute Silkworm Fuzzer Test
+      - uses: ./.github/actions/fuzzer-common-steps
         timeout-minutes: 1440
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
-        run: |
-          # Single thread execution
-          ./rpcdaemon_fuzzer_test -max_total_time=86300 -detect_leaks=0 -rss_limit_mb=65536 $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
+        with:
+          fuzzer_sanitizers: address,leak
 
-          # Multi-thread execution
-          # ./rpcdaemon_fuzzer_test -max_total_time=86300 -detect_leaks=0 -jobs=3 -rss_limit_mb=10922 $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
+  fuzzer-test-no-sanitizer:
+    needs: fuzzer-test-thread-sanitizer
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
+    timeout-minutes: 1440
+    env:
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
+    steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "1" # Fetch only the last commit, not the entire history
+      - uses: ./.github/actions/fuzzer-common-steps
+        timeout-minutes: 1440
 
-      - name: Save Fuzzer Test Results
-        if: always()
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
-        run: |
-          # Save failed results to the crash directory (ignore errors)
-          cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
-          cp leak-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+  fuzzer-test-memory-sanitizer:
+    needs: fuzzer-test-no-sanitizer
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
+    timeout-minutes: 1440
+    env:
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
+    steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "1" # Fetch only the last commit, not the entire history
+      - uses: ./.github/actions/fuzzer-common-steps
+        timeout-minutes: 1440
+        with:
+          fuzzer_sanitizers: memory
 
-      - name: Tear Down Build Environment
-        if: always()
-        run: |
-          # Reset compiler paths
-          sudo update-alternatives --remove cc /usr/bin/clang
-          sudo update-alternatives --remove c++ /usr/bin/clang++
-          sudo rm -f /usr/bin/clang
-          sudo rm -f /usr/bin/clang++
-          
-          # Resume the Erigon instance dedicated to db maintenance
-          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
-
-
+  fuzzer-test-thread-sanitizer:
+    needs: fuzzer-test-address-sanitizer
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
+    timeout-minutes: 1440
+    env:
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
+    steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "1" # Fetch only the last commit, not the entire history
+      - uses: ./.github/actions/fuzzer-common-steps
+        timeout-minutes: 1440
+        with:
+          fuzzer_sanitizers: thread,undefined

@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [ Erigon2, Erigon3 ]
+        backend: [ Erigon3 ]
     runs-on: [ self-hosted, "${{ matrix.backend }}" ]
     concurrency:
       group: ${{ github.workflow }}-${{ matrix.backend }}
@@ -33,11 +33,7 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          if [ ${{ matrix.backend }} == 'Erigon2' ]; then
-             git -c advice.detachedHead=false clone --depth 1 --branch v0.55.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
-          else
-             git -c advice.detachedHead=false clone --depth 1 --branch v0.55.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
-          fi
+          git -c advice.detachedHead=false clone --depth 1 --branch v1.2.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt
 
@@ -56,23 +52,39 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
-      - name: Pause the Erigon instance dedicated to db maintenance
-        if: matrix.backend == 'Erigon2'
+      - name: Resume the Erigon instance dedicated to db maintenance, if needed
         run: |
-          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
+          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
+
+      - name: Wait for port 8545 to be opened
+        run: |
+          for i in {1..30}; do
+            if nc -z localhost 8545; then
+              echo "Port 8545 is open"
+              break
+            fi
+            echo "Waiting for port 8545 to open..."
+            sleep 10
+          done
+          if ! nc -z localhost 8545; then
+            echo "Port 8545 did not open in time"
+            exit 1
+          fi
 
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
-          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh ${{ matrix.backend }} $ERIGON_DATA_DIR ./jwt.hex &
+          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh $ERIGON_DATA_DIR ./jwt.hex &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
       - name: Run RPC Integration Tests
         id: test_step
         run: |
+          set +e # Disable exit on error
+          
           # Run RPC integration test runner via http
-          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_tests.sh ${{ matrix.backend }} ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/ 
+          ${{runner.workspace}}/silkworm/.github/workflows/run_integration_tests.sh ${{runner.workspace}}/rpc-tests/integration ${{runner.workspace}}/silkworm/build/cmd/jwt.hex $RPC_PAST_TEST_DIR/mainnet_$(date +%Y%m%d_%H%M%S)_integration_$(git -C ${{runner.workspace}}/silkworm rev-parse --short HEAD)_http/ 
 
           # Capture test runner script exit status
           test_exit_status=$?
@@ -89,8 +101,7 @@ jobs:
         run: |
           ${{runner.workspace}}/silkworm/.github/workflows/stop_integration_rpcdaemon.sh $RPC_DAEMON_PID
 
-      - name: Resume the Erigon instance dedicated to db maintenance
-        if: matrix.backend == 'Erigon2'
+      - name: Resume the Erigon instance dedicated to db maintenance, if crashed or paused
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 

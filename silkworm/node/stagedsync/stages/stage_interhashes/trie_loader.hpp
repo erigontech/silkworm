@@ -18,25 +18,29 @@
 
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
-#include <silkworm/db/etl/collector.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/etl/collector.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
 namespace silkworm::trie {
 
 class TrieLoader {
   public:
-    explicit TrieLoader(db::ROTxn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
-                        db::etl::Collector* account_trie_node_collector, db::etl::Collector* storage_trie_node_collector);
+    explicit TrieLoader(
+        db::ROTxn& txn,
+        PrefixSet* account_changes,
+        PrefixSet* storage_changes,
+        db::etl::Collector* account_trie_node_collector,
+        db::etl::Collector* storage_trie_node_collector);
 
     //! \brief (re)calculates root hash on behalf of collected hashed changes and existing data in TrieOfAccount and
     //! TrieOfStorage buckets
     //! \return The computed hash
     //! \remark May throw
-    [[nodiscard]] evmc::bytes32 calculate_root();
+    evmc::bytes32 calculate_root();
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
-    [[nodiscard]] std::string get_log_key() const {
+    std::string get_log_key() const {
         std::scoped_lock lock{log_mtx_};
         return log_key_;
     }
@@ -55,9 +59,10 @@ class TrieLoader {
     //! TrieOfStorage bucket
     //! \return The computed hash
     //! \remark May throw
-    [[nodiscard]] static evmc::bytes32 calculate_storage_root(TrieCursor& trie_storage_cursor,
-                                                              HashBuilder& storage_hash_builder,
-                                                              db::ROCursorDupSort& hashed_storage,
-                                                              const Bytes& db_storage_prefix);
+    static evmc::bytes32 calculate_storage_root(
+        TrieCursor& trie_storage_cursor,
+        HashBuilder& storage_hash_builder,
+        db::ROCursorDupSort& hashed_storage,
+        const Bytes& db_storage_prefix);
 };
 }  // namespace silkworm::trie

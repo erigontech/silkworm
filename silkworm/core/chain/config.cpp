@@ -95,7 +95,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     return ret;
 }
 
-[[nodiscard]] bool ChainConfig::valid_pre_merge_config() const noexcept {
+bool ChainConfig::valid_pre_merge_config() const noexcept {
     const bool has_pre_merge_config{!std::holds_alternative<protocol::NoPreMergeConfig>(rule_set_config)};
     const bool has_merge_at_genesis{!terminal_total_difficulty || terminal_total_difficulty == 0};
     return has_pre_merge_config || has_merge_at_genesis;
@@ -178,10 +178,10 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     return config;
 }
 
-[[nodiscard]] bool ChainConfig::withdrawals_activated(BlockTime block_time) const noexcept {
+bool ChainConfig::withdrawals_activated(BlockTime block_time) const noexcept {
     return shanghai_time && block_time >= shanghai_time;
 }
-[[nodiscard]] bool ChainConfig::is_london(BlockNum block_number) const noexcept {
+bool ChainConfig::is_london(BlockNum block_number) const noexcept {
     return (london_block && block_number >= london_block);
 }
 
@@ -249,8 +249,8 @@ std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
 
     std::vector<uint64_t> points;
     points.resize(numbers.size() + times.size());
-    std::move(numbers.begin(), numbers.end(), points.begin());
-    std::move(times.begin(), times.end(), points.begin() + (numbers.end() - numbers.begin()));
+    std::ranges::move(numbers, points.begin());
+    std::ranges::move(times, points.begin() + (numbers.end() - numbers.begin()));
 
     return points;
 }

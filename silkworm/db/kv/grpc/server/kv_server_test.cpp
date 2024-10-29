@@ -30,7 +30,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
@@ -1953,7 +1953,7 @@ TEST_CASE("KvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]
     KvEnd2EndTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
-    constexpr auto kCustomMaxTimeToLive{1000ms};
+    static constexpr std::chrono::milliseconds kCustomMaxTimeToLive = 1000ms;
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
 
     SECTION("Tx: cursor NEXT ops across renew are consecutive") {

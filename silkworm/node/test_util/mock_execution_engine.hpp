@@ -22,26 +22,41 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 namespace silkworm::execution::api {
 
 //! \brief gMock mock class for stagedsync::ExecutionEngine
 class MockExecutionEngine : public stagedsync::ExecutionEngine {
   public:
-    static stagedsync::BodiesStageFactory empty_bodies_stage_factory() {
-        return [](stagedsync::SyncContext*) {
-            return std::unique_ptr<stagedsync::BodiesStage>{};
+    static db::DataModelFactory null_data_model_factory() {
+        return [](db::ROTxn&) -> db::DataModel {
+            SILKWORM_ASSERT(false);
+            std::abort();
+        };
+    };
+
+    static stagedsync::StageContainerFactory empty_stages_factory() {
+        return [](stagedsync::SyncContext&) {
+            return stagedsync::StageContainer{};
         };
     };
 
     MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, db::RWAccess dba)
-        : ExecutionEngine(std::move(executor), ns, /* log_timer_factory = */ std::nullopt, empty_bodies_stage_factory(), std::move(dba)) {}
+        : ExecutionEngine{
+              std::move(executor),
+              ns,
+              null_data_model_factory(),
+              /* log_timer_factory = */ std::nullopt,
+              empty_stages_factory(),
+              std::move(dba),
+          } {}
     ~MockExecutionEngine() override = default;
 
     MOCK_METHOD((void), open, (), (override));

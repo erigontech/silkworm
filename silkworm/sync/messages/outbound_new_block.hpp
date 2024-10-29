@@ -30,16 +30,16 @@ class OutboundNewBlock : public OutboundMessage {
   public:
     OutboundNewBlock(Blocks, bool is_first_sync);
 
-    [[nodiscard]] std::string name() const override { return "OutboundNewBlock"; }
-    [[nodiscard]] std::string content() const override;
+    std::string name() const override { return "OutboundNewBlock"; }
+    std::string content() const override;
 
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) override;
 
-    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+    silkworm::sentry::eth::MessageId eth_message_id() const override {
         return silkworm::sentry::eth::MessageId::kNewBlock;
     }
 
-    [[nodiscard]] Bytes message_data() const override;
+    Bytes message_data() const override;
 
   private:
     std::vector<PeerId> send_packet(SentryClient& sentry, NewBlockPacket packet);

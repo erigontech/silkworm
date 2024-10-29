@@ -26,8 +26,8 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
-#include <silkworm/db/snapshots/seg/decompressor.hpp>
-#include <silkworm/db/snapshots/snapshot_path.hpp>
+#include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
+#include <silkworm/db/datastore/snapshots/seg/decompressor.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {
@@ -90,12 +90,14 @@ class TxsAndBodiesQuery {
         std::optional<MemoryMappedRegion> txs_segment_region,
         SnapshotPath bodies_segment_path,
         std::optional<MemoryMappedRegion> bodies_segment_region,
+        BlockNum first_block_num,
         uint64_t first_tx_id,
         uint64_t expected_tx_count)
         : txs_segment_path_(std::move(txs_segment_path)),
           txs_segment_region_(txs_segment_region),
           bodies_segment_path_(std::move(bodies_segment_path)),
           bodies_segment_region_(bodies_segment_region),
+          first_block_num_(first_block_num),
           first_tx_id_(first_tx_id),
           expected_tx_count_(expected_tx_count) {}
 
@@ -109,6 +111,7 @@ class TxsAndBodiesQuery {
     std::optional<MemoryMappedRegion> txs_segment_region_;
     SnapshotPath bodies_segment_path_;
     std::optional<MemoryMappedRegion> bodies_segment_region_;
+    BlockNum first_block_num_;
     uint64_t first_tx_id_;
     uint64_t expected_tx_count_;
 };

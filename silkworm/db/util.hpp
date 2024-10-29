@@ -31,7 +31,7 @@ see its package dbutils.
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 namespace silkworm::db {
 
@@ -43,7 +43,7 @@ struct VersionBase {
     uint32_t minor{0};
     uint32_t patch{0};
 
-    [[nodiscard]] std::string to_string() const { return absl::StrCat(major, ".", minor, ".", patch); }
+    std::string to_string() const { return absl::StrCat(major, ".", minor, ".", patch); }
 
     // NOLINTNEXTLINE(hicpp-use-nullptr, modernize-use-nullptr)
     friend auto operator<=>(const VersionBase&, const VersionBase&) = default;

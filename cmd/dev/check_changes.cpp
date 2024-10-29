@@ -25,8 +25,8 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -110,11 +110,13 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        auto snapshot_bundle_factory = std::make_unique<db::SnapshotBundleFactoryImpl>();
-        snapshots::SnapshotRepository repository{snapshots::SnapshotSettings{}, std::move(snapshot_bundle_factory)};
+        snapshots::SnapshotRepository repository{
+            data_dir.snapshots().path(),
+            std::make_unique<snapshots::StepToBlockNumConverter>(),
+            std::make_unique<db::SnapshotBundleFactoryImpl>(),
+        };
         repository.reopen_folder();
-        db::DataModel::set_snapshot_repository(&repository);
-        db::DataModel access_layer{txn};
+        db::DataModel access_layer{txn, repository};
 
         AnalysisCache analysis_cache{/*max_size=*/5'000};
         std::vector<Receipt> receipts;
@@ -127,7 +129,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            db::Buffer buffer{txn};
+            db::Buffer buffer{txn, std::make_unique<db::BufferFullDataModel>(access_layer)};
             buffer.set_historical_block(block_num);
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};

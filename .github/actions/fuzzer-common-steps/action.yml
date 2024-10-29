@@ -1,0 +1,98 @@
+name: QA - RPC Fuzzer Common Steps
+description: Common steps for running Silkworm fuzzer tests
+
+inputs:
+  fuzzer_sanitizers:
+    description: 'List of enabled fuzzer sanitizers'
+    default: 'OFF'
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Install Compiler
+      shell: bash
+      run: cmake/setup/compiler_install.sh clang 16
+
+    - name: Clean Build Directory
+      shell: bash
+      run: rm -rf ${{runner.workspace}}/silkworm/build
+
+    - name: Create Build Environment
+      shell: bash
+      run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
+
+    - name: Temporary step - conan cache cleanup - to be executed only once per runner
+      shell: bash
+      run: conan remove "*" --force
+
+    - name: Preinstall Conan packages
+      shell: bash
+      working-directory: ${{runner.workspace}}/silkworm
+      run: CC=clang-16 CXX=clang++-16 conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/silkworm/build
+      run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=experimental/linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_FUZZER_SANITIZERS=${{inputs.fuzzer_sanitizers}}
+
+    - name: Build Silkworm Fuzzer Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/silkworm/build
+      run: CC=clang-16 CXX=clang++-16 cmake  --build . --target rpcdaemon_fuzzer_test -j 8
+
+    - name: Prepare Corpus Directories
+      shell: bash
+      working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
+      run: |
+        echo "Ensure persistent directories for fuzzing corpus are created"
+        mkdir -p $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus
+        mkdir -p $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes
+
+        echo "Create corpus artifacts from execution-api specification"
+        mkdir -p artifacts
+        for file in ../../../third_party/execution-apis/tests/*/*.io; do cp --backup=numbered "$file" artifacts; done
+        for file in artifacts/*; do sed -i '2,$d' "$file"; done
+        for file in artifacts/*; do sed -i 's/^>> //' "$file"; done
+
+        mkdir -p local-corpus
+
+    - name: Pause the Erigon instance dedicated to db maintenance
+      shell: bash
+      run: |
+        python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
+
+    - name: Execute Silkworm Fuzzer Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
+      run: |
+        # Create minimal corpus
+        ./rpcdaemon_fuzzer_test -merge=1 -max_total_time=60 local-corpus $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus artifacts
+
+        # Single thread execution
+        ./rpcdaemon_fuzzer_test -max_total_time=25200 -rss_limit_mb=10922 local-corpus
+        
+    - name: Save Fuzzer Test Results
+      shell: bash
+      if: always()
+      working-directory: ${{runner.workspace}}/silkworm/build/cmd/test
+      run: |
+        # Save failed results to the crash directory (ignore errors)
+        cp crash-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+        cp leak-* $RPC_PAST_TEST_DIR/silkworm-fuzzer/crashes/ 2>/dev/null || :
+
+        # Save corpus to the persistent corpus directory
+        rm -rf $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus/*
+        cp -r local-corpus/* $RPC_PAST_TEST_DIR/silkworm-fuzzer/corpus/
+
+    - name: Tear Down Build Environment
+      shell: bash
+      if: always()
+      run: |
+        # Reset compiler paths
+        sudo update-alternatives --remove cc /usr/bin/clang
+        sudo update-alternatives --remove c++ /usr/bin/clang++
+        sudo rm -f /usr/bin/clang
+        sudo rm -f /usr/bin/clang++
+        
+        # Resume the Erigon instance dedicated to db maintenance
+        python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true

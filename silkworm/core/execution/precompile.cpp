@@ -24,6 +24,7 @@
 #include <limits>
 
 #include <evmone_precompiles/blake2b.hpp>
+#include <evmone_precompiles/kzg.hpp>
 #include <evmone_precompiles/ripemd160.hpp>
 #include <evmone_precompiles/sha256.hpp>
 
@@ -39,7 +40,6 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
-#include <silkworm/core/crypto/kzg.hpp>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/types/hash.hpp>
@@ -246,7 +246,7 @@ std::optional<Bytes> expmod_run(ByteView input_view) noexcept {
     // export as little-endian
     mpz_export(out.data(), nullptr, -1, 1, 0, 0, result);
     // and convert to big-endian
-    std::reverse(out.begin(), out.end());
+    std::ranges::reverse(out);
 
     mpz_clear(result);
     mpz_clear(modulus);
@@ -368,7 +368,7 @@ static Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
     std::memcpy(&out[0], y.data, 32);
     std::memcpy(&out[32], x.data, 32);
 
-    std::reverse(out.begin(), out.end());
+    std::ranges::reverse(out);
     return out;
 }
 
@@ -510,11 +510,12 @@ std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
     std::span<const uint8_t, 48> commitment{&input[96], 48};
     std::span<const uint8_t, 48> proof{&input[144], 48};
 
-    if (kzg_to_versioned_hash(commitment) != ByteView{versioned_hash}) {
-        return std::nullopt;
-    }
-
-    if (!verify_kzg_proof(commitment, z, y, proof)) {
+    if (!evmone::crypto::kzg_verify_proof(
+            std::as_bytes(versioned_hash).data(),
+            std::as_bytes(z).data(),
+            std::as_bytes(y).data(),
+            std::as_bytes(commitment).data(),
+            std::as_bytes(proof).data())) {
         return std::nullopt;
     }
 

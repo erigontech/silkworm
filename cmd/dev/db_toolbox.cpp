@@ -41,14 +41,14 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
+#include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshots/snapshot_settings.hpp>
-#include <silkworm/db/stage_scheduler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -62,12 +62,15 @@
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies_factory.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
+#include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 
 #include "../common/common.hpp"
 
 namespace fs = std::filesystem;
 using namespace silkworm;
+using namespace silkworm::db;
 
 class Progress {
   public:
@@ -75,7 +78,7 @@ class Progress {
     ~Progress() = default;
 
     //! Returns current progress percent
-    [[nodiscard]] uint32_t percent() const {
+    uint32_t percent() const {
         if (!max_counter_) {
             return 100;
         }
@@ -87,8 +90,8 @@ class Progress {
 
     void step() { ++current_counter_; }
     void set_current(size_t count) { current_counter_ = std::max(count, current_counter_); }
-    [[nodiscard]] size_t get_current() const noexcept { return current_counter_; }
-    [[nodiscard]] size_t get_increment_count() const noexcept { return bar_width_ ? (max_counter_ / bar_width_) : 0u; }
+    size_t get_current() const noexcept { return current_counter_; }
+    size_t get_increment_count() const noexcept { return bar_width_ ? (max_counter_ / bar_width_) : 0u; }
 
     void reset() {
         current_counter_ = 0;
@@ -111,7 +114,7 @@ class Progress {
         return ret;
     }
 
-    [[maybe_unused]] [[nodiscard]] std::string print_progress(char c = '.') const {
+    [[maybe_unused]] std::string print_progress(char c = '.') const {
         uint32_t percentage{percent()};
         uint32_t numChars{percentage / percent_step_};
         if (!numChars) {
@@ -134,19 +137,19 @@ struct DbTableInfo {
     std::string name{};
     mdbx::txn::map_stat stat;
     mdbx::map_handle::info info;
-    [[nodiscard]] size_t pages() const noexcept {
+    size_t pages() const noexcept {
         return stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages;
     }
-    [[nodiscard]] size_t size() const noexcept { return pages() * stat.ms_psize; }
+    size_t size() const noexcept { return pages() * stat.ms_psize; }
 };
 
-[[nodiscard]] bool operator==(const DbTableInfo& lhs, const DbTableInfo& rhs) {
+bool operator==(const DbTableInfo& lhs, const DbTableInfo& rhs) {
     return lhs.name == rhs.name;
 }
 
 using DbComparisonResult = tl::expected<void, std::string>;
 
-[[nodiscard]] DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs, bool check_layout) {
+DbComparisonResult compare(const DbTableInfo& lhs, const DbTableInfo& rhs, bool check_layout) {
     // Skip freelist table because its content depends not only on *which* data you write but also *how* you write it
     // (i.e. writing the same data w/ different commit policies can lead to different freelist content)
     if (lhs.name == "FREE_DBI" && rhs.name == "FREE_DBI") {
@@ -208,11 +211,11 @@ struct DbFreeInfo {
     std::vector<DbFreeEntry> entries{};
 };
 
-void cursor_for_each(mdbx::cursor& cursor, db::WalkFuncRef walker) {
+void cursor_for_each(mdbx::cursor& cursor, WalkFuncRef walker) {
     const bool throw_notfound{false};
     auto data = cursor.eof() ? cursor.to_first(throw_notfound) : cursor.current(throw_notfound);
     while (data) {
-        walker(db::from_slice(data.key), db::from_slice(data.value));
+        walker(from_slice(data.key), from_slice(data.value));
         data = cursor.move(mdbx::cursor::move_operation::next, throw_notfound);
     }
 }
@@ -269,7 +272,7 @@ bool user_confirmation(const std::string& message = {"Confirm ?"}) {
     return matches[2].length() == 0;
 }
 
-void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
+void do_clear(EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
               bool drop) {
     config.readonly = false;
 
@@ -277,11 +280,11 @@ void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vecto
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_write()};
 
     for (const auto& tablename : table_names) {
-        if (!db::has_map(txn, tablename.c_str())) {
+        if (!has_map(txn, tablename.c_str())) {
             std::cout << "Table " << tablename << " not found\n";
             continue;
         }
@@ -389,10 +392,10 @@ DbInfo get_tables_info(::mdbx::txn& txn) {
     return ret;
 }
 
-void do_scan(db::EnvConfig& config) {
+void do_scan(EnvConfig& config) {
     static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_read()};
 
     auto tablesInfo{get_tables_info(txn)};
@@ -459,18 +462,18 @@ void do_scan(db::EnvConfig& config) {
     env.close(config.shared);
 }
 
-void do_stages(db::EnvConfig& config) {
+void do_stages(EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %10s "};
     static std::string fmt_row{" %-24s %10u %-8s"};
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_read()};
-    if (!db::has_map(txn, db::table::kSyncStageProgress.name)) {
+    if (!has_map(txn, table::kSyncStageProgress.name)) {
         throw std::runtime_error("Either not a Silkworm db or table " +
-                                 std::string{db::table::kSyncStageProgress.name} + " not found");
+                                 std::string{table::kSyncStageProgress.name} + " not found");
     }
 
-    auto crs{db::open_cursor(txn, db::table::kSyncStageProgress)};
+    auto crs{open_cursor(txn, table::kSyncStageProgress)};
 
     if (txn.get_map_stat(crs.map()).ms_entries) {
         std::cout << "\n"
@@ -488,7 +491,7 @@ void do_stages(db::EnvConfig& config) {
                 offset = kPrunePrefix.length();
             }
 
-            bool Known{db::stages::is_known_stage(result.key.char_ptr() + offset)};
+            bool Known{stages::is_known_stage(result.key.char_ptr() + offset)};
             std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
                           (Known ? std::string(8, ' ') : "Unknown"))
                       << "\n";
@@ -503,19 +506,19 @@ void do_stages(db::EnvConfig& config) {
     env.close(config.shared);
 }
 
-void do_migrations(db::EnvConfig& config) {
+void do_migrations(EnvConfig& config) {
     static std::string fmt_hdr{" %-24s"};
     static std::string fmt_row{" %-24s"};
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_read()};
 
-    if (!db::has_map(txn, db::table::kMigrations.name)) {
-        throw std::runtime_error("Either not a Silkworm db or table " + std::string{db::table::kMigrations.name} +
+    if (!has_map(txn, table::kMigrations.name)) {
+        throw std::runtime_error("Either not a Silkworm db or table " + std::string{table::kMigrations.name} +
                                  " not found");
     }
 
-    auto crs{db::open_cursor(txn, db::table::kMigrations)};
+    auto crs{open_cursor(txn, table::kMigrations)};
 
     if (txn.get_map_stat(crs.map()).ms_entries) {
         std::cout << "\n"
@@ -536,24 +539,24 @@ void do_migrations(db::EnvConfig& config) {
     env.close(config.shared);
 }
 
-void do_stage_set(db::EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
+void do_stage_set(EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
 
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{silkworm::db::open_env(config)};
-    db::RWTxnManaged txn{env};
-    if (!db::stages::is_known_stage(stage_name.c_str())) {
+    auto env{open_env(config)};
+    RWTxnManaged txn{env};
+    if (!stages::is_known_stage(stage_name.c_str())) {
         throw std::runtime_error("Stage name " + stage_name + " is not known");
     }
-    if (!db::has_map(txn, silkworm::db::table::kSyncStageProgress.name)) {
+    if (!has_map(txn, table::kSyncStageProgress.name)) {
         throw std::runtime_error("Either non Silkworm db or table " +
-                                 std::string(silkworm::db::table::kSyncStageProgress.name) + " not found");
+                                 std::string(table::kSyncStageProgress.name) + " not found");
     }
-    auto old_height{db::stages::read_stage_progress(txn, stage_name.c_str())};
-    db::stages::write_stage_progress(txn, stage_name.c_str(), new_height);
+    auto old_height{stages::read_stage_progress(txn, stage_name.c_str())};
+    stages::write_stage_progress(txn, stage_name.c_str(), new_height);
     if (!dry) {
         txn.commit_and_renew();
     }
@@ -561,35 +564,62 @@ void do_stage_set(db::EnvConfig& config, const std::string& stage_name, uint32_t
     std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n\n";
 }
 
-void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
+static silkworm::stagedsync::BodiesStageFactory make_bodies_stage_factory(
+    const silkworm::ChainConfig& chain_config,
+    silkworm::db::DataModelFactory data_model_factory) {
+    return [chain_config, data_model_factory = std::move(data_model_factory)](silkworm::stagedsync::SyncContext* sync_context) {
+        return std::make_unique<silkworm::stagedsync::BodiesStage>(
+            sync_context,
+            chain_config,
+            data_model_factory,
+            [] { return 0; });
+    };
+};
+
+static silkworm::stagedsync::StageContainerFactory make_stages_factory(
+    const silkworm::NodeSettings& node_settings,
+    silkworm::db::DataModelFactory data_model_factory) {
+    auto bodies_stage_factory = make_bodies_stage_factory(*node_settings.chain_config, data_model_factory);
+    return silkworm::stagedsync::StagesFactoryImpl::to_factory({
+        node_settings,
+        std::move(data_model_factory),
+        std::move(bodies_stage_factory),
+    });
+}
+
+void unwind(EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
     config.readonly = false;
 
-    auto env{silkworm::db::open_env(config)};
-    db::RWTxnManaged txn{env};
-    auto chain_config{db::read_chain_config(txn)};
+    auto env{open_env(config)};
+    RWTxnManaged txn{env};
+    auto chain_config{read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
+
+    auto data_directory = std::make_unique<DataDirectory>();
+    snapshots::SnapshotRepository repository{
+        data_directory->snapshots().path(),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<SnapshotBundleFactoryImpl>(),
+    };
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
 
     boost::asio::io_context io_context;
 
     NodeSettings settings{
-        .data_directory = std::make_unique<DataDirectory>(),
+        .data_directory = std::move(data_directory),
         .chaindata_env_config = config,
         .chain_config = chain_config};
-
-    stagedsync::BodiesStageFactory bodies_stage_factory = [&](stagedsync::SyncContext* sync_context) {
-        return std::make_unique<stagedsync::BodiesStage>(sync_context, *settings.chain_config, [] { return 0; });
-    };
 
     stagedsync::TimerFactory log_timer_factory = [&](std::function<bool()> callback) {
         return std::make_shared<Timer>(io_context.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
     };
 
     stagedsync::ExecutionPipeline stage_pipeline{
-        &settings,
+        data_model_factory,
         std::move(log_timer_factory),
-        std::move(bodies_stage_factory),
+        make_stages_factory(settings, data_model_factory),
     };
     const auto unwind_result{stage_pipeline.unwind(txn, unwind_point)};
 
@@ -604,10 +634,10 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
         std::cout << " Removing also block headers and bodies up to block: " << unwind_point << "\n";
 
         // Remove the block bodies up to the unwind point
-        const auto body_cursor{txn.rw_cursor(db::table::kBlockBodies)};
-        const auto start_key{db::block_key(unwind_point)};
+        const auto body_cursor{txn.rw_cursor(table::kBlockBodies)};
+        const auto start_key{block_key(unwind_point)};
         size_t erased_bodies{0};
-        auto body_data{body_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        auto body_data{body_cursor->lower_bound(to_slice(start_key), /*throw_notfound=*/false)};
         while (body_data) {
             body_cursor->erase();
             ++erased_bodies;
@@ -616,9 +646,9 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
         std::cout << " Removed block bodies erased: " << erased_bodies << "\n";
 
         // Remove the block headers up to the unwind point
-        const auto header_cursor{txn.rw_cursor(db::table::kHeaders)};
+        const auto header_cursor{txn.rw_cursor(table::kHeaders)};
         size_t erased_headers{0};
-        auto header_data{header_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        auto header_data{header_cursor->lower_bound(to_slice(start_key), /*throw_notfound=*/false)};
         while (header_data) {
             header_cursor->erase();
             ++erased_headers;
@@ -627,9 +657,9 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
         std::cout << " Removed block headers erased: " << erased_headers << "\n";
 
         // Remove the canonical hashes up to the unwind point
-        const auto canonical_cursor{txn.rw_cursor(db::table::kCanonicalHashes)};
+        const auto canonical_cursor{txn.rw_cursor(table::kCanonicalHashes)};
         size_t erased_hashes{0};
-        auto hash_data{canonical_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        auto hash_data{canonical_cursor->lower_bound(to_slice(start_key), /*throw_notfound=*/false)};
         while (hash_data) {
             canonical_cursor->erase();
             ++erased_hashes;
@@ -641,18 +671,18 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     }
 }
 
-void do_tables(db::EnvConfig& config) {
+void do_tables(EnvConfig& config) {
     static std::string fmt_hdr{" %3s %-26s %10s %2s %10s %10s %10s %12s %10s %10s"};
     static std::string fmt_row{" %3i %-26s %10u %2u %10u %10u %10u %12s %10s %10s"};
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_read()};
 
     auto dbTablesInfo{get_tables_info(txn)};
     auto dbFreeInfo{get_free_info(txn)};
 
     std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << "\n";
-    std::cout << " Effective pruning        : " << db::read_prune_mode(txn).to_string() << "\n"
+    std::cout << " Effective pruning        : " << read_prune_mode(txn).to_string() << "\n"
               << "\n";
 
     if (!dbTablesInfo.tables.empty()) {
@@ -688,11 +718,11 @@ void do_tables(db::EnvConfig& config) {
     env.close(config.shared);
 }
 
-void do_freelist(db::EnvConfig& config, bool detail) {
+void do_freelist(EnvConfig& config, bool detail) {
     static std::string fmt_hdr{"%9s %9s %12s"};
     static std::string fmt_row{"%9u %9u %12s"};
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_read()};
 
     auto db_free_info{get_free_info(txn)};
@@ -713,24 +743,24 @@ void do_freelist(db::EnvConfig& config, bool detail) {
     env.close(config.shared);
 }
 
-void do_schema(db::EnvConfig& config, bool force_update) {
-    auto env{silkworm::db::open_env(config)};
-    db::RWTxnManaged txn{env};
+void do_schema(EnvConfig& config, bool force_update) {
+    auto env{open_env(config)};
+    RWTxnManaged txn{env};
 
-    auto schema_version{db::read_schema_version(txn)};
+    auto schema_version{read_schema_version(txn)};
     if (!schema_version.has_value()) {
         throw std::runtime_error("Not a Silkworm db or no schema version found");
     }
     std::cout << "Database schema version: " << schema_version->to_string() << "\n";
 
     if (force_update) {
-        db::write_schema_version(txn, db::table::kRequiredSchemaVersion);
+        write_schema_version(txn, table::kRequiredSchemaVersion);
         txn.commit_and_stop();
-        std::cout << "New database schema version: " << db::table::kRequiredSchemaVersion.to_string() << "\n";
+        std::cout << "New database schema version: " << table::kRequiredSchemaVersion.to_string() << "\n";
     }
 }
 
-void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
+void do_compact(EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -745,13 +775,13 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
         throw std::runtime_error("Directory " + work_path.string() + " does not exist and could not be created");
     }
 
-    fs::path target_file_path{work_path / fs::path(db::kDbDataFileName)};
+    fs::path target_file_path{work_path / fs::path(kDbDataFileName)};
     if (fs::exists(target_file_path)) {
         throw std::runtime_error("Directory " + work_path.string() + " already contains an " +
-                                 std::string(db::kDbDataFileName) + " file");
+                                 std::string(kDbDataFileName) + " file");
     }
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
 
     // Determine file size of origin db
     size_t src_filesize{env.get_info().mi_geo.current};
@@ -778,11 +808,11 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
 
         // Do we have to replace original file ?
         if (replace) {
-            auto source_file_path{db::get_datafile_path(fs::path(config.path))};
+            auto source_file_path{get_datafile_path(fs::path(config.path))};
             // Create a backup copy before replacing ?
             if (!nobak) {
                 std::cout << " Creating backup copy of origin database ...\n";
-                std::string src_file_back{db::kDbDataFileName};
+                std::string src_file_back{kDbDataFileName};
                 src_file_back.append(".bak");
                 fs::path src_path_bak{source_file_path.parent_path() / fs::path{src_file_back}};
                 if (fs::exists(src_path_bak)) {
@@ -800,7 +830,7 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
     }
 }
 
-void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool create, bool noempty,
+void do_copy(EnvConfig& src_config, const std::string& target_dir, bool create, bool noempty,
              std::vector<std::string>& names, std::vector<std::string>& xnames) {
     if (!src_config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to source database");
@@ -822,19 +852,19 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
     }
 
     // Target config
-    db::EnvConfig tgt_config{target_path.string()};
+    EnvConfig tgt_config{target_path.string()};
     tgt_config.exclusive = true;
-    fs::path target_file_path{target_path / fs::path(db::kDbDataFileName)};
+    fs::path target_file_path{target_path / fs::path(kDbDataFileName)};
     if (!fs::exists(target_file_path)) {
         tgt_config.create = true;
     }
 
     // Source db
-    auto src_env{silkworm::db::open_env(src_config)};
+    auto src_env{open_env(src_config)};
     auto src_txn{src_env.start_read()};
 
     // Target db
-    auto tgt_env{silkworm::db::open_env(tgt_config)};
+    auto tgt_env{open_env(tgt_config)};
     auto tgt_txn{tgt_env.start_write()};
 
     // Get free info and tables from both source and target environment
@@ -976,7 +1006,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
     std::cout << "\n All done!\n";
 }
 
-static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorDupSort* cursor2, bool force_print = false) {
+static size_t print_multi_table_diff(ROCursorDupSort* cursor1, ROCursorDupSort* cursor2, bool force_print = false) {
     size_t diff_count{0};
     auto result1{cursor1->to_first()};
     auto result2{cursor2->to_first()};
@@ -1076,7 +1106,7 @@ static size_t print_multi_table_diff(db::ROCursorDupSort* cursor1, db::ROCursorD
     return diff_count;
 }
 
-static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* cursor2, bool force_print) {
+static size_t print_single_table_diff(ROCursor* cursor1, ROCursor* cursor2, bool force_print) {
     size_t diff_count{0};
     auto result1{cursor1->to_first()};
     auto result2{cursor2->to_first()};
@@ -1136,19 +1166,19 @@ static size_t print_single_table_diff(db::ROCursor* cursor1, db::ROCursor* curso
     return diff_count;
 }
 
-static void print_table_diff(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& table1, const DbTableInfo& table2, bool force_print = false) {
+static void print_table_diff(ROTxn& txn1, ROTxn& txn2, const DbTableInfo& table1, const DbTableInfo& table2, bool force_print = false) {
     ensure(table1.name == table2.name, [&]() { return "name mismatch: " + table1.name + " vs " + table2.name; });
     ensure(table1.info.key_mode() == table2.info.key_mode(),
            [&]() { return "key_mode mismatch: " + std::to_string(static_cast<int>(table1.info.key_mode())) + " vs " + std::to_string(static_cast<int>(table2.info.key_mode())); });
     ensure(table1.info.value_mode() == table2.info.value_mode(),
            [&]() { return "value_mode mismatch: " + std::to_string(static_cast<int>(table1.info.value_mode())) + " vs " + std::to_string(static_cast<int>(table2.info.value_mode())); });
 
-    db::MapConfig table1_config{
+    MapConfig table1_config{
         .name = table1.name.c_str(),
         .key_mode = table1.info.key_mode(),
         .value_mode = table1.info.value_mode(),
     };
-    db::MapConfig table2_config{
+    MapConfig table2_config{
         .name = table2.name.c_str(),
         .key_mode = table2.info.key_mode(),
         .value_mode = table2.info.value_mode(),
@@ -1220,7 +1250,7 @@ static DbComparisonResult compare_db_schema(const DbInfo& db1_info, const DbInfo
     return {};
 }
 
-static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbTableInfo& db1_table, const DbTableInfo& db2_table,
+static DbComparisonResult compare_table_content(ROTxn& txn1, ROTxn& txn2, const DbTableInfo& db1_table, const DbTableInfo& db2_table,
                                                 bool check_layout, bool deep, bool verbose) {
     // Check both databases have the same stats (e.g. number of records) for the specified table
     if (const auto result{compare(db1_table, db2_table, check_layout)}; !result || deep) {
@@ -1238,7 +1268,7 @@ static DbComparisonResult compare_table_content(db::ROTxn& txn1, db::ROTxn& txn2
     return {};
 }
 
-static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, const DbInfo& db1_info, const DbInfo& db2_info,
+static DbComparisonResult compare_db_content(ROTxn& txn1, ROTxn& txn2, const DbInfo& db1_info, const DbInfo& db2_info,
                                              bool check_layout, bool deep, bool verbose) {
     const auto& db1_tables{db1_info.tables};
     const auto& db2_tables{db2_info.tables};
@@ -1254,19 +1284,19 @@ static DbComparisonResult compare_db_content(db::ROTxn& txn1, db::ROTxn& txn2, c
     return {};
 }
 
-void compare(db::EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, bool deep, std::optional<std::string_view> table) {
+void compare(EnvConfig& config, const fs::path& target_datadir_path, bool check_layout, bool verbose, bool deep, std::optional<std::string_view> table) {
     ensure(fs::exists(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " does not exist"; });
     ensure(fs::is_directory(target_datadir_path), [&]() { return "target datadir " + target_datadir_path.string() + " must be a folder"; });
 
     DataDirectory target_datadir{target_datadir_path};
-    db::EnvConfig target_config{target_datadir.chaindata().path()};
+    EnvConfig target_config{target_datadir.chaindata().path()};
 
-    auto source_env{db::open_env(config)};
-    db::ROTxnManaged source_txn{source_env};
+    auto source_env{open_env(config)};
+    ROTxnManaged source_txn{source_env};
     const auto source_db_info{get_tables_info(source_txn)};
 
-    auto target_env{db::open_env(target_config)};
-    db::ROTxnManaged target_txn{target_env};
+    auto target_env{open_env(target_config)};
+    ROTxnManaged target_txn{target_env};
     const auto target_db_info{get_tables_info(target_txn)};
 
     if (table) {
@@ -1334,15 +1364,15 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
 
     // Prime database
-    db::EnvConfig config{data_dir.chaindata().path().string(), /*create*/ true};
-    auto env{db::open_env(config)};
-    db::RWTxnManaged txn{env};
-    db::table::check_or_create_chaindata_tables(txn);
-    db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
+    EnvConfig config{data_dir.chaindata().path().string(), /*create*/ true};
+    auto env{open_env(config)};
+    RWTxnManaged txn{env};
+    table::check_or_create_chaindata_tables(txn);
+    initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
 
     // Set schema version
-    silkworm::db::VersionBase v{3, 0, 0};
-    db::write_schema_version(txn, v);
+    VersionBase v{3, 0, 0};
+    write_schema_version(txn, v);
 
     if (!dry) {
         txn.commit_and_renew();
@@ -1352,10 +1382,10 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
     env.close();
 }
 
-void do_chainconfig(db::EnvConfig& config) {
-    auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
-    auto chain_config{db::read_chain_config(txn)};
+void do_chainconfig(EnvConfig& config) {
+    auto env{open_env(config)};
+    ROTxnManaged txn{env};
+    auto chain_config{read_chain_config(txn)};
     if (!chain_config.has_value()) {
         throw std::runtime_error("Not an initialized Silkworm db or unknown/custom chain ");
     }
@@ -1365,18 +1395,18 @@ void do_chainconfig(db::EnvConfig& config) {
               << chain.to_json().dump(/*indent=*/2) << "\n\n";
 }
 
-void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
-    auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
+void print_canonical_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
+    auto env{open_env(config)};
+    ROTxnManaged txn{env};
 
     // Determine last canonical block number
-    auto canonical_hashes_table{txn.ro_cursor(db::table::kCanonicalHashes)};
+    auto canonical_hashes_table{txn.ro_cursor(table::kCanonicalHashes)};
     auto last_data{canonical_hashes_table->to_last(/*throw_notfound=*/false)};
     ensure(last_data.done, "Table CanonicalHashes is empty");
     ensure(last_data.key.size() == sizeof(BlockNum), "Table CanonicalHashes has unexpected key size");
 
     // Use last block as max block if to is missing and perform range checks
-    BlockNum last{db::block_number_from_key(last_data.key)};
+    BlockNum last{block_number_from_key(last_data.key)};
     if (to) {
         ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
         ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
@@ -1386,30 +1416,30 @@ void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<
     }
 
     // Read the range of block headers and bodies from database
-    auto block_headers_table{txn.ro_cursor(db::table::kHeaders)};
-    auto block_bodies_table{txn.ro_cursor(db::table::kBlockBodies)};
+    auto block_headers_table{txn.ro_cursor(table::kHeaders)};
+    auto block_bodies_table{txn.ro_cursor(table::kBlockBodies)};
     for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
         // Lookup each canonical block hash from each block number
-        auto block_number_key{db::block_key(block_number)};
-        auto ch_data{canonical_hashes_table->find(db::to_slice(block_number_key), /*throw_notfound=*/false)};
+        auto block_number_key{block_key(block_number)};
+        auto ch_data{canonical_hashes_table->find(to_slice(block_number_key), /*throw_notfound=*/false)};
         ensure(ch_data.done, [&]() { return "Table CanonicalHashes does not contain key=" + to_hex(block_number_key); });
-        const auto block_hash{to_bytes32(db::from_slice(ch_data.value))};
+        const auto block_hash{to_bytes32(from_slice(ch_data.value))};
 
         // Read and decode each canonical block header
         auto block_key{db::block_key(block_number, block_hash.bytes)};
-        auto bh_data{block_headers_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
+        auto bh_data{block_headers_table->find(to_slice(block_key), /*throw_notfound=*/false)};
         ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
-        ByteView block_header_data{db::from_slice(bh_data.value)};
+        ByteView block_header_data{from_slice(bh_data.value)};
         BlockHeader header;
         const auto res{rlp::decode(block_header_data, header)};
-        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)); });
+        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(from_slice(bh_data.value)); });
 
         // Read and decode each canonical block body
-        auto bb_data{block_bodies_table->find(db::to_slice(block_key), /*throw_notfound=*/false)};
+        auto bb_data{block_bodies_table->find(to_slice(block_key), /*throw_notfound=*/false)};
         if (!bb_data.done) {
             break;
         }
-        ByteView block_body_data{db::from_slice(bb_data.value)};
+        ByteView block_body_data{from_slice(bb_data.value)};
         const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
@@ -1421,18 +1451,18 @@ void print_canonical_blocks(db::EnvConfig& config, BlockNum from, std::optional<
     }
 }
 
-void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
-    auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
+void print_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, uint64_t step) {
+    auto env{open_env(config)};
+    ROTxnManaged txn{env};
 
     // Determine last block header number
-    auto block_headers_table{txn.ro_cursor(db::table::kHeaders)};
+    auto block_headers_table{txn.ro_cursor(table::kHeaders)};
     auto last_data{block_headers_table->to_last(/*throw_notfound=*/false)};
     ensure(last_data.done, "Table Headers is empty");
     ensure(last_data.key.size() == sizeof(BlockNum) + kHashLength, "Table Headers has unexpected key size");
 
     // Use last block as max block if to is missing and perform range checks
-    BlockNum last{db::block_number_from_key(last_data.key)};
+    BlockNum last{block_number_from_key(last_data.key)};
     if (to) {
         ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
         ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
@@ -1442,23 +1472,23 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
     }
 
     // Read the range of block headers and bodies from database
-    auto block_bodies_table{txn.ro_cursor(db::table::kBlockBodies)};
+    auto block_bodies_table{txn.ro_cursor(table::kBlockBodies)};
     for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
         // Read and decode each block header
         auto block_key{db::block_key(block_number)};
-        auto bh_data{block_headers_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};
+        auto bh_data{block_headers_table->lower_bound(to_slice(block_key), /*throw_notfound=*/false)};
         ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
-        ByteView block_header_data{db::from_slice(bh_data.value)};
+        ByteView block_header_data{from_slice(bh_data.value)};
         BlockHeader header;
         const auto res{rlp::decode(block_header_data, header)};
-        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(db::from_slice(bh_data.value)); });
+        ensure(res.has_value(), [&]() { return "Cannot decode block header from rlp=" + to_hex(from_slice(bh_data.value)); });
 
         // Read and decode each block body
-        auto bb_data{block_bodies_table->lower_bound(db::to_slice(block_key), /*throw_notfound=*/false)};
+        auto bb_data{block_bodies_table->lower_bound(to_slice(block_key), /*throw_notfound=*/false)};
         if (!bb_data.done) {
             break;
         }
-        ByteView block_body_data{db::from_slice(bb_data.value)};
+        ByteView block_body_data{from_slice(bb_data.value)};
         const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
@@ -1470,23 +1500,23 @@ void print_blocks(db::EnvConfig& config, BlockNum from, std::optional<BlockNum> 
     }
 }
 
-void do_first_byte_analysis(db::EnvConfig& config) {
+void do_first_byte_analysis(EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %=50s "};
 
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
+    auto env{open_env(config)};
+    ROTxnManaged txn{env};
 
     std::cout << "\n"
               << (boost::format(fmt_hdr) % "Table name" % "%") << "\n"
               << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(50, '-')) << "\n"
-              << (boost::format(" %-24s ") % db::table::kCode.name) << std::flush;
+              << (boost::format(" %-24s ") % table::kCode.name) << std::flush;
 
     std::unordered_map<uint8_t, size_t> histogram;
-    auto code_cursor{db::open_cursor(txn, db::table::kCode)};
+    auto code_cursor{open_cursor(txn, table::kCode)};
 
     Progress progress{50};
     size_t total_entries{txn->get_map_stat(code_cursor.map()).ms_entries};
@@ -1507,7 +1537,7 @@ void do_first_byte_analysis(db::EnvConfig& config) {
                         }
                     });
 
-    BlockNum last_block{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
+    BlockNum last_block{stages::read_stage_progress(txn, stages::kExecutionKey)};
     progress.set_current(total_entries);
     std::cout << progress.print_interval('.') << "\n";
 
@@ -1533,13 +1563,13 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     std::cout << "\n\n";
 }
 
-void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uint32_t step) {
+void do_extract_headers(EnvConfig& config, const std::string& file_name, uint32_t step) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
+    auto env{open_env(config)};
+    ROTxnManaged txn{env};
 
     // We can store all header hashes into a single byte array given all hashes have same length.
     // We only need to ensure that the total size of the byte array is a multiple of hash length.
@@ -1552,18 +1582,18 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
                << "#include <cstddef>\n"
                << "static const uint64_t kPreverifiedHashesMainnetInternal[] = {\n";
 
-    BlockNum block_max{silkworm::db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
+    BlockNum block_max{stages::read_stage_progress(txn, stages::kHeadersKey)};
     BlockNum max_height{0};
-    auto hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
+    auto hashes_table{open_cursor(txn, table::kCanonicalHashes)};
 
     for (BlockNum block_num = 0; block_num <= block_max; block_num += step) {
         auto block_key{db::block_key(block_num)};
-        auto data{hashes_table.find(db::to_slice(block_key), false)};
+        auto data{hashes_table.find(to_slice(block_key), false)};
         if (!data.done) {
             break;
         }
 
-        const uint64_t* chuncks{reinterpret_cast<const uint64_t*>(db::from_slice(data.value).data())};
+        const uint64_t* chuncks{reinterpret_cast<const uint64_t*>(from_slice(data.value).data())};
         out_stream << "   ";
         for (int i = 0; i < 4; ++i) {
             std::string hex{to_hex(chuncks[i], true)};
@@ -1581,23 +1611,23 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     out_stream.close();
 }
 
-void do_trie_account_analysis(db::EnvConfig& config) {
+void do_trie_account_analysis(EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %=50s "};
 
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_read()};
 
     std::cout << "\n"
               << (boost::format(fmt_hdr) % "Table name" % "%") << "\n"
               << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(50, '-')) << "\n"
-              << (boost::format(" %-24s ") % db::table::kTrieOfAccounts.name) << std::flush;
+              << (boost::format(" %-24s ") % table::kTrieOfAccounts.name) << std::flush;
 
     std::map<size_t, size_t> histogram;
-    auto code_cursor{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto code_cursor{open_cursor(txn, table::kTrieOfAccounts)};
 
     Progress progress{50};
     size_t total_entries{txn.get_map_stat(code_cursor.map()).ms_entries};
@@ -1628,22 +1658,22 @@ void do_trie_account_analysis(db::EnvConfig& config) {
     std::cout << "\n\n";
 }
 
-void do_trie_scan(db::EnvConfig& config, bool del) {
-    auto env{silkworm::db::open_env(config)};
+void do_trie_scan(EnvConfig& config, bool del) {
+    auto env{open_env(config)};
     auto txn{env.start_write()};
-    std::vector<db::MapConfig> tables{db::table::kTrieOfAccounts, db::table::kTrieOfStorage};
+    std::vector<MapConfig> tables{table::kTrieOfAccounts, table::kTrieOfStorage};
     size_t counter{1};
 
     for (const auto& map_config : tables) {
         if (SignalHandler::signalled()) {
             break;
         }
-        db::PooledCursor cursor(txn, map_config);
+        PooledCursor cursor(txn, map_config);
         std::cout << " Scanning " << map_config.name << "\n";
         auto data{cursor.to_first(false)};
         while (data) {
             if (data.value.empty()) {
-                std::cout << "Empty value at key " << to_hex(db::from_slice(data.key), true) << "\n";
+                std::cout << "Empty value at key " << to_hex(from_slice(data.key), true) << "\n";
                 if (del) {
                     cursor.erase();
                 }
@@ -1663,7 +1693,7 @@ void do_trie_scan(db::EnvConfig& config, bool del) {
     std::cout << "\n\n";
 }
 
-void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
+void do_trie_integrity(EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -1671,15 +1701,15 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
     using namespace std::chrono_literals;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    auto env{silkworm::db::open_env(config)};
+    auto env{open_env(config)};
     auto txn{env.start_write()};
 
-    std::string source{db::table::kTrieOfAccounts.name};
+    std::string source{table::kTrieOfAccounts.name};
 
     bool is_healthy{true};
-    db::PooledCursor trie_cursor1(txn, db::table::kTrieOfAccounts);
-    db::PooledCursor trie_cursor2(txn, db::table::kTrieOfAccounts);
-    db::PooledCursor state_cursor(txn, db::table::kHashedAccounts);
+    PooledCursor trie_cursor1(txn, table::kTrieOfAccounts);
+    PooledCursor trie_cursor2(txn, table::kTrieOfAccounts);
+    PooledCursor state_cursor(txn, table::kHashedAccounts);
     size_t prefix_len{0};
 
     Bytes buffer;
@@ -1688,11 +1718,11 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
     // First loop Accounts; Second loop Storage
     for (int loop_id{0}; loop_id < 2; ++loop_id) {
         if (loop_id != 0) {
-            source = std::string(db::table::kTrieOfStorage.name);
-            trie_cursor1.bind(txn, db::table::kTrieOfStorage);
-            trie_cursor2.bind(txn, db::table::kTrieOfStorage);
-            state_cursor.bind(txn, db::table::kHashedStorage);
-            prefix_len = db::kHashedStoragePrefixLength;
+            source = std::string(table::kTrieOfStorage.name);
+            trie_cursor1.bind(txn, table::kTrieOfStorage);
+            trie_cursor2.bind(txn, table::kTrieOfStorage);
+            state_cursor.bind(txn, table::kHashedStorage);
+            prefix_len = kHashedStoragePrefixLength;
         }
 
         SILK_INFO << "Checking ..." << log::Args{"source", source, "state", (with_state_coverage ? "true" : "false")};
@@ -1700,8 +1730,8 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
         auto data1{trie_cursor1.to_first(false)};
 
         while (data1) {
-            auto data1_k{db::from_slice(data1.key)};
-            auto data1_v{db::from_slice(data1.value)};
+            auto data1_k{from_slice(data1.key)};
+            auto data1_v{from_slice(data1.value)};
             auto node_k{data1_k.substr(prefix_len)};
 
             // Only unmarshal relevant data without copy on read
@@ -1795,14 +1825,14 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                         continue;
                     }
                     buffer.back() = static_cast<uint8_t>(i);
-                    auto data2{trie_cursor2.lower_bound(db::to_slice(buffer), false)};
+                    auto data2{trie_cursor2.lower_bound(to_slice(buffer), false)};
                     if (!data2) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
                                                  " but there is no child " + std::to_string(i) +
                                                  " in db. LTE found is : null");
                     }
-                    auto data2_k{db::from_slice(data2.key)};
+                    auto data2_k{from_slice(data2.key)};
                     if (!data2_k.starts_with(buffer)) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
@@ -1826,12 +1856,12 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
 
                 for (size_t i{data1_k.size() - 1}; i >= prefix_len && !found; --i) {
                     auto parent_seek_key{data1_k.substr(0, i)};
-                    auto data2{trie_cursor2.find(db::to_slice(parent_seek_key), false)};
+                    auto data2{trie_cursor2.find(to_slice(parent_seek_key), false)};
                     if (!data2) {
                         continue;
                     }
                     found = true;
-                    const auto data2_v{db::from_slice(data2.value)};
+                    const auto data2_v{from_slice(data2.value)};
                     const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
                     const auto parent_child_id{static_cast<int>(data1_k[i])};
                     const auto parent_has_tree_bit{(parent_tree_mask & (1 << parent_child_id)) != 0};
@@ -1910,9 +1940,9 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
 
                     // On first loop we search HashedAccounts (which is not dup-sorted)
                     if (!loop_id) {
-                        auto data3{state_cursor.lower_bound(db::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound(to_slice(seek), false)};
                         if (data3) {
-                            auto data3_k{db::from_slice(data3.key)};
+                            auto data3_k{from_slice(data3.key)};
                             if (data3_k.length() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
@@ -1924,17 +1954,17 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                                              std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
                                              std::to_string(i) + "," + to_hex(seek, true) + " in hashed state"};
                             if (data3) {
-                                auto data3_k{db::from_slice(data3.key)};
+                                auto data3_k{from_slice(data3.key)};
                                 what.append(" found instead " + to_hex(data3_k, true));
                             }
                             throw std::runtime_error(what);
                         }
                     } else {
                         // On second loop we search HashedStorage (which is dup-sorted)
-                        auto data3{state_cursor.lower_bound_multivalue(db::to_slice(data1_k.substr(0, prefix_len)),
-                                                                       db::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound_multivalue(to_slice(data1_k.substr(0, prefix_len)),
+                                                                       to_slice(seek), false)};
                         if (data3) {
-                            auto data3_v{db::from_slice(data3.value)};
+                            auto data3_v{from_slice(data3.value)};
                             if (data3_v.length() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_v.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
@@ -1946,8 +1976,8 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                                              std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
                                              std::to_string(i) + "," + to_hex(seek, true) + " in state"};
                             if (data3) {
-                                auto data3_k{db::from_slice(data3.key)};
-                                auto data3_v{db::from_slice(data3.value)};
+                                auto data3_k{from_slice(data3.key)};
+                                auto data3_v{from_slice(data3.value)};
                                 what.append(" found instead " + to_hex(data3_k, true) + to_hex(data3_v, false));
                             }
                             throw std::runtime_error(what);
@@ -1978,7 +2008,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
     env.close();
 }
 
-void do_trie_reset(db::EnvConfig& config, bool always_yes) {
+void do_trie_reset(EnvConfig& config, bool always_yes) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -1989,37 +2019,37 @@ void do_trie_reset(db::EnvConfig& config, bool always_yes) {
         }
     }
 
-    auto env{silkworm::db::open_env(config)};
-    db::RWTxnManaged txn{env};
-    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfAccounts.name};
-    txn->clear_map(db::table::kTrieOfAccounts.name);
-    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfStorage.name};
-    txn->clear_map(db::table::kTrieOfStorage.name);
-    SILK_INFO << "Setting progress ..." << log::Args{"key", db::stages::kIntermediateHashesKey, "value", "0"};
-    db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
+    auto env{open_env(config)};
+    RWTxnManaged txn{env};
+    SILK_INFO << "Clearing ..." << log::Args{"table", table::kTrieOfAccounts.name};
+    txn->clear_map(table::kTrieOfAccounts.name);
+    SILK_INFO << "Clearing ..." << log::Args{"table", table::kTrieOfStorage.name};
+    txn->clear_map(table::kTrieOfStorage.name);
+    SILK_INFO << "Setting progress ..." << log::Args{"key", stages::kIntermediateHashesKey, "value", "0"};
+    stages::write_stage_progress(txn, stages::kIntermediateHashesKey, 0);
     SILK_INFO << "Committing ..." << log::Args{};
     txn.commit_and_renew();
     SILK_INFO << "Closing db" << log::Args{"path", env.get_path().string()};
     env.close();
 }
 
-void do_trie_root(db::EnvConfig& config) {
+void do_trie_root(EnvConfig& config) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{silkworm::db::open_env(config)};
-    db::ROTxnManaged txn{env};
-    db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
+    auto env{open_env(config)};
+    ROTxnManaged txn{env};
+    PooledCursor trie_accounts(txn, table::kTrieOfAccounts);
 
     // Retrieve expected state root
-    auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
-    auto intermediate_hashes_stage_progress{db::stages::read_stage_progress(txn, db::stages::kIntermediateHashesKey)};
+    auto hashstate_stage_progress{stages::read_stage_progress(txn, stages::kHashStateKey)};
+    auto intermediate_hashes_stage_progress{stages::read_stage_progress(txn, stages::kIntermediateHashesKey)};
     if (hashstate_stage_progress != intermediate_hashes_stage_progress) {
         throw std::runtime_error("HashState and Intermediate hashes stage progresses do not match");
     }
-    auto header_hash{db::read_canonical_header_hash(txn, hashstate_stage_progress)};
-    auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
+    auto header_hash{read_canonical_header_hash(txn, hashstate_stage_progress)};
+    auto header{read_header(txn, hashstate_stage_progress, header_hash->bytes)};
     auto expected_state_root{header->state_root};
 
     trie::PrefixSet empty_changes{};  // We need this to tell we have no changes. If nullptr means full regen
@@ -2048,7 +2078,7 @@ void do_trie_root(db::EnvConfig& config) {
     }
 }
 
-void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
+void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -2060,138 +2090,138 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
 
     log::Info() << "Ok... you say it. Please be patient...";
 
-    auto env{silkworm::db::open_env(config)};
-    db::RWTxnManaged txn(env);
+    auto env{open_env(config)};
+    RWTxnManaged txn(env);
 
     StopWatch sw(/*auto_start=*/true);
     // Void finish stage
-    db::stages::write_stage_progress(txn, db::stages::kFinishKey, 0);
+    stages::write_stage_progress(txn, stages::kFinishKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kFinishKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kFinishKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void TxLookup stage
-    SILK_INFO << db::stages::kTxLookupKey << log::Args{"table", db::table::kTxLookup.name} << "truncating ...";
-    db::PooledCursor source(*txn, db::table::kTxLookup);
+    SILK_INFO << stages::kTxLookupKey << log::Args{"table", table::kTxLookup.name} << "truncating ...";
+    PooledCursor source(*txn, table::kTxLookup);
     txn->clear_map(source.map());
-    db::stages::write_stage_progress(txn, db::stages::kTxLookupKey, 0);
-    db::stages::write_stage_prune_progress(txn, db::stages::kTxLookupKey, 0);
+    stages::write_stage_progress(txn, stages::kTxLookupKey, 0);
+    stages::write_stage_prune_progress(txn, stages::kTxLookupKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kTxLookupKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kTxLookupKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void LogIndex stage
-    SILK_INFO << db::stages::kLogIndexKey << log::Args{"table", db::table::kLogTopicIndex.name} << " truncating ...";
-    source.bind(*txn, db::table::kLogTopicIndex);
+    SILK_INFO << stages::kLogIndexKey << log::Args{"table", table::kLogTopicIndex.name} << " truncating ...";
+    source.bind(*txn, table::kLogTopicIndex);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kLogIndexKey << log::Args{"table", db::table::kLogAddressIndex.name} << " truncating ...";
-    source.bind(*txn, db::table::kLogAddressIndex);
+    SILK_INFO << stages::kLogIndexKey << log::Args{"table", table::kLogAddressIndex.name} << " truncating ...";
+    source.bind(*txn, table::kLogAddressIndex);
     txn->clear_map(source.map());
-    db::stages::write_stage_progress(txn, db::stages::kLogIndexKey, 0);
-    db::stages::write_stage_prune_progress(txn, db::stages::kLogIndexKey, 0);
+    stages::write_stage_progress(txn, stages::kLogIndexKey, 0);
+    stages::write_stage_prune_progress(txn, stages::kLogIndexKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kLogIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kLogIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HistoryIndex (StorageHistoryIndex + AccountHistoryIndex) stage
-    SILK_INFO << db::stages::kStorageHistoryIndexKey << log::Args{"table", db::table::kStorageHistory.name} << " truncating ...";
-    source.bind(*txn, db::table::kStorageHistory);
+    SILK_INFO << stages::kStorageHistoryIndexKey << log::Args{"table", table::kStorageHistory.name} << " truncating ...";
+    source.bind(*txn, table::kStorageHistory);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kAccountHistoryIndexKey << log::Args{"table", db::table::kAccountHistory.name} << " truncating ...";
-    source.bind(*txn, db::table::kAccountHistory);
+    SILK_INFO << stages::kAccountHistoryIndexKey << log::Args{"table", table::kAccountHistory.name} << " truncating ...";
+    source.bind(*txn, table::kAccountHistory);
     txn->clear_map(source.map());
-    db::stages::write_stage_progress(txn, db::stages::kStorageHistoryIndexKey, 0);
-    db::stages::write_stage_progress(txn, db::stages::kAccountHistoryIndexKey, 0);
-    db::stages::write_stage_prune_progress(txn, db::stages::kStorageHistoryIndexKey, 0);
-    db::stages::write_stage_prune_progress(txn, db::stages::kAccountHistoryIndexKey, 0);
+    stages::write_stage_progress(txn, stages::kStorageHistoryIndexKey, 0);
+    stages::write_stage_progress(txn, stages::kAccountHistoryIndexKey, 0);
+    stages::write_stage_prune_progress(txn, stages::kStorageHistoryIndexKey, 0);
+    stages::write_stage_prune_progress(txn, stages::kAccountHistoryIndexKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kStorageHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
-    SILK_INFO << db::stages::kAccountHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kStorageHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kAccountHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HashState stage
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"table", db::table::kHashedCodeHash.name} << " truncating ...";
-    source.bind(*txn, db::table::kHashedCodeHash);
+    SILK_INFO << stages::kHashStateKey << log::Args{"table", table::kHashedCodeHash.name} << " truncating ...";
+    source.bind(*txn, table::kHashedCodeHash);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"table", db::table::kHashedStorage.name} << " truncating ...";
-    source.bind(*txn, db::table::kHashedStorage);
+    SILK_INFO << stages::kHashStateKey << log::Args{"table", table::kHashedStorage.name} << " truncating ...";
+    source.bind(*txn, table::kHashedStorage);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"table", db::table::kHashedAccounts.name} << " truncating ...";
-    source.bind(*txn, db::table::kHashedAccounts);
+    SILK_INFO << stages::kHashStateKey << log::Args{"table", table::kHashedAccounts.name} << " truncating ...";
+    source.bind(*txn, table::kHashedAccounts);
     txn->clear_map(source.map());
-    db::stages::write_stage_progress(txn, db::stages::kHashStateKey, 0);
-    db::stages::write_stage_prune_progress(txn, db::stages::kHashStateKey, 0);
+    stages::write_stage_progress(txn, stages::kHashStateKey, 0);
+    stages::write_stage_prune_progress(txn, stages::kHashStateKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kHashStateKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Intermediate Hashes stage
-    SILK_INFO << db::stages::kIntermediateHashesKey << log::Args{"table", db::table::kTrieOfStorage.name} << " truncating ...";
-    source.bind(*txn, db::table::kTrieOfStorage);
+    SILK_INFO << stages::kIntermediateHashesKey << log::Args{"table", table::kTrieOfStorage.name} << " truncating ...";
+    source.bind(*txn, table::kTrieOfStorage);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kIntermediateHashesKey << log::Args{"table", db::table::kTrieOfAccounts.name} << " truncating ...";
-    source.bind(*txn, db::table::kTrieOfAccounts);
+    SILK_INFO << stages::kIntermediateHashesKey << log::Args{"table", table::kTrieOfAccounts.name} << " truncating ...";
+    source.bind(*txn, table::kTrieOfAccounts);
     txn->clear_map(source.map());
-    db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
+    stages::write_stage_progress(txn, stages::kIntermediateHashesKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kIntermediateHashesKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kIntermediateHashesKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Execution stage
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kBlockReceipts.name} << " truncating ...";
-    source.bind(*txn, db::table::kBlockReceipts);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kBlockReceipts.name} << " truncating ...";
+    source.bind(*txn, table::kBlockReceipts);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kLogs.name} << " truncating ...";
-    source.bind(*txn, db::table::kLogs);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kLogs.name} << " truncating ...";
+    source.bind(*txn, table::kLogs);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kIncarnationMap.name} << " truncating ...";
-    source.bind(*txn, db::table::kIncarnationMap);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kIncarnationMap.name} << " truncating ...";
+    source.bind(*txn, table::kIncarnationMap);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kCode.name} << " truncating ...";
-    source.bind(*txn, db::table::kCode);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kCode.name} << " truncating ...";
+    source.bind(*txn, table::kCode);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kPlainCodeHash.name} << " truncating ...";
-    source.bind(*txn, db::table::kPlainCodeHash);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kPlainCodeHash.name} << " truncating ...";
+    source.bind(*txn, table::kPlainCodeHash);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kAccountChangeSet.name} << " truncating ...";
-    source.bind(*txn, db::table::kAccountChangeSet);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kAccountChangeSet.name} << " truncating ...";
+    source.bind(*txn, table::kAccountChangeSet);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kStorageChangeSet.name} << " truncating ...";
-    source.bind(*txn, db::table::kStorageChangeSet);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kStorageChangeSet.name} << " truncating ...";
+    source.bind(*txn, table::kStorageChangeSet);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kPlainState.name} << " truncating ...";
-    source.bind(*txn, db::table::kPlainState);
+    SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kPlainState.name} << " truncating ...";
+    source.bind(*txn, table::kPlainState);
     txn->clear_map(source.map());
     txn.commit_and_renew();
 
     {
-        SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kPlainState.name} << " redo genesis allocations ...";
+        SILK_INFO << stages::kExecutionKey << log::Args{"table", table::kPlainState.name} << " redo genesis allocations ...";
         // Read chain ID from database
-        const auto chain_config{db::read_chain_config(txn)};
+        const auto chain_config{read_chain_config(txn)};
         ensure(chain_config.has_value(), "cannot read chain configuration from database");
         // Read genesis data from embedded file
         auto source_data{read_genesis_data(chain_config->chain_id)};
         // Parse genesis JSON data
         // N.B. = instead of {} initialization due to https://github.com/nlohmann/json/issues/2204
         auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
-        db::initialize_genesis_allocations(txn, genesis_json);
+        initialize_genesis_allocations(txn, genesis_json);
         txn.commit_and_renew();
     }
 
-    db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 0);
-    db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, 0);
+    stages::write_stage_progress(txn, stages::kExecutionKey, 0);
+    stages::write_stage_prune_progress(txn, stages::kExecutionKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kExecutionKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
 
     if (!keep_senders) {
         // Void Senders stage
-        SILK_INFO << db::stages::kSendersKey << log::Args{"table", db::table::kSenders.name} << " truncating ...";
-        source.bind(*txn, db::table::kSenders);
+        SILK_INFO << stages::kSendersKey << log::Args{"table", table::kSenders.name} << " truncating ...";
+        source.bind(*txn, table::kSenders);
         txn->clear_map(source.map());
-        db::stages::write_stage_progress(txn, db::stages::kSendersKey, 0);
-        db::stages::write_stage_prune_progress(txn, db::stages::kSendersKey, 0);
+        stages::write_stage_progress(txn, stages::kSendersKey, 0);
+        stages::write_stage_prune_progress(txn, stages::kSendersKey, 0);
         txn.commit_and_renew();
-        SILK_INFO << db::stages::kSendersKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+        SILK_INFO << stages::kSendersKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
         if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
     }
 
@@ -2200,12 +2230,12 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     SILK_INFO << "All done" << log::Args{"in", StopWatch::format(duration)};
 }
 
-void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir, bool keep_blocks) {
+void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_blocks) {
     using namespace concurrency::awaitable_wait_for_one;
 
     class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
       public:
-        explicit StageSchedulerAdapter(db::RWAccess db_access)
+        explicit StageSchedulerAdapter(RWAccess db_access)
             : db_access_(std::move(db_access)) {}
         ~StageSchedulerAdapter() override = default;
 
@@ -2219,7 +2249,7 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir, bool keep_b
             return ActiveComponent::stop();
         }
 
-        Task<void> schedule(std::function<void(db::RWTxn&)> callback) override {
+        Task<void> schedule(std::function<void(RWTxn&)> callback) override {
             co_await concurrency::spawn_task(io_context_, [this, c = std::move(callback)]() -> Task<void> {
                 auto tx = this->db_access_.start_rw_tx();
                 c(tx);
@@ -2230,21 +2260,20 @@ void do_freeze(db::EnvConfig& config, const DataDirectory& data_dir, bool keep_b
 
       private:
         boost::asio::io_context io_context_;
-        db::RWAccess db_access_;
+        RWAccess db_access_;
     };
 
-    auto env = db::open_env(config);
-    StageSchedulerAdapter stage_scheduler{db::RWAccess{env}};
+    auto env = open_env(config);
+    StageSchedulerAdapter stage_scheduler{RWAccess{env}};
 
-    snapshots::SnapshotSettings settings;
-    settings.repository_dir = data_dir.snapshots().path();
-    settings.no_downloader = true;
-    std::unique_ptr<snapshots::SnapshotBundleFactory> bundle_factory = std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>();
-    snapshots::SnapshotRepository repository{std::move(settings), std::move(bundle_factory)};
+    snapshots::SnapshotRepository repository{
+        data_dir.snapshots().path(),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<SnapshotBundleFactoryImpl>(),
+    };
     repository.reopen_folder();
-    db::DataModel::set_snapshot_repository(&repository);
 
-    db::Freezer freezer{db::ROAccess{env}, repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
+    Freezer freezer{ROAccess{env}, repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
 
     test_util::TaskRunner runner;
     runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));
@@ -2463,15 +2492,15 @@ int main(int argc, char* argv[]) {
                 std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not exist or is empty\n";
                 return -1;
             }
-            auto mdbx_path{db::get_datafile_path(data_dir.chaindata().path())};
+            auto mdbx_path{get_datafile_path(data_dir.chaindata().path())};
             if (!fs::exists(mdbx_path) || !fs::is_regular_file(mdbx_path)) {
                 std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not contain "
-                          << db::kDbDataFileName << "\n";
+                          << kDbDataFileName << "\n";
                 return -1;
             }
         }
 
-        db::EnvConfig src_config{data_dir.chaindata().path().string()};
+        EnvConfig src_config{data_dir.chaindata().path().string()};
         src_config.shared = static_cast<bool>(*shared_opt);
         src_config.exclusive = static_cast<bool>(*exclusive_opt);
 

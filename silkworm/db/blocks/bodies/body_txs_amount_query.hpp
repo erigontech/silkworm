@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-#include <silkworm/db/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 
 namespace silkworm::snapshots {
 
@@ -29,12 +29,12 @@ class BodyTxsAmountQuery {
         uint64_t count{};
     };
 
-    explicit BodyTxsAmountQuery(const Snapshot& snapshot) : snapshot_(snapshot) {}
+    explicit BodyTxsAmountQuery(const SegmentFileReader& segment) : segment_(segment) {}
 
     Result exec();
 
   private:
-    const Snapshot& snapshot_;
+    const SegmentFileReader& segment_;
 };
 
 }  // namespace silkworm::snapshots

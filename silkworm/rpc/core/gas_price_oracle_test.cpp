@@ -16,6 +16,7 @@
 
 #include "gas_price_oracle.hpp"
 
+#include <algorithm>
 #include <iostream>
 
 #include <boost/asio/co_spawn.hpp>
@@ -81,13 +82,9 @@ static void fill_blocks_vector(std::vector<silkworm::BlockWithHash>& blocks, con
                                const VariableBlockData& variable_block_data) {
     for (auto idx = 0; idx < static_cast<int>(blocks.capacity()); ++idx) {
         int64_t max_priority = int64_t{variable_block_data.max_priority_fee_per_gas} + variable_block_data.delta_max_priority_fee_per_gas * idx;
-        if (max_priority < 0) {
-            max_priority = 0;
-        }
+        max_priority = std::max<int64_t>(max_priority, 0);
         int64_t max_fee = int64_t{variable_block_data.max_fee_per_gas} + variable_block_data.delta_max_fee_per_gas * idx;
-        if (max_fee < 0) {
-            max_fee = 0;
-        }
+        max_fee = std::max<int64_t>(max_fee, 0);
 
         FixedBlockData block_data = {
             variable_block_data.base_fee,

@@ -23,17 +23,16 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/types.hpp>
-#include <silkworm/rpc/types/log.hpp>
 
 namespace silkworm::rpc::json_rpc {
 class RequestHandler;

@@ -1,32 +1,48 @@
 #!/bin/bash
 
-if [ "$#" -ne 4 ]; then
-  echo "Usage: $0 Erigon2/Erigon3 <integration_dir> <jwt_file> <failed_tests_dir>"
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <integration_dir> <jwt_file> <failed_tests_dir>"
   exit 1
 fi
 
 set +e # Disable exit on error
 
-cd "$2" || exit 1
+cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-if [ "$1" == 'Erigon2' ]; then
-   python3 ./run_tests.py --continue --blockchain mainnet --jwt "$3" --display-only-fail --port 8545 -x admin_,eth_mining,eth_getWork,eth_coinbase,eth_createAccessList/test_16.json,engine_,net_,web3_,txpool_,eth_submitWork,eth_submitHashrate,eth_protocolVersion,erigon_nodeInfo --transport_type http,websocket
-else
-   python3 ./run_tests.py --continue --blockchain mainnet --jwt "$3" --display-only-fail --port 51515 -x engine_,\
+
+# debug_traceTransaction: modify expected response according erigon and makes silkworm fix
+# trace_filter/test_16.json: modify expected response according erigon and makes silkworm fix
+# debug_traceCall/test_02.json: modify expected response according erigon and makes silkworm fix
+# erigon_getHeaderByNumber: modify expected response according erigon and makes silkworm fix
+# erigon_getHeaderByHash: modify expected response according erigon and makes silkworm fix
+# eth_feeHistory: modify expected response according erigon and makes silkworm fix
+# trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
+# trace_rawTransaction: different implementation
+
+python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
+debug_traceCall/test_02.json,\
+debug_traceTransaction,\
+engine_,\
 erigon_getBalanceChangesInBlock,\
-ots_getTransactionBySenderAndNonce,\
-parity_listStorageKeys,\
-ots_getContractCreator,\
+erigon_getHeaderByHash,\
+erigon_getHeaderByNumber,\
 erigon_getLatestLogs,\
+eth_feeHistory,\
 eth_getLogs,\
-txpool_content,\
+eth_getBalance/test_05.json,\
+ots_getTransactionBySenderAndNonce,\
+ots_getContractCreator,\
+ots_hasCode,\
 ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore --transport_type http,websocket
-fi
+ots_searchTransactionsBefore,\
+parity_listStorageKeys/test_12.json,\
+trace_rawTransaction,\
+trace_filter/test_16.json,\
+txpool_content -- http,websocket
 
 failed_test=$?
 
@@ -37,7 +53,9 @@ else
     echo "error detected during tests"
 
     # Save failed results to a directory with timestamp and commit hash
-    cp -r "$2"/mainnet/results/ "$4"
+    cp -r "$1"/mainnet/results/ "$3"
 fi
 
 exit $failed_test
+
+

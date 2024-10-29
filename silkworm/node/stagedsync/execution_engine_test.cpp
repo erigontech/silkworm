@@ -27,23 +27,29 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 #include <silkworm/node/common/node_settings.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/test_util/make_stages_factory.hpp>
 #include <silkworm/node/test_util/temp_chain_data_node_settings.hpp>
 
 namespace silkworm {
 
-using namespace silkworm::test_util;
+using namespace silkworm::db;
 using namespace stagedsync;
 
 using execution::api::InvalidChain;
 using execution::api::ValidationError;
 using execution::api::ValidChain;
+
+using silkworm::stagedsync::test_util::make_stages_factory;
+using silkworm::test_util::generate_sample_child_blocks;
+using silkworm::test_util::SetLogVerbosityGuard;
+using silkworm::test_util::TaskRunner;
 
 class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
   public:
@@ -52,18 +58,16 @@ class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::main_chain_;
 };
 
-static BodiesStageFactory make_bodies_stage_factory(const ChainConfig& chain_config) {
-    return [chain_config](SyncContext* sync_context) {
-        return std::make_unique<BodiesStage>(sync_context, chain_config, [] { return 0; });
-    };
-};
-
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-    test_util::TaskRunner runner;
-    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+    SetLogVerbosityGuard log_guard(log::Level::kNone);
+    TaskRunner runner;
+    Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     auto db_context = db::test_util::TestDatabaseContext();
+
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](ROTxn& tx) { return DataModel{tx, repository}; };
+
     auto node_settings = NodeSettings{
         .data_directory = std::make_unique<DataDirectory>(db_context.mdbx_env().get_path(), false),
         .chaindata_env_config = db_context.get_env_config(),
@@ -72,13 +76,14 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         .keep_db_txn_open = true,
     };
 
-    db::RWAccess db_access{db_context.mdbx_env()};
+    RWAccess db_access{db_context.mdbx_env()};
 
     ExecutionEngineForTest exec_engine{
         runner.executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        make_bodies_stage_factory(*node_settings.chain_config),
+        make_stages_factory(node_settings, data_model_factory),
         db_access,
     };
     exec_engine.open();
@@ -98,9 +103,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     }
 
     SECTION("get_header by hash") {
-        auto db_block_number = silkworm::db::read_block_number(tx, header1_hash);
+        auto db_block_number = silkworm::read_block_number(tx, header1_hash);
         silkworm::Block db_block;
-        auto db_read = silkworm::db::read_block(tx, header1_hash, *db_block_number, db_block);
+        auto db_read = silkworm::read_block(tx, header1_hash, *db_block_number, db_block);
         REQUIRE(db_read);
 
         auto header1 = exec_engine.get_header(header1_hash);
@@ -112,9 +117,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     SECTION("get_header by hash not found") {
         const silkworm::Hash header_not_found_hash{0x00000000000000000000000000000000000000000000000000000000deadbeef_bytes32};
 
-        auto db_block_number = silkworm::db::read_block_number(tx, header_not_found_hash);
+        auto db_block_number = silkworm::read_block_number(tx, header_not_found_hash);
         silkworm::Block db_block;
-        auto db_read = silkworm::db::read_block(tx, header_not_found_hash, *db_block_number, db_block);
+        auto db_read = silkworm::read_block(tx, header_not_found_hash, *db_block_number, db_block);
         REQUIRE(!db_read);
 
         auto header = exec_engine.get_header(header_not_found_hash);
@@ -693,21 +698,21 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block1_hash = block1->header.hash();
         auto block2_hash = block2->header.hash();
 
-        CHECK(!db::read_block_number(tx, block1_hash).has_value());
-        CHECK(!db::read_block_number(tx, block2_hash).has_value());
+        CHECK(!read_block_number(tx, block1_hash).has_value());
+        CHECK(!read_block_number(tx, block2_hash).has_value());
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
 
-        CHECK(db::read_block_number(tx, block1_hash).has_value());
-        CHECK(db::read_block_number(tx, block2_hash).has_value());
+        CHECK(read_block_number(tx, block1_hash).has_value());
+        CHECK(read_block_number(tx, block2_hash).has_value());
 
         tx.commit_and_renew();  // exec_engine.insert_blocks() automatically commits every 1000 blocks
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
-        CHECK(db::read_block_number(tx2, block1_hash).has_value());
-        CHECK(db::read_block_number(tx2, block2_hash).has_value());
+        CHECK(read_block_number(tx2, block1_hash).has_value());
+        CHECK(read_block_number(tx2, block2_hash).has_value());
     }
 
     SECTION("verify_chain updates chain database") {
@@ -717,22 +722,22 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block1_hash = block1->header.hash();
         auto block2_hash = block2->header.hash();
 
-        CHECK(!db::read_block_number(tx, block1_hash).has_value());
-        CHECK(!db::read_block_number(tx, block2_hash).has_value());
+        CHECK(!read_block_number(tx, block1_hash).has_value());
+        CHECK(!read_block_number(tx, block2_hash).has_value());
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
         runner.run(exec_engine.verify_chain(block2_hash));
 
-        CHECK(db::read_block_number(tx, block1_hash).has_value());
-        CHECK(db::read_block_number(tx, block2_hash).has_value());
+        CHECK(read_block_number(tx, block1_hash).has_value());
+        CHECK(read_block_number(tx, block2_hash).has_value());
 
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
 
-        CHECK(db::read_block_number(tx2, block1_hash).has_value());
-        CHECK(db::read_block_number(tx2, block2_hash).has_value());
+        CHECK(read_block_number(tx2, block1_hash).has_value());
+        CHECK(read_block_number(tx2, block2_hash).has_value());
         tx2.abort();
     }
 
@@ -743,28 +748,28 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block1_hash = block1->header.hash();
         auto block2_hash = block2->header.hash();
 
-        CHECK(!db::read_block_number(tx, block1_hash).has_value());
-        CHECK(!db::read_block_number(tx, block2_hash).has_value());
+        CHECK(!read_block_number(tx, block1_hash).has_value());
+        CHECK(!read_block_number(tx, block2_hash).has_value());
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
         runner.run(exec_engine.verify_chain(block2_hash));
         exec_engine.notify_fork_choice_update(block2_hash, current_head_id.hash, {});
 
-        CHECK(db::read_block_number(tx, block1_hash).has_value());
-        CHECK(db::read_block_number(tx, block2_hash).has_value());
+        CHECK(read_block_number(tx, block1_hash).has_value());
+        CHECK(read_block_number(tx, block2_hash).has_value());
 
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
-        CHECK(db::read_block_number(tx2, block1_hash).has_value());
-        CHECK(db::read_block_number(tx2, block2_hash).has_value());
+        CHECK(read_block_number(tx2, block1_hash).has_value());
+        CHECK(read_block_number(tx2, block2_hash).has_value());
         tx2.abort();
     }
 
-    // TODO: temoporarily disabled, to be fixed (JG)
+    // TODO: temporarily disabled, to be fixed (JG)
     // SECTION("updates storage") {
-    //     static constexpr auto kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    //     static constexpr evmc::address kSender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     //     auto block1 = generate_sample_child_blocks(current_head);
 
     //     // This contract initially sets its 0th storage to 0x2a and its 1st storage to 0x01c9.
@@ -796,15 +801,15 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 
     //     auto contract_address{silkworm::create_address(kSender, /*nonce=*/0)};
 
-    //     auto contract = db::read_account(tx, contract_address);
+    //     auto contract = read_account(tx, contract_address);
     //     REQUIRE(contract.has_value());
 
     //     evmc::bytes32 storage_key0{};
-    //     auto storage_value0 = db::read_storage(tx, contract_address, silkworm::kDefaultIncarnation, storage_key0);
+    //     auto storage_value0 = read_storage(tx, contract_address, silkworm::kDefaultIncarnation, storage_key0);
     //     CHECK(silkworm::to_hex(storage_value0) == "000000000000000000000000000000000000000000000000000000000000002a");
 
     //     evmc::bytes32 storage_key1{to_bytes32(*from_hex("01"))};
-    //     auto storage_value1 = db::read_storage(tx, contract_address, silkworm::kDefaultIncarnation, storage_key1);
+    //     auto storage_value1 = read_storage(tx, contract_address, silkworm::kDefaultIncarnation, storage_key1);
     //     CHECK(silkworm::to_hex(storage_value1) == "00000000000000000000000000000000000000000000000000000000000001c9");
     // }
 }
@@ -812,38 +817,42 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 TEST_CASE("ExecutionEngine") {
     SetLogVerbosityGuard log_guard(log::Level::kNone);
 
-    test_util::TaskRunner runner;
+    TaskRunner runner;
 
     db::test_util::TempChainData context;
     context.add_genesis_data();
     context.commit_txn();
 
-    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::DataModelFactory data_model_factory = [&](ROTxn& tx) { return DataModel{tx, repository}; };
+
+    Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    db::RWAccess db_access{context.env()};
+
     ExecutionEngineForTest exec_engine{
         runner.executor(),
         node_settings,
+        data_model_factory,
         /* log_timer_factory = */ std::nullopt,
-        make_bodies_stage_factory(*node_settings.chain_config),
-        db_access,
+        make_stages_factory(node_settings, data_model_factory),
+        RWAccess{context.env()},
     };
     exec_engine.open();
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
-    auto header0_hash = db::read_canonical_header_hash(tx, 0);
+    auto header0_hash = read_canonical_header_hash(tx, 0);
     REQUIRE(header0_hash.has_value());
 
-    auto header0 = db::read_canonical_header(tx, 0);
+    auto header0 = read_canonical_header(tx, 0);
     REQUIRE(header0.has_value());
 
     BlockId block0_id{0, *header0_hash};
 
     // check db
     BlockBody block0_body;
-    const bool block0_present = db::read_body(tx, *header0_hash, block0_id.number, block0_body);
+    const bool block0_present = read_body(tx, *header0_hash, block0_id.number, block0_body);
     CHECK(block0_present);
 
     /* status:
@@ -872,7 +881,7 @@ TEST_CASE("ExecutionEngine") {
 
         // check db
         BlockBody saved_body;
-        const bool block1_present = db::read_body(tx, header1_hash, block1->header.number, saved_body);
+        const bool block1_present = read_body(tx, header1_hash, block1->header.number, saved_body);
         CHECK(block1_present);
 
         auto progress = exec_engine.block_progress();
@@ -881,11 +890,11 @@ TEST_CASE("ExecutionEngine") {
         // verifying the chain
         auto verification = runner.run(exec_engine.verify_chain(header1_hash));
 
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kHeadersKey) == 1);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockHashesKey) == 1);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey) == 1);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kSendersKey) == 0);
-        CHECK(db::stages::read_stage_progress(tx, db::stages::kExecutionKey) == 0);
+        CHECK(stages::read_stage_progress(tx, stages::kHeadersKey) == 1);
+        CHECK(stages::read_stage_progress(tx, stages::kBlockHashesKey) == 1);
+        CHECK(stages::read_stage_progress(tx, stages::kBlockBodiesKey) == 1);
+        CHECK(stages::read_stage_progress(tx, stages::kSendersKey) == 0);
+        CHECK(stages::read_stage_progress(tx, stages::kExecutionKey) == 0);
 
         CHECK(!holds_alternative<ValidationError>(verification));
         REQUIRE(holds_alternative<InvalidChain>(verification));
@@ -959,7 +968,7 @@ TEST_CASE("ExecutionEngine") {
 
         // check db content
         BlockBody saved_body;
-        bool present = db::read_body(tx, block1_hash, block1->header.number, saved_body);
+        bool present = read_body(tx, block1_hash, block1->header.number, saved_body);
         CHECK(present);
 
         auto present_in_canonical = exec_engine.is_canonical(block1_hash);
@@ -1008,7 +1017,7 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.get_canonical_hash(3) == block3_hash);
         CHECK(exec_engine.get_canonical_header(3).has_value());
 
-        auto [head_height, head_hash] = db::read_canonical_head(tx);
+        auto [head_height, head_hash] = read_canonical_head(tx);
         CHECK(head_height == 3);
         CHECK(head_hash == block3_hash);
 
@@ -1038,7 +1047,7 @@ TEST_CASE("ExecutionEngine") {
             CHECK(exec_engine.get_canonical_hash(4) == block4_hash);
             CHECK(exec_engine.get_canonical_header(4).has_value());
 
-            std::tie(head_height, head_hash) = db::read_canonical_head(tx);
+            std::tie(head_height, head_hash) = read_canonical_head(tx);
             CHECK(head_height == 4);
             CHECK(head_hash == block4_hash);
         }
@@ -1069,7 +1078,7 @@ TEST_CASE("ExecutionEngine") {
             CHECK_FALSE(exec_engine.get_canonical_header(3).has_value());
             CHECK_FALSE(exec_engine.get_canonical_header(4).has_value());
 
-            std::tie(head_height, head_hash) = db::read_canonical_head(tx);
+            std::tie(head_height, head_hash) = read_canonical_head(tx);
             CHECK(head_height == 2);
             CHECK(head_hash == block2b_hash);
         }

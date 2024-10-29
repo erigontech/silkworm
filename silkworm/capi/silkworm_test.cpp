@@ -25,10 +25,9 @@
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
-#include <silkworm/db/mdbx/mdbx.hpp>
-#include <silkworm/db/snapshots/index.hpp>
-#include <silkworm/db/snapshots/index_builder.hpp>
-#include <silkworm/db/snapshots/snapshot_reader.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/snapshots/index_builder.hpp>
+#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
@@ -41,6 +40,7 @@
 namespace silkworm {
 
 namespace snapshot_test = snapshots::test_util;
+using namespace silkworm::db;
 
 struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
@@ -228,7 +228,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: block not fo
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{10};  // This does not exist, TestDatabaseContext db contains up to block 9
     BlockNum end_block{100};
-    db::RWTxnManaged external_txn{env};
+    RWTxnManaged external_txn{env};
     const auto result0{
         silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
                                     true, true, true)};
@@ -262,7 +262,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral: chain id not
     const uint64_t batch_size{256 * kMebi};
     BlockNum start_block{1};
     BlockNum end_block{2};
-    db::RWTxnManaged external_txn{env};
+    RWTxnManaged external_txn{env};
     const auto result0{
         silkworm_lib.execute_blocks(*external_txn, chain_id, start_block, end_block, batch_size,
                                     true, true, true)};
@@ -291,8 +291,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual: chain id not
 static void insert_block(mdbx::env& env, Block& block) {
     auto block_hash = block.header.hash();
 
-    db::RWTxnManaged rw_txn{env};
-    db::write_senders(rw_txn, block_hash, block.header.number, block);
+    RWTxnManaged rw_txn{env};
+    write_senders(rw_txn, block_hash, block.header.number, block);
 
     intx::uint256 max_priority_fee_per_gas =
         block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;
@@ -304,9 +304,9 @@ static void insert_block(mdbx::env& env, Block& block) {
     block.transactions.emplace(block.transactions.begin(), system_transaction);
     block.transactions.emplace_back(system_transaction);
 
-    db::write_header(rw_txn, block.header, true);
-    db::write_raw_body(rw_txn, block, block_hash, block.header.number);
-    db::write_canonical_header_hash(rw_txn, block_hash.bytes, block.header.number);
+    write_header(rw_txn, block.header, true);
+    write_raw_body(rw_txn, block, block_hash, block.header.number);
+    write_canonical_header_hash(rw_txn, block_hash.bytes, block.header.number);
     rw_txn.commit_and_stop();
 }
 
@@ -362,7 +362,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     insert_block(env, block);
 
     // Execute block 11 using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{env};
+    RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -370,9 +370,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
 
     // Prepare and insert block 11 (same as block 10)
@@ -384,7 +384,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     insert_block(env, block);
 
     // Execute block 11 using an *external* txn, then commit
-    db::RWTxnManaged external_txn1{env};
+    RWTxnManaged external_txn1{env};
 
     start_block = 11, end_block = 11;
     const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
@@ -393,9 +393,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral single block:
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block: OK", "[silkworm][capi]") {
@@ -456,9 +456,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
 
     // Prepare and insert block 11 (same as block 10)
@@ -476,9 +476,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual single block:
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple blocks: OK", "[silkworm][capi]") {
@@ -541,7 +541,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{env};
+    RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10 + kBlocks - 1};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -549,9 +549,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == kBlocks * value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == kBlocks * value);
     ro_txn.abort();
 
     // Insert N blocks again
@@ -564,7 +564,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn1{env};
+    RWTxnManaged external_txn1{env};
 
     start_block = 10 + kBlocks, end_block = 10 + 2 * kBlocks - 1;
     const auto result1{execute_blocks(*external_txn1, start_block, end_block)};
@@ -573,14 +573,11 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * kBlocks * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * kBlocks * value);
 }
 
-// Skip the following tests in macOS build because raised exception seems not to be catchable despite the correct catch block
-// Maybe somehow related to https://github.com/llvm/llvm-project/issues/49036
-#if !defined(__APPLE__)
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple blocks: OK", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};
@@ -648,9 +645,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result0.last_executed_block == end_block);
     CHECK(result0.mdbx_error_code == 0);
 
-    db::ROTxnManaged ro_txn{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == value);
+    ROTxnManaged ro_txn{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == value);
     ro_txn.abort();
 
     // Insert N blocks again
@@ -671,9 +668,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result1.last_executed_block == end_block);
     CHECK(result1.mdbx_error_code == 0);
 
-    ro_txn = db::ROTxnManaged{env};
-    REQUIRE(db::read_account(ro_txn, to));
-    CHECK(db::read_account(ro_txn, to)->balance == 2 * value);
+    ro_txn = ROTxnManaged{env};
+    REQUIRE(read_account(ro_txn, to));
+    CHECK(read_account(ro_txn, to)->balance == 2 * value);
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple blocks: insufficient buffer", "[silkworm][capi]") {
@@ -736,7 +733,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_ephemeral multiple bloc
     }
 
     // Execute N blocks using an *external* txn, then commit
-    db::RWTxnManaged external_txn0{env};
+    RWTxnManaged external_txn0{env};
     BlockNum start_block{10}, end_block{10 + kBlocks - 1};
     const auto result0{execute_blocks(*external_txn0, start_block, end_block)};
     CHECK_NOTHROW(external_txn0.commit_and_stop());
@@ -808,55 +805,56 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     const auto result0{execute_blocks(start_block, end_block)};
     CHECK(result0.execute_block_result == SILKWORM_INTERNAL_ERROR);
 }
-#endif  // !defined(__APPLE__)
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
-    snapshot_test::SampleHeaderSnapshotFile valid_header_snapshot{tmp_dir.path()};
-    snapshot_test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};
-    snapshot_test::SampleBodySnapshotFile valid_body_snapshot{tmp_dir.path()};
-    snapshot_test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};
-    snapshot_test::SampleTransactionSnapshotFile valid_tx_snapshot{tmp_dir.path()};
-    snapshot_test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};
+    snapshot_test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};
+    auto& header_segment_path = header_segment_file.path();
+    snapshot_test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};
+    auto& body_segment_path = body_segment_file.path();
+    snapshot_test::SampleTransactionSnapshotFile txn_segment_file{tmp_dir.path()};
+    auto& txn_segment_path = txn_segment_file.path();
 
-    auto header_index_builder = snapshots::HeaderIndex::make(header_snapshot_path);
+    auto header_index_builder = snapshots::HeaderIndex::make(header_segment_path);
+    header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    snapshots::Snapshot header_snapshot{header_snapshot_path};
-    header_snapshot.reopen_segment();
-    snapshots::Index idx_header_hash{header_snapshot_path.index_file()};
+    snapshots::SegmentFileReader header_segment{header_segment_path};
+    header_segment.reopen_segment();
+    snapshots::Index idx_header_hash{header_segment_path.index_file()};
     idx_header_hash.reopen_index();
 
-    auto body_index_builder = snapshots::BodyIndex::make(body_snapshot_path);
+    auto body_index_builder = snapshots::BodyIndex::make(body_segment_path);
+    body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    snapshots::Snapshot body_snapshot{body_snapshot_path};
-    body_snapshot.reopen_segment();
-    snapshots::Index idx_body_number{body_snapshot_path.index_file()};
+    snapshots::SegmentFileReader body_segment{body_segment_path};
+    body_segment.reopen_segment();
+    snapshots::Index idx_body_number{body_segment_path.index_file()};
     idx_body_number.reopen_index();
 
-    auto tx_index_builder = snapshots::TransactionIndex::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index_builder = snapshots::TransactionIndex::make(body_segment_path, txn_segment_path);
     tx_index_builder.build();
-    auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_snapshot_path, tx_snapshot_path);
+    auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start);
     tx_index_hash_to_block_builder.build();
-    snapshots::Snapshot tx_snapshot{tx_snapshot_path};
-    tx_snapshot.reopen_segment();
-    snapshots::Index idx_txn_hash{tx_snapshot_path.index_file()};
+    snapshots::SegmentFileReader txn_segment{txn_segment_path};
+    txn_segment.reopen_segment();
+    snapshots::Index idx_txn_hash{txn_segment_path.index_file()};
     idx_txn_hash.reopen_index();
     snapshots::Index idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
     idx_txn_hash_2_block.reopen_index();
 
-    const auto header_snapshot_path_string{header_snapshot_path.path().string()};
+    const auto header_segment_path_string{header_segment_path.path().string()};
     const auto header_index_path_string{idx_header_hash.path().path().string()};
-    const auto body_snapshot_path_string{body_snapshot_path.path().string()};
+    const auto body_segment_path_string{body_segment_path.path().string()};
     const auto body_index_path_string{idx_body_number.path().path().string()};
-    const auto tx_snapshot_path_string{tx_snapshot_path.path().string()};
+    const auto txn_segment_path_string{txn_segment_path.path().string()};
     const auto tx_hash_index_path_string{idx_txn_hash.path().path().string()};
     const auto tx_hash2block_index_path_string{idx_txn_hash_2_block.path().path().string()};
 
     // Prepare templates for valid header/body/transaction C data structures
     SilkwormHeadersSnapshot valid_shs{
         .segment = SilkwormMemoryMappedFile{
-            .file_path = header_snapshot_path_string.c_str(),
-            .memory_address = header_snapshot.memory_file_region().data(),
-            .memory_length = header_snapshot.memory_file_region().size(),
+            .file_path = header_segment_path_string.c_str(),
+            .memory_address = header_segment.memory_file_region().data(),
+            .memory_length = header_segment.memory_file_region().size(),
         },
         .header_hash_index = SilkwormMemoryMappedFile{
             .file_path = header_index_path_string.c_str(),
@@ -866,9 +864,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     };
     SilkwormBodiesSnapshot valid_sbs{
         .segment = SilkwormMemoryMappedFile{
-            .file_path = body_snapshot_path_string.c_str(),
-            .memory_address = body_snapshot.memory_file_region().data(),
-            .memory_length = body_snapshot.memory_file_region().size(),
+            .file_path = body_segment_path_string.c_str(),
+            .memory_address = body_segment.memory_file_region().data(),
+            .memory_length = body_segment.memory_file_region().size(),
         },
         .block_num_index = SilkwormMemoryMappedFile{
             .file_path = body_index_path_string.c_str(),
@@ -878,9 +876,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     };
     SilkwormTransactionsSnapshot valid_sts{
         .segment = SilkwormMemoryMappedFile{
-            .file_path = tx_snapshot_path_string.c_str(),
-            .memory_address = tx_snapshot.memory_file_region().data(),
-            .memory_length = tx_snapshot.memory_file_region().size(),
+            .file_path = txn_segment_path_string.c_str(),
+            .memory_address = txn_segment.memory_file_region().data(),
+            .memory_length = txn_segment.memory_file_region().size(),
         },
         .tx_hash_index = SilkwormMemoryMappedFile{
             .file_path = tx_hash_index_path_string.c_str(),
@@ -1057,7 +1055,7 @@ static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
 static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
-    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};

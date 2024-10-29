@@ -26,16 +26,16 @@ class OutboundBlockHeaders : public OutboundMessage {
   public:
     explicit OutboundBlockHeaders(BlockHeadersPacket66 packet) : packet_(std::move(packet)) {}
 
-    [[nodiscard]] std::string name() const override { return "OutboundBlockHeaders"; }
-    [[nodiscard]] std::string content() const override;
+    std::string name() const override { return "OutboundBlockHeaders"; }
+    std::string content() const override;
 
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) override;
 
-    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+    silkworm::sentry::eth::MessageId eth_message_id() const override {
         return silkworm::sentry::eth::MessageId::kBlockHeaders;
     }
 
-    [[nodiscard]] Bytes message_data() const override;
+    Bytes message_data() const override;
 
   private:
     BlockHeadersPacket66 packet_{};

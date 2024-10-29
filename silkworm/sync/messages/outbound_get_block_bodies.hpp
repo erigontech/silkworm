@@ -28,22 +28,22 @@ class OutboundGetBlockBodies : public OutboundMessage {
   public:
     OutboundGetBlockBodies() = default;
 
-    [[nodiscard]] std::string name() const override { return "OutboundGetBlockBodies"; }
-    [[nodiscard]] std::string content() const override;
+    std::string name() const override { return "OutboundGetBlockBodies"; }
+    std::string content() const override;
 
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::DataStoreRef, HeaderChain&, BodySequence&, SentryClient&) override;
 
-    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+    silkworm::sentry::eth::MessageId eth_message_id() const override {
         return silkworm::sentry::eth::MessageId::kGetBlockBodies;
     }
 
-    [[nodiscard]] Bytes message_data() const override;
+    Bytes message_data() const override;
 
     GetBlockBodiesPacket66& packet();
     std::vector<PeerPenalization>& penalties();
     BlockNum& min_block();
 
-    [[nodiscard]] bool packet_present() const;
+    bool packet_present() const;
 
   private:
     std::vector<PeerId> send_packet(SentryClient&);

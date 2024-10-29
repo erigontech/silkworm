@@ -23,7 +23,6 @@
 #include <evmc/instructions.h>
 
 #include <silkworm/infra/common/clock_time.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>

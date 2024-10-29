@@ -25,8 +25,8 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
-#include <silkworm/db/mdbx/bitmap.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -40,6 +40,7 @@
 
 namespace silkworm::rpc::commands {
 
+using namespace silkworm::db;
 using db::state::StateReader;
 
 constexpr int kCurrentApiLevel{8};
@@ -109,11 +110,9 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
-            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
-            const Block extended_block{block_with_hash, *total_difficulty, false};
+            const Block extended_block{block_with_hash, false};
             const auto block_size = extended_block.get_block_size();
-            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
+            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
             const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
@@ -157,12 +156,9 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
-            const auto block_number = block_with_hash->block.header.number;
-            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
-            const Block extended_block{block_with_hash, *total_difficulty, false};
+            const Block extended_block{block_with_hash, false};
             const auto block_size = extended_block.get_block_size();
-            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header, *total_difficulty,
+            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header,
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
             const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
@@ -211,9 +207,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
-            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-            ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
-            const Block extended_block{block_with_hash, *total_difficulty, false};
+            const Block extended_block{block_with_hash, false};
             auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             auto block_size = extended_block.get_block_size();
             auto transaction_count = block_with_hash->block.transactions.size();
@@ -222,7 +216,6 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
                 block_size,
                 block_with_hash->hash,
                 block_with_hash->block.header,
-                *total_difficulty,
                 transaction_count,
                 block_with_hash->block.ommers,
                 {},  // receipt
@@ -280,8 +273,8 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
     auto tx = co_await database_->begin();
 
     try {
-        auto account_history_cursor = co_await tx->cursor(db::table::kAccountHistoryName);
-        auto account_change_set_cursor = co_await tx->cursor_dup_sort(db::table::kAccountChangeSetName);
+        auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);
+        auto account_change_set_cursor = co_await tx->cursor_dup_sort(table::kAccountChangeSetName);
         const ByteView sender_byte_view{sender.bytes};
         auto key_value = co_await account_history_cursor->seek(sender_byte_view);
 
@@ -292,7 +285,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
         while (true) {
             if (key_value.key.empty() || !key_value.key.starts_with(sender_byte_view)) {
-                auto plain_state_cursor = co_await tx->cursor(db::table::kPlainStateName);
+                auto plain_state_cursor = co_await tx->cursor(table::kPlainStateName);
                 auto account_payload = co_await plain_state_cursor->seek(sender_byte_view);
                 auto account = Account::from_encoded_storage(account_payload.value);
 
@@ -305,7 +298,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 co_return;
             }
 
-            bitmap = db::bitmap::parse(key_value.value);
+            bitmap = bitmap::parse(key_value.value);
             auto const max_block = bitmap.maximum();
             auto block_key{db::block_key(max_block)};
             auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
@@ -391,7 +384,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
     try {
         const ByteView contract_address_byte_view{contract_address.bytes};
-        auto plain_state_cursor = co_await tx->cursor(db::table::kPlainStateName);
+        auto plain_state_cursor = co_await tx->cursor(table::kPlainStateName);
         auto account_payload = co_await plain_state_cursor->seek(contract_address_byte_view);
         auto plain_state_account = Account::from_encoded_storage(account_payload.value);
 
@@ -407,10 +400,10 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             co_return;
         }
 
-        auto account_history_cursor = co_await tx->cursor(db::table::kAccountHistoryName);
-        auto account_change_set_cursor = co_await tx->cursor_dup_sort(db::table::kAccountChangeSetName);
+        auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);
+        auto account_change_set_cursor = co_await tx->cursor_dup_sort(table::kAccountChangeSetName);
 
-        auto key_value = co_await account_history_cursor->seek(db::account_history_key(contract_address, 0));
+        auto key_value = co_await account_history_cursor->seek(account_history_key(contract_address, 0));
 
         std::vector<BlockNum> account_block_numbers;
 
@@ -423,7 +416,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             co_return;
         }
         while (true) {
-            bitmap = db::bitmap::parse(key_value.value);
+            bitmap = bitmap::parse(key_value.value);
             auto const max_block = bitmap.maximum();
             auto block_key{db::block_key(max_block)};
             auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
@@ -675,8 +668,8 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     auto tx = co_await database_->begin();
 
     try {
-        auto call_from_cursor = co_await tx->cursor(db::table::kCallFromIndexName);
-        auto call_to_cursor = co_await tx->cursor(db::table::kCallToIndexName);
+        auto call_from_cursor = co_await tx->cursor(table::kCallFromIndexName);
+        auto call_to_cursor = co_await tx->cursor(table::kCallToIndexName);
 
         bool is_first_page = false;
 
@@ -757,8 +750,8 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     auto tx = co_await database_->begin();
 
     try {
-        auto call_from_cursor = co_await tx->cursor(db::table::kCallFromIndexName);
-        auto call_to_cursor = co_await tx->cursor(db::table::kCallToIndexName);
+        auto call_from_cursor = co_await tx->cursor(table::kCallFromIndexName);
+        auto call_to_cursor = co_await tx->cursor(table::kCallToIndexName);
 
         bool is_last_page = false;
 
@@ -821,7 +814,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 
 Task<bool> OtsRpcApi::trace_blocks(
     FromToBlockProvider& from_to_provider,
-    db::kv::api::Transaction& tx,
+    kv::api::Transaction& tx,
     const evmc::address& address,
     uint64_t page_size,
     uint64_t result_count,
@@ -848,20 +841,18 @@ Task<bool> OtsRpcApi::trace_blocks(
     co_return has_more;
 }
 
-Task<void> OtsRpcApi::trace_block(db::kv::api::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {
+Task<void> OtsRpcApi::trace_block(kv::api::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {
     const auto chain_storage = tx.create_storage();
     const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
     if (!block_with_hash) {
         co_return;
     }
 
-    const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
-    ensure(total_difficulty.has_value(), [&]() { return "no total difficulty for block: " + std::to_string(block_number); });
     const auto receipts = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
-    const Block extended_block{block_with_hash, *total_difficulty, false};
+    const Block extended_block{block_with_hash, false};
 
     trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, tx};
-    co_await executor.trace_touch_block(*block_with_hash, search_addr, extended_block.get_block_size(), *total_difficulty, receipts, results);
+    co_await executor.trace_touch_block(*block_with_hash, search_addr, extended_block.get_block_size(), receipts, results);
 }
 
 IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, const silkworm::BlockWithHash& block) {
@@ -931,8 +922,8 @@ Task<ChunkProviderResponse> ChunkProvider::get() {
     co_return ChunkProviderResponse{key_value.value, true, false};
 }
 
-ChunkProvider::ChunkProvider(db::kv::api::Cursor* cursor, const evmc::address& address,
-                             bool navigate_forward, db::kv::api::KeyValue first_seek_key_value)
+ChunkProvider::ChunkProvider(kv::api::Cursor* cursor, const evmc::address& address,
+                             bool navigate_forward, kv::api::KeyValue first_seek_key_value)
     : cursor_{cursor},
       address_{address},
       navigate_forward_{navigate_forward},
@@ -942,7 +933,7 @@ ChunkProvider::ChunkProvider(db::kv::api::Cursor* cursor, const evmc::address& a
 Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
     KeyValue key_value;
     try {
-        key_value = co_await cursor_->seek(db::account_history_key(address_, min_block));
+        key_value = co_await cursor_->seek(account_history_key(address_, min_block));
 
         if (key_value.key.empty()) {
             co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, false};
@@ -955,7 +946,7 @@ Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
     }
 }
 
-ChunkLocator::ChunkLocator(db::kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward)
+ChunkLocator::ChunkLocator(kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward)
     : cursor_{cursor},
       address_{address},
       navigate_forward_{navigate_forward} {
@@ -995,7 +986,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
         }
 
         try {
-            roaring::Roaring64Map bitmap = db::bitmap::parse(chunk_provider_res.chunk);
+            roaring::Roaring64Map bitmap = bitmap::parse(chunk_provider_res.chunk);
 
             iterator(bitmap);
 
@@ -1034,7 +1025,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
         has_next_ = true;
 
         try {
-            auto bitmap = db::bitmap::parse(chunk_provider_res.chunk);
+            auto bitmap = bitmap::parse(chunk_provider_res.chunk);
             iterator(bitmap);
 
         } catch (std::exception& e) {
@@ -1107,7 +1098,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
         }
 
         try {
-            roaring::Roaring64Map bitmap = db::bitmap::parse(chunk_provider_res.chunk);
+            roaring::Roaring64Map bitmap = bitmap::parse(chunk_provider_res.chunk);
 
             // It can happen that on the first chunk we'll get a chunk that contains
             // the last block <= maxBlock in the middle of the chunk/bitmap, so we
@@ -1133,7 +1124,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
                     co_return BlockProviderResponse{0, false, false};
                 }
 
-                bitmap = db::bitmap::parse(chunk_provider_res.chunk);
+                bitmap = bitmap::parse(chunk_provider_res.chunk);
                 reverse_iterator(bitmap);
             }
 
@@ -1161,7 +1152,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
         has_next_ = true;
 
         try {
-            auto bitmap = db::bitmap::parse(chunk_provider_res.chunk);
+            auto bitmap = bitmap::parse(chunk_provider_res.chunk);
             reverse_iterator(bitmap);
 
         } catch (std::exception& e) {

@@ -133,13 +133,11 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 /**
  * \brief Build a set of indexes for the given snapshots.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] snapshots An array of snapshots to index.
- * \param[in] indexPaths An array of paths to write indexes to.
- * Note that the name of the index is a part of the path and it is used to determine the index type.
- * \param[in] len The number of snapshots and paths.
+ * \param[in] segments An array of segment files to index.
+ * \param[in] len The number of segment files.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure on some or all indexes.
  */
-SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* snapshots[], size_t len) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* segments[], size_t len) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Notify Silkworm about a new snapshot to use.

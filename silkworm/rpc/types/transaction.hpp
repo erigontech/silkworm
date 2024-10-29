@@ -39,7 +39,7 @@ struct Transaction : public silkworm::Transaction {
     uint64_t transaction_index{0};
     bool queued_in_pool{false};
 
-    [[nodiscard]] intx::uint256 effective_gas_price() const;  // EIP-1559
+    intx::uint256 effective_gas_price() const;  // EIP-1559
 };
 
 struct Rlp {

@@ -18,7 +18,7 @@
 
 #include <gmock/gmock.h>
 
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 namespace silkworm::db::test_util {
 

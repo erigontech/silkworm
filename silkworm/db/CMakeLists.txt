@@ -16,14 +16,12 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(etl)
-add_subdirectory(mdbx)
-add_subdirectory(snapshots)
+add_subdirectory(datastore)
 add_subdirectory(test_util)
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-find_package(Boost REQUIRED headers)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
@@ -36,10 +34,10 @@ set(LIBS_PUBLIC
     absl::flat_hash_set
     absl::strings
     silkworm_core
-    silkworm_db_mdbx
+    silkworm_infra
+    silkworm_datastore
 )
 
-# cmake-format: off
 set(LIBS_PRIVATE
     cborcpp
     magic_enum::magic_enum
@@ -50,10 +48,7 @@ set(LIBS_PRIVATE
     gRPC::grpc++
     protobuf::libprotobuf
     silkworm_db_etl
-    silkworm_infra
-    silkworm_snapshots
 )
-# cmake-format: on
 
 silkworm_library(
   silkworm_db

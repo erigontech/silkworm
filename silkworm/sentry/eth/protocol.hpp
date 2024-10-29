@@ -34,11 +34,11 @@ class Protocol : public rlpx::Protocol {
 
     ~Protocol() override = default;
 
-    [[nodiscard]] std::pair<std::string, uint8_t> capability() override {
+    std::pair<std::string, uint8_t> capability() override {
         return {"eth", Protocol::kVersion};
     }
 
-    [[nodiscard]] Message first_message() override {
+    Message first_message() override {
         auto status = status_provider_();
         return status.message.to_message();
     }

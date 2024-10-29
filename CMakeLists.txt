@@ -54,6 +54,7 @@ option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports"
 option(SILKWORM_CLANG_TIDY "Clang-Tidy linter" OFF)
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 option(SILKWORM_FUZZER "Build instrumentation for fuzzers" OFF)
+option(SILKWORM_FUZZER_SANITIZERS "CLang sanitizer options for fuzzers" OFF)
 option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 option(SILKWORM_ALLOW_UNUSED_VAR_WARNINGS "Turn unused variable errors into warnings" OFF)
 
@@ -77,7 +78,7 @@ if(NOT SILKWORM_CORE_ONLY)
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
   set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Honor visibility properties for all target types
 
-  find_package(Boost REQUIRED headers)
+  find_package(Boost REQUIRED COMPONENTS headers)
   # Define Boost::headers target if missing because libtorrent needs it
   if(NOT TARGET Boost::headers)
     add_library(Boost::headers INTERFACE IMPORTED)

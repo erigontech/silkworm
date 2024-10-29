@@ -211,9 +211,9 @@ TEST_CASE("intx::uint256 from scientific notation string") {
     CHECK(from_string_sci<intx::uint256>("18.1e+2") == intx::from_string<intx::uint256>("1810"));
     CHECK(from_string_sci<intx::uint256>("18.12e+2") == intx::from_string<intx::uint256>("1812"));
 
-    static constexpr auto kMaxFixedDecimalNotation{"115792089237316195423570985008687907853269984665640564039457584007913129639935"};
+    static constexpr char* kMaxFixedDecimalNotation{"115792089237316195423570985008687907853269984665640564039457584007913129639935"};
     CHECK(from_string_sci<intx::uint256>(kMaxFixedDecimalNotation) == std::numeric_limits<intx::uint256>::max());
-    static constexpr auto kMaxScientificNotation{"1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77"};
+    static constexpr char* kMaxScientificNotation{"1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77"};
     CHECK(from_string_sci<intx::uint256>(kMaxScientificNotation) == std::numeric_limits<intx::uint256>::max());
 }
 
@@ -225,7 +225,7 @@ TEST_CASE("intx::uint256 to_float") {
 }
 
 TEST_CASE("print intx::uint256") {
-    const auto i{intx::from_string<intx::uint256>("1000000000000000000000000")};
+    const intx::uint256 i{intx::from_string<intx::uint256>("1000000000000000000000000")};
     CHECK(test_util::null_stream() << i);
 }
 

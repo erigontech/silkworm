@@ -23,14 +23,14 @@
 namespace silkworm::sentry::rlpx {
 
 struct PingMessage {
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] sentry::Message to_message() const;
+    Bytes rlp_encode() const;
+    sentry::Message to_message() const;
     static const uint8_t kId;
 };
 
 struct PongMessage {
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] sentry::Message to_message() const;
+    Bytes rlp_encode() const;
+    sentry::Message to_message() const;
     static const uint8_t kId;
 };
 

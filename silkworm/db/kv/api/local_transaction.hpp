@@ -24,7 +24,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/db/mdbx/mdbx.hpp>
+#include <silkworm/db/data_store.hpp>
 
 #include "base_transaction.hpp"
 #include "cursor.hpp"
@@ -35,13 +35,17 @@ namespace silkworm::db::kv::api {
 
 class LocalTransaction : public BaseTransaction {
   public:
-    explicit LocalTransaction(mdbx::env chaindata_env, StateCache* state_cache)
-        : BaseTransaction(state_cache), chaindata_env_{std::move(chaindata_env)}, txn_{chaindata_env_} {}
+    explicit LocalTransaction(
+        DataStoreRef data_store,
+        StateCache* state_cache)
+        : BaseTransaction(state_cache),
+          data_store_{std::move(data_store)},
+          txn_{data_store_.chaindata_env} {}
 
     ~LocalTransaction() override = default;
 
-    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
-    [[nodiscard]] uint64_t view_id() const override { return txn_.id(); }
+    uint64_t tx_id() const override { return tx_id_; }
+    uint64_t view_id() const override { return txn_.id(); }
 
     Task<void> open() override;
 
@@ -52,6 +56,8 @@ class LocalTransaction : public BaseTransaction {
     std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) override;
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
+
+    Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;
 
     Task<void> close() override;
 
@@ -78,7 +84,7 @@ class LocalTransaction : public BaseTransaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
 
-    mdbx::env chaindata_env_;
+    DataStoreRef data_store_;
     uint32_t last_cursor_id_{0};
     ROTxnManaged txn_;
     uint64_t tx_id_{++next_tx_id_};

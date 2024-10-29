@@ -16,28 +16,15 @@
 
 #include "execution_pipeline.hpp"
 
-#include <memory>
-
 #include <absl/strings/str_format.h>
 #include <magic_enum.hpp>
 
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
-#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
-#include <silkworm/node/stagedsync/stages/stage_call_trace_index.hpp>
-#include <silkworm/node/stagedsync/stages/stage_execution.hpp>
-#include <silkworm/node/stagedsync/stages/stage_finish.hpp>
-#include <silkworm/node/stagedsync/stages/stage_hashstate.hpp>
-#include <silkworm/node/stagedsync/stages/stage_headers.hpp>
-#include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
-#include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
-#include <silkworm/node/stagedsync/stages/stage_log_index.hpp>
-#include <silkworm/node/stagedsync/stages/stage_senders.hpp>
-#include <silkworm/node/stagedsync/stages/stage_triggers.hpp>
-#include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
 
 namespace silkworm::stagedsync {
+
+using namespace silkworm::db::stages;
 
 #if defined(NDEBUG)
 static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
@@ -46,14 +33,45 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
 ExecutionPipeline::ExecutionPipeline(
-    silkworm::NodeSettings* node_settings,
+    db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
-    BodiesStageFactory bodies_stage_factory)
-    : node_settings_{node_settings},
+    const StageContainerFactory& stages_factory)
+    : data_model_factory_{std::move(data_model_factory)},
       log_timer_factory_{std::move(log_timer_factory)},
-      bodies_stage_factory_{std::move(bodies_stage_factory)},
-      sync_context_{std::make_unique<SyncContext>()} {
-    load_stages();
+      sync_context_{std::make_unique<SyncContext>()},
+      stages_{stages_factory(*sync_context_)},
+      current_stage_{stages_.end()} {
+    stages_forward_order_ = StageNames{
+        kHeadersKey,
+        kBlockHashesKey,
+        kBlockBodiesKey,
+        kSendersKey,
+        kExecutionKey,
+        kHashStateKey,
+        kIntermediateHashesKey,
+        kHistoryIndexKey,
+        kLogIndexKey,
+        kCallTracesKey,
+        kTxLookupKey,
+        kTriggersStageKey,
+        kFinishKey,
+    };
+
+    stages_unwind_order_ = StageNames{
+        kFinishKey,
+        kTriggersStageKey,
+        kTxLookupKey,
+        kCallTracesKey,
+        kLogIndexKey,
+        kHistoryIndexKey,
+        kHashStateKey,
+        kIntermediateHashesKey,  // Needs to happen after unwinding HashState
+        kExecutionKey,
+        kSendersKey,
+        kBlockBodiesKey,
+        kBlockHashesKey,  // De-canonify block hashes
+        kHeadersKey,
+    };
 }
 
 BlockNum ExecutionPipeline::head_header_number() const {
@@ -72,83 +90,6 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
     return sync_context_->bad_block_hash;
 }
 
-/*
- * Stages from Erigon -> Silkworm
- *  1 StageHeaders ->  stagedsync::HeadersStage
- *  2 StageBodies -> stagedsync::BodiesStage
- *  3 StageBlockHashes -> stagedsync::BlockHashes
- *  4 StageSenders -> stagedsync::Senders
- *  5 StageExecution -> stagedsync::Execution
- *  6 StageHashState -> stagedsync::HashState
- *  7 StageInterHashes -> stagedsync::InterHashes
- *  8 StageIndexes -> stagedsync::HistoryIndex
- *  9 StageLogIndex -> stagedsync::LogIndex
- * 10 StageCallTraces -> stagedsync::CallTraceIndex
- * 11 StageTxLookup -> stagedsync::TxLookup
- * 12 StageFinish -> stagedsync::Finish
- */
-
-void ExecutionPipeline::load_stages() {
-    stages_.emplace(db::stages::kHeadersKey,
-                    std::make_unique<stagedsync::HeadersStage>(sync_context_.get()));
-    stages_.emplace(db::stages::kBlockBodiesKey, bodies_stage_factory_(sync_context_.get()));
-    stages_.emplace(db::stages::kBlockHashesKey,
-                    std::make_unique<stagedsync::BlockHashes>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(db::stages::kSendersKey,
-                    std::make_unique<stagedsync::Senders>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.senders()));
-    stages_.emplace(db::stages::kExecutionKey,
-                    std::make_unique<stagedsync::Execution>(sync_context_.get(), *node_settings_->chain_config, node_settings_->batch_size, node_settings_->prune_mode));
-    stages_.emplace(db::stages::kHashStateKey,
-                    std::make_unique<stagedsync::HashState>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(db::stages::kIntermediateHashesKey,
-                    std::make_unique<stagedsync::InterHashes>(sync_context_.get(), node_settings_->etl()));
-    stages_.emplace(db::stages::kHistoryIndexKey,
-                    std::make_unique<stagedsync::HistoryIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
-    stages_.emplace(db::stages::kLogIndexKey,
-                    std::make_unique<stagedsync::LogIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.history()));
-    stages_.emplace(db::stages::kCallTracesKey,
-                    std::make_unique<stagedsync::CallTraceIndex>(sync_context_.get(), node_settings_->batch_size, node_settings_->etl(), node_settings_->prune_mode.call_traces()));
-    stages_.emplace(db::stages::kTxLookupKey,
-                    std::make_unique<stagedsync::TxLookup>(sync_context_.get(), node_settings_->etl(), node_settings_->prune_mode.tx_index()));
-    stages_.emplace(db::stages::kTriggersStageKey,
-                    std::make_unique<stagedsync::TriggersStage>(sync_context_.get()));
-    stages_.emplace(db::stages::kFinishKey,
-                    std::make_unique<stagedsync::Finish>(sync_context_.get(), node_settings_->build_info.build_description));
-    current_stage_ = stages_.begin();
-
-    stages_forward_order_.insert(stages_forward_order_.begin(),
-                                 {
-                                     db::stages::kHeadersKey,
-                                     db::stages::kBlockHashesKey,
-                                     db::stages::kBlockBodiesKey,
-                                     db::stages::kSendersKey,
-                                     db::stages::kExecutionKey,
-                                     db::stages::kHashStateKey,
-                                     db::stages::kIntermediateHashesKey,
-                                     db::stages::kHistoryIndexKey,
-                                     db::stages::kLogIndexKey,
-                                     db::stages::kCallTracesKey,
-                                     db::stages::kTxLookupKey,
-                                     db::stages::kFinishKey,
-                                 });
-
-    stages_unwind_order_.insert(stages_unwind_order_.begin(),
-                                {
-                                    db::stages::kFinishKey,
-                                    db::stages::kTxLookupKey,
-                                    db::stages::kCallTracesKey,
-                                    db::stages::kLogIndexKey,
-                                    db::stages::kHistoryIndexKey,
-                                    db::stages::kHashStateKey,
-                                    db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
-                                    db::stages::kExecutionKey,
-                                    db::stages::kSendersKey,
-                                    db::stages::kBlockBodiesKey,
-                                    db::stages::kBlockHashesKey,  // De-canonify block hashes
-                                    db::stages::kHeadersKey,
-                                });
-}
-
 bool ExecutionPipeline::stop() {
     bool stopped{true};
     for (const auto& [_, stage] : stages_) {
@@ -160,7 +101,7 @@ bool ExecutionPipeline::stop() {
 }
 
 StageScheduler& ExecutionPipeline::stage_scheduler() const {
-    return *dynamic_cast<StageScheduler*>(stages_.at(db::stages::kTriggersStageKey).get());
+    return *dynamic_cast<StageScheduler*>(stages_.at(kTriggersStageKey).get());
 }
 
 Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
@@ -188,7 +129,8 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
-            current_stage_->second->set_log_prefix(get_log_prefix());
+            const auto& current_stage_name = current_stage_->first;
+            current_stage_->second->set_log_prefix(get_log_prefix(current_stage_name));
 
             // Check if we have to start at specific stage due to environment variable
             if (start_stage_name) {
@@ -217,12 +159,12 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
             if (stage_result != Stage::Result::kSuccess) { /* clang-format off */
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
-                log::Error(get_log_prefix(), {"op", "Forward", "returned", result_description});
+                log::Error(get_log_prefix(current_stage_name), {"op", "Forward", "returned", result_description});
                 log::Error("ExecPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             } /* clang-format on */
 
-            auto stage_head_number = db::stages::read_stage_progress(cycle_txn, current_stage_->first);
+            auto stage_head_number = read_stage_progress(cycle_txn, current_stage_name.data());
             if (!stop_at_block && stage_head_number != target_height) {
                 throw std::logic_error("Sync pipeline: stage returned success with an height different from target=" +
                                        to_string(target_height) + " reached= " + to_string(stage_head_number));
@@ -230,12 +172,13 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(), {"op", "Forward", "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(current_stage_name), {"op", "Forward", "done", StopWatch::format(stage_duration)});
             }
         }
 
-        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
-        const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
+        db::DataModel data_model = data_model_factory_(cycle_txn);
+        const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
+        head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
         if (head_header_number_ != target_height) {
@@ -252,8 +195,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
         return result;
     } catch (const std::exception& ex) {
-        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        log::Error("ExecutionPipeline") << "Forward aborted due to exception: " << ex.what();
+        SILK_ERROR_M("ExecutionPipeline") << get_log_prefix("unknown") << " Forward exception " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
@@ -276,7 +218,8 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
-            current_stage_->second->set_log_prefix(get_log_prefix());
+            const auto& current_stage_name = current_stage_->first;
+            current_stage_->second->set_log_prefix(get_log_prefix(current_stage_name));
 
             if (log_timer) {
                 log_timer->reset();  // Resets the interval for next log line from now
@@ -286,7 +229,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             const auto stage_result = current_stage_->second->unwind(cycle_txn);
             if (stage_result != Stage::Result::kSuccess) {
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
-                log::Error(get_log_prefix(), {"op", "Unwind", "returned", result_description});
+                log::Error(get_log_prefix(current_stage_name), {"op", "Unwind", "returned", result_description});
                 log::Error("ExecPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
@@ -294,12 +237,13 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             // Log performances
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(), {"op", "Unwind", "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(current_stage_name), {"op", "Unwind", "done", StopWatch::format(stage_duration)});
             }
         }
 
-        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
-        const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
+        db::DataModel data_model = data_model_factory_(cycle_txn);
+        const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
+        head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
         if (head_header_number_ != unwind_point) {
@@ -316,8 +260,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
-        log::Error("ExecPipeline") << "Unwind aborted due to exception: " << ex.what();
-        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        SILK_ERROR_M("ExecutionPipeline") << get_log_prefix("unknown") << " Unwind exception " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
@@ -337,7 +280,8 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
-            current_stage_->second->set_log_prefix(get_log_prefix());
+            const auto& current_stage_name = current_stage_->first;
+            current_stage_->second->set_log_prefix(get_log_prefix(current_stage_name));
 
             if (log_timer) {
                 log_timer->reset();  // Resets the interval for next log line from now
@@ -345,20 +289,21 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
 
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
             if (stage_result != Stage::Result::kSuccess) {
-                log::Error(get_log_prefix(), {"op", "Prune", "returned",
-                                              std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
+                log::Error(get_log_prefix(current_stage_name), {"op", "Prune", "returned",
+                                                                std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 log::Error("ExecPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(), {"op", "Prune", "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(current_stage_name), {"op", "Prune", "done", StopWatch::format(stage_duration)});
             }
         }
 
-        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
-        const auto head_header = db::DataModel(cycle_txn).read_header(head_header_hash_);
+        db::DataModel data_model = data_model_factory_(cycle_txn);
+        const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
+        head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
 
@@ -366,16 +311,16 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
-        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        SILK_ERROR_M("ExecutionPipeline") << get_log_prefix("unknown") << " Prune exception " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
 
-std::string ExecutionPipeline::get_log_prefix() const {
+std::string ExecutionPipeline::get_log_prefix(const std::string_view& stage_name) const {
     return absl::StrFormat("[%u/%u %s]",
                            current_stage_number_,
                            current_stages_count_,
-                           current_stage_->first);
+                           stage_name);
 }
 
 std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
@@ -386,11 +331,15 @@ std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
 }
 
 bool ExecutionPipeline::log_timer_expired() {
+    const auto current_stage_name =
+        (current_stage_ != stages_.end())
+            ? current_stage_->first
+            : "unknown";
     if (is_stopping()) {
-        log::Info(get_log_prefix()) << "stopping ...";
+        log::Info(get_log_prefix(current_stage_name)) << "stopping ...";
         return false;
     }
-    log::Info(get_log_prefix(), current_stage_->second->get_log_progress());
+    log::Info(get_log_prefix(current_stage_name), current_stage_->second->get_log_progress());
     return true;
 }
 

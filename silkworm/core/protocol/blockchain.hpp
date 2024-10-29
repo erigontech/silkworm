@@ -59,10 +59,12 @@ class Blockchain {
 
     void unwind_last_changes(uint64_t ancestor, uint64_t tip);
 
-    [[nodiscard]] std::vector<BlockWithHash> intermediate_chain(uint64_t block_number, evmc::bytes32 hash,
-                                                                uint64_t canonical_ancestor) const;
+    std::vector<BlockWithHash> intermediate_chain(
+        uint64_t block_number,
+        evmc::bytes32 hash,
+        uint64_t canonical_ancestor) const;
 
-    [[nodiscard]] uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
+    uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
 
     State& state_;
     const ChainConfig& config_;

@@ -20,8 +20,8 @@
 #include <absl/container/btree_map.h>
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/mdbx/bitmap.hpp>
-#include <silkworm/db/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/mdbx/etl_mdbx_collector.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm::db::bitmap {
@@ -61,16 +61,16 @@ TEST_CASE("Roaring Bitmaps") {
 
     SECTION("To/From Bytes") {
         auto original_bitmap{roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(1, 101, 1))};
-        Bytes bitmap_data{db::bitmap::to_bytes(original_bitmap)};
-        auto loaded_bitmap{db::bitmap::parse(bitmap_data)};
+        Bytes bitmap_data{bitmap::to_bytes(original_bitmap)};
+        auto loaded_bitmap{bitmap::parse(bitmap_data)};
         REQUIRE(original_bitmap == loaded_bitmap);
         original_bitmap.clear();
-        REQUIRE(db::bitmap::to_bytes(original_bitmap).empty());
+        REQUIRE(bitmap::to_bytes(original_bitmap).empty());
     }
 
     SECTION("cut_left1") {
         for (size_t mdbx_page_size{1_Kibi}; mdbx_page_size < 32_Kibi; mdbx_page_size *= 2) {
-            static const size_t kBitmapChunkLimit{db::max_value_size_for_leaf_page(mdbx_page_size, 0)};
+            static const size_t kBitmapChunkLimit{max_value_size_for_leaf_page(mdbx_page_size, 0)};
             roaring::Roaring64Map bitmap(roaring::api::roaring_bitmap_from_range(0, 100000, 1));
             roaring::Roaring64Map expected(roaring::api::roaring_bitmap_from_range(0, 100000, 1));
             roaring::Roaring64Map actual;
@@ -109,12 +109,12 @@ TEST_CASE("Roaring Bitmaps") {
 }
 
 TEST_CASE("Bitmap Index Loader") {
-    db::test_util::TempChainData context;
-    db::RWTxn& txn{context.rw_txn()};
+    test_util::TempChainData context;
+    RWTxn& txn{context.rw_txn()};
 
-    const auto address1{0x00000000000000000001_address};
-    const auto address2{0x00000000000000000002_address};
-    const auto address3{0x00000000000000000003_address};
+    const evmc::address address1{0x00000000000000000001_address};
+    const evmc::address address2{0x00000000000000000002_address};
+    const evmc::address address3{0x00000000000000000003_address};
 
     // Note range is [min,max)
     roaring::Roaring64Map roaring1{roaring::api::roaring_bitmap_from_range(1, 20'001, 1)};
@@ -128,7 +128,7 @@ TEST_CASE("Bitmap Index Loader") {
     };
 
     etl_mdbx::Collector collector(context.dir().temp().path());
-    IndexLoader bm_loader(db::table::kLogAddressIndex);
+    IndexLoader bm_loader(table::kLogAddressIndex);
     IndexLoader::flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
     REQUIRE(collector.bytes_size());
 
@@ -139,22 +139,22 @@ TEST_CASE("Bitmap Index Loader") {
 
     // Check we have an incomplete shard for each key
     Bytes key(address1.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    auto data{log_addresses.find(db::to_slice(key), /*throw_notfound=*/false)};
+    key.append(block_key(UINT64_MAX));
+    auto data{log_addresses.find(to_slice(key), /*throw_notfound=*/false)};
     REQUIRE(data.done);
     auto loaded_bitmap{bitmap::parse(data.value)};
     REQUIRE(loaded_bitmap.maximum() == 20'000);
 
     key.assign(address2.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    key.append(block_key(UINT64_MAX));
+    data = log_addresses.find(to_slice(key), /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 50'000);
 
     key.assign(address3.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    key.append(block_key(UINT64_MAX));
+    data = log_addresses.find(to_slice(key), /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 50'000);
@@ -169,24 +169,24 @@ TEST_CASE("Bitmap Index Loader") {
 
     // First address stays the same
     key.assign(address1.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    key.append(block_key(UINT64_MAX));
+    data = log_addresses.find(to_slice(key), /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 20'000);
 
     // Second address has decreased to 30'000
     key.assign(address2.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    key.append(block_key(UINT64_MAX));
+    data = log_addresses.find(to_slice(key), /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 30'000);
 
     // Third address should be gone
     key.assign(address3.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    key.append(block_key(UINT64_MAX));
+    data = log_addresses.find(to_slice(key), /*throw_notfound=*/false);
     REQUIRE_FALSE(data.done);
 
     // Now prune up to 25000
@@ -195,14 +195,14 @@ TEST_CASE("Bitmap Index Loader") {
 
     // First address is gone
     key.assign(address1.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    key.append(block_key(UINT64_MAX));
+    data = log_addresses.find(to_slice(key), /*throw_notfound=*/false);
     REQUIRE_FALSE(data.done);
 
     // Second address has a new minimum
     key.assign(address2.bytes, kAddressLength);
-    key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    key.append(block_key(UINT64_MAX));
+    data = log_addresses.find(to_slice(key), /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 30'000);

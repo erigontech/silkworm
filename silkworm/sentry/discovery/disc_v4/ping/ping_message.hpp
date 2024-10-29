@@ -34,10 +34,10 @@ struct PingMessage {
     std::chrono::time_point<std::chrono::system_clock> expiration;
     std::optional<uint64_t> enr_seq_num;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static PingMessage rlp_decode(ByteView data);
+    Bytes rlp_encode() const;
+    static PingMessage rlp_decode(ByteView data);
 
-    [[nodiscard]] NodeAddress sender_node_address() const { return {sender_endpoint, sender_port_rlpx}; };
+    NodeAddress sender_node_address() const { return {sender_endpoint, sender_port_rlpx}; };
 
     static const uint8_t kId;
 };

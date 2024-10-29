@@ -18,10 +18,12 @@ find_package(Microsoft.GSL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(tl-expected REQUIRED)
 
-if(MSVC)
-  add_compile_options(/EHsc)
-else()
-  add_compile_options(-fno-exceptions)
+if(SILKWORM_CORE_ONLY)
+  if(MSVC)
+    add_compile_options(/EHsc)
+  else()
+    add_compile_options(-fno-exceptions)
+  endif()
 endif()
 
 file(
@@ -49,7 +51,7 @@ set(SILKWORM_CORE_PUBLIC_LIBS
     secp256k1
     tl::expected
 )
-set(SILKWORM_CORE_PRIVATE_LIBS ff blst)
+set(SILKWORM_CORE_PRIVATE_LIBS ff blst::blst)
 
 if(SILKWORM_CORE_USE_ABSEIL)
   find_package(absl REQUIRED)

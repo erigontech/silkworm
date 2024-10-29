@@ -67,7 +67,7 @@ StatusDataProvider::StatusData StatusDataProvider::make_status_data(
     return status_data;
 }
 
-StatusDataProvider::StatusData StatusDataProvider::get_status_data(uint8_t eth_version) {
+StatusDataProvider::StatusData StatusDataProvider::get_status_data(uint8_t eth_version) const {
     if (eth_version != silkworm::sentry::eth::Protocol::kVersion) {
         throw std::runtime_error("StatusDataProvider::get_status_data: unsupported eth version " + std::to_string(eth_version));
     }
@@ -79,7 +79,7 @@ StatusDataProvider::StatusData StatusDataProvider::get_status_data(uint8_t eth_v
 }
 
 StatusDataProvider::StatusDataProviderFactory StatusDataProvider::to_factory_function(StatusDataProvider provider) {
-    return [provider = std::move(provider)](uint8_t eth_version) mutable -> Task<StatusData> {
+    return [provider = std::move(provider)](uint8_t eth_version) -> Task<StatusData> {
         co_return provider.get_status_data(eth_version);
     };
 }

@@ -40,11 +40,11 @@ struct Config {
     // https://forum.polygon.technology/t/pip-28-agra-hardfork
     BlockNum agra_block{0};
 
-    [[nodiscard]] uint64_t sprint_size(BlockNum number) const noexcept;
+    uint64_t sprint_size(BlockNum number) const noexcept;
 
-    [[nodiscard]] nlohmann::json to_json() const noexcept;
+    nlohmann::json to_json() const noexcept;
 
-    [[nodiscard]] static std::optional<Config> from_json(const nlohmann::json& json) noexcept;
+    static std::optional<Config> from_json(const nlohmann::json& json) noexcept;
 
     bool operator==(const Config&) const = default;
 };
@@ -57,7 +57,7 @@ struct Config {
 //
 // N.B. Similar to borKeyValueConfigHelper in Erigon.
 template <typename T>
-[[nodiscard]] constexpr const T* config_value_lookup(const SmallMap<BlockNum, T>& config, BlockNum number) noexcept {
+constexpr const T* config_value_lookup(const SmallMap<BlockNum, T>& config, BlockNum number) noexcept {
     auto it{config.begin()};
     if (config.empty() || it->first > number) {
         return nullptr;

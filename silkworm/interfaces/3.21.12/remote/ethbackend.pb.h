@@ -67,6 +67,12 @@ extern BorEventReplyDefaultTypeInternal _BorEventReply_default_instance_;
 class BorEventRequest;
 struct BorEventRequestDefaultTypeInternal;
 extern BorEventRequestDefaultTypeInternal _BorEventRequest_default_instance_;
+class CanonicalBodyForStorageReply;
+struct CanonicalBodyForStorageReplyDefaultTypeInternal;
+extern CanonicalBodyForStorageReplyDefaultTypeInternal _CanonicalBodyForStorageReply_default_instance_;
+class CanonicalBodyForStorageRequest;
+struct CanonicalBodyForStorageRequestDefaultTypeInternal;
+extern CanonicalBodyForStorageRequestDefaultTypeInternal _CanonicalBodyForStorageRequest_default_instance_;
 class CanonicalHashReply;
 struct CanonicalHashReplyDefaultTypeInternal;
 extern CanonicalHashReplyDefaultTypeInternal _CanonicalHashReply_default_instance_;
@@ -153,6 +159,8 @@ template<> ::remote::BlockReply* Arena::CreateMaybeMessage<::remote::BlockReply>
 template<> ::remote::BlockRequest* Arena::CreateMaybeMessage<::remote::BlockRequest>(Arena*);
 template<> ::remote::BorEventReply* Arena::CreateMaybeMessage<::remote::BorEventReply>(Arena*);
 template<> ::remote::BorEventRequest* Arena::CreateMaybeMessage<::remote::BorEventRequest>(Arena*);
+template<> ::remote::CanonicalBodyForStorageReply* Arena::CreateMaybeMessage<::remote::CanonicalBodyForStorageReply>(Arena*);
+template<> ::remote::CanonicalBodyForStorageRequest* Arena::CreateMaybeMessage<::remote::CanonicalBodyForStorageRequest>(Arena*);
 template<> ::remote::CanonicalHashReply* Arena::CreateMaybeMessage<::remote::CanonicalHashReply>(Arena*);
 template<> ::remote::CanonicalHashRequest* Arena::CreateMaybeMessage<::remote::CanonicalHashRequest>(Arena*);
 template<> ::remote::ClientVersionReply* Arena::CreateMaybeMessage<::remote::ClientVersionReply>(Arena*);
@@ -2170,6 +2178,307 @@ class HeaderNumberReply final :
 };
 // -------------------------------------------------------------------
 
+class CanonicalBodyForStorageRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.CanonicalBodyForStorageRequest) */ {
+ public:
+  inline CanonicalBodyForStorageRequest() : CanonicalBodyForStorageRequest(nullptr) {}
+  ~CanonicalBodyForStorageRequest() override;
+  explicit PROTOBUF_CONSTEXPR CanonicalBodyForStorageRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  CanonicalBodyForStorageRequest(const CanonicalBodyForStorageRequest& from);
+  CanonicalBodyForStorageRequest(CanonicalBodyForStorageRequest&& from) noexcept
+    : CanonicalBodyForStorageRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline CanonicalBodyForStorageRequest& operator=(const CanonicalBodyForStorageRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline CanonicalBodyForStorageRequest& operator=(CanonicalBodyForStorageRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const CanonicalBodyForStorageRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const CanonicalBodyForStorageRequest* internal_default_instance() {
+    return reinterpret_cast<const CanonicalBodyForStorageRequest*>(
+               &_CanonicalBodyForStorageRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    14;
+
+  friend void swap(CanonicalBodyForStorageRequest& a, CanonicalBodyForStorageRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(CanonicalBodyForStorageRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(CanonicalBodyForStorageRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  CanonicalBodyForStorageRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<CanonicalBodyForStorageRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const CanonicalBodyForStorageRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const CanonicalBodyForStorageRequest& from) {
+    CanonicalBodyForStorageRequest::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(CanonicalBodyForStorageRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.CanonicalBodyForStorageRequest";
+  }
+  protected:
+  explicit CanonicalBodyForStorageRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kBlockNumberFieldNumber = 1,
+  };
+  // uint64 blockNumber = 1;
+  void clear_blocknumber();
+  uint64_t blocknumber() const;
+  void set_blocknumber(uint64_t value);
+  private:
+  uint64_t _internal_blocknumber() const;
+  void _internal_set_blocknumber(uint64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.CanonicalBodyForStorageRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    uint64_t blocknumber_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fethbackend_2eproto;
+};
+// -------------------------------------------------------------------
+
+class CanonicalBodyForStorageReply final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.CanonicalBodyForStorageReply) */ {
+ public:
+  inline CanonicalBodyForStorageReply() : CanonicalBodyForStorageReply(nullptr) {}
+  ~CanonicalBodyForStorageReply() override;
+  explicit PROTOBUF_CONSTEXPR CanonicalBodyForStorageReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  CanonicalBodyForStorageReply(const CanonicalBodyForStorageReply& from);
+  CanonicalBodyForStorageReply(CanonicalBodyForStorageReply&& from) noexcept
+    : CanonicalBodyForStorageReply() {
+    *this = ::std::move(from);
+  }
+
+  inline CanonicalBodyForStorageReply& operator=(const CanonicalBodyForStorageReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline CanonicalBodyForStorageReply& operator=(CanonicalBodyForStorageReply&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const CanonicalBodyForStorageReply& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const CanonicalBodyForStorageReply* internal_default_instance() {
+    return reinterpret_cast<const CanonicalBodyForStorageReply*>(
+               &_CanonicalBodyForStorageReply_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    15;
+
+  friend void swap(CanonicalBodyForStorageReply& a, CanonicalBodyForStorageReply& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(CanonicalBodyForStorageReply* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(CanonicalBodyForStorageReply* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  CanonicalBodyForStorageReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<CanonicalBodyForStorageReply>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const CanonicalBodyForStorageReply& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const CanonicalBodyForStorageReply& from) {
+    CanonicalBodyForStorageReply::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(CanonicalBodyForStorageReply* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.CanonicalBodyForStorageReply";
+  }
+  protected:
+  explicit CanonicalBodyForStorageReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kBodyFieldNumber = 1,
+  };
+  // bytes body = 1;
+  void clear_body();
+  const std::string& body() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_body(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_body();
+  PROTOBUF_NODISCARD std::string* release_body();
+  void set_allocated_body(std::string* body);
+  private:
+  const std::string& _internal_body() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_body(const std::string& value);
+  std::string* _internal_mutable_body();
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.CanonicalBodyForStorageReply)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr body_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fethbackend_2eproto;
+};
+// -------------------------------------------------------------------
+
 class SubscribeRequest final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.SubscribeRequest) */ {
  public:
@@ -2218,7 +2527,7 @@ class SubscribeRequest final :
                &_SubscribeRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    16;
 
   friend void swap(SubscribeRequest& a, SubscribeRequest& b) {
     a.Swap(&b);
@@ -2366,7 +2675,7 @@ class SubscribeReply final :
                &_SubscribeReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    17;
 
   friend void swap(SubscribeReply& a, SubscribeReply& b) {
     a.Swap(&b);
@@ -2530,7 +2839,7 @@ class LogsFilterRequest final :
                &_LogsFilterRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    18;
 
   friend void swap(LogsFilterRequest& a, LogsFilterRequest& b) {
     a.Swap(&b);
@@ -2729,7 +3038,7 @@ class SubscribeLogsReply final :
                &_SubscribeLogsReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    17;
+    19;
 
   friend void swap(SubscribeLogsReply& a, SubscribeLogsReply& b) {
     a.Swap(&b);
@@ -3006,7 +3315,7 @@ class BlockRequest final :
                &_BlockRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    20;
 
   friend void swap(BlockRequest& a, BlockRequest& b) {
     a.Swap(&b);
@@ -3174,7 +3483,7 @@ class BlockReply final :
                &_BlockReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    19;
+    21;
 
   friend void swap(BlockReply& a, BlockReply& b) {
     a.Swap(&b);
@@ -3343,7 +3652,7 @@ class TxnLookupRequest final :
                &_TxnLookupRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    20;
+    22;
 
   friend void swap(TxnLookupRequest& a, TxnLookupRequest& b) {
     a.Swap(&b);
@@ -3500,7 +3809,7 @@ class TxnLookupReply final :
                &_TxnLookupReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    23;
 
   friend void swap(TxnLookupReply& a, TxnLookupReply& b) {
     a.Swap(&b);
@@ -3648,7 +3957,7 @@ class NodesInfoRequest final :
                &_NodesInfoRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    24;
 
   friend void swap(NodesInfoRequest& a, NodesInfoRequest& b) {
     a.Swap(&b);
@@ -3796,7 +4105,7 @@ class AddPeerRequest final :
                &_AddPeerRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    25;
 
   friend void swap(AddPeerRequest& a, AddPeerRequest& b) {
     a.Swap(&b);
@@ -3949,7 +4258,7 @@ class NodesInfoReply final :
                &_NodesInfoReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    24;
+    26;
 
   friend void swap(NodesInfoReply& a, NodesInfoReply& b) {
     a.Swap(&b);
@@ -4106,7 +4415,7 @@ class PeersReply final :
                &_PeersReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    27;
 
   friend void swap(PeersReply& a, PeersReply& b) {
     a.Swap(&b);
@@ -4263,7 +4572,7 @@ class AddPeerReply final :
                &_AddPeerReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    28;
 
   friend void swap(AddPeerReply& a, AddPeerReply& b) {
     a.Swap(&b);
@@ -4411,7 +4720,7 @@ class PendingBlockReply final :
                &_PendingBlockReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    27;
+    29;
 
   friend void swap(PendingBlockReply& a, PendingBlockReply& b) {
     a.Swap(&b);
@@ -4564,7 +4873,7 @@ class EngineGetPayloadBodiesByHashV1Request final :
                &_EngineGetPayloadBodiesByHashV1Request_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    28;
+    30;
 
   friend void swap(EngineGetPayloadBodiesByHashV1Request& a, EngineGetPayloadBodiesByHashV1Request& b) {
     a.Swap(&b);
@@ -4721,7 +5030,7 @@ class EngineGetPayloadBodiesByRangeV1Request final :
                &_EngineGetPayloadBodiesByRangeV1Request_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    31;
 
   friend void swap(EngineGetPayloadBodiesByRangeV1Request& a, EngineGetPayloadBodiesByRangeV1Request& b) {
     a.Swap(&b);
@@ -4880,7 +5189,7 @@ class BorEventRequest final :
                &_BorEventRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    32;
 
   friend void swap(BorEventRequest& a, BorEventRequest& b) {
     a.Swap(&b);
@@ -5037,7 +5346,7 @@ class BorEventReply final :
                &_BorEventReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    33;
 
   friend void swap(BorEventReply& a, BorEventReply& b) {
     a.Swap(&b);
@@ -5646,6 +5955,84 @@ inline void HeaderNumberReply::_internal_set_number(uint64_t value) {
 inline void HeaderNumberReply::set_number(uint64_t value) {
   _internal_set_number(value);
   // @@protoc_insertion_point(field_set:remote.HeaderNumberReply.number)
+}
+
+// -------------------------------------------------------------------
+
+// CanonicalBodyForStorageRequest
+
+// uint64 blockNumber = 1;
+inline void CanonicalBodyForStorageRequest::clear_blocknumber() {
+  _impl_.blocknumber_ = uint64_t{0u};
+}
+inline uint64_t CanonicalBodyForStorageRequest::_internal_blocknumber() const {
+  return _impl_.blocknumber_;
+}
+inline uint64_t CanonicalBodyForStorageRequest::blocknumber() const {
+  // @@protoc_insertion_point(field_get:remote.CanonicalBodyForStorageRequest.blockNumber)
+  return _internal_blocknumber();
+}
+inline void CanonicalBodyForStorageRequest::_internal_set_blocknumber(uint64_t value) {
+  
+  _impl_.blocknumber_ = value;
+}
+inline void CanonicalBodyForStorageRequest::set_blocknumber(uint64_t value) {
+  _internal_set_blocknumber(value);
+  // @@protoc_insertion_point(field_set:remote.CanonicalBodyForStorageRequest.blockNumber)
+}
+
+// -------------------------------------------------------------------
+
+// CanonicalBodyForStorageReply
+
+// bytes body = 1;
+inline void CanonicalBodyForStorageReply::clear_body() {
+  _impl_.body_.ClearToEmpty();
+}
+inline const std::string& CanonicalBodyForStorageReply::body() const {
+  // @@protoc_insertion_point(field_get:remote.CanonicalBodyForStorageReply.body)
+  return _internal_body();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CanonicalBodyForStorageReply::set_body(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.body_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.CanonicalBodyForStorageReply.body)
+}
+inline std::string* CanonicalBodyForStorageReply::mutable_body() {
+  std::string* _s = _internal_mutable_body();
+  // @@protoc_insertion_point(field_mutable:remote.CanonicalBodyForStorageReply.body)
+  return _s;
+}
+inline const std::string& CanonicalBodyForStorageReply::_internal_body() const {
+  return _impl_.body_.Get();
+}
+inline void CanonicalBodyForStorageReply::_internal_set_body(const std::string& value) {
+  
+  _impl_.body_.Set(value, GetArenaForAllocation());
+}
+inline std::string* CanonicalBodyForStorageReply::_internal_mutable_body() {
+  
+  return _impl_.body_.Mutable(GetArenaForAllocation());
+}
+inline std::string* CanonicalBodyForStorageReply::release_body() {
+  // @@protoc_insertion_point(field_release:remote.CanonicalBodyForStorageReply.body)
+  return _impl_.body_.Release();
+}
+inline void CanonicalBodyForStorageReply::set_allocated_body(std::string* body) {
+  if (body != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.body_.SetAllocated(body, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.body_.IsDefault()) {
+    _impl_.body_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.CanonicalBodyForStorageReply.body)
 }
 
 // -------------------------------------------------------------------
@@ -7150,6 +7537,10 @@ BorEventReply::mutable_event_rlps() {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

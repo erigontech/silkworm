@@ -21,6 +21,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
@@ -53,6 +54,7 @@ struct SnapshotSyncTest {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     db::test_util::TempChainData context;
+    SnapshotRepository repository{db::test_util::make_repository(tmp_dir.path())};
     TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;
 };
@@ -84,7 +86,7 @@ struct SnapshotSyncForTest : public SnapshotSync {
         : SnapshotSync{
               make_settings(test.tmp_dir.path(), overrides),
               kMainnetConfig.chain_id,
-              test.context.env(),
+              db::DataStoreRef{test.context.env(), test.repository},
               test.tmp_dir.path(),
               test.stage_scheduler} {}
 };
@@ -114,47 +116,55 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     auto tmp_dir_path = test.tmp_dir.path();
 
     // Create a sample Header snapshot+index
-    snapshots::test_util::SampleHeaderSnapshotFile header_snapshot_file{tmp_dir_path};
-    snapshots::test_util::SampleHeaderSnapshotPath header_snapshot_path{header_snapshot_file.path()};
-    snapshots::Snapshot header_snapshot{header_snapshot_path};
-    REQUIRE_NOTHROW(snapshots::HeaderIndex::make(header_snapshot_path).build());
-    snapshots::Index idx_header_hash{header_snapshot_path.index_file()};
+    snapshots::test_util::SampleHeaderSnapshotFile header_segment_file{tmp_dir_path};
+    auto& header_segment_path = header_segment_file.path();
+    SegmentFileReader header_segment{header_segment_path};
+    auto header_index_builder = HeaderIndex::make(header_segment_path);
+    header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
+    REQUIRE_NOTHROW(header_index_builder.build());
+    Index idx_header_hash{header_segment_path.index_file()};
 
     // Create a sample Body snapshot+index
-    snapshots::test_util::SampleBodySnapshotFile body_snapshot_file{tmp_dir_path};
-    snapshots::test_util::SampleBodySnapshotPath body_snapshot_path{body_snapshot_file.path()};
-    snapshots::Snapshot body_snapshot{body_snapshot_path};
-    REQUIRE_NOTHROW(snapshots::BodyIndex::make(body_snapshot_path).build());
-    snapshots::Index idx_body_number{body_snapshot_path.index_file()};
+    snapshots::test_util::SampleBodySnapshotFile body_segment_file{tmp_dir_path};
+    auto& body_segment_path = body_segment_file.path();
+    SegmentFileReader body_segment{body_segment_path};
+    auto body_index_builder = BodyIndex::make(body_segment_path);
+    body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
+    REQUIRE_NOTHROW(body_index_builder.build());
+    Index idx_body_number{body_segment_path.index_file()};
 
     // Create a sample Transaction snapshot+indexes
-    snapshots::test_util::SampleTransactionSnapshotFile txn_snapshot_file{tmp_dir_path};
-    snapshots::test_util::SampleTransactionSnapshotPath txn_snapshot_path{txn_snapshot_file.path()};
-    snapshots::Snapshot txn_snapshot{txn_snapshot_path};
-    REQUIRE_NOTHROW(snapshots::TransactionIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    REQUIRE_NOTHROW(snapshots::TransactionToBlockIndex::make(body_snapshot_path, txn_snapshot_path).build());
-    snapshots::Index idx_txn_hash{txn_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions)};
-    snapshots::Index idx_txn_hash_2_block{txn_snapshot_path.index_file_for_type(snapshots::SnapshotType::transactions_to_block)};
+    snapshots::test_util::SampleTransactionSnapshotFile txn_segment_file{tmp_dir_path};
+    auto& txn_segment_path = txn_segment_file.path();
+    SegmentFileReader txn_segment{txn_segment_path};
+    REQUIRE_NOTHROW(TransactionIndex::make(body_segment_path, txn_segment_path).build());
+    REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start).build());
+    Index idx_txn_hash{txn_segment_path.related_path(SnapshotType::transactions, kIdxExtension)};
+    Index idx_txn_hash_2_block{txn_segment_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
 
     // Add a sample Snapshot bundle to the repository
-    snapshots::SnapshotBundle bundle{{
-        .header_snapshot = std::move(header_snapshot),
-        .idx_header_hash = std::move(idx_header_hash),
+    SnapshotBundle bundle{
+        header_segment_path.step_range(),
+        {
+            .header_segment = std::move(header_segment),
+            .idx_header_hash = std::move(idx_header_hash),
 
-        .body_snapshot = std::move(body_snapshot),
-        .idx_body_number = std::move(idx_body_number),
+            .body_segment = std::move(body_segment),
+            .idx_body_number = std::move(idx_body_number),
 
-        .txn_snapshot = std::move(txn_snapshot),
-        .idx_txn_hash = std::move(idx_txn_hash),
-        .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-    }};
+            .txn_segment = std::move(txn_segment),
+            .idx_txn_hash = std::move(idx_txn_hash),
+            .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
+        },
+    };
     auto& repository = snapshot_sync.repository();
     repository.add_snapshot_bundle(std::move(bundle));
 
     // Update the block headers in the database according to the repository content
     auto& tmp_db = test.context;
+    BlockNum max_block_available = header_segment_file.block_num_range().end - 1;
     auto is_stopping = [] { return false; };
-    CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), repository.max_block_available(), is_stopping));
+    CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), max_block_available, is_stopping));
 
     // Expect that the database is correctly populated (N.B. cannot check Difficulty table because of sample snapshots)
     auto block_is_in_header_numbers = [&](Hash block_hash, BlockNum expected_block_number) {

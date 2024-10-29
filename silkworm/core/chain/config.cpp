@@ -87,6 +87,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "mergeNetsplitBlock", merge_netsplit_block);
     member_to_json(ret, "shanghaiTime", shanghai_time);
     member_to_json(ret, "cancunTime", cancun_time);
+    member_to_json(ret, "cancunTime", prague_time);
 
     if (genesis_hash.has_value()) {
         ret["genesisBlockHash"] = to_hex(*genesis_hash, /*with_prefix=*/true);
@@ -168,6 +169,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "mergeNetsplitBlock", config.merge_netsplit_block);
     read_json_config_member(json, "shanghaiTime", config.shanghai_time);
     read_json_config_member(json, "cancunTime", config.cancun_time);
+    read_json_config_member(json, "pragueTime", config.prague_time);
 
     /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
      * effective genesis block has been persisted */
@@ -188,6 +190,7 @@ bool ChainConfig::is_london(BlockNum block_number) const noexcept {
 evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) const noexcept {
     if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;
     if (shanghai_time && block_time >= shanghai_time) return EVMC_SHANGHAI;
+    if (prague_time && block_time >= prague_time) return EVMC_PRAGUE;
 
     const auto* bor{std::get_if<protocol::bor::Config>(&rule_set_config)};
     if (bor && block_number >= bor->agra_block) return EVMC_SHANGHAI;
@@ -238,6 +241,7 @@ std::vector<BlockTime> ChainConfig::distinct_fork_times() const {
     // Add forks identified by *block timestamp* in ascending order
     ret.insert(shanghai_time.value_or(0));
     ret.insert(cancun_time.value_or(0));
+    ret.insert(prague_time.value_or(0));
 
     ret.erase(0);  // Block 0 is not a fork timestamp
     return {ret.cbegin(), ret.cend()};
@@ -275,6 +279,7 @@ constinit const ChainConfig kMainnetConfig{
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
     .shanghai_time = 1681338455,
     .cancun_time = 1710338135,
+    .prague_time = 1710338135, // TODO
     .rule_set_config = protocol::EthashConfig{},
 };
 
@@ -292,6 +297,7 @@ constinit const ChainConfig kHoleskyConfig{
     .terminal_total_difficulty = 0,
     .shanghai_time = 1696000704,
     .cancun_time = 1707305664,
+    .prague_time = 1707305664, // TODO
     .rule_set_config = protocol::NoPreMergeConfig{},
 };
 
@@ -311,6 +317,7 @@ constinit const ChainConfig kSepoliaConfig{
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
     .cancun_time = 1706655072,
+    .prague_time = 1706655072, // TODO
     .rule_set_config = protocol::EthashConfig{},
 };
 

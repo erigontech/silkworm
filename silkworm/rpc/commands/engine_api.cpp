@@ -58,12 +58,14 @@ Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readabi
         "engine_newPayloadV1",
         "engine_newPayloadV2",
         "engine_newPayloadV3",
+        "engine_newPayloadV4",
         "engine_forkchoiceUpdatedV1",
         "engine_forkchoiceUpdatedV2",
         "engine_forkchoiceUpdatedV3",
         "engine_getPayloadV1",
         "engine_getPayloadV2",
         "engine_getPayloadV3",
+        "engine_getPayloadV4",
         "engine_getPayloadBodiesByHashV1",
         "engine_getPayloadBodiesByRangeV1",
         "engine_exchangeTransitionConfigurationV1",
@@ -165,6 +167,38 @@ Task<void> EngineRpcApi::handle_engine_get_payload_v3(const nlohmann::json& requ
     try {
         const auto payload_quantity = params[0].get<std::string>();
         // TODO(canepat) we need a way to specify V3 i.e. blobs should be returned (hint: use versioned struct PayloadIdentifier)
+        const auto payload_and_value = co_await engine_->get_payload(from_quantity(payload_quantity), kGetPayloadTimeout);
+        reply = make_json_content(request, payload_and_value);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request, se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_getpayloadv4
+Task<void> EngineRpcApi::handle_engine_get_payload_v4(const nlohmann::json& request, nlohmann::json& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required argument 0";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+    const auto& params = request.at("params");
+    if (params.size() != 1) {
+        auto error_msg = "invalid engine_getPayloadV4 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto payload_quantity = params[0].get<std::string>();
         const auto payload_and_value = co_await engine_->get_payload(from_quantity(payload_quantity), kGetPayloadTimeout);
         reply = make_json_content(request, payload_and_value);
     } catch (const boost::system::system_error& se) {
@@ -392,6 +426,63 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
             .parent_beacon_block_root = parent_beacon_block_root,
         };
         const auto new_payload = co_await engine_->new_payload(new_payload_v3_request, kNewPayloadTimeout);
+
+        reply = make_json_content(request, new_payload);
+#ifndef BUILD_COVERAGE
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request, se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+#endif
+    co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/prague.md#engine_newpayloadv4
+Task<void> EngineRpcApi::handle_engine_new_payload_v4(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 3) {
+        auto error_msg = "invalid engine_newPayloadV3 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+    auto payload = params[0].get<ExecutionPayload>();
+    auto expected_blob_versioned_hashes = params[1].get<std::vector<Hash>>();
+    auto parent_beacon_block_root = params[2].get<evmc::bytes32>();
+    auto execution_requests = params[3].get<std::vector<Bytes>>();
+    auto tx = co_await database_->begin();
+
+#ifndef BUILD_COVERAGE
+    try {
+#endif
+        const auto storage{tx->create_storage()};
+        const auto config{co_await storage->read_chain_config()};
+        ensure(config.shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
+        ensure(config.cancun_time.has_value(), "execution layer has no Cancun timestamp in configuration");
+        ensure(config.prague_time.has_value(), "execution layer has no Prague timestamp in configuration");
+
+        // We MUST check that CL has sent the expected ExecutionPayload version [Specification for params]
+        if (payload.timestamp < config.prague_time) {
+            const auto error_msg = "consensus layer must use ExecutionPayloadV3 if timestamp greater or equal to Prague";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request, kUnsupportedFork, error_msg);
+            co_await tx->close();
+            co_return;
+        }
+
+        NewPayloadRequest new_payload_v4_request{
+            .execution_payload = std::move(payload),
+            .expected_blob_versioned_hashes = std::move(expected_blob_versioned_hashes),
+            .parent_beacon_block_root = parent_beacon_block_root,
+            .execution_requests = execution_requests
+        };
+        const auto new_payload = co_await engine_->new_payload(new_payload_v4_request, kNewPayloadTimeout);
 
         reply = make_json_content(request, new_payload);
 #ifndef BUILD_COVERAGE

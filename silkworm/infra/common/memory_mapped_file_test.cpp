@@ -19,7 +19,6 @@
 #include <chrono>
 #include <fstream>
 #include <stdexcept>
-#include <string_view>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -52,16 +51,16 @@ TEST_CASE("MemoryMappedFile from file", "[silkworm][infra][common][memory_mapped
         CHECK_NOTHROW(MemoryMappedFile{tmp_file.string(), {}, false});
     }
 
-    static constexpr std::string_view kFileContent{"\x01\x02\x03"};
+    const std::string file_content{"\x01\x02\x03"};
     const auto tmp_file = TemporaryDirectory::get_unique_temporary_path();
     std::ofstream tmp_stream{tmp_file, std::ios_base::binary};
-    tmp_stream.write(kFileContent.data(), static_cast<std::streamsize>(kFileContent.size()));
+    tmp_stream.write(file_content.data(), static_cast<std::streamsize>(file_content.size()));
     tmp_stream.close();
     MemoryMappedFile mmf{tmp_file};
 
     SECTION("has expected memory address and size") {
         CHECK(mmf.region().data() != nullptr);
-        CHECK(mmf.size() == kFileContent.size());
+        CHECK(mmf.size() == file_content.size());
     }
 
     SECTION("has expected content") {
@@ -83,7 +82,7 @@ TEST_CASE("MemoryMappedFile from file", "[silkworm][infra][common][memory_mapped
         MemoryMappedInputStream mmis{mmf.region()};
         std::string s;
         mmis >> s;
-        CHECK(s == kFileContent);
+        CHECK(s == file_content);
     }
 
     SECTION("last_write_time") {
@@ -118,10 +117,10 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
         CHECK_NOTHROW(MemoryMappedFile(tmp_file, mmf_from_file.region()));
     }
 
-    static constexpr std::string_view kFileContent{"\x01\x02\x03"};
+    const std::string file_content{"\x01\x02\x03"};
     const auto tmp_file = TemporaryDirectory::get_unique_temporary_path();
     std::ofstream tmp_stream{tmp_file, std::ios_base::binary};
-    tmp_stream.write(kFileContent.data(), static_cast<std::streamsize>(kFileContent.size()));
+    tmp_stream.write(file_content.data(), static_cast<std::streamsize>(file_content.size()));
     tmp_stream.close();
     MemoryMappedFile mmf_from_file{tmp_file};
     const auto region{mmf_from_file.region()};
@@ -151,7 +150,7 @@ TEST_CASE("MemoryMappedFile from memory", "[silkworm][infra][common][memory_mapp
         MemoryMappedInputStream mmis{mmf.region()};
         std::string s;
         mmis >> s;
-        CHECK(s == kFileContent);
+        CHECK(s == file_content);
     }
 
     SECTION("last_write_time") {

@@ -69,7 +69,6 @@ std::optional<intx::uint256> BlockHeader::blob_gas_price() const {
     return calc_blob_gas_price(*excess_blob_gas);
 }
 
-
 namespace rlp {
 
     static Header rlp_header(const BlockHeader& header, bool for_sealing = false, bool exclude_extra_data_sig = false) {

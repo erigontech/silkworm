@@ -191,7 +191,7 @@ NodeImpl::NodeImpl(
       data_store_{
           init_chain_data_db(settings.node_settings),
           snapshots::SnapshotRepository{
-              settings_.snapshot_settings.repository_dir,
+              settings_.snapshot_settings.repository_path,
               std::make_unique<snapshots::StepToBlockNumConverter>(),
               std::make_unique<db::SnapshotBundleFactoryImpl>(),
           },

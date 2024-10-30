@@ -33,7 +33,7 @@ SnapshotRepository make_repository(std::filesystem::path dir_path) {
 
 SnapshotRepository make_repository() {
     SnapshotSettings settings;
-    return make_repository(settings.repository_dir);
+    return make_repository(settings.repository_path);
 }
 
 }  // namespace silkworm::db::test_util

@@ -73,7 +73,7 @@ struct SnapshotSyncForTest : public SnapshotSync {
         const std::filesystem::path& tmp_dir_path,
         const SettingsOverrides& overrides) {
         return SnapshotSettings{
-            .repository_dir = tmp_dir_path,
+            .repository_path = tmp_dir_path,
             .enabled = overrides.enabled,
             .no_downloader = overrides.no_downloader,
             .bittorrent_settings = bittorrent::BitTorrentSettings{

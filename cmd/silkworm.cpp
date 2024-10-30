@@ -187,8 +187,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
 
     // snapshots::SnapshotSettings
     auto& snapshot_settings = settings.snapshot_settings;
-    snapshot_settings.repository_dir = node_settings.data_directory->snapshots().path();
-    snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
+    snapshot_settings.repository_path = node_settings.data_directory->snapshots().path();
+    snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_path;
 
     // sentry::Settings
     settings.sentry_settings.client_id = node_settings.build_info.client_id;

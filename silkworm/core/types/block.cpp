@@ -34,9 +34,11 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing, bool exclude_extra_data_sig) c
 
 ethash::hash256 BlockHeader::boundary() const {
     using intx::operator""_u256;
-    static const auto kDividend{intx::uint320{1} << 256};
-    auto result{difficulty > 1u ? intx::uint256{kDividend / difficulty}
-                                : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256};
+    static const intx::uint320 kDividend = intx::uint320{1} << 256;
+    intx::uint256 result =
+        (difficulty > 1u)
+            ? intx::uint256{kDividend / difficulty}
+            : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
     return intx::be::store<ethash::hash256>(result);
 }
 

@@ -36,7 +36,7 @@ using db::test_util::make_repository;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 
-const Bytes kLoremIpsumDict{*from_hex(
+static const Bytes kLoremIpsumDict{*from_hex(
     "000000000000004200000000000000000000000000000000000000000000001e"
     "010003060409040b040a050d07100716071107050507060c0715070e04080f4c"
     "6f72656d20300f697073756d20310f646f6c6f72203201736974203307616d65"

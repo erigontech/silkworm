@@ -26,9 +26,9 @@
 
 namespace silkworm::rpc::core {
 
-constexpr const char* kHeadBlockHash = "headBlockHash";
-constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
-constexpr const char* kSafeBlockHash = "safeBlockHash";
+static constexpr const char* kHeadBlockHash = "headBlockHash";
+static constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
+static constexpr const char* kSafeBlockHash = "safeBlockHash";
 
 using namespace silkworm::db;
 using namespace silkworm::db::chain;

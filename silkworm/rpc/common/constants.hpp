@@ -42,6 +42,6 @@ inline constexpr const char* kDefaultEngineEndPoint{"localhost:8551"};
 inline constexpr const char* kDefaultPrivateApiAddr{"localhost:9090"};
 inline constexpr const char* kDefaultEth1ApiSpec{"admin,debug,eth,net,parity,erigon,trace,web3,txpool"};
 inline constexpr const char* kDefaultEth2ApiSpec{"engine,eth"};
-inline constexpr const std::chrono::milliseconds kDefaultTimeout{10000};
+inline constexpr std::chrono::milliseconds kDefaultTimeout{10000};
 
 }  // namespace silkworm

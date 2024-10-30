@@ -43,10 +43,10 @@ namespace silkworm::snapshots::seg {
  * Pick every kWordSamplingFactor-th word for superstring inclusion.
  * Also drop superstrings unless their overflowing word is kWordSamplingFactor-th.
  */
-constexpr size_t kSuperstringSamplingFactor = 4;
+static constexpr size_t kSuperstringSamplingFactor = 4;
 
-constexpr size_t kOutputStreamBufferSize = 1_Mebi;
-constexpr size_t kIntermediateStreamBufferSize = kOutputStreamBufferSize * 4;
+static constexpr size_t kOutputStreamBufferSize = 1_Mebi;
+static constexpr size_t kIntermediateStreamBufferSize = kOutputStreamBufferSize * 4;
 
 class CompressorImpl {
   public:

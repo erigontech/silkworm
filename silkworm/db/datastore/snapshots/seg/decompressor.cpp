@@ -35,15 +35,15 @@
 namespace silkworm::snapshots::seg {
 
 //! Size in bytes of metadata header fields in compressed file
-constexpr size_t kWordsCountSize{sizeof(uint64_t)};
-constexpr size_t kEmptyWordsCountSize{sizeof(uint64_t)};
-constexpr size_t kDictionaryLengthSize{sizeof(uint64_t)};
+static constexpr size_t kWordsCountSize{sizeof(uint64_t)};
+static constexpr size_t kEmptyWordsCountSize{sizeof(uint64_t)};
+static constexpr size_t kDictionaryLengthSize{sizeof(uint64_t)};
 
 //! Minimum compressed file size given the metadata header
-constexpr size_t kMinimumFileSize = 32;
+static constexpr size_t kMinimumFileSize = 32;
 
 //! Maximum allowed depth in compressed file
-constexpr size_t kMaxAllowedDepth = 50;
+static constexpr size_t kMaxAllowedDepth = 50;
 
 DecodingTable::DecodingTable(size_t max_depth) : max_depth_(max_depth) {
     bit_length_ = max_depth_ > kMaxTableBitLength ? kMaxTableBitLength : max_depth_;

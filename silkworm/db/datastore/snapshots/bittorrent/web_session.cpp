@@ -38,7 +38,7 @@ namespace ssl = net::ssl;
 namespace urls = boost::urls;
 
 //! The timeout for HTTP asynchronous operations
-constexpr std::chrono::seconds kHttpTimeoutSecs{30};
+static constexpr std::chrono::seconds kHttpTimeoutSecs{30};
 
 WebSession::WebSession(std::optional<std::string> server_certificate)
     : server_certificate_(std::move(server_certificate)) {}

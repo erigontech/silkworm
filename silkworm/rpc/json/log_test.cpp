@@ -29,9 +29,9 @@
 
 namespace {
 #ifdef _WIN32
-const char* kInvalidArgumentMessage = "invalid argument";
+constexpr const char* kInvalidArgumentMessage = "invalid argument";
 #else
-const char* kInvalidArgumentMessage = "Invalid argument";
+constexpr const char* kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 

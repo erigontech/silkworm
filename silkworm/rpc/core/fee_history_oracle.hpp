@@ -78,9 +78,9 @@ class FeeHistoryOracle {
     Task<FeeHistory> fee_history(BlockNum newest_block, BlockNum block_count, const std::vector<int8_t>& reward_percentiles);
 
   private:
-    static inline const std::uint32_t kDefaultMaxFeeHistory = 1024;
-    static inline const std::uint32_t kDefaultMaxHeaderHistory = 0;
-    static inline const std::uint32_t kDefaultMaxBlockHistory = 0;
+    static constexpr std::uint32_t kDefaultMaxFeeHistory{1024};
+    static constexpr std::uint32_t kDefaultMaxHeaderHistory{0};
+    static constexpr std::uint32_t kDefaultMaxBlockHistory{0};
 
     Task<BlockRange> resolve_block_range(BlockNum newest_block, uint64_t block_count, uint64_t max_history);
     Task<void> process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles);

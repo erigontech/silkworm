@@ -64,7 +64,7 @@ struct ExecutionResult {
     std::string error_message(bool full_error = true) const;
 };
 
-constexpr int kCacheSize = 32000;
+inline constexpr int kCacheSize = 32000;
 
 template <typename T>
 using ServiceBase = boost::asio::detail::execution_context_service_base<T>;

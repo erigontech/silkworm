@@ -96,8 +96,8 @@ class MemoryMutationCursorTest {
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814
 #ifndef SILKWORM_SANITIZE
 
-const MapConfig kNonexistentTestMap{"NonexistentTable"};
-const MapConfig kNonexistentTestMultiMap{"NonexistentMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+static const MapConfig kNonexistentTestMap{"NonexistentTable"};
+static const MapConfig kNonexistentTestMultiMap{"NonexistentMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 TEST_CASE("MemoryMutationCursor: initialization", "[silkworm][node][db][memory_mutation]") {
     MemoryMutationCursorTest test1;

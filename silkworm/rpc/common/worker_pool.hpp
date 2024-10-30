@@ -23,7 +23,7 @@
 namespace silkworm::rpc {
 
 //! Default number of threads in worker pool (i.e. dedicated to heavier tasks)
-inline const auto kDefaultNumWorkers{std::thread::hardware_concurrency() / 2};
+inline const uint32_t kDefaultNumWorkers{std::thread::hardware_concurrency() / 2};
 
 //! Pool of worker threads dedicated to heavier tasks
 using WorkerPool = boost::asio::thread_pool;

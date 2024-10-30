@@ -129,7 +129,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
 
         if (end_block_number > start_block_number) {
             std::stringstream msg;
-            msg << "start block (" << start_block_number << ") must be less or equal to end block (" <<  end_block_number << ")";
+            msg << "start block (" << start_block_number << ") must be less or equal to end block (" << end_block_number << ")";
             throw std::invalid_argument(msg.str());
         }
 
@@ -656,7 +656,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     const auto start_txn_number = co_await tx.first_txn_num_in_block(start_block_number);
     const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number) - 1;
 
-    db::kv::api::HistoryRangeQuery query {
+    db::kv::api::HistoryRangeQuery query{
         .table = db::table::kAccountDomain,
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),

@@ -21,7 +21,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
-#include <silkworm/infra/common/binary_search.hpp>
+#include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
 #include "../tables.hpp"

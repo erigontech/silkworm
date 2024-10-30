@@ -391,7 +391,7 @@ struct EnvUnmanaged : public ::mdbx::env {
 //! \param [in] config : A structure containing essential environment settings
 //! \return A handler to mdbx::env_managed class
 //! \remarks May throw exceptions
-::mdbx::env_managed open_env(EnvConfig& config);
+::mdbx::env_managed open_env(const EnvConfig& config);
 
 //! \brief Opens an mdbx "map" (aka table)
 //! \param [in] tx : a reference to a valid mdbx transaction

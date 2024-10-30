@@ -85,7 +85,7 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
                : mdbx::cursor::move_operation::previous;
 }
 
-::mdbx::env_managed open_env(EnvConfig& config) {
+::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
     if (config.path.empty()) {
@@ -171,8 +171,11 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
 
     ::mdbx::env_managed env{env_path.native(), cp, op, config.shared};
 
-    // MDBX will not change the page size if db already exists, so we need to read value
-    config.page_size = env.get_pagesize();
+    // Read stats to make sure that env is fully functional,
+    // otherwise there's an obscure bug:
+    // mdbx::env::start_read fails with 22 (EINVAL) from fcntl on the mdbx lock file
+    // (see branch debug_mdbx_txn_begin_fcntl_22 for a test case)
+    [[maybe_unused]] auto _ = env.get_stat();
 
     if (!config.shared) {
         // C++ bindings don't have set_option

@@ -254,8 +254,8 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         co_return;  // rewards were not requested, return
     }
 
-    // in erigon is chainConfig param and not configured so ratio is not calculated
     /*
+    // TODO: waiting fix on erigon to evalute MaxBlobGasPerBlock
     if (header.blob_gas_used &&  protocol::kMaxBlobGasPerBlock) {
         block_fees.blob_gas_used_ratio = static_cast<double>(*(header.blob_gas_used)) / static_cast<double>(protocol::kMaxBlobGasPerBlock);
     }

@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include "binary_search.hpp"
+
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -21,8 +23,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/assert.hpp>
-
-#include "binary_search.hpp"
 
 namespace silkworm {
 

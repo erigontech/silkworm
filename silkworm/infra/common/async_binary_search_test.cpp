@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
+#include "async_binary_search.hpp"
+
 #include <string>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/test_util/context_test_base.hpp>
-
-#include "async_binary_search.hpp"
 
 namespace silkworm {
 

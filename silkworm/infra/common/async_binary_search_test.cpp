@@ -50,7 +50,7 @@ std::vector<BinaryTestData> kTestData = {
 };
 
 Task<size_t> binary_search_in_vector(std::vector<size_t> sequence, size_t value) {
-    co_return co_await binary_search(sequence.size(), [&, value](uint64_t i) -> Task<bool> {
+    co_return co_await async_binary_search(sequence.size(), [&, value](uint64_t i) -> Task<bool> {
         co_return i < sequence.size() && sequence[i] >= value;
     });
 }

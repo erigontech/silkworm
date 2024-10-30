@@ -93,7 +93,7 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
     const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
     const auto last_key_value = co_await max_tx_num_cursor->last();
     const auto [last_block_num, _] = kv_to_block_num_and_tx_num(last_key_value);
-    const auto block_num = co_await binary_search(last_block_num + 1, [&](size_t i) -> Task<bool> {
+    const auto block_num = co_await async_binary_search(last_block_num + 1, [&](size_t i) -> Task<bool> {
         const auto max_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, i, provider);
         co_return max_tx_num >= tx_num;
     });

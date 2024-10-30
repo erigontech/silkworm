@@ -18,7 +18,7 @@
 
 namespace silkworm {
 
-Task<size_t> binary_search(size_t n, BinaryPredicate pred) {
+Task<size_t> async_binary_search(size_t n, BinaryPredicate pred) {
     size_t i{0};
     size_t j{n};
     while (j > i) {

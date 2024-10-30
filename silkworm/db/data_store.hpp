@@ -41,6 +41,10 @@ class DataStore {
               make_repositories_map(std::move(blocks_repository), std::move(state_repository)),
           } {}
 
+    DataStore(
+        const EnvConfig& chaindata_env_config,
+        std::filesystem::path repository_path);
+
     DataStoreRef ref() const {
         return {store_.chaindata_env(), store_.repository(blocks::kBlocksRepositoryName)};
     }

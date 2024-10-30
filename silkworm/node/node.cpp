@@ -23,7 +23,6 @@
 #include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/chain_head.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/execution/api/active_direct_service.hpp>
 #include <silkworm/execution/api/direct_client.hpp>
@@ -108,7 +107,7 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static mdbx::env_managed init_chain_data_db(NodeSettings& node_settings) {
+static db::EnvConfig init_chain_data_db(NodeSettings& node_settings) {
     node_settings.data_directory->deploy();
     node_settings.chain_config = db::chain_data_init(db::ChainDataInitSettings{
         .chaindata_env_config = node_settings.chaindata_env_config,
@@ -116,7 +115,7 @@ static mdbx::env_managed init_chain_data_db(NodeSettings& node_settings) {
         .network_id = node_settings.network_id,
         .init_if_empty = true,
     });
-    return db::open_env(node_settings.chaindata_env_config);
+    return node_settings.chaindata_env_config;
 }
 
 static rpc::ServerSettings make_execution_server_settings(const std::optional<std::string>& exec_api_address) {
@@ -190,11 +189,7 @@ NodeImpl::NodeImpl(
     : settings_{settings},
       data_store_{
           init_chain_data_db(settings.node_settings),
-          snapshots::SnapshotRepository{
-              settings_.snapshot_settings.repository_path,
-              std::make_unique<snapshots::StepToBlockNumConverter>(),
-              std::make_unique<db::SnapshotBundleFactoryImpl>(),
-          },
+          settings_.snapshot_settings.repository_path,
       },
       execution_engine_{
           execution_context_.get_executor(),

@@ -31,7 +31,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/kv/api/direct_client.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
@@ -125,21 +124,17 @@ int Daemon::run(const DaemonSettings& settings) {
         // Activate the local chaindata and snapshot access (if required)
         std::optional<db::DataStore> data_store;
         if (settings.datadir) {
-            DataDirectory data_folder{*settings.datadir};
+            DataDirectory data_dir{*settings.datadir};
 
             silkworm::db::EnvConfig db_config{
-                .path = data_folder.chaindata().path().string(),
+                .path = data_dir.chaindata().path().string(),
                 .in_memory = true,
                 .shared = true,
                 .max_readers = kDatabaseMaxReaders};
 
             data_store.emplace(db::DataStore{
-                db::open_env(db_config),
-                snapshots::SnapshotRepository{
-                    data_folder.snapshots().path(),
-                    std::make_unique<snapshots::StepToBlockNumConverter>(),
-                    std::make_unique<db::SnapshotBundleFactoryImpl>(),
-                },
+                db_config,
+                data_dir.snapshots().path(),
             });
 
             auto& snapshot_repository = data_store->ref().repository;

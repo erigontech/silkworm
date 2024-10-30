@@ -27,7 +27,6 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -106,12 +105,8 @@ int main(int argc, char* argv[]) {
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
 
         db::DataStore data_store{
-            db::open_env(db_config),
-            snapshots::SnapshotRepository{
-                data_dir.snapshots().path(),
-                std::make_unique<snapshots::StepToBlockNumConverter>(),
-                std::make_unique<db::SnapshotBundleFactoryImpl>(),
-            },
+            db_config,
+            data_dir.snapshots().path(),
         };
 
         db::RWTxnManaged txn = data_store.chaindata_rw().start_rw_tx();

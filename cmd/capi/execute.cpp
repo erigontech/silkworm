@@ -34,7 +34,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>
@@ -290,12 +289,8 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
         .exclusive = true};
 
     db::DataStore data_store{
-        db::open_env(config),
-        SnapshotRepository{
-            data_dir.snapshots().path(),
-            std::make_unique<StepToBlockNumConverter>(),
-            std::make_unique<db::SnapshotBundleFactoryImpl>(),
-        },
+        config,
+        data_dir.snapshots().path(),
     };
 
     auto& repository = data_store.ref().repository;

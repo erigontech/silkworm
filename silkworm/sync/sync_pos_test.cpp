@@ -25,7 +25,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -37,9 +36,10 @@ namespace silkworm::chainsync {
 
 class PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
   public:
+    TemporaryDirectory tmp_dir;
     db::DataStore data_store{
-        mdbx::env_managed{},
-        db::test_util::make_repository(),
+        db::EnvConfig{tmp_dir.path().string(), /* create = */ true},
+        tmp_dir.path(),
     };
     SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
     test_util::MockBlockExchange block_exchange{data_store.ref(), sentry_client, kSepoliaConfig};

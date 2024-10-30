@@ -153,11 +153,10 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
 
     SECTION("wrong key format") {
         // Block 0 is last in MDBX and has max tx num equal to 1
-        const Bytes kBlock0Key = *from_hex("0000000000000000");
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{*from_hex("01"), *from_hex("0000000000000001")};
         }));
-        provider = [](BlockNum block_num) -> Task<Bytes> { co_return Bytes{}; };
+        provider = [](BlockNum) -> Task<Bytes> { co_return Bytes{}; };
 
         CHECK_THROWS_AS(spawn_and_wait(block_num_from_tx_num(transaction, 0, provider)), std::exception);
     }
@@ -167,7 +166,7 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{kBlock0Key, *from_hex("01")};
         }));
-        provider = [](BlockNum block_num) -> Task<Bytes> { co_return Bytes{}; };
+        provider = [](BlockNum) -> Task<Bytes> { co_return Bytes{}; };
 
         CHECK_THROWS_AS(spawn_and_wait(block_num_from_tx_num(transaction, 0, provider)), std::exception);
     }
@@ -178,7 +177,7 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{*from_hex(""), *from_hex("")};
         }));
-        provider = [](BlockNum block_num) -> Task<Bytes> { co_return Bytes{}; };
+        provider = [](BlockNum) -> Task<Bytes> { co_return Bytes{}; };
 
         CHECK_THROWS_AS(spawn_and_wait(block_num_from_tx_num(transaction, 0, provider)), std::exception);
     }
@@ -191,7 +190,7 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock0Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{kBlock0Key, *from_hex("0000000000000001")};
         }));
-        provider = [](BlockNum block_num) -> Task<Bytes> { co_return Bytes{}; };
+        provider = [](BlockNum) -> Task<Bytes> { co_return Bytes{}; };
 
         CHECK(spawn_and_wait(block_num_from_tx_num(transaction, 0, provider)) == 0);
     }
@@ -211,7 +210,7 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock0Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{kBlock0Key, *from_hex("0000000000000001")};
         }));
-        provider = [](BlockNum block_num) -> Task<Bytes> { co_return Bytes{}; };
+        provider = [](BlockNum) -> Task<Bytes> { co_return Bytes{}; };
 
         CHECK(spawn_and_wait(block_num_from_tx_num(transaction, 1, provider)) == 0);
     }
@@ -231,7 +230,7 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock0Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{kBlock0Key, *from_hex("0000000000000001")};
         }));
-        provider = [](BlockNum block_num) -> Task<Bytes> { co_return Bytes{}; };
+        provider = [](BlockNum) -> Task<Bytes> { co_return Bytes{}; };
 
         CHECK(spawn_and_wait(block_num_from_tx_num(transaction, 14, provider)) == 1);
     }
@@ -249,7 +248,7 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock1Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{kBlock1Key, *from_hex("000000000000000E")};
         }));
-        provider = [](BlockNum block_num) -> Task<Bytes> { co_return Bytes{}; };
+        provider = [](BlockNum) -> Task<Bytes> { co_return Bytes{}; };
 
         CHECK(spawn_and_wait(block_num_from_tx_num(transaction, 15, provider)) == 2);
     }

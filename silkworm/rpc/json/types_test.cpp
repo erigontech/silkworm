@@ -195,6 +195,7 @@ TEST_CASE("serialize empty block header", "[rpc][to_json]") {
         "Verkle":false,
         "VerkleKeyVals":null,
         "VerkleProof":null,
+        "requestsHash":null,
         "blobGasUsed":null,
         "excessBlobGas": null,
         "parentBeaconBlockRoot": null
@@ -250,6 +251,7 @@ TEST_CASE("serialize block header", "[rpc][to_json]") {
         "Verkle":false,
         "VerkleKeyVals":null,
         "VerkleProof":null,
+        "requestsHash":null,
         "blobGasUsed":null,
         "excessBlobGas": null,
         "parentBeaconBlockRoot": null
@@ -308,6 +310,7 @@ TEST_CASE("serialize block header with baseFeePerGas", "[rpc][to_json]") {
         "Verkle":false,
         "VerkleKeyVals":null,
         "VerkleProof":null,
+        "requestsHash":null,
         "blobGasUsed":null,
         "excessBlobGas": null,
         "parentBeaconBlockRoot": null

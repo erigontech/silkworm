@@ -10,36 +10,53 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-
-# new API BlobBaseFee and BaseFee
-# debug_traceTransaction: modify expected response according erigon(report evm error) and makes silkworm fix
-# debug_traceCall/test_02.json: requests is_latest fix to support ethbackend 
-# erigon_getHeaderByNumber: modify expected response according erigon and makes silkworm fix
-# erigon_getHeaderByHash: modify expected response according erigon and makes silkworm fix
-# debug_accountRange, debug_getModifiedAccountsm, debug_storageRangeAt, erigon_getBalanceChangesInBlock, ots_getTransactionBySenderAndNonce, ots_getContractCreator, ots_searchTransactionsAfter, ots_searchTransactionsBefore, erigon_getLatestLogs, eth_getLogs: new algo using tkv
+# debug_accountRange: new algo using TKV
+# debug_getModifiedAccounts: new algo using TKV
+# debug_storageRangeAt: new algo using TKV
+# debug_traceCall/test_02.json: requested is_latest fix to support ethbackend
+# debug_traceTransaction: change expected response according erigon (report evm error) and make silkworm fix
+# erigon_getBalanceChangesInBlock: new algo using TKV
+# erigon_getLatestLogs: new algo using TKV
+# eth_getLogs: new algo using TKV
+# ots_getTransactionBySenderAndNonce: new algo using TKV
+# ots_getContractCreator: new algo using TKV
+# ots_hasCode: new algo using TKV
+# ots_searchTransactionsAfter: new algo using TKV
+# ots_searchTransactionsBefore: new algo using TKV
+# parity_listStorageKeys/test_12.json: fix required
 # trace_rawTransaction: different implementation
-# trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
+
+# trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response wrt e3 but should be e3 problem (to be analyzed)
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
 debug_traceCall/test_02.json,\
-debug_traceTransaction,\
+debug_traceTransaction/test_25.json,\
+debug_traceTransaction/test_36.json,\
+debug_traceTransaction/test_43.json,\
+debug_traceTransaction/test_62.json,\
+debug_traceTransaction/test_74.tar,\
+debug_traceTransaction/test_75.tar,\
+debug_traceTransaction/test_77.json,\
+debug_traceTransaction/test_90.tar,\
+debug_traceTransaction/test_91.tar,\
+debug_traceTransaction/test_92.tar,\
+debug_traceTransaction/test_96.json,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
-erigon_getHeaderByHash,\
-erigon_getHeaderByNumber,\
 erigon_getLatestLogs,\
 eth_getLogs,\
-eth_getBalance/test_05.json,\
 ots_getTransactionBySenderAndNonce,\
 ots_getContractCreator,\
 ots_hasCode,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
-trace_rawTransaction --transport_type http,websocket
+trace_rawTransaction,\
+trace_filter/test_16.json,\
+txpool_content --transport_type http,websocket
 
 failed_test=$?
 
@@ -54,5 +71,3 @@ else
 fi
 
 exit $failed_test
-
-

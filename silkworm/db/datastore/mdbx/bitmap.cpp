@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/infra/common/binary_find_if.hpp>
+#include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 

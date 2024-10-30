@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "binary_find_if.hpp"
+#include "binary_search.hpp"
 
 namespace silkworm {
 

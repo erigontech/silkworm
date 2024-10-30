@@ -19,6 +19,9 @@
 #include <memory>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -31,6 +34,7 @@ namespace silkworm::db::test_util {
 class TempChainData {
   public:
     explicit TempChainData(bool with_create_tables = true, bool in_memory = true);
+    virtual ~TempChainData() = default;
 
     // Not copyable nor movable
     TempChainData(const TempChainData&) = delete;
@@ -44,7 +48,16 @@ class TempChainData {
 
     const db::EnvConfig& chaindata_env_config() const { return chaindata_env_config_; }
 
-    mdbx::env& env() { return env_; }
+    // TODO: make private and use RXAccess
+    virtual mdbx::env env() const {
+        return *env_;  // NOLINT(cppcoreguidelines-slicing)
+    }
+    db::ROAccess chaindata() const {
+        return db::ROAccess{env()};
+    }
+    db::RWAccess chaindata_rw() const {
+        return db::RWAccess{env()};
+    }
 
     mdbx::txn& txn() const { return *txn_; }
 
@@ -57,14 +70,48 @@ class TempChainData {
     const db::PruneMode& prune_mode() const { return prune_mode_; }
     void set_prune_mode(const db::PruneMode& prune_mode) { prune_mode_ = prune_mode; }
 
-  private:
+  protected:
+    mdbx::env_managed move_env() {
+        mdbx::env_managed env{std::move(*env_)};
+        env_.reset();
+        return env;
+    }
+
     TemporaryDirectory tmp_dir_;
     DataDirectory data_dir_;
     ChainConfig chain_config_;
     db::EnvConfig chaindata_env_config_;
-    mdbx::env_managed env_;
+    std::unique_ptr<mdbx::env_managed> env_;
     std::unique_ptr<db::RWTxn> txn_;
     db::PruneMode prune_mode_;
+};
+
+class TempChainDataStore : public TempChainData {
+  public:
+    TempChainDataStore()
+        : data_store_{
+              move_env(),
+              blocks::make_blocks_repository(
+                  data_dir_.snapshots().path()),
+          } {}
+    ~TempChainDataStore() override {
+        // need to destroy a started RWTxn in the base class before destroying env_managed inside the data_store_
+        txn_.reset();
+    }
+
+    mdbx::env env() const override {
+        return data_store_.chaindata_env();
+    }
+
+    db::DataStore& operator*() { return data_store_; }
+    db::DataStore* operator->() { return &data_store_; }
+
+    db::DataModelFactory data_model_factory() {
+        return [ref = data_store_.ref()](db::ROTxn& tx) { return db::DataModel{tx, ref.repository}; };
+    }
+
+  private:
+    db::DataStore data_store_;
 };
 
 }  // namespace silkworm::db::test_util

@@ -49,6 +49,10 @@ class DataStore {
               blocks::make_blocks_repository(std::move(repository_path)),
           } {}
 
+    void close() {
+        store_.close();
+    }
+
     DataStoreRef ref() const {
         return {store_.chaindata_env(), store_.repository(blocks::kBlocksRepositoryName)};
     }

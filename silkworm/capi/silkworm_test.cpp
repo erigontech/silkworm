@@ -45,7 +45,7 @@ using namespace silkworm::db;
 struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
-    mdbx::env& env{mdbx_env()};
+    mdbx::env env{mdbx_env()};
     std::filesystem::path env_path() { return mdbx_env().get_path(); }
 };
 

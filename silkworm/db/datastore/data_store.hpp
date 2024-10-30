@@ -33,6 +33,12 @@ class DataStore {
         : chaindata_env_{std::move(chaindata_env)},
           repositories_{std::move(repositories)} {}
 
+    void close() {
+        chaindata_env_.close();
+        for (auto& entry : repositories_)
+            entry.second->close();
+    }
+
     // TODO: remove this, use RXAccess instead
     mdbx::env chaindata_env() const {
         return chaindata_env_;  // NOLINT(cppcoreguidelines-slicing)

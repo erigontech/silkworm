@@ -37,14 +37,12 @@ namespace silkworm::chainsync {
 
 class PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
   public:
-    mdbx::env_managed chaindata_env;
-    snapshots::SnapshotRepository repository{db::test_util::make_repository()};
-    db::DataStoreRef data_store{
-        chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
-        repository,
+    db::DataStore data_store{
+        mdbx::env_managed{},
+        db::test_util::make_repository(),
     };
     SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
-    test_util::MockBlockExchange block_exchange{data_store, sentry_client, kSepoliaConfig};
+    test_util::MockBlockExchange block_exchange{data_store.ref(), sentry_client, kSepoliaConfig};
     std::shared_ptr<test_util::MockExecutionService> execution_service{std::make_shared<test_util::MockExecutionService>()};
     test_util::MockExecutionClient execution_client{execution_service};
 

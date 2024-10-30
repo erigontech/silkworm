@@ -123,45 +123,40 @@ int Daemon::run(const DaemonSettings& settings) {
         }
 
         // Activate the local chaindata and snapshot access (if required)
-        std::optional<mdbx::env_managed> chaindata_env;
-        std::unique_ptr<snapshots::SnapshotRepository> snapshot_repository;
-        std::optional<db::DataStoreRef> data_store;
+        std::optional<db::DataStore> data_store;
         if (settings.datadir) {
             DataDirectory data_folder{*settings.datadir};
 
-            // Create a new local chaindata environment
-            chaindata_env = std::make_optional<mdbx::env_managed>();
             silkworm::db::EnvConfig db_config{
                 .path = data_folder.chaindata().path().string(),
                 .in_memory = true,
                 .shared = true,
                 .max_readers = kDatabaseMaxReaders};
-            *chaindata_env = silkworm::db::open_env(db_config);
 
-            // Create a new snapshot repository
-            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
-                data_folder.snapshots().path(),
-                std::make_unique<snapshots::StepToBlockNumConverter>(),
-                std::make_unique<db::SnapshotBundleFactoryImpl>());
-            snapshot_repository->reopen_folder();
+            data_store.emplace(db::DataStore{
+                db::open_env(db_config),
+                snapshots::SnapshotRepository{
+                    data_folder.snapshots().path(),
+                    std::make_unique<snapshots::StepToBlockNumConverter>(),
+                    std::make_unique<db::SnapshotBundleFactoryImpl>(),
+                },
+            });
+
+            auto& snapshot_repository = data_store->ref().repository;
+            snapshot_repository.reopen_folder();
 
             // At startup check that chain configuration is valid
-            db::ROTxnManaged ro_txn{*chaindata_env};
-            db::DataModel data_access{ro_txn, *snapshot_repository};
+            db::ROTxnManaged ro_txn = data_store->chaindata().start_ro_tx();
+            db::DataModel data_access{ro_txn, snapshot_repository};
             if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
                 throw std::runtime_error{"invalid chain configuration"};
             }
-
-            data_store.emplace(db::DataStoreRef{
-                *chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
-                *snapshot_repository,
-            });
         }
 
         // Create the one-and-only Silkrpc daemon
         Daemon rpc_daemon{
             settings,
-            std::move(data_store),
+            data_store ? std::make_optional(data_store->ref()) : std::nullopt,
         };
 
         // Check protocol version compatibility with Core Services

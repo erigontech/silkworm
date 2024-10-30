@@ -224,8 +224,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
     return snapshot_sequence;
 }
 
-int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, ::mdbx::env& env) {
-    db::ROTxnManaged ro_txn{env};
+int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, db::RWAccess chaindata) {
+    db::ROTxnManaged ro_txn = chaindata.start_ro_tx();
     const auto chain_config{db::read_chain_config(ro_txn)};
     ensure(chain_config.has_value(), "no chain configuration in database");
     const auto chain_id{chain_config->chain_id};
@@ -236,7 +236,7 @@ int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings setti
     const uint64_t count{settings.max_block - settings.start_block + 1};
     SILK_DEBUG << "Execute blocks start_block=" << settings.start_block << " end_block=" << settings.max_block << " count=" << count << " batch_size=" << settings.batch_size << " start";
     const int status_code = silkworm_execute_blocks_perpetual(
-        handle, env, chain_id,
+        handle, *chaindata, chain_id,
         settings.start_block, settings.max_block, settings.batch_size,
         settings.write_change_sets, settings.write_receipts, settings.write_call_traces,
         &last_executed_block, &mdbx_error_code);
@@ -253,9 +253,7 @@ int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings setti
     return status_code;
 }
 
-int execute_with_external_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, ::mdbx::env& env) {
-    db::RWTxnManaged rw_txn{env};
-
+int execute_with_external_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, db::RWTxnManaged rw_txn) {
     const auto chain_config{db::read_chain_config(rw_txn)};
     ensure(chain_config.has_value(), "no chain configuration in database");
     const auto chain_id{chain_config->chain_id};
@@ -284,13 +282,24 @@ int execute_with_external_txn(SilkwormHandle handle, ExecuteBlocksSettings setti
     return SILKWORM_OK;
 }
 
-int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, SnapshotRepository& repository, const DataDirectory& data_dir) {
+int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const DataDirectory& data_dir) {
     // Open chain database
     silkworm::db::EnvConfig config{
         .path = data_dir.chaindata().path().string(),
         .readonly = false,
         .exclusive = true};
-    ::mdbx::env_managed env{silkworm::db::open_env(config)};
+
+    db::DataStore data_store{
+        db::open_env(config),
+        SnapshotRepository{
+            data_dir.snapshots().path(),
+            std::make_unique<StepToBlockNumConverter>(),
+            std::make_unique<db::SnapshotBundleFactoryImpl>(),
+        },
+    };
+
+    auto& repository = data_store.ref().repository;
+    repository.reopen_folder();
 
     // Collect all snapshots
     auto all_chain_snapshots{collect_all_snapshots(repository)};
@@ -315,9 +324,9 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, Snapsh
 
     // Execute blocks
     if (settings.use_internal_txn) {
-        return execute_with_internal_txn(handle, settings, env);
+        return execute_with_internal_txn(handle, settings, data_store.chaindata_rw());
     }
-    return execute_with_external_txn(handle, settings, env);
+    return execute_with_external_txn(handle, settings, data_store.chaindata_rw().start_rw_tx());
 }
 
 int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const DataDirectory& data_dir) {
@@ -433,13 +442,7 @@ int main(int argc, char* argv[]) {
         int status_code = -1;
         if (settings.execute_blocks_settings) {
             // Execute specified block range using Silkworm API library
-            SnapshotRepository repository{
-                data_dir.snapshots().path(),
-                std::make_unique<StepToBlockNumConverter>(),
-                std::make_unique<db::SnapshotBundleFactoryImpl>(),
-            };
-            repository.reopen_folder();
-            status_code = execute_blocks(handle, *settings.execute_blocks_settings, repository, data_dir);
+            status_code = execute_blocks(handle, *settings.execute_blocks_settings, data_dir);
         } else if (settings.build_indexes_settings) {
             // Build index for a specific snapshot using Silkworm API library
             status_code = build_indexes(handle, *settings.build_indexes_settings, data_dir);

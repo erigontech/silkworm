@@ -20,18 +20,23 @@ namespace silkworm {
 
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
-    mdbx::env* chaindata_env,
+    db::ROAccess chaindata,
     std::shared_ptr<sentry::api::SentryClient> sentry_client)
-    : EthereumBackEnd(node_settings, chaindata_env, std::move(sentry_client), std::make_unique<StateChangeCollection>()) {
+    : EthereumBackEnd{
+          node_settings,
+          std::move(chaindata),
+          std::move(sentry_client),
+          std::make_unique<StateChangeCollection>(),
+      } {
 }
 
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
-    mdbx::env* chaindata_env,
+    db::ROAccess chaindata,
     std::shared_ptr<sentry::api::SentryClient> sentry_client,
     std::unique_ptr<StateChangeCollection> state_change_collection)
     : node_settings_(node_settings),
-      chaindata_env_(chaindata_env),
+      chaindata_(std::move(chaindata)),
       sentry_client_(std::move(sentry_client)),
       state_change_collection_(std::move(state_change_collection)) {
     // Get the numeric chain identifier from node settings

@@ -24,7 +24,7 @@ namespace silkworm::node {
 BackEndKvServer::BackEndKvServer(const rpc::ServerSettings& settings, const EthereumBackEnd& backend)
     : Server(settings),
       BackEndServer(settings, backend),
-      KvServer(settings, backend.chaindata_env(), backend.state_change_source()) {
+      KvServer(settings, backend.chaindata(), backend.state_change_source()) {
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.

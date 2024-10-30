@@ -231,7 +231,7 @@ NodeImpl::NodeImpl(
           make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },
       resource_usage_log_{*settings_.node_settings.data_directory} {
-    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, data_store_.chaindata_env_ptr(), std::get<0>(sentry_));
+    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, data_store_.chaindata(), std::get<0>(sentry_));
     backend_->set_node_name(settings_.node_settings.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);

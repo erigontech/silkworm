@@ -34,14 +34,15 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
     db_config.in_memory = true;
-    auto database_env = db::open_env(db_config);
+    auto chaindata_env = db::open_env(db_config);
+    db::ROAccess chaindata{chaindata_env};
 
     NodeSettings node_settings;
 
     std::shared_ptr<sentry::api::SentryClient> null_sentry_client;
 
     SECTION("EthereumBackEnd::EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
-        EthereumBackEnd backend{node_settings, &database_env, null_sentry_client};
+        EthereumBackEnd backend{node_settings, chaindata, null_sentry_client};
         CHECK(backend.node_name() == kDefaultNodeName);
         CHECK(!backend.etherbase());
         CHECK(backend.state_change_source() != nullptr);
@@ -49,19 +50,19 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
 
     SECTION("EthereumBackEnd::set_node_name", "[silkworm][backend][ethereum_backend]") {
         const std::string node_name{"server_name"};
-        EthereumBackEnd backend{node_settings, &database_env, null_sentry_client};
+        EthereumBackEnd backend{node_settings, chaindata, null_sentry_client};
         backend.set_node_name(node_name);
         CHECK(backend.node_name() == node_name);
     }
 
     SECTION("EthereumBackEnd::etherbase", "[silkworm][backend][ethereum_backend]") {
         node_settings.etherbase = 0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address;
-        EthereumBackEnd backend{node_settings, &database_env, null_sentry_client};
+        EthereumBackEnd backend{node_settings, chaindata, null_sentry_client};
         CHECK(backend.etherbase() == 0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address);
     }
 
     SECTION("EthereumBackEnd::close", "[silkworm][backend][ethereum_backend]") {
-        EthereumBackEnd backend{node_settings, &database_env, null_sentry_client};
+        EthereumBackEnd backend{node_settings, chaindata, null_sentry_client};
         CHECK_NOTHROW(backend.close());
     }
 }

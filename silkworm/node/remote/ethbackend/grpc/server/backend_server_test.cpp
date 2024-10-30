@@ -208,10 +208,10 @@ class TestableStateChangeCollection : public StateChangeCollection {
 
 class TestableEthereumBackEnd : public EthereumBackEnd {
   public:
-    TestableEthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
+    TestableEthereumBackEnd(const NodeSettings& node_settings, db::ROAccess chaindata)
         : EthereumBackEnd{
               node_settings,
-              chaindata_env,
+              std::move(chaindata),
               std::make_shared<MockSentryClient>(),
               std::make_unique<TestableStateChangeCollection>(),
           } {}
@@ -249,7 +249,7 @@ struct BackEndE2ETest {
         db::open_map(rw_txn, kTestMultiMap);
         rw_txn.commit();
 
-        backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
+        backend = std::make_unique<TestableEthereumBackEnd>(options, db::ROAccess{database_env});
         server = std::make_unique<BackEndServer>(srv_config, *backend);
         server->build_and_start();
     }
@@ -311,9 +311,9 @@ TEST_CASE("BackEndServer", "[silkworm][node][rpc]") {
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
     db_config.in_memory = true;
-    auto database_env = db::open_env(db_config);
+    auto chaindata_env = db::open_env(db_config);
     NodeSettings node_settings;
-    TestableEthereumBackEnd backend{node_settings, &database_env};
+    TestableEthereumBackEnd backend{node_settings, db::ROAccess{chaindata_env}};
 
     SECTION("BackEndServer::BackEndServer OK: create/destroy server") {
         BackEndServer server{srv_config, backend};

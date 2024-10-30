@@ -10,13 +10,23 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-
-# debug_traceTransaction: modify expected response according erigon and makes silkworm fix
-# trace_filter/test_16.json: modify expected response according erigon and makes silkworm fix
-# debug_traceCall/test_02.json: modify expected response according erigon and makes silkworm fix
-# eth_feeHistory: modify expected response according erigon and makes silkworm fix
-# trace_replayTransaction/trace_replyBlockTransaction: have differente response with silkworm but should be rpcdaemon problems (to be analized)
+# debug_accountRange: new algo using TKV
+# debug_getModifiedAccounts: new algo using TKV
+# debug_storageRangeAt: new algo using TKV
+# debug_traceCall/test_02.json: requested is_latest fix to support ethbackend
+# debug_traceTransaction: change expected response according erigon (report evm error) and make silkworm fix
+# erigon_getBalanceChangesInBlock: new algo using TKV
+# erigon_getLatestLogs: new algo using TKV
+# eth_getLogs: new algo using TKV
+# ots_getTransactionBySenderAndNonce: new algo using TKV
+# ots_getContractCreator: new algo using TKV
+# ots_hasCode: new algo using TKV
+# ots_searchTransactionsAfter: new algo using TKV
+# ots_searchTransactionsBefore: new algo using TKV
+# parity_listStorageKeys/test_12.json: fix required
 # trace_rawTransaction: different implementation
+
+# trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response wrt e3 but should be e3 problem (to be analyzed)
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
 debug_accountRange,\
@@ -37,7 +47,6 @@ debug_traceTransaction/test_96.json,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
-eth_feeHistory,\
 eth_getLogs,\
 ots_getTransactionBySenderAndNonce,\
 ots_getContractCreator,\
@@ -62,5 +71,3 @@ else
 fi
 
 exit $failed_test
-
-

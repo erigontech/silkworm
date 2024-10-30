@@ -82,7 +82,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, kInternalError, e.what());
+        reply = make_json_content(request, false);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request, kServerError, "unexpected exception");

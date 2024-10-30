@@ -56,15 +56,19 @@ static intx::uint256 fake_exponential(const intx::uint256& factor,
     return output / denominator;
 }
 
+intx::uint256 calc_blob_gas_price(uint64_t excess_blob_gas) {
+    return fake_exponential(
+        protocol::kMinBlobGasPrice,
+        excess_blob_gas,
+        protocol::kBlobGasPriceUpdateFraction);
+}
+
 std::optional<intx::uint256> BlockHeader::blob_gas_price() const {
     if (!excess_blob_gas) {
         return std::nullopt;
     }
 
-    return fake_exponential(
-        protocol::kMinBlobGasPrice,
-        *excess_blob_gas,
-        protocol::kBlobGasPriceUpdateFraction);
+    return calc_blob_gas_price(*excess_blob_gas);
 }
 
 namespace rlp {

@@ -31,6 +31,7 @@ TEST_CASE("FeeHistory: json serialization") {
 
         CHECK(nlohmann::json(fh) == R"({
             "gasUsedRatio":null,
+            "blobGasUsedRatio":null,
             "oldestBlock":"0x0"
         })"_json);
     }
@@ -44,6 +45,8 @@ TEST_CASE("FeeHistory: json serialization") {
 
         CHECK(nlohmann::json(fh) == R"({
             "baseFeePerGas":["0x13c723946e","0x163fe26534"],
+            "blobGasUsedRatio":null,
+            "blobGasUsedRatio":null,
             "gasUsedRatio":[0.9998838666666666],
             "oldestBlock":"0x867a80",
             "reward":[

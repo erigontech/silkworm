@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "blocks/schema_config.hpp"
 #include "datastore/data_store.hpp"
 #include "state/schema_config.hpp"
@@ -33,7 +35,7 @@ class DataStore {
     DataStore(
         mdbx::env_managed chaindata_env,
         snapshots::SnapshotRepository blocks_repository,
-        snapshots::SnapshotRepository state_repository)
+        std::optional<snapshots::SnapshotRepository> state_repository = std::nullopt)
         : store_{
               std::move(chaindata_env),
               make_repositories_map(std::move(blocks_repository), std::move(state_repository)),
@@ -43,13 +45,22 @@ class DataStore {
         return {store_.chaindata_env(), store_.repository(blocks::kBlocksRepositoryName)};
     }
 
+    // TODO: remove this, use RXAccess instead
+    mdbx::env chaindata_env() const { return store_.chaindata_env(); }
+    // TODO: remove this, use RXAccess instead
+    mdbx::env* chaindata_env_ptr() { return store_.chaindata_env_ptr(); }
+
+    db::ROAccess chaindata() const { return store_.chaindata(); }
+    db::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
+
   private:
     static std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> make_repositories_map(
         snapshots::SnapshotRepository blocks_repository,
-        snapshots::SnapshotRepository state_repository) {
+        std::optional<snapshots::SnapshotRepository> state_repository) {
         std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories;
         repositories.emplace(blocks::kBlocksRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)));
-        repositories.emplace(state::kStateRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository)));
+        if (state_repository)
+            repositories.emplace(state::kStateRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(*state_repository)));
         return repositories;
     }
 

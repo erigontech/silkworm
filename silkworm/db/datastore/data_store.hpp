@@ -37,6 +37,10 @@ class DataStore {
     mdbx::env chaindata_env() const {
         return chaindata_env_;  // NOLINT(cppcoreguidelines-slicing)
     }
+    // TODO: remove this, use RXAccess instead
+    mdbx::env* chaindata_env_ptr() {
+        return &chaindata_env_;  // NOLINT(cppcoreguidelines-slicing)
+    }
 
     db::ROAccess chaindata() const { return db::ROAccess{chaindata_env_}; }
     db::RWAccess chaindata_rw() const { return db::RWAccess{chaindata_env_}; }

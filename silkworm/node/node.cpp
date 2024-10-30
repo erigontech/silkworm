@@ -67,13 +67,10 @@ class NodeImpl final {
 
   private:
     db::DataStoreRef data_store() {
-        return {
-            chaindata_env_,  // NOLINT(cppcoreguidelines-slicing)
-            repository_,
-        };
+        return data_store_.ref();
     }
     db::DataModelFactory data_model_factory() {
-        return [this](db::ROTxn& tx) { return db::DataModel{tx, repository_}; };
+        return [this](db::ROTxn& tx) { return db::DataModel{tx, data_store().repository}; };
     }
     const ChainConfig& chain_config() const {
         return *settings_.node_settings.chain_config;
@@ -87,8 +84,7 @@ class NodeImpl final {
 
     Settings& settings_;
 
-    mdbx::env_managed chaindata_env_;
-    snapshots::SnapshotRepository repository_;
+    db::DataStore data_store_;
 
     //! The execution layer server engine
     boost::asio::io_context execution_context_;
@@ -192,11 +188,13 @@ NodeImpl::NodeImpl(
     rpc::ClientContextPool& context_pool,
     Settings& settings)
     : settings_{settings},
-      chaindata_env_{init_chain_data_db(settings.node_settings)},
-      repository_{
-          settings_.snapshot_settings.repository_dir,
-          std::make_unique<snapshots::StepToBlockNumConverter>(),
-          std::make_unique<db::SnapshotBundleFactoryImpl>(),
+      data_store_{
+          init_chain_data_db(settings.node_settings),
+          snapshots::SnapshotRepository{
+              settings_.snapshot_settings.repository_dir,
+              std::make_unique<snapshots::StepToBlockNumConverter>(),
+              std::make_unique<db::SnapshotBundleFactoryImpl>(),
+          },
       },
       execution_engine_{
           execution_context_.get_executor(),
@@ -204,7 +202,7 @@ NodeImpl::NodeImpl(
           data_model_factory(),
           make_log_timer_factory(context_pool.any_executor(), settings_.node_settings.sync_loop_log_interval_seconds),
           make_stages_factory(settings_.node_settings, data_model_factory(), *this),
-          db::RWAccess{chaindata_env_},
+          data_store_.chaindata_rw(),
       },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(settings_.node_settings.exec_api_address), execution_service_},
@@ -222,7 +220,7 @@ NodeImpl::NodeImpl(
               settings.node_settings.remote_sentry_addresses,
               context_pool.as_executor_pool(),
               context_pool,
-              make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, chain_config()))},
+              make_sentry_eth_status_data_provider(data_store_.chaindata(), chain_config()))},
       chain_sync_{
           context_pool.any_executor(),
           data_store(),
@@ -233,7 +231,7 @@ NodeImpl::NodeImpl(
           make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },
       resource_usage_log_{*settings_.node_settings.data_directory} {
-    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, &chaindata_env_, std::get<0>(sentry_));
+    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, data_store_.chaindata_env_ptr(), std::get<0>(sentry_));
     backend_->set_node_name(settings_.node_settings.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);

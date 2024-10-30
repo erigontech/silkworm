@@ -22,10 +22,10 @@
 
 #include <absl/functional/function_ref.h>
 
-namespace silkworm::rpc {
+namespace silkworm {
 
 using BinaryPredicate = absl::FunctionRef<Task<bool>(size_t)>;
 
-Task<size_t> binary_search(size_t n, BinaryPredicate pred);
+Task<size_t> async_binary_search(size_t n, BinaryPredicate pred);
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm

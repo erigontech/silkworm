@@ -21,6 +21,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
+#include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
 #include "../tables.hpp"
@@ -30,10 +31,9 @@ namespace silkworm::db::txn {
 using kv::api::KeyValue;
 using kv::api::Transaction;
 
-static Task<TxNum> last_tx_num_for_block(Transaction& tx,
+static Task<TxNum> last_tx_num_for_block(const std::shared_ptr<kv::api::Cursor>& max_tx_num_cursor,
                                          BlockNum block_number,
                                          chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) {
-    const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
     const auto block_number_key = block_key(block_number);
     const auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
     if (key_value.value.empty()) {
@@ -63,26 +63,44 @@ static std::pair<BlockNum, TxNum> kv_to_block_num_and_tx_num(const KeyValue& key
 }
 
 Task<TxNum> max_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider) {
-    co_return co_await last_tx_num_for_block(tx, block_number, provider);
+    const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
+    co_return co_await last_tx_num_for_block(max_tx_num_cursor, block_number, provider);
 }
 
 Task<TxNum> min_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider) {
     if (block_number == 0) {
         co_return 0;
     }
-    co_return (co_await last_tx_num_for_block(tx, (block_number - 1), provider) + 1);
+    const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
+    co_return (co_await last_tx_num_for_block(max_tx_num_cursor, (block_number - 1), provider) + 1);
 }
 
 Task<BlockNumAndTxnNumber> first_tx_num(Transaction& tx) {
-    auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
-    const auto key_value = co_await max_tx_num_cursor->first();
-    co_return kv_to_block_num_and_tx_num(key_value);
+    const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
+    const auto first_key_value = co_await max_tx_num_cursor->first();
+    co_return kv_to_block_num_and_tx_num(first_key_value);
 }
 
 Task<BlockNumAndTxnNumber> last_tx_num(Transaction& tx) {
-    auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
-    const auto key_value = co_await max_tx_num_cursor->last();
-    co_return kv_to_block_num_and_tx_num(key_value);
+    const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
+    const auto last_key_value = co_await max_tx_num_cursor->last();
+    co_return kv_to_block_num_and_tx_num(last_key_value);
+}
+
+Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
+                                                    TxNum tx_num,
+                                                    chain::CanonicalBodyForStorageProvider provider) {
+    const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
+    const auto last_key_value = co_await max_tx_num_cursor->last();
+    const auto [last_block_num, _] = kv_to_block_num_and_tx_num(last_key_value);
+    const auto block_num = co_await async_binary_search(last_block_num + 1, [&](size_t i) -> Task<bool> {
+        const auto max_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, i, provider);
+        co_return max_tx_num >= tx_num;
+    });
+    if (block_num > last_block_num) {
+        co_return std::nullopt;
+    }
+    co_return block_num;
 }
 
 }  // namespace silkworm::db::txn

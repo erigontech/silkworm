@@ -49,7 +49,6 @@
 #include <silkworm/db/datastore/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/tables.hpp>
@@ -1052,17 +1051,10 @@ void sync(const SnapshotSettings& settings) {
 
     TemporaryDirectory tmp_dir;
     db::EnvConfig chaindata_env_config{tmp_dir.path()};
-    auto chaindata_env = db::open_env(chaindata_env_config);
 
-    SnapshotRepository repository{
+    db::DataStore data_store{
+        chaindata_env_config,
         settings.repository_path,
-        std::make_unique<StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>(),
-    };
-
-    db::DataStoreRef data_store{
-        chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
-        repository,
     };
 
     test_util::TaskRunner runner;
@@ -1070,7 +1062,7 @@ void sync(const SnapshotSettings& settings) {
     db::SnapshotSync snapshot_sync{
         settings,
         kMainnetConfig.chain_id,
-        data_store,
+        data_store.ref(),
         tmp_dir.path(),
         stage_scheduler,
     };

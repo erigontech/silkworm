@@ -27,8 +27,8 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
@@ -87,8 +87,12 @@ TEST_CASE("Sync Stages") {
 
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
-    auto chaindata_env{open_env(node_settings.chaindata_env_config)};
-    RWTxnManaged txn(chaindata_env);
+    db::DataStore data_store{
+        node_settings.chaindata_env_config,
+        node_settings.data_directory->snapshots().path(),
+    };
+
+    RWTxnManaged txn = data_store.chaindata_rw().start_rw_tx();
     table::check_or_create_chaindata_tables(txn);
     txn.commit_and_renew();
     const auto initial_tx_sequence{read_map_sequence(txn, table::kBlockTransactions.name)};
@@ -102,7 +106,7 @@ TEST_CASE("Sync Stages") {
     const auto tx_sequence_after_genesis{read_map_sequence(txn, table::kBlockTransactions.name)};
     REQUIRE(tx_sequence_after_genesis == 2);  // 2 system txs for genesis
 
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    auto& repository = data_store.ref().repository;
     db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
 
     SECTION("BlockHashes") {

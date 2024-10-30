@@ -14,22 +14,18 @@
    limitations under the License.
 */
 
-#include "data_store.hpp"
+#include "schema_config.hpp"
 
-#include "snapshot_bundle_factory_impl.hpp"
+#include "../snapshot_bundle_factory_impl.hpp"
 
-namespace silkworm::db {
+namespace silkworm::db::blocks {
 
-DataStore::DataStore(
-    EnvConfig chaindata_env_config,
-    std::filesystem::path repository_path)
-    : DataStore{
-          db::open_env(chaindata_env_config),
-          snapshots::SnapshotRepository{
-              std::move(repository_path),
-              std::make_unique<snapshots::StepToBlockNumConverter>(),
-              std::make_unique<db::SnapshotBundleFactoryImpl>(),
-          },
-      } {}
+snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path) {
+    return snapshots::SnapshotRepository{
+        std::move(dir_path),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<db::SnapshotBundleFactoryImpl>(),
+    };
+}
 
-}  // namespace silkworm::db
+}  // namespace silkworm::db::blocks

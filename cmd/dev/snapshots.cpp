@@ -38,6 +38,7 @@
 #include <silkworm/db/blocks/bodies/body_queries.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/datastore/snapshot_merger.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
@@ -296,11 +297,7 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
 }
 
 static SnapshotRepository make_repository(const SnapshotSettings& settings) {
-    return SnapshotRepository{
-        settings.repository_path,
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>(),
-    };
+    return db::blocks::make_blocks_repository(settings.repository_path);
 }
 
 using BodyCounters = std::pair<int, uint64_t>;

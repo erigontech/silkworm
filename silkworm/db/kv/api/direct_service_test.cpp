@@ -18,7 +18,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>

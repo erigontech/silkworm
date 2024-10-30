@@ -17,9 +17,12 @@
 #pragma once
 
 #include "../datastore/common/entity_name.hpp"
+#include "../datastore/snapshots/snapshot_repository.hpp"
 
 namespace silkworm::db::blocks {
 
 inline constexpr datastore::EntityName kBlocksRepositoryName{"Blocks"};
+
+snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path);
 
 }  // namespace silkworm::db::blocks

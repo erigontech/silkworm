@@ -39,7 +39,6 @@
 #if !defined(__APPLE__) || defined(NDEBUG)
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #endif  // !defined(__APPLE__) || defined(NDEBUG)
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/interfaces/kv_mock_fix24351.grpc.pb.h>

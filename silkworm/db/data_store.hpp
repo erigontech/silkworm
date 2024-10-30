@@ -43,7 +43,11 @@ class DataStore {
 
     DataStore(
         const EnvConfig& chaindata_env_config,
-        std::filesystem::path repository_path);
+        std::filesystem::path repository_path)  // NOLINT(performance-unnecessary-value-param)
+        : DataStore{
+              db::open_env(chaindata_env_config),
+              blocks::make_blocks_repository(std::move(repository_path)),
+          } {}
 
     DataStoreRef ref() const {
         return {store_.chaindata_env(), store_.repository(blocks::kBlocksRepositoryName)};

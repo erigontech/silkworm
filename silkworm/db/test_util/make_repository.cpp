@@ -16,24 +16,20 @@
 
 #include "make_repository.hpp"
 
+#include "../blocks/schema_config.hpp"
 #include "../datastore/snapshots/snapshot_settings.hpp"
-#include "../snapshot_bundle_factory_impl.hpp"
 
 namespace silkworm::db::test_util {
 
 using namespace silkworm::snapshots;
 
 SnapshotRepository make_repository(std::filesystem::path dir_path) {
-    return SnapshotRepository{
-        std::move(dir_path),
-        std::make_unique<StepToBlockNumConverter>(),
-        std::make_unique<SnapshotBundleFactoryImpl>(),
-    };
+    return blocks::make_blocks_repository(std::move(dir_path));
 }
 
 SnapshotRepository make_repository() {
     SnapshotSettings settings;
-    return make_repository(settings.repository_path);
+    return blocks::make_blocks_repository(settings.repository_path);
 }
 
 }  // namespace silkworm::db::test_util

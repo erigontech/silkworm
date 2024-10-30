@@ -75,6 +75,9 @@ class NodeImpl final {
     db::DataModelFactory data_model_factory() {
         return [this](db::ROTxn& tx) { return db::DataModel{tx, repository_}; };
     }
+    const ChainConfig& chain_config() const {
+        return *settings_.node_settings.chain_config;
+    }
 
     Task<void> run_execution_service();
     Task<void> run_execution_server();
@@ -85,9 +88,6 @@ class NodeImpl final {
     Settings& settings_;
 
     mdbx::env_managed chaindata_env_;
-
-    ChainConfig& chain_config_;
-
     snapshots::SnapshotRepository repository_;
 
     //! The execution layer server engine
@@ -193,7 +193,6 @@ NodeImpl::NodeImpl(
     Settings& settings)
     : settings_{settings},
       chaindata_env_{init_chain_data_db(settings.node_settings)},
-      chain_config_{*settings_.node_settings.chain_config},
       repository_{
           settings_.snapshot_settings.repository_dir,
           std::make_unique<snapshots::StepToBlockNumConverter>(),
@@ -212,7 +211,7 @@ NodeImpl::NodeImpl(
       execution_direct_client_{execution_service_},
       snapshot_sync_{
           settings.snapshot_settings,
-          chain_config_.chain_id,
+          chain_config().chain_id,
           data_store(),
           settings_.node_settings.data_directory->temp().path(),
           execution_engine_.stage_scheduler(),
@@ -223,13 +222,13 @@ NodeImpl::NodeImpl(
               settings.node_settings.remote_sentry_addresses,
               context_pool.as_executor_pool(),
               context_pool,
-              make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, chain_config_))},
+              make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, chain_config()))},
       chain_sync_{
           context_pool.any_executor(),
           data_store(),
           execution_direct_client_,
           std::get<0>(sentry_),
-          chain_config_,
+          chain_config(),
           /* use_preverified_hashes = */ true,
           make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },

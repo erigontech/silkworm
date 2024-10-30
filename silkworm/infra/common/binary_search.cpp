@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,19 +18,19 @@
 
 namespace silkworm {
 
-size_t binary_find_if(size_t n, absl::FunctionRef<bool(size_t)> f) {
+Task<size_t> binary_search(size_t n, BinaryPredicate pred) {
     size_t i{0};
     size_t j{n};
     while (j > i) {
         const size_t count{j - i};
         const size_t m{i + count / 2};
-        if (f(m)) {
+        if (co_await pred(m)) {
             j = m;
         } else {
             i = m + 1;
         }
     }
-    return i;
+    co_return i;
 }
 
 }  // namespace silkworm

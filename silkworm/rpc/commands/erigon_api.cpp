@@ -23,9 +23,9 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/chain/chain.hpp>
+#include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/common/binary_search.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>

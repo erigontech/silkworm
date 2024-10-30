@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,37 +16,54 @@
 
 #include "binary_search.hpp"
 
-#include <algorithm>
-#include <utility>
+#include <string>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/core/common/assert.hpp>
+#include <silkworm/infra/test_util/context_test_base.hpp>
 
 namespace silkworm {
 
-static void check_binary_find_if(const std::vector<int>& vec, const int value) {
-    SILKWORM_ASSERT(std::ranges::is_sorted(vec));
-    const auto res1{std::ranges::upper_bound(vec, value)};
-    const auto res2{std::ranges::find_if(vec, [&](int x) { return x > value; })};
-    CHECK(res1 == res2);
-    const auto res3{binary_find_if(vec.size(), [&](size_t i) { return vec[i] > value; })};
-    CHECK(std::cmp_equal(res1 - vec.begin(), res3));
+struct BinarySearchTest : test_util::ContextTestBase {
+};
+
+struct BinaryTestData {
+    std::vector<size_t> sequence;
+    size_t value;
+    size_t result;
+};
+
+std::vector<BinaryTestData> kTestData = {
+    {{}, 0, 0},
+    {{}, 18, 0},
+    {{1, 2, 6, 6, 7}, 0, 0},
+    {{1, 2, 6, 6, 7}, 1, 0},
+    {{1, 2, 6, 6, 7}, 2, 1},
+    {{1, 2, 6, 6, 7}, 3, 2},
+    {{1, 2, 6, 6, 7}, 4, 2},
+    {{1, 2, 6, 6, 7}, 5, 2},
+    {{1, 2, 6, 6, 7}, 6, 2},
+    {{1, 2, 6, 6, 7}, 7, 4},
+    {{1, 2, 6, 6, 7}, 8, 5},
+    {{1, 2, 6, 6, 7}, 9, 5},
+};
+
+Task<size_t> binary_search_in_vector(std::vector<size_t> sequence, size_t value) {
+    co_return co_await binary_search(sequence.size(), [&, value](uint64_t i) -> Task<bool> {
+        co_return i < sequence.size() && sequence[i] >= value;
+    });
 }
 
-TEST_CASE("binary_find_if") {
-    check_binary_find_if({}, 42);
-    check_binary_find_if({0}, -1);
-    check_binary_find_if({0}, 0);
-    check_binary_find_if({0}, 1);
-    check_binary_find_if({1, 3, 3, 5}, 0);
-    check_binary_find_if({1, 3, 3, 5}, 1);
-    check_binary_find_if({1, 3, 3, 5}, 2);
-    check_binary_find_if({1, 3, 3, 5}, 3);
-    check_binary_find_if({1, 3, 3, 5}, 4);
-    check_binary_find_if({1, 3, 3, 5}, 5);
-    check_binary_find_if({1, 3, 3, 5}, 6);
+#ifndef SILKWORM_SANITIZE
+TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[infra][common][binary_search]") {
+    for (size_t i{0}; i < kTestData.size(); ++i) {
+        const auto [s, v, r] = kTestData[i];
+        SECTION("search" + std::to_string(i)) {
+            CHECK_NOTHROW(spawn_and_wait(binary_search_in_vector(s, v)) == r);
+        }
+    }
 }
+#endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm

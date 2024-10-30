@@ -16,31 +16,8 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(common)
-add_subdirectory(etl)
-add_subdirectory(mdbx)
-add_subdirectory(snapshots)
-
-find_package(Boost REQUIRED COMPONENTS headers)
-
-# cmake-format: off
-set(LIBS_PUBLIC
-    Boost::headers
-    silkworm_core
-    silkworm_infra
-    silkworm_datastore_common
-    silkworm_db_mdbx
-    silkworm_snapshots
-)
-# cmake-format: on
-
-# cmake-format: off
-set(LIBS_PRIVATE
-)
-# cmake-format: on
-
 silkworm_library(
-  silkworm_datastore
-  PUBLIC ${LIBS_PUBLIC}
-  PRIVATE ${LIBS_PRIVATE}
+  silkworm_datastore_common
+  PUBLIC silkworm_core
+  PRIVATE ""
 )

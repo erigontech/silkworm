@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,35 +12,14 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+#pragma once
 
-add_subdirectory(common)
-add_subdirectory(etl)
-add_subdirectory(mdbx)
-add_subdirectory(snapshots)
+#include "../datastore/common/entity_name.hpp"
 
-find_package(Boost REQUIRED COMPONENTS headers)
+namespace silkworm::db::state {
 
-# cmake-format: off
-set(LIBS_PUBLIC
-    Boost::headers
-    silkworm_core
-    silkworm_infra
-    silkworm_datastore_common
-    silkworm_db_mdbx
-    silkworm_snapshots
-)
-# cmake-format: on
+inline constexpr datastore::EntityName kStateRepositoryName{"State"};
 
-# cmake-format: off
-set(LIBS_PRIVATE
-)
-# cmake-format: on
-
-silkworm_library(
-  silkworm_datastore
-  PUBLIC ${LIBS_PUBLIC}
-  PRIVATE ${LIBS_PRIVATE}
-)
+}  // namespace silkworm::db::state

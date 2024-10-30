@@ -21,7 +21,6 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
@@ -52,9 +51,7 @@ class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
 
 struct SnapshotSyncTest {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    TemporaryDirectory tmp_dir;
-    db::test_util::TempChainData context;
-    SnapshotRepository repository{db::test_util::make_repository(tmp_dir.path())};
+    db::test_util::TempChainDataStore context;
     TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;
 };
@@ -84,10 +81,10 @@ struct SnapshotSyncForTest : public SnapshotSync {
 
     explicit SnapshotSyncForTest(SnapshotSyncTest& test, SettingsOverrides overrides = {})
         : SnapshotSync{
-              make_settings(test.tmp_dir.path(), overrides),
+              make_settings(test.context.dir().snapshots().path(), overrides),
               kMainnetConfig.chain_id,
-              db::DataStoreRef{test.context.env(), test.repository},
-              test.tmp_dir.path(),
+              test.context->ref(),
+              test.context.dir().temp().path(),
               test.stage_scheduler} {}
 };
 
@@ -113,7 +110,7 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[db][snapshot][sync]") 
 TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     SnapshotSyncTest test;
     SnapshotSyncForTest snapshot_sync{test};
-    auto tmp_dir_path = test.tmp_dir.path();
+    auto tmp_dir_path = test.context.dir().snapshots().path();
 
     // Create a sample Header snapshot+index
     snapshots::test_util::SampleHeaderSnapshotFile header_segment_file{tmp_dir_path};

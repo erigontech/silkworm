@@ -19,28 +19,27 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/test_util/kv_test_base.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/fixture.hpp>
 
 namespace silkworm::db::kv::api {
 
 using namespace silkworm::test_util;
-using test_util::make_repository;
-using test_util::TestDatabaseContext;
+using test_util::TestDataStore;
 
-struct DirectServiceTest : public test_util::KVTestBase, TestDatabaseContext {
+struct DirectServiceTest : public test_util::KVTestBase {
     Task<void> consumer(std::optional<StateChangeSet> change_set) {
         if (!change_set) co_return;
         change_set_vector.push_back(*change_set);
     }
-    DataStoreRef data_store() { return {mdbx_env(), repository}; }
+
+    TemporaryDirectory tmp_dir;
+    TestDataStore data_store{tmp_dir};
 
     StateChangeChannelPtr channel{std::make_shared<StateChangeChannel>(io_context_.get_executor())};
     concurrency::Channel<StateChangesCall> state_changes_calls_channel{io_context_.get_executor()};
-    snapshots::SnapshotRepository repository{make_repository()};
     std::unique_ptr<StateCache> state_cache{std::make_unique<CoherentStateCache>()};
-    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store(), state_cache.get()};
+    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store->ref(), state_cache.get()};
     std::vector<StateChangeSet> change_set_vector;
 };
 

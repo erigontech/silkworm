@@ -18,7 +18,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 
@@ -26,11 +25,9 @@ namespace silkworm {
 
 // Switch off the null sanitizer because nullptr SentryClient is formally dereferenced in command->execute.
 [[clang::no_sanitize("null")]] TEST_CASE("internal message") {
-    db::test_util::TempChainData context;
+    db::test_util::TempChainDataStore context;
     // not used in the test execution
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
-    // not used in the test execution
-    db::DataStoreRef data_store{context.env(), repository};
+    db::DataStoreRef data_store = context->ref();
     // not used in the test execution
     HeaderChain hc(kMainnetConfig, /* use_preverified_hashes = */ false);
     // not used in the test execution

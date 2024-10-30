@@ -24,7 +24,6 @@
 #include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -57,12 +56,11 @@ class ForkForTest : public Fork {
 TEST_CASE("Fork") {
     SetLogVerbosityGuard log_guard(log::Level::kNone);
 
-    db::test_util::TempChainData context;
+    db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();
 
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    db::DataModelFactory data_model_factory = context.data_model_factory();
 
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
@@ -70,7 +68,7 @@ TEST_CASE("Fork") {
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    db::RWAccess db_access{context.env()};
+    db::RWAccess db_access = context.chaindata_rw();
 
     MainChain main_chain{
         io.get_executor(),

@@ -21,9 +21,9 @@
 
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_queries.hpp>
@@ -35,15 +35,19 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
-using db::test_util::make_repository;
 using silkworm::test_util::SetLogVerbosityGuard;
 
 #define CHECK_FIRST(x) CHECK((x).first)
 #define CHECK_FALSE_FIRST(x) CHECK_FALSE((x).first)
 
+static SnapshotRepository make_repository(std::filesystem::path dir_path) {
+    return db::blocks::make_blocks_repository(std::move(dir_path));
+}
+
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
-    CHECK_NOTHROW(make_repository());
+    TemporaryDirectory tmp_dir;
+    CHECK_NOTHROW(make_repository(tmp_dir.path()));
 }
 
 TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][snapshot]") {

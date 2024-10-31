@@ -278,11 +278,11 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto key = db::code_domain_key(sender);
 
         db::kv::api::IndexRangeQuery query{
-                .table = "AccountsHistoryIdx", // TODO insert in tables.hpp
-                .key = key,
-                .from_timestamp = -1,
-                .to_timestamp = -1,
-                .ascending_order = true};
+            .table = "AccountsHistoryIdx",  // TODO insert in tables.hpp
+            .key = key,
+            .from_timestamp = -1,
+            .to_timestamp = -1,
+            .ascending_order = true};
         auto paginated_result = co_await tx->index_range(std::move(query));
         auto it = co_await paginated_result.begin();
 
@@ -297,11 +297,10 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 continue;
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
-            db::kv::api::HistoryPointQuery hpq {
-                .table = "AccountsHistory", // TODO insert in tables.hpp
+            db::kv::api::HistoryPointQuery hpq{
+                .table = "AccountsHistory",  // TODO insert in tables.hpp
                 .key = key,
-                .timestamp = *value
-            };
+                .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -315,7 +314,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 prev_txn_id = txn_id;
                 continue;
             }
-            const auto account {Account::from_encoded_storage_v3(result.value)};
+            const auto account{Account::from_encoded_storage_v3(result.value)};
             SILK_DEBUG << "Account: " << *account;
             if (account->nonce > nonce) {
                 break;
@@ -334,11 +333,10 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             auto txn_id = i + prev_txn_id;
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
-            db::kv::api::HistoryPointQuery hpq {
-                    .table = "AccountsHistory", // TODO insert in tables.hpp
-                    .key = key,
-                    .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)
-            };
+            db::kv::api::HistoryPointQuery hpq{
+                .table = "AccountsHistory",  // TODO insert in tables.hpp
+                .key = key,
+                .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 co_return false;
@@ -347,7 +345,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 creation_txn_id = static_cast<uint64_t>(txn_id);
                 co_return false;
             }
-            const auto account {Account::from_encoded_storage_v3(result.value)};
+            const auto account{Account::from_encoded_storage_v3(result.value)};
             SILK_DEBUG << "account.nonce: " << account->nonce << ", nonce: " << nonce;
             if (account->nonce <= nonce) {
                 creation_txn_id = std::max(creation_txn_id, static_cast<uint64_t>(txn_id));

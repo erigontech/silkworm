@@ -50,7 +50,8 @@ erigon_getLatestLogs,\
 eth_estimateGas,\
 eth_getBlockReceipts/test_07.json,\
 eth_getLogs,\
-ots_getTransactionBySenderAndNonce,\
+ots_getTransactionBySenderAndNonce/test_04.json,\
+ots_getTransactionBySenderAndNonce/test_07.json,\
 ots_getContractCreator,\
 ots_hasCode/test_09.json,\
 ots_searchTransactionsAfter,\

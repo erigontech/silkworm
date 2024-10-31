@@ -27,14 +27,17 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 
@@ -257,24 +260,24 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-using TestFunc = std::function<Task<bool>(int64_t)>;
-Task<int64_t> ots_binary_search(int64_t n, TestFunc& func) {
-    int64_t left = 0;
-    int64_t right = n;
-
-    SILK_LOG << "ots_binary_search [0,  " << right << "]";
-
-    while (left < right) {
-        int64_t mid = (left + right) >> 1;
-
-        if (! co_await func(mid)) {
-            left = mid + 1;
-        } else {
-            right = mid;
-        }
-    }
-    co_return left;
-}
+//using TestFunc = std::function<Task<bool>(int64_t)>;
+//Task<int64_t> ots_binary_search(int64_t n, TestFunc& func) {
+//    int64_t left = 0;
+//    int64_t right = n;
+//
+//    SILK_LOG << "ots_binary_search [0,  " << right << "]";
+//
+//    while (left < right) {
+//        auto mid = (left + right) >> 1;
+//
+//        if (! co_await func(mid)) {
+//            left = mid + 1;
+//        } else {
+//            right = mid;
+//        }
+//    }
+//    co_return left;
+//}
 
 Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
@@ -288,7 +291,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
     const auto sender = params[0].get<evmc::address>();
     const auto nonce = params[1].get<uint64_t>();
 
-    SILK_DEBUG << "sender: " << sender << " nonce: " << nonce;
+    SILK_DEBUG << "sender: " << sender << ", nonce: " << nonce;
     auto tx = co_await database_->begin();
 
     try {
@@ -305,84 +308,109 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
         std::vector<std::string> keys;
         std::uint64_t count = 0;
-        std::int64_t prevTxnId = 0;
-        std::int64_t nextTxnId = 0;
+        TxnId prev_txn_id = 0;
+        TxnId next_txn_id = 0;
         while (const auto value = co_await it.next()) {
-            const auto txnId = *value;
+            const auto txn_id = static_cast<TxnId>(*value);
             if (count++ % 4096 != 0) {
-                nextTxnId = txnId;
+                next_txn_id = txn_id;
                 continue;
             }
-            SILK_LOG << "count: " << count << ", txnId: " << txnId;
+            SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
             db::kv::api::HistoryPointQuery hpq {
                 .table = "AccountsHistory", // TODO insert in tables.hpp
                 .key = key,
-                .timestamp = txnId
+                .timestamp = *value
             };
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
+                co_await tx->close();
                 co_return;
             }
+            SILK_DEBUG << "history: len:" << result.value.size() << " [" << result.value << "]";
+
             if (result.value.empty()) {
-                prevTxnId = txnId;
+                SILK_DEBUG << "history bytes empty";
+                prev_txn_id = txn_id;
                 continue;
             }
-            auto account = Account::from_encoded_storage_v3(result.value);
-            if (account.has_value() && account.value().nonce > nonce) {
+            const auto account {Account::from_encoded_storage_v3(result.value)};
+            SILK_DEBUG << "Account: " << *account;
+            if (account->nonce > nonce) {
                 break;
             }
-            prevTxnId = txnId;
+            prev_txn_id = txn_id;
         }
-        SILK_LOG << "range -> prevTxnId: " << prevTxnId << ", nextTxnId: " << nextTxnId;
+        SILK_DEBUG << "range -> prev_txn_id: " << prev_txn_id << ", next_txn_id: " << next_txn_id;
 
         reply = make_json_content(request, nlohmann::detail::value_t::null);
-        if (nextTxnId == 0) {
-            nextTxnId = prevTxnId + 1;
+        if (next_txn_id == 0) {
+            next_txn_id = prev_txn_id + 1;
         }
 
-        std::int64_t creationTxnId = 0;
-        TestFunc func = [&](int64_t i) -> Task<bool> {
-            auto txnId = i + prevTxnId;
+        db::txn::TxNum creation_txn_id = 0;
+        auto index = co_await async_binary_search(static_cast<size_t>(next_txn_id - prev_txn_id), [&](size_t i) -> Task<bool> {
+            auto txn_id = i + prev_txn_id;
 
-            SILK_LOG << "searching for txnId: " << txnId << ", i: " << i;
+            SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
             db::kv::api::HistoryPointQuery hpq {
                     .table = "AccountsHistory", // TODO insert in tables.hpp
                     .key = key,
-                    .timestamp = txnId
+                    .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)
             };
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 co_return false;
             }
             if (result.value.empty()) {
-                creationTxnId = txnId;
+                creation_txn_id = static_cast<uint64_t>(txn_id);
                 co_return false;
             }
             const auto account {Account::from_encoded_storage_v3(result.value)};
-//            if (account.has_value()) {
-//                co_return false;
-//            }
-            SILK_LOG << "account.nonce: " << account->nonce << ", nonce: " << nonce;
+            SILK_DEBUG << "account.nonce: " << account->nonce << ", nonce: " << nonce;
             if (account->nonce <= nonce) {
-                creationTxnId = std::max(creationTxnId, txnId);
+                creation_txn_id = std::max(creation_txn_id, static_cast<uint64_t>(txn_id));
                 co_return false;
             }
-
             co_return true;
-        };
+        });
+        SILK_DEBUG << "after search -> index: " << index << " creationTxnId: " << creation_txn_id;
 
-        auto index = co_await ots_binary_search((nextTxnId - prevTxnId), func);
-        SILK_LOG << "after search -> index: " << index << " creationTxnId: " << creationTxnId;
-
-        if (creationTxnId == 0) {
-            SILK_LOG << "binary search in [" << prevTxnId << ", " << nextTxnId << "] found nothing";
-            reply = make_json_content(request, nlohmann::detail::value_t::null);
-        } else {
-
+        if (creation_txn_id == 0) {
+            SILK_DEBUG << "binary search in [" << prev_txn_id << ", " << next_txn_id << "] found nothing";
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
 
+        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
+        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        if (block_number_opt) {
+            const auto block_number = block_number_opt.value();
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_number, provider);
+            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_number);
+            SILK_DEBUG << "block_number: " << block_number << ", min_txn_id: " << min_txn_id << ", first_txn_id: " << first_txn_id;
+
+            TxnId tx_index{0};
+            if (creation_txn_id == min_txn_id) {
+                tx_index = index + prev_txn_id - min_txn_id - 1;
+            } else {
+                tx_index = creation_txn_id - min_txn_id - 1;
+            }
+            SILK_DEBUG << "block_number: " << block_number << ", tx_index: " << tx_index;
+
+            const auto chain_storage{tx->create_storage()};
+
+            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_number, tx_index);
+            if (!transaction) {
+                SILK_INFO << "No transaction found in block " << block_number << " for index " << tx_index;
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
+            } else {
+                reply = make_json_content(request, transaction.value().hash());
+            }
+        } else {
+            SILK_INFO << "No block found for txn_id " << creation_txn_id;
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
+        }
         /*
         auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);
         auto account_change_set_cursor = co_await tx->cursor_dup_sort(table::kAccountChangeSetName);

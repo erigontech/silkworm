@@ -10,11 +10,13 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
+# eth_baseFee & eth_blobBaseFee: new APIs
+# eth_estimateGas new fields
+# eth_getBlockReceipts/test_07.json new blobFields   
 # debug_accountRange: new algo using TKV
 # debug_getModifiedAccounts: new algo using TKV
 # debug_storageRangeAt: new algo using TKV
 # debug_traceCall/test_02.json: requested is_latest fix to support ethbackend
-# debug_traceTransaction: change expected response according erigon (report evm error) and make silkworm fix
 # erigon_getBalanceChangesInBlock: new algo using TKV
 # erigon_getLatestLogs: new algo using TKV
 # eth_getLogs: new algo using TKV
@@ -25,8 +27,7 @@ rm -rf ./mainnet/results/
 # ots_searchTransactionsBefore: new algo using TKV
 # parity_listStorageKeys/test_12.json: fix required
 # trace_rawTransaction: different implementation
-
-# trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response wrt e3 but should be e3 problem (to be analyzed)
+# trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response with erigon3 but could be erigon3 problem (to be analyzed)
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
 debug_accountRange,\

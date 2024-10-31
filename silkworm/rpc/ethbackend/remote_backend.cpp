@@ -205,7 +205,7 @@ Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_numb
     co_return hash;
 }
 
-Task<Bytes> RemoteBackEnd::canonical_body_for_storage(BlockNum number) {
+Task<std::optional<Bytes>> RemoteBackEnd::canonical_body_for_storage(BlockNum number) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalBodyForStorage> canonical_body_for_storage_rpc{*stub_, grpc_context_};
     ::remote::CanonicalBodyForStorageRequest request;
@@ -213,6 +213,9 @@ Task<Bytes> RemoteBackEnd::canonical_body_for_storage(BlockNum number) {
     const auto reply = co_await canonical_body_for_storage_rpc.finish_on(executor_, request);
     SILK_TRACE << "RemoteBackEnd::canonical_body_for_storage bn=" << number
                << " t=" << clock_time::since(start_time);
+    if (reply.body().length() == 0) {
+        co_return std::nullopt;
+    }
     co_return string_to_bytes(reply.body());
 }
 

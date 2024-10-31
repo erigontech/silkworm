@@ -26,9 +26,9 @@
 
 namespace silkworm::sentry::rlpx::crypto {
 
-static const size_t kKeySize128 = 16;
-static const size_t kKeySize256 = 32;
-extern const size_t kAESBlockSize = AES_BLOCK_SIZE;
+static constexpr size_t kKeySize128 = 16;
+static constexpr size_t kKeySize256 = 32;
+extern constexpr size_t kAESBlockSize = AES_BLOCK_SIZE;
 
 AESCipher::AESCipher(ByteView key, std::optional<ByteView> iv, Direction direction) {
     SILKWORM_ASSERT(!iv || (iv->size() == kAESBlockSize));

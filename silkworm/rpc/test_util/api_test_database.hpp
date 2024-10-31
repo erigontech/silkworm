@@ -50,7 +50,7 @@
 
 namespace silkworm::rpc::test_util {
 
-static constexpr size_t kDefaultCapacity{4 * 1024};
+inline constexpr size_t kDefaultCapacity = 4 * 1024;
 
 class ChannelForTest : public StreamWriter {
   public:

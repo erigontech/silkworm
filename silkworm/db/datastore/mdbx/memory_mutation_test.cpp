@@ -22,10 +22,10 @@
 
 namespace silkworm::db {
 
-const MapConfig kTestMap{"TestTable"};
-const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+static const MapConfig kTestMap{"TestTable"};
+static const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-const MapConfig kTestNonexistentMap{"NonexistentTable"};
+static const MapConfig kTestNonexistentMap{"NonexistentTable"};
 
 TEST_CASE("MemoryDatabase", "[silkworm][node][db][memory_mutation]") {
     const TemporaryDirectory tmp_dir;

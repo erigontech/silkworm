@@ -29,8 +29,8 @@
 
 namespace silkworm::rpc {
 
-static const size_t kDefaultFilterStorageSize = 1024;  // default filter storage size, ie max num for filters in storage
-static const size_t kDefaultMaxFilterAge = 900;        // lasting time for unused filters in seconds (15 min)
+inline constexpr size_t kDefaultFilterStorageSize = 1024;  // default filter storage size, ie max num for filters in storage
+inline constexpr size_t kDefaultMaxFilterAge = 900;        // lasting time for unused filters in seconds (15 min)
 
 enum FilterType {
     kLogs,

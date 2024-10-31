@@ -91,16 +91,16 @@ using namespace std::chrono;
 using encoding::remap16, encoding::remap128;
 
 //! Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000
-static const int kMaxBucketSize = 3000;
+inline constexpr int kMaxBucketSize = 3000;
 
 //! Assumed *maximum* size of splitting tree leaves
-static const int kMaxLeafSize = 24;
+inline constexpr int kMaxLeafSize = 24;
 
 //! Assumed *maximum* size of splitting tree fanout
-static const int kMaxFanout = 32;
+inline constexpr int kMaxFanout = 32;
 
 //! Starting seed at given distance from the root (extracted at random)
-static constexpr std::array<uint64_t, 20> kStartSeed = {
+inline constexpr std::array<uint64_t, 20> kStartSeed = {
     0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
     0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
     0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
@@ -125,7 +125,7 @@ struct Hash128 {
 };
 
 // Optimal Golomb-Rice parameters for leaves
-static constexpr uint8_t kBijMemo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
+inline constexpr uint8_t kBijMemo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
 
 //! The splitting strategy of Recsplit algorithm is embedded into the generation code, which uses only the public fields
 template <size_t LEAF_SIZE>
@@ -158,30 +158,30 @@ class SplittingStrategy {
 };
 
 //! Size in bytes of 1st fixed metadata header fields in RecSplit-encoded file
-static constexpr size_t kBaseDataIdLength{sizeof(uint64_t)};
-static constexpr size_t kKeyCountLength{sizeof(uint64_t)};
-static constexpr size_t kBytesPerRecordLength{sizeof(uint8_t)};
+inline constexpr size_t kBaseDataIdLength = sizeof(uint64_t);
+inline constexpr size_t kKeyCountLength = sizeof(uint64_t);
+inline constexpr size_t kBytesPerRecordLength = sizeof(uint8_t);
 
 //! Size in bytes of 1st fixed metadata header in RecSplit-encoded file
-constexpr size_t kFirstMetadataHeaderLength{
-    kBaseDataIdLength + kKeyCountLength + kBytesPerRecordLength};
+inline constexpr size_t kFirstMetadataHeaderLength =
+    kBaseDataIdLength + kKeyCountLength + kBytesPerRecordLength;
 
 //! Size in bytes of 2nd fixed metadata header fields in RecSplit-encoded file
-static constexpr size_t kBucketCountLength{sizeof(uint64_t)};
-static constexpr size_t kBucketSizeLength{sizeof(uint16_t)};
-static constexpr size_t kLeafSizeLength{sizeof(uint16_t)};
-static constexpr size_t kSaltSizeLength{sizeof(uint32_t)};
-static constexpr size_t kStartSeedSizeLength{sizeof(uint8_t)};
+inline constexpr size_t kBucketCountLength = sizeof(uint64_t);
+inline constexpr size_t kBucketSizeLength = sizeof(uint16_t);
+inline constexpr size_t kLeafSizeLength = sizeof(uint16_t);
+inline constexpr size_t kSaltSizeLength = sizeof(uint32_t);
+inline constexpr size_t kStartSeedSizeLength = sizeof(uint8_t);
 
-static constexpr size_t kFeaturesFlagLength{sizeof(uint8_t)};
-static constexpr size_t kGolombParamSizeLength{sizeof(uint32_t)};  // Erigon writes 4-instead-of-2 bytes
-static constexpr size_t kEliasFano32CountLength{sizeof(uint64_t)};
-static constexpr size_t kEliasFano32ULength{sizeof(uint64_t)};
-static constexpr size_t kExistenceFilterSizeLength{sizeof(uint64_t)};
+inline constexpr size_t kFeaturesFlagLength = sizeof(uint8_t);
+inline constexpr size_t kGolombParamSizeLength = sizeof(uint32_t);  // Erigon writes 4-instead-of-2 bytes
+inline constexpr size_t kEliasFano32CountLength = sizeof(uint64_t);
+inline constexpr size_t kEliasFano32ULength = sizeof(uint64_t);
+inline constexpr size_t kExistenceFilterSizeLength = sizeof(uint64_t);
 
 //! Size in bytes of 2nd fixed metadata header in RecSplit-encoded file
-constexpr size_t kSecondMetadataHeaderLength{
-    kBucketCountLength + kBucketSizeLength + kLeafSizeLength + kSaltSizeLength + kStartSeedSizeLength};
+inline constexpr size_t kSecondMetadataHeaderLength =
+    kBucketCountLength + kBucketSizeLength + kLeafSizeLength + kSaltSizeLength + kStartSeedSizeLength;
 
 //! Parameters for modified Recursive splitting (RecSplit) algorithm.
 struct RecSplitSettings {
@@ -202,7 +202,7 @@ consteval void enable_bitmask_operator_and(RecSplitFeatures);
 consteval void enable_bitmask_operator_or(RecSplitFeatures);
 consteval void enable_bitmask_operator_not(RecSplitFeatures);
 
-constexpr std::array kSupportedFeatures{RecSplitFeatures::kEnums, RecSplitFeatures::kLessFalsePositives};
+inline constexpr std::array kSupportedFeatures{RecSplitFeatures::kEnums, RecSplitFeatures::kLessFalsePositives};
 
 //! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
@@ -1010,7 +1010,7 @@ class RecSplit {
     std::unique_ptr<BuildingStrategy> building_strategy_;
 };
 
-constexpr size_t kLeafSize{8};
+inline constexpr size_t kLeafSize = 8;
 
 using RecSplit8 = RecSplit<kLeafSize>;
 

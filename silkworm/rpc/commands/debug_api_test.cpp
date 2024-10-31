@@ -47,8 +47,8 @@ using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 
-const nlohmann::json kEmpty;
-const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+static const nlohmann::json kEmpty;
+static const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
 class DummyCursor : public CursorDupSort {
   public:
@@ -249,8 +249,8 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
     }
 
   private:
-    inline static uint64_t next_tx_id{0};
-    inline static uint64_t next_view_id{0};
+    static inline uint64_t next_tx_id{0};
+    static inline uint64_t next_view_id{0};
 
     const nlohmann::json& json_;
     const uint64_t tx_id_;

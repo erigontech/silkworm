@@ -101,7 +101,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if req
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "result":{"gasUsedRatio":null,"oldestBlock":"0x0"}
+        "result":{"gasUsedRatio":null,"oldestBlock":"0x0", "blobGasUsedRatio":null}
     })"_json);
 }
 
@@ -135,7 +135,9 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "fuzzy: eth_feeHistory sigsegv valid 
         "jsonrpc":"2.0",
         "id":1,
         "result":{
+            "baseFeePerBlobGas":["0x0","0x0","0x0","0x0"],
             "baseFeePerGas":["0x3b9aca00","0x342770c0","0x2db08786","0x2806be9d"],
+            "blobGasUsedRatio":[0.0,0.0,0.0],
             "gasUsedRatio":[0.0,0.0042,0.0042],
             "oldestBlock":"0x0",
             "reward":[["0x0","0x0"],["0x1","0x1"],["0x1","0x1"]]}

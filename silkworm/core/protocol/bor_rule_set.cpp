@@ -176,7 +176,7 @@ namespace {
 
     void bor_transfer(IntraBlockState& state, const evmc::address& sender, const evmc::address& recipient,
                       const intx::uint256& amount, bool bailout) {
-        static constexpr auto kTransferLogSig{
+        static constexpr evmc::bytes32 kTransferLogSig{
             0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4_bytes32};
         intx::uint256 sender_initial_balance{state.get_balance(sender)};
         intx::uint256 recipient_initial_balance{state.get_balance(recipient)};
@@ -195,7 +195,7 @@ namespace {
 void BorRuleSet::add_fee_transfer_log(IntraBlockState& state, const intx::uint256& amount, const evmc::address& sender,
                                       const intx::uint256& sender_initial_balance, const evmc::address& recipient,
                                       const intx::uint256& recipient_initial_balance) {
-    static constexpr auto kTransferFeeLogSig{
+    static constexpr evmc::bytes32 kTransferFeeLogSig{
         0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63_bytes32};
     SILKWORM_ASSERT(amount <= sender_initial_balance);
     add_transfer_log(state, kTransferFeeLogSig, sender, recipient, amount,

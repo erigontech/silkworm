@@ -65,13 +65,13 @@ bool are_equivalent(const nlohmann::json& obj1, const nlohmann::json& obj2) {
     return str1 == str2;
 }
 
-const std::vector<std::string> kTestsToIgnore = {
+static const std::vector<std::string> kTestsToIgnore = {
     "eth_getProof",            // not implemented
     "debug_getRawReceipts",    // not implemented
     "eth_sendRawTransaction",  // call to txpool fails, needs mocking
 };
 
-const std::vector<std::string> kSubtestsToIgnore = {
+static const std::vector<std::string> kSubtestsToIgnore = {
     "create-al-multiple-reads.io",  // eth_createAccessList: expected value doesn't contain gas optimization
     "estimate-simple-transfer.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas
     "estimate-simple-contract.io",  // eth_estimateGas: without gas paramters doesn't support base_fee_gas of block as default gas

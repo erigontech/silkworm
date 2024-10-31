@@ -129,7 +129,7 @@ class AsyncUnaryCall : public AsyncCall {
 
     virtual void handle_finish(bool /*ok*/) {}
 
-    inline static UnaryStats unary_stats_;
+    static inline UnaryStats unary_stats_;
 
     StubInterface* stub_;
     Reply reply_;
@@ -253,7 +253,7 @@ class AsyncServerStreamingCall : public AsyncCall {
     virtual void handle_read() = 0;
     virtual void handle_finish() = 0;
 
-    inline static ServerStreamingStats server_streaming_stats_;
+    static inline ServerStreamingStats server_streaming_stats_;
 
     TagProcessor start_processor_;
     TagProcessor read_processor_;
@@ -445,7 +445,7 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
     virtual bool handle_write() = 0;
     virtual void handle_finish() = 0;
 
-    inline static BidirectionalStreamingStats bidi_streaming_stats_;
+    static inline BidirectionalStreamingStats bidi_streaming_stats_;
 
     enum class State {
         kIdle,
@@ -733,8 +733,8 @@ class AsyncTxCall
     }
 
   private:
-    inline static const uint32_t kInvalidViewId{0};
-    inline static const uint32_t kInvalidCursorId{0};
+    static constexpr uint32_t kInvalidViewId{0};
+    static constexpr uint32_t kInvalidCursorId{0};
 
     uint32_t view_id_{kInvalidViewId};
     std::string table_name_{silkworm::db::table::kCanonicalHashes.name};
@@ -785,7 +785,7 @@ class AsyncStateChangesCall
     }
 
   private:
-    inline static std::vector<AsyncStateChangesCall*> pending_calls_;
+    static inline std::vector<AsyncStateChangesCall*> pending_calls_;
 };
 
 enum class Rpc {

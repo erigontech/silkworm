@@ -26,9 +26,9 @@
 
 #include "memory_mapped_file.hpp"
 
-constexpr uint64_t k4MiBFileSize{4u * silkworm::kMebi};
+static constexpr uint64_t k4MiBFileSize{4u * silkworm::kMebi};
 
-static inline std::filesystem::path create_random_temporary_file(int64_t file_size) {
+static std::filesystem::path create_random_temporary_file(int64_t file_size) {
     auto tmp_file = silkworm::TemporaryDirectory::get_unique_temporary_path();
     std::ofstream tmp_stream{tmp_file, std::ios_base::binary};
     silkworm::RandomNumber rnd{0, 255};

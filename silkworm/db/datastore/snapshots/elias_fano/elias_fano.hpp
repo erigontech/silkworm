@@ -75,18 +75,18 @@
 namespace silkworm::snapshots::elias_fano {
 
 //! Log2Q = Log2(Quantum)
-static constexpr uint64_t kLog2q = 8;
+inline constexpr uint64_t kLog2q = 8;
 //! Q = Quantum
-static constexpr uint64_t kQ = 1 << kLog2q;  // 256
+inline constexpr uint64_t kQ = 1 << kLog2q;  // 256
 //! QMask = Quantum Mask
-static constexpr uint64_t kQMask = kQ - 1;
+inline constexpr uint64_t kQMask = kQ - 1;
 //! SuperQ = Super Quantum
-static constexpr uint64_t kSuperQ = 1 << 14;  // 16384
+inline constexpr uint64_t kSuperQ = 1 << 14;  // 16384
 //! SuperQMask = SuperQuantum Mask
-static constexpr uint64_t kSuperQMask = kSuperQ - 1;
-static constexpr uint64_t kQPerSuperQ = kSuperQ / kQ;
-static constexpr uint64_t kSuperQSize16 = 1 + kQPerSuperQ / 4;
-static constexpr uint64_t kSuperQSize32 = 1 + kQPerSuperQ / 2;
+inline constexpr uint64_t kSuperQMask = kSuperQ - 1;
+inline constexpr uint64_t kQPerSuperQ = kSuperQ / kQ;
+inline constexpr uint64_t kSuperQSize16 = 1 + kQPerSuperQ / 4;
+inline constexpr uint64_t kSuperQSize32 = 1 + kQPerSuperQ / 2;
 
 template <class T, size_t Extent>
 static void set(std::span<T, Extent> bits, const uint64_t pos) {

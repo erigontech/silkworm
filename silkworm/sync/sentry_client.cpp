@@ -37,9 +37,9 @@
 
 // In debug mode we dump malformed messages received from Sentry
 #ifdef NDEBUG
-constexpr bool kDumpMalformedMsg{false};
+static constexpr bool kDumpMalformedMsg{false};
 #else
-constexpr bool kDumpMalformedMsg{true};
+static constexpr bool kDumpMalformedMsg{true};
 #endif
 
 namespace silkworm {

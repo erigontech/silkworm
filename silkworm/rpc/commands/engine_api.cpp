@@ -33,12 +33,12 @@ namespace silkworm::rpc::commands {
 using namespace std::chrono_literals;
 
 // Engine API standard timeouts
-constexpr auto kGetPayloadTimeout{1s};
-constexpr auto kGetPayloadBodiesTimeout{10s};
-constexpr auto kNewPayloadTimeout{8s};
-constexpr auto kForkChoiceUpdatedTimeout{8s};
+static constexpr std::chrono::seconds kGetPayloadTimeout{1s};
+static constexpr std::chrono::seconds kGetPayloadBodiesTimeout{10s};
+static constexpr std::chrono::seconds kNewPayloadTimeout{8s};
+static constexpr std::chrono::seconds kForkChoiceUpdatedTimeout{8s};
 
-constexpr auto kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+static constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md#engine_exchangecapabilities
 Task<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(readability-convert-member-functions-to-static)

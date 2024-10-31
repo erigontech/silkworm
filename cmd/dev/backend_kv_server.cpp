@@ -218,9 +218,9 @@ int main(int argc, char* argv[]) {
             using namespace boost::asio::experimental::awaitable_operators;
             auto state_changes_simulator = [](auto& ctx_pool, auto& be) -> Task<void> {
                 boost::asio::steady_timer state_changes_timer{ctx_pool.next_io_context()};
-                constexpr auto kStateChangeInterval{std::chrono::seconds(10)};
-                constexpr silkworm::BlockNum kStartBlock{100'000'000};
-                constexpr uint64_t kGasLimit{30'000'000};
+                static constexpr std::chrono::seconds kStateChangeInterval{10};
+                static constexpr silkworm::BlockNum kStartBlock{100'000'000};
+                static constexpr uint64_t kGasLimit{30'000'000};
                 auto run = [&]() {
                     boost::system::error_code ec;
                     while (ec != boost::asio::error::operation_aborted) {

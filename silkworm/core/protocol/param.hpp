@@ -76,8 +76,8 @@ inline constexpr uint64_t kBlobGasPriceUpdateFraction{3338477};
 // EIP-4788: Beacon block root in the EVM
 using namespace evmc::literals;
 inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
-inline constexpr auto kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
-inline constexpr auto kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02_address};
+inline constexpr evmc::address kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
+inline constexpr evmc::address kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02_address};
 
 // EIP-6110
 inline constexpr auto kDepositContractAddress{0x00000000219ab540356cbb839cbe05303d7705fa_address};

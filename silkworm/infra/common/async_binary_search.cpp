@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "binary_search.hpp"
+#include "async_binary_search.hpp"
 
-namespace silkworm::rpc {
+namespace silkworm {
 
-Task<size_t> binary_search(size_t n, BinaryPredicate pred) {
+Task<size_t> async_binary_search(size_t n, BinaryPredicate pred) {
     size_t i{0};
     size_t j{n};
     while (j > i) {
@@ -33,4 +33,4 @@ Task<size_t> binary_search(size_t n, BinaryPredicate pred) {
     co_return i;
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm

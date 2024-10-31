@@ -37,15 +37,15 @@ using testing::Expectation;
 using testing::Property;
 namespace test = rpc::test;
 
-static const char* kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
-static const char* kPlainStateValue{""};
+static constexpr const char* kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
+static constexpr const char* kPlainStateValue{""};
 
 static const silkworm::Bytes kPlainStateKeyBytes{string_to_bytes(kPlainStateKey)};
 static const silkworm::Bytes kPlainStateValueBytes{string_to_bytes(kPlainStateValue)};
 
-static const char* kAccountChangeSetKey{"0000000000532b9f"};
-static const char* kAccountChangeSetSubkey{"0000000000000000000000000000000000000000"};
-static const char* kAccountChangeSetValue{"020944ed67f28fd50bb8e9"};
+static constexpr const char* kAccountChangeSetKey{"0000000000532b9f"};
+static constexpr const char* kAccountChangeSetSubkey{"0000000000000000000000000000000000000000"};
+static constexpr const char* kAccountChangeSetValue{"020944ed67f28fd50bb8e9"};
 
 static const silkworm::Bytes kAccountChangeSetKeyBytes{string_to_bytes(kAccountChangeSetKey)};
 static const silkworm::Bytes kAccountChangeSetSubkeyBytes{string_to_bytes(kAccountChangeSetSubkey)};

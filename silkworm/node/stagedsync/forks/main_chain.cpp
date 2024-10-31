@@ -58,14 +58,14 @@ class TransactionHandler {
     silkworm::db::RWTxnManaged& txn_;
     silkworm::db::RWAccess& db_access_;
     bool keep_db_txn_open_{true};
-    inline static SILKWORM_THREAD_LOCAL int request_count_;
+    static inline SILKWORM_THREAD_LOCAL int request_count_;
 };
 }  // namespace
 
 namespace silkworm::stagedsync {
 
 //! The number of inserted blocks between two successive commits on db
-constexpr uint64_t kInsertedBlockBatch{1'000};
+static constexpr uint64_t kInsertedBlockBatch{1'000};
 
 using execution::api::InvalidChain;
 using execution::api::ValidationError;

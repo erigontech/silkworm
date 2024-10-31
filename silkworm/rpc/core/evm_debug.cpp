@@ -16,11 +16,11 @@
 
 #include "evm_debug.hpp"
 
-#include <memory>
 #include <string>
 
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
+#include <evmone/instructions_traits.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -84,18 +84,21 @@ void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory)
     const auto data = memory.data();
     vect.push_back(silkworm::to_hex({data, memory.size()}));
 }
-
 void insert_error(DebugLog& log, evmc_status_code status_code) {
     switch (status_code) {
-        case evmc_status_code::EVMC_FAILURE:
         case evmc_status_code::EVMC_OUT_OF_GAS:
+            log.error = "out of gas";
+            break;
         case evmc_status_code::EVMC_STACK_OVERFLOW:
+            log.error = {"stack overflow (" + std::to_string(log.stack_height) + " <=> " + std::to_string(evmone::instr::traits[log.op_code].stack_height_required) + ")"};
+            break;
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
-            log.error = true;
+            log.error = {"stack underflow (" + std::to_string(log.stack_height) + " <=> " + std::to_string(evmone::instr::traits[log.op_code].stack_height_required) + ")"};
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
+        case evmc_status_code::EVMC_FAILURE:
         default:
-            log.error = false;
+            log.error = "";
             break;
     }
 }
@@ -189,6 +192,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     log.gas = gas;
     log.gas_cost = metrics_[opcode].gas_cost;
     log.depth = execution_state.msg->depth + 1;
+    log.stack_height = stack_height;
 
     if (!config_.disable_stack) {
         output_stack(log.stack, stack_top, stack_height);
@@ -328,10 +332,9 @@ void DebugTracer::write_log(const DebugLog& log) {
         }
         stream_.close_object();
     }
-    if (log.error) {
-        stream_.write_field("error");
-        stream_.open_object();
-        stream_.close_object();
+
+    if (!log.error.empty()) {
+        stream_.write_field("error", log.error);
     }
 
     stream_.close_object();

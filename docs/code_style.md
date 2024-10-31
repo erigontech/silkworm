@@ -44,7 +44,7 @@ This is a list of project-specific guidelines that take precedence over the rule
 	* Thread
 	* Url
 
-### P1a init syntax convention for vars
+### P1a init syntax convention for variables
 
 Use modern init syntax only for custom construction of objects. Use a more conventional assignment operator primitive values and references.
 
@@ -69,9 +69,9 @@ Exception:
 
 	Bytes transaction_key(8, 0);  // has to use parentheses to create 8 zeros instead of [8, 0] list
 
-### P1b init syntax convention for class members
+### P1b init syntax convention for data members (fields)
 
-Member init list must use modern init syntax.
+Member initializer list must use the modern init syntax:
 
 	DebugExecutor(...) :
 	    database_reader_{database_reader},
@@ -79,6 +79,12 @@ Member init list must use modern init syntax.
 	    workers_{workers},
 	    tx_{tx},
 	    config_{config} {}
+
+as well as inline initialization of data members:
+
+	struct PayloadAttributes {
+		uint64_t timestamp{0};
+	};
 
 ### P2 io_context var naming
 
@@ -147,21 +153,36 @@ When copy-prevention is required, consider making a type move-only. If T is an a
 
 ### P10 constants definition keywords
 
-A) For class-member constants in .hpp files or private constants in .cpp files:
+In all cases the order of keywords is:
+
+	[static] [inline] const[expr]
+
+**Case 1:** For class-member constants:
 
 Use `static constexpr` if possible:
 
 	static constexpr uint64_t kMinDifficulty{0x20000};
 
-Otherwise use `static const`.
+(`inline` is implicit in this case),
 
-`inline` is implicit for class-member constants, and unnecessary for private constants in .cpp files.
+otherwise use `static inline const`:
 
-B) For global constants in .hpp files:
+	static inline const std::filesystem::path kDefaultTorrentRepoPath{".torrent"};
+
+**Case 2:** For private constants in .cpp files:
+
+Use `static constexpr` if possible,  
+otherwise use `static const`.
+
+`inline` is unnecessary in this case.
+
+**Case 3:** For global constants in .hpp files:
 
 Use `inline constexpr` if possible,    
 otherwise use `inline const` if possible,  
 otherwise use `extern const`.
+
+`static` is misleading in this case.
 
 See also: [Constants: Safe Idioms](https://abseil.io/tips/140)
 

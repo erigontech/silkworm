@@ -27,16 +27,18 @@
 
 namespace silkworm {
 
-constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
+static constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 
-static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
+static void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source) {
         json[key] = source.value();
     }
 }
 
-static inline void read_json_config_member(const nlohmann::json& json, const std::string& key,
-                                           std::optional<uint64_t>& target) {
+static void read_json_config_member(
+    const nlohmann::json& json,
+    const std::string& key,
+    std::optional<uint64_t>& target) {
     if (json.contains(key)) {
         target = json[key].get<uint64_t>();
     }

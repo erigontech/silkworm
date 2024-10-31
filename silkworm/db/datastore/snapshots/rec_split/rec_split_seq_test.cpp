@@ -38,7 +38,7 @@ using test_util::next_pseudo_random;
 #ifndef _WIN32
 
 //! Make the MPHF predictable just for testing
-constexpr int kTestSalt{1};
+static constexpr int kTestSalt{1};
 
 TEST_CASE("RecSplit8: key_count=0", "[silkworm][snapshots][recsplit]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
@@ -116,7 +116,7 @@ static void check_bijection(RS& rec_split, const std::vector<Hash128>& keys) {
     }
 }
 
-constexpr int kTestLeaf{4};
+static constexpr int kTestLeaf{4};
 
 using RecSplit4 = RecSplit<kTestLeaf>;
 template <>

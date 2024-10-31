@@ -41,7 +41,7 @@ namespace silkworm::rpc::http {
 
 using RequestWithStringBody = boost::beast::http::request<boost::beast::http::string_body>;
 
-static constexpr size_t kDefaultCapacity{4 * 1024};
+inline constexpr size_t kDefaultCapacity = 4 * 1024;
 
 //! Represents a single connection from a client.
 class Connection : public StreamWriter {

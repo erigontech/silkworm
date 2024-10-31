@@ -173,9 +173,11 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_txn_hash", "[si
     }
 
     SECTION("call get_block_number_from_txn_hash and get zero count") {
+        ::remote::TxnLookupReply response;
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
+        response.set_block_number(0);
         const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_txn_hash>(hash.bytes);
-        CHECK(bn == 0);
+        CHECK(bn == std::nullopt);
     }
 
     SECTION("call get_block_number_from_txn_hash and get error") {
@@ -240,7 +242,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_hash_from_block_number", "[
     const uint64_t bn{0};
     EXPECT_CALL(*stub_, AsyncCanonicalHashRaw).WillOnce(testing::Return(&reader));
 
-    SECTION("call get_block_number_from_hash and get number") {
+    SECTION("call get_block_hash_from_block_number and get number") {
         ::remote::CanonicalHashReply response;
         response.set_allocated_hash(make_h256(0x3b8fb240d288781d, 0x4aac94d3fd16809e, 0xe413bc99294a0857, 0x98a589dae51ddd4a));
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
@@ -248,13 +250,13 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_hash_from_block_number", "[
         CHECK(hash == 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32);
     }
 
-    SECTION("call get_block_number_from_hash and get zero count") {
+    SECTION("call get_block_hash_from_block_number and get zero count") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto hash = run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_number>(bn);
-        CHECK(hash == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
+        CHECK(hash == std::nullopt);
     }
 
-    SECTION("call get_block_number_from_hash and get error") {
+    SECTION("call get_block_hash_from_block_number and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
         CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_number>(bn)), boost::system::system_error);
     }

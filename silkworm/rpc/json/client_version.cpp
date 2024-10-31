@@ -25,12 +25,15 @@
 namespace silkworm::rpc {
 
 //! Commit hash length is hard-coded at 4-bytes hex by spec
-inline constexpr auto kCommitSize = 4 * 2;
+inline constexpr size_t kCommitSize = 4 * 2;
 
 //! ClientVersionV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/identification.md#clientversionv1
 struct ClientVersionV1 {
-    inline static std::string_view code{"SW"};        // never-changing value, hard-coded for efficiency
-    inline static std::string_view name{"silkworm"};  // never-changing value, hard-coded for efficiency
+    // NOLINTBEGIN(readability-identifier-naming)
+    static constexpr std::string_view code{"SW"};        // never-changing value, hard-coded for efficiency
+    static constexpr std::string_view name{"silkworm"};  // never-changing value, hard-coded for efficiency
+    // NOLINTEND(readability-identifier-naming)
+
     std::string_view version;
     std::string_view commit;
 

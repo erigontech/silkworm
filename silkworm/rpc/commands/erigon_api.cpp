@@ -23,9 +23,9 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/chain/chain.hpp>
+#include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/common/binary_search.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -139,7 +139,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
             block_number = kEarliestBlockNumber;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
-            auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {
+            auto matching_block_number = co_await async_binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {
                 const auto header = co_await chain_storage->read_canonical_header(bn);
                 co_return header && header->timestamp >= timestamp;
             });

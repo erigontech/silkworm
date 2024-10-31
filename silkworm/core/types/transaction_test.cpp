@@ -27,7 +27,7 @@ namespace silkworm {
 
 using namespace evmc::literals;
 
-const std::vector<AccessListEntry> kAccessList{
+static const std::vector<AccessListEntry> kAccessList{
     {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
      {
          0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,

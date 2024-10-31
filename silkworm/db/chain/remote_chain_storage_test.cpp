@@ -18,14 +18,13 @@
 
 #include <string>
 
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
@@ -48,18 +47,25 @@ static Bytes kChainConfig{*from_hex(
     "30302c22697374616e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a31323936353030302c226d75697"
     "2476c6163696572426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a373238303030307d")};
 
-chain::BlockProvider block_provider{
-    [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
-chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
-    [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
-chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
-    [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
-chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
-    [](BlockNum) -> Task<evmc::bytes32> { co_return kBlockHash; }};
+static chain::Providers make_null_providers() {
+    return {
+        .block = [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; },
+        .block_number_from_txn_hash = [](HashAsSpan) -> Task<BlockNum> { co_return 0; },
+        .block_number_from_hash = [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return 0; },
+        .canonical_block_hash_from_number = [](BlockNum) -> Task<std::optional<evmc::bytes32>> { co_return kBlockHash; },
+    };
+}
+
+class RemoteChainStorageForTest : public RemoteChainStorage {
+  public:
+    using RemoteChainStorage::providers;
+    using RemoteChainStorage::RemoteChainStorage;
+};
 
 struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     test_util::MockTransaction transaction;
-    RemoteChainStorage storage{transaction, {block_provider, block_number_from_txn_hash_provider, block_number_from_block_hash_provider, canonical_block_hash_from_number_provider}};
+    RemoteChainStorageForTest storage{transaction, make_null_providers()};
+    chain::Providers& providers{storage.providers()};
 };
 
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
@@ -103,6 +109,21 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
                 "muirGlacierBlock":9200000,
                 "petersburgBlock":7280000
             })"_json);
+    }
+}
+
+TEST_CASE_METHOD(RemoteChainStorageTest, "read_transaction_by_idx_in_block") {
+    SECTION("not found") {
+        const auto txn = spawn_and_wait(storage.read_transaction_by_idx_in_block(0, 0));
+        REQUIRE_FALSE(txn);
+    }
+    SECTION("found") {
+        Block block = silkworm::test_util::sample_block();
+        providers.block = [&](BlockNum, HashAsSpan, bool, Block& b) -> Task<bool> { b = block; co_return true; };
+        const auto txn0 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_id=*/0));
+        REQUIRE(txn0 == silkworm::test_util::kSampleTx0);
+        const auto txn1 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_id=*/1));
+        REQUIRE(txn1 == silkworm::test_util::kSampleTx1);
     }
 }
 

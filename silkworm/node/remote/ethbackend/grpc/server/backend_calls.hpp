@@ -40,10 +40,10 @@
 namespace silkworm::ethbackend::grpc::server {
 
 //! Current devp2p 'eth' protocol version in use.
-constexpr uint64_t kEthDevp2pProtocolVersion = 66;
+inline constexpr uint64_t kEthDevp2pProtocolVersion = 66;
 
 //! Current ETHBACKEND API protocol version.
-constexpr auto kEthBackEndApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(2, 3, 0);
+inline constexpr auto kEthBackEndApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(2, 3, 0);
 
 //! Unary RPC for Etherbase method of 'ethbackend' gRPC protocol.
 class EtherbaseCall : public rpc::server::UnaryCall<remote::EtherbaseRequest, remote::EtherbaseReply> {

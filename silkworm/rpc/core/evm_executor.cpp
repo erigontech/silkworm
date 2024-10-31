@@ -53,8 +53,8 @@ static Bytes build_abi_selector(const std::string& signature) {
 }
 
 static std::optional<std::string> decode_error_reason(const Bytes& error_data) {
-    static const auto kRevertSelector{build_abi_selector("Error(string)")};
-    static const auto kAbiStringOffsetSize{32};
+    static const Bytes kRevertSelector = build_abi_selector("Error(string)");
+    static constexpr size_t kAbiStringOffsetSize{32};
 
     if (error_data.size() < kRevertSelector.size() || error_data.substr(0, kRevertSelector.size()) != kRevertSelector) {
         return std::nullopt;

@@ -67,8 +67,8 @@ using namespace silkworm::cmd::common;
 using namespace silkworm::snapshots;
 using namespace silkworm::snapshots::bittorrent;
 
-constexpr int kDefaultPageSize{4 * 1024};  // 4kB
-constexpr int kDefaultRepetitions{1};
+static constexpr int kDefaultPageSize{4 * 1024};  // 4kB
+static constexpr int kDefaultRepetitions{1};
 
 //! The settings for handling Thorax snapshots customized for this tool
 struct SnapshotSubcommandSettings {
@@ -93,7 +93,7 @@ struct DownloadSettings {
     std::optional<std::string> magnet_uri;
 };
 
-static const auto kTorrentRepoPath{bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath};
+static const std::filesystem::path kTorrentRepoPath{bittorrent::BitTorrentSettings::kDefaultTorrentRepoPath};
 
 //! The available subcommands in snapshots utility
 //! \warning reducing the enum base type size as suggested by clang-tidy breaks CLI11

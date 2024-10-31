@@ -33,7 +33,7 @@ using silkworm::test_util::ContextTestBase;
 using test_util::TestDatabaseContext;
 
 struct LocalCursorTest : public ContextTestBase, TestDatabaseContext {
-    inline static uint32_t last_cursor_id{0};
+    static inline uint32_t last_cursor_id{0};
 };
 
 // In all following tests we need to create the MDBX transaction using the io_context scheduler thread, so we simply

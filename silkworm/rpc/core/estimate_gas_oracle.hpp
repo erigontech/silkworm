@@ -33,8 +33,8 @@
 
 namespace silkworm::rpc {
 
-const std::uint64_t kTxGas = 21'000;
-const std::uint64_t kGasCap = 50'000'000;
+inline constexpr std::uint64_t kTxGas = 21'000;
+inline constexpr std::uint64_t kGasCap = 50'000'000;
 
 using BlockHeaderProvider = std::function<Task<std::optional<silkworm::BlockHeader>>(uint64_t)>;
 using AccountReader = std::function<Task<std::optional<silkworm::Account>>(const evmc::address&, uint64_t)>;

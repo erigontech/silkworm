@@ -39,10 +39,9 @@ static api::Blocks sample_blocks() {
 }
 
 static void empty_proto_block(proto::Block* proto_block) {
-    static const auto kEmptyHeaderHash{BlockHeader{}.hash()};
+    static const evmc::bytes32 kEmptyHeaderHash{BlockHeader{}.hash()};
     proto_block->mutable_header()->set_allocated_block_hash(rpc::h256_from_bytes32(kEmptyHeaderHash).release());
     proto_block->mutable_body()->set_allocated_block_hash(rpc::h256_from_bytes32(kEmptyHeaderHash).release());
-    ;
 }
 
 static proto::InsertBlocksRequest sample_proto_insert_block_request() {

@@ -264,7 +264,7 @@ TEST_CASE("RWTxn") {
     const TemporaryDirectory tmp_dir;
     EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{open_env(db_config)};
-    static const char* kTableName{"GeneticCode"};
+    static constexpr const char* kTableName{"GeneticCode"};
 
     SECTION("Managed: commit_and_renew") {
         {
@@ -386,7 +386,7 @@ TEST_CASE("Cursor walk") {
     auto env{open_env(db_config)};
     auto txn{env.start_write()};
 
-    static const char* kTableName{"GeneticCode"};
+    static constexpr const char* kTableName{"GeneticCode"};
 
     PooledCursor table_cursor(txn, {kTableName});
 

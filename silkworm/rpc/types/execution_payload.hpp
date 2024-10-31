@@ -101,11 +101,12 @@ struct NewPayloadRequest {
 
 //! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
 struct PayloadStatus {
-    static inline const char* kValidStr{"VALID"};
-    static inline const char* kInvalidStr{"INVALID"};
-    static inline const char* kSyncingStr{"SYNCING"};
-    static inline const char* kAcceptedStr{"ACCEPTED"};
-    static inline const char* kInvalidBlockHashStr{"INVALID_BLOCK_HASH"};
+    static constexpr const char* kValidStr{"VALID"};
+    static constexpr const char* kInvalidStr{"INVALID"};
+    static constexpr const char* kSyncingStr{"SYNCING"};
+    static constexpr const char* kAcceptedStr{"ACCEPTED"};
+    static constexpr const char* kInvalidBlockHashStr{"INVALID_BLOCK_HASH"};
+
     static const PayloadStatus kSyncing;
     static const PayloadStatus kAccepted;
     static const PayloadStatus kInvalidBlockHash;

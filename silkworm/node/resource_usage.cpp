@@ -33,7 +33,7 @@ namespace silkworm::node {
 using namespace std::chrono_literals;
 using std::chrono::steady_clock;
 
-constexpr auto kResourceUsageInterval{300s};
+static constexpr std::chrono::seconds kResourceUsageInterval{300s};
 
 Task<void> ResourceUsageLog::run() {
     auto executor = co_await boost::asio::this_coro::executor;

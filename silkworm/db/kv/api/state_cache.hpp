@@ -75,9 +75,9 @@ struct CoherentStateRoot {
 
 using StateViewId = uint64_t;
 
-constexpr auto kDefaultMaxViews{5ul};
-constexpr auto kDefaultMaxStateKeys{1'000'000u};
-constexpr auto kDefaultMaxCodeKeys{10'000u};
+inline constexpr uint64_t kDefaultMaxViews = 5ul;
+inline constexpr uint32_t kDefaultMaxStateKeys = 1'000'000u;
+inline constexpr uint32_t kDefaultMaxCodeKeys = 10'000u;
 
 struct CoherentCacheConfig {
     uint64_t max_views{kDefaultMaxViews};

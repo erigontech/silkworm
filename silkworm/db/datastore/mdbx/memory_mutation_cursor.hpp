@@ -88,8 +88,8 @@ class MemoryMutationCursor : public RWCursorDupSort {
     bool erase(const Slice& key, const Slice& value) override;
 
   private:
-    static inline void throw_error_nodata();
-    static inline void throw_error_notfound();
+    static void throw_error_nodata();
+    static void throw_error_notfound();
 
     enum class MoveType : uint8_t {
         kNone,

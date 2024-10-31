@@ -28,7 +28,7 @@
 namespace silkworm::cmd::common {
 
 //! All Ethereum EL JSON RPC API namespaces (standard + custom)
-constexpr std::array kAllEth1Namespaces{
+static constexpr std::array kAllEth1Namespaces{
     kAdminApiNamespace,
     kDebugApiNamespace,
     kEthApiNamespace,
@@ -41,7 +41,7 @@ constexpr std::array kAllEth1Namespaces{
     kOtterscanApiNamespace};
 
 //! Compute the maximum number of chars in comma-separated list of all API namespaces
-static const auto kApiNamespaceListMaxChars{
+static const size_t kApiNamespaceListMaxChars{
     std::accumulate(kAllEth1Namespaces.cbegin(), kAllEth1Namespaces.cend(), 0, [](size_t sum, auto s) {
         return sum + std::strlen(s);
     }) +

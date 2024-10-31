@@ -71,10 +71,10 @@ namespace server {
 
       private:
         //! Keep track of the total outstanding RPC calls (intentionally signed to spot underflow).
-        inline static std::atomic_int64_t instance_count_ = 0;
+        static inline std::atomic_int64_t instance_count_{0};
 
         //! Keep track of the total RPC calls.
-        inline static std::atomic_uint64_t total_count_ = 0;
+        static inline std::atomic_uint64_t total_count_{0};
     };
 
     //! This represents any unary RPC (i.e. one-client-request, one-server-response).
@@ -122,7 +122,7 @@ namespace server {
             : Call(server_context), responder_(responder), grpc_context_(grpc_context) {}
 
       protected:
-        inline static std::chrono::milliseconds max_idle_duration_{kDefaultMaxIdleDuration};
+        static inline std::chrono::milliseconds max_idle_duration_{kDefaultMaxIdleDuration};
 
         Responder& responder_;
         agrpc::GrpcContext& grpc_context_;

@@ -18,10 +18,10 @@
 
 namespace silkworm::snapshots::seg::varint {
 
-constexpr size_t kMaxVarintBytes = 10;
-constexpr uint8_t kByteMask = 0b01111111;
-constexpr uint8_t kContMask = 0b10000000;
-constexpr uint8_t kByteMaskBits = 7;
+static constexpr size_t kMaxVarintBytes = 10;
+static constexpr uint8_t kByteMask = 0b01111111;
+static constexpr uint8_t kContMask = 0b10000000;
+static constexpr uint8_t kByteMaskBits = 7;
 
 ByteView encode(Bytes& out, uint64_t value) {
     out.reserve(kMaxVarintBytes);

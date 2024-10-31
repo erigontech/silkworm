@@ -38,8 +38,11 @@ static Task<TxNum> last_tx_num_for_block(const std::shared_ptr<kv::api::Cursor>&
     const auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
     if (key_value.value.empty()) {
         SILKWORM_ASSERT(canonical_body_for_storage_provider);
-        Bytes block_body_data = co_await canonical_body_for_storage_provider(block_number);
-        ByteView block_body_data_view{block_body_data};
+        auto block_body_data = co_await canonical_body_for_storage_provider(block_number);
+        if (!block_body_data) {
+            throw std::invalid_argument("Bad block_num  " + std::to_string(block_number));
+        }
+        ByteView block_body_data_view{*block_body_data};
         const auto stored_body = unwrap_or_throw(decode_stored_block_body(block_body_data_view));
         co_return stored_body.base_txn_id + stored_body.txn_count - 1;
     }

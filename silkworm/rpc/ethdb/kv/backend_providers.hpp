@@ -46,7 +46,7 @@ inline db::chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from
 }
 
 inline db::chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider(ethbackend::BackEnd* backend) {
-    return [backend](BlockNum number) -> Task<Bytes> {
+    return [backend](BlockNum number) -> Task<std::optional<Bytes>> {
         co_return co_await backend->canonical_body_for_storage(number);
     };
 }

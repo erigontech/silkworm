@@ -22,7 +22,6 @@
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
-#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
@@ -260,25 +259,6 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-//using TestFunc = std::function<Task<bool>(int64_t)>;
-//Task<int64_t> ots_binary_search(int64_t n, TestFunc& func) {
-//    int64_t left = 0;
-//    int64_t right = n;
-//
-//    SILK_LOG << "ots_binary_search [0,  " << right << "]";
-//
-//    while (left < right) {
-//        auto mid = (left + right) >> 1;
-//
-//        if (! co_await func(mid)) {
-//            left = mid + 1;
-//        } else {
-//            right = mid;
-//        }
-//    }
-//    co_return left;
-//}
-
 Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
@@ -411,88 +391,6 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             SILK_INFO << "No block found for txn_id " << creation_txn_id;
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
-        /*
-        auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);
-        auto account_change_set_cursor = co_await tx->cursor_dup_sort(table::kAccountChangeSetName);
-        const ByteView sender_byte_view{sender.bytes};
-        auto key_value = co_await account_history_cursor->seek(sender_byte_view);
-
-        std::vector<BlockNum> account_block_numbers;
-
-        BlockNum max_block_prev_chunk = 0;
-        roaring::Roaring64Map bitmap;
-
-        while (true) {
-            if (key_value.key.empty() || !key_value.key.starts_with(sender_byte_view)) {
-                auto plain_state_cursor = co_await tx->cursor(table::kPlainStateName);
-                auto account_payload = co_await plain_state_cursor->seek(sender_byte_view);
-                auto account = Account::from_encoded_storage(account_payload.value);
-
-                if (account.has_value() && account.value().nonce > nonce) {
-                    break;
-                }
-
-                reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
-            }
-
-            bitmap = bitmap::parse(key_value.value);
-            auto const max_block = bitmap.maximum();
-            auto block_key{db::block_key(max_block)};
-            auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
-            if (account_payload.starts_with(sender_byte_view)) {
-                account_payload = account_payload.substr(sender_byte_view.length());
-                auto account = Account::from_encoded_storage(account_payload);
-
-                if (account.has_value() && account.value().nonce > nonce) {
-                    break;
-                }
-            }
-            max_block_prev_chunk = max_block;
-            key_value = co_await account_history_cursor->next();
-        }
-
-        uint64_t cardinality = bitmap.cardinality();
-        account_block_numbers.reserve(cardinality);
-        bitmap.toUint64Array(account_block_numbers.data());
-
-        uint64_t idx = 0;
-        for (uint64_t i = 0; i < cardinality; ++i) {
-            auto block_number = account_block_numbers[i];
-            auto block_key{db::block_key(block_number)};
-            auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
-            if (account_payload.starts_with(sender_byte_view)) {
-                account_payload = account_payload.substr(sender_byte_view.length());
-                auto account = Account::from_encoded_storage(account_payload);
-
-                if (account.has_value() && account.value().nonce > nonce) {
-                    idx = i;
-                    break;
-                }
-            }
-        }
-
-        auto nonce_block = max_block_prev_chunk;
-        if (idx > 0) {
-            nonce_block = account_block_numbers[idx - 1];
-        }
-
-        const auto chain_storage{tx->create_storage()};
-        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, nonce_block);
-        if (block_with_hash) {
-            for (const auto& transaction : block_with_hash->block.transactions) {
-                if (transaction.sender() == sender && transaction.nonce == nonce) {
-                    reply = make_json_content(request, transaction.hash());
-                    co_await tx->close();
-                    co_return;
-                }
-            }
-            reply = make_json_content(request, nlohmann::detail::value_t::null);
-        } else {
-            reply = make_json_content(request, nlohmann::detail::value_t::null);
-        }
-         */
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request, nlohmann::detail::value_t::null);

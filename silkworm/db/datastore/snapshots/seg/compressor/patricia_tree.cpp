@@ -80,12 +80,12 @@ struct PatriciaTreePathWalker {
     uint32_t tail{};
 };
 
-static inline uint32_t shift_left(uint32_t x, uint32_t bits) {
+static uint32_t shift_left(uint32_t x, uint32_t bits) {
     if (bits >= 32) return 0;
     return x << bits;
 }
 
-static inline uint32_t shift_right(uint32_t x, uint32_t bits) {
+static uint32_t shift_right(uint32_t x, uint32_t bits) {
     if (bits >= 32) return 0;
     return x >> bits;
 }

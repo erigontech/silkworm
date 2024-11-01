@@ -31,7 +31,7 @@
 namespace silkworm::rpc {
 
 // Gas limit cap for eth_call (increased wrt RPCDaemon)
-constexpr uint64_t kDefaultGasLimit{50'000'000};
+inline constexpr uint64_t kDefaultGasLimit{50'000'000};
 
 struct Call {
     std::optional<evmc::address> from;

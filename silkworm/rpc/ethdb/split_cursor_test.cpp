@@ -34,14 +34,14 @@ using evmc::literals::operator""_address;
 using testing::_;
 using testing::InvokeWithoutArgs;
 
-const silkworm::Bytes kValue{*silkworm::from_hex("0x000000000000000000000000000000000000000000000000000000000000001134567")};
-const silkworm::Bytes kEmptyKey{};
-const silkworm::Bytes kShortKey{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5")};
-const silkworm::Bytes kWrongKeyLastByte{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5a7430")};
-const silkworm::Bytes kWrongKeyFirstByte{*silkworm::from_hex("0x59a4d35bd00b1843ec5292217e71dace5e5a7430")};
-const silkworm::Bytes kKey{(0x79a4d35bd00b1843ec5292217e71dace5e5a7439_address).bytes, kAddressLength};
-const silkworm::Bytes kCorrectKey{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5a7439")};
-const silkworm::Bytes kLocation{(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32).bytes, kHashLength};
+static const silkworm::Bytes kValue{*silkworm::from_hex("0x000000000000000000000000000000000000000000000000000000000000001134567")};
+static const silkworm::Bytes kEmptyKey{};
+static const silkworm::Bytes kShortKey{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5")};
+static const silkworm::Bytes kWrongKeyLastByte{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5a7430")};
+static const silkworm::Bytes kWrongKeyFirstByte{*silkworm::from_hex("0x59a4d35bd00b1843ec5292217e71dace5e5a7430")};
+static const silkworm::Bytes kKey{(0x79a4d35bd00b1843ec5292217e71dace5e5a7439_address).bytes, kAddressLength};
+static const silkworm::Bytes kCorrectKey{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5a7439")};
+static const silkworm::Bytes kLocation{(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32).bytes, kHashLength};
 
 TEST_CASE("split cursor dup sort") {
     WorkerPool pool{1};

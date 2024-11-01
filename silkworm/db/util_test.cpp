@@ -24,8 +24,8 @@ namespace silkworm::db {
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
-constexpr evmc::address kZeroAddress = 0x0000000000000000000000000000000000000000_address;
-constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+static constexpr evmc::address kZeroAddress = 0x0000000000000000000000000000000000000000_address;
+static constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 TEST_CASE("all-zero storage prefix", "[core][util]") {
     const auto address_composite_key{storage_prefix(kZeroAddress, 0)};

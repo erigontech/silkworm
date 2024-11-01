@@ -33,8 +33,8 @@
 
 namespace silkworm::rpc {
 
-inline constexpr auto kTxAccessListStorageKeyGas = 1900;  // per storage key specified in EIP 2930 access list
-inline constexpr auto kTxAccessListAddressGas = 2400;     // per address specified in EIP 2930 access list
+static constexpr size_t kTxAccessListStorageKeyGas = 1900;  // per storage key specified in EIP 2930 access list
+static constexpr size_t kTxAccessListAddressGas = 2400;     // per address specified in EIP 2930 access list
 
 void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, int64_t gas,
                                             const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {

@@ -43,7 +43,7 @@ namespace silkworm::rpc::commands {
 using namespace silkworm::db;
 using db::state::StateReader;
 
-constexpr int kCurrentApiLevel{8};
+static constexpr int kCurrentApiLevel{8};
 
 Task<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
     reply = make_json_content(request, kCurrentApiLevel);
@@ -82,7 +82,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         }
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, kInternalError, e.what());
+        reply = make_json_content(request, false);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request, kServerError, "unexpected exception");

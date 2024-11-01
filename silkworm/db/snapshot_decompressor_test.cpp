@@ -407,15 +407,15 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]"
     }
 }
 
-const std::string kLoremIpsum{
+static const std::string kLoremIpsum{
     "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et\n"
     "dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo\n"
     "consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur\n"
     "Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum"};
 
-const std::vector<std::string> kLoremIpsumWords = absl::StrSplit(kLoremIpsum, ' ');
+static const std::vector<std::string> kLoremIpsumWords = absl::StrSplit(kLoremIpsum, ' ');
 
-const Bytes kLoremIpsumDict{*from_hex(
+static const Bytes kLoremIpsumDict{*from_hex(
     "000000000000004200000000000000000000000000000000000000000000001e"
     "010003060409040b040a050d07100716071107050507060c0715070e04080f4c"
     "6f72656d20300f697073756d20310f646f6c6f72203201736974203307616d65"

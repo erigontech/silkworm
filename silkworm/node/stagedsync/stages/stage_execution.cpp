@@ -238,9 +238,9 @@ Stage::Result Execution::execute_batch(RWTxn& txn, BlockNum max_block_num, Analy
                 log_time = now + 5s;
             }
 
-            const auto write_receipts = block_num_ >= prune_receipts_threshold;
-            const auto write_traces = block_num_ >= prune_call_traces_threshold;
-            constexpr auto kWriteChangeSets = true;
+            const bool write_receipts = block_num_ >= prune_receipts_threshold;
+            const bool write_traces = block_num_ >= prune_call_traces_threshold;
+            static constexpr bool kWriteChangeSets = true;
 
             execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets};
             try {
@@ -361,7 +361,7 @@ Stage::Result Execution::unwind(RWTxn& txn) {
         for (const auto& map_config : kUnwindTables) {
             auto unwind_cursor = txn.rw_cursor(map_config);
             auto erased{cursor_erase(*unwind_cursor, start_key, CursorMoveDirection::kForward)};
-            log::Info() << "Erased " << erased << " records from " << map_config.name;
+            SILK_INFO << "Erased " << erased << " records from " << map_config.name;
         }
         stages::write_stage_progress(txn, stages::kExecutionKey, to);
         txn.commit_and_renew();

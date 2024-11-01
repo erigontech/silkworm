@@ -441,8 +441,8 @@ void Senders::recover_batch(ThreadPool& worker_pool, const secp256k1_context* co
     const auto start = sw.start();
 
     // Wait until total unfinished tasks in worker pool falls below 2 * num workers
-    static const auto kMaxUnfinishedTasks{2 * worker_pool.get_thread_count()};
-    while (worker_pool.get_tasks_total() >= kMaxUnfinishedTasks) {
+    const size_t max_unfinished_tasks = 2 * worker_pool.get_thread_count();
+    while (worker_pool.get_tasks_total() >= max_unfinished_tasks) {
         std::this_thread::sleep_for(1ms);
     }
 

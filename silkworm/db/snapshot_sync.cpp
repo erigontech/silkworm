@@ -82,7 +82,7 @@ Task<void> SnapshotSync::run() {
     [[maybe_unused]] auto _ = gsl::finally([this]() { this->is_stopping_latch_.count_down(); });
 
     if (!settings_.enabled) {
-        log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
+        SILK_INFO << "Snapshot sync disabled, no snapshot must be downloaded";
         co_return;
     }
 

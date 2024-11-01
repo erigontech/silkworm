@@ -48,7 +48,7 @@ void InboundGetBlockBodies::execute(db::DataStoreRef db, HeaderChain&, BodySeque
     reply.request = body_retrieval.recover(packet_.request);
 
     if (reply.request.empty()) {
-        log::Trace() << "[WARNING] Not replying to " << identify(*this) << ", no blocks found";
+        SILK_TRACE << "[WARNING] Not replying to " << identify(*this) << ", no blocks found";
         return;
     }
 

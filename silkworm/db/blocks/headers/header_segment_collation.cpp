@@ -45,7 +45,7 @@ void HeaderSegmentCollation::prune(RWTxn& txn, BlockNumRange range) const {
         delete_header(txn, i, hash);
 
         if ((count > 10000) && ((count % 10000) == 0)) {
-            log::Debug("HeaderSegmentCollation") << "cleaned up until block " << i;
+            SILK_DEBUG_M("HeaderSegmentCollation") << "cleaned up until block " << i;
         }
     }
 }

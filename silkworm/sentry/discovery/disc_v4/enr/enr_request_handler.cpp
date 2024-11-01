@@ -59,9 +59,10 @@ Task<void> EnrRequestHandler::handle(
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled)
             throw;
-        log::Warning("disc_v4") << "EnrRequestHandler::handle failed to reply"
-                                << " to " << recipient
-                                << " due to exception: " << ex.what();
+        SILK_WARN_M("disc_v4")
+            << "EnrRequestHandler::handle failed to reply"
+            << " to " << recipient
+            << " due to exception: " << ex.what();
     }
 }
 

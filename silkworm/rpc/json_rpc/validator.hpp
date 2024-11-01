@@ -46,9 +46,9 @@ class Validator {
     ValidationResult validate_number(const nlohmann::json& number);
     ValidationResult validate_null(const nlohmann::json& value);
 
-    inline static std::string openrpc_version_;
-    inline static std::map<std::string, nlohmann::json> method_specs_;
-    inline static std::map<std::string, boost::regex> patterns_;
+    static inline std::string openrpc_version_;
+    static inline std::map<std::string, nlohmann::json> method_specs_;
+    static inline std::map<std::string, boost::regex> patterns_;
     bool accept_unknown_methods_{true};
 };
 

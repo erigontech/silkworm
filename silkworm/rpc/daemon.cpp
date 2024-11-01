@@ -49,10 +49,10 @@
 namespace silkworm::rpc {
 
 //! The maximum receive message in bytes for gRPC channels.
-constexpr auto kRpcMaxReceiveMessageSize{64 * 1024 * 1024};  // 64 MiB
+static constexpr int kRpcMaxReceiveMessageSize = 64 * 1024 * 1024;  // 64 MiB
 
 //! The maximum number of concurrent readers allowed for MDBX datastore.
-static constexpr const int kDatabaseMaxReaders{32000};
+static constexpr int kDatabaseMaxReaders = 32000;
 
 void DaemonChecklist::success_or_throw() const {
     for (const auto& protocol_check : protocol_checklist) {

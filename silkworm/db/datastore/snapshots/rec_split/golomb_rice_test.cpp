@@ -28,8 +28,8 @@ namespace silkworm::snapshots::rec_split {
 using silkworm::snapshots::encoding::Uint32Sequence;
 using silkworm::snapshots::encoding::Uint64Sequence;
 
-static const size_t kGolombRiceTestNumKeys{128};
-static const size_t kGolombRiceTestNumTrees{1'000};
+static constexpr size_t kGolombRiceTestNumKeys{128};
+static constexpr size_t kGolombRiceTestNumTrees{1'000};
 
 static Uint64Sequence generate_keys() {
     static RandomNumber rnd(32, 64);

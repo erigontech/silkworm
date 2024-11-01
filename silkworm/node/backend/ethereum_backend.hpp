@@ -29,7 +29,7 @@
 
 namespace silkworm {
 
-constexpr const char* kDefaultNodeName{"silkworm"};
+inline constexpr const char* kDefaultNodeName{"silkworm"};
 
 class EthereumBackEnd {
   public:

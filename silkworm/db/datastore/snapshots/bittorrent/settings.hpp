@@ -24,7 +24,7 @@ namespace silkworm::snapshots::bittorrent {
 
 //! The settings for handling BitTorrent protocol
 struct BitTorrentSettings {
-    inline const static std::filesystem::path kDefaultTorrentRepoPath{".torrent"};
+    static inline const std::filesystem::path kDefaultTorrentRepoPath{".torrent"};
 
     /* BitTorrentClient configuration settings */
     //! Directory path where torrent files will be stored

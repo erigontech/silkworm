@@ -121,10 +121,8 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
         silkworm::Environment::set_stop_before_stage(silkworm::db::stages::kSendersKey);
     }
 
-    silkworm::log::Info("Starting fork validator");
+    SILK_INFO << "Starting fork validator";
     set_node_settings(handle, *settings, mdbx_env);
-
-    silkworm::log::Info("Settings done");
 
     silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
     silkworm::db::RWAccess rw_access{unmanaged_env};
@@ -140,11 +138,11 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
         make_stages_factory(handle->node_settings, data_model_factory),
         rw_access);
 
-    silkworm::log::Info("Execution engine created");
+    SILK_DEBUG << "Execution engine created";
 
     handle->execution_engine->open();
 
-    silkworm::log::Info("Execution engine opened");
+    SILK_INFO << "Execution engine opened";
 
     return SILKWORM_OK;
 }

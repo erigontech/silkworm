@@ -37,9 +37,9 @@
 
 // In debug mode we dump malformed messages received from Sentry
 #ifdef NDEBUG
-constexpr bool kDumpMalformedMsg{false};
+static constexpr bool kDumpMalformedMsg{false};
 #else
-constexpr bool kDumpMalformedMsg{true};
+static constexpr bool kDumpMalformedMsg{true};
 #endif
 
 namespace silkworm {
@@ -89,10 +89,11 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
         message = std::shared_ptr(decode_inbound_message(message_from_peer));
     } catch (DecodingException& error) {
         PeerId peer_id = message_from_peer.peer_public_key->serialized();
-        log::Warning(kLogTitle) << "received and ignored a malformed message peer=" << human_readable_id(peer_id)
-                                << " msg_id=" << static_cast<int>(message_from_peer.message.id)
-                                << " eth_message_id=" << static_cast<int>(eth_message_id)
-                                << " error=" << error.what();
+        SILK_WARN_M(kLogTitle)
+            << "received and ignored a malformed message peer=" << human_readable_id(peer_id)
+            << " msg_id=" << static_cast<int>(message_from_peer.message.id)
+            << " eth_message_id=" << static_cast<int>(eth_message_id)
+            << " error=" << error.what();
         if (kDumpMalformedMsg) {
             static int i{0};
             std::ofstream malformed_msg{"sentry_malformed_msg_" + std::to_string(++i) + ".txt", std::ios::binary};
@@ -114,7 +115,7 @@ Task<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& m
     }
 
     if (!message) {
-        log::Warning(kLogTitle) << "InboundMessage " << static_cast<int>(eth_message_id) << " received but ignored";
+        SILK_WARN_M(kLogTitle) << "InboundMessage " << static_cast<int>(eth_message_id) << " received but ignored";
         co_return;
     }
 
@@ -294,7 +295,7 @@ static std::string describe_peer_event(
 Task<void> SentryClient::receive_peer_events() {
     // Get the current active peers count.
     // This initial value is later updated by on_peer_event.
-    log::Info(kLogTitle) << (co_await count_active_peers_async()) << " active peers";
+    SILK_INFO_M(kLogTitle) << (co_await count_active_peers_async()) << " active peers";
 
     std::function<Task<void>(silkworm::sentry::api::PeerEvent)> consumer = [this](auto event) -> Task<void> {
         co_await count_active_peers_async();
@@ -302,7 +303,7 @@ Task<void> SentryClient::receive_peer_events() {
         auto service = co_await sentry_client_->service();
         auto peer_info_opt = co_await service->peer_by_id(event.peer_public_key.value());
 
-        log::Info(kLogTitle) << describe_peer_event(event, peer_info_opt, active_peers());
+        SILK_INFO_M(kLogTitle) << describe_peer_event(event, peer_info_opt, active_peers());
     };
 
     auto service = co_await sentry_client_->service();

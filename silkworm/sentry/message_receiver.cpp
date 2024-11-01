@@ -70,13 +70,13 @@ Task<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurrency::E
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Trace("sentry") << "MessageReceiver::unsubscribe_on_signal cancelled";
+            SILK_TRACE_M("sentry") << "MessageReceiver::unsubscribe_on_signal cancelled";
             co_return;
         }
-        log::Error("sentry") << "MessageReceiver::unsubscribe_on_signal system_error: " << ex.what();
+        SILK_ERROR_M("sentry") << "MessageReceiver::unsubscribe_on_signal system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "MessageReceiver::unsubscribe_on_signal exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "MessageReceiver::unsubscribe_on_signal exception: " << ex.what();
         throw;
     }
 
@@ -142,13 +142,13 @@ Task<void> MessageReceiver::on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> 
         co_await receive_messages(peer);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "MessageReceiver::on_peer_added_in_strand cancelled";
+            SILK_DEBUG_M("sentry") << "MessageReceiver::on_peer_added_in_strand cancelled";
             co_return;
         }
-        log::Error("sentry") << "MessageReceiver::on_peer_added_in_strand system_error: " << ex.what();
+        SILK_ERROR_M("sentry") << "MessageReceiver::on_peer_added_in_strand system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "MessageReceiver::on_peer_added_in_strand exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "MessageReceiver::on_peer_added_in_strand exception: " << ex.what();
         throw;
     }
 }

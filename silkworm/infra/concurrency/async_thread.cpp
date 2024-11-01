@@ -47,9 +47,9 @@ Task<void> async_thread(
     boost::thread thread{attributes, [run = std::move(run), name = name, &run_exception, &thread_finished_notifier] {
                              log::set_thread_name(name);
                              try {
-                                 log::Trace() << "Async thread [" << name << "] run started";
+                                 SILK_TRACE << "Async thread [" << name << "] run started";
                                  run();
-                                 log::Trace() << "Async thread [" << name << "] run completed";
+                                 SILK_TRACE << "Async thread [" << name << "] run completed";
                              } catch (...) {
                                  run_exception = std::current_exception();
                              }
@@ -57,7 +57,7 @@ Task<void> async_thread(
                              try {
                                  thread_finished_notifier.notify();
                              } catch (const std::exception& ex) {
-                                 log::Error() << "async_thread thread_finished_notifier.notify exception: " << ex.what();
+                                 SILK_ERROR << "async_thread thread_finished_notifier.notify exception: " << ex.what();
                              }
                          }};
 
@@ -69,16 +69,16 @@ Task<void> async_thread(
             try {
                 stop();
             } catch (const std::exception& stop_ex) {
-                log::Error() << "async_thread stop exception: " << stop_ex.what();
+                SILK_ERROR << "async_thread stop exception: " << stop_ex.what();
                 throw;
             }
             thread.join();
         } else {
-            log::Error() << "async_thread thread_finished_notifier.wait system_error: " << ex.what();
+            SILK_ERROR << "async_thread thread_finished_notifier.wait system_error: " << ex.what();
             throw;
         }
     } catch (...) {
-        log::Critical() << "async_thread thread_finished_notifier.wait unexpected exception";
+        SILK_CRIT << "async_thread thread_finished_notifier.wait unexpected exception";
         throw;
     }
 

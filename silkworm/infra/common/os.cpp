@@ -58,10 +58,10 @@ bool set_max_file_descriptors(uint64_t max_descriptors) {
     return set_result == 0;
 #elif defined(_WIN32)
     // Hard limit is hard-coded on Windows
-    constexpr auto kMaxNumFiles = 8'192;
+    static constexpr int kMaxNumFiles = 8'192;
     // Try to update the *soft* limit (not over the hard limit i.e. max allowance)
     const int num_max_descriptors = max_descriptors < kMaxNumFiles ? static_cast<int>(max_descriptors) : kMaxNumFiles;
-    const auto result = _setmaxstdio(num_max_descriptors);
+    const int result = _setmaxstdio(num_max_descriptors);
     return result == num_max_descriptors;
 #else
     (void)max_descriptors;

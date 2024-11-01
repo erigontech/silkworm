@@ -32,7 +32,7 @@
 namespace silkworm::log {
 
 //! The fixed size for thread name in log traces
-constexpr auto kThreadNameFixedSize{11};
+static constexpr size_t kThreadNameFixedSize = 11;
 
 static Settings settings_{};
 static std::mutex out_mtx{};
@@ -84,7 +84,7 @@ std::string get_thread_name() {
     return thread_name_;
 }
 
-static inline std::pair<const char*, const char*> get_level_settings(Level level) {
+static std::pair<const char*, const char*> get_level_settings(Level level) {
     switch (level) {
         case Level::kTrace:
             return {"TRACE", kColorCoal};

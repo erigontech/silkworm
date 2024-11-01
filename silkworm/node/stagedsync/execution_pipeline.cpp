@@ -110,7 +110,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
     auto log_timer = make_log_timer();
 
     sync_context_->target_height = target_height;
-    log::Info("ExecutionPipeline") << "Forward start";
+    SILK_INFO_M("ExecutionPipeline") << "Forward start";
 
     try {
         Stage::Result result = Stage::Result::kSuccess;
@@ -160,7 +160,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             if (stage_result != Stage::Result::kSuccess) { /* clang-format off */
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
                 log::Error(get_log_prefix(current_stage_name), {"op", "Forward", "returned", result_description});
-                log::Error("ExecPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
+                SILK_ERROR_M("ExecutionPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             } /* clang-format on */
 
@@ -186,10 +186,10 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                                    ", head_header_height= " + to_string(head_header_number_));
         }
 
-        log::Info("ExecutionPipeline") << "Forward done";
+        SILK_INFO_M("ExecutionPipeline") << "Forward done";
 
         if (stop_at_block && stop_at_block <= head_header_number_) {
-            log::Warning("ExecutionPipeline") << "Interrupted by STOP_AT_BLOCK at block " + to_string(*stop_at_block);
+            SILK_WARN_M("ExecutionPipeline") << "Interrupted by STOP_AT_BLOCK at block " + to_string(*stop_at_block);
             return Stage::Result::kStoppedByEnv;
         }
 
@@ -204,7 +204,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
     using std::to_string;
     StopWatch stages_stop_watch(true);
     auto log_timer = make_log_timer();
-    log::Info("ExecutionPipeline") << "Unwind start";
+    SILK_INFO_M("ExecutionPipeline") << "Unwind start";
 
     try {
         sync_context_->unwind_point = unwind_point;
@@ -230,7 +230,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             if (stage_result != Stage::Result::kSuccess) {
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
                 log::Error(get_log_prefix(current_stage_name), {"op", "Unwind", "returned", result_description});
-                log::Error("ExecPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
+                SILK_ERROR_M("ExecutionPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
@@ -256,7 +256,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         sync_context_->unwind_point.reset();
         sync_context_->bad_block_hash.reset();
 
-        log::Info("ExecutionPipeline") << "Unwind done";
+        SILK_INFO_M("ExecutionPipeline") << "Unwind done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
@@ -268,7 +268,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
 Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
     auto log_timer = make_log_timer();
-    log::Info("ExecutionPipeline") << "Prune start";
+    SILK_INFO_M("ExecutionPipeline") << "Prune start";
 
     try {
         current_stages_count_ = stages_forward_order_.size();
@@ -291,7 +291,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
             if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(current_stage_name), {"op", "Prune", "returned",
                                                                 std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
-                log::Error("ExecPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
+                SILK_ERROR_M("ExecutionPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
@@ -307,7 +307,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
 
-        log::Info("ExecutionPipeline") << "Prune done";
+        SILK_INFO_M("ExecutionPipeline") << "Prune done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {

@@ -89,12 +89,12 @@ static void log_exception(const std::exception_ptr& ex_ptr, const char* message)
         }
     } catch (const boost::system::system_error& ex) {
         if (ex.code() != boost::system::errc::operation_canceled) {
-            log::Error("sentry") << message << " system_error: " << ex.what();
+            SILK_ERROR_M("sentry") << message << " system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error("sentry") << message << " exception: " << ex.what();
+        SILK_ERROR_M("sentry") << message << " exception: " << ex.what();
     } catch (...) {
-        log::Error("sentry") << message << " unexpected exception";
+        SILK_ERROR_M("sentry") << message << " unexpected exception";
     }
 }
 

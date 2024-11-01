@@ -31,7 +31,7 @@
 
 namespace silkworm::sentry::discovery::node_db {
 
-static const char* kSqlCreateSchema = R"sql(
+static constexpr const char* kSqlCreateSchema = R"sql(
 
 PRAGMA journal_mode = WAL;
 
@@ -116,7 +116,7 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<bool> upsert_node_address(NodeId id, NodeAddress address) override {
-        static const char* sql_ip_v4 = R"sql(
+        static constexpr const char* kSqlIpV4 = R"sql(
             INSERT INTO nodes(
                 id,
                 ip,
@@ -129,7 +129,7 @@ class NodeDbSqliteImpl : public NodeDb {
                 port_rlpx = excluded.port_rlpx
         )sql";
 
-        static const char* sql_ip_v6 = R"sql(
+        static constexpr const char* kSqlIpV6 = R"sql(
             INSERT INTO nodes(
                 id,
                 ip_v6,
@@ -142,19 +142,19 @@ class NodeDbSqliteImpl : public NodeDb {
                 ip_v6_port_rlpx = excluded.ip_v6_port_rlpx
         )sql";
 
-        static const char* exists_sql = R"sql(
+        static constexpr const char* kExistsSql = R"sql(
             SELECT 1 FROM nodes WHERE id = ?
         )sql";
 
-        SQLite::Statement exists_query{*db_, exists_sql};
+        SQLite::Statement exists_query{*db_, kExistsSql};
         exists_query.bind(1, id.hex());
 
         const char* sql = nullptr;
         if (address.ip.is_v4()) {
-            sql = sql_ip_v4;
+            sql = kSqlIpV4;
         }
         if (address.ip.is_v6()) {
-            sql = sql_ip_v6;
+            sql = kSqlIpV6;
         }
         SILKWORM_ASSERT(sql);
         if (!sql) {
@@ -200,7 +200,7 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT
                 ip,
                 port_disc,
@@ -209,11 +209,11 @@ class NodeDbSqliteImpl : public NodeDb {
             WHERE id = ?
         )sql";
 
-        return find_node_address_sql(id, sql);
+        return find_node_address_sql(id, kSql);
     }
 
     Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT
                 ip_v6,
                 ip_v6_port_disc,
@@ -222,58 +222,58 @@ class NodeDbSqliteImpl : public NodeDb {
             WHERE id = ?
         )sql";
 
-        return find_node_address_sql(id, sql);
+        return find_node_address_sql(id, kSql);
     }
 
     Task<void> update_next_ping_time(NodeId id, Time value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET next_ping_time = ? WHERE id = ?
         )sql";
 
-        set_node_property_time(id, sql, value);
+        set_node_property_time(id, kSql, value);
         co_return;
     }
 
     Task<std::optional<Time>> find_next_ping_time(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT next_ping_time FROM nodes WHERE id = ?
         )sql";
 
-        co_return get_node_property_time(id, sql);
+        co_return get_node_property_time(id, kSql);
     }
 
     Task<void> update_last_pong_time(NodeId id, Time value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET last_pong_time = ? WHERE id = ?
         )sql";
 
-        set_node_property_time(id, sql, value);
+        set_node_property_time(id, kSql, value);
         co_return;
     }
 
     Task<std::optional<Time>> find_last_pong_time(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT last_pong_time FROM nodes WHERE id = ?
         )sql";
 
-        co_return get_node_property_time(id, sql);
+        co_return get_node_property_time(id, kSql);
     }
 
     Task<void> update_ping_fails(NodeId id, size_t value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET ping_fails = ? WHERE id = ?
         )sql";
 
-        set_node_property_int(id, sql, static_cast<int64_t>(value));
+        set_node_property_int(id, kSql, static_cast<int64_t>(value));
         co_return;
     }
 
     Task<std::optional<size_t>> find_ping_fails(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT ping_fails FROM nodes WHERE id = ?
         )sql";
 
-        auto value = get_node_property_int(id, sql);
+        auto value = get_node_property_int(id, kSql);
         if (value) {
             co_return static_cast<size_t>(*value);
         } else {
@@ -282,37 +282,37 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<void> update_peer_disconnected_time(NodeId id, Time value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET peer_disconnected_time = ? WHERE id = ?
         )sql";
 
-        set_node_property_time(id, sql, value);
+        set_node_property_time(id, kSql, value);
         co_return;
     }
 
     Task<std::optional<Time>> find_peer_disconnected_time(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT peer_disconnected_time FROM nodes WHERE id = ?
         )sql";
 
-        co_return get_node_property_time(id, sql);
+        co_return get_node_property_time(id, kSql);
     }
 
     Task<void> update_peer_is_useless(NodeId id, bool value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET peer_is_useless = ? WHERE id = ?
         )sql";
 
-        set_node_property_int(id, sql, value ? 1 : 0);
+        set_node_property_int(id, kSql, value ? 1 : 0);
         co_return;
     }
 
     Task<std::optional<bool>> find_peer_is_useless(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT peer_is_useless FROM nodes WHERE id = ?
         )sql";
 
-        auto value = get_node_property_int(id, sql);
+        auto value = get_node_property_int(id, kSql);
         if (value) {
             co_return *value;
         } else {
@@ -321,20 +321,20 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<void> update_distance(NodeId id, size_t value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET distance = ? WHERE id = ?
         )sql";
 
-        set_node_property_int(id, sql, static_cast<int64_t>(value));
+        set_node_property_int(id, kSql, static_cast<int64_t>(value));
         co_return;
     }
 
     Task<std::optional<size_t>> find_distance(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT distance FROM nodes WHERE id = ?
         )sql";
 
-        auto value = get_node_property_int(id, sql);
+        auto value = get_node_property_int(id, kSql);
         if (value) {
             co_return static_cast<size_t>(*value);
         } else {
@@ -343,20 +343,20 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<void> update_enr_seq_num(NodeId id, uint64_t value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET enr_seq_num = ? WHERE id = ?
         )sql";
 
-        set_node_property_int(id, sql, static_cast<int64_t>(value));
+        set_node_property_int(id, kSql, static_cast<int64_t>(value));
         co_return;
     }
 
     Task<std::optional<uint64_t>> find_enr_seq_num(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT enr_seq_num FROM nodes WHERE id = ?
         )sql";
 
-        auto value = get_node_property_int(id, sql);
+        auto value = get_node_property_int(id, kSql);
         if (value) {
             co_return static_cast<uint64_t>(*value);
         } else {
@@ -365,11 +365,11 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<void> update_eth1_fork_id(NodeId id, std::optional<Bytes> value) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             UPDATE nodes SET eth1_fork_id = ? WHERE id = ?
         )sql";
 
-        SQLite::Statement statement{*db_, sql};
+        SQLite::Statement statement{*db_, kSql};
         if (value) {
             statement.bindNoCopy(1, value->data(), static_cast<int>(value->size()));
         } else {
@@ -381,11 +381,11 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<std::optional<Bytes>> find_eth1_fork_id(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT eth1_fork_id FROM nodes WHERE id = ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
+        SQLite::Statement query{*db_, kSql};
         query.bind(1, id.hex());
 
         if (!query.executeStep()) {
@@ -403,7 +403,7 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT id FROM nodes
             WHERE ((next_ping_time IS NULL) OR (next_ping_time < ?))
                 AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
@@ -411,7 +411,7 @@ class NodeDbSqliteImpl : public NodeDb {
             LIMIT ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
+        SQLite::Statement query{*db_, kSql};
         query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
         query.bind(2, static_cast<int64_t>(limit));
 
@@ -426,7 +426,7 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<std::vector<NodeId>> find_useful_nodes(Time min_pong_time, size_t limit) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT id FROM nodes
             WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
                 AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
@@ -434,7 +434,7 @@ class NodeDbSqliteImpl : public NodeDb {
             LIMIT ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
+        SQLite::Statement query{*db_, kSql};
         query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(min_pong_time)));
         query.bind(2, static_cast<int64_t>(limit));
 
@@ -449,7 +449,7 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<std::vector<NodeId>> find_lookup_candidates(FindLookupCandidatesQuery query_params) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             SELECT id FROM nodes
             WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
                 AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
@@ -458,7 +458,7 @@ class NodeDbSqliteImpl : public NodeDb {
             LIMIT ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
+        SQLite::Statement query{*db_, kSql};
         query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.min_pong_time)));
         query.bind(2, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_lookup_time)));
         query.bind(3, static_cast<int64_t>(query_params.limit));
@@ -477,10 +477,10 @@ class NodeDbSqliteImpl : public NodeDb {
         if (ids.empty())
             co_return;
 
-        static const char* sql_template = R"sql(
+        static constexpr const char* kSqlTemplate = R"sql(
             UPDATE nodes SET lookup_time = ? WHERE id IN (???)
         )sql";
-        auto sql = replace_placeholders(sql_template, "???", ids.size(), "NULL");
+        auto sql = replace_placeholders(kSqlTemplate, "???", ids.size(), "NULL");
 
         SQLite::Statement statement{*db_, sql};
         statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
@@ -500,7 +500,7 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<std::vector<NodeId>> find_peer_candidates(FindPeerCandidatesQuery query_params) override {
-        static const char* sql_template = R"sql(
+        static constexpr const char* kSqlTemplate = R"sql(
             SELECT id FROM nodes
             WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
                 AND ((peer_disconnected_time IS NULL) OR (peer_disconnected_time < ?))
@@ -510,7 +510,7 @@ class NodeDbSqliteImpl : public NodeDb {
             ORDER BY distance, RANDOM()
             LIMIT :limit
         )sql";
-        auto sql = replace_placeholders(sql_template, "???", query_params.exclude_ids.size(), "''");
+        auto sql = replace_placeholders(kSqlTemplate, "???", query_params.exclude_ids.size(), "''");
 
         SQLite::Statement query{*db_, sql};
         query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.min_pong_time)));
@@ -535,10 +535,10 @@ class NodeDbSqliteImpl : public NodeDb {
         if (ids.empty())
             co_return;
 
-        static const char* sql_template = R"sql(
+        static constexpr const char* kSqlTemplate = R"sql(
             UPDATE nodes SET taken_time = ? WHERE id IN (???)
         )sql";
-        auto sql = replace_placeholders(sql_template, "???", ids.size(), "NULL");
+        auto sql = replace_placeholders(kSqlTemplate, "???", ids.size(), "NULL");
 
         SQLite::Statement statement{*db_, sql};
         statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
@@ -558,11 +558,11 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<void> delete_node(NodeId id) override {
-        static const char* sql = R"sql(
+        static constexpr const char* kSql = R"sql(
             DELETE FROM nodes WHERE id = ?
         )sql";
 
-        SQLite::Statement statement{*db_, sql};
+        SQLite::Statement statement{*db_, kSql};
         statement.bind(1, id.hex());
         statement.exec();
         co_return;
@@ -612,7 +612,7 @@ NodeDbSqlite::NodeDbSqlite(const boost::asio::any_io_executor& executor)
 }
 
 NodeDbSqlite::~NodeDbSqlite() {
-    log::Trace("sentry") << "silkworm::sentry::discovery::node_db::NodeDbSqlite::~NodeDbSqlite";
+    SILK_TRACE_M("sentry") << "silkworm::sentry::discovery::node_db::NodeDbSqlite::~NodeDbSqlite";
 }
 
 void NodeDbSqlite::setup(const std::filesystem::path& db_dir_path) {

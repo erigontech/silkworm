@@ -23,7 +23,7 @@ namespace silkworm::sentry {
 Task<void> StatusManager::wait_for_status() {
     auto status = co_await status_channel_.receive();
     status_.set(status);
-    log::Debug("sentry") << "StatusManager received status: network ID = " << status.message.network_id;
+    SILK_DEBUG_M("sentry") << "StatusManager received status: network ID = " << status.message.network_id;
 }
 
 Task<void> StatusManager::run() {
@@ -34,9 +34,9 @@ Task<void> StatusManager::run() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "StatusManager::run unexpected end [operation_canceled]";
+            SILK_DEBUG_M("sentry") << "StatusManager::run unexpected end [operation_canceled]";
         } else {
-            log::Critical("sentry") << "StatusManager::run unexpected end [" + std::string{se.what()} + "]";
+            SILK_CRIT_M("sentry") << "StatusManager::run unexpected end [" + std::string{se.what()} + "]";
         }
         throw se;
     }

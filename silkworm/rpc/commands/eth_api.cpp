@@ -2088,7 +2088,7 @@ Task<void> EthereumRpcApi::handle_base_fee(const nlohmann::json& request, nlohma
         if (chain_config.is_london(header.number + 1)) {
             base_fee = protocol::expected_base_fee_per_gas(header);
         } else {
-            base_fee = 0;  // EIP-4844 blob gas cost (calc_data_fee)block_fees.next_blob_base_fee
+            base_fee = 0;
         }
 
         reply = make_json_content(request, to_quantity(base_fee));

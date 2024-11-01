@@ -357,7 +357,9 @@ void Daemon::start() {
     // Put the interface logs into the data folder
     std::filesystem::path data_folder{};
     if (data_store_) {
-        auto chaindata_path = data_store_->chaindata_env.get_path();
+        db::RWAccess& chaindata = data_store_->chaindata;
+        mdbx::env& chaindata_env = *chaindata;
+        auto chaindata_path = chaindata_env.get_path();
         // Trick to remove any empty filename because MDBX chaindata path ends with '/'
         if (chaindata_path.filename().empty()) {
             chaindata_path = chaindata_path.parent_path();

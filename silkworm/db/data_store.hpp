@@ -25,7 +25,7 @@
 namespace silkworm::db {
 
 struct DataStoreRef {
-    mdbx::env chaindata_env;
+    RWAccess chaindata;
     snapshots::SnapshotRepository& repository;
 };
 
@@ -54,7 +54,7 @@ class DataStore {
     }
 
     DataStoreRef ref() const {
-        return {store_.chaindata_env(), store_.repository(blocks::kBlocksRepositoryName)};
+        return {store_.chaindata_rw(), store_.repository(blocks::kBlocksRepositoryName)};
     }
 
     // TODO: remove this, use RXAccess instead

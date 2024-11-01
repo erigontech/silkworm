@@ -69,7 +69,7 @@ class NodeImpl final {
         return data_store_.ref();
     }
     db::DataModelFactory data_model_factory() {
-        return [this](db::ROTxn& tx) { return db::DataModel{tx, data_store().repository}; };
+        return db::DataModelFactory{data_store()};
     }
     const ChainConfig& chain_config() const {
         return *settings_.node_settings.chain_config;

@@ -106,8 +106,7 @@ TEST_CASE("Sync Stages") {
     const auto tx_sequence_after_genesis{read_map_sequence(txn, table::kBlockTransactions.name)};
     REQUIRE(tx_sequence_after_genesis == 2);  // 2 system txs for genesis
 
-    auto& repository = data_store.ref().repository;
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    db::DataModelFactory data_model_factory{data_store.ref()};
 
     SECTION("BlockHashes") {
         SECTION("Forward/Unwind/Prune args validation") {

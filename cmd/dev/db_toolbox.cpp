@@ -601,8 +601,7 @@ void unwind(EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     auto chain_config{read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
-    auto& repository = data_store.ref().repository;
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    db::DataModelFactory data_model_factory{data_store.ref()};
 
     boost::asio::io_context io_context;
 

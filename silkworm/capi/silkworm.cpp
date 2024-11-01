@@ -605,7 +605,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
     try {
         // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
         db::EnvUnmanaged unmanaged_env{mdbx_env};
-        auto txn = db::RWTxnManaged{unmanaged_env};
+        db::RWAccess rw_access{unmanaged_env};
+        auto txn = rw_access.start_rw_tx();
         const auto env_path = unmanaged_env.get_path();
 
         db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->snapshot_repository})};
@@ -614,9 +615,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
 
-        db::DataModelFactory data_model_factory = [handle](db::ROTxn& tx) {
-            return db::DataModel{tx, *handle->snapshot_repository};
-        };
+        db::DataStoreRef data_store{rw_access, *handle->snapshot_repository};
+        db::DataModelFactory data_model_factory{std::move(data_store)};
 
         BlockProvider block_provider{
             &block_buffer,

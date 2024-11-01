@@ -107,7 +107,7 @@ class TempChainDataStore : public TempChainData {
     db::DataStore* operator->() { return &data_store_; }
 
     db::DataModelFactory data_model_factory() {
-        return [ref = data_store_.ref()](db::ROTxn& tx) { return db::DataModel{tx, ref.repository}; };
+        return db::DataModelFactory{data_store_.ref()};
     }
 
   private:

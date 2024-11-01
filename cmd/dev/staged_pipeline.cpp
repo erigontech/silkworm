@@ -32,6 +32,7 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/genesis.hpp>
@@ -96,18 +97,6 @@ struct StageOrderCompare {
         forward_stages.insert(std::next(history_index_it), stage);
     }
 };
-
-/*static std::unique_ptr<snapshots::SnapshotRepository> setup_data_storage(const DataDirectory& data_dir) {
-    // Set up the data storage snapshot repository
-    snapshots::SnapshotSettings snapshot_settings{
-        .repository_dir = data_dir.snapshots().path(),
-    };
-    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
-        snapshot_settings, std::make_unique<db::SnapshotBundleFactoryImpl>());
-    snapshot_repository->reopen_folder();
-    db::DataModel::set_snapshot_repository(snapshot_repository.get());
-    return snapshot_repository;
-}*/
 
 void list_stages(db::EnvConfig& config) {
     static std::string kTableHeaderFormat{" %-26s %10s "};
@@ -485,14 +474,6 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
         txn.enable_commit();  // this doesn't harm and works even if default changes
     }
 
-    // We should have all the blocks in the interval already validated by stages Headers+Bodies
-    /*const auto headers_progress = db::stages::read_stage_progress(txn, db::stages::kHeadersKey);
-    ensure(headers_progress >= end, [&]() { return "Insufficient Headers progress: " + std::to_string(headers_progress); });
-    const auto bodies_progress = db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey);
-    ensure(bodies_progress >= end, [&]() { return "Insufficient Bodies progress: " + std::to_string(bodies_progress); });*/
-
-    // TODO(canepat) batch or one block at a time for each pipeline forward
-
     const auto chain_config{db::read_chain_config(txn)};
     ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
 
@@ -801,7 +782,6 @@ int main(int argc, char* argv[]) {
             ->check(CLI::Range(0u, UINT32_MAX));
     auto cmd_debug_unwind_step =
         cmd_debug_unwind->add_option("--step", "Step")
-            ->required()
             ->default_val(1)
             ->check(CLI::Range(1u, UINT32_MAX));
     auto cmd_debug_unwind_start_at_stage_opt =
@@ -848,11 +828,18 @@ int main(int argc, char* argv[]) {
 
         log::init(log_settings);
 
-        // Set origin data directory
         DataDirectory data_dir{data_dir_factory()};
+        db::EnvConfig chaindata_env_config{data_dir.chaindata().path().string()};
+        chaindata_env_config.shared = shared_opt->as<bool>();
+        chaindata_env_config.exclusive = exclusive_opt->as<bool>();
+
         if (!data_dir.chaindata().exists() || data_dir.chaindata().is_empty()) {
-            std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not exist or is empty\n";
-            return -1;
+            data_dir.deploy();
+            db::chain_data_init(db::ChainDataInitSettings{
+                .chaindata_env_config = chaindata_env_config,
+                .network_id = 1,
+                .init_if_empty = true,
+            });
         }
         const auto mdbx_path{db::get_datafile_path(data_dir.chaindata().path())};
         if (!fs::exists(mdbx_path) || !fs::is_regular_file(mdbx_path)) {
@@ -861,9 +848,7 @@ int main(int argc, char* argv[]) {
             return -1;
         }
 
-        db::EnvConfig chaindata_env_config{data_dir.chaindata().path().string()};
-        chaindata_env_config.shared = shared_opt->as<bool>();
-        chaindata_env_config.exclusive = exclusive_opt->as<bool>();
+
 
         // Execute subcommand actions
         if (*cmd_stages) {

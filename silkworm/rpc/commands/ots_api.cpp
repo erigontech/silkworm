@@ -278,7 +278,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto key = db::code_domain_key(sender);
 
         db::kv::api::IndexRangeQuery query{
-            .table = "AccountsHistoryIdx",  // TODO insert in tables.hpp
+            .table = db::table::kAccountsHistoryIdxName,
             .key = key,
             .from_timestamp = -1,
             .to_timestamp = -1,
@@ -297,8 +297,8 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 continue;
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
-            db::kv::api::HistoryPointQuery hpq{
-                .table = "AccountsHistory",  // TODO insert in tables.hpp
+            db::kv::api::HistoryPointQuery hpq {
+                .table = db::table::kAccountsHistoryName,
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -323,7 +323,6 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         }
         SILK_DEBUG << "range -> prev_txn_id: " << prev_txn_id << ", next_txn_id: " << next_txn_id;
 
-        reply = make_json_content(request, nlohmann::detail::value_t::null);
         if (next_txn_id == 0) {
             next_txn_id = prev_txn_id + 1;
         }
@@ -333,10 +332,11 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             auto txn_id = i + prev_txn_id;
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
-            db::kv::api::HistoryPointQuery hpq{
-                .table = "AccountsHistory",  // TODO insert in tables.hpp
+            db::kv::api::HistoryPointQuery hpq {
+                .table = db::table::kAccountsHistoryName,
                 .key = key,
-                .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
+                .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)
+            };
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 co_return false;

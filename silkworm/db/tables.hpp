@@ -62,6 +62,12 @@ inline constexpr MapConfig kAccountChangeSet{kAccountChangeSetName, mdbx::key_mo
 inline constexpr const char* kAccountHistoryName{"AccountHistory"};
 inline constexpr MapConfig kAccountHistory{kAccountHistoryName};
 
+inline constexpr const char* kAccountsHistoryName{"AccountsHistory"};
+inline constexpr MapConfig kAccountsHistory{kAccountsHistoryName, mdbx::key_mode::usual, mdbx::value_mode::multi};
+
+inline constexpr const char* kAccountsHistoryIdxName{"AccountsHistoryIdx"};
+inline constexpr MapConfig kAccountsHistoryIdx{kAccountsHistoryIdxName, mdbx::key_mode::usual, mdbx::value_mode::multi};
+
 //! \details Holds block body data
 //! \struct
 //! \verbatim
@@ -376,6 +382,8 @@ inline constexpr MapConfig kMaxTxNum{kMaxTxNumName};
 inline constexpr MapConfig kChainDataTables[]{
     kAccountChangeSet,
     kAccountHistory,
+    kAccountsHistory,
+    kAccountsHistoryIdx,
     kBlockBodies,
     kBlockReceipts,
     kCallFromIndex,

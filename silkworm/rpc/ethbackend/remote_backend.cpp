@@ -167,12 +167,15 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_number, const HashAsSpan& has
     co_return true;
 }
 
-Task<BlockNum> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& hash) {
+Task<std::optional<BlockNum>> RemoteBackEnd::get_block_number_from_txn_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncTxnLookup> txn_lookup_rpc{*stub_, grpc_context_};
     ::remote::TxnLookupRequest request;
     request.set_allocated_txn_hash(h256_from_bytes(hash).release());
     const auto reply = co_await txn_lookup_rpc.finish_on(executor_, request);
+    if (reply.block_number() == 0) {
+        co_return std::nullopt;
+    }
     auto bn = reply.block_number();
     SILK_TRACE << "RemoteBackEnd::get_block_number_from_txn_hash bn=" << bn << " t=" << clock_time::since(start_time);
     co_return bn;
@@ -199,6 +202,9 @@ Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_numb
     request.set_block_number(number);
     const auto reply = co_await canonical_hsh_rpc.finish_on(executor_, request);
     evmc::bytes32 hash;
+    if (reply.has_hash() == 0) {
+        co_return std::nullopt;
+    }
     span_from_h256(reply.hash(), hash.bytes);
     SILK_TRACE << "RemoteBackEnd::get_block_hash_from_block_number bn="
                << " t=" << clock_time::since(start_time);

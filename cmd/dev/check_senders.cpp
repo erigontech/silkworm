@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     log::init(log_settings);
 
     const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
-    log::Info() << "Build info: " << node_name;
+    SILK_INFO << "Build info: " << node_name;
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();
@@ -79,14 +79,14 @@ int main(int argc, char* argv[]) {
     uint64_t processed_senders_count{0};
 
     try {
-        log::Info() << "Checking Transaction Senders...";
+        SILK_INFO << "Checking Transaction Senders...";
 
         // Seek at the first block body (if any)
         Bytes first_block(8, '\0');
         endian::store_big_u64(first_block.data(), block_from);
         const bool block_from_found = bodies_cursor->seek(to_slice(first_block));
         if (block_from_found) {
-            log::Error() << "First block " << block_from << " not found in " << table::kBlockBodies.name << " table";
+            SILK_ERROR << "First block " << block_from << " not found in " << table::kBlockBodies.name << " table";
             return -1;
         }
 
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
             // Decode table key and check expected block number
             auto block_number = endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data()));
             if (block_number != expected_block_number) {
-                log::Error() << "Block " << block_number << " does not match expected number " << expected_block_number;
+                SILK_ERROR << "Block " << block_number << " does not match expected number " << expected_block_number;
                 break;
             }
 
@@ -105,24 +105,24 @@ int main(int argc, char* argv[]) {
             auto body{unwrap_or_throw(decode_stored_block_body(body_rlp))};
 
             // Process block transactions one-by-one
-            log::Debug() << "Processing block: " << block_number << " txn count: " << body.txn_count;
+            SILK_DEBUG << "Processing block: " << block_number << " txn count: " << body.txn_count;
             if (body.txn_count > 0) {
                 // Retrieve canonical block hash
                 const Bytes canonical_key{block_key(block_number)};
                 const auto canonical_data{canonical_hashes_cursor->find(to_slice(canonical_key), false)};
                 if (!canonical_data) {
-                    log::Error() << "Block " << block_number << " not found in " << table::kCanonicalHashes.name << " table";
+                    SILK_ERROR << "Block " << block_number << " not found in " << table::kCanonicalHashes.name << " table";
                     continue;
                 }
                 SILKWORM_ASSERT(canonical_data.value.length() == kHashLength);
                 auto block_hash = to_bytes32({static_cast<const uint8_t*>(canonical_data.value.data()), kHashLength});
-                log::Debug() << "Block hash: " << to_hex(block_hash);
+                SILK_DEBUG << "Block hash: " << to_hex(block_hash);
 
                 // Read the ordered sequence of block senders (one for each transaction)
                 auto senders_key{block_key(block_number, block_hash.bytes)};
                 auto senders_data{senders_cursor->find(to_slice(senders_key), /*throw_notfound = */ false)};
                 if (!senders_data) {
-                    log::Error() << "Block " << block_number << " hash " << to_hex(block_hash) << " not found in " << table::kSenders.name << " table";
+                    SILK_ERROR << "Block " << block_number << " hash " << to_hex(block_hash) << " not found in " << table::kSenders.name << " table";
                     break;
                 }
 
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
                 senders.resize(senders_data.value.length() / kAddressLength);
                 std::memcpy(senders.data(), senders_data.value.data(), senders_data.value.length());
 
-                log::Debug() << "Read senders count: " << senders.size();
+                SILK_DEBUG << "Read senders count: " << senders.size();
 
                 Bytes tx_key(8, '\0');
                 endian::store_big_u64(tx_key.data(), body.base_txn_id);
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
                 auto tx_data{tx_cursor->find(to_slice(tx_key), false)};
                 for (; i < body.txn_count && tx_data.done; ++i, tx_data = tx_cursor->to_next(false)) {
                     if (!tx_data) {
-                        log::Error() << "Block " << block_number << " tx " << i << " not found in " << table::kBlockTransactions.name << " table";
+                        SILK_ERROR << "Block " << block_number << " tx " << i << " not found in " << table::kBlockTransactions.name << " table";
                         continue;
                     }
                     ByteView transaction_rlp{from_slice(tx_data.value)};
@@ -156,26 +156,26 @@ int main(int argc, char* argv[]) {
 
                     // The most important check: i-th stored sender MUST be equal to i-th transaction recomputed sender
                     if (senders[i] != tx.sender()) {
-                        log::Error() << "Block " << block_number << " tx " << i << " recovered sender " << senders[i]
-                                     << " does not match computed sender " << *tx.sender();
+                        SILK_ERROR << "Block " << block_number << " tx " << i << " recovered sender " << senders[i]
+                                   << " does not match computed sender " << *tx.sender();
                     }
                     ++processed_senders_count;
 
                     const auto transaction_hash{keccak256(transaction_rlp)};
-                    log::Debug() << "Tx hash: " << to_hex(transaction_hash.bytes) << " has sender: " << to_hex(senders[i].bytes);
+                    SILK_DEBUG << "Tx hash: " << to_hex(transaction_hash.bytes) << " has sender: " << to_hex(senders[i].bytes);
                 }
 
                 if (i != body.txn_count) {
-                    log::Error() << "Block " << block_number << " claims " << body.txn_count << " transactions but only " << i << " read";
+                    SILK_ERROR << "Block " << block_number << " claims " << body.txn_count << " transactions but only " << i << " read";
                 }
             }
 
             if (expected_block_number % 100000 == 0) {
-                log::Info() << "Scanned blocks " << expected_block_number << " processed senders " << processed_senders_count;
+                SILK_INFO << "Scanned blocks " << expected_block_number << " processed senders " << processed_senders_count;
             }
 
             if (expected_block_number == block_to) {
-                log::Info() << "Target block " << block_to << " reached";
+                SILK_INFO << "Target block " << block_to << " reached";
                 break;
             }
 
@@ -188,10 +188,10 @@ int main(int argc, char* argv[]) {
             bodies_data = bodies_cursor->to_next(false);
         }
 
-        log::Info() << "Check " << (SignalHandler::signalled() ? "aborted" : "completed");
+        SILK_INFO << "Check " << (SignalHandler::signalled() ? "aborted" : "completed");
 
     } catch (const std::exception& ex) {
-        log::Error() << ex.what();
+        SILK_ERROR << ex.what();
         return -1;
     }
     return 0;

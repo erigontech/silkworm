@@ -63,12 +63,12 @@ void check(mdbx::txn& txn, Operation operation) {
 
             auto actual_value{target_table.find(to_slice(key))};
             if (!actual_value) {
-                log::Error() << "key: " << to_hex(key) << ", does not exist.";
+                SILK_ERROR << "key: " << to_hex(key) << ", does not exist.";
                 return;
             }
             if (actual_value.value != data.value) {
-                log::Error() << "Expected: " << to_hex(from_slice(data.value)) << ", Actual: << "
-                             << to_hex(from_slice(actual_value.value));
+                SILK_ERROR << "Expected: " << to_hex(from_slice(data.value)) << ", Actual: << "
+                           << to_hex(from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -88,7 +88,7 @@ void check(mdbx::txn& txn, Operation operation) {
 
             auto target_data{target_table.find_multivalue(to_slice(key), data.value, /*throw_notfound*/ false)};
             if (!target_data) {
-                log::Error() << "Key: " << to_hex(key) << ", does not exist.";
+                SILK_ERROR << "Key: " << to_hex(key) << ", does not exist.";
                 return;
             }
             data = source_table.to_next(false);
@@ -104,13 +104,13 @@ void check(mdbx::txn& txn, Operation operation) {
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], kIncarnationLength);
             auto actual_value{target_table.find(to_slice(key), /*throw_notfound*/ false)};
             if (!actual_value) {
-                log::Error() << "Key: " << to_hex(key) << ", does not exist.";
+                SILK_ERROR << "Key: " << to_hex(key) << ", does not exist.";
                 data = source_table.to_next(false);
                 continue;
             }
             if (actual_value.value != data.value) {
-                log::Error() << "Expected: " << to_hex(from_slice(data.value)) << ", Actual: << "
-                             << to_hex(from_slice(actual_value.value));
+                SILK_ERROR << "Expected: " << to_hex(from_slice(data.value)) << ", Actual: << "
+                           << to_hex(from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
         ->capture_default_str()
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
-    log::Info() << "Checking HashState";
+    SILK_INFO << "Checking HashState";
 
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
@@ -135,15 +135,15 @@ int main(int argc, char* argv[]) {
         auto env{open_env(db_config)};
         auto txn{env.start_write()};
 
-        log::Info() << "Checking Accounts";
+        SILK_INFO << "Checking Accounts";
         check(txn, kHashAccount);
-        log::Info() << "Checking Storage";
+        SILK_INFO << "Checking Storage";
         check(txn, kHashStorage);
-        log::Info() << "Checking Code Keys";
+        SILK_INFO << "Checking Code Keys";
         check(txn, kCode);
-        log::Info() << "All Done!";
+        SILK_INFO << "All Done!";
     } catch (const std::exception& ex) {
-        log::Error() << ex.what();
+        SILK_ERROR << ex.what();
         return -5;
     }
 }

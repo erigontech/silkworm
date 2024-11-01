@@ -145,7 +145,7 @@ Task<Response> unary_rpc_with_retries(
             co_return (co_await unary_rpc(rpc, stub, request, grpc_context));
         } catch (const GrpcStatusError& ex) {
             if (is_disconnect_error(ex.status(), channel)) {
-                log::Warning(log_prefix) << "GRPC unary call failed: " << ex.what();
+                SILK_WARN_M(log_prefix) << "GRPC unary call failed: " << ex.what();
             } else {
                 throw;
             }
@@ -178,7 +178,7 @@ Task<void> server_streaming_rpc_with_retries(
             break;
         } catch (const GrpcStatusError& ex) {
             if (is_disconnect_error(ex.status(), channel)) {
-                log::Warning(log_prefix) << "GRPC server-streaming call failed: " << ex.what();
+                SILK_WARN_M(log_prefix) << "GRPC server-streaming call failed: " << ex.what();
             } else {
                 throw;
             }

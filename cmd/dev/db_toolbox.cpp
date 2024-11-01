@@ -1215,7 +1215,7 @@ static void print_table_diff(ROTxn& txn1, ROTxn& txn2, const DbTableInfo& table1
             std::cout << "No diff found for multi-value table " << table1_config.name << "\n";
         }
     } else {
-        log::Warning() << "unsupported value mode: " << magic_enum::enum_name(table1_config.value_mode);
+        SILK_WARN << "unsupported value mode: " << magic_enum::enum_name(table1_config.value_mode);
     }
 }
 
@@ -2088,7 +2088,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
         return;
     }
 
-    log::Info() << "Ok... you say it. Please be patient...";
+    SILK_INFO << "Ok... you say it. Please be patient...";
 
     auto env{open_env(config)};
     RWTxnManaged txn(env);

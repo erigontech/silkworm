@@ -43,7 +43,7 @@ Task<AuthKeys> Handshake::auth(SocketStream& stream) {
 
 Task<Handshake::HandshakeResult> Handshake::execute(SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
-    log::Trace("sentry") << "rlpx::auth::Handshake AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
+    SILK_TRACE_M("sentry") << "rlpx::auth::Handshake AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
     framing::FramingCipher framing_cipher{
         framing::FramingCipher::KeyMaterial{
@@ -86,8 +86,8 @@ Task<Handshake::HandshakeResult> Handshake::execute(SocketStream& stream) {
         throw CapabilityMismatchError(required_capability.to_string(), hello_reply_message.capabilities_description());
     }
 
-    log::Debug("sentry") << "rlpx::auth::Handshake success: peer Hello: " << hello_reply_message.client_id()
-                         << " with " << hello_reply_message.capabilities_description();
+    SILK_DEBUG_M("sentry") << "rlpx::auth::Handshake success: peer Hello: " << hello_reply_message.client_id()
+                           << " with " << hello_reply_message.capabilities_description();
 
     message_stream.enable_compression();
 

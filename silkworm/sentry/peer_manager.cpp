@@ -62,7 +62,7 @@ Task<void> PeerManager::run_in_strand(concurrency::Channel<std::shared_ptr<rlpx:
                 ++drop_peer_tasks_count_;
                 drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::DisconnectReason::kTooManyPeers));
             } else {
-                log::Warning("sentry") << "PeerManager::run_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
+                SILK_WARN_M("sentry") << "PeerManager::run_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
             }
             continue;
         }
@@ -79,12 +79,12 @@ Task<void> PeerManager::run_peer(std::shared_ptr<rlpx::Peer> peer) {
         co_await (rlpx::Peer::run(peer) && wait_for_peer_handshake(peer));
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "PeerManager::run_peer Peer::run cancelled";
+            SILK_DEBUG_M("sentry") << "PeerManager::run_peer Peer::run cancelled";
         } else {
-            log::Error("sentry") << "PeerManager::run_peer Peer::run system_error: " << ex.what();
+            SILK_ERROR_M("sentry") << "PeerManager::run_peer Peer::run system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "PeerManager::run_peer Peer::run exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "PeerManager::run_peer Peer::run exception: " << ex.what();
     }
 
     handshaking_peers_.remove(peer);
@@ -112,12 +112,12 @@ Task<void> PeerManager::drop_peer(
         co_await rlpx::Peer::drop(peer, reason);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "PeerManager::drop_peer Peer::drop cancelled";
+            SILK_DEBUG_M("sentry") << "PeerManager::drop_peer Peer::drop cancelled";
         } else {
-            log::Error("sentry") << "PeerManager::drop_peer Peer::drop system_error: " << ex.what();
+            SILK_ERROR_M("sentry") << "PeerManager::drop_peer Peer::drop system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "PeerManager::drop_peer Peer::drop exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "PeerManager::drop_peer Peer::drop exception: " << ex.what();
     }
 }
 
@@ -224,9 +224,10 @@ Task<void> PeerManager::discover_peers(
         for (auto& candidate : discovered_peer_candidates) {
             if (candidate.eth1_fork_id_data) {
                 if (!protocol->is_compatible_enr_entry("eth", *candidate.eth1_fork_id_data)) {
-                    log::Debug("sentry") << "PeerManager::discover_peers excluding a peer with an incompatible ENR 'eth' entry;"
-                                         << " peer URL = '" << candidate.url.to_string() << "';"
-                                         << " entry data = '" << to_hex(*candidate.eth1_fork_id_data) << "';";
+                    SILK_DEBUG_M("sentry")
+                        << "PeerManager::discover_peers excluding a peer with an incompatible ENR 'eth' entry;"
+                        << " peer URL = '" << candidate.url.to_string() << "';"
+                        << " entry data = '" << to_hex(*candidate.eth1_fork_id_data) << "';";
                     co_await discovery.on_peer_useless(candidate.url.public_key());
                     continue;
                 }
@@ -256,16 +257,17 @@ Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std
         co_await client_peer_channel_.send(peer);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "PeerManager::connect_peer cancelled";
+            SILK_DEBUG_M("sentry") << "PeerManager::connect_peer cancelled";
         } else {
-            log::Debug("sentry") << "PeerManager::connect_peer failed to connect"
-                                 << " to " << peer_url.to_string()
-                                 << " due to exception: " << ex.what();
+            SILK_DEBUG_M("sentry")
+                << "PeerManager::connect_peer failed to connect"
+                << " to " << peer_url.to_string()
+                << " due to exception: " << ex.what();
             on_peer_connect_error(peer_url);
             need_peers_notifier_.notify();
         }
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "PeerManager::connect_peer exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "PeerManager::connect_peer exception: " << ex.what();
         need_peers_notifier_.notify();
     }
 }

@@ -55,9 +55,9 @@ Task<size_t> lookup(
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled)
                 throw;
-            log::Error("sentry") << "disc_v4::find::lookup find_neighbors node_id=" << node_id.hex() << " system_error: " << ex.what();
+            SILK_ERROR_M("sentry") << "disc_v4::find::lookup find_neighbors node_id=" << node_id.hex() << " system_error: " << ex.what();
         } catch (const std::exception& ex) {
-            log::Error("sentry") << "disc_v4::find::lookup find_neighbors node_id=" << node_id.hex() << " exception: " << ex.what();
+            SILK_ERROR_M("sentry") << "disc_v4::find::lookup find_neighbors node_id=" << node_id.hex() << " exception: " << ex.what();
         }
     };
     auto group_task = concurrency::generate_parallel_group_task(node_ids.size(), group_task_factory);

@@ -156,10 +156,10 @@ BlockNumRange Freezer::cleanup_range() {
 Task<void> Freezer::cleanup() {
     BlockNumRange range = cleanup_range();
     if (range.start >= range.end) co_return;
-    log::Debug(name()) << "cleanup " << range.to_string();
+    SILK_DEBUG_M(name()) << "cleanup " << range.to_string();
 
     if (keep_blocks_) {
-        log::Debug(name()) << "skipping cleanup";
+        SILK_DEBUG_M(name()) << "skipping cleanup";
         co_return;
     }
 

@@ -102,7 +102,7 @@ Task<void> DiscoveryImpl::run() {
     for (auto& url : peer_urls_) {
         auto& node_id = url.public_key();
         if (node_id == local_node_id) {
-            log::Warning("sentry") << "Discovery: ignoring the local node in the static peers list, please remove " << url.to_string();
+            SILK_WARN_M("sentry") << "Discovery: ignoring the local node in the static peers list, please remove " << url.to_string();
             continue;
         }
 
@@ -125,7 +125,7 @@ Task<void> DiscoveryImpl::run() {
         for (auto& url : bootnode_urls) {
             auto& node_id = url.public_key();
             if (node_id == local_node_id) {
-                log::Warning("sentry") << "Discovery: ignoring the local node in the bootnodes list, please remove " << url.to_string();
+                SILK_WARN_M("sentry") << "Discovery: ignoring the local node in the bootnodes list, please remove " << url.to_string();
                 continue;
             }
 
@@ -234,7 +234,7 @@ Discovery::Discovery(
           disc_v4_port)) {}
 
 Discovery::~Discovery() {
-    log::Trace("sentry") << "silkworm::sentry::discovery::Discovery::~Discovery";
+    SILK_TRACE_M("sentry") << "silkworm::sentry::discovery::Discovery::~Discovery";
 }
 
 Task<void> Discovery::run() {
@@ -242,9 +242,9 @@ Task<void> Discovery::run() {
         return p_impl_->run();
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "Discovery::run unexpected end [operation_canceled]";
+            SILK_DEBUG_M("sentry") << "Discovery::run unexpected end [operation_canceled]";
         } else {
-            log::Critical("sentry") << "Discovery::run unexpected end [" + std::string{se.what()} + "]";
+            SILK_CRIT_M("sentry") << "Discovery::run unexpected end [" + std::string{se.what()} + "]";
         }
         throw se;
     }

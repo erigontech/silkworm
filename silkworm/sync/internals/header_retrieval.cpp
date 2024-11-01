@@ -46,8 +46,11 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
             BlockNum next = current + skip + 1;
             if (next <= current) {  // true only if there is an overflow
                 unknown = true;
-                log::Warning("HeaderStage") << "GetBlockHeaders skip overflow attack:"
-                                            << " current=" << current << ", skip=" << skip << ", next=" << next;
+                SILK_WARN_M("chainsync::HeaderRetrieval")
+                    << "GetBlockHeaders skip overflow attack:"
+                    << " current=" << current
+                    << ", skip=" << skip
+                    << ", next=" << next;
             } else {
                 header = data_model_.read_canonical_header(next);
                 if (!header)

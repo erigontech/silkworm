@@ -61,9 +61,10 @@ class ServerImpl final : public rpc::Server {
 
 ServerImpl::ServerImpl(rpc::ServerSettings settings, std::shared_ptr<api::DirectService> service)
     : rpc::Server(std::move(settings)), service_{std::move(service)} {
-    log::Info("execution") << "rpc::Server created listening on: "
-                           << this->settings().address_uri
-                           << " contexts: " << this->settings().context_pool_settings.num_contexts;
+    SILK_INFO_M("execution")
+        << "rpc::Server created listening on: "
+        << this->settings().address_uri
+        << " contexts: " << this->settings().context_pool_settings.num_contexts;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
@@ -109,7 +110,7 @@ Server::Server(rpc::ServerSettings settings, std::shared_ptr<api::DirectService>
     : p_impl_(std::make_unique<ServerImpl>(std::move(settings), std::move(service))) {}
 
 Server::~Server() {
-    log::Trace("sentry") << "silkworm::execution::grpc::server::Server::~Server";
+    SILK_TRACE_M("execution") << "silkworm::execution::grpc::server::Server::~Server";
 }
 
 Task<void> Server::async_run(std::optional<size_t> stack_size) {

@@ -127,7 +127,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
         const auto start_block_number = co_await core::get_block_number(start_block_id, *tx);
         const auto end_block_number = co_await core::get_block_number(end_block_id, *tx);
 
-        if (end_block_number > start_block_number) {
+        if (end_block_number < start_block_number) {
             std::stringstream msg;
             msg << "start block (" << start_block_number << ") must be less or equal to end block (" << end_block_number << ")";
             throw std::invalid_argument(msg.str());
@@ -657,7 +657,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number) - 1;
 
     db::kv::api::HistoryRangeQuery query{
-        .table = db::table::kAccountDomain,
+        .table = db::table::kAccountsDomain,
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
         .ascending_order = true};
@@ -667,8 +667,8 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
 
     std::vector<std::string> keys;
     while (const auto value = co_await it.next()) {
-        const auto key = value->first.substr(20);
-        auto address = bytes_to_address(key);
+        SILKWORM_ASSERT(value->first.size() >= kAddressLength);
+        const auto address = bytes_to_address(value->first.substr(0, kAddressLength));
         addresses.insert(address);
     }
 

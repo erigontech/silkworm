@@ -10,7 +10,6 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-# eth_baseFee & eth_blobBaseFee: new APIs
 # eth_estimateGas new fields
 # eth_getBlockReceipts/test_07.json new blobFields   
 # debug_accountRange: new algo using TKV
@@ -29,7 +28,7 @@ rm -rf ./mainnet/results/
 # trace_rawTransaction: different implementation
 # trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response with erigon3 but could be erigon3 problem (to be analyzed)
 
-python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
+python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 -x \
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
@@ -48,16 +47,16 @@ debug_traceTransaction/test_96.json,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
+eth_estimateGas,\
+eth_getBlockReceipts/test_07.json,\
 eth_getLogs,\
 ots_getTransactionBySenderAndNonce,\
 ots_getContractCreator,\
-ots_hasCode,\
+ots_hasCode/test_09.json,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
-trace_rawTransaction,\
-trace_filter/test_16.json,\
-txpool_content --transport_type http,websocket
+trace_rawTransaction --transport_type http,websocket
 
 failed_test=$?
 

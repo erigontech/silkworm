@@ -39,15 +39,6 @@ class DataStore {
             entry.second->close();
     }
 
-    // TODO: remove this, use RXAccess instead
-    mdbx::env chaindata_env() const {
-        return chaindata_env_;  // NOLINT(cppcoreguidelines-slicing)
-    }
-    // TODO: remove this, use RXAccess instead
-    mdbx::env* chaindata_env_ptr() {
-        return &chaindata_env_;  // NOLINT(cppcoreguidelines-slicing)
-    }
-
     db::ROAccess chaindata() const { return db::ROAccess{chaindata_env_}; }
     db::RWAccess chaindata_rw() const { return db::RWAccess{chaindata_env_}; }
     snapshots::SnapshotRepository& repository(const EntityName& name) const { return *repositories_.at(name); }

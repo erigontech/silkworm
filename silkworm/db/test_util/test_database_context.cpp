@@ -189,6 +189,10 @@ TestDatabaseContext::TestDatabaseContext()
     : chaindata_dir_path_{TemporaryDirectory::get_unique_temporary_path()},
       env_{std::make_unique<mdbx::env_managed>(initialize_test_database(chaindata_dir_path_))} {}
 
+TestDatabaseContext::TestDatabaseContext(const TemporaryDirectory& tmp_dir)
+    : chaindata_dir_path_{DataDirectory{tmp_dir.path()}.chaindata().path()},
+      env_{std::make_unique<mdbx::env_managed>(initialize_test_database(chaindata_dir_path_))} {}
+
 silkworm::ChainConfig TestDatabaseContext::get_chain_config() const {
     ROTxnManaged txn = chaindata().start_ro_tx();
     auto chain_config = read_chain_config(txn);

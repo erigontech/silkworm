@@ -40,18 +40,16 @@ using silkworm::test_util::TaskRunner;
 struct DirectServiceTest : public TaskRunner {
     explicit DirectServiceTest()
         : log_guard{log::Level::kNone},
-          settings{make_node_settings_from_temp_chain_data(tmp_chaindata)},
-          dba{tmp_chaindata.env()} {
+          settings{make_node_settings_from_temp_chain_data(tmp_chaindata)} {
         tmp_chaindata.add_genesis_data();
         tmp_chaindata.commit_txn();
-        mock_execution_engine = std::make_unique<MockExecutionEngine>(executor(), settings, dba);
+        mock_execution_engine = std::make_unique<MockExecutionEngine>(executor(), settings, tmp_chaindata.chaindata_rw());
         direct_service = std::make_unique<DirectService>(*mock_execution_engine);
     }
 
     SetLogVerbosityGuard log_guard;
     TempChainData tmp_chaindata;
     NodeSettings settings;
-    db::RWAccess dba;
     std::unique_ptr<MockExecutionEngine> mock_execution_engine;
     std::unique_ptr<DirectService> direct_service;
 };

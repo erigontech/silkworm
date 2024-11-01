@@ -57,11 +57,6 @@ class DataStore {
         return {store_.chaindata_rw(), store_.repository(blocks::kBlocksRepositoryName)};
     }
 
-    // TODO: remove this, use RXAccess instead
-    mdbx::env chaindata_env() const { return store_.chaindata_env(); }
-    // TODO: remove this, use RXAccess instead
-    mdbx::env* chaindata_env_ptr() { return store_.chaindata_env_ptr(); }
-
     db::ROAccess chaindata() const { return store_.chaindata(); }
     db::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
 

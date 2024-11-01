@@ -48,11 +48,10 @@ class ActiveDirectServiceForTest : public ActiveDirectService {
 struct ActiveDirectServiceTest : public TaskRunner {
     explicit ActiveDirectServiceTest()
         : log_guard{log::Level::kNone},
-          settings{make_node_settings_from_temp_chain_data(tmp_chaindata)},
-          dba{tmp_chaindata.env()} {
+          settings{make_node_settings_from_temp_chain_data(tmp_chaindata)} {
         tmp_chaindata.add_genesis_data();
         tmp_chaindata.commit_txn();
-        mock_execution_engine = std::make_unique<NiceMock<MockExecutionEngine>>(executor(), settings, dba);
+        mock_execution_engine = std::make_unique<NiceMock<MockExecutionEngine>>(executor(), settings, tmp_chaindata.chaindata_rw());
         direct_service = std::make_unique<ActiveDirectServiceForTest>(*mock_execution_engine, execution_context);
         execution_context_thread = std::thread{[this]() {
             direct_service->execution_loop();
@@ -68,7 +67,6 @@ struct ActiveDirectServiceTest : public TaskRunner {
     SetLogVerbosityGuard log_guard;
     TempChainData tmp_chaindata;
     NodeSettings settings;
-    db::RWAccess dba;
     std::unique_ptr<MockExecutionEngine> mock_execution_engine;
     boost::asio::io_context execution_context;
     std::unique_ptr<ActiveDirectServiceForTest> direct_service;

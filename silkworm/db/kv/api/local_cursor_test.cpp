@@ -41,7 +41,7 @@ struct LocalCursorTest : public ContextTestBase, TestDatabaseContext {
 
 TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::open_cursor", "[db][kv][api][local_cursor]") {
     spawn_and_wait([&]() -> Task<void> {
-        ROTxnManaged txn{mdbx_env()};
+        ROTxnManaged txn = chaindata().start_ro_tx();
         LocalCursor cursor{txn, ++last_cursor_id};
 
         CHECK_NOTHROW(co_await cursor.open_cursor(table::kHeadersName, /*is_dup_sorted=*/false));
@@ -51,7 +51,7 @@ TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::open_cursor", "[db][kv][api][loc
 
 TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::close_cursor", "[db][kv][api][local_cursor]") {
     spawn_and_wait([&]() -> Task<void> {
-        ROTxnManaged txn{mdbx_env()};
+        ROTxnManaged txn = chaindata().start_ro_tx();
         LocalCursor cursor{txn, ++last_cursor_id};
         REQUIRE_NOTHROW(co_await cursor.open_cursor(table::kHeadersName, /*is_dup_sorted=*/false));
         REQUIRE(cursor.cursor_id() > 0);
@@ -68,7 +68,7 @@ static auto decode_header(ByteView data_view) {
 
 TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::first", "[db][kv][api][local_cursor]") {
     spawn_and_wait([&]() -> Task<void> {
-        ROTxnManaged txn{mdbx_env()};
+        ROTxnManaged txn = chaindata().start_ro_tx();
         LocalCursor cursor{txn, ++last_cursor_id};
         REQUIRE_NOTHROW(co_await cursor.open_cursor(table::kHeadersName, /*is_dup_sorted=*/false));
 
@@ -83,7 +83,7 @@ TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::first", "[db][kv][api][local_cur
 
 TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::last", "[db][kv][api][local_cursor]") {
     spawn_and_wait([&]() -> Task<void> {
-        ROTxnManaged txn{mdbx_env()};
+        ROTxnManaged txn = chaindata().start_ro_tx();
         LocalCursor cursor{txn, ++last_cursor_id};
         REQUIRE_NOTHROW(co_await cursor.open_cursor(table::kHeadersName, /*is_dup_sorted=*/false));
 
@@ -98,7 +98,7 @@ TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::last", "[db][kv][api][local_curs
 
 TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::next", "[db][kv][api][local_cursor]") {
     spawn_and_wait([&]() -> Task<void> {
-        ROTxnManaged txn{mdbx_env()};
+        ROTxnManaged txn = chaindata().start_ro_tx();
         LocalCursor cursor{txn, ++last_cursor_id};
         REQUIRE_NOTHROW(co_await cursor.open_cursor(table::kHeadersName, /*is_dup_sorted=*/false));
 
@@ -116,7 +116,7 @@ TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::next", "[db][kv][api][local_curs
 
 TEST_CASE_METHOD(LocalCursorTest, "LocalCursor::previous", "[db][kv][api][local_cursor]") {
     spawn_and_wait([&]() -> Task<void> {
-        ROTxnManaged txn{mdbx_env()};
+        ROTxnManaged txn = chaindata().start_ro_tx();
         LocalCursor cursor{txn, ++last_cursor_id};
         REQUIRE_NOTHROW(co_await cursor.open_cursor(table::kHeadersName, /*is_dup_sorted=*/false));
 

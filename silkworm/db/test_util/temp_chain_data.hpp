@@ -48,15 +48,11 @@ class TempChainData {
 
     const db::EnvConfig& chaindata_env_config() const { return chaindata_env_config_; }
 
-    // TODO: make private and use RXAccess
-    virtual mdbx::env env() const {
-        return *env_;  // NOLINT(cppcoreguidelines-slicing)
+    virtual db::ROAccess chaindata() const {
+        return db::ROAccess{*env_};
     }
-    db::ROAccess chaindata() const {
-        return db::ROAccess{env()};
-    }
-    db::RWAccess chaindata_rw() const {
-        return db::RWAccess{env()};
+    virtual db::RWAccess chaindata_rw() const {
+        return db::RWAccess{*env_};
     }
 
     mdbx::txn& txn() const { return *txn_; }
@@ -99,12 +95,15 @@ class TempChainDataStore : public TempChainData {
         txn_.reset();
     }
 
-    mdbx::env env() const override {
-        return data_store_.chaindata_env();
-    }
-
     db::DataStore& operator*() { return data_store_; }
     db::DataStore* operator->() { return &data_store_; }
+
+    db::ROAccess chaindata() const override {
+        return data_store_.chaindata();
+    }
+    db::RWAccess chaindata_rw() const override {
+        return data_store_.chaindata_rw();
+    }
 
     db::DataModelFactory data_model_factory() {
         return db::DataModelFactory{data_store_.ref()};

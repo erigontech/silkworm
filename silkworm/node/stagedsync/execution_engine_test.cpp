@@ -66,13 +66,13 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     db::DataModelFactory data_model_factory = db_context.data_model_factory();
 
     auto node_settings = NodeSettings{
-        .data_directory = std::make_unique<DataDirectory>(db_context.mdbx_env().get_path(), false),
+        .data_directory = std::make_unique<DataDirectory>(tmp_dir.path(), false),
         .chain_config = db_context.get_chain_config(),
         .parallel_fork_tracking_enabled = false,
         .keep_db_txn_open = true,
     };
 
-    RWAccess db_access{db_context.mdbx_env()};
+    RWAccess db_access = db_context.chaindata_rw();
 
     ExecutionEngineForTest exec_engine{
         runner.executor(),
@@ -831,7 +831,7 @@ TEST_CASE("ExecutionEngine") {
         data_model_factory,
         /* log_timer_factory = */ std::nullopt,
         make_stages_factory(node_settings, data_model_factory),
-        RWAccess{context.env()},
+        context.chaindata_rw(),
     };
     exec_engine.open();
 

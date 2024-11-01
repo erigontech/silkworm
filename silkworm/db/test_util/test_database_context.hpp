@@ -36,6 +36,7 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
 class TestDatabaseContext {
   public:
     TestDatabaseContext();
+    explicit TestDatabaseContext(const TemporaryDirectory& tmp_dir);
 
     virtual ~TestDatabaseContext() {
         if (env_) {
@@ -44,18 +45,15 @@ class TestDatabaseContext {
         }
     }
 
-    // TODO: make private and use RXAccess
-    virtual mdbx::env mdbx_env() const {
-        return *env_;  // NOLINT(cppcoreguidelines-slicing)
+    virtual db::ROAccess chaindata() const {
+        return db::ROAccess{*env_};
     }
-    db::ROAccess chaindata() const {
-        return db::ROAccess{mdbx_env()};
-    }
-    db::RWAccess chaindata_rw() const {
-        return db::RWAccess{mdbx_env()};
+    virtual db::RWAccess chaindata_rw() const {
+        return db::RWAccess{*env_};
     }
 
     silkworm::ChainConfig get_chain_config() const;
+    const std::filesystem::path& chaindata_dir_path() const { return chaindata_dir_path_; }
 
   protected:
     mdbx::env_managed move_env() {
@@ -71,7 +69,8 @@ class TestDatabaseContext {
 class TestDataStore : public TestDatabaseContext {
   public:
     explicit TestDataStore(const TemporaryDirectory& tmp_dir)
-        : data_store_{
+        : TestDatabaseContext{tmp_dir},
+          data_store_{
               move_env(),
               blocks::make_blocks_repository(
                   DataDirectory{tmp_dir.path(), true}.snapshots().path()),
@@ -82,12 +81,15 @@ class TestDataStore : public TestDatabaseContext {
         std::filesystem::remove_all(chaindata_dir_path_);
     }
 
-    mdbx::env mdbx_env() const override {
-        return data_store_.chaindata_env();
-    }
-
     db::DataStore& operator*() { return data_store_; }
     db::DataStore* operator->() { return &data_store_; }
+
+    db::ROAccess chaindata() const override {
+        return data_store_.chaindata();
+    }
+    db::RWAccess chaindata_rw() const override {
+        return data_store_.chaindata_rw();
+    }
 
     db::DataModelFactory data_model_factory() {
         return db::DataModelFactory{data_store_.ref()};

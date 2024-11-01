@@ -297,7 +297,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 continue;
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
-            db::kv::api::HistoryPointQuery hpq {
+            db::kv::api::HistoryPointQuery hpq{
                 .table = db::table::kAccountsHistoryName,
                 .key = key,
                 .timestamp = *value};
@@ -332,11 +332,10 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             auto txn_id = i + prev_txn_id;
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
-            db::kv::api::HistoryPointQuery hpq {
+            db::kv::api::HistoryPointQuery hpq{
                 .table = db::table::kAccountsHistoryName,
                 .key = key,
-                .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)
-            };
+                .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 co_return false;

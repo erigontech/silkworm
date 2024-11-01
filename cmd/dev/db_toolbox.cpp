@@ -44,7 +44,6 @@
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>

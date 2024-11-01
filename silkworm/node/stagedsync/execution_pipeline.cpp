@@ -32,6 +32,46 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
+static const ExecutionPipeline::StageNames kStagesForwardOrder{
+    kHeadersKey,
+    kBlockHashesKey,
+    kBlockBodiesKey,
+    kSendersKey,
+    kExecutionKey,
+    kHashStateKey,
+    kIntermediateHashesKey,
+    kHistoryIndexKey,
+    kLogIndexKey,
+    kCallTracesKey,
+    kTxLookupKey,
+    kTriggersStageKey,
+    kFinishKey,
+};
+
+static const ExecutionPipeline::StageNames kStagesUnwindOrder{
+    kFinishKey,
+    kTriggersStageKey,
+    kTxLookupKey,
+    kCallTracesKey,
+    kLogIndexKey,
+    kHistoryIndexKey,
+    kHashStateKey,
+    kIntermediateHashesKey,  // Needs to happen after unwinding HashState
+    kExecutionKey,
+    kSendersKey,
+    kBlockBodiesKey,
+    kBlockHashesKey,
+    kHeadersKey,
+};
+
+ExecutionPipeline::StageNames ExecutionPipeline::stages_forward_order() {
+    return kStagesForwardOrder;
+}
+
+ExecutionPipeline::StageNames ExecutionPipeline::stages_unwind_order() {
+    return kStagesUnwindOrder;
+}
+
 ExecutionPipeline::ExecutionPipeline(
     db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
@@ -40,39 +80,9 @@ ExecutionPipeline::ExecutionPipeline(
       log_timer_factory_{std::move(log_timer_factory)},
       sync_context_{std::make_unique<SyncContext>()},
       stages_{stages_factory(*sync_context_)},
-      current_stage_{stages_.end()} {
-    stages_forward_order_ = StageNames{
-        kHeadersKey,
-        kBlockHashesKey,
-        kBlockBodiesKey,
-        kSendersKey,
-        kExecutionKey,
-        kHashStateKey,
-        kIntermediateHashesKey,
-        kHistoryIndexKey,
-        kLogIndexKey,
-        kCallTracesKey,
-        kTxLookupKey,
-        kTriggersStageKey,
-        kFinishKey,
-    };
-
-    stages_unwind_order_ = StageNames{
-        kFinishKey,
-        kTriggersStageKey,
-        kTxLookupKey,
-        kCallTracesKey,
-        kLogIndexKey,
-        kHistoryIndexKey,
-        kHashStateKey,
-        kIntermediateHashesKey,  // Needs to happen after unwinding HashState
-        kExecutionKey,
-        kSendersKey,
-        kBlockBodiesKey,
-        kBlockHashesKey,  // De-canonify block hashes
-        kHeadersKey,
-    };
-}
+      current_stage_{stages_.end()},
+      stages_forward_order_{kStagesForwardOrder},
+      stages_unwind_order_{kStagesUnwindOrder} {}
 
 BlockNum ExecutionPipeline::head_header_number() const {
     return head_header_block_num_;

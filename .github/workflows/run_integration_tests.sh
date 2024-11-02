@@ -27,7 +27,7 @@ rm -rf ./mainnet/results/
 # trace_rawTransaction: different implementation
 # trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response with erigon3 but could be erigon3 problem (to be analyzed)
 
-python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
+python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 --json-diff -x \
 debug_accountRange,\
 debug_storageRangeAt,\
 debug_traceCall/test_02.json,\
@@ -48,7 +48,7 @@ erigon_getLatestLogs,\
 eth_getLogs,\
 ots_getTransactionBySenderAndNonce,\
 ots_getContractCreator,\
-ots_hasCode,\
+ots_hasCode/test_09,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\

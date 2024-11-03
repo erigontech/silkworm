@@ -30,6 +30,7 @@
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/kv/api/endpoint/paginated_sequence.hpp>
+#include <silkworm/db/kv/api/endpoint/temporal_range.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -385,6 +386,7 @@ TEST_CASE("get_modified_accounts") {
     //auto begin_result = boost::asio::co_spawn(pool, database.begin(), boost::asio::use_future);
     //auto tx = begin_result.get();
     db::test_util::MockTransaction transaction;
+
     auto& tx = transaction;
     SECTION("end == start") {
         db::kv::api::HistoryRangeQuery query{
@@ -394,12 +396,11 @@ TEST_CASE("get_modified_accounts") {
             .ascending_order = true};
 
         EXPECT_CALL(transaction, history_range(std::move(query))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
-            PaginatorKV paginator = []() -> Task<PageResultKV> {
-              co_return PageResultKV{};  // has_more=false as default
+            PaginatorKV empty_paginator = []() -> Task<PageResultKV> {
+              co_return PageResultKV{};
             };
-            PaginatedKV paginated{paginator};
-            silkworm::db::kv::api::PaginatedKeysValues<db::kv::api::PaginatedKeysValues> result{paginator};
-            //result.insert(db::kv::api::PaginatedKeysValues{});
+            db::kv::api::PaginatedKeysValues result{empty_paginator};
+            //{PageK{string_to_bytes("000000000052a010"), string_to_bytes("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")}};
             co_return result;
         }));
 
@@ -414,7 +415,6 @@ TEST_CASE("get_modified_accounts") {
             "0x07aaec0b237ccf56b03a7c43c1c7a783da560642"
         ])"_json);
     }
-
 #ifdef notdef
     SECTION("end == start + 1") {
         auto result = boost::asio::co_spawn(pool, get_modified_accounts(*tx, 0x52a010, 0x52a011), boost::asio::use_future);

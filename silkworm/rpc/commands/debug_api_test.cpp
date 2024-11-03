@@ -34,7 +34,6 @@
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
-
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
@@ -382,9 +381,9 @@ TEST_CASE("get_modified_accounts") {
     };
     // std::cout << "json: " << json << "\n" << std::flush;
 
-    //auto database = DummyDatabase{json};
-    //auto begin_result = boost::asio::co_spawn(pool, database.begin(), boost::asio::use_future);
-    //auto tx = begin_result.get();
+    // auto database = DummyDatabase{json};
+    // auto begin_result = boost::asio::co_spawn(pool, database.begin(), boost::asio::use_future);
+    // auto tx = begin_result.get();
     db::test_util::MockTransaction transaction;
 
     auto& tx = transaction;
@@ -397,7 +396,7 @@ TEST_CASE("get_modified_accounts") {
 
         EXPECT_CALL(transaction, history_range(std::move(query))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
             PaginatorKV empty_paginator = []() -> Task<PageResultKV> {
-              co_return PageResultKV{};
+                co_return PageResultKV{};
             };
             db::kv::api::PaginatedKeysValues result{empty_paginator};
             //{PageK{string_to_bytes("000000000052a010"), string_to_bytes("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")}};

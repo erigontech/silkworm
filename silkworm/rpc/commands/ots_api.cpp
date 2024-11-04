@@ -278,7 +278,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto key = db::code_domain_key(sender);
 
         db::kv::api::IndexRangeQuery query{
-            .table = db::table::kAccountsHistoryIdxName,
+            .table = db::table::kAccountsHistoryIdx,
             .key = key,
             .from_timestamp = -1,
             .to_timestamp = -1,
@@ -298,7 +298,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
             db::kv::api::HistoryPointQuery hpq{
-                .table = db::table::kAccountsHistoryName,
+                .table = db::table::kAccountsHistory,
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -333,7 +333,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
             db::kv::api::HistoryPointQuery hpq{
-                .table = db::table::kAccountsHistoryName,
+                .table = db::table::kAccountsHistory,
                 .key = key,
                 .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));

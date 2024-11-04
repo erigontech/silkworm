@@ -62,12 +62,6 @@ inline constexpr MapConfig kAccountChangeSet{kAccountChangeSetName, mdbx::key_mo
 inline constexpr const char* kAccountHistoryName{"AccountHistory"};
 inline constexpr MapConfig kAccountHistory{kAccountHistoryName};
 
-inline constexpr const char* kAccountsHistoryName{"AccountsHistory"};
-inline constexpr MapConfig kAccountsHistory{kAccountsHistoryName, mdbx::key_mode::usual, mdbx::value_mode::multi};
-
-inline constexpr const char* kAccountsHistoryIdxName{"AccountsHistoryIdx"};
-inline constexpr MapConfig kAccountsHistoryIdx{kAccountsHistoryIdxName, mdbx::key_mode::usual, mdbx::value_mode::multi};
-
 //! \details Holds block body data
 //! \struct
 //! \verbatim
@@ -382,8 +376,6 @@ inline constexpr MapConfig kMaxTxNum{kMaxTxNumName};
 inline constexpr MapConfig kChainDataTables[]{
     kAccountChangeSet,
     kAccountHistory,
-    kAccountsHistory,
-    kAccountsHistoryIdx,
     kBlockBodies,
     kBlockReceipts,
     kCallFromIndex,
@@ -437,5 +429,11 @@ inline constexpr const char* kStorageDomain{"storage"};
 
 //! \details Domain storing the account code information
 inline constexpr const char* kCodeDomain{"code"};
+
+//! \details History storing the account common information
+inline constexpr const char* kAccountsHistory{"AccountsHistory"};
+
+//! \details Inverted Index storing the account common information
+inline constexpr const char* kAccountsHistoryIdx{"AccountsHistoryIdx"};
 
 }  // namespace silkworm::db::table

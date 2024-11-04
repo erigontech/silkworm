@@ -60,7 +60,7 @@ inline constexpr ChainConfig kShanghaiConfig{
     .shanghai_time = 0,
 };
 
-//! Enables Shanghai from genesis.
+//! Enables Prague from genesis.
 inline constexpr ChainConfig kPragueConfig{
     .chain_id = 1,
     .homestead_block = 0,

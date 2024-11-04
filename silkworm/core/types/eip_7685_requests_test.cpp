@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-
 #include "eip_7685_requests.hpp"
 
 #include <catch2/catch_test_macros.hpp>

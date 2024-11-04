@@ -48,7 +48,7 @@ std::string address_to_hex(const evmc::address& address);
 
 namespace rlp {
     void encode(Bytes& to, const evmc::address& address);
-    DecodingResult decode(ByteView& from, evmc::address& to, Leftover mode = Leftover::kProhibit);
+    DecodingResult decode(ByteView& from, evmc::address& address, Leftover mode = Leftover::kProhibit);
     size_t length(const evmc::address& address) noexcept;
 }  // namespace rlp
 

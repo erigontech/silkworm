@@ -19,11 +19,11 @@
 #include <algorithm>
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
+#include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "outbound_get_block_headers.hpp"
@@ -32,7 +32,7 @@ namespace silkworm {
 
 InboundNewBlockHashes::InboundNewBlockHashes(ByteView data, PeerId peer_id)
     : peer_id_(std::move(peer_id)),
-      req_id_(Singleton<RandomNumber>::instance().generate_one())  // for trace purposes
+      req_id_(chainsync::random_number.generate_one())  // for trace purposes
 {
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;

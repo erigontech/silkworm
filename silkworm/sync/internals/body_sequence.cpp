@@ -17,9 +17,9 @@
 #include "body_sequence.hpp"
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
@@ -144,7 +144,7 @@ std::shared_ptr<OutboundMessage> BodySequence::request_bodies(time_point_t tp) {
 
     auto body_request = std::make_shared<OutboundGetBlockBodies>();
     auto& packet = body_request->packet();
-    packet.request_id = Singleton<RandomNumber>::instance().generate_one();
+    packet.request_id = chainsync::random_number.generate_one();
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 

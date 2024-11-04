@@ -21,12 +21,12 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/db_utils.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "algorithm.hpp"
@@ -539,7 +539,7 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::save_external_announce(Hash 
     if (has_link(hash)) return std::nullopt;  // we already have this link, no need to request it
 
     GetBlockHeadersPacket66 request;
-    request.request_id = Singleton<RandomNumber>::instance().generate_one();
+    request.request_id = chainsync::random_number.generate_one();
     request.request.origin = {hash};
     request.request.amount = 1;
     request.request.skip = 0;

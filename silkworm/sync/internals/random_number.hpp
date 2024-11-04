@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,16 +16,10 @@
 
 #pragma once
 
-#include <concepts>
+#include <silkworm/core/common/random_number.hpp>
 
-namespace silkworm {
+namespace silkworm::chainsync {
 
-template <std::default_initializable T>
-class Singleton {
-    static inline T instance_;
+inline RandomNumber random_number;
 
-  public:
-    static T& instance() { return instance_; }
-};
-
-}  // namespace silkworm
+}  // namespace silkworm::chainsync

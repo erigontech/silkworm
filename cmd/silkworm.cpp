@@ -42,9 +42,6 @@
 #include "common/shutdown_signal.hpp"
 #include "common/snapshot_options.hpp"
 
-namespace sw_db = silkworm::db;
-namespace sw_log = silkworm::log;
-
 using namespace silkworm;
 
 using silkworm::BlockNum;
@@ -155,7 +152,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
         throw std::invalid_argument("--chaindata.pagesize is not a power of 2");
     }
 
-    const size_t mdbx_max_size_hard_limit = chaindata_page_size * sw_db::kMdbxMaxPages;
+    const size_t mdbx_max_size_hard_limit = chaindata_page_size * db::kMdbxMaxPages;
     if (node_settings.chaindata_env_config.max_size > mdbx_max_size_hard_limit) {
         throw std::invalid_argument("--chaindata.maxsize exceeds max allowed size by page size i.e" +
                                     human_size(mdbx_max_size_hard_limit));
@@ -169,24 +166,24 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
     node_settings.chaindata_env_config.path = node_settings.data_directory->chaindata().path().string();
 
     // Parse prune mode
-    sw_db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
+    db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
     if (cli["--prune.h.older"]->count()) olderHistory.emplace(cli["--prune.h.older"]->as<BlockNum>());
     if (cli["--prune.r.older"]->count()) olderReceipts.emplace(cli["--prune.r.older"]->as<BlockNum>());
     if (cli["--prune.s.older"]->count()) olderSenders.emplace(cli["--prune.s.older"]->as<BlockNum>());
     if (cli["--prune.t.older"]->count()) olderTxIndex.emplace(cli["--prune.t.older"]->as<BlockNum>());
     if (cli["--prune.c.older"]->count()) olderCallTraces.emplace(cli["--prune.c.older"]->as<BlockNum>());
 
-    sw_db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
+    db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
     if (cli["--prune.h.before"]->count()) beforeHistory.emplace(cli["--prune.h.before"]->as<BlockNum>());
     if (cli["--prune.r.before"]->count()) beforeReceipts.emplace(cli["--prune.r.before"]->as<BlockNum>());
     if (cli["--prune.s.before"]->count()) beforeSenders.emplace(cli["--prune.s.before"]->as<BlockNum>());
     if (cli["--prune.t.before"]->count()) beforeTxIndex.emplace(cli["--prune.t.before"]->as<BlockNum>());
     if (cli["--prune.c.before"]->count()) beforeCallTraces.emplace(cli["--prune.c.before"]->as<BlockNum>());
 
-    node_settings.prune_mode =
-        sw_db::parse_prune_mode(prune_mode,
-                                olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
-                                beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+    node_settings.prune_mode = db::parse_prune_mode(
+        prune_mode,
+        olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+        beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
     // snapshots::SnapshotSettings
     auto& snapshot_settings = settings.snapshot_settings;
@@ -227,10 +224,10 @@ int main(int argc, char* argv[]) {
         parse_silkworm_command_line(cli, argc, argv, settings);
 
         // Initialize logging with cli settings
-        sw_log::init(settings.log_settings);
-        sw_log::set_thread_name("main-thread");
+        log::init(settings.log_settings);
+        log::set_thread_name("main-thread");
 
-        sw_log::Info("Silkworm", build_info_as_log_args(silkworm_get_buildinfo()));
+        log::Info("Silkworm", build_info_as_log_args(silkworm_get_buildinfo()));
 
         silkworm::rpc::ClientContextPool context_pool{
             settings.server_settings.context_pool_settings,
@@ -250,24 +247,24 @@ int main(int argc, char* argv[]) {
             execution_node.run() || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();
-        sw_log::Info() << "Silkworm is now running";
+        SILK_INFO << "Silkworm is now running";
 
         // Wait for shutdown signal or an exception from tasks
         run_future.get();
 
         // Graceful exit after user shutdown signal
-        sw_log::Info() << "Exiting Silkworm";
+        SILK_INFO << "Exiting Silkworm";
         return 0;
     } catch (const CLI::ParseError& ex) {
         // Let CLI11 handle any error occurred parsing command-line args
         return cli.exit(ex);
     } catch (const std::exception& ex) {
         // Any exception during run leads to termination
-        sw_log::Critical("Unrecoverable failure: exit", {"error", ex.what()});
+        SILK_CRIT << "Unrecoverable failure: " << ex.what();
         return -1;
     } catch (...) {
         // Any unknown exception during run leads to termination
-        sw_log::Critical("Unrecoverable failure: exit", {"error", "unexpected exception"});
+        SILK_CRIT << "Unrecoverable failure: unexpected exception";
         return -2;
     }
 }

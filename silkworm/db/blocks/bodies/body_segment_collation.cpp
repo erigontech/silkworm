@@ -51,7 +51,7 @@ void BodySegmentCollation::prune(RWTxn& txn, BlockNumRange range) const {
         delete_body(txn, hash, i);
 
         if ((count > 10000) && ((count % 10000) == 0)) {
-            log::Debug("BodySegmentCollation") << "cleaned up until block " << i;
+            SILK_DEBUG_M("BodySegmentCollation") << "cleaned up until block " << i;
         }
     }
 }

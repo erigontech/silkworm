@@ -83,7 +83,7 @@ void sentry_main(Settings settings) {
 
     const auto pid = boost::this_process::get_id();
     const auto tid = std::this_thread::get_id();
-    log::Info() << "Sentry is now running [pid=" << pid << ", main thread=" << tid << "]";
+    SILK_INFO << "Sentry is now running [pid=" << pid << ", main thread=" << tid << "]";
 
     // wait until either:
     // - shutdown_signal, then the sentry.run() is cancelled gracefully
@@ -93,7 +93,7 @@ void sentry_main(Settings settings) {
     context_pool.stop();
     context_pool.join();
 
-    log::Info() << "Sentry exiting [pid=" << pid << ", main thread=" << tid << "]";
+    SILK_INFO << "Sentry exiting [pid=" << pid << ", main thread=" << tid << "]";
 }
 
 int main(int argc, char* argv[]) {
@@ -102,10 +102,10 @@ int main(int argc, char* argv[]) {
     } catch (const CLI::ParseError& pe) {
         return pe.get_exit_code();
     } catch (const std::exception& e) {
-        log::Critical() << "Sentry exiting due to exception: " << e.what();
+        SILK_CRIT << "Sentry exiting due to exception: " << e.what();
         return -2;
     } catch (...) {
-        log::Critical() << "Sentry exiting due to unexpected exception";
+        SILK_CRIT << "Sentry exiting due to unexpected exception";
         return -3;
     }
 }

@@ -75,12 +75,12 @@ HeaderChain::HeaderChain(
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
         set_target_block(stop_at_block.value());
-        SILK_TRACE << "HeaderChain target block=" << target_block_.value();
+        SILK_TRACE_M("HeaderChain") << "target block=" << target_block_.value();
     }
 
     RandomNumber random(100'000'000, 1'000'000'000);
     request_id_prefix_ = random.generate_one();
-    SILK_TRACE << "HeaderChain: request id prefix=" << request_id_prefix_;
+    SILK_TRACE_M("HeaderChain") << "request id prefix=" << request_id_prefix_;
 }
 
 void HeaderChain::set_target_block(BlockNum target_block) {
@@ -163,8 +163,9 @@ Headers HeaderChain::withdraw_stable_headers() {
     if (insert_list_.empty()) return {};
 
     auto initial_highest_in_db = highest_in_db_;
-    SILK_TRACE << "HeaderChain: finding headers to persist on top of " << highest_in_db_ << " (" << insert_list_.size()
-               << " waiting in queue)";
+    SILK_TRACE_M("HeaderChain")
+        << "finding headers to persist on top of " << highest_in_db_
+        << " (" << insert_list_.size() << " waiting in queue)";
 
     OldestFirstLinkQueue assessing_list = insert_list_;  // use move() operation if it is assured that after the move
     insert_list_.clear();                                // the container is empty and can be reused
@@ -185,15 +186,16 @@ Headers HeaderChain::withdraw_stable_headers() {
 
         if (assessment == kPostpone) {
             insert_list_.push(link);
-            log::Warning() << "HeaderChain: added future link,"
-                           << " hash=" << link->hash << " height=" << link->block_height
-                           << " timestamp=" << link->header->timestamp << ")";
+            SILK_WARN_M("HeaderChain")
+                << "added future link,"
+                << " hash=" << link->hash << " height=" << link->block_height
+                << " timestamp=" << link->header->timestamp << ")";
             continue;
         }
 
         if (assessment == kSkip) {
             links_.erase(link->hash);
-            log::Warning() << "HeaderChain: skipping link at " << link->block_height;
+            SILK_WARN_M("HeaderChain") << "skipping link at " << link->block_height;
             continue;  // todo: do we need to invalidate all the descendants?
         }
 
@@ -222,16 +224,18 @@ Headers HeaderChain::withdraw_stable_headers() {
 
         // Make sure long insertions do not appear as a stuck stage headers
         if (stable_headers.size() % 1000 == 0) {
-            SILK_TRACE << "HeaderChain: " << stable_headers.size() << " headers prepared for persistence on top of "
-                       << initial_highest_in_db << " (cont.)";
+            SILK_TRACE_M("HeaderChain")
+                << stable_headers.size() << " headers prepared for persistence on top of "
+                << initial_highest_in_db << " (cont.)";
         }
     }
 
     if (!stable_headers.empty()) {
-        log::Trace() << "[INFO] HeaderChain: " << stable_headers.size()
-                     << " headers prepared for persistence on top of " << initial_highest_in_db << " (from "
-                     << header_at(stable_headers.begin()).number << " to " << header_at(stable_headers.rbegin()).number
-                     << ")";
+        SILK_TRACE_M("HeaderChain")
+            << stable_headers.size() << " headers prepared for persistence"
+            << " on top of " << initial_highest_in_db
+            << " (from " << header_at(stable_headers.begin()).number
+            << " to " << header_at(stable_headers.rbegin()).number << ")";
     }
 
     // Save memory
@@ -278,15 +282,17 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
         links_.erase(link->hash);
     }
 
-    SILK_TRACE << "PersistedLinkQueue: too many links, cut down from " << initial_size << " to "
-               << persisted_link_queue_.size();
+    SILK_TRACE_M("HeaderChain")
+        << "too many links in persisted_link_queue,"
+        << " cut down from " << initial_size
+        << " to " << persisted_link_queue_.size();
 }
 
 /*
  * Add a ready header to the chain, if it becomes a new anchor then try to extend it if there are no other anchors
  */
 std::shared_ptr<OutboundMessage> HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) {
-    SILK_TRACE << "HeaderChain: adding header " << anchor.number << " " << Hash{anchor.hash()};
+    SILK_TRACE_M("HeaderChain") << "adding header " << anchor.number << " " << Hash{anchor.hash()};
 
     statistics_.received_items += 1;
 
@@ -343,10 +349,11 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     BlockNum top = target_block_ ? std::min(top_seen_height_, *target_block_) : top_seen_height_;
 
     [[maybe_unused]] auto _ = gsl::finally([&] {
-        SILK_TRACE << "HeaderChain, skeleton request, condition = " << skeleton_condition_
-                   << ", anchors = " << anchors_.size()
-                   << ", target = " << top
-                   << ", highest_in_db = " << highest_in_db_ << ")";
+        SILK_TRACE_M("HeaderChain")
+            << "skeleton request, condition = " << skeleton_condition_
+            << ", anchors = " << anchors_.size()
+            << ", target = " << top
+            << ", highest_in_db = " << highest_in_db_ << ")";
     });
 
     if (anchors_.size() > 64) {
@@ -454,7 +461,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
     if (anchor_queue_.empty()) {
         extension_condition_ = "empty anchor queue";
         if (extension_condition_ != prev_condition) {
-            SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
+            SILK_TRACE_M("HeaderChain") << "no more headers to request: " << extension_condition_;
         }
         return {};
     }
@@ -471,7 +478,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
         if (anchor->timestamp > time_point) {
             extension_condition_ = "no anchor ready for extension yet";
             if (extension_condition_ != prev_condition) {
-                SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
+                SILK_TRACE_M("HeaderChain") << "no more headers to request: " << extension_condition_;
             }
             return send_penalties;  // anchor not ready for "extend" re-request yet, send only penalties if any
         }
@@ -489,16 +496,19 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_extension_request(time_poin
 
             statistics_.requested_items += kMaxLen;
 
-            SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->block_height
-                       << " (chain bundle len = " << anchor->chain_length() << ", last link = " << anchor->last_link_height << " )";
+            SILK_TRACE_M("HeaderChain")
+                << "trying to extend anchor " << anchor->block_height
+                << " (chain bundle len = " << anchor->chain_length()
+                << ", last link = " << anchor->last_link_height << " )";
 
             extension_condition_ = "ok";
             return request_message;  // try (again) to extend this anchor
         }
 
         // ancestors of this anchor seem to be unavailable, invalidate and move on
-        log::Warning("HeaderChain") << "invalidating anchor for suspected unavailability, "
-                                    << "height=" << anchor->block_height;
+        SILK_WARN_M("HeaderChain")
+            << "invalidating anchor for suspected unavailability, "
+            << "height=" << anchor->block_height;
         // no need to do anchor_queue_.pop(), implicitly done in the following
         invalidate(anchor);
         send_penalties->penalties().push_back(PeerPenalization{Penalty::kAbandonedAnchorPenalty, anchor->peer_id});
@@ -557,12 +567,13 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
     }
 
     if (anchor == nullptr) {
-        log::Trace() << "[WARNING] HeaderChain: failed restoring timestamp due to request nack, request_id="
-                     << packet.request_id;
+        SILK_TRACE_M("HeaderChain") << "[WARNING] failed restoring timestamp due to request nack;"
+                                    << " request_id=" << packet.request_id;
         return;  // not found
     }
 
-    log::Trace() << "[INFO] HeaderChain: restoring timestamp due to request nack, request_id=" << packet.request_id;
+    SILK_TRACE_M("HeaderChain") << "restoring timestamp due to request nack;"
+                                << " request_id=" << packet.request_id;
 
     anchor_queue_.update(anchor, [&](auto& anchor_) { anchor_->restore_timestamp(); });
 }
@@ -572,17 +583,17 @@ bool HeaderChain::has_link(Hash hash) { return (links_.find(hash) != links_.end(
 bool HeaderChain::find_bad_header(const std::vector<BlockHeader>& headers) {
     return std::ranges::any_of(headers, [this](const BlockHeader& header) {
         if (is_zero(header.parent_hash) && header.number != 0) {
-            log::Warning("HeaderStage") << "received malformed header: " << header.number;
+            SILK_WARN_M("HeaderChain") << "received malformed header: " << header.number;
             return true;
         }
         // Quick-and-dirty validity check based on header difficulty and PoS transition
         if (header.difficulty == 0 && !terminal_total_difficulty_.has_value()) {
-            log::Warning("HeaderStage") << "received header w/ zero difficulty, block=" << header.number;
+            SILK_WARN_M("HeaderChain") << "received header w/ zero difficulty, block=" << header.number;
             return true;
         }
         Hash header_hash = header.hash();
         if (bad_headers_.contains(header_hash)) {
-            log::Warning("HeaderStage") << "received bad header: " << header.number;
+            SILK_WARN_M("HeaderChain") << "received bad header: " << header.number;
             return true;
         }
         return false;
@@ -603,7 +614,9 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
     if (headers.begin()->number < top_seen_height_ &&  // an old header announcement?
         !is_valid_request_id(request_id)) {            // anyway is not requested by us...
         statistics_.reject_causes.not_requested += headers.size();
-        SILK_TRACE << "Rejecting message with reqId=" << request_id << " and first block=" << headers.begin()->number;
+        SILK_TRACE_M("HeaderChain")
+            << "Rejecting message with reqId=" << request_id
+            << " and first block=" << headers.begin()->number;
         return {Penalty::kNoPenalty, request_more_headers};
     }
 
@@ -693,9 +706,11 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
     auto [tip, end] = find_link(segment, start);
 
     if (end == 0) {
-        SILK_TRACE << "HeaderChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
-                   << ", hash=" << Hash{segment[start]->hash()} << " parent-hash=" << Hash{segment[start]->parent_hash}
-                   << (anchor.has_value() ? ", removing corresponding anchor" : ", corresponding anchor not found");
+        SILK_TRACE_M("HeaderChain")
+            << "segment cut&paste error, duplicated segment, bn=" << segment[start]->number
+            << ", hash=" << Hash{segment[start]->hash()}
+            << " parent-hash=" << Hash{segment[start]->parent_hash}
+            << (anchor.has_value() ? ", removing corresponding anchor" : ", corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
         if (anchor.has_value()) invalidate(anchor.value());
@@ -745,9 +760,11 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
         // SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
         //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     } catch (SegmentCutAndPasteError& e) {
-        log::Trace() << "[WARNING] HeaderChain, segment cut&paste error, " << op << " up=" << startNum << " ("
-                     << Hash{segment[start]->hash()} << ") down=" << endNum << " (" << Hash{segment[end - 1]->hash()}
-                     << ") failed, reason: " << e.what();
+        SILK_TRACE_M("HeaderChain")
+            << "[WARNING] segment cut&paste error, " << op
+            << " up=" << startNum << " (" << Hash{segment[start]->hash()} << ")"
+            << " down=" << endNum << " (" << Hash{segment[end - 1]->hash()} << ")"
+            << " failed, reason: " << e.what();
         return false;
     }
 
@@ -765,10 +782,11 @@ void HeaderChain::reduce_links_to(size_t limit) {
 
     invalidate(victim_anchor);
 
-    log::Info("HeaderStage") << "LinkQueue has too many links, cut down from " << initial_size
-                             << " to " << pending_links()
-                             << " (removed chain bundle start=" << victim_anchor->block_height
-                             << " end=" << victim_anchor->last_link_height << ")";
+    SILK_INFO_M("HeaderChain")
+        << "LinkQueue has too many links, cut down from " << initial_size
+        << " to " << pending_links()
+        << " (removed chain bundle start=" << victim_anchor->block_height
+        << " end=" << victim_anchor->last_link_height << ")";
 }
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
@@ -821,8 +839,8 @@ std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> Header
 
     auto a = anchors_.find(parent_link->header->parent_hash);
     if (a == anchors_.end()) {
-        log::Trace()
-            << "[ERROR] HeaderChain: segment cut&paste error, segment without anchor or persisted attach point, "
+        SILK_TRACE_M("HeaderChain")
+            << "[ERROR] segment cut&paste error, segment without anchor or persisted attach point, "
             << "starting bn=" << link->block_height << " ending bn=" << parent_link->block_height << " "
             << "parent=" << to_hex(parent_link->header->parent_hash);
         return {std::nullopt, parent_link};  // wrong, invariant violation, no anchor but there should be
@@ -874,14 +892,15 @@ void HeaderChain::connect(const std::shared_ptr<Link>& attachment_link, Segment:
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as pre-verified
     remove(anchor);
 
-    log::Trace() << "[INFO] HeaderChain, segment op: "
-                 << (deep_a.has_value()
-                         ? "A " + to_string(deep_a.value()->block_height)
-                         : "X " + to_string(deep_link->block_height) + (deep_link->persisted ? " (P)" : " (!P)"))
-                 << " --- " << attachment_link->block_height << (attachment_link->preverified ? " (V)" : "")
-                 << " <-connect-> " << segment_slice.rbegin()->operator*().number << " --- " << prev_link->block_height
-                 << " <-connect-> " << anchor->block_height << " --- " << anchor->last_link_height
-                 << (anchor_preverified ? " (V)" : "");
+    SILK_TRACE_M("HeaderChain")
+        << "segment op: "
+        << (deep_a.has_value()
+                ? "A " + to_string(deep_a.value()->block_height)
+                : "X " + to_string(deep_link->block_height) + (deep_link->persisted ? " (P)" : " (!P)"))
+        << " --- " << attachment_link->block_height << (attachment_link->preverified ? " (V)" : "")
+        << " <-connect-> " << segment_slice.rbegin()->operator*().number << " --- " << prev_link->block_height
+        << " <-connect-> " << anchor->block_height << " --- " << anchor->last_link_height
+        << (anchor_preverified ? " (V)" : "");
 }
 
 HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_slice, const std::shared_ptr<Anchor>& anchor) {
@@ -917,9 +936,10 @@ HeaderChain::RequestMoreHeaders HeaderChain::extend_down(Segment::Slice segment_
     bool newanchor_preverified =
         std::ranges::any_of(new_anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    log::Trace() << "[INFO] HeaderChain, segment op: " << new_anchor->block_height
-                 << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->block_height << " <-extend down "
-                 << anchor->block_height << " --- " << anchor->last_link_height << (anchor_preverified ? " (V)" : "");
+    SILK_TRACE_M("HeaderChain")
+        << "segment op: " << new_anchor->block_height
+        << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->block_height << " <-extend down "
+        << anchor->block_height << " --- " << anchor->last_link_height << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;
 }
@@ -956,13 +976,14 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
         // if (!deep_link->persisted) error, else attachment to special anchor
     }
 
-    log::Trace() << "[INFO] HeaderChain, segment op: "
-                 << (deep_a.has_value()
-                         ? "A " + to_string(deep_a.value()->block_height)
-                         : "X " + to_string(deep_link->block_height) + (deep_link->persisted ? " (P)" : " (!P)"))
-                 << " --- " << attachment_link->block_height << (attachment_link->preverified ? " (V)" : "")
-                 << " extend up-> " << segment_slice.rbegin()->operator*().number << " --- "
-                 << (segment_slice.rend() - 1)->operator*().number;
+    SILK_TRACE_M("HeaderChain")
+        << "segment op: "
+        << (deep_a.has_value()
+                ? "A " + to_string(deep_a.value()->block_height)
+                : "X " + to_string(deep_link->block_height) + (deep_link->persisted ? " (P)" : " (!P)"))
+        << " --- " << attachment_link->block_height << (attachment_link->preverified ? " (V)" : "")
+        << " extend up-> " << segment_slice.rbegin()->operator*().number << " --- "
+        << (segment_slice.rend() - 1)->operator*().number;
 }
 
 HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) {
@@ -991,8 +1012,8 @@ HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_s
     bool anchor_preverified =
         std::ranges::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    log::Trace() << "[INFO] HeaderChain, segment op: new anchor " << anchor->block_height << " --- "
-                 << anchor->last_link_height << (anchor_preverified ? " (V)" : "");
+    SILK_TRACE_M("HeaderChain") << "segment op: new anchor " << anchor->block_height << " --- "
+                                << anchor->last_link_height << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;
 }
@@ -1041,7 +1062,7 @@ void HeaderChain::remove(const std::shared_ptr<Anchor>& anchor) {
     bool erased2 = anchor_queue_.erase(anchor);
 
     if (erased1 == 0 || !erased2) {
-        log::Warning("HeaderStage") << "removal of anchor failed, bn=" << anchor->block_height;
+        SILK_WARN_M("HeaderChain") << "removal of anchor failed, bn=" << anchor->block_height;
     }
 }
 

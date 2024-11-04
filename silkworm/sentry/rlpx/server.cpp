@@ -70,7 +70,7 @@ Task<void> Server::run(
     acceptor.listen();
 
     EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_, port_};
-    log::Info("sentry") << "rlpx::Server is listening at " << node_url.to_string();
+    SILK_INFO_M("sentry") << "rlpx::Server is listening at " << node_url.to_string();
 
     while (acceptor.is_open()) {
         auto client_executor = executor_pool.any_executor();
@@ -79,18 +79,18 @@ Task<void> Server::run(
             co_await acceptor.async_accept(stream.socket(), use_awaitable);
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::invalid_argument) {
-                log::Error("sentry") << "Sentry RLPx server got invalid_argument on accept port=" << port_;
+                SILK_ERROR_M("sentry") << "Sentry RLPx server got invalid_argument on accept port=" << port_;
                 continue;
             }
-            log::Critical("sentry") << "Sentry RLPx server unexpected end [" + std::string{ex.what()} + "]";
+            SILK_CRIT_M("sentry") << "Sentry RLPx server unexpected end [" + std::string{ex.what()} + "]";
             throw;
         }
 
         try {
             const auto remote_endpoint = stream.socket().remote_endpoint();
-            log::Debug("sentry") << "rlpx::Server client connected from " << remote_endpoint;
+            SILK_DEBUG_M("sentry") << "rlpx::Server client connected from " << remote_endpoint;
         } catch (const boost::system::system_error& ex) {
-            log::Debug("sentry") << "rlpx::Server client immediately disconnected [" + std::string{ex.what()} + "]";
+            SILK_DEBUG_M("sentry") << "rlpx::Server client immediately disconnected [" + std::string{ex.what()} + "]";
             continue;
         }
 

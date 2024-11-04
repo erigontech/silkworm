@@ -38,7 +38,7 @@ void add_list_option(CLI::App& cli, const std::string& name, std::vector<TItem>&
                 target_list.emplace_back(result);
             }
         } catch (const std::exception& e) {
-            log::Error() << e.what();
+            SILK_ERROR << e.what();
             return false;
         }
         return true;
@@ -70,7 +70,7 @@ void add_sentry_options(CLI::App& cli, silkworm::sentry::Settings& settings) {
             settings.node_key = {{std::filesystem::path(results[0])}};
             return true;
         } catch (const std::exception& e) {
-            log::Error() << e.what();
+            SILK_ERROR << e.what();
             return false;
         }
     });

@@ -160,7 +160,7 @@ std::optional<ExecutionEngine::ForkingPath> ExecutionEngine::find_forking_point(
 }
 
 VerificationResult ExecutionEngine::verify_chain_no_fork_tracking(Hash head_block_hash) {
-    log::Info("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
+    SILK_INFO_M("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
 
     SILKWORM_ASSERT(!fork_tracking_active_);
 
@@ -173,7 +173,7 @@ VerificationResult ExecutionEngine::verify_chain_no_fork_tracking(Hash head_bloc
 }
 
 Task<VerificationResult> ExecutionEngine::verify_chain(Hash head_block_hash) {
-    log::Info("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
+    SILK_INFO_M("ExecutionEngine") << "verifying chain " << head_block_hash.to_hex();
 
     if (last_fork_choice_.hash == head_block_hash) {
         SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
@@ -203,7 +203,7 @@ Task<VerificationResult> ExecutionEngine::verify_chain(Hash head_block_hash) {
 bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
                                                 std::optional<Hash> finalized_block_hash,
                                                 std::optional<Hash> safe_block_hash) {
-    log::Info("ExecutionEngine") << "updating fork choice to " << head_block_hash.to_hex();
+    SILK_INFO_M("ExecutionEngine") << "updating fork choice to " << head_block_hash.to_hex();
 
     if (!fork_tracking_active_ || head_block_hash == last_fork_choice_.hash) {
         bool updated = main_chain_.notify_fork_choice_update(head_block_hash, finalized_block_hash);  // BLOCKING
@@ -211,7 +211,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash,
 
         last_fork_choice_ = main_chain_.last_chosen_head();
         if (head_block_hash == main_chain_.current_head().hash && node_settings_.parallel_fork_tracking_enabled) {
-            log::Info("ExecutionEngine") << "activate parallel fork tracking at head " << head_block_hash.to_hex();
+            SILK_INFO_M("ExecutionEngine") << "activate parallel fork tracking at head " << head_block_hash.to_hex();
             fork_tracking_active_ = true;
         }
     } else {

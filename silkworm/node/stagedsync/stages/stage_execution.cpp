@@ -361,7 +361,7 @@ Stage::Result Execution::unwind(RWTxn& txn) {
         for (const auto& map_config : kUnwindTables) {
             auto unwind_cursor = txn.rw_cursor(map_config);
             auto erased{cursor_erase(*unwind_cursor, start_key, CursorMoveDirection::kForward)};
-            log::Info() << "Erased " << erased << " records from " << map_config.name;
+            SILK_INFO << "Erased " << erased << " records from " << map_config.name;
         }
         stages::write_stage_progress(txn, stages::kExecutionKey, to);
         txn.commit_and_renew();

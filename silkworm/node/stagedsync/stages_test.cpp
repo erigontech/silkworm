@@ -506,7 +506,7 @@ TEST_CASE("Sync Stages") {
         }
 
         SECTION("Execution Prune Default") {
-            log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
+            SILK_INFO << "Pruning with " << node_settings.prune_mode.to_string();
             stagedsync::SyncContext sync_context{};
             stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);
             REQUIRE(stage.prune(txn) == stagedsync::Stage::Result::kSuccess);
@@ -536,7 +536,7 @@ TEST_CASE("Sync Stages") {
                 parse_prune_mode("", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, 2,
                                  std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
-            log::Info() << "Pruning with " << node_settings.prune_mode.to_string();
+            SILK_INFO << "Pruning with " << node_settings.prune_mode.to_string();
             REQUIRE(node_settings.prune_mode.history().enabled());
             stagedsync::SyncContext sync_context{};
             stagedsync::Execution stage = make_execution_stage(&sync_context, node_settings, data_model_factory);

@@ -612,7 +612,7 @@ NodeDbSqlite::NodeDbSqlite(const boost::asio::any_io_executor& executor)
 }
 
 NodeDbSqlite::~NodeDbSqlite() {
-    log::Trace("sentry") << "silkworm::sentry::discovery::node_db::NodeDbSqlite::~NodeDbSqlite";
+    SILK_TRACE_M("sentry") << "silkworm::sentry::discovery::node_db::NodeDbSqlite::~NodeDbSqlite";
 }
 
 void NodeDbSqlite::setup(const std::filesystem::path& db_dir_path) {

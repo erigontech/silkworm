@@ -70,9 +70,10 @@ ServerImpl::ServerImpl(
     ServiceRouter router)
     : silkworm::rpc::Server(config),
       router_(std::move(router)) {
-    log::Info("sentry") << "rpc::Server created"
-                        << " to listen on: " << config.address_uri << ";"
-                        << " contexts: " << config.context_pool_settings.num_contexts;
+    SILK_INFO_M("sentry")
+        << "rpc::Server created"
+        << " to listen on: " << config.address_uri << ";"
+        << " contexts: " << config.context_pool_settings.num_contexts;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
@@ -113,7 +114,7 @@ Server::Server(
     : p_impl_(std::make_unique<ServerImpl>(config, std::move(router))) {}
 
 Server::~Server() {
-    log::Trace("sentry") << "silkworm::sentry::grpc::server::Server::~Server";
+    SILK_TRACE_M("sentry") << "silkworm::sentry::grpc::server::Server::~Server";
 }
 
 Task<void> Server::async_run() {

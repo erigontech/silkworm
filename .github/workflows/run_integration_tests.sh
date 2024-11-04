@@ -10,7 +10,6 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-# eth_baseFee & eth_blobBaseFee: new APIs
 # eth_estimateGas new fields
 # eth_getBlockReceipts/test_07.json new blobFields   
 # debug_accountRange: new algo using TKV
@@ -20,8 +19,9 @@ rm -rf ./mainnet/results/
 # erigon_getBalanceChangesInBlock: new algo using TKV
 # erigon_getLatestLogs: new algo using TKV
 # eth_getLogs: new algo using TKV
-# ots_getTransactionBySenderAndNonce: new algo using TKV
 # ots_getContractCreator: new algo using TKV
+# ots_getTransactionBySenderAndNonce/test_04.json: erigon3 bug in limit and page_size management in IndexRangeQuery query
+# ots_getTransactionBySenderAndNonce/test_07.json: erigon3 bug in limit and page_size management in IndexRangeQuery query
 # ots_hasCode: new algo using TKV
 # ots_searchTransactionsAfter: new algo using TKV
 # ots_searchTransactionsBefore: new algo using TKV
@@ -29,7 +29,7 @@ rm -rf ./mainnet/results/
 # trace_rawTransaction: different implementation
 # trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response with erigon3 but could be erigon3 problem (to be analyzed)
 
-python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --port 51515 -x \
+python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
@@ -48,16 +48,17 @@ debug_traceTransaction/test_96.json,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
+eth_estimateGas,\
+eth_getBlockReceipts/test_07.json,\
 eth_getLogs,\
-ots_getTransactionBySenderAndNonce,\
+ots_getTransactionBySenderAndNonce/test_04.json,\
+ots_getTransactionBySenderAndNonce/test_07.json,\
 ots_getContractCreator,\
-ots_hasCode,\
+ots_hasCode/test_09.json,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\
-trace_rawTransaction,\
-trace_filter/test_16.json,\
-txpool_content --transport_type http,websocket
+trace_rawTransaction
 
 failed_test=$?
 

@@ -840,7 +840,7 @@ class Header final :
     kBaseFeePerGasFieldNumber = 17,
     kWithdrawalHashFieldNumber = 18,
     kParentBeaconBlockRootFieldNumber = 21,
-    kRequestsRootFieldNumber = 22,
+    kRequestsHashFieldNumber = 22,
     kBlockNumberFieldNumber = 7,
     kGasLimitFieldNumber = 8,
     kGasUsedFieldNumber = 9,
@@ -1116,23 +1116,23 @@ class Header final :
       ::types::H256* parent_beacon_block_root);
   ::types::H256* unsafe_arena_release_parent_beacon_block_root();
 
-  // optional .types.H256 requests_root = 22;
-  bool has_requests_root() const;
+  // optional .types.H256 requests_hash = 22;
+  bool has_requests_hash() const;
   private:
-  bool _internal_has_requests_root() const;
+  bool _internal_has_requests_hash() const;
   public:
-  void clear_requests_root();
-  const ::types::H256& requests_root() const;
-  PROTOBUF_NODISCARD ::types::H256* release_requests_root();
-  ::types::H256* mutable_requests_root();
-  void set_allocated_requests_root(::types::H256* requests_root);
+  void clear_requests_hash();
+  const ::types::H256& requests_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_requests_hash();
+  ::types::H256* mutable_requests_hash();
+  void set_allocated_requests_hash(::types::H256* requests_hash);
   private:
-  const ::types::H256& _internal_requests_root() const;
-  ::types::H256* _internal_mutable_requests_root();
+  const ::types::H256& _internal_requests_hash() const;
+  ::types::H256* _internal_mutable_requests_hash();
   public:
-  void unsafe_arena_set_allocated_requests_root(
-      ::types::H256* requests_root);
-  ::types::H256* unsafe_arena_release_requests_root();
+  void unsafe_arena_set_allocated_requests_hash(
+      ::types::H256* requests_hash);
+  ::types::H256* unsafe_arena_release_requests_hash();
 
   // uint64 block_number = 7;
   void clear_block_number();
@@ -1243,7 +1243,7 @@ class Header final :
     ::types::H256* base_fee_per_gas_;
     ::types::H256* withdrawal_hash_;
     ::types::H256* parent_beacon_block_root_;
-    ::types::H256* requests_root_;
+    ::types::H256* requests_hash_;
     uint64_t block_number_;
     uint64_t gas_limit_;
     uint64_t gas_used_;
@@ -1382,7 +1382,6 @@ class BlockBody final :
     kTransactionsFieldNumber = 3,
     kUnclesFieldNumber = 4,
     kWithdrawalsFieldNumber = 5,
-    kRequestsFieldNumber = 6,
     kBlockHashFieldNumber = 1,
     kBlockNumberFieldNumber = 2,
   };
@@ -1446,30 +1445,6 @@ class BlockBody final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
       withdrawals() const;
 
-  // repeated bytes requests = 6;
-  int requests_size() const;
-  private:
-  int _internal_requests_size() const;
-  public:
-  void clear_requests();
-  const std::string& requests(int index) const;
-  std::string* mutable_requests(int index);
-  void set_requests(int index, const std::string& value);
-  void set_requests(int index, std::string&& value);
-  void set_requests(int index, const char* value);
-  void set_requests(int index, const void* value, size_t size);
-  std::string* add_requests();
-  void add_requests(const std::string& value);
-  void add_requests(std::string&& value);
-  void add_requests(const char* value);
-  void add_requests(const void* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& requests() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_requests();
-  private:
-  const std::string& _internal_requests(int index) const;
-  std::string* _internal_add_requests();
-  public:
-
   // .types.H256 block_hash = 1;
   bool has_block_hash() const;
   private:
@@ -1508,7 +1483,6 @@ class BlockBody final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> transactions_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::execution::Header > uncles_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal > withdrawals_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> requests_;
     ::types::H256* block_hash_;
     uint64_t block_number_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -3857,6 +3831,7 @@ class AssembledBlockData final :
     kExecutionPayloadFieldNumber = 1,
     kBlockValueFieldNumber = 2,
     kBlobsBundleFieldNumber = 3,
+    kRequestsFieldNumber = 4,
   };
   // .types.ExecutionPayload execution_payload = 1;
   bool has_execution_payload() const;
@@ -3912,6 +3887,24 @@ class AssembledBlockData final :
       ::types::BlobsBundleV1* blobs_bundle);
   ::types::BlobsBundleV1* unsafe_arena_release_blobs_bundle();
 
+  // .types.RequestsBundle requests = 4;
+  bool has_requests() const;
+  private:
+  bool _internal_has_requests() const;
+  public:
+  void clear_requests();
+  const ::types::RequestsBundle& requests() const;
+  PROTOBUF_NODISCARD ::types::RequestsBundle* release_requests();
+  ::types::RequestsBundle* mutable_requests();
+  void set_allocated_requests(::types::RequestsBundle* requests);
+  private:
+  const ::types::RequestsBundle& _internal_requests() const;
+  ::types::RequestsBundle* _internal_mutable_requests();
+  public:
+  void unsafe_arena_set_allocated_requests(
+      ::types::RequestsBundle* requests);
+  ::types::RequestsBundle* unsafe_arena_release_requests();
+
   // @@protoc_insertion_point(class_scope:execution.AssembledBlockData)
  private:
   class _Internal;
@@ -3923,6 +3916,7 @@ class AssembledBlockData final :
     ::types::ExecutionPayload* execution_payload_;
     ::types::H256* block_value_;
     ::types::BlobsBundleV1* blobs_bundle_;
+    ::types::RequestsBundle* requests_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -6695,41 +6689,41 @@ inline void Header::set_allocated_parent_beacon_block_root(::types::H256* parent
   // @@protoc_insertion_point(field_set_allocated:execution.Header.parent_beacon_block_root)
 }
 
-// optional .types.H256 requests_root = 22;
-inline bool Header::_internal_has_requests_root() const {
+// optional .types.H256 requests_hash = 22;
+inline bool Header::_internal_has_requests_hash() const {
   bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.requests_root_ != nullptr);
+  PROTOBUF_ASSUME(!value || _impl_.requests_hash_ != nullptr);
   return value;
 }
-inline bool Header::has_requests_root() const {
-  return _internal_has_requests_root();
+inline bool Header::has_requests_hash() const {
+  return _internal_has_requests_hash();
 }
-inline const ::types::H256& Header::_internal_requests_root() const {
-  const ::types::H256* p = _impl_.requests_root_;
+inline const ::types::H256& Header::_internal_requests_hash() const {
+  const ::types::H256* p = _impl_.requests_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::requests_root() const {
-  // @@protoc_insertion_point(field_get:execution.Header.requests_root)
-  return _internal_requests_root();
+inline const ::types::H256& Header::requests_hash() const {
+  // @@protoc_insertion_point(field_get:execution.Header.requests_hash)
+  return _internal_requests_hash();
 }
-inline void Header::unsafe_arena_set_allocated_requests_root(
-    ::types::H256* requests_root) {
+inline void Header::unsafe_arena_set_allocated_requests_hash(
+    ::types::H256* requests_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_root_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_hash_);
   }
-  _impl_.requests_root_ = requests_root;
-  if (requests_root) {
+  _impl_.requests_hash_ = requests_hash;
+  if (requests_hash) {
     _impl_._has_bits_[0] |= 0x00000010u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000010u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.requests_root)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.requests_hash)
 }
-inline ::types::H256* Header::release_requests_root() {
+inline ::types::H256* Header::release_requests_hash() {
   _impl_._has_bits_[0] &= ~0x00000010u;
-  ::types::H256* temp = _impl_.requests_root_;
-  _impl_.requests_root_ = nullptr;
+  ::types::H256* temp = _impl_.requests_hash_;
+  _impl_.requests_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -6741,45 +6735,45 @@ inline ::types::H256* Header::release_requests_root() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_requests_root() {
-  // @@protoc_insertion_point(field_release:execution.Header.requests_root)
+inline ::types::H256* Header::unsafe_arena_release_requests_hash() {
+  // @@protoc_insertion_point(field_release:execution.Header.requests_hash)
   _impl_._has_bits_[0] &= ~0x00000010u;
-  ::types::H256* temp = _impl_.requests_root_;
-  _impl_.requests_root_ = nullptr;
+  ::types::H256* temp = _impl_.requests_hash_;
+  _impl_.requests_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_requests_root() {
+inline ::types::H256* Header::_internal_mutable_requests_hash() {
   _impl_._has_bits_[0] |= 0x00000010u;
-  if (_impl_.requests_root_ == nullptr) {
+  if (_impl_.requests_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.requests_root_ = p;
+    _impl_.requests_hash_ = p;
   }
-  return _impl_.requests_root_;
+  return _impl_.requests_hash_;
 }
-inline ::types::H256* Header::mutable_requests_root() {
-  ::types::H256* _msg = _internal_mutable_requests_root();
-  // @@protoc_insertion_point(field_mutable:execution.Header.requests_root)
+inline ::types::H256* Header::mutable_requests_hash() {
+  ::types::H256* _msg = _internal_mutable_requests_hash();
+  // @@protoc_insertion_point(field_mutable:execution.Header.requests_hash)
   return _msg;
 }
-inline void Header::set_allocated_requests_root(::types::H256* requests_root) {
+inline void Header::set_allocated_requests_hash(::types::H256* requests_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_root_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_hash_);
   }
-  if (requests_root) {
+  if (requests_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(requests_root));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(requests_hash));
     if (message_arena != submessage_arena) {
-      requests_root = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, requests_root, submessage_arena);
+      requests_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, requests_hash, submessage_arena);
     }
     _impl_._has_bits_[0] |= 0x00000010u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000010u;
   }
-  _impl_.requests_root_ = requests_root;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.requests_root)
+  _impl_.requests_hash_ = requests_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.requests_hash)
 }
 
 // optional uint64 aura_step = 23;
@@ -7137,81 +7131,6 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
 BlockBody::withdrawals() const {
   // @@protoc_insertion_point(field_list:execution.BlockBody.withdrawals)
   return _impl_.withdrawals_;
-}
-
-// repeated bytes requests = 6;
-inline int BlockBody::_internal_requests_size() const {
-  return _impl_.requests_.size();
-}
-inline int BlockBody::requests_size() const {
-  return _internal_requests_size();
-}
-inline void BlockBody::clear_requests() {
-  _impl_.requests_.Clear();
-}
-inline std::string* BlockBody::add_requests() {
-  std::string* _s = _internal_add_requests();
-  // @@protoc_insertion_point(field_add_mutable:execution.BlockBody.requests)
-  return _s;
-}
-inline const std::string& BlockBody::_internal_requests(int index) const {
-  return _impl_.requests_.Get(index);
-}
-inline const std::string& BlockBody::requests(int index) const {
-  // @@protoc_insertion_point(field_get:execution.BlockBody.requests)
-  return _internal_requests(index);
-}
-inline std::string* BlockBody::mutable_requests(int index) {
-  // @@protoc_insertion_point(field_mutable:execution.BlockBody.requests)
-  return _impl_.requests_.Mutable(index);
-}
-inline void BlockBody::set_requests(int index, const std::string& value) {
-  _impl_.requests_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:execution.BlockBody.requests)
-}
-inline void BlockBody::set_requests(int index, std::string&& value) {
-  _impl_.requests_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:execution.BlockBody.requests)
-}
-inline void BlockBody::set_requests(int index, const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.requests_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:execution.BlockBody.requests)
-}
-inline void BlockBody::set_requests(int index, const void* value, size_t size) {
-  _impl_.requests_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:execution.BlockBody.requests)
-}
-inline std::string* BlockBody::_internal_add_requests() {
-  return _impl_.requests_.Add();
-}
-inline void BlockBody::add_requests(const std::string& value) {
-  _impl_.requests_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:execution.BlockBody.requests)
-}
-inline void BlockBody::add_requests(std::string&& value) {
-  _impl_.requests_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:execution.BlockBody.requests)
-}
-inline void BlockBody::add_requests(const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.requests_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:execution.BlockBody.requests)
-}
-inline void BlockBody::add_requests(const void* value, size_t size) {
-  _impl_.requests_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:execution.BlockBody.requests)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-BlockBody::requests() const {
-  // @@protoc_insertion_point(field_list:execution.BlockBody.requests)
-  return _impl_.requests_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-BlockBody::mutable_requests() {
-  // @@protoc_insertion_point(field_mutable_list:execution.BlockBody.requests)
-  return &_impl_.requests_;
 }
 
 // -------------------------------------------------------------------
@@ -9016,6 +8935,91 @@ inline void AssembledBlockData::set_allocated_blobs_bundle(::types::BlobsBundleV
   }
   _impl_.blobs_bundle_ = blobs_bundle;
   // @@protoc_insertion_point(field_set_allocated:execution.AssembledBlockData.blobs_bundle)
+}
+
+// .types.RequestsBundle requests = 4;
+inline bool AssembledBlockData::_internal_has_requests() const {
+  return this != internal_default_instance() && _impl_.requests_ != nullptr;
+}
+inline bool AssembledBlockData::has_requests() const {
+  return _internal_has_requests();
+}
+inline const ::types::RequestsBundle& AssembledBlockData::_internal_requests() const {
+  const ::types::RequestsBundle* p = _impl_.requests_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::RequestsBundle&>(
+      ::types::_RequestsBundle_default_instance_);
+}
+inline const ::types::RequestsBundle& AssembledBlockData::requests() const {
+  // @@protoc_insertion_point(field_get:execution.AssembledBlockData.requests)
+  return _internal_requests();
+}
+inline void AssembledBlockData::unsafe_arena_set_allocated_requests(
+    ::types::RequestsBundle* requests) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_);
+  }
+  _impl_.requests_ = requests;
+  if (requests) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.AssembledBlockData.requests)
+}
+inline ::types::RequestsBundle* AssembledBlockData::release_requests() {
+  
+  ::types::RequestsBundle* temp = _impl_.requests_;
+  _impl_.requests_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::types::RequestsBundle* AssembledBlockData::unsafe_arena_release_requests() {
+  // @@protoc_insertion_point(field_release:execution.AssembledBlockData.requests)
+  
+  ::types::RequestsBundle* temp = _impl_.requests_;
+  _impl_.requests_ = nullptr;
+  return temp;
+}
+inline ::types::RequestsBundle* AssembledBlockData::_internal_mutable_requests() {
+  
+  if (_impl_.requests_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::RequestsBundle>(GetArenaForAllocation());
+    _impl_.requests_ = p;
+  }
+  return _impl_.requests_;
+}
+inline ::types::RequestsBundle* AssembledBlockData::mutable_requests() {
+  ::types::RequestsBundle* _msg = _internal_mutable_requests();
+  // @@protoc_insertion_point(field_mutable:execution.AssembledBlockData.requests)
+  return _msg;
+}
+inline void AssembledBlockData::set_allocated_requests(::types::RequestsBundle* requests) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.requests_);
+  }
+  if (requests) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(requests));
+    if (message_arena != submessage_arena) {
+      requests = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, requests, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.requests_ = requests;
+  // @@protoc_insertion_point(field_set_allocated:execution.AssembledBlockData.requests)
 }
 
 // -------------------------------------------------------------------

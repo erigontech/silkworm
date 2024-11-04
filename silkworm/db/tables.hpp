@@ -436,4 +436,10 @@ inline constexpr const char* kAccountsHistory{"AccountsHistory"};
 //! \details Inverted Index storing the account common information
 inline constexpr const char* kAccountsHistoryIdx{"AccountsHistoryIdx"};
 
+//! \details TODO
+inline constexpr const char* kTracesFromIdx{"TracesFromIdx"};
+
+//! \details TODO
+inline constexpr const char* kTracesToIdx{"TracesToIdx"};
+
 }  // namespace silkworm::db::table

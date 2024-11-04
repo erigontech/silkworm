@@ -694,7 +694,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     auto block_number = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
-    SILK_DEBUG << "address: " << address << " block_number: " << block_number << " page_size: " << page_size;
+    SILK_LOG << "address: " << address << " block_number: " << block_number << " page_size: " << page_size;
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
@@ -703,51 +703,99 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         co_return;
     }
 
+    if (block_number > 0) {
+        --block_number;
+    }
     auto tx = co_await database_->begin();
-
     try {
-        auto call_from_cursor = co_await tx->cursor(table::kCallFromIndexName);
-        auto call_to_cursor = co_await tx->cursor(table::kCallToIndexName);
+        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
+        const auto key = db::code_domain_key(address);
 
-        bool is_first_page = false;
+        const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_number, provider);
+        SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
 
-        if (block_number == 0) {
-            is_first_page = true;
-        } else {
-            // Internal search code considers blockNum [including], so adjust the value
-            --block_number;
-        }
+        db::kv::api::IndexRangeQuery query_to{
+                .table = db::table::kTracesToIdx,
+                .key = key,
+                .from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num),
+                .to_timestamp = -1,
+                .ascending_order = false};
+        auto paginated_result_to = co_await tx->index_range(std::move(query_to));
+        auto it_to = co_await paginated_result_to.begin();
 
-        BackwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
-        BackwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
-        FromToBlockProvider from_to_provider{false, &from_provider, &to_provider};
+        db::kv::api::IndexRangeQuery query_from{
+                .table = db::table::kTracesFromIdx,
+                .key = key,
+                .from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num),
+                .to_timestamp = -1,
+                .ascending_order = false};
+        auto paginated_result_from = co_await tx->index_range(std::move(query_from));
+        auto it_from = co_await paginated_result_from.begin();
 
-        uint64_t result_count = 0;
-        bool has_more = true;
-
-        TransactionsWithReceipts results{
-            .first_page = is_first_page};
-
-        while (result_count < page_size && has_more) {
-            std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
-
-            has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
-
-            for (const auto& item : transactions_with_receipts_vec) {
-                results.receipts.insert(results.receipts.end(), item.receipts.rbegin(), item.receipts.rend());
-                results.transactions.insert(results.transactions.end(), item.transactions.rbegin(), item.transactions.rend());
-                results.blocks.insert(results.blocks.end(), item.blocks.rbegin(), item.blocks.rend());
-
-                result_count += item.transactions.size();
-
-                if (result_count >= page_size) {
-                    break;
-                }
+//        auto it = db::kv::api::UnionIterator{it_from, it_to, false, 0};
+        auto it = db::kv::api::UnionIterator{it_to, it_from, false, 5};
+//        std::vector<std::string> keys;
+//        std::uint64_t count = 0;
+//        TxnId prev_txn_id = 0;
+//        TxnId next_txn_id = 0;
+        while (const auto value = co_await it.next()) {
+            const auto txn_id = static_cast<TxnId>(*value);
+            SILK_LOG << "txn_id: " << txn_id;
+            const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, txn_id, provider);
+            if (block_number_opt) {
+                const auto bn = block_number_opt.value();
+                SILK_LOG << "txn_id: " << txn_id << " block_number: " << bn;
             }
         }
 
-        results.last_page = !has_more;
+        TransactionsWithReceipts results{
+            .first_page = false,
+            .last_page = false};
         reply = make_json_content(request, results);
+
+//    try {
+//        auto call_from_cursor = co_await tx->cursor(table::kCallFromIndexName);
+//        auto call_to_cursor = co_await tx->cursor(table::kCallToIndexName);
+//
+//        bool is_first_page = false;
+//
+//        if (block_number == 0) {
+//            is_first_page = true;
+//        } else {
+//            // Internal search code considers blockNum [including], so adjust the value
+//            --block_number;
+//        }
+//
+//        BackwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
+//        BackwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
+//        FromToBlockProvider from_to_provider{false, &from_provider, &to_provider};
+//
+//        uint64_t result_count = 0;
+//        bool has_more = true;
+//
+//        TransactionsWithReceipts results{
+//            .first_page = is_first_page};
+//
+//        while (result_count < page_size && has_more) {
+//            std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
+//
+//            has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
+//
+//            for (const auto& item : transactions_with_receipts_vec) {
+//                results.receipts.insert(results.receipts.end(), item.receipts.rbegin(), item.receipts.rend());
+//                results.transactions.insert(results.transactions.end(), item.transactions.rbegin(), item.transactions.rend());
+//                results.blocks.insert(results.blocks.end(), item.blocks.rbegin(), item.blocks.rend());
+//
+//                result_count += item.transactions.size();
+//
+//                if (result_count >= page_size) {
+//                    break;
+//                }
+//            }
+//        }
+//
+//        results.last_page = !has_more;
+//        reply = make_json_content(request, results);
 
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();

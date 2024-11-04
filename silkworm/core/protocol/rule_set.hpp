@@ -76,7 +76,7 @@ class RuleSet {
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \remarks For Ethash See [YP] Section 11.3 "Reward Application".
-    virtual void finalize(IntraBlockState& state, const Block& block) = 0;
+    virtual ValidationResult finalize(IntraBlockState& state, const Block& block, EVM& evm) = 0;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from

@@ -70,7 +70,7 @@ class DummyRuleSet : public protocol::RuleSet {
 
     void initialize(EVM&) override {}
 
-    void finalize(IntraBlockState&, const Block&) override {}
+    ValidationResult finalize(IntraBlockState&, const Block&, EVM&) override { return ValidationResult::kOk; }
 
   protected:
     ValidationResult validate_difficulty_and_seal(const BlockHeader&, const BlockHeader&) override {

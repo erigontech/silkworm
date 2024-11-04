@@ -216,12 +216,12 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     }
 
     state_.clear_journal_and_substate();
-    rule_set_.finalize(state_, block);
+    const auto finalization_result = rule_set_.finalize(state_, block, evm_);
     state_.finalize_transaction(rev);
 
     notify_block_execution_end(block);
 
-    return ValidationResult::kOk;
+    return finalization_result;
 }
 
 ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipts) noexcept {

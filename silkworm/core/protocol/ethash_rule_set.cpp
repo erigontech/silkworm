@@ -71,12 +71,13 @@ void EthashRuleSet::initialize(EVM& evm) {
     }
 }
 
-void EthashRuleSet::finalize(IntraBlockState& state, const Block& block) {
+ValidationResult EthashRuleSet::finalize(IntraBlockState& state, const Block& block, EVM&) {
     const BlockReward reward{compute_reward(block)};
     state.add_to_balance(get_beneficiary(block.header), reward.miner);
     for (size_t i{0}; i < block.ommers.size(); ++i) {
         state.add_to_balance(block.ommers[i].beneficiary, reward.ommers[i]);
     }
+    return ValidationResult::kOk;
 }
 
 static intx::uint256 block_reward_base(const evmc_revision rev) {

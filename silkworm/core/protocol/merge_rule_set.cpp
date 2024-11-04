@@ -22,6 +22,7 @@
 #include <silkworm/core/common/assert.hpp>
 
 #include "param.hpp"
+#include "silkworm/core/types/eip_7685_requests.hpp"
 
 namespace silkworm::protocol {
 
@@ -97,29 +98,28 @@ void MergeRuleSet::initialize(EVM& evm) {
         system_txn.set_sender(kSystemAddress);
         evm.execute(system_txn, kSystemCallGasLimit);
     }
-
-    if (evm.revision() >= EVMC_PRAGUE) {
-        // (bzawisto) TODO
-    }
 }
 
-void MergeRuleSet::finalize(IntraBlockState& state, const Block& block) {
+ValidationResult MergeRuleSet::finalize(IntraBlockState& state, const Block& block, EVM& evm) {
     if (block.header.difficulty != 0) {
         if (pre_merge_rule_set_) {
-            pre_merge_rule_set_->finalize(state, block);
+            return pre_merge_rule_set_->finalize(state, block, evm);
         }
-        return;
     }
 
-    if (!block.withdrawals) {
-        return;
+    if (block.withdrawals) {
+        // See EIP-4895: Beacon chain push withdrawals as operations
+        for (const Withdrawal& w : *block.withdrawals) {
+            const auto amount_in_wei{intx::uint256{w.amount} * intx::uint256{kGiga}};
+            state.add_to_balance(w.address, amount_in_wei);
+        }
     }
 
-    // See EIP-4895: Beacon chain push withdrawals as operations
-    for (const Withdrawal& w : *block.withdrawals) {
-        const auto amount_in_wei{intx::uint256{w.amount} * intx::uint256{kGiga}};
-        state.add_to_balance(w.address, amount_in_wei);
+    if (evm.revision() >= EVMC_PRAGUE && block.header.requests_hash) {
+        return validate_requests_root(block.header, state.logs(), evm);
+
     }
+    return ValidationResult::kOk;
 }
 
 evmc::address MergeRuleSet::get_beneficiary(const BlockHeader& header) {

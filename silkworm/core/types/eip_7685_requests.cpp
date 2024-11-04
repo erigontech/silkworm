@@ -54,13 +54,13 @@ void FlatRequests::extract_deposits_from_logs(const std::vector<Log>& logs) {
     for (const auto& log : logs) {
         if (log.address == protocol::kDepositContractAddress) {
             auto bytes = extract_deposit(log.data);
-            requests_[magic_enum::enum_integer(FlatRequestType::kDepositRequest)].append(std::move(bytes));
+            requests_[magic_enum::enum_integer(FlatRequestType::kDepositRequest)] += bytes;
         }
     }
 }
 
 void FlatRequests::add_request(FlatRequestType type, Bytes data) {
-    requests_[magic_enum::enum_integer(type)].append(std::move(data));
+    requests_[magic_enum::enum_integer(type)] += data;
 }
 
 ByteView FlatRequests::preview_data_by_type(FlatRequestType type) const {

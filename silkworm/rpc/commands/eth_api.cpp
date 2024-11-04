@@ -2063,7 +2063,7 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
 
 Task<void> EthereumRpcApi::handle_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-    if (params.size() != 0) {
+    if (!params.empty()) {
         const auto error_msg = "invalid eth_baseFee params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, 100, error_msg);
@@ -2106,7 +2106,7 @@ Task<void> EthereumRpcApi::handle_base_fee(const nlohmann::json& request, nlohma
 
 Task<void> EthereumRpcApi::handle_blob_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-    if (params.size() != 0) {
+    if (!params.empty()) {
         const auto error_msg = "invalid eth_blobBaseFee params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, 100, error_msg);

@@ -23,7 +23,9 @@ runs:
 
     - name: Temporary step - conan cache cleanup - to be executed only once per runner
       shell: bash
-      run: conan remove "*" --force
+      run: |
+        pip3 install --user conan==1.64.1
+        conan remove "*" --force
 
     - name: Preinstall Conan packages
       shell: bash

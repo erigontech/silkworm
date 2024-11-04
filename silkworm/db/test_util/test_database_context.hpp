@@ -35,15 +35,8 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
 
 class TestDatabaseContext {
   public:
-    TestDatabaseContext();
     explicit TestDatabaseContext(const TemporaryDirectory& tmp_dir);
-
-    virtual ~TestDatabaseContext() {
-        if (env_) {
-            env_->close();
-            std::filesystem::remove_all(chaindata_dir_path_);
-        }
-    }
+    virtual ~TestDatabaseContext() = default;
 
     virtual db::ROAccess chaindata() const {
         return db::ROAccess{*env_};
@@ -75,11 +68,7 @@ class TestDataStore : public TestDatabaseContext {
               blocks::make_blocks_repository(
                   DataDirectory{tmp_dir.path(), true}.snapshots().path()),
           } {}
-
-    ~TestDataStore() override {
-        data_store_.close();
-        std::filesystem::remove_all(chaindata_dir_path_);
-    }
+    ~TestDataStore() override = default;
 
     db::DataStore& operator*() { return data_store_; }
     db::DataStore* operator->() { return &data_store_; }

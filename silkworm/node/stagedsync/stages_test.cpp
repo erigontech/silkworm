@@ -70,9 +70,9 @@ static stagedsync::CallTraceIndex make_call_traces_stage(
 }
 
 TEST_CASE("Sync Stages") {
-    TemporaryDirectory temp_dir{};
+    TemporaryDirectory tmp_dir;
     NodeSettings node_settings{};
-    node_settings.data_directory = std::make_unique<DataDirectory>(temp_dir.path());
+    node_settings.data_directory = std::make_unique<DataDirectory>(tmp_dir.path());
     node_settings.data_directory->deploy();
     node_settings.chaindata_env_config.path = node_settings.data_directory->chaindata().path().string();
     node_settings.chaindata_env_config.max_size = 1_Gibi;      // Small enough to fit in memory

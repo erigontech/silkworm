@@ -90,8 +90,8 @@ class InMemoryCollector {
     //! \param [in] load_func : Pointer to function transforming collected entries
     void load(const KVLoadFunc& load_func) {
         using namespace std::chrono_literals;
-        [[maybe_unused]] static const auto kLogInterval{5s};               // Updates processing key (for log purposes) every this time
-        [[maybe_unused]] auto log_time{std::chrono::steady_clock::now()};  // To check if an update of key is needed
+        [[maybe_unused]] static constexpr std::chrono::seconds kLogInterval{5s};  // Updates processing key (for log purposes) every this time
+        [[maybe_unused]] auto log_time{std::chrono::steady_clock::now()};         // To check if an update of key is needed
 
         set_loading_key({});
 

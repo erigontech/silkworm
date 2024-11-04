@@ -25,7 +25,7 @@
 namespace silkworm::rpc {
 
 // Necessary just to extract `id` field to fill the same into the reply
-const nlohmann::json kEmptyRequest{{"jsonrpc", "2.0"}, {"id", 1}};
+static const nlohmann::json kEmptyRequest{{"jsonrpc", "2.0"}, {"id", 1}};
 
 TEST_CASE("make glaze json error", "[silkworm][rpc][make_glaze_json_error]") {
     std::string json;

@@ -50,19 +50,21 @@ Bytes extract_deposit(const Bytes& data) {
     return result;
 }
 
-Bytes FlatRequests::extract_deposits_from_logs(const std::vector<Log>& logs) {
-    Bytes result;
+void FlatRequests::extract_deposits_from_logs(const std::vector<Log>& logs) {
     for (const auto& log : logs) {
         if (log.address == protocol::kDepositContractAddress) {
             auto bytes = extract_deposit(log.data);
-            result.append(std::move(bytes));
+            requests_[magic_enum::enum_integer(FlatRequestType::kDepositRequest)].append(std::move(bytes));
         }
     }
-    return result;
 }
 
 void FlatRequests::add_request(FlatRequestType type, Bytes data) {
     requests_[magic_enum::enum_integer(type)].append(std::move(data));
+}
+
+ByteView FlatRequests::preview_data_by_type(FlatRequestType type) const {
+    return {requests_[magic_enum::enum_integer(type)]};
 }
 
 Hash FlatRequests::calculate_sha256() const {

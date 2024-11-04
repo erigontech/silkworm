@@ -194,13 +194,20 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_hash", "[silkwo
         response.set_number(3);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
-        CHECK(bn == 3);
+        CHECK(*bn == 3);
     }
 
+    SECTION("call get_block_number_from_hash return no number") {
+        ::remote::HeaderNumberReply response;
+        response.clear_number();
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
+        CHECK(bn == std::nullopt);
+    }
     SECTION("call get_block_number_from_hash and get zero count") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
-        CHECK(bn == 0);
+        CHECK(bn == std::nullopt);
     }
 
     SECTION("call get_block_number_from_hash and get error") {

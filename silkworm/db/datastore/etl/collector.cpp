@@ -78,8 +78,8 @@ void Collector::collect(Bytes key, Bytes value) {
 
 void Collector::load(const LoadFunc& load_func) {
     using namespace std::chrono_literals;
-    static const auto kLogInterval{5s};               // Updates processing key (for log purposes) every this time
-    auto log_time{std::chrono::steady_clock::now()};  // To check if an update of key is needed
+    static constexpr std::chrono::seconds kLogInterval{5s};  // Updates processing key (for log purposes) every this time
+    auto log_time{std::chrono::steady_clock::now()};         // To check if an update of key is needed
 
     set_loading_key({});
 

@@ -45,8 +45,8 @@ namespace silkworm::sentry::nat {
 
 using namespace boost::asio;
 
-constexpr std::string_view kStunDefaultServerHost = "stun.l.google.com";
-constexpr uint16_t kStunDefaultServerPort = 19302;
+static constexpr std::string_view kStunDefaultServerHost = "stun.l.google.com";
+static constexpr uint16_t kStunDefaultServerPort = 19302;
 
 Task<ip::address> stun_ip_resolver() {
     using namespace std::chrono_literals;

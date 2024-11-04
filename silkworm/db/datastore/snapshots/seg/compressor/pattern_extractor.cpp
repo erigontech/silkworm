@@ -29,16 +29,16 @@
 namespace silkworm::snapshots::seg {
 
 //! How large one superstring gets before processed.
-static const size_t kSuperstringLimit = 16_Mebi;
+static constexpr size_t kSuperstringLimit = 16_Mebi;
 
 //! Minimum pattern length.
-static const size_t kPatternLenMin = 5;
+static constexpr size_t kPatternLenMin = 5;
 
 //! Maximum pattern length.
-static const size_t kPatternLenMax = 128;
+static constexpr size_t kPatternLenMax = 128;
 
 //! Minimum score of a pattern in a word.
-static const uint64_t kPatternScoreMin = 1024;
+static constexpr uint64_t kPatternScoreMin = 1024;
 
 Superstring::Superstring() {
     superstring_.reserve(kSuperstringLimit);

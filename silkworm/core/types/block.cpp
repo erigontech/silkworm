@@ -34,9 +34,11 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing, bool exclude_extra_data_sig) c
 
 ethash::hash256 BlockHeader::boundary() const {
     using intx::operator""_u256;
-    static const auto kDividend{intx::uint320{1} << 256};
-    auto result{difficulty > 1u ? intx::uint256{kDividend / difficulty}
-                                : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256};
+    static const intx::uint320 kDividend = intx::uint320{1} << 256;
+    intx::uint256 result =
+        (difficulty > 1u)
+            ? intx::uint256{kDividend / difficulty}
+            : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
     return intx::be::store<ethash::hash256>(result);
 }
 
@@ -54,15 +56,19 @@ static intx::uint256 fake_exponential(const intx::uint256& factor,
     return output / denominator;
 }
 
+intx::uint256 calc_blob_gas_price(uint64_t excess_blob_gas) {
+    return fake_exponential(
+        protocol::kMinBlobGasPrice,
+        excess_blob_gas,
+        protocol::kBlobGasPriceUpdateFraction);
+}
+
 std::optional<intx::uint256> BlockHeader::blob_gas_price() const {
     if (!excess_blob_gas) {
         return std::nullopt;
     }
 
-    return fake_exponential(
-        protocol::kMinBlobGasPrice,
-        *excess_blob_gas,
-        protocol::kBlobGasPriceUpdateFraction);
+    return calc_blob_gas_price(*excess_blob_gas);
 }
 
 namespace rlp {
@@ -219,7 +225,7 @@ namespace rlp {
             to.excess_blob_gas = 0;
             to.parent_beacon_block_root = evmc::bytes32{};
             if (DecodingResult res{decode_items(from, *to.blob_gas_used, *to.excess_blob_gas,
-                                                *to.parent_beacon_block_root, *to.requests_hash)};
+                                                *to.parent_beacon_block_root)};
                 !res) {
                 return res;
             }
@@ -227,6 +233,15 @@ namespace rlp {
             to.blob_gas_used = std::nullopt;
             to.excess_blob_gas = std::nullopt;
             to.parent_beacon_block_root = std::nullopt;
+        }
+
+        if (from.length() > leftover) {
+            to.requests_hash = evmc::bytes32{};
+            if (DecodingResult res{decode(from, *to.requests_hash)}; !res) {
+                return res;
+            }
+        }
+        else {
             to.requests_hash = std::nullopt;
         }
 

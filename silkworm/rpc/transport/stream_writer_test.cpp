@@ -38,7 +38,7 @@ class JsonChunkWriter : public StreamWriter {
     Task<size_t> write(std::string_view content, bool last) override;
 
   private:
-    static const size_t kDefaultChunkSize = 0x800;
+    static constexpr size_t kDefaultChunkSize{0x800};
 
     StreamWriter& writer_;
     bool chunk_open_ = false;

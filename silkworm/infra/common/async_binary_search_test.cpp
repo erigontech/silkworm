@@ -14,18 +14,18 @@
    limitations under the License.
 */
 
-#include "binary_search.hpp"
+#include "async_binary_search.hpp"
 
 #include <string>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/rpc/test_util/service_context_test_base.hpp>
+#include <silkworm/infra/test_util/context_test_base.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm {
 
-struct BinarySearchTest : test_util::ServiceContextTestBase {
+struct BinarySearchTest : test_util::ContextTestBase {
 };
 
 struct BinaryTestData {
@@ -50,13 +50,13 @@ std::vector<BinaryTestData> kTestData = {
 };
 
 Task<size_t> binary_search_in_vector(std::vector<size_t> sequence, size_t value) {
-    co_return co_await binary_search(sequence.size(), [&, value](uint64_t i) -> Task<bool> {
+    co_return co_await async_binary_search(sequence.size(), [&, value](uint64_t i) -> Task<bool> {
         co_return i < sequence.size() && sequence[i] >= value;
     });
 }
 
 #ifndef SILKWORM_SANITIZE
-TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[rpc][common][binary_search]") {
+TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[infra][common][binary_search]") {
     for (size_t i{0}; i < kTestData.size(); ++i) {
         const auto [s, v, r] = kTestData[i];
         SECTION("search" + std::to_string(i)) {
@@ -66,4 +66,4 @@ TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[rpc][common][binary_search
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm

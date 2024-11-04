@@ -71,7 +71,7 @@ class ClientThread {
 
 //! Generate test data for resume file content
 //! \details https://github.com/arvidn/libtorrent/blob/RC_2_0/test/test_read_resume.cpp
-static inline std::vector<char> test_resume_data() {
+static std::vector<char> test_resume_data() {
     lt::entry rd;
 
     rd["file-format"] = "libtorrent resume file";

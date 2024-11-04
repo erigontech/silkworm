@@ -38,9 +38,10 @@ enum class FlatRequestType : uint8_t {
 };
 
 struct FlatRequests {
-    static Bytes extract_deposits_from_logs(const std::vector<Log>& logs);
+    void extract_deposits_from_logs(const std::vector<Log>& logs);
     void add_request(FlatRequestType type, Bytes data);
     Hash calculate_sha256() const;
+    ByteView preview_data_by_type(FlatRequestType type) const;
 
   private:
     static constexpr size_t kTypesCount = magic_enum::enum_count<FlatRequestType>();

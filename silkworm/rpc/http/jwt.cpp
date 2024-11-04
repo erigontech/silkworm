@@ -37,10 +37,10 @@ static std::string hex_to_string(const std::string& jwt_token) {
 
 namespace silkworm {
 
-constexpr char kHexCharacters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+static constexpr char kHexCharacters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-constexpr size_t kTokenSize{32 * 2};                  // 32-bytes as hex chars
-constexpr size_t kPrefixedTokenSize{2 + kTokenSize};  // "0x" + 32-bytes as hex chars
+static constexpr size_t kTokenSize{32 * 2};                  // 32-bytes as hex chars
+static constexpr size_t kPrefixedTokenSize{2 + kTokenSize};  // "0x" + 32-bytes as hex chars
 
 std::string generate_jwt_token(const std::filesystem::path& file_path) {
     // Check input file path is not empty

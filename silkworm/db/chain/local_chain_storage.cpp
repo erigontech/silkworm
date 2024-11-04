@@ -17,6 +17,7 @@
 #include "local_chain_storage.hpp"
 
 #include <bit>
+#include <stdexcept>
 
 #include <silkworm/db/access_layer.hpp>
 
@@ -142,6 +143,10 @@ Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(cons
 
 Task<std::optional<BlockNum>> LocalChainStorage::read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
     co_return data_model_.read_tx_lookup(transaction_hash);
+}
+
+Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_block(BlockNum /*block_num*/, uint64_t /*txn_id*/) const {
+    throw std::runtime_error{"not yet implemented"};
 }
 
 }  // namespace silkworm::db::chain

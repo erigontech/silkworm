@@ -42,6 +42,8 @@ struct FeeHistory {
     std::vector<intx::uint256> base_fees_per_gas;
     std::vector<double> gas_used_ratio;
     std::vector<Rewards> rewards;
+    std::vector<double> blob_gas_used_ratio;
+    std::vector<intx::uint256> blob_base_fees_per_gas;
     std::optional<std::string> error{std::nullopt};
 };
 
@@ -62,7 +64,10 @@ struct BlockFees {
     Rewards rewards;
     intx::uint256 base_fee;
     intx::uint256 next_base_fee;
+    intx::uint256 blob_base_fee;
+    intx::uint256 next_blob_base_fee;
     double gas_used_ratio{0};
+    double blob_gas_used_ratio{0};
 };
 
 class FeeHistoryOracle {
@@ -78,9 +83,9 @@ class FeeHistoryOracle {
     Task<FeeHistory> fee_history(BlockNum newest_block, BlockNum block_count, const std::vector<int8_t>& reward_percentiles);
 
   private:
-    static inline const std::uint32_t kDefaultMaxFeeHistory = 1024;
-    static inline const std::uint32_t kDefaultMaxHeaderHistory = 0;
-    static inline const std::uint32_t kDefaultMaxBlockHistory = 0;
+    static constexpr std::uint32_t kDefaultMaxFeeHistory{1024};
+    static constexpr std::uint32_t kDefaultMaxHeaderHistory{0};
+    static constexpr std::uint32_t kDefaultMaxBlockHistory{0};
 
     Task<BlockRange> resolve_block_range(BlockNum newest_block, uint64_t block_count, uint64_t max_history);
     Task<void> process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles);

@@ -173,7 +173,7 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
         : TemporarySnapshotFile{tmp_dir, filename, kHeader, kBody} {}
 
   private:
-    inline static const SnapshotHeader kHeader{
+    static inline const SnapshotHeader kHeader{
         .words_count = 1,  // number of non-empty words
         .empty_words_count = 0,
         .patterns = std::vector<SnapshotPattern>{},  // zero patterns
@@ -181,7 +181,7 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
             {1, 0},  // 1: depth 0: value
             {1, 13}  // 1: depth 13: unencoded data length (including position encoding)
         }};
-    inline static const SnapshotBody kBody{
+    static inline const SnapshotBody kBody{
         *from_hex("0168656C6C6F2C20776F726C64")  // 0x01: position 0x68656C6C6F2C20776F726C64: "hello, world"
     };
 };

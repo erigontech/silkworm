@@ -26,9 +26,9 @@
 
 namespace silkworm::rpc::stages {
 
-const Bytes kHeaders = string_to_bytes(db::stages::kHeadersKey);
-const Bytes kExecution = string_to_bytes(db::stages::kExecutionKey);
-const Bytes kFinish = string_to_bytes(db::stages::kFinishKey);
+inline const Bytes kHeaders = string_to_bytes(db::stages::kHeadersKey);
+inline const Bytes kExecution = string_to_bytes(db::stages::kExecutionKey);
+inline const Bytes kFinish = string_to_bytes(db::stages::kFinishKey);
 
 Task<BlockNum> get_sync_stage_progress(db::kv::api::Transaction& tx, const Bytes& stage_key);
 

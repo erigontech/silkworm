@@ -20,6 +20,6 @@
 
 namespace silkworm::snapshots {
 
-static constexpr size_t kMaxMergerSnapshotSize = 100'000;
+inline constexpr size_t kMaxMergerSnapshotSize = 100'000;
 
 }  // namespace silkworm::snapshots

@@ -33,7 +33,7 @@
 namespace silkworm::rpc {
 
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
-    static const char* kHexDigits{"0123456789abcdef"};
+    static constexpr const char* kHexDigits{"0123456789abcdef"};
     if (bytes.size() * 2 + 2 + 1 > hex_bytes.size()) {
         SILK_ERROR << "req buffer length: " << bytes.size() * 2 + 2 + 1 << "  buffer length: " << hex_bytes.size() << "\n";
         throw std::invalid_argument("to_hex: hex_bytes too small");
@@ -49,7 +49,7 @@ void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
 }
 
 void to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
-    static const char* kHexDigits{"0123456789abcdef"};
+    static constexpr const char* kHexDigits{"0123456789abcdef"};
     size_t len = bytes.length();
     if (len * 2 + 2 + 1 > hex_bytes.size()) {
         SILK_ERROR << "req buffer length: " << len * 2 + 2 + 1 << "  buffer length: " << hex_bytes.size() << "\n";
@@ -102,7 +102,7 @@ void to_quantity(std::span<char> quantity_hex_bytes, intx::uint256 number) {
 }
 
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
-    static const char* kHexDigits{"0123456789abcdef"};
+    static constexpr const char* kHexDigits{"0123456789abcdef"};
 
     std::string out{};
 
@@ -233,6 +233,7 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
         json["Verkle"] = false;
         json["VerkleKeyVals"] = nullptr;
         json["VerkleProof"] = nullptr;
+        json["requestsHash"] = nullptr;
     }
     if (header.blob_gas_used) {
         json["blobGasUsed"] = rpc::to_quantity(*header.blob_gas_used);
@@ -253,6 +254,11 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
         json["withdrawalsRoot"] = *header.withdrawals_root;
     } else {
         json["withdrawalsRoot"] = nullptr;
+    }
+    if (header.requests_hash) {
+        json["requestsHash"] = "0x" + to_hex(*header.requests_hash);
+    } else {
+        json["requestsHash"] = nullptr;
     }
 }
 
@@ -369,6 +375,9 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     if (b.block.withdrawals) {
         json["block"]["withdrawals"] = *b.block.withdrawals;
     }
+    if (b.block.header.requests_hash) {
+        json["block"]["requestsHash"] = *b.block.header.requests_hash;
+    }
 }
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
@@ -409,6 +418,9 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     }
     if (b.header.parent_beacon_block_root) {
         json["fullblock"]["parentBeaconBlockRoot"] = silkworm::to_hex(*b.header.parent_beacon_block_root, /* with_prefix = */ true);
+    }
+    if (b.header.requests_hash) {
+        json["fullblock"]["requestsHash"] = silkworm::to_hex(*b.header.requests_hash, /* with_prefix = */ true);
     }
 
     json["fullblock"]["transactions"] = b.transactions;

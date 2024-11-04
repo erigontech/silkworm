@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -27,17 +28,17 @@
 
 namespace silkworm::rpc {
 
-const intx::uint256 kWei = 1;
-const intx::uint256 kGWei = 1E9;
+inline const intx::uint256 kWei = 1;
+inline const intx::uint256 kGWei = 1E9;
 
-const intx::uint256 kDefaultPrice = 0;
-const intx::uint256 kDefaultMaxPrice = 500 * kGWei;
-const intx::uint256 kDefaultMinPrice = 2 * kWei;
+inline const intx::uint256 kDefaultPrice = 0;
+inline const intx::uint256 kDefaultMaxPrice = 500 * kGWei;
+inline const intx::uint256 kDefaultMinPrice = 2 * kWei;
 
-const std::uint8_t kCheckBlocks = 20;
-const std::uint8_t kSamples = 3;
-const std::uint8_t kMaxSamples = kCheckBlocks * kSamples;
-const std::uint8_t kPercentile = 60;
+inline constexpr uint8_t kCheckBlocks = 20;
+inline constexpr uint8_t kSamples = 3;
+inline constexpr uint8_t kMaxSamples = kCheckBlocks * kSamples;
+inline constexpr uint8_t kPercentile = 60;
 
 using BlockProvider = std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)>;
 

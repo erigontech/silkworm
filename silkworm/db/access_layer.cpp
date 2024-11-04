@@ -961,9 +961,9 @@ uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_seque
     return current_sequence;
 }
 
-const std::string kHeadBlockHash = "headBlockHash";
-const std::string kSafeBlockHash = "safeBlockHash";
-const std::string kFinalizedBlockHash = "finalizedBlockHash";
+static const std::string kHeadBlockHash = "headBlockHash";
+static const std::string kSafeBlockHash = "safeBlockHash";
+static const std::string kFinalizedBlockHash = "finalizedBlockHash";
 
 std::optional<evmc::bytes32> read_last_fcu_field(ROTxn& txn, const std::string& field) {
     auto cursor = txn.ro_cursor(table::kLastForkchoice);

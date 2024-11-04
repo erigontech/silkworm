@@ -31,8 +31,8 @@
 
 namespace silkworm::sentry::rlpx::auth {
 
-static const size_t kKeySize = 16;
-static const size_t kMacSize = 32;
+static constexpr size_t kKeySize = 16;
+static constexpr size_t kMacSize = 32;
 
 static Bytes kdf(ByteView secret);
 using namespace crypto;

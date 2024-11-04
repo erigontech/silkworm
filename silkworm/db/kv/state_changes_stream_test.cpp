@@ -91,11 +91,11 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
         [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
     chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
-        [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+        [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return std::nullopt; }};
     chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
-        [](BlockNum) -> Task<evmc::bytes32> { co_return 0; }};
+        [](BlockNum) -> Task<std::optional<evmc::bytes32>> { co_return 0; }};
     chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider{
-        [](BlockNum) -> Task<Bytes> { co_return Bytes{}; }};
+        [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; }};
 
     RemoteClient make_remote_client(auto&& channel_or_stub) {
         return {

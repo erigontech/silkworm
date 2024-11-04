@@ -306,7 +306,6 @@ evmc::bytes32 compute_ommers_hash(const BlockBody& body) {
 }
 
 ValidationResult validate_requests_root(const BlockHeader& header, const std::vector<Log>& logs, EVM& evm) {
-
     FlatRequests requests;
 
     // Dequeue deposit requests by parsing logs

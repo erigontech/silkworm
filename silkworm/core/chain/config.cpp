@@ -281,7 +281,7 @@ constinit const ChainConfig kMainnetConfig{
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
     .shanghai_time = 1681338455,
     .cancun_time = 1710338135,
-    .prague_time = 1710338135, // TODO
+    .prague_time = 1710338135,  // TODO
     .rule_set_config = protocol::EthashConfig{},
 };
 
@@ -299,7 +299,7 @@ constinit const ChainConfig kHoleskyConfig{
     .terminal_total_difficulty = 0,
     .shanghai_time = 1696000704,
     .cancun_time = 1707305664,
-    .prague_time = 1707305664, // TODO
+    .prague_time = 1707305664,  // TODO
     .rule_set_config = protocol::NoPreMergeConfig{},
 };
 
@@ -319,7 +319,7 @@ constinit const ChainConfig kSepoliaConfig{
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
     .cancun_time = 1706655072,
-    .prague_time = 1706655072, // TODO
+    .prague_time = 1706655072,  // TODO
     .rule_set_config = protocol::EthashConfig{},
 };
 

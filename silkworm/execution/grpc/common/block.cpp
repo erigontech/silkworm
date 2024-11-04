@@ -129,7 +129,7 @@ void proto_from_header(const BlockHeader& bh, proto::Header* header) {
     if (bh.excess_blob_gas) {
         header->set_excess_blob_gas(*bh.excess_blob_gas);
     }
-    if(bh.requests_hash) {
+    if (bh.requests_hash) {
         header->set_allocated_requests_root(rpc::h256_from_bytes32(*bh.requests_hash).release());
     }
 }

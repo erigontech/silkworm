@@ -117,7 +117,6 @@ ValidationResult MergeRuleSet::finalize(IntraBlockState& state, const Block& blo
 
     if (evm.revision() >= EVMC_PRAGUE && block.header.requests_hash) {
         return validate_requests_root(block.header, state.logs(), evm);
-
     }
     return ValidationResult::kOk;
 }

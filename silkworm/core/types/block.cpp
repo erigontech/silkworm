@@ -240,8 +240,7 @@ namespace rlp {
             if (DecodingResult res{decode(from, *to.requests_hash)}; !res) {
                 return res;
             }
-        }
-        else {
+        } else {
             to.requests_hash = std::nullopt;
         }
 

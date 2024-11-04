@@ -480,8 +480,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v4(const nlohmann::json& requ
             .execution_payload = std::move(payload),
             .expected_blob_versioned_hashes = std::move(expected_blob_versioned_hashes),
             .parent_beacon_block_root = parent_beacon_block_root,
-            .execution_requests = execution_requests
-        };
+            .execution_requests = execution_requests};
         const auto new_payload = co_await engine_->new_payload(new_payload_v4_request, kNewPayloadTimeout);
 
         reply = make_json_content(request, new_payload);

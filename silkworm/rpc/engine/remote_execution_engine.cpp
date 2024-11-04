@@ -41,7 +41,6 @@ Task<PayloadStatus> RemoteExecutionEngine::new_payload(const NewPayloadRequest& 
         block->header.parent_beacon_block_root = request.parent_beacon_block_root;
     }
 
-
     // Validations
     if (const auto result = validate_blob_hashes(*block, request.expected_blob_versioned_hashes); !result) {
         co_return PayloadStatus{rpc::PayloadStatus::kInvalidStr, {}, result.error()};

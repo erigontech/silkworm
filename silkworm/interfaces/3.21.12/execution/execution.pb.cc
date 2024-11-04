@@ -83,7 +83,7 @@ PROTOBUF_CONSTEXPR Header::Header(
   , /*decltype(_impl_.base_fee_per_gas_)*/nullptr
   , /*decltype(_impl_.withdrawal_hash_)*/nullptr
   , /*decltype(_impl_.parent_beacon_block_root_)*/nullptr
-  , /*decltype(_impl_.requests_root_)*/nullptr
+  , /*decltype(_impl_.requests_hash_)*/nullptr
   , /*decltype(_impl_.block_number_)*/uint64_t{0u}
   , /*decltype(_impl_.gas_limit_)*/uint64_t{0u}
   , /*decltype(_impl_.gas_used_)*/uint64_t{0u}
@@ -106,7 +106,6 @@ PROTOBUF_CONSTEXPR BlockBody::BlockBody(
     /*decltype(_impl_.transactions_)*/{}
   , /*decltype(_impl_.uncles_)*/{}
   , /*decltype(_impl_.withdrawals_)*/{}
-  , /*decltype(_impl_.requests_)*/{}
   , /*decltype(_impl_.block_hash_)*/nullptr
   , /*decltype(_impl_.block_number_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
@@ -312,6 +311,7 @@ PROTOBUF_CONSTEXPR AssembledBlockData::AssembledBlockData(
     /*decltype(_impl_.execution_payload_)*/nullptr
   , /*decltype(_impl_.block_value_)*/nullptr
   , /*decltype(_impl_.blobs_bundle_)*/nullptr
+  , /*decltype(_impl_.requests_)*/nullptr
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct AssembledBlockDataDefaultTypeInternal {
   PROTOBUF_CONSTEXPR AssembledBlockDataDefaultTypeInternal()
@@ -475,7 +475,7 @@ const uint32_t TableStruct_execution_2fexecution_2eproto::offsets[] PROTOBUF_SEC
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.blob_gas_used_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.excess_blob_gas_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.parent_beacon_block_root_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.requests_root_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.requests_hash_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.aura_step_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.aura_seal_),
   ~0u,
@@ -513,7 +513,6 @@ const uint32_t TableStruct_execution_2fexecution_2eproto::offsets[] PROTOBUF_SEC
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, _impl_.transactions_),
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, _impl_.uncles_),
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, _impl_.withdrawals_),
-  PROTOBUF_FIELD_OFFSET(::execution::BlockBody, _impl_.requests_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::execution::Block, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -642,6 +641,7 @@ const uint32_t TableStruct_execution_2fexecution_2eproto::offsets[] PROTOBUF_SEC
   PROTOBUF_FIELD_OFFSET(::execution::AssembledBlockData, _impl_.execution_payload_),
   PROTOBUF_FIELD_OFFSET(::execution::AssembledBlockData, _impl_.block_value_),
   PROTOBUF_FIELD_OFFSET(::execution::AssembledBlockData, _impl_.blobs_bundle_),
+  PROTOBUF_FIELD_OFFSET(::execution::AssembledBlockData, _impl_.requests_),
   PROTOBUF_FIELD_OFFSET(::execution::GetAssembledBlockResponse, _impl_._has_bits_),
   PROTOBUF_FIELD_OFFSET(::execution::GetAssembledBlockResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -703,20 +703,20 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 18, -1, -1, sizeof(::execution::IsCanonicalResponse)},
   { 25, 55, -1, sizeof(::execution::Header)},
   { 79, -1, -1, sizeof(::execution::BlockBody)},
-  { 91, -1, -1, sizeof(::execution::Block)},
-  { 99, 106, -1, sizeof(::execution::GetHeaderResponse)},
-  { 107, 114, -1, sizeof(::execution::GetTDResponse)},
-  { 115, 122, -1, sizeof(::execution::GetBodyResponse)},
-  { 123, 130, -1, sizeof(::execution::GetHeaderHashNumberResponse)},
-  { 131, 139, -1, sizeof(::execution::GetSegmentRequest)},
-  { 141, -1, -1, sizeof(::execution::InsertBlocksRequest)},
-  { 148, 158, -1, sizeof(::execution::ForkChoice)},
-  { 162, -1, -1, sizeof(::execution::InsertionResult)},
-  { 169, -1, -1, sizeof(::execution::ValidationRequest)},
-  { 177, 189, -1, sizeof(::execution::AssembleBlockRequest)},
-  { 195, -1, -1, sizeof(::execution::AssembleBlockResponse)},
-  { 203, -1, -1, sizeof(::execution::GetAssembledBlockRequest)},
-  { 210, -1, -1, sizeof(::execution::AssembledBlockData)},
+  { 90, -1, -1, sizeof(::execution::Block)},
+  { 98, 105, -1, sizeof(::execution::GetHeaderResponse)},
+  { 106, 113, -1, sizeof(::execution::GetTDResponse)},
+  { 114, 121, -1, sizeof(::execution::GetBodyResponse)},
+  { 122, 129, -1, sizeof(::execution::GetHeaderHashNumberResponse)},
+  { 130, 138, -1, sizeof(::execution::GetSegmentRequest)},
+  { 140, -1, -1, sizeof(::execution::InsertBlocksRequest)},
+  { 147, 157, -1, sizeof(::execution::ForkChoice)},
+  { 161, -1, -1, sizeof(::execution::InsertionResult)},
+  { 168, -1, -1, sizeof(::execution::ValidationRequest)},
+  { 176, 188, -1, sizeof(::execution::AssembleBlockRequest)},
+  { 194, -1, -1, sizeof(::execution::AssembleBlockResponse)},
+  { 202, -1, -1, sizeof(::execution::GetAssembledBlockRequest)},
+  { 209, -1, -1, sizeof(::execution::AssembledBlockData)},
   { 219, 227, -1, sizeof(::execution::GetAssembledBlockResponse)},
   { 229, -1, -1, sizeof(::execution::GetBodiesBatchResponse)},
   { 236, -1, -1, sizeof(::execution::GetBodiesByHashesRequest)},
@@ -782,99 +782,99 @@ const char descriptor_table_protodef_execution_2fexecution_2eproto[] PROTOBUF_SE
   "awal_hash\030\022 \001(\0132\013.types.H256H\001\210\001\001\022\032\n\rblo"
   "b_gas_used\030\023 \001(\004H\002\210\001\001\022\034\n\017excess_blob_gas"
   "\030\024 \001(\004H\003\210\001\001\0222\n\030parent_beacon_block_root\030"
-  "\025 \001(\0132\013.types.H256H\004\210\001\001\022\'\n\rrequests_root"
+  "\025 \001(\0132\013.types.H256H\004\210\001\001\022\'\n\rrequests_hash"
   "\030\026 \001(\0132\013.types.H256H\005\210\001\001\022\026\n\taura_step\030\027 "
   "\001(\004H\006\210\001\001\022\026\n\taura_seal\030\030 \001(\014H\007\210\001\001B\023\n\021_bas"
   "e_fee_per_gasB\022\n\020_withdrawal_hashB\020\n\016_bl"
   "ob_gas_usedB\022\n\020_excess_blob_gasB\033\n\031_pare"
-  "nt_beacon_block_rootB\020\n\016_requests_rootB\014"
-  "\n\n_aura_stepB\014\n\n_aura_seal\"\265\001\n\tBlockBody"
+  "nt_beacon_block_rootB\020\n\016_requests_hashB\014"
+  "\n\n_aura_stepB\014\n\n_aura_seal\"\243\001\n\tBlockBody"
   "\022\037\n\nblock_hash\030\001 \001(\0132\013.types.H256\022\024\n\014blo"
   "ck_number\030\002 \001(\004\022\024\n\014transactions\030\003 \003(\014\022!\n"
   "\006uncles\030\004 \003(\0132\021.execution.Header\022&\n\013with"
-  "drawals\030\005 \003(\0132\021.types.Withdrawal\022\020\n\010requ"
-  "ests\030\006 \003(\014\"N\n\005Block\022!\n\006header\030\001 \001(\0132\021.ex"
-  "ecution.Header\022\"\n\004body\030\002 \001(\0132\024.execution"
-  ".BlockBody\"F\n\021GetHeaderResponse\022&\n\006heade"
-  "r\030\001 \001(\0132\021.execution.HeaderH\000\210\001\001B\t\n\007_head"
-  "er\"4\n\rGetTDResponse\022\034\n\002td\030\001 \001(\0132\013.types."
-  "H256H\000\210\001\001B\005\n\003_td\"C\n\017GetBodyResponse\022\'\n\004b"
-  "ody\030\001 \001(\0132\024.execution.BlockBodyH\000\210\001\001B\007\n\005"
-  "_body\"I\n\033GetHeaderHashNumberResponse\022\031\n\014"
-  "block_number\030\001 \001(\004H\000\210\001\001B\017\n\r_block_number"
-  "\"t\n\021GetSegmentRequest\022\031\n\014block_number\030\001 "
-  "\001(\004H\000\210\001\001\022$\n\nblock_hash\030\002 \001(\0132\013.types.H25"
-  "6H\001\210\001\001B\017\n\r_block_numberB\r\n\013_block_hash\"7"
-  "\n\023InsertBlocksRequest\022 \n\006blocks\030\001 \003(\0132\020."
-  "execution.Block\"\313\001\n\nForkChoice\022$\n\017head_b"
-  "lock_hash\030\001 \001(\0132\013.types.H256\022\017\n\007timeout\030"
-  "\002 \001(\004\022.\n\024finalized_block_hash\030\003 \001(\0132\013.ty"
-  "pes.H256H\000\210\001\001\022)\n\017safe_block_hash\030\004 \001(\0132\013"
-  ".types.H256H\001\210\001\001B\027\n\025_finalized_block_has"
-  "hB\022\n\020_safe_block_hash\"=\n\017InsertionResult"
-  "\022*\n\006result\030\001 \001(\0162\032.execution.ExecutionSt"
-  "atus\">\n\021ValidationRequest\022\031\n\004hash\030\001 \001(\0132"
-  "\013.types.H256\022\016\n\006number\030\002 \001(\004\"\224\002\n\024Assembl"
-  "eBlockRequest\022 \n\013parent_hash\030\001 \001(\0132\013.typ"
-  "es.H256\022\021\n\ttimestamp\030\002 \001(\004\022 \n\013prev_randa"
-  "o\030\003 \001(\0132\013.types.H256\022,\n\027suggested_fee_re"
-  "cipient\030\004 \001(\0132\013.types.H160\022&\n\013withdrawal"
-  "s\030\005 \003(\0132\021.types.Withdrawal\0222\n\030parent_bea"
-  "con_block_root\030\006 \001(\0132\013.types.H256H\000\210\001\001B\033"
-  "\n\031_parent_beacon_block_root\"1\n\025AssembleB"
-  "lockResponse\022\n\n\002id\030\001 \001(\004\022\014\n\004busy\030\002 \001(\010\"&"
-  "\n\030GetAssembledBlockRequest\022\n\n\002id\030\001 \001(\004\"\226"
-  "\001\n\022AssembledBlockData\0222\n\021execution_paylo"
-  "ad\030\001 \001(\0132\027.types.ExecutionPayload\022 \n\013blo"
-  "ck_value\030\002 \001(\0132\013.types.H256\022*\n\014blobs_bun"
-  "dle\030\003 \001(\0132\024.types.BlobsBundleV1\"d\n\031GetAs"
-  "sembledBlockResponse\0220\n\004data\030\001 \001(\0132\035.exe"
-  "cution.AssembledBlockDataH\000\210\001\001\022\014\n\004busy\030\002"
-  " \001(\010B\007\n\005_data\">\n\026GetBodiesBatchResponse\022"
-  "$\n\006bodies\030\001 \003(\0132\024.execution.BlockBody\"7\n"
-  "\030GetBodiesByHashesRequest\022\033\n\006hashes\030\001 \003("
-  "\0132\013.types.H256\"7\n\027GetBodiesByRangeReques"
-  "t\022\r\n\005start\030\001 \001(\004\022\r\n\005count\030\002 \001(\004\"\036\n\rReady"
-  "Response\022\r\n\005ready\030\001 \001(\010\">\n\024FrozenBlocksR"
-  "esponse\022\025\n\rfrozen_blocks\030\001 \001(\004\022\017\n\007has_ga"
-  "p\030\002 \001(\010\"%\n\020HasBlockResponse\022\021\n\thas_block"
-  "\030\001 \001(\010*q\n\017ExecutionStatus\022\013\n\007Success\020\000\022\014"
-  "\n\010BadBlock\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016MissingS"
-  "egment\020\003\022\025\n\021InvalidForkchoice\020\004\022\010\n\004Busy\020"
-  "\0052\206\n\n\tExecution\022J\n\014InsertBlocks\022\036.execut"
-  "ion.InsertBlocksRequest\032\032.execution.Inse"
-  "rtionResult\022K\n\rValidateChain\022\034.execution"
-  ".ValidationRequest\032\034.execution.Validatio"
-  "nReceipt\022G\n\020UpdateForkChoice\022\025.execution"
-  ".ForkChoice\032\034.execution.ForkChoiceReceip"
-  "t\022R\n\rAssembleBlock\022\037.execution.AssembleB"
-  "lockRequest\032 .execution.AssembleBlockRes"
-  "ponse\022^\n\021GetAssembledBlock\022#.execution.G"
-  "etAssembledBlockRequest\032$.execution.GetA"
-  "ssembledBlockResponse\022E\n\rCurrentHeader\022\026"
-  ".google.protobuf.Empty\032\034.execution.GetHe"
-  "aderResponse\022\?\n\005GetTD\022\034.execution.GetSeg"
-  "mentRequest\032\030.execution.GetTDResponse\022G\n"
-  "\tGetHeader\022\034.execution.GetSegmentRequest"
-  "\032\034.execution.GetHeaderResponse\022C\n\007GetBod"
-  "y\022\034.execution.GetSegmentRequest\032\032.execut"
-  "ion.GetBodyResponse\022E\n\010HasBlock\022\034.execut"
-  "ion.GetSegmentRequest\032\033.execution.HasBlo"
-  "ckResponse\022Y\n\020GetBodiesByRange\022\".executi"
-  "on.GetBodiesByRangeRequest\032!.execution.G"
-  "etBodiesBatchResponse\022[\n\021GetBodiesByHash"
-  "es\022#.execution.GetBodiesByHashesRequest\032"
-  "!.execution.GetBodiesBatchResponse\022>\n\017Is"
-  "CanonicalHash\022\013.types.H256\032\036.execution.I"
-  "sCanonicalResponse\022J\n\023GetHeaderHashNumbe"
-  "r\022\013.types.H256\032&.execution.GetHeaderHash"
-  "NumberResponse\022>\n\rGetForkChoice\022\026.google"
-  ".protobuf.Empty\032\025.execution.ForkChoice\0229"
-  "\n\005Ready\022\026.google.protobuf.Empty\032\030.execut"
-  "ion.ReadyResponse\022G\n\014FrozenBlocks\022\026.goog"
-  "le.protobuf.Empty\032\037.execution.FrozenBloc"
-  "ksResponseB\034Z\032./execution;executionproto"
-  "b\006proto3"
+  "drawals\030\005 \003(\0132\021.types.Withdrawal\"N\n\005Bloc"
+  "k\022!\n\006header\030\001 \001(\0132\021.execution.Header\022\"\n\004"
+  "body\030\002 \001(\0132\024.execution.BlockBody\"F\n\021GetH"
+  "eaderResponse\022&\n\006header\030\001 \001(\0132\021.executio"
+  "n.HeaderH\000\210\001\001B\t\n\007_header\"4\n\rGetTDRespons"
+  "e\022\034\n\002td\030\001 \001(\0132\013.types.H256H\000\210\001\001B\005\n\003_td\"C"
+  "\n\017GetBodyResponse\022\'\n\004body\030\001 \001(\0132\024.execut"
+  "ion.BlockBodyH\000\210\001\001B\007\n\005_body\"I\n\033GetHeader"
+  "HashNumberResponse\022\031\n\014block_number\030\001 \001(\004"
+  "H\000\210\001\001B\017\n\r_block_number\"t\n\021GetSegmentRequ"
+  "est\022\031\n\014block_number\030\001 \001(\004H\000\210\001\001\022$\n\nblock_"
+  "hash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\017\n\r_block_n"
+  "umberB\r\n\013_block_hash\"7\n\023InsertBlocksRequ"
+  "est\022 \n\006blocks\030\001 \003(\0132\020.execution.Block\"\313\001"
+  "\n\nForkChoice\022$\n\017head_block_hash\030\001 \001(\0132\013."
+  "types.H256\022\017\n\007timeout\030\002 \001(\004\022.\n\024finalized"
+  "_block_hash\030\003 \001(\0132\013.types.H256H\000\210\001\001\022)\n\017s"
+  "afe_block_hash\030\004 \001(\0132\013.types.H256H\001\210\001\001B\027"
+  "\n\025_finalized_block_hashB\022\n\020_safe_block_h"
+  "ash\"=\n\017InsertionResult\022*\n\006result\030\001 \001(\0162\032"
+  ".execution.ExecutionStatus\">\n\021Validation"
+  "Request\022\031\n\004hash\030\001 \001(\0132\013.types.H256\022\016\n\006nu"
+  "mber\030\002 \001(\004\"\224\002\n\024AssembleBlockRequest\022 \n\013p"
+  "arent_hash\030\001 \001(\0132\013.types.H256\022\021\n\ttimesta"
+  "mp\030\002 \001(\004\022 \n\013prev_randao\030\003 \001(\0132\013.types.H2"
+  "56\022,\n\027suggested_fee_recipient\030\004 \001(\0132\013.ty"
+  "pes.H160\022&\n\013withdrawals\030\005 \003(\0132\021.types.Wi"
+  "thdrawal\0222\n\030parent_beacon_block_root\030\006 \001"
+  "(\0132\013.types.H256H\000\210\001\001B\033\n\031_parent_beacon_b"
+  "lock_root\"1\n\025AssembleBlockResponse\022\n\n\002id"
+  "\030\001 \001(\004\022\014\n\004busy\030\002 \001(\010\"&\n\030GetAssembledBloc"
+  "kRequest\022\n\n\002id\030\001 \001(\004\"\277\001\n\022AssembledBlockD"
+  "ata\0222\n\021execution_payload\030\001 \001(\0132\027.types.E"
+  "xecutionPayload\022 \n\013block_value\030\002 \001(\0132\013.t"
+  "ypes.H256\022*\n\014blobs_bundle\030\003 \001(\0132\024.types."
+  "BlobsBundleV1\022\'\n\010requests\030\004 \001(\0132\025.types."
+  "RequestsBundle\"d\n\031GetAssembledBlockRespo"
+  "nse\0220\n\004data\030\001 \001(\0132\035.execution.AssembledB"
+  "lockDataH\000\210\001\001\022\014\n\004busy\030\002 \001(\010B\007\n\005_data\">\n\026"
+  "GetBodiesBatchResponse\022$\n\006bodies\030\001 \003(\0132\024"
+  ".execution.BlockBody\"7\n\030GetBodiesByHashe"
+  "sRequest\022\033\n\006hashes\030\001 \003(\0132\013.types.H256\"7\n"
+  "\027GetBodiesByRangeRequest\022\r\n\005start\030\001 \001(\004\022"
+  "\r\n\005count\030\002 \001(\004\"\036\n\rReadyResponse\022\r\n\005ready"
+  "\030\001 \001(\010\">\n\024FrozenBlocksResponse\022\025\n\rfrozen"
+  "_blocks\030\001 \001(\004\022\017\n\007has_gap\030\002 \001(\010\"%\n\020HasBlo"
+  "ckResponse\022\021\n\thas_block\030\001 \001(\010*q\n\017Executi"
+  "onStatus\022\013\n\007Success\020\000\022\014\n\010BadBlock\020\001\022\016\n\nT"
+  "ooFarAway\020\002\022\022\n\016MissingSegment\020\003\022\025\n\021Inval"
+  "idForkchoice\020\004\022\010\n\004Busy\020\0052\206\n\n\tExecution\022J"
+  "\n\014InsertBlocks\022\036.execution.InsertBlocksR"
+  "equest\032\032.execution.InsertionResult\022K\n\rVa"
+  "lidateChain\022\034.execution.ValidationReques"
+  "t\032\034.execution.ValidationReceipt\022G\n\020Updat"
+  "eForkChoice\022\025.execution.ForkChoice\032\034.exe"
+  "cution.ForkChoiceReceipt\022R\n\rAssembleBloc"
+  "k\022\037.execution.AssembleBlockRequest\032 .exe"
+  "cution.AssembleBlockResponse\022^\n\021GetAssem"
+  "bledBlock\022#.execution.GetAssembledBlockR"
+  "equest\032$.execution.GetAssembledBlockResp"
+  "onse\022E\n\rCurrentHeader\022\026.google.protobuf."
+  "Empty\032\034.execution.GetHeaderResponse\022\?\n\005G"
+  "etTD\022\034.execution.GetSegmentRequest\032\030.exe"
+  "cution.GetTDResponse\022G\n\tGetHeader\022\034.exec"
+  "ution.GetSegmentRequest\032\034.execution.GetH"
+  "eaderResponse\022C\n\007GetBody\022\034.execution.Get"
+  "SegmentRequest\032\032.execution.GetBodyRespon"
+  "se\022E\n\010HasBlock\022\034.execution.GetSegmentReq"
+  "uest\032\033.execution.HasBlockResponse\022Y\n\020Get"
+  "BodiesByRange\022\".execution.GetBodiesByRan"
+  "geRequest\032!.execution.GetBodiesBatchResp"
+  "onse\022[\n\021GetBodiesByHashes\022#.execution.Ge"
+  "tBodiesByHashesRequest\032!.execution.GetBo"
+  "diesBatchResponse\022>\n\017IsCanonicalHash\022\013.t"
+  "ypes.H256\032\036.execution.IsCanonicalRespons"
+  "e\022J\n\023GetHeaderHashNumber\022\013.types.H256\032&."
+  "execution.GetHeaderHashNumberResponse\022>\n"
+  "\rGetForkChoice\022\026.google.protobuf.Empty\032\025"
+  ".execution.ForkChoice\0229\n\005Ready\022\026.google."
+  "protobuf.Empty\032\030.execution.ReadyResponse"
+  "\022G\n\014FrozenBlocks\022\026.google.protobuf.Empty"
+  "\032\037.execution.FrozenBlocksResponseB\034Z\032./e"
+  "xecution;executionprotob\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_execution_2fexecution_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -882,7 +882,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_execution_2fexecuti
 };
 static ::_pbi::once_flag descriptor_table_execution_2fexecution_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_execution_2fexecution_2eproto = {
-    false, false, 4728, descriptor_table_protodef_execution_2fexecution_2eproto,
+    false, false, 4751, descriptor_table_protodef_execution_2fexecution_2eproto,
     "execution/execution.proto",
     &descriptor_table_execution_2fexecution_2eproto_once, descriptor_table_execution_2fexecution_2eproto_deps, 2, 26,
     schemas, file_default_instances, TableStruct_execution_2fexecution_2eproto::offsets,
@@ -1696,8 +1696,8 @@ class Header::_Internal {
   static void set_has_parent_beacon_block_root(HasBits* has_bits) {
     (*has_bits)[0] |= 8u;
   }
-  static const ::types::H256& requests_root(const Header* msg);
-  static void set_has_requests_root(HasBits* has_bits) {
+  static const ::types::H256& requests_hash(const Header* msg);
+  static void set_has_requests_hash(HasBits* has_bits) {
     (*has_bits)[0] |= 16u;
   }
   static void set_has_aura_step(HasBits* has_bits) {
@@ -1761,8 +1761,8 @@ Header::_Internal::parent_beacon_block_root(const Header* msg) {
   return *msg->_impl_.parent_beacon_block_root_;
 }
 const ::types::H256&
-Header::_Internal::requests_root(const Header* msg) {
-  return *msg->_impl_.requests_root_;
+Header::_Internal::requests_hash(const Header* msg) {
+  return *msg->_impl_.requests_hash_;
 }
 void Header::clear_parent_hash() {
   if (GetArenaForAllocation() == nullptr && _impl_.parent_hash_ != nullptr) {
@@ -1836,8 +1836,8 @@ void Header::clear_parent_beacon_block_root() {
   if (_impl_.parent_beacon_block_root_ != nullptr) _impl_.parent_beacon_block_root_->Clear();
   _impl_._has_bits_[0] &= ~0x00000008u;
 }
-void Header::clear_requests_root() {
-  if (_impl_.requests_root_ != nullptr) _impl_.requests_root_->Clear();
+void Header::clear_requests_hash() {
+  if (_impl_.requests_hash_ != nullptr) _impl_.requests_hash_->Clear();
   _impl_._has_bits_[0] &= ~0x00000010u;
 }
 Header::Header(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -1867,7 +1867,7 @@ Header::Header(const Header& from)
     , decltype(_impl_.base_fee_per_gas_){nullptr}
     , decltype(_impl_.withdrawal_hash_){nullptr}
     , decltype(_impl_.parent_beacon_block_root_){nullptr}
-    , decltype(_impl_.requests_root_){nullptr}
+    , decltype(_impl_.requests_hash_){nullptr}
     , decltype(_impl_.block_number_){}
     , decltype(_impl_.gas_limit_){}
     , decltype(_impl_.gas_used_){}
@@ -1933,8 +1933,8 @@ Header::Header(const Header& from)
   if (from._internal_has_parent_beacon_block_root()) {
     _this->_impl_.parent_beacon_block_root_ = new ::types::H256(*from._impl_.parent_beacon_block_root_);
   }
-  if (from._internal_has_requests_root()) {
-    _this->_impl_.requests_root_ = new ::types::H256(*from._impl_.requests_root_);
+  if (from._internal_has_requests_hash()) {
+    _this->_impl_.requests_hash_ = new ::types::H256(*from._impl_.requests_hash_);
   }
   ::memcpy(&_impl_.block_number_, &from._impl_.block_number_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.aura_step_) -
@@ -1964,7 +1964,7 @@ inline void Header::SharedCtor(
     , decltype(_impl_.base_fee_per_gas_){nullptr}
     , decltype(_impl_.withdrawal_hash_){nullptr}
     , decltype(_impl_.parent_beacon_block_root_){nullptr}
-    , decltype(_impl_.requests_root_){nullptr}
+    , decltype(_impl_.requests_hash_){nullptr}
     , decltype(_impl_.block_number_){uint64_t{0u}}
     , decltype(_impl_.gas_limit_){uint64_t{0u}}
     , decltype(_impl_.gas_used_){uint64_t{0u}}
@@ -2010,7 +2010,7 @@ inline void Header::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.base_fee_per_gas_;
   if (this != internal_default_instance()) delete _impl_.withdrawal_hash_;
   if (this != internal_default_instance()) delete _impl_.parent_beacon_block_root_;
-  if (this != internal_default_instance()) delete _impl_.requests_root_;
+  if (this != internal_default_instance()) delete _impl_.requests_hash_;
 }
 
 void Header::SetCachedSize(int size) const {
@@ -2082,8 +2082,8 @@ void Header::Clear() {
       _impl_.parent_beacon_block_root_->Clear();
     }
     if (cached_has_bits & 0x00000010u) {
-      GOOGLE_DCHECK(_impl_.requests_root_ != nullptr);
-      _impl_.requests_root_->Clear();
+      GOOGLE_DCHECK(_impl_.requests_hash_ != nullptr);
+      _impl_.requests_hash_->Clear();
     }
   }
   ::memset(&_impl_.block_number_, 0, static_cast<size_t>(
@@ -2276,10 +2276,10 @@ const char* Header::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
         } else
           goto handle_unusual;
         continue;
-      // optional .types.H256 requests_root = 22;
+      // optional .types.H256 requests_hash = 22;
       case 22:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 178)) {
-          ptr = ctx->ParseMessage(_internal_mutable_requests_root(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_requests_hash(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2471,11 +2471,11 @@ uint8_t* Header::_InternalSerialize(
         _Internal::parent_beacon_block_root(this).GetCachedSize(), target, stream);
   }
 
-  // optional .types.H256 requests_root = 22;
-  if (_internal_has_requests_root()) {
+  // optional .types.H256 requests_hash = 22;
+  if (_internal_has_requests_hash()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(22, _Internal::requests_root(this),
-        _Internal::requests_root(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(22, _Internal::requests_hash(this),
+        _Internal::requests_hash(this).GetCachedSize(), target, stream);
   }
 
   // optional uint64 aura_step = 23;
@@ -2613,11 +2613,11 @@ size_t Header::ByteSizeLong() const {
           *_impl_.parent_beacon_block_root_);
     }
 
-    // optional .types.H256 requests_root = 22;
+    // optional .types.H256 requests_hash = 22;
     if (cached_has_bits & 0x00000010u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *_impl_.requests_root_);
+          *_impl_.requests_hash_);
     }
 
   }
@@ -2748,8 +2748,8 @@ void Header::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBU
           from._internal_parent_beacon_block_root());
     }
     if (cached_has_bits & 0x00000010u) {
-      _this->_internal_mutable_requests_root()->::types::H256::MergeFrom(
-          from._internal_requests_root());
+      _this->_internal_mutable_requests_hash()->::types::H256::MergeFrom(
+          from._internal_requests_hash());
     }
   }
   if (from._internal_block_number() != 0) {
@@ -2854,7 +2854,6 @@ BlockBody::BlockBody(const BlockBody& from)
       decltype(_impl_.transactions_){from._impl_.transactions_}
     , decltype(_impl_.uncles_){from._impl_.uncles_}
     , decltype(_impl_.withdrawals_){from._impl_.withdrawals_}
-    , decltype(_impl_.requests_){from._impl_.requests_}
     , decltype(_impl_.block_hash_){nullptr}
     , decltype(_impl_.block_number_){}
     , /*decltype(_impl_._cached_size_)*/{}};
@@ -2875,7 +2874,6 @@ inline void BlockBody::SharedCtor(
       decltype(_impl_.transactions_){arena}
     , decltype(_impl_.uncles_){arena}
     , decltype(_impl_.withdrawals_){arena}
-    , decltype(_impl_.requests_){arena}
     , decltype(_impl_.block_hash_){nullptr}
     , decltype(_impl_.block_number_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
@@ -2896,7 +2894,6 @@ inline void BlockBody::SharedDtor() {
   _impl_.transactions_.~RepeatedPtrField();
   _impl_.uncles_.~RepeatedPtrField();
   _impl_.withdrawals_.~RepeatedPtrField();
-  _impl_.requests_.~RepeatedPtrField();
   if (this != internal_default_instance()) delete _impl_.block_hash_;
 }
 
@@ -2913,7 +2910,6 @@ void BlockBody::Clear() {
   _impl_.transactions_.Clear();
   _impl_.uncles_.Clear();
   _impl_.withdrawals_.Clear();
-  _impl_.requests_.Clear();
   if (GetArenaForAllocation() == nullptr && _impl_.block_hash_ != nullptr) {
     delete _impl_.block_hash_;
   }
@@ -2984,20 +2980,6 @@ const char* BlockBody::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx
         } else
           goto handle_unusual;
         continue;
-      // repeated bytes requests = 6;
-      case 6:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            auto str = _internal_add_requests();
-            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<50>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -3062,12 +3044,6 @@ uint8_t* BlockBody::_InternalSerialize(
         InternalWriteMessage(5, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // repeated bytes requests = 6;
-  for (int i = 0, n = this->_internal_requests_size(); i < n; i++) {
-    const auto& s = this->_internal_requests(i);
-    target = stream->WriteBytes(6, s, target);
-  }
-
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -3106,14 +3082,6 @@ size_t BlockBody::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // repeated bytes requests = 6;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.requests_.size());
-  for (int i = 0, n = _impl_.requests_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-      _impl_.requests_.Get(i));
-  }
-
   // .types.H256 block_hash = 1;
   if (this->_internal_has_block_hash()) {
     total_size += 1 +
@@ -3147,7 +3115,6 @@ void BlockBody::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROT
   _this->_impl_.transactions_.MergeFrom(from._impl_.transactions_);
   _this->_impl_.uncles_.MergeFrom(from._impl_.uncles_);
   _this->_impl_.withdrawals_.MergeFrom(from._impl_.withdrawals_);
-  _this->_impl_.requests_.MergeFrom(from._impl_.requests_);
   if (from._internal_has_block_hash()) {
     _this->_internal_mutable_block_hash()->::types::H256::MergeFrom(
         from._internal_block_hash());
@@ -3175,7 +3142,6 @@ void BlockBody::InternalSwap(BlockBody* other) {
   _impl_.transactions_.InternalSwap(&other->_impl_.transactions_);
   _impl_.uncles_.InternalSwap(&other->_impl_.uncles_);
   _impl_.withdrawals_.InternalSwap(&other->_impl_.withdrawals_);
-  _impl_.requests_.InternalSwap(&other->_impl_.requests_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(BlockBody, _impl_.block_number_)
       + sizeof(BlockBody::_impl_.block_number_)
@@ -6240,6 +6206,7 @@ class AssembledBlockData::_Internal {
   static const ::types::ExecutionPayload& execution_payload(const AssembledBlockData* msg);
   static const ::types::H256& block_value(const AssembledBlockData* msg);
   static const ::types::BlobsBundleV1& blobs_bundle(const AssembledBlockData* msg);
+  static const ::types::RequestsBundle& requests(const AssembledBlockData* msg);
 };
 
 const ::types::ExecutionPayload&
@@ -6253,6 +6220,10 @@ AssembledBlockData::_Internal::block_value(const AssembledBlockData* msg) {
 const ::types::BlobsBundleV1&
 AssembledBlockData::_Internal::blobs_bundle(const AssembledBlockData* msg) {
   return *msg->_impl_.blobs_bundle_;
+}
+const ::types::RequestsBundle&
+AssembledBlockData::_Internal::requests(const AssembledBlockData* msg) {
+  return *msg->_impl_.requests_;
 }
 void AssembledBlockData::clear_execution_payload() {
   if (GetArenaForAllocation() == nullptr && _impl_.execution_payload_ != nullptr) {
@@ -6272,6 +6243,12 @@ void AssembledBlockData::clear_blobs_bundle() {
   }
   _impl_.blobs_bundle_ = nullptr;
 }
+void AssembledBlockData::clear_requests() {
+  if (GetArenaForAllocation() == nullptr && _impl_.requests_ != nullptr) {
+    delete _impl_.requests_;
+  }
+  _impl_.requests_ = nullptr;
+}
 AssembledBlockData::AssembledBlockData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -6285,6 +6262,7 @@ AssembledBlockData::AssembledBlockData(const AssembledBlockData& from)
       decltype(_impl_.execution_payload_){nullptr}
     , decltype(_impl_.block_value_){nullptr}
     , decltype(_impl_.blobs_bundle_){nullptr}
+    , decltype(_impl_.requests_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -6297,6 +6275,9 @@ AssembledBlockData::AssembledBlockData(const AssembledBlockData& from)
   if (from._internal_has_blobs_bundle()) {
     _this->_impl_.blobs_bundle_ = new ::types::BlobsBundleV1(*from._impl_.blobs_bundle_);
   }
+  if (from._internal_has_requests()) {
+    _this->_impl_.requests_ = new ::types::RequestsBundle(*from._impl_.requests_);
+  }
   // @@protoc_insertion_point(copy_constructor:execution.AssembledBlockData)
 }
 
@@ -6308,6 +6289,7 @@ inline void AssembledBlockData::SharedCtor(
       decltype(_impl_.execution_payload_){nullptr}
     , decltype(_impl_.block_value_){nullptr}
     , decltype(_impl_.blobs_bundle_){nullptr}
+    , decltype(_impl_.requests_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -6326,6 +6308,7 @@ inline void AssembledBlockData::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.execution_payload_;
   if (this != internal_default_instance()) delete _impl_.block_value_;
   if (this != internal_default_instance()) delete _impl_.blobs_bundle_;
+  if (this != internal_default_instance()) delete _impl_.requests_;
 }
 
 void AssembledBlockData::SetCachedSize(int size) const {
@@ -6350,6 +6333,10 @@ void AssembledBlockData::Clear() {
     delete _impl_.blobs_bundle_;
   }
   _impl_.blobs_bundle_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.requests_ != nullptr) {
+    delete _impl_.requests_;
+  }
+  _impl_.requests_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -6379,6 +6366,14 @@ const char* AssembledBlockData::_InternalParse(const char* ptr, ::_pbi::ParseCon
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_blobs_bundle(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .types.RequestsBundle requests = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          ptr = ctx->ParseMessage(_internal_mutable_requests(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -6433,6 +6428,13 @@ uint8_t* AssembledBlockData::_InternalSerialize(
         _Internal::blobs_bundle(this).GetCachedSize(), target, stream);
   }
 
+  // .types.RequestsBundle requests = 4;
+  if (this->_internal_has_requests()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(4, _Internal::requests(this),
+        _Internal::requests(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -6470,6 +6472,13 @@ size_t AssembledBlockData::ByteSizeLong() const {
         *_impl_.blobs_bundle_);
   }
 
+  // .types.RequestsBundle requests = 4;
+  if (this->_internal_has_requests()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.requests_);
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -6500,6 +6509,10 @@ void AssembledBlockData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, con
     _this->_internal_mutable_blobs_bundle()->::types::BlobsBundleV1::MergeFrom(
         from._internal_blobs_bundle());
   }
+  if (from._internal_has_requests()) {
+    _this->_internal_mutable_requests()->::types::RequestsBundle::MergeFrom(
+        from._internal_requests());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -6518,8 +6531,8 @@ void AssembledBlockData::InternalSwap(AssembledBlockData* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(AssembledBlockData, _impl_.blobs_bundle_)
-      + sizeof(AssembledBlockData::_impl_.blobs_bundle_)
+      PROTOBUF_FIELD_OFFSET(AssembledBlockData, _impl_.requests_)
+      + sizeof(AssembledBlockData::_impl_.requests_)
       - PROTOBUF_FIELD_OFFSET(AssembledBlockData, _impl_.execution_payload_)>(
           reinterpret_cast<char*>(&_impl_.execution_payload_),
           reinterpret_cast<char*>(&other->_impl_.execution_payload_));

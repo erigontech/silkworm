@@ -61,7 +61,7 @@ class PaginatedSequence {
         Task<std::optional<T>> next() {
             if (it_ == current_.values.cend()) {
                 if (!current_.next_page_token.empty()) {
-                    current_ = co_await next_page_provider_(current_.next_page_token);
+                    current_ = co_await next_page_provider_(std::move(current_.next_page_token));
                     it_ = current_.values.cbegin();
                 }
             }
@@ -138,7 +138,7 @@ class PaginatedSequencePair {
             if (key_it_ == current_.keys.cend()) {
                 SILKWORM_ASSERT(value_it_ == current_.values.cend());
                 if (!current_.next_page_token.empty()) {
-                    current_ = co_await next_page_provider_(current_.next_page_token);
+                    current_ = co_await next_page_provider_(std::move(current_.next_page_token));
                     key_it_ = current_.keys.cbegin();
                     value_it_ = current_.values.cbegin();
                 }

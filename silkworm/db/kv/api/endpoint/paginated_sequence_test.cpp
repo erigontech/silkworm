@@ -46,12 +46,12 @@ struct PaginatedSequenceTest : public test_util::ContextTestBase {
 struct TestPaginatorUint64 {
     explicit TestPaginatorUint64(const PageUint64List& pages) : pages_(pages) {}
 
-    Task<PageResultUint64> operator()() {
+    Task<PageResultUint64> operator()(std::string /*page_token*/) {
         if (count_ == 0 && pages_.empty()) {
-            co_return PageResultUint64{};  // has_more=false as default
+            co_return PageResultUint64{};
         }
         if (count_ < pages_.size()) {
-            const auto next_token = (count_ != pages_.size() - 1) ? "again" : "";
+            const auto next_token = (count_ != pages_.size() - 1) ? "next" : "";
             PageResultUint64 page_result{pages_[count_], next_token};
             ++count_;
             co_return page_result;
@@ -67,11 +67,8 @@ struct TestPaginatorUint64 {
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: empty sequence", "[db][kv][api][paginated_sequence]") {
     PageUint64List empty;
     TestPaginatorUint64 paginator{empty};
-    auto lambda = [&](std::string) mutable -> Task<PageResultUint64> {
-        co_return co_await paginator();
-    };
 
-    PaginatedUint64 paginated{lambda};
+    PaginatedUint64 paginated{paginator};
     // We're using this lambda instead of built-in paginated_to_vector just to check Iterator::has_next
     const auto paginated_it_to_vector = [](auto& ps) -> Task<std::vector<uint64_t>> {
         auto it = co_await ps.begin();
@@ -92,11 +89,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: non-empty se
     for (const auto& [page_list, expected_sequence] : fixtures) {
         SECTION("test vector: " + std::to_string(++i)) {
             TestPaginatorUint64 paginator{page_list};
-            auto lambda = [&](const std::string&) mutable -> Task<PageResultUint64> {
-                co_return co_await paginator();
-            };
-
-            PaginatedUint64 paginated{lambda};
+            PaginatedUint64 paginated{paginator};
             CHECK(spawn_and_wait(paginated_to_vector(paginated)) == expected_sequence);
         }
     }
@@ -190,14 +183,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][pagin
         SECTION("test vector: " + std::to_string(++i)) {
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
-            auto lambda1 = [&](std::string) mutable -> Task<PageResultUint64> {
-                co_return co_await paginator1();
-            };
-            auto lambda2 = [&](std::string) mutable -> Task<PageResultUint64> {
-                co_return co_await paginator2();
-            };
-
-            PaginatedUint64 paginated1{lambda1}, paginated2{lambda2};
+            PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
             const auto async_intersection = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
                 IntersectionIterator it = set_intersection(co_await ps1.begin(), co_await ps2.begin());
                 CHECK(co_await it.has_next() == !expected_intersection_set.empty());
@@ -221,14 +207,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_union", "[db][kv][api][paginated_se
         SECTION("test vector: " + std::to_string(++i)) {
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
-            auto lambda1 = [&](std::string) mutable -> Task<PageResultUint64> {
-                co_return co_await paginator1();
-            };
-            auto lambda2 = [&](std::string) mutable -> Task<PageResultUint64> {
-                co_return co_await paginator2();
-            };
-
-            PaginatedUint64 paginated1{lambda1}, paginated2{lambda2};
+            PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
             const auto async_union = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
                 UnionIterator<PaginatedUint64::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin());
                 CHECK(co_await it.has_next() == !expected_union_set.empty());

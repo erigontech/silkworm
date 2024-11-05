@@ -24,7 +24,9 @@
 #include <silkworm/core/common/assert.hpp>
 
 #include "common/snapshot_path.hpp"
+#include "common/util/iterator/map_values_view.hpp"
 #include "rec_split_index/index.hpp"
+#include "schema.hpp"
 #include "segment/segment_reader.hpp"
 #include "segment_and_index.hpp"
 
@@ -49,21 +51,10 @@ struct SnapshotBundleData {
     static constexpr size_t kIndexesCount = 4;
 };
 
-struct SnapshotBundlePathsData {
-    SnapshotPath header_segment_path;
-    SnapshotPath idx_header_hash_path;
-
-    SnapshotPath body_segment_path;
-    SnapshotPath idx_body_number_path;
-
-    SnapshotPath txn_segment_path;
-    SnapshotPath idx_txn_hash_path;
-    SnapshotPath idx_txn_hash_2_block_path;
-};
-
-struct SnapshotBundlePaths : public SnapshotBundlePathsData {
-    SnapshotBundlePaths(StepRange step_range, SnapshotBundlePathsData bundle)
-        : SnapshotBundlePathsData{std::move(bundle)},
+struct SnapshotBundlePaths {
+    SnapshotBundlePaths(Schema::RepositoryDef schema, std::filesystem::path dir_path, StepRange step_range)
+        : schema_{std::move(schema)},
+          dir_path_{std::move(dir_path)},
           step_range_{step_range} {}
 
     StepRange step_range() const { return step_range_; }
@@ -72,6 +63,8 @@ struct SnapshotBundlePaths : public SnapshotBundlePathsData {
     std::vector<SnapshotPath> segment_paths() const;
 
   private:
+    Schema::RepositoryDef schema_;
+    std::filesystem::path dir_path_;
     StepRange step_range_;
 };
 

@@ -16,11 +16,14 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/snapshots/schema.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_bundle_factory.hpp>
 
 namespace silkworm::db {
 
 struct SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
+    SnapshotBundleFactoryImpl(snapshots::Schema::RepositoryDef schema)
+        : schema_{std::move(schema)} {}
     ~SnapshotBundleFactoryImpl() override = default;
 
     snapshots::SnapshotBundle make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const override;
@@ -28,6 +31,9 @@ struct SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
     snapshots::SnapshotBundlePaths make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const override;
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& segment_path) const override;
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPathList& segment_paths) const override;
+
+  private:
+    snapshots::Schema::RepositoryDef schema_;
 };
 
 }  // namespace silkworm::db

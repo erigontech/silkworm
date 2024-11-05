@@ -72,23 +72,17 @@ std::vector<SnapshotPath> SnapshotBundle::segment_paths() {
 }
 
 std::vector<SnapshotPath> SnapshotBundlePaths::segment_paths() const {
-    return {
-        header_segment_path,
-        body_segment_path,
-        txn_segment_path,
-    };
+    std::vector<SnapshotPath> results;
+    for (auto& entry : schema_.make_segment_paths(dir_path_, step_range_))
+        results.push_back(std::move(entry.second));
+    return results;
 }
 
 std::vector<std::filesystem::path> SnapshotBundlePaths::files() const {
-    return std::vector<std::filesystem::path>{
-        header_segment_path.path(),
-        idx_header_hash_path.path(),
-        body_segment_path.path(),
-        idx_body_number_path.path(),
-        txn_segment_path.path(),
-        idx_txn_hash_path.path(),
-        idx_txn_hash_2_block_path.path(),
-    };
+    std::vector<std::filesystem::path> results;
+    for (auto& path : schema_.make_all_paths(dir_path_, step_range_))
+        results.push_back(path.path());
+    return results;
 }
 
 }  // namespace silkworm::snapshots

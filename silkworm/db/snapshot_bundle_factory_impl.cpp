@@ -55,26 +55,10 @@ SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_
 }
 
 SnapshotBundlePaths SnapshotBundleFactoryImpl::make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    PathByTypeProvider snapshot_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::make(dir_path, kSnapshotV1, range, type);
-    };
-    PathByTypeProvider index_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::make(dir_path, kSnapshotV1, range, type, kIdxExtension);
-    };
-
     return SnapshotBundlePaths{
+        schema_,
+        dir_path,
         range,
-        SnapshotBundlePathsData{
-            .header_segment_path = snapshot_path(SnapshotType::headers),
-            .idx_header_hash_path = index_path(SnapshotType::headers),
-
-            .body_segment_path = snapshot_path(SnapshotType::bodies),
-            .idx_body_number_path = index_path(SnapshotType::bodies),
-
-            .txn_segment_path = snapshot_path(SnapshotType::transactions),
-            .idx_txn_hash_path = index_path(SnapshotType::transactions),
-            .idx_txn_hash_2_block_path = index_path(SnapshotType::transactions_to_block),
-        },
     };
 }
 

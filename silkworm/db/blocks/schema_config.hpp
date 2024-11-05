@@ -17,12 +17,31 @@
 #pragma once
 
 #include "../datastore/common/entity_name.hpp"
+#include "../datastore/snapshots/schema.hpp"
 #include "../datastore/snapshots/snapshot_repository.hpp"
 
 namespace silkworm::db::blocks {
 
 inline constexpr datastore::EntityName kBlocksRepositoryName{"Blocks"};
 
-snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path, bool open = true);
+snapshots::Schema::RepositoryDef make_blocks_repository_schema();
+
+snapshots::SnapshotRepository make_blocks_repository(
+    std::filesystem::path dir_path,
+    bool open = true);
+
+inline constexpr datastore::EntityName kHeaderSegmentName{"headers"};
+//! Index header_hash -> block_num -> headers_segment_offset
+inline constexpr datastore::EntityName kIdxHeaderHashName{"headers"};
+
+inline constexpr datastore::EntityName kBodySegmentName{"bodies"};
+//! Index block_num -> bodies_segment_offset
+inline constexpr datastore::EntityName kIdxBodyNumberName{"bodies"};
+
+inline constexpr datastore::EntityName kTxnSegmentName{"transactions"};
+//! Index transaction_hash -> txn_id -> transactions_segment_offset
+inline constexpr datastore::EntityName kIdxTxnHashName{"transactions"};
+//! Index transaction_hash -> block_num
+inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions_to_block"};
 
 }  // namespace silkworm::db::blocks

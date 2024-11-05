@@ -159,7 +159,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
         co_return;
     }
 
-    const float kTxFeeCap = 1;  // 1 ether
+    constexpr float kTxFeeCap = 1;  // 1 ether
 
     if (!check_tx_fee_less_cap(kTxFeeCap, transaction.max_fee_per_gas, transaction.gas_limit)) {
         const auto error_msg = "tx fee exceeds the configured cap";

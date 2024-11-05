@@ -63,22 +63,22 @@ TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
 
 TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    const char* FILE_NAME{"file.cpp"};
-    const int LINE_NUMBER{10};
+    const char* file_name{"file.cpp"};
+    const int line_number{10};
     Grpc2SilkwormLogGuard log_guard;
 
     SECTION("GPR_LOG_SEVERITY_ERROR") {
-        CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_ERROR, "error message"));
+        CHECK_NOTHROW(gpr_log(file_name, line_number, GPR_LOG_SEVERITY_ERROR, "error message"));
     }
 
     SECTION("GPR_LOG_SEVERITY_INFO") {
         gpr_set_log_verbosity(GPR_LOG_SEVERITY_INFO);
-        CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_INFO, "info message"));
+        CHECK_NOTHROW(gpr_log(file_name, line_number, GPR_LOG_SEVERITY_INFO, "info message"));
     }
 
     SECTION("GPR_LOG_SEVERITY_DEBUG") {
         gpr_set_log_verbosity(GPR_LOG_SEVERITY_DEBUG);
-        CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_DEBUG, "debug message"));
+        CHECK_NOTHROW(gpr_log(file_name, line_number, GPR_LOG_SEVERITY_DEBUG, "debug message"));
     }
 
     // restore the GRPC default log level to not affect logging coming from the other tests

@@ -738,7 +738,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
     Segment::Slice segment_slice = segment.slice(start, end);
 
     std::string op;
-    bool requestMore = false;
+    bool request_more = false;
     try {
         if (anchor.has_value()) {
             if (tip.has_value()) {
@@ -746,7 +746,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
                 connect(*tip, segment_slice, *anchor);
             } else {
                 op = "extend down";
-                requestMore = extend_down(segment_slice, *anchor);
+                request_more = extend_down(segment_slice, *anchor);
             }
         } else if (tip.has_value()) {
             if (end > 0) {
@@ -755,10 +755,10 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
             }
         } else {
             op = "new anchor";
-            requestMore = new_anchor(segment_slice, peerId);
+            request_more = new_anchor(segment_slice, peerId);
         }
         // SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
-        //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
+        //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << request_more << ")";
     } catch (SegmentCutAndPasteError& e) {
         SILK_TRACE_M("HeaderChain")
             << "[WARNING] segment cut&paste error, " << op
@@ -770,7 +770,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
 
     reduce_links_to(kLinkLimit);
 
-    return requestMore;
+    return request_more;
 }
 
 void HeaderChain::reduce_links_to(size_t limit) {

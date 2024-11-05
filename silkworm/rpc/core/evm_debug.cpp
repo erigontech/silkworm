@@ -555,24 +555,24 @@ Task<void> DebugExecutor::execute(
         for (const auto& bundle : bundles) {
             const auto& block_override = bundle.block_override;
 
-            rpc::Block blockContext{{block_with_hash}};
+            rpc::Block block_context{{block_with_hash}};
             if (block_override.block_number) {
-                blockContext.block_with_hash->block.header.number = block_override.block_number.value();
+                block_context.block_with_hash->block.header.number = block_override.block_number.value();
             }
             if (block_override.coin_base) {
-                blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
+                block_context.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
             }
             if (block_override.timestamp) {
-                blockContext.block_with_hash->block.header.timestamp = block_override.timestamp.value();
+                block_context.block_with_hash->block.header.timestamp = block_override.timestamp.value();
             }
             if (block_override.difficulty) {
-                blockContext.block_with_hash->block.header.difficulty = block_override.difficulty.value();
+                block_context.block_with_hash->block.header.difficulty = block_override.difficulty.value();
             }
             if (block_override.gas_limit) {
-                blockContext.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
+                block_context.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
             }
             if (block_override.base_fee) {
-                blockContext.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
+                block_context.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
             }
 
             stream.open_array();
@@ -587,7 +587,7 @@ Task<void> DebugExecutor::execute(
                 auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
                 Tracers tracers{debug_tracer};
 
-                const auto execution_result = executor.call(blockContext.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+                const auto execution_result = executor.call(block_context.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
 
                 debug_tracer->flush_logs();
                 stream.close_array();

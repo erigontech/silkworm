@@ -29,7 +29,7 @@ const uint8_t PingMessage::kId = static_cast<uint8_t>(PacketType::kPing);
 
 Bytes PingMessage::rlp_encode() const {
     Bytes data;
-    const int kDiscVersion = 4;
+    constexpr int kDiscVersion = 4;
     NodeAddress sender_address{sender_endpoint, sender_port_rlpx};
     NodeAddress recipient_address{recipient_endpoint, 0};
     auto expiration_ts = unix_timestamp_from_time_point(expiration);

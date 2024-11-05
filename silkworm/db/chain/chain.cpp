@@ -58,8 +58,7 @@ Task<intx::uint256> read_total_difficulty(kv::api::Transaction& tx, const evmc::
 }
 
 Task<evmc::bytes32> read_head_header_hash(kv::api::Transaction& tx) {
-    const Bytes kHeadHeaderKey = string_to_bytes(table::kHeadHeaderName);
-    const auto value = co_await tx.get_one(table::kHeadHeaderName, kHeadHeaderKey);
+    const auto value = co_await tx.get_one(table::kHeadHeaderName, string_to_bytes(table::kHeadHeaderName));
     if (value.empty()) {
         throw std::runtime_error{"empty head header hash value in read_head_header_hash"};
     }

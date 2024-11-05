@@ -35,12 +35,19 @@ static Task<TxNum> last_tx_num_for_block(const std::shared_ptr<kv::api::Cursor>&
                                          BlockNum block_number,
                                          chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) {
     const auto block_number_key = block_key(block_number);
-    const auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
+    auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
     if (key_value.value.empty()) {
         SILKWORM_ASSERT(canonical_body_for_storage_provider);
         auto block_body_data = co_await canonical_body_for_storage_provider(block_number);
         if (!block_body_data) {
-            throw std::invalid_argument("Bad block_num  " + std::to_string(block_number));
+            key_value = co_await max_tx_num_cursor->last();
+            if (key_value.value.empty()) {
+                co_return 0;
+            }
+            if (key_value.value.size() != sizeof(TxNum)) {
+                throw std::length_error("Bad TxNum value size " + std::to_string(key_value.value.size()) + " in db");
+            }
+            co_return endian::load_big_u64(key_value.value.data());
         }
         ByteView block_body_data_view{*block_body_data};
         const auto stored_body = unwrap_or_throw(decode_stored_block_body(block_body_data_view));

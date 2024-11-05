@@ -88,7 +88,8 @@ class PaginatedSequence2 {
         Page values;
         std::string next_page_token;
     };
-    using Paginator = std::function<Task<PageResult>(std::string page_token)>;
+    using PageToken = std::string;
+    using Paginator = std::function<Task<PageResult>(PageToken)>;
 
     class Iterator {
       public:
@@ -108,7 +109,7 @@ class PaginatedSequence2 {
         }
 
         Task<void> next_page() {
-            current_ = co_await next_page_provider_(current_.next_page_token);
+            current_ = co_await next_page_provider_(std::move(current_.next_page_token));
             it_ = current_.values.cbegin();
         }
 

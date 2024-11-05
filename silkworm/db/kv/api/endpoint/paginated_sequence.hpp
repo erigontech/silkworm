@@ -121,7 +121,7 @@ class PaginatedSequencePair {
         VPage values;
         std::string next_page_token;
     };
-    using Paginator = std::function<Task<PageResult>(const std::string &page_token)>;
+    using Paginator = std::function<Task<PageResult>(const std::string& page_token)>;
 
     class Iterator {
       public:

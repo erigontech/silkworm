@@ -19,9 +19,9 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 
 namespace silkworm::db {
 

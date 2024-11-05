@@ -21,8 +21,8 @@
 
 #include "blocks/bodies/body_segment.hpp"
 #include "blocks/headers/header_segment.hpp"
+#include "blocks/transactions/txn_segment.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
-#include "transactions/txn_segment.hpp"
 
 namespace silkworm::snapshots {
 

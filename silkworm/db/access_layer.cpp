@@ -25,11 +25,11 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/blocks/bodies/body_queries.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
+#include <silkworm/db/blocks/transactions/txn_queries.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/transactions/txn_queries.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 

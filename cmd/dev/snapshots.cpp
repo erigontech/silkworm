@@ -39,6 +39,9 @@
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_queries.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshot_merger.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
@@ -52,9 +55,6 @@
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_queries.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>

@@ -127,9 +127,11 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
     const auto block_num = co_await async_binary_search(last_block_num + 1, [&](size_t i) -> Task<bool> {
         const auto max_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, i, provider);
         if (!max_tx_num) {
-            auto first_key = co_await max_tx_num_cursor->first();
-            auto last_key = co_await max_tx_num_cursor->last();
-            std::string msg = "Bad txNum: first: " + std::to_string(endian::load_big_u64(first_key.value.data())) + " last: " + std::to_string(endian::load_big_u64(last_key.value.data()));
+            const KeyValue first_key = co_await max_tx_num_cursor->first();
+            const KeyValue last_key = co_await max_tx_num_cursor->last();
+            const Bytes first_value = first_key.value.empty() ? 0 : first_key.value;
+            const Bytes last_value = last_key.value.empty() ? 0 : last_key.value;
+            std::string msg = "Bad txNum: first: " + std::to_string(endian::load_big_u64(first_value.data())) + " last: " + std::to_string(endian::load_big_u64(last_value.data()));
             throw std::invalid_argument(msg);
         }
         co_return max_tx_num >= tx_num;

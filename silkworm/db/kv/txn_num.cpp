@@ -31,23 +31,16 @@ namespace silkworm::db::txn {
 using kv::api::KeyValue;
 using kv::api::Transaction;
 
-static Task<TxNum> last_tx_num_for_block(const std::shared_ptr<kv::api::Cursor>& max_tx_num_cursor,
-                                         BlockNum block_number,
-                                         chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) {
+static Task<std::optional<TxNum>> last_tx_num_for_block(const std::shared_ptr<kv::api::Cursor>& max_tx_num_cursor,
+                                                        BlockNum block_number,
+                                                        chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) {
     const auto block_number_key = block_key(block_number);
     auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
     if (key_value.value.empty()) {
         SILKWORM_ASSERT(canonical_body_for_storage_provider);
         auto block_body_data = co_await canonical_body_for_storage_provider(block_number);
         if (!block_body_data) {
-            key_value = co_await max_tx_num_cursor->last();
-            if (key_value.value.empty()) {
-                co_return 0;
-            }
-            if (key_value.value.size() != sizeof(TxNum)) {
-                throw std::length_error("Bad TxNum value size " + std::to_string(key_value.value.size()) + " in db");
-            }
-            co_return endian::load_big_u64(key_value.value.data());
+            co_return std::nullopt;
         }
         ByteView block_body_data_view{*block_body_data};
         const auto stored_body = unwrap_or_throw(decode_stored_block_body(block_body_data_view));
@@ -74,7 +67,18 @@ static std::pair<BlockNum, TxNum> kv_to_block_num_and_tx_num(const KeyValue& key
 
 Task<TxNum> max_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider) {
     const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
-    co_return co_await last_tx_num_for_block(max_tx_num_cursor, block_number, provider);
+    const std::optional<TxNum> last_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, block_number, provider);
+    if (!last_tx_num) {
+        const KeyValue key_value = co_await max_tx_num_cursor->last();
+        if (key_value.value.empty()) {
+            co_return 0;
+        }
+        if (key_value.value.size() != sizeof(TxNum)) {
+            throw std::length_error("Bad TxNum value size " + std::to_string(key_value.value.size()) + " in db");
+        }
+        co_return endian::load_big_u64(key_value.value.data());
+    }
+    co_return *last_tx_num;
 }
 
 Task<TxNum> min_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider) {
@@ -82,7 +86,18 @@ Task<TxNum> min_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalB
         co_return 0;
     }
     const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
-    co_return (co_await last_tx_num_for_block(max_tx_num_cursor, (block_number - 1), provider) + 1);
+    const std::optional<TxNum> last_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, (block_number - 1), provider);
+    if (!last_tx_num) {
+        const KeyValue key_value = co_await max_tx_num_cursor->last();
+        if (key_value.value.empty()) {
+            co_return 0;
+        }
+        if (key_value.value.size() != sizeof(TxNum)) {
+            throw std::length_error("Bad TxNum value size " + std::to_string(key_value.value.size()) + " in db");
+        }
+        co_return endian::load_big_u64(key_value.value.data());
+    }
+    co_return *last_tx_num + 1;
 }
 
 Task<BlockNumAndTxnNumber> first_tx_num(Transaction& tx) {
@@ -102,9 +117,21 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
                                                     chain::CanonicalBodyForStorageProvider provider) {
     const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
     const auto last_key_value = co_await max_tx_num_cursor->last();
+    if (last_key_value.value.empty()) {
+        co_return std::nullopt;
+    }
+    if (last_key_value.value.size() != sizeof(TxNum)) {
+        throw std::length_error("Bad TxNum value size " + std::to_string(last_key_value.value.size()) + " in db");
+    }
     const auto [last_block_num, _] = kv_to_block_num_and_tx_num(last_key_value);
     const auto block_num = co_await async_binary_search(last_block_num + 1, [&](size_t i) -> Task<bool> {
         const auto max_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, i, provider);
+        if (!max_tx_num) {
+            auto first_key = co_await max_tx_num_cursor->first();
+            auto last_key = co_await max_tx_num_cursor->last();
+            std::string msg = "Bad txNum: first: " + std::to_string(endian::load_big_u64(first_key.value.data())) + " last: " + std::to_string(endian::load_big_u64(last_key.value.data()));
+            throw std::invalid_argument(msg);
+        }
         co_return max_tx_num >= tx_num;
     });
     if (block_num > last_block_num) {

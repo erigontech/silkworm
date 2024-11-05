@@ -22,7 +22,6 @@ rm -rf ./mainnet/results/
 # ots_getContractCreator: new algo using TKV
 # ots_getTransactionBySenderAndNonce/test_04.json: erigon3 bug in limit and page_size management in IndexRangeQuery query
 # ots_getTransactionBySenderAndNonce/test_07.json: erigon3 bug in limit and page_size management in IndexRangeQuery query
-# ots_hasCode: new algo using TKV
 # ots_searchTransactionsAfter: new algo using TKV
 # ots_searchTransactionsBefore: new algo using TKV
 # parity_listStorageKeys/test_12.json: fix required
@@ -54,7 +53,6 @@ eth_getLogs,\
 ots_getTransactionBySenderAndNonce/test_04.json,\
 ots_getTransactionBySenderAndNonce/test_07.json,\
 ots_getContractCreator,\
-ots_hasCode/test_09.json,\
 ots_searchTransactionsAfter,\
 ots_searchTransactionsBefore,\
 parity_listStorageKeys/test_12.json,\

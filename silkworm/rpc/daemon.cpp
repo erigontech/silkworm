@@ -137,12 +137,12 @@ int Daemon::run(const DaemonSettings& settings) {
                 data_dir.snapshots().path(),
             });
 
-            auto& snapshot_repository = data_store->ref().repository;
-            snapshot_repository.reopen_folder();
+            auto& repository = data_store->ref().repository;
+            repository.reopen_folder();
 
             // At startup check that chain configuration is valid
             db::ROTxnManaged ro_txn = data_store->chaindata().start_ro_tx();
-            db::DataModel data_access{ro_txn, snapshot_repository};
+            db::DataModel data_access{ro_txn, repository};
             if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
                 throw std::runtime_error{"invalid chain configuration"};
             }

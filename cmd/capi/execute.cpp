@@ -145,12 +145,12 @@ const char* make_path(const snapshots::SnapshotPath& p) {
     return path;
 }
 
-std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepository& snapshot_repository) {
+std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepository& repository) {
     std::vector<SilkwormHeadersSnapshot> headers_snapshot_sequence;
     std::vector<SilkwormBodiesSnapshot> bodies_snapshot_sequence;
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
 
-    for (const auto& bundle_ptr : snapshot_repository.view_bundles()) {
+    for (const auto& bundle_ptr : repository.view_bundles()) {
         const auto& bundle = *bundle_ptr;
         {
             {
@@ -206,9 +206,9 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
         }
     }
 
-    ensure(headers_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid header snapshot count");
-    ensure(bodies_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid body snapshot count");
-    ensure(transactions_snapshot_sequence.size() == snapshot_repository.bundles_count(), "invalid tx snapshot count");
+    ensure(headers_snapshot_sequence.size() == repository.bundles_count(), "invalid header snapshot count");
+    ensure(bodies_snapshot_sequence.size() == repository.bundles_count(), "invalid body snapshot count");
+    ensure(transactions_snapshot_sequence.size() == repository.bundles_count(), "invalid tx snapshot count");
 
     std::vector<SilkwormChainSnapshot> snapshot_sequence;
     snapshot_sequence.reserve(headers_snapshot_sequence.size());

@@ -31,7 +31,7 @@ template <typename TSequence>
 TSequence make_paginated_sequence(const size_t page_size, const size_t n) {
     const size_t num_pages = n / page_size + (n % page_size ? 1 : 0);
     const size_t last_page_size = n % page_size ? n % page_size : page_size;
-    typename TSequence::Paginator paginator = [=](const std::string&) -> Task<typename TSequence::PageResult> {
+    typename TSequence::Paginator paginator = [=](std::string) -> Task<typename TSequence::PageResult> {
         static size_t count{0};
         const bool has_more = ++count < num_pages;
         const std::string token = has_more ? "next" : "";

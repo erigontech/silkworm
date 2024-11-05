@@ -61,7 +61,7 @@ std::vector<std::filesystem::path> SnapshotBundle::files() {
     return files;
 }
 
-std::vector<SnapshotPath> SnapshotBundle::snapshot_paths() {
+std::vector<SnapshotPath> SnapshotBundle::segment_paths() {
     std::vector<SnapshotPath> paths;
     paths.reserve(kSnapshotsCount);
 

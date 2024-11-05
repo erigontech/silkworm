@@ -42,8 +42,6 @@ void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
 }
 
 void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
-    bundle.reopen();
-
     std::scoped_lock lock(*bundles_mutex_);
     // copy bundles prior to modification
     auto bundles = std::make_shared<Bundles>(*bundles_);
@@ -148,8 +146,7 @@ void SnapshotRepository::reopen_folder() {
             auto index_path = [&](SnapshotType type) {
                 return all_index_paths[groups[num][true][type]];
             };
-            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path);
-            bundle.reopen();
+            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path, true);
 
             bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
         }
@@ -244,7 +241,7 @@ void SnapshotRepository::remove_stale_indexes() const {
 }
 
 void SnapshotRepository::build_indexes(SnapshotBundle& bundle) const {
-    for (auto& builder : bundle_factory_->index_builders(bundle.snapshot_paths())) {
+    for (auto& builder : bundle_factory_->index_builders(bundle.segment_paths())) {
         builder->build();
     }
 }

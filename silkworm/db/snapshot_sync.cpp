@@ -297,7 +297,7 @@ void SnapshotSync::seed_frozen_bundle(StepRange range) {
 }
 
 void SnapshotSync::seed_bundle(SnapshotBundle& bundle) {
-    for (auto& path : bundle.snapshot_paths()) {
+    for (auto& path : bundle.segment_paths()) {
         seed_snapshot(path);
     }
 }

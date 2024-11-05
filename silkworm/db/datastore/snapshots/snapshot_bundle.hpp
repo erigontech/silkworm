@@ -50,9 +50,11 @@ struct SnapshotBundleData {
 };
 
 struct SnapshotBundle : public SnapshotBundleData {
-    explicit SnapshotBundle(StepRange step_range, SnapshotBundleData bundle)
+    explicit SnapshotBundle(StepRange step_range, SnapshotBundleData bundle, bool open)
         : SnapshotBundleData{std::move(bundle)},
-          step_range_{step_range} {}
+          step_range_{step_range} {
+        if (open) reopen();
+    }
     virtual ~SnapshotBundle();
 
     SnapshotBundle(SnapshotBundle&&) = default;
@@ -128,7 +130,7 @@ struct SnapshotBundle : public SnapshotBundleData {
     StepRange step_range() const { return step_range_; }
 
     std::vector<std::filesystem::path> files();
-    std::vector<SnapshotPath> snapshot_paths();
+    std::vector<SnapshotPath> segment_paths();
 
     void reopen();
     void close();

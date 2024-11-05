@@ -153,7 +153,6 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
             .idx_txn_hash = std::move(idx_txn_hash),
             .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
         },
-        true,
     };
     auto& repository = snapshot_sync.repository();
     repository.add_snapshot_bundle(std::move(bundle));

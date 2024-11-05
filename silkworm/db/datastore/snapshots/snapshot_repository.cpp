@@ -149,7 +149,7 @@ void SnapshotRepository::reopen_folder() {
             auto index_path = [&](SnapshotType type) {
                 return all_index_paths[groups[num][true][type]];
             };
-            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path, true);
+            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path);
 
             bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
         }
@@ -243,7 +243,7 @@ void SnapshotRepository::remove_stale_indexes() const {
     }
 }
 
-void SnapshotRepository::build_indexes(SnapshotBundle& bundle) const {
+void SnapshotRepository::build_indexes(SnapshotBundlePaths& bundle) const {
     for (auto& builder : bundle_factory_->index_builders(bundle.segment_paths())) {
         builder->build();
     }

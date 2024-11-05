@@ -47,10 +47,10 @@ struct SnapshotMergerCommand : public DataMigrationCommand {
 };
 
 struct SnapshotMergerResult : public DataMigrationResult {
-    SnapshotBundle bundle;
+    SnapshotBundlePaths bundle_paths;
 
-    explicit SnapshotMergerResult(SnapshotBundle bundle1)
-        : bundle(std::move(bundle1)) {}
+    explicit SnapshotMergerResult(SnapshotBundlePaths bundle_paths1)
+        : bundle_paths(std::move(bundle_paths1)) {}
     ~SnapshotMergerResult() override = default;
 };
 
@@ -114,8 +114,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
 
 void SnapshotMerger::index(std::shared_ptr<DataMigrationResult> result) {
     auto& merger_result = dynamic_cast<SnapshotMergerResult&>(*result);
-    auto& bundle = merger_result.bundle;
-    snapshots_.build_indexes(bundle);
+    snapshots_.build_indexes(merger_result.bundle_paths);
 }
 
 static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
@@ -128,7 +127,7 @@ static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
 
 void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<SnapshotMergerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
+    auto& bundle = freezer_result.bundle_paths;
     auto merged_bundles = snapshots_.bundles_in_range(bundle.step_range());
 
     move_files(bundle.files(), snapshots_.path());

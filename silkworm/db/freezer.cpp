@@ -41,10 +41,10 @@ namespace silkworm::db {
 using namespace silkworm::snapshots;
 
 struct FreezerResult : public DataMigrationResult {
-    SnapshotBundle bundle;
+    SnapshotBundlePaths bundle_paths;
 
-    explicit FreezerResult(SnapshotBundle bundle1)
-        : bundle(std::move(bundle1)) {}
+    explicit FreezerResult(SnapshotBundlePaths bundle_paths1)
+        : bundle_paths(std::move(bundle_paths1)) {}
     ~FreezerResult() override = default;
 };
 
@@ -126,13 +126,12 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
 
 void Freezer::index(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
-    snapshots_.build_indexes(bundle);
+    snapshots_.build_indexes(freezer_result.bundle_paths);
 }
 
 void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
+    auto& bundle = freezer_result.bundle_paths;
     move_files(bundle.files(), snapshots_.path());
 
     auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.step_range());

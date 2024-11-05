@@ -49,11 +49,37 @@ struct SnapshotBundleData {
     static constexpr size_t kIndexesCount = 4;
 };
 
+struct SnapshotBundlePathsData {
+    SnapshotPath header_segment_path;
+    SnapshotPath idx_header_hash_path;
+
+    SnapshotPath body_segment_path;
+    SnapshotPath idx_body_number_path;
+
+    SnapshotPath txn_segment_path;
+    SnapshotPath idx_txn_hash_path;
+    SnapshotPath idx_txn_hash_2_block_path;
+};
+
+struct SnapshotBundlePaths : public SnapshotBundlePathsData {
+    SnapshotBundlePaths(StepRange step_range, SnapshotBundlePathsData bundle)
+        : SnapshotBundlePathsData{std::move(bundle)},
+          step_range_{step_range} {}
+
+    StepRange step_range() const { return step_range_; }
+
+    std::vector<std::filesystem::path> files() const;
+    std::vector<SnapshotPath> segment_paths() const;
+
+  private:
+    StepRange step_range_;
+};
+
 struct SnapshotBundle : public SnapshotBundleData {
-    explicit SnapshotBundle(StepRange step_range, SnapshotBundleData bundle, bool open)
+    explicit SnapshotBundle(StepRange step_range, SnapshotBundleData bundle)
         : SnapshotBundleData{std::move(bundle)},
           step_range_{step_range} {
-        if (open) reopen();
+        reopen();
     }
     virtual ~SnapshotBundle();
 

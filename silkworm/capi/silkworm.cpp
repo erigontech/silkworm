@@ -391,7 +391,6 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
             .idx_txn_hash = std::move(idx_txn_hash),
             .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
         },
-        true,
     };
     handle->repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;

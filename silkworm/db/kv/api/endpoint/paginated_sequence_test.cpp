@@ -51,7 +51,8 @@ struct TestPaginatorUint64 {
             co_return PageResultUint64{};  // has_more=false as default
         }
         if (count_ < pages_.size()) {
-            PageResultUint64 page_result{pages_[count_], /*has_more=*/(count_ != pages_.size() - 1)};
+            const auto next_token = (count_ != pages_.size() - 1) ? "again" : "";
+            PageResultUint64 page_result{pages_[count_], next_token};
             ++count_;
             co_return page_result;
         }
@@ -66,7 +67,11 @@ struct TestPaginatorUint64 {
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: empty sequence", "[db][kv][api][paginated_sequence]") {
     PageUint64List empty;
     TestPaginatorUint64 paginator{empty};
-    PaginatedUint64 paginated{paginator};
+    auto lambda = [&](const std::string&) mutable -> Task<PageResultUint64> {
+        co_return co_await paginator();
+    };
+
+    PaginatedUint64 paginated{lambda};
     // We're using this lambda instead of built-in paginated_to_vector just to check Iterator::has_next
     const auto paginated_it_to_vector = [](auto& ps) -> Task<std::vector<uint64_t>> {
         auto it = co_await ps.begin();
@@ -87,20 +92,24 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: non-empty se
     for (const auto& [page_list, expected_sequence] : fixtures) {
         SECTION("test vector: " + std::to_string(++i)) {
             TestPaginatorUint64 paginator{page_list};
-            PaginatedUint64 paginated{paginator};
+            auto lambda = [&](const std::string&) mutable -> Task<PageResultUint64> {
+                co_return co_await paginator();
+            };
+
+            PaginatedUint64 paginated{lambda};
             CHECK(spawn_and_wait(paginated_to_vector(paginated)) == expected_sequence);
         }
     }
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: error", "[db][kv][api][paginated_sequence]") {
-    PaginatorUint64 paginator = []() -> Task<PageResultUint64> {
+    PaginatorUint64 paginator = [](const std::string&) -> Task<PageResultUint64> {
         static int count{0};
         switch (++count) {
             case 1:
-                co_return PageResultUint64{PageUint64{1, 2, 3}, /*has_more=*/true};
+                co_return PageResultUint64{PageUint64{1, 2, 3}, "next"};
             case 2:
-                co_return PageResultUint64{PageUint64{4, 5, 6}, /*has_more=*/true};
+                co_return PageResultUint64{PageUint64{4, 5, 6}, "next"};
             case 3:
                 throw std::runtime_error{"error during pagination"};
             default:
@@ -112,7 +121,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: error", "[db
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: empty sequence", "[db][kv][api][paginated_sequence]") {
-    PaginatorKV paginator = []() -> Task<PageResultKV> {
+    PaginatorKV paginator = [](const std::string&) -> Task<PageResultKV> {
         co_return PageResultKV{};  // has_more=false as default
     };
     PaginatedKV paginated{paginator};
@@ -132,15 +141,15 @@ static const Bytes kValue1{*from_hex("FF11")}, kValue2{*from_hex("FF22")}, kValu
 static const Bytes kValue4{*from_hex("FF44")}, kValue5{*from_hex("FF55")}, kValue6{*from_hex("FF66")};
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: non-empty sequence", "[db][kv][api][paginated_sequence]") {
-    PaginatorKV paginator = []() -> Task<PageResultKV> {
+    PaginatorKV paginator = [](const std::string&) -> Task<PageResultKV> {
         static int count{0};
         switch (++count) {
             case 1:
-                co_return PageResultKV{PageK{kKey1, kKey2}, PageV{kValue1, kValue2}, /*has_more=*/true};
+                co_return PageResultKV{PageK{kKey1, kKey2}, PageV{kValue1, kValue2}, "next"};
             case 2:
-                co_return PageResultKV{PageK{kKey3, kKey4}, PageV{kValue3, kValue4}, /*has_more=*/true};
+                co_return PageResultKV{PageK{kKey3, kKey4}, PageV{kValue3, kValue4}, "next"};
             case 3:
-                co_return PageResultKV{PageK{kKey5, kKey6}, PageV{kValue5, kValue6}, /*has_more=*/false};
+                co_return PageResultKV{PageK{kKey5, kKey6}, PageV{kValue5, kValue6}, "next"};
             default:
                 throw std::logic_error{"unexpected call to paginator"};
         }
@@ -151,13 +160,13 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: non-empty sequen
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: error", "[db][kv][api][paginated_sequence]") {
-    PaginatorKV paginator = []() -> Task<PageResultKV> {
+    PaginatorKV paginator = [](const std::string&) -> Task<PageResultKV> {
         static int count{0};
         switch (++count) {
             case 1:
-                co_return PageResultKV{PageK{kKey1, kKey2}, PageV{kValue1, kValue2}, /*has_more=*/true};
+                co_return PageResultKV{PageK{kKey1, kKey2}, PageV{kValue1, kValue2}, "next"};
             case 2:
-                co_return PageResultKV{PageK{kKey3, kKey4}, PageV{kValue3, kValue4}, /*has_more=*/true};
+                co_return PageResultKV{PageK{kKey3, kKey4}, PageV{kValue3, kValue4}, "next"};
             case 3:
                 throw std::runtime_error{"error during pagination"};
             default:
@@ -181,7 +190,14 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][pagin
         SECTION("test vector: " + std::to_string(++i)) {
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
-            PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
+            auto lambda1 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+                co_return co_await paginator1();
+            };
+            auto lambda2 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+                co_return co_await paginator2();
+            };
+
+            PaginatedUint64 paginated1{lambda1}, paginated2{lambda2};
             const auto async_intersection = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
                 IntersectionIterator it = set_intersection(co_await ps1.begin(), co_await ps2.begin());
                 CHECK(co_await it.has_next() == !expected_intersection_set.empty());
@@ -205,7 +221,14 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_union", "[db][kv][api][paginated_se
         SECTION("test vector: " + std::to_string(++i)) {
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
-            PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
+            auto lambda1 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+                co_return co_await paginator1();
+            };
+            auto lambda2 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+                co_return co_await paginator2();
+            };
+
+            PaginatedUint64 paginated1{lambda1}, paginated2{lambda2};
             const auto async_union = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
                 UnionIterator<PaginatedUint64::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin());
                 CHECK(co_await it.has_next() == !expected_union_set.empty());

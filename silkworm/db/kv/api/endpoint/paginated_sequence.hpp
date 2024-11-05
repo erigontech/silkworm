@@ -48,9 +48,9 @@ class PaginatedSequence {
     using Page = std::vector<T>;
     struct PageResult {
         Page values;
-        bool has_more{false};
+        std::string next_page_token;
     };
-    using Paginator = std::function<Task<PageResult>()>;
+    using Paginator = std::function<Task<PageResult>(const std::string& page_token)>;
 
     class Iterator {
       public:
@@ -60,8 +60,8 @@ class PaginatedSequence {
 
         Task<std::optional<T>> next() {
             if (it_ == current_.values.cend()) {
-                if (current_.has_more) {
-                    current_ = co_await next_page_provider_();
+                if (!current_.next_page_token.empty()) {
+                    current_ = co_await next_page_provider_(current_.next_page_token);
                     it_ = current_.values.cbegin();
                 }
             }
@@ -88,7 +88,7 @@ class PaginatedSequence {
         : next_page_provider_(std::move(next_page_provider)) {}
 
     Task<Iterator> begin() {
-        auto current = co_await next_page_provider_();
+        auto current = co_await next_page_provider_("");
         co_return Iterator{next_page_provider_, std::move(current)};
     }
 
@@ -119,9 +119,9 @@ class PaginatedSequencePair {
     struct PageResult {
         KPage keys;
         VPage values;
-        bool has_more{false};
+        std::string next_page_token;
     };
-    using Paginator = std::function<Task<PageResult>()>;
+    using Paginator = std::function<Task<PageResult>(const std::string &page_token)>;
 
     class Iterator {
       public:
@@ -137,8 +137,8 @@ class PaginatedSequencePair {
         Task<std::optional<value_type>> next() {
             if (key_it_ == current_.keys.cend()) {
                 SILKWORM_ASSERT(value_it_ == current_.values.cend());
-                if (current_.has_more) {
-                    current_ = co_await next_page_provider_();
+                if (!current_.next_page_token.empty()) {
+                    current_ = co_await next_page_provider_(current_.next_page_token);
                     key_it_ = current_.keys.cbegin();
                     value_it_ = current_.values.cbegin();
                 }
@@ -171,7 +171,7 @@ class PaginatedSequencePair {
         : next_page_provider_(std::move(next_page_provider)) {}
 
     Task<Iterator> begin() {
-        auto current = co_await next_page_provider_();
+        auto current = co_await next_page_provider_("");
         ensure(current.keys.size() == current.values.size(), "PaginatedSequencePair::begin keys/values size mismatch");
         co_return Iterator{next_page_provider_, std::move(current)};
     }

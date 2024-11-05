@@ -90,7 +90,6 @@ class RemoteTransaction : public api::BaseTransaction {
     //! Flag indicating if agrpc::ClientRPC<>::start has been called on Tx RPC or not. This is necessary to avoid
     //! a crash in agrpc if you call agrpc::ClientRPC<>::finish before calling agrpc::ClientRPC<>::start
     bool start_called_{false};
-    std::string page_token_;
     uint64_t tx_id_{0};
     uint64_t view_id_{0};
 };

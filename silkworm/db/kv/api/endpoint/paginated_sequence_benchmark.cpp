@@ -31,11 +31,12 @@ template <typename TSequence>
 TSequence make_paginated_sequence(const size_t page_size, const size_t n) {
     const size_t num_pages = n / page_size + (n % page_size ? 1 : 0);
     const size_t last_page_size = n % page_size ? n % page_size : page_size;
-    typename TSequence::Paginator paginator = [=]() -> Task<typename TSequence::PageResult> {
+    typename TSequence::Paginator paginator = [=](const std::string&) -> Task<typename TSequence::PageResult> {
         static size_t count{0};
         const bool has_more = ++count < num_pages;
+        const std::string token = has_more ? "next" : "";
         typename TSequence::Page p(has_more ? page_size : last_page_size, 0);
-        co_return typename TSequence::PageResult{std::move(p), has_more};
+        co_return typename TSequence::PageResult{std::move(p), token};
     };
     return TSequence{std::move(paginator)};
 }
@@ -85,9 +86,9 @@ class PaginatedSequence2 {
     using Page = std::vector<T>;
     struct PageResult {
         Page values;
-        bool has_more{false};
+        std::string next_page_token;
     };
-    using Paginator = std::function<Task<PageResult>()>;
+    using Paginator = std::function<Task<PageResult>(const std::string& page_token)>;
 
     class Iterator {
       public:
@@ -98,7 +99,7 @@ class PaginatedSequence2 {
         bool operator++() {
             ++it_;
             if (it_ == current_.values.cend()) {
-                if (current_.has_more) {
+                if (!current_.next_page_token.empty()) {
                     return true;
                 }
                 it_ = typename Page::const_iterator();  // empty i.e. sentinel value
@@ -107,7 +108,7 @@ class PaginatedSequence2 {
         }
 
         Task<void> next_page() {
-            current_ = co_await next_page_provider_();
+            current_ = co_await next_page_provider_(current_.next_page_token);
             it_ = current_.values.cbegin();
         }
 
@@ -134,7 +135,7 @@ class PaginatedSequence2 {
         : next_page_provider_(std::move(next_page_provider)) {}
 
     Task<Iterator> begin() {
-        auto current = co_await next_page_provider_();
+        auto current = co_await next_page_provider_("");
         co_return Iterator{next_page_provider_, std::move(current)};
     }
 

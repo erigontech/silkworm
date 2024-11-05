@@ -36,8 +36,8 @@ TempChainData::TempChainData(bool with_create_tables, bool in_memory)
       }) {
     chain_config_.genesis_hash.emplace(kMainnetGenesisHash);
 
-    env_ = db::open_env(chaindata_env_config_);
-    txn_ = std::make_unique<db::RWTxnManaged>(env_);
+    env_ = std::make_unique<mdbx::env_managed>(db::open_env(chaindata_env_config_));
+    txn_ = std::make_unique<db::RWTxnManaged>(chaindata_rw().start_rw_tx());
 
     if (with_create_tables) {
         db::table::check_or_create_chaindata_tables(*txn_);

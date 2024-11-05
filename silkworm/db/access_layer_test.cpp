@@ -116,51 +116,6 @@ namespace silkworm::db {
 
 using silkworm::test_util::SetLogVerbosityGuard;
 
-TEST_CASE("Db Opening", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
-    // Empty dir
-    std::string empty{};
-    EnvConfig db_config{empty};
-    db_config.in_memory = true;
-    REQUIRE_THROWS_AS(open_env(db_config), std::invalid_argument);
-
-    // Conflicting flags
-    TemporaryDirectory tmp_dir1;
-    DataDirectory data_dir{tmp_dir1.path()};
-    REQUIRE_NOTHROW(data_dir.deploy());
-    REQUIRE(data_dir.exists());
-
-    db_config.path = data_dir.chaindata().path().string();
-    db_config.create = true;
-    db_config.shared = true;
-    REQUIRE_THROWS_AS(open_env(db_config), std::runtime_error);
-
-    // Must open
-    db_config.shared = false;
-    ::mdbx::env_managed env;
-    REQUIRE_NOTHROW(env = open_env(db_config));
-
-    // Create in same path not allowed
-    ::mdbx::env_managed env2;
-    REQUIRE_THROWS(env2 = open_env(db_config));
-
-    env.close();
-
-    // Conflicting flags
-    TemporaryDirectory tmp_dir2;
-    db_config = EnvConfig{tmp_dir2.path().string()};
-    db_config.create = true;
-    db_config.readonly = true;
-    db_config.in_memory = true;
-    REQUIRE_THROWS_AS(open_env(db_config), std::runtime_error);
-
-    // Must open
-    db_config.readonly = false;
-    db_config.exclusive = true;
-    REQUIRE_NOTHROW(env = open_env(db_config));
-    env.close();
-}
-
 TEST_CASE("Methods cursor_for_each/cursor_for_count", "[db][access_layer]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;

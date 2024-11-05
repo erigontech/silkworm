@@ -19,7 +19,11 @@
 #include <filesystem>
 
 #include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm::db::test_util {
 
@@ -32,20 +36,67 @@ void populate_blocks(db::RWTxn& txn, const std::filesystem::path& tests_dir, InM
 class TestDatabaseContext {
   public:
     TestDatabaseContext();
+    explicit TestDatabaseContext(const TemporaryDirectory& tmp_dir);
 
-    ~TestDatabaseContext() {
-        auto env_path = env_.get_path();
-        env_.close();
-        std::filesystem::remove_all(env_path);
+    virtual ~TestDatabaseContext() {
+        if (env_) {
+            env_->close();
+            std::filesystem::remove_all(chaindata_dir_path_);
+        }
     }
 
-    mdbx::env& mdbx_env() { return env_; }
-    db::EnvConfig get_env_config() { return env_config_; }
-    silkworm::ChainConfig get_chain_config();
+    virtual db::ROAccess chaindata() const {
+        return db::ROAccess{*env_};
+    }
+    virtual db::RWAccess chaindata_rw() const {
+        return db::RWAccess{*env_};
+    }
+
+    silkworm::ChainConfig get_chain_config() const;
+    const std::filesystem::path& chaindata_dir_path() const { return chaindata_dir_path_; }
+
+  protected:
+    mdbx::env_managed move_env() {
+        mdbx::env_managed env{std::move(*env_)};
+        env_.reset();
+        return env;
+    }
+
+    std::filesystem::path chaindata_dir_path_;
+    std::unique_ptr<mdbx::env_managed> env_;
+};
+
+class TestDataStore : public TestDatabaseContext {
+  public:
+    explicit TestDataStore(const TemporaryDirectory& tmp_dir)
+        : TestDatabaseContext{tmp_dir},
+          data_store_{
+              move_env(),
+              blocks::make_blocks_repository(
+                  DataDirectory{tmp_dir.path(), true}.snapshots().path()),
+          } {}
+
+    ~TestDataStore() override {
+        data_store_.close();
+        std::filesystem::remove_all(chaindata_dir_path_);
+    }
+
+    db::DataStore& operator*() { return data_store_; }
+    db::DataStore* operator->() { return &data_store_; }
+
+    db::ROAccess chaindata() const override {
+        return data_store_.chaindata();
+    }
+    db::RWAccess chaindata_rw() const override {
+        return data_store_.chaindata_rw();
+    }
+
+    db::DataModelFactory data_model_factory() {
+        return db::DataModelFactory{data_store_.ref()};
+    }
 
   private:
-    mdbx::env_managed env_;
-    db::EnvConfig env_config_;
+    db::DataStore data_store_;
 };
 
 }  // namespace silkworm::db::test_util

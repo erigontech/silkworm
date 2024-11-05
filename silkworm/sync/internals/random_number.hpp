@@ -16,11 +16,10 @@
 
 #pragma once
 
-#include "../datastore/snapshots/snapshot_repository.hpp"
+#include <silkworm/core/common/random_number.hpp>
 
-namespace silkworm::db::test_util {
+namespace silkworm::chainsync {
 
-snapshots::SnapshotRepository make_repository(std::filesystem::path dir_path);
-snapshots::SnapshotRepository make_repository();
+inline RandomNumber random_number;
 
-}  // namespace silkworm::db::test_util
+}  // namespace silkworm::chainsync

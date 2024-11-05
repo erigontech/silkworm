@@ -30,7 +30,10 @@ namespace silkworm::db::kv::grpc::server {
 
 class KvServer : public virtual rpc::Server {
   public:
-    KvServer(const rpc::ServerSettings& settings, mdbx::env* chaindata_env, StateChangeCollection* state_change_source);
+    KvServer(
+        const rpc::ServerSettings& settings,
+        ROAccess chaindata,
+        StateChangeCollection* state_change_source);
 
     KvServer(const KvServer&) = delete;
     KvServer& operator=(const KvServer&) = delete;
@@ -47,7 +50,7 @@ class KvServer : public virtual rpc::Server {
     remote::KV::AsyncService kv_async_service_;
 
     //! The chain database environment
-    mdbx::env* chaindata_env_;
+    ROAccess chaindata_;
 
     //! The collector of state changes acting as source of state change notifications
     StateChangeCollection* state_change_source_;

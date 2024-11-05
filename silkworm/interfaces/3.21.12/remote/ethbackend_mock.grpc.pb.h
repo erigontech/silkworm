@@ -27,6 +27,9 @@ class MockETHBACKENDStub : public ETHBACKEND::StubInterface {
   MOCK_METHOD3(Version, ::grpc::Status(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::types::VersionReply* response));
   MOCK_METHOD3(AsyncVersionRaw, ::grpc::ClientAsyncResponseReaderInterface< ::types::VersionReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncVersionRaw, ::grpc::ClientAsyncResponseReaderInterface< ::types::VersionReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(Syncing, ::grpc::Status(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::remote::SyncingReply* response));
+  MOCK_METHOD3(AsyncSyncingRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::SyncingReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncSyncingRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::SyncingReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(ProtocolVersion, ::grpc::Status(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::remote::ProtocolVersionReply* response));
   MOCK_METHOD3(AsyncProtocolVersionRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::ProtocolVersionReply>*(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncProtocolVersionRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::ProtocolVersionReply>*(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::grpc::CompletionQueue* cq));
@@ -66,9 +69,12 @@ class MockETHBACKENDStub : public ETHBACKEND::StubInterface {
   MOCK_METHOD3(PendingBlock, ::grpc::Status(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::remote::PendingBlockReply* response));
   MOCK_METHOD3(AsyncPendingBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::PendingBlockReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncPendingBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::PendingBlockReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(BorEvent, ::grpc::Status(::grpc::ClientContext* context, const ::remote::BorEventRequest& request, ::remote::BorEventReply* response));
-  MOCK_METHOD3(AsyncBorEventRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BorEventReply>*(::grpc::ClientContext* context, const ::remote::BorEventRequest& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(PrepareAsyncBorEventRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BorEventReply>*(::grpc::ClientContext* context, const ::remote::BorEventRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(BorTxnLookup, ::grpc::Status(::grpc::ClientContext* context, const ::remote::BorTxnLookupRequest& request, ::remote::BorTxnLookupReply* response));
+  MOCK_METHOD3(AsyncBorTxnLookupRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BorTxnLookupReply>*(::grpc::ClientContext* context, const ::remote::BorTxnLookupRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncBorTxnLookupRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BorTxnLookupReply>*(::grpc::ClientContext* context, const ::remote::BorTxnLookupRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(BorEvents, ::grpc::Status(::grpc::ClientContext* context, const ::remote::BorEventsRequest& request, ::remote::BorEventsReply* response));
+  MOCK_METHOD3(AsyncBorEventsRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BorEventsReply>*(::grpc::ClientContext* context, const ::remote::BorEventsRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncBorEventsRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::BorEventsReply>*(::grpc::ClientContext* context, const ::remote::BorEventsRequest& request, ::grpc::CompletionQueue* cq));
 };
 
 }  // namespace remote

@@ -162,21 +162,18 @@ void populate_blocks(RWTxn& txn, const std::filesystem::path& tests_dir, InMemor
 }
 
 namespace {
-    mdbx::env_managed open_db(const std::string& chaindata_dir) {
-        EnvConfig chain_conf{
-            .path = chaindata_dir,
+    mdbx::env_managed initialize_test_database(const std::filesystem::path& chaindata_dir_path) {
+        const auto tests_dir = get_tests_dir();
+
+        EnvConfig env_config{
+            .path = chaindata_dir_path,
             .create = true,
             .exclusive = true,
             .in_memory = true,
-            .shared = false};
+            .shared = false,
+        };
+        auto env = open_env(env_config);
 
-        return open_env(chain_conf);
-    }
-
-    mdbx::env_managed initialize_test_database() {
-        const auto tests_dir = get_tests_dir();
-        const auto db_dir = TemporaryDirectory::get_unique_temporary_path();
-        auto env = open_db(db_dir.string());
         RWTxnManaged txn{env};
         table::check_or_create_chaindata_tables(txn);
         auto state_buffer = populate_genesis(txn, tests_dir);
@@ -188,10 +185,16 @@ namespace {
 
 }  // namespace
 
-TestDatabaseContext::TestDatabaseContext() : env_{initialize_test_database()} {}
+TestDatabaseContext::TestDatabaseContext()
+    : chaindata_dir_path_{TemporaryDirectory::get_unique_temporary_path()},
+      env_{std::make_unique<mdbx::env_managed>(initialize_test_database(chaindata_dir_path_))} {}
 
-silkworm::ChainConfig TestDatabaseContext::get_chain_config() {
-    ROTxnManaged txn{env_};
+TestDatabaseContext::TestDatabaseContext(const TemporaryDirectory& tmp_dir)
+    : chaindata_dir_path_{DataDirectory{tmp_dir.path()}.chaindata().path()},
+      env_{std::make_unique<mdbx::env_managed>(initialize_test_database(chaindata_dir_path_))} {}
+
+silkworm::ChainConfig TestDatabaseContext::get_chain_config() const {
+    ROTxnManaged txn = chaindata().start_ro_tx();
     auto chain_config = read_chain_config(txn);
     return chain_config ? *chain_config : silkworm::ChainConfig{};
 }

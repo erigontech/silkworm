@@ -29,3 +29,5 @@ silkworm_library(
          silkworm_infra
          silkworm_db_etl
 )
+
+target_link_libraries(silkworm_db_mdbx_test PRIVATE silkworm_infra_test_util)

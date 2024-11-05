@@ -230,7 +230,7 @@ struct KvEnd2EndTest {
         rw_txn.commit();
 
         state_change_collection = std::make_unique<TestableStateChangeCollection>();
-        server = std::make_unique<KvServer>(srv_config, &database_env, state_change_collection.get());
+        server = std::make_unique<KvServer>(srv_config, db::ROAccess{database_env}, state_change_collection.get());
         server->build_and_start();
     }
 
@@ -291,20 +291,21 @@ TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
     db_config.in_memory = true;
-    auto database_env = db::open_env(db_config);
+    auto chaindata_env = db::open_env(db_config);
+    ROAccess chaindata{chaindata_env};
     auto state_change_source{std::make_unique<TestableStateChangeCollection>()};
 
     SECTION("KvServer::KvServer OK: create/destroy server") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
     }
 
     SECTION("KvServer::KvServer OK: create/shutdown/destroy server") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.shutdown();
     }
 
     SECTION("KvServer::build_and_start OK: run server in separate thread") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
@@ -312,31 +313,31 @@ TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     }
 
     SECTION("KvServer::build_and_start OK: create/shutdown/run/destroy server") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.shutdown();
         server.build_and_start();
     }
 
     SECTION("KvServer::shutdown OK: shutdown server not running") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.shutdown();
     }
 
     SECTION("KvServer::shutdown OK: shutdown twice server not running") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.shutdown();
         server.shutdown();
     }
 
     SECTION("KvServer::shutdown OK: shutdown running server") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.build_and_start();
         server.shutdown();
         server.join();
     }
 
     SECTION("KvServer::shutdown OK: shutdown twice running server") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.build_and_start();
         server.shutdown();
         server.shutdown();
@@ -344,7 +345,7 @@ TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     }
 
     SECTION("KvServer::shutdown OK: shutdown running server again after join") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.build_and_start();
         server.shutdown();
         server.join();
@@ -352,7 +353,7 @@ TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     }
 
     SECTION("KvServer::join OK: shutdown joined server") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
@@ -360,7 +361,7 @@ TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     }
 
     SECTION("KvServer::join OK: shutdown joined server and join again") {
-        KvServer server{srv_config, &database_env, state_change_source.get()};
+        KvServer server{srv_config, chaindata, state_change_source.get()};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();

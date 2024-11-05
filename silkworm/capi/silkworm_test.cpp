@@ -45,8 +45,8 @@ using namespace silkworm::db;
 struct CApiTest : public db::test_util::TestDatabaseContext {
     TemporaryDirectory tmp_dir;
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
-    mdbx::env& env{mdbx_env()};
-    std::filesystem::path env_path() { return mdbx_env().get_path(); }
+    mdbx::env env{*chaindata_rw()};
+    const std::filesystem::path& env_path() { return chaindata_dir_path(); }
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array

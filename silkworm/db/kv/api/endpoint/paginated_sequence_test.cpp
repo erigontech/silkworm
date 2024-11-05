@@ -67,7 +67,7 @@ struct TestPaginatorUint64 {
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: empty sequence", "[db][kv][api][paginated_sequence]") {
     PageUint64List empty;
     TestPaginatorUint64 paginator{empty};
-    auto lambda = [&](const std::string&) mutable -> Task<PageResultUint64> {
+    auto lambda = [&](std::string) mutable -> Task<PageResultUint64> {
         co_return co_await paginator();
     };
 
@@ -103,7 +103,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: non-empty se
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: error", "[db][kv][api][paginated_sequence]") {
-    PaginatorUint64 paginator = [](const std::string&) -> Task<PageResultUint64> {
+    PaginatorUint64 paginator = [](std::string) -> Task<PageResultUint64> {
         static int count{0};
         switch (++count) {
             case 1:
@@ -121,7 +121,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: error", "[db
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: empty sequence", "[db][kv][api][paginated_sequence]") {
-    PaginatorKV paginator = [](const std::string&) -> Task<PageResultKV> {
+    PaginatorKV paginator = [](std::string) -> Task<PageResultKV> {
         co_return PageResultKV{};  // has_more=false as default
     };
     PaginatedKV paginated{paginator};
@@ -141,7 +141,7 @@ static const Bytes kValue1{*from_hex("FF11")}, kValue2{*from_hex("FF22")}, kValu
 static const Bytes kValue4{*from_hex("FF44")}, kValue5{*from_hex("FF55")}, kValue6{*from_hex("FF66")};
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: non-empty sequence", "[db][kv][api][paginated_sequence]") {
-    PaginatorKV paginator = [](const std::string&) -> Task<PageResultKV> {
+    PaginatorKV paginator = [](std::string) -> Task<PageResultKV> {
         static int count{0};
         switch (++count) {
             case 1:
@@ -160,7 +160,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: non-empty sequen
 }
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: error", "[db][kv][api][paginated_sequence]") {
-    PaginatorKV paginator = [](const std::string&) -> Task<PageResultKV> {
+    PaginatorKV paginator = [](std::string) -> Task<PageResultKV> {
         static int count{0};
         switch (++count) {
             case 1:
@@ -190,10 +190,10 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][pagin
         SECTION("test vector: " + std::to_string(++i)) {
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
-            auto lambda1 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+            auto lambda1 = [&](std::string) mutable -> Task<PageResultUint64> {
                 co_return co_await paginator1();
             };
-            auto lambda2 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+            auto lambda2 = [&](std::string) mutable -> Task<PageResultUint64> {
                 co_return co_await paginator2();
             };
 
@@ -221,10 +221,10 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_union", "[db][kv][api][paginated_se
         SECTION("test vector: " + std::to_string(++i)) {
             const auto& [v1, v2] = v1_v2_pair;
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
-            auto lambda1 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+            auto lambda1 = [&](std::string) mutable -> Task<PageResultUint64> {
                 co_return co_await paginator1();
             };
-            auto lambda2 = [&](const std::string&) mutable -> Task<PageResultUint64> {
+            auto lambda2 = [&](std::string) mutable -> Task<PageResultUint64> {
                 co_return co_await paginator2();
             };
 

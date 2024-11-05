@@ -149,7 +149,7 @@ Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQ
 }
 
 Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQuery&& query) {
-    auto paginator = [&, query = std::move(query)](const std::string& page_token) mutable -> Task<api::PaginatedTimestamps::PageResult> {
+    auto paginator = [&, query = std::move(query)](std::string page_token) mutable -> Task<api::PaginatedTimestamps::PageResult> {
         query.tx_id = tx_id_;
         query.page_token = page_token;
         auto request = index_range_request_from_query(query);
@@ -167,7 +167,7 @@ Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQue
 }
 
 Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRangeQuery&& query) {
-    auto paginator = [&, query = std::move(query)](const std::string& page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+    auto paginator = [&, query = std::move(query)](std::string page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         query.tx_id = tx_id_;
         query.page_token = page_token;
         auto request = history_range_request_from_query(query);
@@ -185,7 +185,7 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
 }
 
 Task<api::PaginatedKeysValues> RemoteTransaction::domain_range(api::DomainRangeQuery&& query) {
-    auto paginator = [&, query = std::move(query)](const std::string& page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+    auto paginator = [&, query = std::move(query)](std::string page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         query.tx_id = tx_id_;
         query.page_token = page_token;
         auto request = domain_range_request_from_query(query);

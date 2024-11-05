@@ -198,7 +198,7 @@ set(BOR_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/remote/bor.grpc.pb.h"
     "${OUT_PATH_SYMLINK}/remote/bor.pb.cc"
     "${OUT_PATH_SYMLINK}/remote/bor.pb.h"
-    "${OUT_PATH_SYMLINK}/remote/bor.grpc.pb.h"
+    "${OUT_PATH_SYMLINK}/remote/bor_mock.grpc.pb.h"
 )
 # cmake-format: on
 

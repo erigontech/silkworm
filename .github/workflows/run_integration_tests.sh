@@ -33,6 +33,12 @@ python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only
 debug_accountRange,\
 debug_getModifiedAccounts,\
 debug_storageRangeAt,\
+debug_traceBlockByHash/test_05,\
+debug_traceBlockByHash/test_08,\
+debug_traceBlockByHash/test_09,\
+debug_traceBlockByHash/test_10,\
+debug_traceBlockByHash/test_11,\
+debug_traceBlockByHash/test_12,\
 debug_traceCall/test_02.json,\
 debug_traceTransaction/test_25.json,\
 debug_traceTransaction/test_36.json,\

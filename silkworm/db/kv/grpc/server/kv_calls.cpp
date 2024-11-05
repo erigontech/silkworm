@@ -75,8 +75,8 @@ void TxCall::set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_durat
     TxCall::max_ttl_duration_ = max_ttl_duration;
 }
 
-Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
-    SILK_TRACE << "TxCall peer: " << peer() << " MDBX readers: " << chaindata_env->get_info().mi_numreaders;
+Task<void> TxCall::operator()(ROAccess chaindata) {
+    SILK_TRACE << "TxCall peer: " << peer() << " MDBX readers: " << (*chaindata).get_info().mi_numreaders;
 
     ::grpc::Status status{::grpc::Status::OK};
     try {
@@ -84,7 +84,7 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
         const auto tx_id = ++next_tx_id_;
 
         // Create a new read-only transaction.
-        read_only_txn_ = ROTxnManaged{*chaindata_env};
+        read_only_txn_ = chaindata.start_ro_tx();
         SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << tx_id << " view: " << read_only_txn_->id();
 
         // Send an unsolicited message containing the transaction ID and view ID (i.e. MDBX txn ID)
@@ -157,7 +157,7 @@ Task<void> TxCall::operator()(mdbx::env* chaindata_env) {
             while (true) {
                 const auto [ec] = co_await max_ttl_alarm.async_wait(as_tuple(use_awaitable));
                 if (!ec) {
-                    handle_max_ttl_timer_expired(chaindata_env);
+                    handle_max_ttl_timer_expired(chaindata);
                     max_ttl_deadline += max_ttl_duration_;
                 }
             }
@@ -325,7 +325,7 @@ void TxCall::handle_operation(const remote::Cursor* request, ROCursorDupSort& cu
     SILK_TRACE << "TxCall::handle_operation " << this << " op=" << remote::Op_Name(request->op()) << " END";
 }
 
-void TxCall::handle_max_ttl_timer_expired(mdbx::env* chaindata_env) {
+void TxCall::handle_max_ttl_timer_expired(ROAccess chaindata) {
     // Save the whole state of the transaction (i.e. all cursor positions)
     std::vector<CursorPosition> positions;
     const bool save_success = save_cursors(positions);
@@ -336,7 +336,7 @@ void TxCall::handle_max_ttl_timer_expired(mdbx::env* chaindata_env) {
 
     // Close and reopen to avoid long-lived transactions (resource-consuming for MDBX)
     read_only_txn_.abort();
-    read_only_txn_ = ROTxnManaged{*chaindata_env};
+    read_only_txn_ = chaindata.start_ro_tx();
 
     // Restore the whole state of the transaction (i.e. all cursor positions)
     const bool restore_success = restore_cursors(positions);

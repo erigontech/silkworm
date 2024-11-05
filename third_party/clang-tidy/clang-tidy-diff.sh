@@ -5,7 +5,15 @@ set -o pipefail
 
 clion="/Applications/CLion.app"
 clion_tidy="$clion/Contents/bin/clang/mac/aarch64/clang-tidy"
-clion_builtin_includes="$(dirname "$clion_tidy")/include"
+clion_builtin_includes="$clion/Contents/bin/lldb/mac/aarch64/LLDB.framework/Resources/Clang/include"
+
+function install_clion_tidy {
+	target_dir="$1"
+	mkdir -p "$target_dir/bin"
+	cp "$clion_tidy" "$target_dir/bin"
+	mkdir -p "$target_dir/lib/clang/19"
+	cp -R "$clion_builtin_includes" "$target_dir/lib/clang/19"
+}
 
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 project_dir=$(realpath "$script_dir/../..")
@@ -25,11 +33,10 @@ fi
 if which clang-tidy > /dev/null
 then
 	tidy=clang-tidy
-	builtin_includes=/usr/include
-elif [[ -x "$clion_tidy" ]]
+elif [[ -d "$clion" ]]
 then
-	tidy="$clion_tidy"
-	builtin_includes="$clion_builtin_includes"
+	install_clion_tidy "$build_dir/tidy"
+	tidy="$build_dir/tidy/bin/clang-tidy"
 else
 	echo "clang-tidy not found" >&2
 	exit 1
@@ -38,7 +45,7 @@ fi
 args=(
 	-clang-tidy-binary "$tidy"
 	-p 1
-	-exclude "(mock_.+\\.hpp|\\.pb\\.h|remote_backend|snapshots/config/.+\\.hpp)"
+	-exclude "\\.hpp"
 	-j 6
 	-timeout 60
 	-config-file "$project_dir/.clang-tidy"

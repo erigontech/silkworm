@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,12 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#pragma once
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-#include "../datastore/snapshots/snapshot_repository.hpp"
-
-namespace silkworm::db::test_util {
-
-snapshots::SnapshotRepository make_repository(std::filesystem::path dir_path);
-snapshots::SnapshotRepository make_repository();
-
-}  // namespace silkworm::db::test_util
+silkworm_library(
+  silkworm_datastore_common
+  PUBLIC silkworm_core
+  PRIVATE ""
+)

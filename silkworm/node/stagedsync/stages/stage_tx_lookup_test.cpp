@@ -19,7 +19,6 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
@@ -28,16 +27,15 @@ namespace silkworm {
 
 using namespace silkworm::db;
 using namespace evmc::literals;
-using db::test_util::TempChainData;
+using db::test_util::TempChainDataStore;
 using silkworm::test_util::SetLogVerbosityGuard;
 
 stagedsync::TxLookup make_tx_lookup_stage(
     stagedsync::SyncContext* sync_context,
-    snapshots::SnapshotRepository& repository,
-    const TempChainData& chain_data) {
+    TempChainDataStore& chain_data) {
     return stagedsync::TxLookup{
         sync_context,
-        [&](ROTxn& tx) { return DataModel{tx, repository}; },
+        chain_data.data_model_factory(),
         etl::CollectorSettings{chain_data.dir().temp().path(), 256_Mebi},
         chain_data.prune_mode().tx_index(),
     };
@@ -49,11 +47,9 @@ TEST_CASE("Stage Transaction Lookups") {
     const evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
     const evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 
-    TempChainData context;
+    TempChainDataStore context;
     RWTxn& txn{context.rw_txn()};
     txn.disable_commit();
-
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
 
     PooledCursor canonicals(txn, table::kCanonicalHashes);
     PooledCursor bodies_table(txn, table::kBlockBodies);
@@ -94,7 +90,7 @@ TEST_CASE("Stage Transaction Lookups") {
     SECTION("Forward checks and unwind") {
         // Execute stage forward
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, repository, context);
+        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, context);
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         PooledCursor lookup_table(txn, table::kTxLookup);
@@ -145,7 +141,7 @@ TEST_CASE("Stage Transaction Lookups") {
 
         // Execute stage forward
         stagedsync::SyncContext sync_context{};
-        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, repository, context);
+        stagedsync::TxLookup stage_tx_lookup = make_tx_lookup_stage(&sync_context, context);
         REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         // Only leave block 2 alive

@@ -34,11 +34,8 @@ SnapshotRepository::SnapshotRepository(
     : dir_path_(std::move(dir_path)),
       step_converter_(std::move(step_converter)),
       bundle_factory_(std::move(bundle_factory)),
-      bundles_(std::make_shared<Bundles>()) {}
-
-SnapshotRepository::~SnapshotRepository() {
-    close();
-}
+      bundles_(std::make_shared<Bundles>()),
+      bundles_mutex_(std::make_unique<std::mutex>()) {}
 
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
     replace_snapshot_bundles(std::move(bundle));
@@ -47,7 +44,7 @@ void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
 void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
     bundle.reopen();
 
-    std::scoped_lock lock(bundles_mutex_);
+    std::scoped_lock lock(*bundles_mutex_);
     // copy bundles prior to modification
     auto bundles = std::make_shared<Bundles>(*bundles_);
 
@@ -63,13 +60,13 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
 }
 
 size_t SnapshotRepository::bundles_count() const {
-    std::scoped_lock lock(bundles_mutex_);
+    std::scoped_lock lock(*bundles_mutex_);
     return bundles_->size();
 }
 
 void SnapshotRepository::close() {
     SILK_TRACE << "Close snapshot repository folder: " << dir_path_.string();
-    std::scoped_lock lock(bundles_mutex_);
+    std::scoped_lock lock(*bundles_mutex_);
     bundles_ = std::make_shared<Bundles>();
 }
 
@@ -86,7 +83,7 @@ Timestamp SnapshotRepository::max_timestamp_available() const {
 }
 
 Step SnapshotRepository::max_end_step() const {
-    std::scoped_lock lock(bundles_mutex_);
+    std::scoped_lock lock(*bundles_mutex_);
     if (bundles_->empty())
         return Step{0};
 
@@ -137,7 +134,7 @@ void SnapshotRepository::reopen_folder() {
         num = groups.begin()->first;
     }
 
-    std::unique_lock lock(bundles_mutex_);
+    std::unique_lock lock(*bundles_mutex_);
     // copy bundles prior to modification
     auto bundles = std::make_shared<Bundles>(*bundles_);
 

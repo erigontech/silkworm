@@ -16,6 +16,7 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+add_subdirectory(common)
 add_subdirectory(etl)
 add_subdirectory(mdbx)
 add_subdirectory(snapshots)
@@ -27,6 +28,7 @@ set(LIBS_PUBLIC
     Boost::headers
     silkworm_core
     silkworm_infra
+    silkworm_datastore_common
     silkworm_db_mdbx
     silkworm_snapshots
 )

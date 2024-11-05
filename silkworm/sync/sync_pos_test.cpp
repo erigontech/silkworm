@@ -38,8 +38,8 @@ class PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
   public:
     TemporaryDirectory tmp_dir;
     db::DataStore data_store{
-        db::EnvConfig{tmp_dir.path().string(), /* create = */ true},
-        tmp_dir.path(),
+        mdbx::env_managed{},
+        db::blocks::make_blocks_repository(tmp_dir.path()),
     };
     SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
     test_util::MockBlockExchange block_exchange{data_store.ref(), sentry_client, kSepoliaConfig};

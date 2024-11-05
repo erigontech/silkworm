@@ -149,7 +149,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: non-empty sequen
             case 2:
                 co_return PageResultKV{PageK{kKey3, kKey4}, PageV{kValue3, kValue4}, "next"};
             case 3:
-                co_return PageResultKV{PageK{kKey5, kKey6}, PageV{kValue5, kValue6}, "next"};
+                co_return PageResultKV{PageK{kKey5, kKey6}, PageV{kValue5, kValue6}, ""};
             default:
                 throw std::logic_error{"unexpected call to paginator"};
         }

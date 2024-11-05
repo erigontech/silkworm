@@ -20,9 +20,10 @@
 
 namespace silkworm::db::blocks {
 
-snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path) {
+snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path, bool open) {
     return snapshots::SnapshotRepository{
         std::move(dir_path),
+        open,
         std::make_unique<snapshots::StepToBlockNumConverter>(),
         std::make_unique<db::SnapshotBundleFactoryImpl>(),
     };

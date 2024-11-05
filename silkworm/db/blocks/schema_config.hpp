@@ -23,6 +23,6 @@ namespace silkworm::db::blocks {
 
 inline constexpr datastore::EntityName kBlocksRepositoryName{"Blocks"};
 
-snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path);
+snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path, bool open = true);
 
 }  // namespace silkworm::db::blocks

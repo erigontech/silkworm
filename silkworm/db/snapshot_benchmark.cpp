@@ -69,19 +69,12 @@ static void open_snapshot(benchmark::State& state) {
 }
 BENCHMARK(open_snapshot);
 
-static SnapshotRepository make_repository(std::filesystem::path dir_path) {
-    return db::blocks::make_blocks_repository(std::move(dir_path));
-}
-
 static void build_header_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
     test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
-    test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
-    test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
 
     for ([[maybe_unused]] auto _ : state) {
         auto header_index = HeaderIndex::make(header_segment.path());
@@ -93,7 +86,6 @@ BENCHMARK(build_header_index);
 
 static void build_body_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -109,7 +101,6 @@ BENCHMARK(build_body_index);
 
 static void build_tx_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;
-    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -134,7 +125,6 @@ BENCHMARK(build_tx_index);
 static void reopen_folder(benchmark::State& state) {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -158,7 +148,7 @@ static void reopen_folder(benchmark::State& state) {
     tx_index_hash_to_block.build();
 
     for ([[maybe_unused]] auto _ : state) {
-        repository.reopen_folder();
+        [[maybe_unused]] auto repository = db::blocks::make_blocks_repository(tmp_dir.path());
     }
 }
 BENCHMARK(reopen_folder);

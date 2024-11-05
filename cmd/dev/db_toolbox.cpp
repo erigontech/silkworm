@@ -2267,10 +2267,13 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
     };
     StageSchedulerAdapter stage_scheduler{data_store.chaindata_rw()};
 
-    auto& repository = data_store.ref().repository;
-    repository.reopen_folder();
-
-    Freezer freezer{data_store.chaindata(), repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
+    Freezer freezer{
+        data_store.chaindata(),
+        data_store.ref().repository,
+        stage_scheduler,
+        data_dir.temp().path(),
+        keep_blocks,
+    };
 
     test_util::TaskRunner runner;
     runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));

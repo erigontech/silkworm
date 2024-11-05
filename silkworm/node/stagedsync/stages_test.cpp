@@ -70,6 +70,7 @@ static stagedsync::CallTraceIndex make_call_traces_stage(
 }
 
 TEST_CASE("Sync Stages") {
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     NodeSettings node_settings{};
     node_settings.data_directory = std::make_unique<DataDirectory>(tmp_dir.path());
@@ -84,8 +85,6 @@ TEST_CASE("Sync Stages") {
         parse_prune_mode("",
                          std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
                          std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
-
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     db::DataStore data_store{
         node_settings.chaindata_env_config,

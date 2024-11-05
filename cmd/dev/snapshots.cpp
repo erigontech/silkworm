@@ -325,7 +325,6 @@ BodyCounters count_bodies_in_one(const SnapshotSubcommandSettings& settings, con
 
 BodyCounters count_bodies_in_all(const SnapshotSubcommandSettings& settings) {
     auto repository = make_repository(settings.settings);
-    repository.reopen_folder();
     int num_bodies = 0;
     uint64_t num_txns = 0;
     for (const auto& bundle_ptr : repository.view_bundles()) {
@@ -375,7 +374,6 @@ int count_headers_in_one(const SnapshotSubcommandSettings& settings, const Segme
 
 int count_headers_in_all(const SnapshotSubcommandSettings& settings) {
     auto repository = make_repository(settings.settings);
-    repository.reopen_folder();
     int num_headers{0};
     for (const auto& bundle_ptr : repository.view_bundles()) {
         const auto& bundle = *bundle_ptr;
@@ -722,7 +720,6 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     std::optional<SnapshotPath> matching_snapshot_path;
     std::optional<BlockHeader> matching_header;
     auto repository = make_repository(settings.settings);
-    repository.reopen_folder();
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_index(SnapshotType::headers);
@@ -752,7 +749,6 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     auto repository = make_repository(settings.settings);
-    repository.reopen_folder();
     const auto [segment_and_index, _] = repository.find_segment(SnapshotType::headers, block_number);
     if (segment_and_index) {
         const auto header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_number);
@@ -812,7 +808,6 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
 
 void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum block_number) {
     auto repository = make_repository(settings.settings);
-    repository.reopen_folder();
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto [segment_and_index, _] = repository.find_segment(SnapshotType::bodies, block_number);
@@ -919,7 +914,6 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
 
 void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const Hash& hash) {
     auto repository = make_repository(settings.settings);
-    repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot_path;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -984,7 +978,6 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
 
 void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_t txn_id) {
     auto repository = make_repository(settings.settings);
-    repository.reopen_folder();
 
     std::optional<SnapshotPath> matching_snapshot_path;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -1030,7 +1023,6 @@ void lookup_transaction(const SnapshotSubcommandSettings& settings) {
 
 void merge(const SnapshotSettings& settings) {
     auto repository = make_repository(settings);
-    repository.reopen_folder();
     TemporaryDirectory tmp_dir;
     db::SnapshotMerger merger{repository, tmp_dir.path()};
     test_util::TaskRunner runner;

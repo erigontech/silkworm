@@ -294,7 +294,6 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
     };
 
     auto& repository = data_store.ref().repository;
-    repository.reopen_folder();
 
     // Collect all snapshots
     auto all_chain_snapshots{collect_all_snapshots(repository)};

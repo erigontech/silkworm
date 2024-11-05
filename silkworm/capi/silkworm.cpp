@@ -225,7 +225,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 
     auto data_dir_path = parse_path(settings->data_dir_path);
     auto repository = db::blocks::make_blocks_repository(
-        DataDirectory{data_dir_path}.snapshots().path());
+        DataDirectory{data_dir_path}.snapshots().path(),
+        /* open = */ false);
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{

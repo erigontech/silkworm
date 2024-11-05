@@ -47,6 +47,7 @@ class SnapshotRepository {
   public:
     SnapshotRepository(
         std::filesystem::path dir_path,
+        bool open,
         std::unique_ptr<StepToTimestampConverter> step_converter,
         std::unique_ptr<SnapshotBundleFactory> bundle_factory);
 

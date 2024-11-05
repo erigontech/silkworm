@@ -29,13 +29,16 @@ namespace fs = std::filesystem;
 
 SnapshotRepository::SnapshotRepository(
     std::filesystem::path dir_path,
+    bool open,
     std::unique_ptr<StepToTimestampConverter> step_converter,
     std::unique_ptr<SnapshotBundleFactory> bundle_factory)
     : dir_path_(std::move(dir_path)),
       step_converter_(std::move(step_converter)),
       bundle_factory_(std::move(bundle_factory)),
       bundles_(std::make_shared<Bundles>()),
-      bundles_mutex_(std::make_unique<std::mutex>()) {}
+      bundles_mutex_(std::make_unique<std::mutex>()) {
+    if (open) reopen_folder();
+}
 
 void SnapshotRepository::add_snapshot_bundle(SnapshotBundle bundle) {
     replace_snapshot_bundles(std::move(bundle));

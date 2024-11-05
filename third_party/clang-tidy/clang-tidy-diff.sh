@@ -45,7 +45,7 @@ fi
 args=(
 	-clang-tidy-binary "$tidy"
 	-p 1
-	-exclude "\\.hpp"
+	-exclude "(\\.hpp|\\.pb\\.)"
 	-j 6
 	-timeout 60
 	-config-file "$project_dir/.clang-tidy"

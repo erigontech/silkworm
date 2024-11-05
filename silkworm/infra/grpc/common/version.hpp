@@ -36,7 +36,7 @@ struct ProtocolVersion {
     uint32_t patch;
 };
 
-inline constexpr ProtocolVersion kKvServiceApiVersion{6, 2, 0};
+inline constexpr ProtocolVersion kKvServiceApiVersion{7, 0, 0};
 inline constexpr ProtocolVersion kEthBackEndServiceApiVersion{3, 3, 0};
 inline constexpr ProtocolVersion kMiningServiceApiVersion{1, 0, 0};
 inline constexpr ProtocolVersion kTxPoolServiceApiVersion{1, 0, 0};

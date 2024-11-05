@@ -34,6 +34,7 @@
 #include <google/protobuf/unknown_field_set.h>
 #include <google/protobuf/empty.pb.h>
 #include "types/types.pb.h"
+#include "remote/bor.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_remote_2fethbackend_2eproto
@@ -61,12 +62,6 @@ extern BlockReplyDefaultTypeInternal _BlockReply_default_instance_;
 class BlockRequest;
 struct BlockRequestDefaultTypeInternal;
 extern BlockRequestDefaultTypeInternal _BlockRequest_default_instance_;
-class BorEventReply;
-struct BorEventReplyDefaultTypeInternal;
-extern BorEventReplyDefaultTypeInternal _BorEventReply_default_instance_;
-class BorEventRequest;
-struct BorEventRequestDefaultTypeInternal;
-extern BorEventRequestDefaultTypeInternal _BorEventRequest_default_instance_;
 class CanonicalBodyForStorageReply;
 struct CanonicalBodyForStorageReplyDefaultTypeInternal;
 extern CanonicalBodyForStorageReplyDefaultTypeInternal _CanonicalBodyForStorageReply_default_instance_;
@@ -145,6 +140,12 @@ extern SubscribeReplyDefaultTypeInternal _SubscribeReply_default_instance_;
 class SubscribeRequest;
 struct SubscribeRequestDefaultTypeInternal;
 extern SubscribeRequestDefaultTypeInternal _SubscribeRequest_default_instance_;
+class SyncingReply;
+struct SyncingReplyDefaultTypeInternal;
+extern SyncingReplyDefaultTypeInternal _SyncingReply_default_instance_;
+class SyncingReply_StageProgress;
+struct SyncingReply_StageProgressDefaultTypeInternal;
+extern SyncingReply_StageProgressDefaultTypeInternal _SyncingReply_StageProgress_default_instance_;
 class TxnLookupReply;
 struct TxnLookupReplyDefaultTypeInternal;
 extern TxnLookupReplyDefaultTypeInternal _TxnLookupReply_default_instance_;
@@ -157,8 +158,6 @@ template<> ::remote::AddPeerReply* Arena::CreateMaybeMessage<::remote::AddPeerRe
 template<> ::remote::AddPeerRequest* Arena::CreateMaybeMessage<::remote::AddPeerRequest>(Arena*);
 template<> ::remote::BlockReply* Arena::CreateMaybeMessage<::remote::BlockReply>(Arena*);
 template<> ::remote::BlockRequest* Arena::CreateMaybeMessage<::remote::BlockRequest>(Arena*);
-template<> ::remote::BorEventReply* Arena::CreateMaybeMessage<::remote::BorEventReply>(Arena*);
-template<> ::remote::BorEventRequest* Arena::CreateMaybeMessage<::remote::BorEventRequest>(Arena*);
 template<> ::remote::CanonicalBodyForStorageReply* Arena::CreateMaybeMessage<::remote::CanonicalBodyForStorageReply>(Arena*);
 template<> ::remote::CanonicalBodyForStorageRequest* Arena::CreateMaybeMessage<::remote::CanonicalBodyForStorageRequest>(Arena*);
 template<> ::remote::CanonicalHashReply* Arena::CreateMaybeMessage<::remote::CanonicalHashReply>(Arena*);
@@ -185,6 +184,8 @@ template<> ::remote::ProtocolVersionRequest* Arena::CreateMaybeMessage<::remote:
 template<> ::remote::SubscribeLogsReply* Arena::CreateMaybeMessage<::remote::SubscribeLogsReply>(Arena*);
 template<> ::remote::SubscribeReply* Arena::CreateMaybeMessage<::remote::SubscribeReply>(Arena*);
 template<> ::remote::SubscribeRequest* Arena::CreateMaybeMessage<::remote::SubscribeRequest>(Arena*);
+template<> ::remote::SyncingReply* Arena::CreateMaybeMessage<::remote::SyncingReply>(Arena*);
+template<> ::remote::SyncingReply_StageProgress* Arena::CreateMaybeMessage<::remote::SyncingReply_StageProgress>(Arena*);
 template<> ::remote::TxnLookupReply* Arena::CreateMaybeMessage<::remote::TxnLookupReply>(Arena*);
 template<> ::remote::TxnLookupRequest* Arena::CreateMaybeMessage<::remote::TxnLookupRequest>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
@@ -760,6 +761,373 @@ class NetVersionReply final :
 };
 // -------------------------------------------------------------------
 
+class SyncingReply_StageProgress final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.SyncingReply.StageProgress) */ {
+ public:
+  inline SyncingReply_StageProgress() : SyncingReply_StageProgress(nullptr) {}
+  ~SyncingReply_StageProgress() override;
+  explicit PROTOBUF_CONSTEXPR SyncingReply_StageProgress(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  SyncingReply_StageProgress(const SyncingReply_StageProgress& from);
+  SyncingReply_StageProgress(SyncingReply_StageProgress&& from) noexcept
+    : SyncingReply_StageProgress() {
+    *this = ::std::move(from);
+  }
+
+  inline SyncingReply_StageProgress& operator=(const SyncingReply_StageProgress& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SyncingReply_StageProgress& operator=(SyncingReply_StageProgress&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SyncingReply_StageProgress& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const SyncingReply_StageProgress* internal_default_instance() {
+    return reinterpret_cast<const SyncingReply_StageProgress*>(
+               &_SyncingReply_StageProgress_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    4;
+
+  friend void swap(SyncingReply_StageProgress& a, SyncingReply_StageProgress& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(SyncingReply_StageProgress* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SyncingReply_StageProgress* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SyncingReply_StageProgress* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<SyncingReply_StageProgress>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const SyncingReply_StageProgress& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const SyncingReply_StageProgress& from) {
+    SyncingReply_StageProgress::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(SyncingReply_StageProgress* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.SyncingReply.StageProgress";
+  }
+  protected:
+  explicit SyncingReply_StageProgress(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kStageNameFieldNumber = 1,
+    kBlockNumberFieldNumber = 2,
+  };
+  // string stage_name = 1;
+  void clear_stage_name();
+  const std::string& stage_name() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_stage_name(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_stage_name();
+  PROTOBUF_NODISCARD std::string* release_stage_name();
+  void set_allocated_stage_name(std::string* stage_name);
+  private:
+  const std::string& _internal_stage_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_stage_name(const std::string& value);
+  std::string* _internal_mutable_stage_name();
+  public:
+
+  // uint64 block_number = 2;
+  void clear_block_number();
+  uint64_t block_number() const;
+  void set_block_number(uint64_t value);
+  private:
+  uint64_t _internal_block_number() const;
+  void _internal_set_block_number(uint64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.SyncingReply.StageProgress)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr stage_name_;
+    uint64_t block_number_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fethbackend_2eproto;
+};
+// -------------------------------------------------------------------
+
+class SyncingReply final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.SyncingReply) */ {
+ public:
+  inline SyncingReply() : SyncingReply(nullptr) {}
+  ~SyncingReply() override;
+  explicit PROTOBUF_CONSTEXPR SyncingReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  SyncingReply(const SyncingReply& from);
+  SyncingReply(SyncingReply&& from) noexcept
+    : SyncingReply() {
+    *this = ::std::move(from);
+  }
+
+  inline SyncingReply& operator=(const SyncingReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SyncingReply& operator=(SyncingReply&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SyncingReply& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const SyncingReply* internal_default_instance() {
+    return reinterpret_cast<const SyncingReply*>(
+               &_SyncingReply_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    5;
+
+  friend void swap(SyncingReply& a, SyncingReply& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(SyncingReply* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SyncingReply* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SyncingReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<SyncingReply>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const SyncingReply& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const SyncingReply& from) {
+    SyncingReply::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(SyncingReply* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.SyncingReply";
+  }
+  protected:
+  explicit SyncingReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  typedef SyncingReply_StageProgress StageProgress;
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kStagesFieldNumber = 5,
+    kLastNewBlockSeenFieldNumber = 1,
+    kFrozenBlocksFieldNumber = 2,
+    kCurrentBlockFieldNumber = 3,
+    kSyncingFieldNumber = 4,
+  };
+  // repeated .remote.SyncingReply.StageProgress stages = 5;
+  int stages_size() const;
+  private:
+  int _internal_stages_size() const;
+  public:
+  void clear_stages();
+  ::remote::SyncingReply_StageProgress* mutable_stages(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::SyncingReply_StageProgress >*
+      mutable_stages();
+  private:
+  const ::remote::SyncingReply_StageProgress& _internal_stages(int index) const;
+  ::remote::SyncingReply_StageProgress* _internal_add_stages();
+  public:
+  const ::remote::SyncingReply_StageProgress& stages(int index) const;
+  ::remote::SyncingReply_StageProgress* add_stages();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::SyncingReply_StageProgress >&
+      stages() const;
+
+  // uint64 last_new_block_seen = 1;
+  void clear_last_new_block_seen();
+  uint64_t last_new_block_seen() const;
+  void set_last_new_block_seen(uint64_t value);
+  private:
+  uint64_t _internal_last_new_block_seen() const;
+  void _internal_set_last_new_block_seen(uint64_t value);
+  public:
+
+  // uint64 frozen_blocks = 2;
+  void clear_frozen_blocks();
+  uint64_t frozen_blocks() const;
+  void set_frozen_blocks(uint64_t value);
+  private:
+  uint64_t _internal_frozen_blocks() const;
+  void _internal_set_frozen_blocks(uint64_t value);
+  public:
+
+  // uint64 current_block = 3;
+  void clear_current_block();
+  uint64_t current_block() const;
+  void set_current_block(uint64_t value);
+  private:
+  uint64_t _internal_current_block() const;
+  void _internal_set_current_block(uint64_t value);
+  public:
+
+  // bool syncing = 4;
+  void clear_syncing();
+  bool syncing() const;
+  void set_syncing(bool value);
+  private:
+  bool _internal_syncing() const;
+  void _internal_set_syncing(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.SyncingReply)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::SyncingReply_StageProgress > stages_;
+    uint64_t last_new_block_seen_;
+    uint64_t frozen_blocks_;
+    uint64_t current_block_;
+    bool syncing_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fethbackend_2eproto;
+};
+// -------------------------------------------------------------------
+
 class NetPeerCountRequest final :
     public ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase /* @@protoc_insertion_point(class_definition:remote.NetPeerCountRequest) */ {
  public:
@@ -807,7 +1175,7 @@ class NetPeerCountRequest final :
                &_NetPeerCountRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    6;
 
   friend void swap(NetPeerCountRequest& a, NetPeerCountRequest& b) {
     a.Swap(&b);
@@ -926,7 +1294,7 @@ class NetPeerCountReply final :
                &_NetPeerCountReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    5;
+    7;
 
   friend void swap(NetPeerCountReply& a, NetPeerCountReply& b) {
     a.Swap(&b);
@@ -1073,7 +1441,7 @@ class ProtocolVersionRequest final :
                &_ProtocolVersionRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    6;
+    8;
 
   friend void swap(ProtocolVersionRequest& a, ProtocolVersionRequest& b) {
     a.Swap(&b);
@@ -1192,7 +1560,7 @@ class ProtocolVersionReply final :
                &_ProtocolVersionReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    7;
+    9;
 
   friend void swap(ProtocolVersionReply& a, ProtocolVersionReply& b) {
     a.Swap(&b);
@@ -1339,7 +1707,7 @@ class ClientVersionRequest final :
                &_ClientVersionRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    10;
 
   friend void swap(ClientVersionRequest& a, ClientVersionRequest& b) {
     a.Swap(&b);
@@ -1458,7 +1826,7 @@ class ClientVersionReply final :
                &_ClientVersionReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    11;
 
   friend void swap(ClientVersionReply& a, ClientVersionReply& b) {
     a.Swap(&b);
@@ -1611,7 +1979,7 @@ class CanonicalHashRequest final :
                &_CanonicalHashRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    10;
+    12;
 
   friend void swap(CanonicalHashRequest& a, CanonicalHashRequest& b) {
     a.Swap(&b);
@@ -1759,7 +2127,7 @@ class CanonicalHashReply final :
                &_CanonicalHashReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    11;
+    13;
 
   friend void swap(CanonicalHashReply& a, CanonicalHashReply& b) {
     a.Swap(&b);
@@ -1916,7 +2284,7 @@ class HeaderNumberRequest final :
                &_HeaderNumberRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    12;
+    14;
 
   friend void swap(HeaderNumberRequest& a, HeaderNumberRequest& b) {
     a.Swap(&b);
@@ -2073,7 +2441,7 @@ class HeaderNumberReply final :
                &_HeaderNumberReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    13;
+    15;
 
   friend void swap(HeaderNumberReply& a, HeaderNumberReply& b) {
     a.Swap(&b);
@@ -2226,7 +2594,7 @@ class CanonicalBodyForStorageRequest final :
                &_CanonicalBodyForStorageRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    16;
 
   friend void swap(CanonicalBodyForStorageRequest& a, CanonicalBodyForStorageRequest& b) {
     a.Swap(&b);
@@ -2374,7 +2742,7 @@ class CanonicalBodyForStorageReply final :
                &_CanonicalBodyForStorageReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    17;
 
   friend void swap(CanonicalBodyForStorageReply& a, CanonicalBodyForStorageReply& b) {
     a.Swap(&b);
@@ -2527,7 +2895,7 @@ class SubscribeRequest final :
                &_SubscribeRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    18;
 
   friend void swap(SubscribeRequest& a, SubscribeRequest& b) {
     a.Swap(&b);
@@ -2675,7 +3043,7 @@ class SubscribeReply final :
                &_SubscribeReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    17;
+    19;
 
   friend void swap(SubscribeReply& a, SubscribeReply& b) {
     a.Swap(&b);
@@ -2839,7 +3207,7 @@ class LogsFilterRequest final :
                &_LogsFilterRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    20;
 
   friend void swap(LogsFilterRequest& a, LogsFilterRequest& b) {
     a.Swap(&b);
@@ -3038,7 +3406,7 @@ class SubscribeLogsReply final :
                &_SubscribeLogsReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    19;
+    21;
 
   friend void swap(SubscribeLogsReply& a, SubscribeLogsReply& b) {
     a.Swap(&b);
@@ -3315,7 +3683,7 @@ class BlockRequest final :
                &_BlockRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    20;
+    22;
 
   friend void swap(BlockRequest& a, BlockRequest& b) {
     a.Swap(&b);
@@ -3483,7 +3851,7 @@ class BlockReply final :
                &_BlockReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    23;
 
   friend void swap(BlockReply& a, BlockReply& b) {
     a.Swap(&b);
@@ -3652,7 +4020,7 @@ class TxnLookupRequest final :
                &_TxnLookupRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    24;
 
   friend void swap(TxnLookupRequest& a, TxnLookupRequest& b) {
     a.Swap(&b);
@@ -3809,7 +4177,7 @@ class TxnLookupReply final :
                &_TxnLookupReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    25;
 
   friend void swap(TxnLookupReply& a, TxnLookupReply& b) {
     a.Swap(&b);
@@ -3957,7 +4325,7 @@ class NodesInfoRequest final :
                &_NodesInfoRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    24;
+    26;
 
   friend void swap(NodesInfoRequest& a, NodesInfoRequest& b) {
     a.Swap(&b);
@@ -4105,7 +4473,7 @@ class AddPeerRequest final :
                &_AddPeerRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    27;
 
   friend void swap(AddPeerRequest& a, AddPeerRequest& b) {
     a.Swap(&b);
@@ -4258,7 +4626,7 @@ class NodesInfoReply final :
                &_NodesInfoReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    28;
 
   friend void swap(NodesInfoReply& a, NodesInfoReply& b) {
     a.Swap(&b);
@@ -4415,7 +4783,7 @@ class PeersReply final :
                &_PeersReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    27;
+    29;
 
   friend void swap(PeersReply& a, PeersReply& b) {
     a.Swap(&b);
@@ -4572,7 +4940,7 @@ class AddPeerReply final :
                &_AddPeerReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    28;
+    30;
 
   friend void swap(AddPeerReply& a, AddPeerReply& b) {
     a.Swap(&b);
@@ -4720,7 +5088,7 @@ class PendingBlockReply final :
                &_PendingBlockReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    31;
 
   friend void swap(PendingBlockReply& a, PendingBlockReply& b) {
     a.Swap(&b);
@@ -4873,7 +5241,7 @@ class EngineGetPayloadBodiesByHashV1Request final :
                &_EngineGetPayloadBodiesByHashV1Request_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    32;
 
   friend void swap(EngineGetPayloadBodiesByHashV1Request& a, EngineGetPayloadBodiesByHashV1Request& b) {
     a.Swap(&b);
@@ -5030,7 +5398,7 @@ class EngineGetPayloadBodiesByRangeV1Request final :
                &_EngineGetPayloadBodiesByRangeV1Request_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    33;
 
   friend void swap(EngineGetPayloadBodiesByRangeV1Request& a, EngineGetPayloadBodiesByRangeV1Request& b) {
     a.Swap(&b);
@@ -5134,348 +5502,6 @@ class EngineGetPayloadBodiesByRangeV1Request final :
   struct Impl_ {
     uint64_t start_;
     uint64_t count_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_remote_2fethbackend_2eproto;
-};
-// -------------------------------------------------------------------
-
-class BorEventRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.BorEventRequest) */ {
- public:
-  inline BorEventRequest() : BorEventRequest(nullptr) {}
-  ~BorEventRequest() override;
-  explicit PROTOBUF_CONSTEXPR BorEventRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  BorEventRequest(const BorEventRequest& from);
-  BorEventRequest(BorEventRequest&& from) noexcept
-    : BorEventRequest() {
-    *this = ::std::move(from);
-  }
-
-  inline BorEventRequest& operator=(const BorEventRequest& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline BorEventRequest& operator=(BorEventRequest&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const BorEventRequest& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const BorEventRequest* internal_default_instance() {
-    return reinterpret_cast<const BorEventRequest*>(
-               &_BorEventRequest_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    32;
-
-  friend void swap(BorEventRequest& a, BorEventRequest& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(BorEventRequest* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(BorEventRequest* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  BorEventRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<BorEventRequest>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const BorEventRequest& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const BorEventRequest& from) {
-    BorEventRequest::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(BorEventRequest* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.BorEventRequest";
-  }
-  protected:
-  explicit BorEventRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kBorTxHashFieldNumber = 1,
-  };
-  // .types.H256 bor_tx_hash = 1;
-  bool has_bor_tx_hash() const;
-  private:
-  bool _internal_has_bor_tx_hash() const;
-  public:
-  void clear_bor_tx_hash();
-  const ::types::H256& bor_tx_hash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_bor_tx_hash();
-  ::types::H256* mutable_bor_tx_hash();
-  void set_allocated_bor_tx_hash(::types::H256* bor_tx_hash);
-  private:
-  const ::types::H256& _internal_bor_tx_hash() const;
-  ::types::H256* _internal_mutable_bor_tx_hash();
-  public:
-  void unsafe_arena_set_allocated_bor_tx_hash(
-      ::types::H256* bor_tx_hash);
-  ::types::H256* unsafe_arena_release_bor_tx_hash();
-
-  // @@protoc_insertion_point(class_scope:remote.BorEventRequest)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::types::H256* bor_tx_hash_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_remote_2fethbackend_2eproto;
-};
-// -------------------------------------------------------------------
-
-class BorEventReply final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.BorEventReply) */ {
- public:
-  inline BorEventReply() : BorEventReply(nullptr) {}
-  ~BorEventReply() override;
-  explicit PROTOBUF_CONSTEXPR BorEventReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  BorEventReply(const BorEventReply& from);
-  BorEventReply(BorEventReply&& from) noexcept
-    : BorEventReply() {
-    *this = ::std::move(from);
-  }
-
-  inline BorEventReply& operator=(const BorEventReply& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline BorEventReply& operator=(BorEventReply&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const BorEventReply& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const BorEventReply* internal_default_instance() {
-    return reinterpret_cast<const BorEventReply*>(
-               &_BorEventReply_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    33;
-
-  friend void swap(BorEventReply& a, BorEventReply& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(BorEventReply* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(BorEventReply* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  BorEventReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<BorEventReply>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const BorEventReply& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const BorEventReply& from) {
-    BorEventReply::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(BorEventReply* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.BorEventReply";
-  }
-  protected:
-  explicit BorEventReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kEventRlpsFieldNumber = 3,
-    kBlockNumberFieldNumber = 2,
-    kPresentFieldNumber = 1,
-  };
-  // repeated bytes event_rlps = 3;
-  int event_rlps_size() const;
-  private:
-  int _internal_event_rlps_size() const;
-  public:
-  void clear_event_rlps();
-  const std::string& event_rlps(int index) const;
-  std::string* mutable_event_rlps(int index);
-  void set_event_rlps(int index, const std::string& value);
-  void set_event_rlps(int index, std::string&& value);
-  void set_event_rlps(int index, const char* value);
-  void set_event_rlps(int index, const void* value, size_t size);
-  std::string* add_event_rlps();
-  void add_event_rlps(const std::string& value);
-  void add_event_rlps(std::string&& value);
-  void add_event_rlps(const char* value);
-  void add_event_rlps(const void* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& event_rlps() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_event_rlps();
-  private:
-  const std::string& _internal_event_rlps(int index) const;
-  std::string* _internal_add_event_rlps();
-  public:
-
-  // uint64 block_number = 2;
-  void clear_block_number();
-  uint64_t block_number() const;
-  void set_block_number(uint64_t value);
-  private:
-  uint64_t _internal_block_number() const;
-  void _internal_set_block_number(uint64_t value);
-  public:
-
-  // bool present = 1;
-  void clear_present();
-  bool present() const;
-  void set_present(bool value);
-  private:
-  bool _internal_present() const;
-  void _internal_set_present(bool value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:remote.BorEventReply)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> event_rlps_;
-    uint64_t block_number_;
-    bool present_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -5607,6 +5633,204 @@ inline void NetVersionReply::_internal_set_id(uint64_t value) {
 inline void NetVersionReply::set_id(uint64_t value) {
   _internal_set_id(value);
   // @@protoc_insertion_point(field_set:remote.NetVersionReply.id)
+}
+
+// -------------------------------------------------------------------
+
+// SyncingReply_StageProgress
+
+// string stage_name = 1;
+inline void SyncingReply_StageProgress::clear_stage_name() {
+  _impl_.stage_name_.ClearToEmpty();
+}
+inline const std::string& SyncingReply_StageProgress::stage_name() const {
+  // @@protoc_insertion_point(field_get:remote.SyncingReply.StageProgress.stage_name)
+  return _internal_stage_name();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void SyncingReply_StageProgress::set_stage_name(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.stage_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.SyncingReply.StageProgress.stage_name)
+}
+inline std::string* SyncingReply_StageProgress::mutable_stage_name() {
+  std::string* _s = _internal_mutable_stage_name();
+  // @@protoc_insertion_point(field_mutable:remote.SyncingReply.StageProgress.stage_name)
+  return _s;
+}
+inline const std::string& SyncingReply_StageProgress::_internal_stage_name() const {
+  return _impl_.stage_name_.Get();
+}
+inline void SyncingReply_StageProgress::_internal_set_stage_name(const std::string& value) {
+  
+  _impl_.stage_name_.Set(value, GetArenaForAllocation());
+}
+inline std::string* SyncingReply_StageProgress::_internal_mutable_stage_name() {
+  
+  return _impl_.stage_name_.Mutable(GetArenaForAllocation());
+}
+inline std::string* SyncingReply_StageProgress::release_stage_name() {
+  // @@protoc_insertion_point(field_release:remote.SyncingReply.StageProgress.stage_name)
+  return _impl_.stage_name_.Release();
+}
+inline void SyncingReply_StageProgress::set_allocated_stage_name(std::string* stage_name) {
+  if (stage_name != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.stage_name_.SetAllocated(stage_name, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.stage_name_.IsDefault()) {
+    _impl_.stage_name_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.SyncingReply.StageProgress.stage_name)
+}
+
+// uint64 block_number = 2;
+inline void SyncingReply_StageProgress::clear_block_number() {
+  _impl_.block_number_ = uint64_t{0u};
+}
+inline uint64_t SyncingReply_StageProgress::_internal_block_number() const {
+  return _impl_.block_number_;
+}
+inline uint64_t SyncingReply_StageProgress::block_number() const {
+  // @@protoc_insertion_point(field_get:remote.SyncingReply.StageProgress.block_number)
+  return _internal_block_number();
+}
+inline void SyncingReply_StageProgress::_internal_set_block_number(uint64_t value) {
+  
+  _impl_.block_number_ = value;
+}
+inline void SyncingReply_StageProgress::set_block_number(uint64_t value) {
+  _internal_set_block_number(value);
+  // @@protoc_insertion_point(field_set:remote.SyncingReply.StageProgress.block_number)
+}
+
+// -------------------------------------------------------------------
+
+// SyncingReply
+
+// uint64 last_new_block_seen = 1;
+inline void SyncingReply::clear_last_new_block_seen() {
+  _impl_.last_new_block_seen_ = uint64_t{0u};
+}
+inline uint64_t SyncingReply::_internal_last_new_block_seen() const {
+  return _impl_.last_new_block_seen_;
+}
+inline uint64_t SyncingReply::last_new_block_seen() const {
+  // @@protoc_insertion_point(field_get:remote.SyncingReply.last_new_block_seen)
+  return _internal_last_new_block_seen();
+}
+inline void SyncingReply::_internal_set_last_new_block_seen(uint64_t value) {
+  
+  _impl_.last_new_block_seen_ = value;
+}
+inline void SyncingReply::set_last_new_block_seen(uint64_t value) {
+  _internal_set_last_new_block_seen(value);
+  // @@protoc_insertion_point(field_set:remote.SyncingReply.last_new_block_seen)
+}
+
+// uint64 frozen_blocks = 2;
+inline void SyncingReply::clear_frozen_blocks() {
+  _impl_.frozen_blocks_ = uint64_t{0u};
+}
+inline uint64_t SyncingReply::_internal_frozen_blocks() const {
+  return _impl_.frozen_blocks_;
+}
+inline uint64_t SyncingReply::frozen_blocks() const {
+  // @@protoc_insertion_point(field_get:remote.SyncingReply.frozen_blocks)
+  return _internal_frozen_blocks();
+}
+inline void SyncingReply::_internal_set_frozen_blocks(uint64_t value) {
+  
+  _impl_.frozen_blocks_ = value;
+}
+inline void SyncingReply::set_frozen_blocks(uint64_t value) {
+  _internal_set_frozen_blocks(value);
+  // @@protoc_insertion_point(field_set:remote.SyncingReply.frozen_blocks)
+}
+
+// uint64 current_block = 3;
+inline void SyncingReply::clear_current_block() {
+  _impl_.current_block_ = uint64_t{0u};
+}
+inline uint64_t SyncingReply::_internal_current_block() const {
+  return _impl_.current_block_;
+}
+inline uint64_t SyncingReply::current_block() const {
+  // @@protoc_insertion_point(field_get:remote.SyncingReply.current_block)
+  return _internal_current_block();
+}
+inline void SyncingReply::_internal_set_current_block(uint64_t value) {
+  
+  _impl_.current_block_ = value;
+}
+inline void SyncingReply::set_current_block(uint64_t value) {
+  _internal_set_current_block(value);
+  // @@protoc_insertion_point(field_set:remote.SyncingReply.current_block)
+}
+
+// bool syncing = 4;
+inline void SyncingReply::clear_syncing() {
+  _impl_.syncing_ = false;
+}
+inline bool SyncingReply::_internal_syncing() const {
+  return _impl_.syncing_;
+}
+inline bool SyncingReply::syncing() const {
+  // @@protoc_insertion_point(field_get:remote.SyncingReply.syncing)
+  return _internal_syncing();
+}
+inline void SyncingReply::_internal_set_syncing(bool value) {
+  
+  _impl_.syncing_ = value;
+}
+inline void SyncingReply::set_syncing(bool value) {
+  _internal_set_syncing(value);
+  // @@protoc_insertion_point(field_set:remote.SyncingReply.syncing)
+}
+
+// repeated .remote.SyncingReply.StageProgress stages = 5;
+inline int SyncingReply::_internal_stages_size() const {
+  return _impl_.stages_.size();
+}
+inline int SyncingReply::stages_size() const {
+  return _internal_stages_size();
+}
+inline void SyncingReply::clear_stages() {
+  _impl_.stages_.Clear();
+}
+inline ::remote::SyncingReply_StageProgress* SyncingReply::mutable_stages(int index) {
+  // @@protoc_insertion_point(field_mutable:remote.SyncingReply.stages)
+  return _impl_.stages_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::SyncingReply_StageProgress >*
+SyncingReply::mutable_stages() {
+  // @@protoc_insertion_point(field_mutable_list:remote.SyncingReply.stages)
+  return &_impl_.stages_;
+}
+inline const ::remote::SyncingReply_StageProgress& SyncingReply::_internal_stages(int index) const {
+  return _impl_.stages_.Get(index);
+}
+inline const ::remote::SyncingReply_StageProgress& SyncingReply::stages(int index) const {
+  // @@protoc_insertion_point(field_get:remote.SyncingReply.stages)
+  return _internal_stages(index);
+}
+inline ::remote::SyncingReply_StageProgress* SyncingReply::_internal_add_stages() {
+  return _impl_.stages_.Add();
+}
+inline ::remote::SyncingReply_StageProgress* SyncingReply::add_stages() {
+  ::remote::SyncingReply_StageProgress* _add = _internal_add_stages();
+  // @@protoc_insertion_point(field_add:remote.SyncingReply.stages)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::SyncingReply_StageProgress >&
+SyncingReply::stages() const {
+  // @@protoc_insertion_point(field_list:remote.SyncingReply.stages)
+  return _impl_.stages_;
 }
 
 // -------------------------------------------------------------------
@@ -7324,214 +7548,6 @@ inline void EngineGetPayloadBodiesByRangeV1Request::_internal_set_count(uint64_t
 inline void EngineGetPayloadBodiesByRangeV1Request::set_count(uint64_t value) {
   _internal_set_count(value);
   // @@protoc_insertion_point(field_set:remote.EngineGetPayloadBodiesByRangeV1Request.count)
-}
-
-// -------------------------------------------------------------------
-
-// BorEventRequest
-
-// .types.H256 bor_tx_hash = 1;
-inline bool BorEventRequest::_internal_has_bor_tx_hash() const {
-  return this != internal_default_instance() && _impl_.bor_tx_hash_ != nullptr;
-}
-inline bool BorEventRequest::has_bor_tx_hash() const {
-  return _internal_has_bor_tx_hash();
-}
-inline const ::types::H256& BorEventRequest::_internal_bor_tx_hash() const {
-  const ::types::H256* p = _impl_.bor_tx_hash_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
-}
-inline const ::types::H256& BorEventRequest::bor_tx_hash() const {
-  // @@protoc_insertion_point(field_get:remote.BorEventRequest.bor_tx_hash)
-  return _internal_bor_tx_hash();
-}
-inline void BorEventRequest::unsafe_arena_set_allocated_bor_tx_hash(
-    ::types::H256* bor_tx_hash) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.bor_tx_hash_);
-  }
-  _impl_.bor_tx_hash_ = bor_tx_hash;
-  if (bor_tx_hash) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:remote.BorEventRequest.bor_tx_hash)
-}
-inline ::types::H256* BorEventRequest::release_bor_tx_hash() {
-  
-  ::types::H256* temp = _impl_.bor_tx_hash_;
-  _impl_.bor_tx_hash_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::types::H256* BorEventRequest::unsafe_arena_release_bor_tx_hash() {
-  // @@protoc_insertion_point(field_release:remote.BorEventRequest.bor_tx_hash)
-  
-  ::types::H256* temp = _impl_.bor_tx_hash_;
-  _impl_.bor_tx_hash_ = nullptr;
-  return temp;
-}
-inline ::types::H256* BorEventRequest::_internal_mutable_bor_tx_hash() {
-  
-  if (_impl_.bor_tx_hash_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.bor_tx_hash_ = p;
-  }
-  return _impl_.bor_tx_hash_;
-}
-inline ::types::H256* BorEventRequest::mutable_bor_tx_hash() {
-  ::types::H256* _msg = _internal_mutable_bor_tx_hash();
-  // @@protoc_insertion_point(field_mutable:remote.BorEventRequest.bor_tx_hash)
-  return _msg;
-}
-inline void BorEventRequest::set_allocated_bor_tx_hash(::types::H256* bor_tx_hash) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.bor_tx_hash_);
-  }
-  if (bor_tx_hash) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(bor_tx_hash));
-    if (message_arena != submessage_arena) {
-      bor_tx_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, bor_tx_hash, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  _impl_.bor_tx_hash_ = bor_tx_hash;
-  // @@protoc_insertion_point(field_set_allocated:remote.BorEventRequest.bor_tx_hash)
-}
-
-// -------------------------------------------------------------------
-
-// BorEventReply
-
-// bool present = 1;
-inline void BorEventReply::clear_present() {
-  _impl_.present_ = false;
-}
-inline bool BorEventReply::_internal_present() const {
-  return _impl_.present_;
-}
-inline bool BorEventReply::present() const {
-  // @@protoc_insertion_point(field_get:remote.BorEventReply.present)
-  return _internal_present();
-}
-inline void BorEventReply::_internal_set_present(bool value) {
-  
-  _impl_.present_ = value;
-}
-inline void BorEventReply::set_present(bool value) {
-  _internal_set_present(value);
-  // @@protoc_insertion_point(field_set:remote.BorEventReply.present)
-}
-
-// uint64 block_number = 2;
-inline void BorEventReply::clear_block_number() {
-  _impl_.block_number_ = uint64_t{0u};
-}
-inline uint64_t BorEventReply::_internal_block_number() const {
-  return _impl_.block_number_;
-}
-inline uint64_t BorEventReply::block_number() const {
-  // @@protoc_insertion_point(field_get:remote.BorEventReply.block_number)
-  return _internal_block_number();
-}
-inline void BorEventReply::_internal_set_block_number(uint64_t value) {
-  
-  _impl_.block_number_ = value;
-}
-inline void BorEventReply::set_block_number(uint64_t value) {
-  _internal_set_block_number(value);
-  // @@protoc_insertion_point(field_set:remote.BorEventReply.block_number)
-}
-
-// repeated bytes event_rlps = 3;
-inline int BorEventReply::_internal_event_rlps_size() const {
-  return _impl_.event_rlps_.size();
-}
-inline int BorEventReply::event_rlps_size() const {
-  return _internal_event_rlps_size();
-}
-inline void BorEventReply::clear_event_rlps() {
-  _impl_.event_rlps_.Clear();
-}
-inline std::string* BorEventReply::add_event_rlps() {
-  std::string* _s = _internal_add_event_rlps();
-  // @@protoc_insertion_point(field_add_mutable:remote.BorEventReply.event_rlps)
-  return _s;
-}
-inline const std::string& BorEventReply::_internal_event_rlps(int index) const {
-  return _impl_.event_rlps_.Get(index);
-}
-inline const std::string& BorEventReply::event_rlps(int index) const {
-  // @@protoc_insertion_point(field_get:remote.BorEventReply.event_rlps)
-  return _internal_event_rlps(index);
-}
-inline std::string* BorEventReply::mutable_event_rlps(int index) {
-  // @@protoc_insertion_point(field_mutable:remote.BorEventReply.event_rlps)
-  return _impl_.event_rlps_.Mutable(index);
-}
-inline void BorEventReply::set_event_rlps(int index, const std::string& value) {
-  _impl_.event_rlps_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:remote.BorEventReply.event_rlps)
-}
-inline void BorEventReply::set_event_rlps(int index, std::string&& value) {
-  _impl_.event_rlps_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:remote.BorEventReply.event_rlps)
-}
-inline void BorEventReply::set_event_rlps(int index, const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.event_rlps_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:remote.BorEventReply.event_rlps)
-}
-inline void BorEventReply::set_event_rlps(int index, const void* value, size_t size) {
-  _impl_.event_rlps_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:remote.BorEventReply.event_rlps)
-}
-inline std::string* BorEventReply::_internal_add_event_rlps() {
-  return _impl_.event_rlps_.Add();
-}
-inline void BorEventReply::add_event_rlps(const std::string& value) {
-  _impl_.event_rlps_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:remote.BorEventReply.event_rlps)
-}
-inline void BorEventReply::add_event_rlps(std::string&& value) {
-  _impl_.event_rlps_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:remote.BorEventReply.event_rlps)
-}
-inline void BorEventReply::add_event_rlps(const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.event_rlps_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:remote.BorEventReply.event_rlps)
-}
-inline void BorEventReply::add_event_rlps(const void* value, size_t size) {
-  _impl_.event_rlps_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:remote.BorEventReply.event_rlps)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-BorEventReply::event_rlps() const {
-  // @@protoc_insertion_point(field_list:remote.BorEventReply.event_rlps)
-  return _impl_.event_rlps_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-BorEventReply::mutable_event_rlps() {
-  // @@protoc_insertion_point(field_mutable_list:remote.BorEventReply.event_rlps)
-  return &_impl_.event_rlps_;
 }
 
 #ifdef __GNUC__

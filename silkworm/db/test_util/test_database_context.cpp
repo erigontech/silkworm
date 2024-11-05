@@ -166,7 +166,7 @@ namespace {
         const auto tests_dir = get_tests_dir();
 
         EnvConfig env_config{
-            .path = chaindata_dir_path,
+            .path = chaindata_dir_path.string(),
             .create = true,
             .exclusive = true,
             .in_memory = true,

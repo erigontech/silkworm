@@ -51,7 +51,6 @@ class SnapshotPath {
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }
     SnapshotType type() const { return type_; }
-    std::string type_string() const;
     bool exists() const { return std::filesystem::exists(path_); }
 
     SnapshotPath related_path(SnapshotType type, const char* ext) const;

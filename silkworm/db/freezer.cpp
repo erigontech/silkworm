@@ -29,6 +29,7 @@
 #include "blocks/bodies/body_queries.hpp"
 #include "blocks/bodies/body_segment_collation.hpp"
 #include "blocks/headers/header_segment_collation.hpp"
+#include "blocks/schema_config.hpp"
 #include "blocks/transactions/txn_segment_collation.hpp"
 #include "datastore/segment_collation.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
@@ -87,22 +88,20 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
     return {};
 }
 
-static const SegmentCollation& get_collation(SnapshotType type) {
+static const SegmentCollation& get_collation(datastore::EntityName name) {
     static HeaderSegmentCollation header_collation;
     static BodySegmentCollation body_collation;
     static TransactionSegmentCollation txn_collation;
 
-    switch (type) {
-        case SnapshotType::headers:
-            return header_collation;
-        case SnapshotType::bodies:
-            return body_collation;
-        case SnapshotType::transactions:
-            return txn_collation;
-        default:
-            SILKWORM_ASSERT(false);
-            throw std::runtime_error("invalid type");
-    }
+    if (name == blocks::kHeaderSegmentName)
+        return header_collation;
+    if (name == blocks::kBodySegmentName)
+        return body_collation;
+    if (name == blocks::kTxnSegmentName)
+        return txn_collation;
+
+    SILKWORM_ASSERT(false);
+    throw std::runtime_error("invalid name");
 }
 
 std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrationCommand> command) {
@@ -111,11 +110,11 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
     auto step_range = StepRange::from_block_num_range(range);
 
     auto bundle = snapshots_.bundle_factory().make_paths(tmp_dir_path_, step_range);
-    for (auto& path : bundle.segment_paths()) {
+    for (const auto& [name, path] : bundle.segment_paths()) {
         SegmentFileWriter file_writer{path, tmp_dir_path_};
         {
             auto db_tx = db_access_.start_ro_tx();
-            auto& freezer = get_collation(path.type());
+            auto& freezer = get_collation(name);
             freezer.copy(db_tx, freezer_command, file_writer);
         }
         SegmentFileWriter::flush(std::move(file_writer));
@@ -167,9 +166,9 @@ Task<void> Freezer::cleanup() {
 }
 
 void Freezer::prune_collations(RWTxn& db_tx, BlockNumRange range) const {
-    get_collation(SnapshotType::transactions).prune(db_tx, range);
-    get_collation(SnapshotType::bodies).prune(db_tx, range);
-    get_collation(SnapshotType::headers).prune(db_tx, range);
+    get_collation(blocks::kHeaderSegmentName).prune(db_tx, range);
+    get_collation(blocks::kBodySegmentName).prune(db_tx, range);
+    get_collation(blocks::kTxnSegmentName).prune(db_tx, range);
 }
 
 }  // namespace silkworm::db

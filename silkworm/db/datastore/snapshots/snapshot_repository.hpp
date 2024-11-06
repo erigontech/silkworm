@@ -73,7 +73,7 @@ class SnapshotRepository {
 
     std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
-    void build_indexes(SnapshotBundlePaths& bundle) const;
+    void build_indexes(const SnapshotBundlePaths& bundle) const;
 
     using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;
 

@@ -51,7 +51,7 @@ struct SnapshotBundlePaths {
     StepRange step_range() const { return step_range_; }
 
     std::vector<std::filesystem::path> files() const;
-    std::vector<SnapshotPath> segment_paths() const;
+    std::map<datastore::EntityName, SnapshotPath> segment_paths() const;
 
   private:
     Schema::RepositoryDef schema_;
@@ -80,6 +80,11 @@ struct SnapshotBundle {
     const Index& index(SnapshotType type) const;
     SegmentAndIndex segment_and_index(SnapshotType type) const {
         return {segment(type), index(type)};
+    }
+    const SegmentFileReader& segment(datastore::EntityName name) const;
+    const Index& index(datastore::EntityName name) const;
+    SegmentAndIndex segment_and_index(datastore::EntityName name) const {
+        return {segment(name), index(name)};
     }
 
     StepRange step_range() const { return step_range_; }

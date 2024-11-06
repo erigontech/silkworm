@@ -243,8 +243,12 @@ void SnapshotRepository::remove_stale_indexes() const {
     }
 }
 
-void SnapshotRepository::build_indexes(SnapshotBundlePaths& bundle) const {
-    for (auto& builder : bundle_factory_->index_builders(bundle.segment_paths())) {
+void SnapshotRepository::build_indexes(const SnapshotBundlePaths& bundle) const {
+    std::vector<SnapshotPath> segment_paths;
+    for (auto& entry : bundle.segment_paths())
+        segment_paths.push_back(std::move(entry.second));
+
+    for (auto& builder : bundle_factory_->index_builders(segment_paths)) {
         builder->build();
     }
 }

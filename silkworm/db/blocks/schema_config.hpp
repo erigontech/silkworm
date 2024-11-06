@@ -17,10 +17,11 @@
 #pragma once
 
 #include <memory>
+
 #include "../datastore/common/entity_name.hpp"
 #include "../datastore/snapshots/schema.hpp"
-#include "../datastore/snapshots/snapshot_repository.hpp"
 #include "../datastore/snapshots/snapshot_bundle_factory.hpp"
+#include "../datastore/snapshots/snapshot_repository.hpp"
 
 namespace silkworm::db::blocks {
 

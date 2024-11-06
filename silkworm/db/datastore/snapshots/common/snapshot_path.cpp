@@ -117,10 +117,6 @@ SnapshotPath SnapshotPath::make(
     return SnapshotPath{dir / filename, version, step_range, type};
 }
 
-std::string SnapshotPath::type_string() const {
-    return std::string{magic_enum::enum_name(type_)};
-}
-
 fs::path SnapshotPath::make_filename(
     uint8_t version,
     StepRange step_range,

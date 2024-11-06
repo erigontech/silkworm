@@ -74,6 +74,14 @@ const Index& SnapshotBundle::index(SnapshotType type) const {
     return data_.rec_split_indexes.at(name);
 }
 
+const SegmentFileReader& SnapshotBundle::segment(datastore::EntityName name) const {
+    return data_.segments.at(name);
+}
+
+const Index& SnapshotBundle::index(datastore::EntityName name) const {
+    return data_.rec_split_indexes.at(name);
+}
+
 std::vector<std::filesystem::path> SnapshotBundle::files() {
     std::vector<std::filesystem::path> files;
     for (const SegmentFileReader& segment : segments()) {
@@ -93,11 +101,8 @@ std::vector<SnapshotPath> SnapshotBundle::segment_paths() {
     return paths;
 }
 
-std::vector<SnapshotPath> SnapshotBundlePaths::segment_paths() const {
-    std::vector<SnapshotPath> results;
-    for (auto& entry : schema_.make_segment_paths(dir_path_, step_range_))
-        results.push_back(std::move(entry.second));
-    return results;
+std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::segment_paths() const {
+    return schema_.make_segment_paths(dir_path_, step_range_);
 }
 
 std::vector<std::filesystem::path> SnapshotBundlePaths::files() const {

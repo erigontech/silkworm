@@ -96,13 +96,13 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
     auto step_range = StepRange::from_block_num_range(range);
 
     auto new_bundle = snapshots_.bundle_factory().make_paths(tmp_dir_path_, step_range);
-    for (auto& path : new_bundle.segment_paths()) {
-        SILK_DEBUG_M("SnapshotMerger") << "merging " << path.type_string() << " range " << range.to_string();
+    for (const auto& [name, path] : new_bundle.segment_paths()) {
+        SILK_DEBUG_M("SnapshotMerger") << "merging " << name.to_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(StepRange::from_block_num_range(range))) {
             auto& bundle = *bundle_ptr;
-            SegmentReader<RawDecoder> reader{bundle.segment(path.type())};
+            SegmentReader<RawDecoder> reader{bundle.segment(name)};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 

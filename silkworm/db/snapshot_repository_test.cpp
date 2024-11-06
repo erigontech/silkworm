@@ -44,6 +44,14 @@ static SnapshotRepository make_repository(std::filesystem::path dir_path) {
     return db::blocks::make_blocks_repository(std::move(dir_path));
 }
 
+// NOLINTBEGIN(readability-identifier-naming)
+struct SnapshotType {
+    static constexpr datastore::EntityName headers{db::blocks::kHeaderSegmentName};
+    static constexpr datastore::EntityName bodies{db::blocks::kBodySegmentName};
+    static constexpr datastore::EntityName transactions{db::blocks::kTxnSegmentName};
+};
+// NOLINTEND(readability-identifier-naming)
+
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;

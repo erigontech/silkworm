@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "common/snapshot_path.hpp"
-#include "common/snapshot_type.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "rec_split_index/index.hpp"
 #include "schema.hpp"
@@ -74,11 +73,6 @@ struct SnapshotBundle {
     }
     auto rec_split_indexes() {
         return make_map_values_view(data_.rec_split_indexes);
-    }
-    const SegmentFileReader& segment(SnapshotType type) const;
-    const Index& index(SnapshotType type) const;
-    SegmentAndIndex segment_and_index(SnapshotType type) const {
-        return {segment(type), index(type)};
     }
     const SegmentFileReader& segment(datastore::EntityName name) const;
     const Index& index(datastore::EntityName name) const;

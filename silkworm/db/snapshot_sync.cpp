@@ -390,7 +390,7 @@ void SnapshotSync::update_block_bodies(RWTxn& txn, BlockNum max_block_available)
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto [txn_segment, _] = repository_.find_segment(SnapshotType::transactions, max_block_available);
+    const auto [txn_segment, _] = repository_.find_segment(db::blocks::kTxnSegmentName, max_block_available);
     ensure(txn_segment.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
     const auto last_tx_id = txn_segment->index.base_data_id() + txn_segment->segment.item_count();
     reset_map_sequence(txn, table::kBlockTransactions.name, last_tx_id + 1);

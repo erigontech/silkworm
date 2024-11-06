@@ -16,8 +16,6 @@
 
 #include "snapshot_bundle.hpp"
 
-#include <magic_enum.hpp>
-
 #include <silkworm/infra/common/ensure.hpp>
 
 namespace silkworm::snapshots {
@@ -62,16 +60,6 @@ void SnapshotBundle::close() {
     if (on_close_callback_) {
         on_close_callback_(*this);
     }
-}
-
-const SegmentFileReader& SnapshotBundle::segment(SnapshotType type) const {
-    datastore::EntityName name{magic_enum::enum_name(type)};
-    return data_.segments.at(name);
-}
-
-const Index& SnapshotBundle::index(SnapshotType type) const {
-    datastore::EntityName name{magic_enum::enum_name(type)};
-    return data_.rec_split_indexes.at(name);
 }
 
 const SegmentFileReader& SnapshotBundle::segment(datastore::EntityName name) const {

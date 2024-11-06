@@ -28,7 +28,6 @@
 namespace silkworm::snapshots::test_util {
 
 using snapshots::SnapshotPath;
-using snapshots::SnapshotType;
 
 //! Big-endian encoder
 inline size_t encode_big_endian(uint64_t value, Bytes& output) {

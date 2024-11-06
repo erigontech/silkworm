@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "../common/entity_name.hpp"
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
@@ -104,7 +105,7 @@ class SnapshotRepository {
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
-    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, Timestamp t) const;
+    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(datastore::EntityName name, Timestamp t) const;
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;
 
     std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const;

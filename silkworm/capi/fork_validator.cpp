@@ -126,9 +126,8 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
 
     silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
     silkworm::db::RWAccess rw_access{unmanaged_env};
-    silkworm::db::DataModelFactory data_model_factory = [handle](silkworm::db::ROTxn& tx) {
-        return silkworm::db::DataModel{tx, *handle->snapshot_repository};
-    };
+    silkworm::db::DataStoreRef data_store{rw_access, *handle->snapshot_repository};
+    silkworm::db::DataModelFactory data_model_factory{std::move(data_store)};
 
     handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(
         /* executor = */ std::nullopt,  // ExecutionEngine manages an internal io_context

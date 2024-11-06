@@ -22,9 +22,9 @@
 #include <boost/signals2.hpp>
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -117,8 +117,8 @@ void BlockExchange::execution_loop() {
             size_t room_for_new_requests = peers_capacity > outstanding_requests ? peers_capacity - outstanding_requests : 0;
 
             auto body_requests = room_for_new_requests == 1
-                                     ? Singleton<RandomNumber>::instance().generate_one() % 2  // 50% chance to request a body
-                                     : room_for_new_requests / 2;                              // a slight bias towards headers
+                                     ? chainsync::random_number.generate_one() % 2  // 50% chance to request a body
+                                     : room_for_new_requests / 2;                   // a slight bias towards headers
 
             room_for_new_requests -= request_bodies(now, body_requests);           // do the computed nr. of body requests
             room_for_new_requests -= request_headers(now, room_for_new_requests);  // do the remaining nr. of header requests

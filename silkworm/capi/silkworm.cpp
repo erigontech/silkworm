@@ -36,10 +36,10 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
@@ -224,10 +224,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
     auto data_dir_path = parse_path(settings->data_dir_path);
-    auto snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
-        DataDirectory{data_dir_path}.snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>());
+    auto snapshot_repository = db::blocks::make_blocks_repository(
+        DataDirectory{data_dir_path}.snapshots().path());
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
@@ -237,7 +235,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         },
         .data_dir_path = std::move(data_dir_path),
         .node_settings = {},
-        .snapshot_repository = std::move(snapshot_repository),
+        .snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_repository)),
         .rpcdaemon = {},
         .execution_engine = {},
         .sentry_thread = {},
@@ -607,7 +605,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
     try {
         // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
         db::EnvUnmanaged unmanaged_env{mdbx_env};
-        auto txn = db::RWTxnManaged{unmanaged_env};
+        db::RWAccess rw_access{unmanaged_env};
+        auto txn = rw_access.start_rw_tx();
         const auto env_path = unmanaged_env.get_path();
 
         db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->snapshot_repository})};
@@ -616,9 +615,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
 
-        db::DataModelFactory data_model_factory = [handle](db::ROTxn& tx) {
-            return db::DataModel{tx, *handle->snapshot_repository};
-        };
+        db::DataStoreRef data_store{rw_access, *handle->snapshot_repository};
+        db::DataModelFactory data_model_factory{std::move(data_store)};
 
         BlockProvider block_provider{
             &block_buffer,

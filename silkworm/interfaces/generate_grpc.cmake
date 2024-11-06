@@ -187,6 +187,30 @@ add_custom_command(
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
+# BOR
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
+set(BOR_PROTO "${PROTO_PATH}/remote/bor.proto")
+
+# cmake-format: off
+set(BOR_SOURCES_SYMLINK
+    "${OUT_PATH_SYMLINK}/remote/bor.grpc.pb.cc"
+    "${OUT_PATH_SYMLINK}/remote/bor.grpc.pb.h"
+    "${OUT_PATH_SYMLINK}/remote/bor.pb.cc"
+    "${OUT_PATH_SYMLINK}/remote/bor.pb.h"
+    "${OUT_PATH_SYMLINK}/remote/bor_mock.grpc.pb.h"
+)
+# cmake-format: on
+
+add_custom_command(
+  OUTPUT ${BOR_SOURCES_SYMLINK}
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${OUT_PATH}"
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${BOR_PROTO}"
+  DEPENDS ${BOR_PROTO} generate_remote_grpc_symlink
+  COMMENT "Running C++ gRPC compiler on ${BOR_PROTO}"
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
 # MINING
 # ---------------------------------------------------------------------------------------------------------------------
 # gRPC protocol interface file

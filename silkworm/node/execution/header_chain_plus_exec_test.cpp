@@ -22,7 +22,6 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -83,15 +82,14 @@ TEST_CASE("Headers receiving and saving") {
 
     TaskRunner runner;
 
-    db::test_util::TempChainData context;
+    db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();
 
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    db::DataModelFactory data_model_factory = context.data_model_factory();
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    RWAccess db_access{context.env()};
+    RWAccess db_access = context.chaindata_rw();
 
     // creating the ExecutionEngine
     ExecutionEngineForTest exec_engine{

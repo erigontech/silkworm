@@ -20,6 +20,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
@@ -105,7 +106,8 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
             }
 
             SECTION("RPC IO test " + group_name + " | " + test_name) {  // NOLINT(*-inefficient-string-concatenation)
-                auto context = db::test_util::TestDatabaseContext();
+                TemporaryDirectory tmp_dir;
+                auto context = db::test_util::TestDatabaseContext(tmp_dir);
                 RpcApiTestBase<RequestHandlerForTest> test_base{context.mdbx_env()};
 
                 std::string line_out;
@@ -138,7 +140,8 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
 
 TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
     SetLogVerbosityGuard log_guard{log::Level::kNone};
-    auto context = db::test_util::TestDatabaseContext();
+    TemporaryDirectory tmp_dir;
+    auto context = db::test_util::TestDatabaseContext(tmp_dir);
     RpcApiTestBase<RequestHandlerForTest> test_base{context.mdbx_env()};
 
     SECTION("sample test") {

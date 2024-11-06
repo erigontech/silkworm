@@ -23,7 +23,6 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm {
@@ -35,11 +34,12 @@ class BodiesStageForTest : public stagedsync::BodiesStage {
 using BodyDataModelForTest = BodiesStageForTest::BodyDataModel;
 
 TEST_CASE("BodiesStage - data model") {
-    db::test_util::TempChainData context;
+    db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();
 
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
+    db::RWAccess chaindata = context.chaindata_rw();
+    auto data_model_factory = context.data_model_factory();
 
     auto& chain_config = context.chain_config();
 
@@ -49,8 +49,8 @@ TEST_CASE("BodiesStage - data model") {
      *         h0 <----- h1
      */
     SECTION("one invalid body after the genesis") {
-        db::RWTxnManaged tx(context.env());
-        db::DataModel data_model{tx, repository};
+        db::RWTxnManaged tx = chaindata.start_rw_tx();
+        db::DataModel data_model = data_model_factory(tx);
 
         auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -90,8 +90,8 @@ TEST_CASE("BodiesStage - data model") {
     }
 
     SECTION("one valid body after the genesis") {
-        db::RWTxnManaged tx(context.env());
-        db::DataModel data_model{tx, repository};
+        db::RWTxnManaged tx = chaindata.start_rw_tx();
+        db::DataModel data_model = data_model_factory(tx);
 
         auto header0_hash = db::read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());

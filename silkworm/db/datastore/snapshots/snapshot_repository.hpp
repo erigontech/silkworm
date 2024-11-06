@@ -49,7 +49,9 @@ class SnapshotRepository {
         std::filesystem::path dir_path,
         std::unique_ptr<StepToTimestampConverter> step_converter,
         std::unique_ptr<SnapshotBundleFactory> bundle_factory);
-    ~SnapshotRepository();
+
+    SnapshotRepository(SnapshotRepository&&) = default;
+    SnapshotRepository& operator=(SnapshotRepository&&) noexcept = default;
 
     const std::filesystem::path& path() const { return dir_path_; }
     const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
@@ -94,12 +96,12 @@ class SnapshotRepository {
     };
 
     auto view_bundles() const {
-        std::scoped_lock lock(bundles_mutex_);
+        std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{make_map_values_view(*bundles_), bundles_};
     }
 
     auto view_bundles_reverse() const {
-        std::scoped_lock lock(bundles_mutex_);
+        std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
@@ -134,7 +136,7 @@ class SnapshotRepository {
 
     //! Full snapshot bundles ordered by block_from
     std::shared_ptr<Bundles> bundles_;
-    mutable std::mutex bundles_mutex_;
+    std::unique_ptr<std::mutex> bundles_mutex_;
 };
 
 }  // namespace silkworm::snapshots

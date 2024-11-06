@@ -75,7 +75,7 @@ class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pai
 
     static void set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_duration);
 
-    Task<void> operator()(mdbx::env* chaindata_env);
+    Task<void> operator()(ROAccess chaindata);
 
   private:
     struct TxCursor {
@@ -98,7 +98,7 @@ class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pai
 
     void handle_operation(const remote::Cursor* request, ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_max_ttl_timer_expired(mdbx::env* chaindata_env);
+    void handle_max_ttl_timer_expired(ROAccess chaindata);
 
     bool save_cursors(std::vector<CursorPosition>& positions);
 

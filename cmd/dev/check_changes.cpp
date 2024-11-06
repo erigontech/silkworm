@@ -25,8 +25,8 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -103,18 +103,19 @@ int main(int argc, char* argv[]) {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
-        auto env{db::open_env(db_config)};
-        db::RWTxnManaged txn{env};
+
+        db::DataStore data_store{
+            db_config,
+            data_dir.snapshots().path(),
+        };
+
+        db::RWTxnManaged txn = data_store.chaindata_rw().start_rw_tx();
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        snapshots::SnapshotRepository repository{
-            data_dir.snapshots().path(),
-            std::make_unique<snapshots::StepToBlockNumConverter>(),
-            std::make_unique<db::SnapshotBundleFactoryImpl>(),
-        };
+        auto& repository = data_store.ref().repository;
         repository.reopen_folder();
         db::DataModel access_layer{txn, repository};
 

@@ -1,5 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
+#[[
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,20 +12,12 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#pragma once
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-#include <concepts>
-
-namespace silkworm {
-
-template <std::default_initializable T>
-class Singleton {
-    static inline T instance_;
-
-  public:
-    static T& instance() { return instance_; }
-};
-
-}  // namespace silkworm
+silkworm_library(
+  silkworm_datastore_common
+  PUBLIC silkworm_core
+  PRIVATE ""
+)

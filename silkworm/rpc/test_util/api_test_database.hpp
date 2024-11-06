@@ -37,7 +37,6 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
@@ -79,17 +78,13 @@ class RequestHandlerForTest : public json_rpc::RequestHandler {
     }
 };
 
-class TestDataStoreBase : public db::test_util::TestDatabaseContext {
+class TestDataStoreBase {
   public:
-    explicit TestDataStoreBase()
-        : repository_{db::test_util::make_repository()},
-          data_store_{mdbx_env(), repository_} {}
-
-    db::DataStoreRef data_store() const { return data_store_; }
+    db::DataStoreRef data_store() { return data_store_->ref(); }
 
   private:
-    snapshots::SnapshotRepository repository_;
-    db::DataStoreRef data_store_;
+    TemporaryDirectory tmp_dir_;
+    db::test_util::TestDataStore data_store_{tmp_dir_};
 };
 
 class LocalContextTestBase : public ServiceContextTestBase {

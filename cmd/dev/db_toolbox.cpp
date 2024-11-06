@@ -41,6 +41,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_settings.hpp>
@@ -48,7 +49,6 @@
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/prune_mode.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -589,21 +589,19 @@ static silkworm::stagedsync::StageContainerFactory make_stages_factory(
 
 void unwind(EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
     ensure(config.exclusive, "Function requires exclusive access to database");
-
     config.readonly = false;
 
-    auto env{open_env(config)};
-    RWTxnManaged txn{env};
+    auto data_directory = std::make_unique<DataDirectory>();
+    DataStore data_store{
+        config,
+        data_directory->snapshots().path(),
+    };
+
+    RWTxnManaged txn = data_store.chaindata_rw().start_rw_tx();
     auto chain_config{read_chain_config(txn)};
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
-    auto data_directory = std::make_unique<DataDirectory>();
-    snapshots::SnapshotRepository repository{
-        data_directory->snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<SnapshotBundleFactoryImpl>(),
-    };
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    db::DataModelFactory data_model_factory{data_store.ref()};
 
     boost::asio::io_context io_context;
 
@@ -2263,17 +2261,16 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
         RWAccess db_access_;
     };
 
-    auto env = open_env(config);
-    StageSchedulerAdapter stage_scheduler{RWAccess{env}};
-
-    snapshots::SnapshotRepository repository{
+    DataStore data_store{
+        config,
         data_dir.snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<SnapshotBundleFactoryImpl>(),
     };
+    StageSchedulerAdapter stage_scheduler{data_store.chaindata_rw()};
+
+    auto& repository = data_store.ref().repository;
     repository.reopen_folder();
 
-    Freezer freezer{ROAccess{env}, repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
+    Freezer freezer{data_store.chaindata(), repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
 
     test_util::TaskRunner runner;
     runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));

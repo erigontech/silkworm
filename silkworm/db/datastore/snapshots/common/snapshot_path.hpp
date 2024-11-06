@@ -42,7 +42,7 @@ class SnapshotPath {
         uint8_t version,
         StepRange step_range,
         std::string tag,
-        const char* ext = kSegmentExtension);
+        const char* ext);
 
     std::string filename() const { return path_.filename().string(); }
     const std::filesystem::path& path() const { return path_; }

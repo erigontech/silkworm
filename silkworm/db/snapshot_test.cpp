@@ -50,7 +50,8 @@ class SnapshotPathForTest : public SnapshotPath {
                   tmp_dir,
                   kSnapshotV1,
                   step_range,
-                  "headers"),
+                  "headers",
+                  ".seg"),
           } {}
 };
 

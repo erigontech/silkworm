@@ -43,7 +43,7 @@ struct CharCodec : public Encoder, public Decoder {
 
 TEST_CASE("KVSegmentFile") {
     TemporaryDirectory tmp_dir;
-    auto path = SnapshotPath::make(tmp_dir.path(), kSnapshotV1, StepRange{Step{0}, Step{1}}, "headers");
+    auto path = SnapshotPath::make(tmp_dir.path(), kSnapshotV1, StepRange{Step{0}, Step{1}}, "headers", ".seg");
     static constexpr seg::CompressionKind kCompressionKind = seg::CompressionKind::kKeys;
 
     std::vector<std::pair<std::string, char>> entries = {

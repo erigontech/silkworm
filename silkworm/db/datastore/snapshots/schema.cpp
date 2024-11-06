@@ -24,7 +24,7 @@ std::map<datastore::EntityName, SnapshotPath> Schema::RepositoryDef::make_segmen
     std::map<datastore::EntityName, SnapshotPath> results;
     for (auto& entry : segment_defs_) {
         auto tag = entry.first.to_string();
-        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag)));
+        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag), kSegmentExtension));
     }
     return results;
 }

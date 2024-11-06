@@ -49,6 +49,7 @@ class SnapshotRepository {
     SnapshotRepository(
         std::filesystem::path dir_path,
         bool open,
+        Schema::RepositoryDef schema,
         std::unique_ptr<StepToTimestampConverter> step_converter,
         std::unique_ptr<SnapshotBundleFactory> bundle_factory);
 
@@ -113,15 +114,7 @@ class SnapshotRepository {
   private:
     Step max_end_step() const;
 
-    SnapshotPathList get_segment_files() const {
-        return get_files(kSegmentExtension);
-    }
-
-    SnapshotPathList get_idx_files() const {
-        return get_files(kIdxExtension);
-    }
-
-    SnapshotPathList get_files(const std::string& ext) const;
+    SnapshotPathList get_files(std::string_view ext) const;
     std::vector<StepRange> list_dir_file_ranges() const;
 
     bool is_stale_index_path(const SnapshotPath& index_path) const;
@@ -129,6 +122,9 @@ class SnapshotRepository {
 
     //! Path to the snapshots directory
     std::filesystem::path dir_path_;
+
+    //! Schema
+    Schema::RepositoryDef schema_;
 
     //! Converts timestamp units to steps
     std::unique_ptr<StepToTimestampConverter> step_converter_;

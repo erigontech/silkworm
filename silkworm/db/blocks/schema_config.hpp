@@ -27,6 +27,9 @@ namespace silkworm::db::blocks {
 
 inline constexpr datastore::EntityName kBlocksRepositoryName{"Blocks"};
 
+inline constexpr std::string_view kSegmentExtension{".seg"};
+inline constexpr std::string_view kIdxExtension{".idx"};
+
 snapshots::Schema::RepositoryDef make_blocks_repository_schema();
 
 std::unique_ptr<snapshots::SnapshotBundleFactory> make_blocks_bundle_factory();

@@ -26,6 +26,8 @@
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
+#include "../schema_config.hpp"
+
 namespace silkworm::snapshots {
 
 struct TransactionKeyFactory : IndexKeyFactory {
@@ -66,7 +68,7 @@ class TransactionIndex {
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, uint64_t first_tx_id) {
         return {
-            .index_file = segment_path.related_path_ext(kIdxExtension),
+            .index_file = segment_path.related_path_ext(db::blocks::kIdxExtension),
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
             .base_data_id = first_tx_id,
             .less_false_positives = true,

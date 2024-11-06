@@ -99,7 +99,7 @@ SnapshotPath SnapshotPath::make(
     uint8_t version,
     StepRange step_range,
     std::string tag,
-    const char* ext) {
+    std::string_view ext) {
     const auto filename = SnapshotPath::make_filename(version, step_range, tag, ext);
     return SnapshotPath{dir / filename, version, step_range, std::move(tag)};
 }
@@ -108,7 +108,7 @@ fs::path SnapshotPath::make_filename(
     uint8_t version,
     StepRange step_range,
     std::string_view tag,
-    const char* ext) {
+    std::string_view ext) {
     std::string filename = absl::StrFormat(
         "v%d-%06d-%06d-%s%s",
         version,
@@ -119,7 +119,7 @@ fs::path SnapshotPath::make_filename(
     return fs::path{filename};
 }
 
-SnapshotPath SnapshotPath::related_path(std::string tag, const char* ext) const {
+SnapshotPath SnapshotPath::related_path(std::string tag, std::string_view ext) const {
     return SnapshotPath::make(path_.parent_path(), version_, step_range_, std::move(tag), ext);
 }
 

@@ -30,9 +30,11 @@ namespace fs = std::filesystem;
 SnapshotRepository::SnapshotRepository(
     std::filesystem::path dir_path,
     bool open,
+    Schema::RepositoryDef schema,
     std::unique_ptr<StepToTimestampConverter> step_converter,
     std::unique_ptr<SnapshotBundleFactory> bundle_factory)
     : dir_path_(std::move(dir_path)),
+      schema_(std::move(schema)),
       step_converter_(std::move(step_converter)),
       bundle_factory_(std::move(bundle_factory)),
       bundles_(std::make_shared<Bundles>()),
@@ -104,7 +106,7 @@ std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> Snaps
 }
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
-    SnapshotPathList segment_files = get_segment_files();
+    SnapshotPathList segment_files = get_files(schema_.segment_file_ext());
     auto index_builders = bundle_factory_->index_builders(segment_files);
 
     std::erase_if(index_builders, [&](const auto& builder) {
@@ -176,7 +178,7 @@ std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_rang
     return bundles;
 }
 
-SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
+SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {
     ensure(fs::exists(dir_path_),
            [&]() { return "SnapshotRepository: " + dir_path_.string() + " does not exist"; });
     ensure(fs::is_directory(dir_path_),
@@ -231,7 +233,7 @@ bool SnapshotRepository::is_stale_index_path(const SnapshotPath& index_path) con
 
 SnapshotPathList SnapshotRepository::stale_index_paths() const {
     SnapshotPathList results;
-    auto all_files = this->get_idx_files();
+    auto all_files = get_files(schema_.rec_split_index_file_ext());
     std::copy_if(
         all_files.begin(), all_files.end(),
         std::back_inserter(results),

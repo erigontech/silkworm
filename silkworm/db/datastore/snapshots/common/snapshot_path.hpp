@@ -26,9 +26,6 @@
 
 namespace silkworm::snapshots {
 
-inline constexpr const char* kSegmentExtension{".seg"};
-inline constexpr const char* kIdxExtension{".idx"};
-
 //! The snapshot version 1 aka v1
 inline constexpr uint8_t kSnapshotV1{1};
 
@@ -42,7 +39,7 @@ class SnapshotPath {
         uint8_t version,
         StepRange step_range,
         std::string tag,
-        const char* ext);
+        std::string_view ext);
 
     std::string filename() const { return path_.filename().string(); }
     const std::filesystem::path& path() const { return path_; }
@@ -52,8 +49,8 @@ class SnapshotPath {
     const std::string& tag() const { return tag_; }
     bool exists() const { return std::filesystem::exists(path_); }
 
-    SnapshotPath related_path(std::string tag, const char* ext) const;
-    SnapshotPath related_path_ext(const char* ext) const {
+    SnapshotPath related_path(std::string tag, std::string_view ext) const;
+    SnapshotPath related_path_ext(std::string_view ext) const {
         return related_path(tag_, ext);
     }
 
@@ -65,7 +62,7 @@ class SnapshotPath {
         uint8_t version,
         StepRange step_range,
         std::string_view tag,
-        const char* ext);
+        std::string_view ext);
 
     SnapshotPath(
         std::filesystem::path path,

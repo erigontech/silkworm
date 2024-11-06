@@ -51,7 +51,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
         if (name == db::blocks::kBodySegmentName)
             return {std::make_shared<IndexBuilder>(BodyIndex::make(segment_path))};
         if (name == db::blocks::kTxnSegmentName) {
-            auto bodies_segment_path = segment_path.related_path(db::blocks::kBodySegmentName.to_string(), kSegmentExtension);
+            auto bodies_segment_path = segment_path.related_path(db::blocks::kBodySegmentName.to_string(), db::blocks::kSegmentExtension);
             if (!bodies_segment_path.exists()) return {};
             return {
                 std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, segment_path)),
@@ -86,7 +86,7 @@ SnapshotPathList SnapshotBundleFactoryImpl::index_dependency_paths(const Snapsho
         SILKWORM_ASSERT(false);
         std::abort();
     }();
-    SnapshotPath snapshot_path = index_path.related_path(segment_name.to_string(), kSegmentExtension);
+    SnapshotPath snapshot_path = index_path.related_path(segment_name.to_string(), db::blocks::kSegmentExtension);
     return {snapshot_path};
 }
 

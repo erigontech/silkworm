@@ -96,7 +96,7 @@ class TransactionToBlockIndex {
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, BlockNum first_block_num, uint64_t first_tx_id) {
         return {
-            .index_file = segment_path.related_path(db::blocks::kIdxTxnHash2BlockName.to_string(), kIdxExtension),
+            .index_file = segment_path.related_path(db::blocks::kIdxTxnHash2BlockName.to_string(), db::blocks::kIdxExtension),
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
             .base_data_id = first_block_num,
             .double_enum_index = false,

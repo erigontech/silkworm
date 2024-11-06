@@ -23,6 +23,8 @@ namespace silkworm::db::blocks {
 snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
     snapshots::Schema::RepositoryDef schema;
     schema
+        .segment_file_ext(kSegmentExtension)
+        .rec_split_index_file_ext(kIdxExtension)
         .segment(kHeaderSegmentName)
         .rec_split_index(kIdxHeaderHashName)
         .segment(kBodySegmentName)
@@ -41,6 +43,7 @@ snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_p
     return snapshots::SnapshotRepository{
         std::move(dir_path),
         open,
+        make_blocks_repository_schema(),
         std::make_unique<snapshots::StepToBlockNumConverter>(),
         make_blocks_bundle_factory(),
     };

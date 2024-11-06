@@ -36,8 +36,18 @@ class Schema {
             return *this;
         }
 
+        RepositoryDef& segment_file_ext(std::string_view ext) {
+            segment_file_ext_ = ext;
+            return *this;
+        }
+
         RepositoryDef& rec_split_index(datastore::EntityName name) {
             rec_split_index_defs_.try_emplace(name);
+            return *this;
+        }
+
+        RepositoryDef& rec_split_index_file_ext(std::string_view ext) {
+            rec_split_index_file_ext_ = ext;
             return *this;
         }
 
@@ -47,9 +57,14 @@ class Schema {
         std::map<datastore::EntityName, Index> make_rec_split_indexes(const std::filesystem::path& dir_path, StepRange range) const;
         std::vector<SnapshotPath> make_all_paths(const std::filesystem::path& dir_path, StepRange range) const;
 
+        std::string_view segment_file_ext() const { return segment_file_ext_; }
+        std::string_view rec_split_index_file_ext() const { return rec_split_index_file_ext_; }
+
       private:
         std::map<datastore::EntityName, std::monostate> segment_defs_;
+        std::string segment_file_ext_;
         std::map<datastore::EntityName, std::monostate> rec_split_index_defs_;
+        std::string rec_split_index_file_ext_;
     };
 
     RepositoryDef& repository(datastore::EntityName name) {

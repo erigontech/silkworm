@@ -56,7 +56,7 @@ struct PathHasher {
 static bool snapshot_file_is_fully_merged(std::string_view file_name) {
     const auto path = SnapshotPath::parse(std::filesystem::path{file_name});
     return path.has_value() &&
-           (path->extension() == kSegmentExtension) &&
+           (path->extension() == blocks::kSegmentExtension) &&
            (path->step_range().to_block_num_range().size() >= kMaxMergerSnapshotSize);
 }
 

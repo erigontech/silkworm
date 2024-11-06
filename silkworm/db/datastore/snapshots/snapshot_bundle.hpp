@@ -21,9 +21,8 @@
 #include <functional>
 #include <vector>
 
-#include <silkworm/core/common/assert.hpp>
-
 #include "common/snapshot_path.hpp"
+#include "common/snapshot_type.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "rec_split_index/index.hpp"
 #include "schema.hpp"

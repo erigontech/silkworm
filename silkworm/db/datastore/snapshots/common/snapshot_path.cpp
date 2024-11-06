@@ -18,13 +18,10 @@
 
 #include <algorithm>
 #include <charconv>
-#include <string_view>
-#include <utility>
 
 #include <absl/strings/str_format.h>
 #include <absl/strings/str_replace.h>
 #include <absl/strings/str_split.h>
-#include <magic_enum.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 
@@ -99,12 +96,8 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     // parsing relies on magic_enum, so SnapshotType items must match exactly
     std::string tag_str{tag.data(), tag.size()};
     std::replace(tag_str.begin(), tag_str.end(), '-', '_');
-    const auto type = magic_enum::enum_cast<SnapshotType>(tag_str);
-    if (!type) {
-        return std::nullopt;
-    }
 
-    return SnapshotPath{std::move(path), ver_num, *step_range, std::move(tag_str), *type};
+    return SnapshotPath{std::move(path), ver_num, *step_range, std::move(tag_str)};
 }
 
 SnapshotPath SnapshotPath::make(
@@ -114,8 +107,7 @@ SnapshotPath SnapshotPath::make(
     std::string tag,
     const char* ext) {
     const auto filename = SnapshotPath::make_filename(version, step_range, tag, ext);
-    auto type = *magic_enum::enum_cast<SnapshotType>(tag);
-    return SnapshotPath{dir / filename, version, step_range, std::move(tag), type};
+    return SnapshotPath{dir / filename, version, step_range, std::move(tag)};
 }
 
 fs::path SnapshotPath::make_filename(
@@ -141,13 +133,11 @@ SnapshotPath::SnapshotPath(
     fs::path path,
     uint8_t version,
     StepRange step_range,
-    std::string tag,
-    SnapshotType type)
+    std::string tag)
     : path_{std::move(path)},
       version_{version},
       step_range_{step_range},
-      tag_{std::move(tag)},
-      type_{type} {
+      tag_{std::move(tag)} {
 }
 
 bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs) {

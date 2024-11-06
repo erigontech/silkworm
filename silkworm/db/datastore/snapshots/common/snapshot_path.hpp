@@ -22,7 +22,6 @@
 #include <string>
 #include <vector>
 
-#include "snapshot_type.hpp"
 #include "step.hpp"
 
 namespace silkworm::snapshots {
@@ -72,14 +71,12 @@ class SnapshotPath {
         std::filesystem::path path,
         uint8_t version,
         StepRange step_range,
-        std::string tag,
-        SnapshotType type);
+        std::string tag);
 
     std::filesystem::path path_;
     uint8_t version_{0};
     StepRange step_range_;
     std::string tag_;
-    SnapshotType type_;
 };
 
 using SnapshotPathList = std::vector<SnapshotPath>;

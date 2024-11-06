@@ -265,19 +265,15 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
             return SILKWORM_INVALID_PATH;
         }
 
-        std::shared_ptr<snapshots::IndexBuilder> index;
-        switch (snapshot_path->type()) {
-            case snapshots::SnapshotType::headers: {
-                index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
+        datastore::EntityName name{snapshot_path->tag()};
+        {
+            if (name == db::blocks::kHeaderSegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
                 needed_indexes.push_back(index);
-                break;
-            }
-            case snapshots::SnapshotType::bodies: {
-                index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
+            } else if (name == db::blocks::kBodySegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
                 needed_indexes.push_back(index);
-                break;
-            }
-            case snapshots::SnapshotType::transactions: {
+            } else if (name == db::blocks::kTxnSegmentName) {
                 auto bodies_segment_path = snapshot_path->related_path(snapshots::SnapshotType::bodies, snapshots::kSegmentExtension);
                 auto bodies_file = std::find_if(segments, segments + len, [&](SilkwormMemoryMappedFile* file) -> bool {
                     return snapshots::SnapshotPath::parse(file->file_path) == bodies_segment_path;
@@ -286,7 +282,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                 if (bodies_file < segments + len) {
                     auto bodies_segment_region = make_region(**bodies_file);
 
-                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
+                    auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
                         bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
                     needed_indexes.push_back(index);
 
@@ -294,9 +290,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                         bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
                     needed_indexes.push_back(index);
                 }
-                break;
-            }
-            default: {
+            } else {
                 SILKWORM_ASSERT(false);
             }
         }

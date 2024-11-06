@@ -58,13 +58,12 @@ class SnapshotPath {
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }
     const std::string& tag() const { return tag_; }
-    SnapshotType type() const { return type_; }
     bool exists() const { return std::filesystem::exists(path_); }
 
     SnapshotPath related_path(std::string tag, const char* ext) const;
     SnapshotPath related_path(SnapshotType type, const char* ext) const;
     SnapshotPath index_file() const {
-        return related_path(type_, kIdxExtension);
+        return related_path(tag_, kIdxExtension);
     }
 
     friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);

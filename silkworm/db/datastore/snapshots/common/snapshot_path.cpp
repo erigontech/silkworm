@@ -175,8 +175,8 @@ bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs) {
     if (lhs.step_range_.end != rhs.step_range_.end) {
         return lhs.step_range_.end < rhs.step_range_.end;
     }
-    if (lhs.type_ != rhs.type_) {
-        return lhs.type_ < rhs.type_;
+    if (lhs.tag_ != rhs.tag_) {
+        return lhs.tag_ < rhs.tag_;
     }
     return lhs.path_.extension() < rhs.path_.extension();
 }

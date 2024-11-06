@@ -125,11 +125,11 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: empty sequence",
     CHECK(spawn_and_wait(paginated_it_to_vector(paginated)).empty());
 }
 
-const Bytes kKey1{*from_hex("0011")}, kKey2{*from_hex("0022")}, kKey3{*from_hex("0033")};
-const Bytes kKey4{*from_hex("0044")}, kKey5{*from_hex("0055")}, kKey6{*from_hex("0066")};
+static const Bytes kKey1{*from_hex("0011")}, kKey2{*from_hex("0022")}, kKey3{*from_hex("0033")};
+static const Bytes kKey4{*from_hex("0044")}, kKey5{*from_hex("0055")}, kKey6{*from_hex("0066")};
 
-const Bytes kValue1{*from_hex("FF11")}, kValue2{*from_hex("FF22")}, kValue3{*from_hex("FF33")};
-const Bytes kValue4{*from_hex("FF44")}, kValue5{*from_hex("FF55")}, kValue6{*from_hex("FF66")};
+static const Bytes kValue1{*from_hex("FF11")}, kValue2{*from_hex("FF22")}, kValue3{*from_hex("FF33")};
+static const Bytes kValue4{*from_hex("FF44")}, kValue5{*from_hex("FF55")}, kValue6{*from_hex("FF66")};
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: non-empty sequence", "[db][kv][api][paginated_sequence]") {
     PaginatorKV paginator = []() -> Task<PageResultKV> {

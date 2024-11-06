@@ -39,8 +39,39 @@ ExecutionPipeline::ExecutionPipeline(
     : data_model_factory_{std::move(data_model_factory)},
       log_timer_factory_{std::move(log_timer_factory)},
       sync_context_{std::make_unique<SyncContext>()},
-      stages_{stages_factory(*sync_context_)} {
-    load_stages();
+      stages_{stages_factory(*sync_context_)},
+      current_stage_{stages_.end()} {
+    stages_forward_order_ = StageNames{
+        kHeadersKey,
+        kBlockHashesKey,
+        kBlockBodiesKey,
+        kSendersKey,
+        kExecutionKey,
+        kHashStateKey,
+        kIntermediateHashesKey,
+        kHistoryIndexKey,
+        kLogIndexKey,
+        kCallTracesKey,
+        kTxLookupKey,
+        kTriggersStageKey,
+        kFinishKey,
+    };
+
+    stages_unwind_order_ = StageNames{
+        kFinishKey,
+        kTriggersStageKey,
+        kTxLookupKey,
+        kCallTracesKey,
+        kLogIndexKey,
+        kHistoryIndexKey,
+        kHashStateKey,
+        kIntermediateHashesKey,  // Needs to happen after unwinding HashState
+        kExecutionKey,
+        kSendersKey,
+        kBlockBodiesKey,
+        kBlockHashesKey,  // De-canonify block hashes
+        kHeadersKey,
+    };
 }
 
 BlockNum ExecutionPipeline::head_header_number() const {
@@ -57,58 +88,6 @@ std::optional<BlockNum> ExecutionPipeline::unwind_point() {
 
 std::optional<Hash> ExecutionPipeline::bad_block() {
     return sync_context_->bad_block_hash;
-}
-
-/*
- * Stages from Erigon -> Silkworm
- *  1 StageHeaders ->  stagedsync::HeadersStage
- *  2 StageBodies -> stagedsync::BodiesStage
- *  3 StageBlockHashes -> stagedsync::BlockHashes
- *  4 StageSenders -> stagedsync::Senders
- *  5 StageExecution -> stagedsync::Execution
- *  6 StageHashState -> stagedsync::HashState
- *  7 StageInterHashes -> stagedsync::InterHashes
- *  8 StageIndexes -> stagedsync::HistoryIndex
- *  9 StageLogIndex -> stagedsync::LogIndex
- * 10 StageCallTraces -> stagedsync::CallTraceIndex
- * 11 StageTxLookup -> stagedsync::TxLookup
- * 12 StageFinish -> stagedsync::Finish
- */
-
-void ExecutionPipeline::load_stages() {
-    current_stage_ = stages_.begin();
-
-    stages_forward_order_.insert(stages_forward_order_.begin(),
-                                 {
-                                     kHeadersKey,
-                                     kBlockHashesKey,
-                                     kBlockBodiesKey,
-                                     kSendersKey,
-                                     kExecutionKey,
-                                     kHashStateKey,
-                                     kIntermediateHashesKey,
-                                     kHistoryIndexKey,
-                                     kLogIndexKey,
-                                     kCallTracesKey,
-                                     kTxLookupKey,
-                                     kFinishKey,
-                                 });
-
-    stages_unwind_order_.insert(stages_unwind_order_.begin(),
-                                {
-                                    kFinishKey,
-                                    kTxLookupKey,
-                                    kCallTracesKey,
-                                    kLogIndexKey,
-                                    kHistoryIndexKey,
-                                    kHashStateKey,
-                                    kIntermediateHashesKey,  // Needs to happen after unwinding HashState
-                                    kExecutionKey,
-                                    kSendersKey,
-                                    kBlockBodiesKey,
-                                    kBlockHashesKey,  // De-canonify block hashes
-                                    kHeadersKey,
-                                });
 }
 
 bool ExecutionPipeline::stop() {
@@ -131,7 +110,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
     auto log_timer = make_log_timer();
 
     sync_context_->target_height = target_height;
-    log::Info("ExecutionPipeline") << "Forward start";
+    SILK_INFO_M("ExecutionPipeline") << "Forward start";
 
     try {
         Stage::Result result = Stage::Result::kSuccess;
@@ -150,7 +129,8 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
-            current_stage_->second->set_log_prefix(get_log_prefix());
+            const auto& current_stage_name = current_stage_->first;
+            current_stage_->second->set_log_prefix(get_log_prefix(current_stage_name));
 
             // Check if we have to start at specific stage due to environment variable
             if (start_stage_name) {
@@ -179,12 +159,12 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
             if (stage_result != Stage::Result::kSuccess) { /* clang-format off */
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
-                log::Error(get_log_prefix(), {"op", "Forward", "returned", result_description});
-                log::Error("ExecPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
+                log::Error(get_log_prefix(current_stage_name), {"op", "Forward", "returned", result_description});
+                SILK_ERROR_M("ExecutionPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             } /* clang-format on */
 
-            auto stage_head_number = read_stage_progress(cycle_txn, current_stage_->first);
+            auto stage_head_number = read_stage_progress(cycle_txn, current_stage_name.data());
             if (!stop_at_block && stage_head_number != target_height) {
                 throw std::logic_error("Sync pipeline: stage returned success with an height different from target=" +
                                        to_string(target_height) + " reached= " + to_string(stage_head_number));
@@ -192,7 +172,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
 
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(), {"op", "Forward", "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(current_stage_name), {"op", "Forward", "done", StopWatch::format(stage_duration)});
             }
         }
 
@@ -206,17 +186,16 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
                                    ", head_header_height= " + to_string(head_header_number_));
         }
 
-        log::Info("ExecutionPipeline") << "Forward done";
+        SILK_INFO_M("ExecutionPipeline") << "Forward done";
 
         if (stop_at_block && stop_at_block <= head_header_number_) {
-            log::Warning("ExecutionPipeline") << "Interrupted by STOP_AT_BLOCK at block " + to_string(*stop_at_block);
+            SILK_WARN_M("ExecutionPipeline") << "Interrupted by STOP_AT_BLOCK at block " + to_string(*stop_at_block);
             return Stage::Result::kStoppedByEnv;
         }
 
         return result;
     } catch (const std::exception& ex) {
-        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        log::Error("ExecutionPipeline") << "Forward aborted due to exception: " << ex.what();
+        SILK_ERROR_M("ExecutionPipeline") << get_log_prefix("unknown") << " Forward exception " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
@@ -225,7 +204,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
     using std::to_string;
     StopWatch stages_stop_watch(true);
     auto log_timer = make_log_timer();
-    log::Info("ExecutionPipeline") << "Unwind start";
+    SILK_INFO_M("ExecutionPipeline") << "Unwind start";
 
     try {
         sync_context_->unwind_point = unwind_point;
@@ -239,7 +218,8 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
-            current_stage_->second->set_log_prefix(get_log_prefix());
+            const auto& current_stage_name = current_stage_->first;
+            current_stage_->second->set_log_prefix(get_log_prefix(current_stage_name));
 
             if (log_timer) {
                 log_timer->reset();  // Resets the interval for next log line from now
@@ -249,15 +229,15 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
             const auto stage_result = current_stage_->second->unwind(cycle_txn);
             if (stage_result != Stage::Result::kSuccess) {
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
-                log::Error(get_log_prefix(), {"op", "Unwind", "returned", result_description});
-                log::Error("ExecPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
+                log::Error(get_log_prefix(current_stage_name), {"op", "Unwind", "returned", result_description});
+                SILK_ERROR_M("ExecutionPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
             // Log performances
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(), {"op", "Unwind", "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(current_stage_name), {"op", "Unwind", "done", StopWatch::format(stage_duration)});
             }
         }
 
@@ -276,12 +256,11 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         sync_context_->unwind_point.reset();
         sync_context_->bad_block_hash.reset();
 
-        log::Info("ExecutionPipeline") << "Unwind done";
+        SILK_INFO_M("ExecutionPipeline") << "Unwind done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
-        log::Error("ExecPipeline") << "Unwind aborted due to exception: " << ex.what();
-        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        SILK_ERROR_M("ExecutionPipeline") << get_log_prefix("unknown") << " Unwind exception " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
@@ -289,7 +268,7 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
 Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
     auto log_timer = make_log_timer();
-    log::Info("ExecutionPipeline") << "Prune start";
+    SILK_INFO_M("ExecutionPipeline") << "Prune start";
 
     try {
         current_stages_count_ = stages_forward_order_.size();
@@ -301,7 +280,8 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
-            current_stage_->second->set_log_prefix(get_log_prefix());
+            const auto& current_stage_name = current_stage_->first;
+            current_stage_->second->set_log_prefix(get_log_prefix(current_stage_name));
 
             if (log_timer) {
                 log_timer->reset();  // Resets the interval for next log line from now
@@ -309,15 +289,15 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
 
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
             if (stage_result != Stage::Result::kSuccess) {
-                log::Error(get_log_prefix(), {"op", "Prune", "returned",
-                                              std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
-                log::Error("ExecPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
+                log::Error(get_log_prefix(current_stage_name), {"op", "Prune", "returned",
+                                                                std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
+                SILK_ERROR_M("ExecutionPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(), {"op", "Prune", "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(current_stage_name), {"op", "Prune", "done", StopWatch::format(stage_duration)});
             }
         }
 
@@ -327,20 +307,20 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_number_ = head_header->number;
 
-        log::Info("ExecutionPipeline") << "Prune done";
+        SILK_INFO_M("ExecutionPipeline") << "Prune done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
-        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        SILK_ERROR_M("ExecutionPipeline") << get_log_prefix("unknown") << " Prune exception " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
 
-std::string ExecutionPipeline::get_log_prefix() const {
+std::string ExecutionPipeline::get_log_prefix(const std::string_view& stage_name) const {
     return absl::StrFormat("[%u/%u %s]",
                            current_stage_number_,
                            current_stages_count_,
-                           current_stage_->first);
+                           stage_name);
 }
 
 std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
@@ -351,11 +331,15 @@ std::shared_ptr<Timer> ExecutionPipeline::make_log_timer() {
 }
 
 bool ExecutionPipeline::log_timer_expired() {
+    const auto current_stage_name =
+        (current_stage_ != stages_.end())
+            ? current_stage_->first
+            : "unknown";
     if (is_stopping()) {
-        log::Info(get_log_prefix()) << "stopping ...";
+        log::Info(get_log_prefix(current_stage_name)) << "stopping ...";
         return false;
     }
-    log::Info(get_log_prefix(), current_stage_->second->get_log_progress());
+    log::Info(get_log_prefix(current_stage_name), current_stage_->second->get_log_progress());
     return true;
 }
 

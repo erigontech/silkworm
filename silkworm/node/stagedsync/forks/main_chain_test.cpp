@@ -25,7 +25,6 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -53,7 +52,6 @@ class MainChainForTest : public stagedsync::MainChain {
     using stagedsync::MainChain::interim_head_status_;
     using stagedsync::MainChain::MainChain;
     using stagedsync::MainChain::pipeline_;
-    using stagedsync::MainChain::tx_;
 };
 
 TEST_CASE("MainChain transaction handling") {
@@ -66,25 +64,23 @@ TEST_CASE("MainChain transaction handling") {
             asio::io_context io;
             asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
-            db::test_util::TempChainData context;
+            db::test_util::TempChainDataStore context;
             context.add_genesis_data();
             context.commit_txn();
 
-            snapshots::SnapshotRepository repository = db::test_util::make_repository();
-            db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+            db::DataModelFactory data_model_factory = context.data_model_factory();
 
             Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
             NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             node_settings.keep_db_txn_open = keep_db_txn_open;
-            RWAccess db_access{context.env()};
             MainChainForTest main_chain{
                 io.get_executor(),
                 node_settings,
                 data_model_factory,
                 /* log_timer_factory = */ std::nullopt,
                 make_stages_factory(node_settings, data_model_factory),
-                db_access,
+                context.chaindata_rw(),
             };
             main_chain.open();
 
@@ -167,17 +163,16 @@ TEST_CASE("MainChain") {
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
-    db::test_util::TempChainData context;
+    db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();
 
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    db::DataModelFactory data_model_factory = context.data_model_factory();
 
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    RWAccess db_access{context.env()};
+    RWAccess db_access = context.chaindata_rw();
     MainChainForTest main_chain{
         io.get_executor(),
         node_settings,

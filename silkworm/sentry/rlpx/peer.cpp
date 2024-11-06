@@ -72,7 +72,7 @@ Peer::Peer(
 }
 
 Peer::~Peer() {
-    log::Trace("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
+    SILK_TRACE_M("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
 Task<void> Peer::run(std::shared_ptr<Peer> peer) {
@@ -89,8 +89,8 @@ static bool is_fatal_network_error(const boost::system::system_error& ex) {
            (code == boost::asio::error::broken_pipe);
 }
 
-constexpr std::chrono::milliseconds kPeerDisconnectTimeout = 2s;
-constexpr std::chrono::milliseconds kPeerPingInterval = 15s;
+static constexpr std::chrono::milliseconds kPeerDisconnectTimeout = 2s;
+static constexpr std::chrono::milliseconds kPeerPingInterval = 15s;
 
 class PingTimeoutError : public std::runtime_error {
   public:
@@ -101,13 +101,13 @@ Task<void> Peer::handle() {
     using namespace concurrency::awaitable_wait_for_all;
     using namespace concurrency::awaitable_wait_for_one;
 
-    log::Trace("sentry") << "Peer::handle";
+    SILK_TRACE_M("sentry") << "Peer::handle";
 
     [[maybe_unused]] auto _ = gsl::finally([this] {
         try {
             this->handshake_promise_.set_value(false);
         } catch (const concurrency::AwaitablePromise<bool>::AlreadySatisfiedError&) {
-            log::Trace("sentry") << "Peer::handle AlreadySatisfiedError";
+            SILK_TRACE_M("sentry") << "Peer::handle AlreadySatisfiedError";
         }
         this->close();
     });
@@ -117,7 +117,7 @@ Task<void> Peer::handle() {
 
         co_await message_stream.send(protocol_->first_message());
         auto first_message = co_await message_stream.receive();
-        log::Trace("sentry") << "Peer::handle first_message: " << int{first_message.id};
+        SILK_TRACE_M("sentry") << "Peer::handle first_message: " << int{first_message.id};
 
         if (first_message.id == DisconnectMessage::kId) {
             auto disconnect_message = DisconnectMessage::from_message(first_message);
@@ -132,7 +132,7 @@ Task<void> Peer::handle() {
         }
 
         if (is_incompatible) {
-            log::Debug("sentry") << "Peer::handle IncompatiblePeerError";
+            SILK_DEBUG_M("sentry") << "Peer::handle IncompatiblePeerError";
             disconnect_reason_.set({DisconnectReason::kUselessPeer});
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::kUselessPeer}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
@@ -163,7 +163,7 @@ Task<void> Peer::handle() {
         }
 
         if (is_disconnecting) {
-            log::Debug("sentry") << "Peer::handle disconnecting";
+            SILK_DEBUG_M("sentry") << "Peer::handle disconnecting";
             auto reason = disconnect_reason_.get().value_or(DisconnectReason::kDisconnectRequested);
             disconnect_reason_.set({reason});
             co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
@@ -171,7 +171,7 @@ Task<void> Peer::handle() {
         }
 
         if (is_cancelled) {
-            log::Debug("sentry") << "Peer::handle cancelled - quitting gracefully";
+            SILK_DEBUG_M("sentry") << "Peer::handle cancelled - quitting gracefully";
             co_await boost::asio::this_coro::reset_cancellation_state();
             disconnect_reason_.set({DisconnectReason::kClientQuitting});
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::kClientQuitting}.to_message()) ||
@@ -180,67 +180,68 @@ Task<void> Peer::handle() {
         }
 
         if (is_ping_timed_out) {
-            log::Debug("sentry") << "Peer::handle ping timed out";
+            SILK_DEBUG_M("sentry") << "Peer::handle ping timed out";
             disconnect_reason_.set({DisconnectReason::kPingTimeout});
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::kPingTimeout}.to_message()) ||
                       concurrency::timeout(kPeerDisconnectTimeout));
         }
 
     } catch (const auth::Handshake::DisconnectError& ex) {
-        log::Debug("sentry") << "Peer::handle DisconnectError reason: " << static_cast<int>(ex.reason());
+        SILK_DEBUG_M("sentry") << "Peer::handle DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
     } catch (const auth::AuthMessageErrorDecryptFailure& ex) {
-        log::Trace("sentry") << "Peer::handle AuthMessageErrorDecryptFailure"
-                             << " remote_endpoint: " << remote_endpoint() << ";"
-                             << " local_endpoint: " << local_endpoint() << ";"
-                             << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
-                             << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
-                             << " auth_message: " << to_hex(ex.message_data()) << ";"
-                             << " description: " << ex.what() << ";";
+        SILK_TRACE_M("sentry")
+            << "Peer::handle AuthMessageErrorDecryptFailure"
+            << " remote_endpoint: " << remote_endpoint() << ";"
+            << " local_endpoint: " << local_endpoint() << ";"
+            << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
+            << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
+            << " auth_message: " << to_hex(ex.message_data()) << ";"
+            << " description: " << ex.what() << ";";
         disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const framing::MessageStream::DecompressionError& ex) {
-        log::Debug("sentry") << "Peer::handle DecompressionError: " << ex.what();
+        SILK_DEBUG_M("sentry") << "Peer::handle DecompressionError: " << ex.what();
         disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const auth::Handshake::CapabilityMismatchError& ex) {
-        log::Debug("sentry") << "Peer::handle CapabilityMismatchError: " << ex.what();
+        SILK_DEBUG_M("sentry") << "Peer::handle CapabilityMismatchError: " << ex.what();
         disconnect_reason_.set({DisconnectReason::kUselessPeer});
     } catch (const concurrency::TimeoutExpiredError&) {
-        log::Debug("sentry") << "Peer::handle timeout expired";
+        SILK_DEBUG_M("sentry") << "Peer::handle timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
-            log::Debug("sentry") << "Peer::handle network error: " << ex.what();
+            SILK_DEBUG_M("sentry") << "Peer::handle network error: " << ex.what();
             auto reason = disconnect_reason_.get().value_or(DisconnectReason::kNetworkError);
             disconnect_reason_.set({reason});
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "Peer::handle cancelled";
+            SILK_DEBUG_M("sentry") << "Peer::handle cancelled";
             co_return;
         }
-        log::Error("sentry") << "Peer::handle system_error: " << ex.what();
+        SILK_ERROR_M("sentry") << "Peer::handle system_error: " << ex.what();
         throw;
     } catch (const std::nested_exception& ne) {
         try {
             ne.rethrow_nested();
         } catch (const DisconnectedError&) {
-            log::Debug("sentry") << "Peer::handle nested disconnection error";
+            SILK_DEBUG_M("sentry") << "Peer::handle nested disconnection error";
             auto reason = disconnect_reason_.get().value_or(DisconnectReason::kDisconnectRequested);
             disconnect_reason_.set({reason});
             co_return;
         } catch (const boost::system::system_error& ex) {
             if (is_fatal_network_error(ex)) {
-                log::Debug("sentry") << "Peer::handle nested network error: " << ex.what();
+                SILK_DEBUG_M("sentry") << "Peer::handle nested network error: " << ex.what();
                 auto reason = disconnect_reason_.get().value_or(DisconnectReason::kNetworkError);
                 disconnect_reason_.set({reason});
                 co_return;
             } else if (ex.code() == boost::system::errc::operation_canceled) {
-                log::Debug("sentry") << "Peer::handle nested cancellation";
+                SILK_DEBUG_M("sentry") << "Peer::handle nested cancellation";
                 co_return;
             }
-            log::Error("sentry") << "Peer::handle nested system_error: " << ex.what();
+            SILK_ERROR_M("sentry") << "Peer::handle nested system_error: " << ex.what();
             throw;
         }
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "Peer::handle exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "Peer::handle exception: " << ex.what();
         throw;
     }
 }
@@ -256,7 +257,7 @@ Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> peer, DisconnectReason rea
 Task<void> Peer::drop(DisconnectReason reason) {
     using namespace concurrency::awaitable_wait_for_one;
 
-    log::Debug("sentry") << "Peer::drop reason " << static_cast<int>(reason);
+    SILK_DEBUG_M("sentry") << "Peer::drop reason " << static_cast<int>(reason);
     [[maybe_unused]] auto _ = gsl::finally([this] { this->close(); });
 
     try {
@@ -265,43 +266,44 @@ Task<void> Peer::drop(DisconnectReason reason) {
         co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
                   concurrency::timeout(kPeerDisconnectTimeout));
     } catch (const auth::Handshake::DisconnectError& ex) {
-        log::Debug("sentry") << "Peer::drop DisconnectError reason: " << static_cast<int>(ex.reason());
+        SILK_DEBUG_M("sentry") << "Peer::drop DisconnectError reason: " << static_cast<int>(ex.reason());
         disconnect_reason_.set({ex.reason()});
     } catch (const auth::AuthMessageErrorDecryptFailure& ex) {
-        log::Trace("sentry") << "Peer::drop AuthMessageErrorDecryptFailure"
-                             << " remote_endpoint: " << remote_endpoint() << ";"
-                             << " local_endpoint: " << local_endpoint() << ";"
-                             << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
-                             << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
-                             << " auth_message: " << to_hex(ex.message_data()) << ";"
-                             << " description: " << ex.what() << ";";
+        SILK_TRACE_M("sentry")
+            << "Peer::drop AuthMessageErrorDecryptFailure"
+            << " remote_endpoint: " << remote_endpoint() << ";"
+            << " local_endpoint: " << local_endpoint() << ";"
+            << " cause_code: " << static_cast<int>(ex.cause_code()) << ";"
+            << " auth_message_type: " << static_cast<int>(ex.message_type()) << ";"
+            << " auth_message: " << to_hex(ex.message_data()) << ";"
+            << " description: " << ex.what() << ";";
         disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const framing::MessageStream::DecompressionError& ex) {
-        log::Debug("sentry") << "Peer::drop DecompressionError: " << ex.what();
+        SILK_DEBUG_M("sentry") << "Peer::drop DecompressionError: " << ex.what();
         disconnect_reason_.set({DisconnectReason::kProtocolError});
     } catch (const auth::Handshake::CapabilityMismatchError& ex) {
-        log::Debug("sentry") << "Peer::drop CapabilityMismatchError: " << ex.what();
+        SILK_DEBUG_M("sentry") << "Peer::drop CapabilityMismatchError: " << ex.what();
         disconnect_reason_.set({DisconnectReason::kUselessPeer});
     } catch (const concurrency::TimeoutExpiredError&) {
-        log::Debug("sentry") << "Peer::drop timeout expired";
+        SILK_DEBUG_M("sentry") << "Peer::drop timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
-            log::Debug("sentry") << "Peer::drop network error: " << ex.what();
+            SILK_DEBUG_M("sentry") << "Peer::drop network error: " << ex.what();
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "Peer::drop cancelled";
+            SILK_DEBUG_M("sentry") << "Peer::drop cancelled";
             co_return;
         }
-        log::Error("sentry") << "Peer::drop system_error: " << ex.what();
+        SILK_ERROR_M("sentry") << "Peer::drop system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "Peer::drop exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "Peer::drop exception: " << ex.what();
         throw;
     }
 }
 
 void Peer::disconnect(DisconnectReason reason) {
-    log::Debug("sentry") << "Peer::disconnect reason " << static_cast<int>(reason);
+    SILK_DEBUG_M("sentry") << "Peer::disconnect reason " << static_cast<int>(reason);
     disconnect_reason_.set({reason});
     this->close();
 }
@@ -331,7 +333,7 @@ void Peer::close() {
         receive_message_channel_.close();
         pong_channel_.close();
     } catch (const std::exception& ex) {
-        log::Warning("sentry") << "Peer::close exception: " << ex.what();
+        SILK_WARN_M("sentry") << "Peer::close exception: " << ex.what();
     }
 }
 
@@ -339,7 +341,7 @@ void Peer::post_message(const std::shared_ptr<Peer>& peer, const Message& messag
     try {
         peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
     } catch (const concurrency::TaskGroup::SpawnAfterCloseError&) {
-        log::Warning("sentry") << "Peer::post_message cannot spawn send_message after close";
+        SILK_WARN_M("sentry") << "Peer::post_message cannot spawn send_message after close";
     }
 }
 
@@ -347,16 +349,16 @@ Task<void> Peer::send_message(std::shared_ptr<Peer> peer, Message message) {
     try {
         co_await peer->send_message(std::move(message));
     } catch (const DisconnectedError& ex) {
-        log::Debug("sentry") << "Peer::send_message: " << ex.what();
+        SILK_DEBUG_M("sentry") << "Peer::send_message: " << ex.what();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "Peer::send_message cancelled";
+            SILK_DEBUG_M("sentry") << "Peer::send_message cancelled";
             co_return;
         }
-        log::Error("sentry") << "Peer::send_message system_error: " << ex.what();
+        SILK_ERROR_M("sentry") << "Peer::send_message system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error("sentry") << "Peer::send_message exception: " << ex.what();
+        SILK_ERROR_M("sentry") << "Peer::send_message exception: " << ex.what();
         throw;
     }
 }

@@ -23,6 +23,6 @@ namespace silkworm::db::kv::api {
 using Version = std::tuple<uint32_t, uint32_t, uint32_t>;
 
 //! Current KV API protocol version.
-constexpr auto kCurrentVersion = Version{5, 1, 0};
+inline constexpr Version kCurrentVersion{5, 1, 0};
 
 }  // namespace silkworm::db::kv::api

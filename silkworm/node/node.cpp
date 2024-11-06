@@ -23,7 +23,6 @@
 #include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/chain_head.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/execution/api/active_direct_service.hpp>
 #include <silkworm/execution/api/direct_client.hpp>
@@ -46,7 +45,7 @@
 namespace silkworm::node {
 
 //! Custom stack size for thread running block execution on EVM
-constexpr uint64_t kExecutionThreadStackSize{16'777'216};  // 16MiB
+static constexpr uint64_t kExecutionThreadStackSize{16'777'216};  // 16MiB
 
 using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 
@@ -67,13 +66,13 @@ class NodeImpl final {
 
   private:
     db::DataStoreRef data_store() {
-        return {
-            chaindata_env_,  // NOLINT(cppcoreguidelines-slicing)
-            repository_,
-        };
+        return data_store_.ref();
     }
     db::DataModelFactory data_model_factory() {
-        return [this](db::ROTxn& tx) { return db::DataModel{tx, repository_}; };
+        return db::DataModelFactory{data_store()};
+    }
+    const ChainConfig& chain_config() const {
+        return *settings_.node_settings.chain_config;
     }
 
     Task<void> run_execution_service();
@@ -84,11 +83,7 @@ class NodeImpl final {
 
     Settings& settings_;
 
-    mdbx::env_managed chaindata_env_;
-
-    ChainConfig& chain_config_;
-
-    snapshots::SnapshotRepository repository_;
+    db::DataStore data_store_;
 
     //! The execution layer server engine
     boost::asio::io_context execution_context_;
@@ -112,7 +107,7 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static mdbx::env_managed init_chain_data_db(NodeSettings& node_settings) {
+static db::EnvConfig init_chain_data_db(NodeSettings& node_settings) {
     node_settings.data_directory->deploy();
     node_settings.chain_config = db::chain_data_init(db::ChainDataInitSettings{
         .chaindata_env_config = node_settings.chaindata_env_config,
@@ -120,7 +115,7 @@ static mdbx::env_managed init_chain_data_db(NodeSettings& node_settings) {
         .network_id = node_settings.network_id,
         .init_if_empty = true,
     });
-    return db::open_env(node_settings.chaindata_env_config);
+    return node_settings.chaindata_env_config;
 }
 
 static rpc::ServerSettings make_execution_server_settings(const std::optional<std::string>& exec_api_address) {
@@ -192,12 +187,9 @@ NodeImpl::NodeImpl(
     rpc::ClientContextPool& context_pool,
     Settings& settings)
     : settings_{settings},
-      chaindata_env_{init_chain_data_db(settings.node_settings)},
-      chain_config_{*settings_.node_settings.chain_config},
-      repository_{
-          settings_.snapshot_settings.repository_dir,
-          std::make_unique<snapshots::StepToBlockNumConverter>(),
-          std::make_unique<db::SnapshotBundleFactoryImpl>(),
+      data_store_{
+          init_chain_data_db(settings.node_settings),
+          settings_.snapshot_settings.repository_path,
       },
       execution_engine_{
           execution_context_.get_executor(),
@@ -205,14 +197,14 @@ NodeImpl::NodeImpl(
           data_model_factory(),
           make_log_timer_factory(context_pool.any_executor(), settings_.node_settings.sync_loop_log_interval_seconds),
           make_stages_factory(settings_.node_settings, data_model_factory(), *this),
-          db::RWAccess{chaindata_env_},
+          data_store_.chaindata_rw(),
       },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
       execution_server_{make_execution_server_settings(settings_.node_settings.exec_api_address), execution_service_},
       execution_direct_client_{execution_service_},
       snapshot_sync_{
           settings.snapshot_settings,
-          chain_config_.chain_id,
+          chain_config().chain_id,
           data_store(),
           settings_.node_settings.data_directory->temp().path(),
           execution_engine_.stage_scheduler(),
@@ -223,18 +215,18 @@ NodeImpl::NodeImpl(
               settings.node_settings.remote_sentry_addresses,
               context_pool.as_executor_pool(),
               context_pool,
-              make_sentry_eth_status_data_provider(db::ROAccess{chaindata_env_}, chain_config_))},
+              make_sentry_eth_status_data_provider(data_store_.chaindata(), chain_config()))},
       chain_sync_{
           context_pool.any_executor(),
           data_store(),
           execution_direct_client_,
           std::get<0>(sentry_),
-          chain_config_,
+          chain_config(),
           /* use_preverified_hashes = */ true,
           make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },
       resource_usage_log_{*settings_.node_settings.data_directory} {
-    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, &chaindata_env_, std::get<0>(sentry_));
+    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, data_store_.chaindata(), std::get<0>(sentry_));
     backend_->set_node_name(settings_.node_settings.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);

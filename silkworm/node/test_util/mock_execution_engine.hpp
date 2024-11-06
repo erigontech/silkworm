@@ -35,13 +35,6 @@ namespace silkworm::execution::api {
 //! \brief gMock mock class for stagedsync::ExecutionEngine
 class MockExecutionEngine : public stagedsync::ExecutionEngine {
   public:
-    static db::DataModelFactory null_data_model_factory() {
-        return [](db::ROTxn&) -> db::DataModel {
-            SILKWORM_ASSERT(false);
-            std::abort();
-        };
-    };
-
     static stagedsync::StageContainerFactory empty_stages_factory() {
         return [](stagedsync::SyncContext&) {
             return stagedsync::StageContainer{};
@@ -52,7 +45,7 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
         : ExecutionEngine{
               std::move(executor),
               ns,
-              null_data_model_factory(),
+              db::DataModelFactory::null(),
               /* log_timer_factory = */ std::nullopt,
               empty_stages_factory(),
               std::move(dba),

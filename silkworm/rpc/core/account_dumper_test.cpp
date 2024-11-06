@@ -37,10 +37,10 @@ using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 
-const nlohmann::json kEmpty;
-const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+static const nlohmann::json kEmpty;
+static const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 #ifdef TEST_DISABLED
-const evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+static const evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 #endif
 
 class DummyCursor : public CursorDupSort {

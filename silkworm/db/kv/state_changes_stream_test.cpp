@@ -39,8 +39,6 @@
 #if !defined(__APPLE__) || defined(NDEBUG)
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #endif  // !defined(__APPLE__) || defined(NDEBUG)
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/interfaces/kv_mock_fix24351.grpc.pb.h>
 #include <silkworm/infra/grpc/test_util/test_runner.hpp>
@@ -51,7 +49,6 @@ namespace silkworm::db::kv {
 
 using namespace std::chrono_literals;  // NOLINT(build/namespaces)
 using grpc::client::RemoteClient;
-using test_util::make_repository;
 using testing::InvokeWithoutArgs;
 namespace test = rpc::test;
 
@@ -75,10 +72,10 @@ struct StateChangesStreamTest : public StateCacheTestBase {
     std::unique_ptr<api::StateCache> state_cache{std::make_unique<api::CoherentStateCache>()};
 };
 
-struct DirectStateChangesStreamTest : public StateChangesStreamTest, test_util::TestDatabaseContext {
-    DataStoreRef data_store() { return {mdbx_env(), repository}; }
-    snapshots::SnapshotRepository repository{make_repository()};
-    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router, data_store(), state_cache.get())};
+struct DirectStateChangesStreamTest : public StateChangesStreamTest {
+    TemporaryDirectory tmp_dir;
+    test_util::TestDataStore data_store{tmp_dir};
+    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router, data_store->ref(), state_cache.get())};
     api::DirectClient direct_client{direct_service};
     StateChangesStream stream{context_, direct_client};
 };
@@ -89,13 +86,13 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
         [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
     // We're not testing blocks here, so we don't care about proper block-number-from-txn-hash provider
     chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
-        [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+        [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return 0; }};
     chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
-        [](HashAsSpan) -> Task<BlockNum> { co_return 0; }};
+        [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return std::nullopt; }};
     chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
-        [](BlockNum) -> Task<evmc::bytes32> { co_return 0; }};
+        [](BlockNum) -> Task<std::optional<evmc::bytes32>> { co_return 0; }};
     chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider{
-        [](BlockNum) -> Task<Bytes> { co_return Bytes{}; }};
+        [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; }};
 
     RemoteClient make_remote_client(auto&& channel_or_stub) {
         return {

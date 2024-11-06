@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <tuple>
 
 #include <silkworm/infra/concurrency/task.hpp>
@@ -46,5 +47,10 @@ Task<BlockNumAndTxnNumber> first_tx_num(kv::api::Transaction& tx);
 
 //! Return the last assigned TxNum
 Task<BlockNumAndTxnNumber> last_tx_num(kv::api::Transaction& tx);
+
+//! Return the number of the block with max txn number at least equal to given \code tx_num
+Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
+                                                    TxNum tx_num,
+                                                    chain::CanonicalBodyForStorageProvider provider);
 
 }  // namespace silkworm::db::txn

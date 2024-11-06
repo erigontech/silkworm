@@ -31,7 +31,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/kv/api/direct_client.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
@@ -49,10 +48,10 @@
 namespace silkworm::rpc {
 
 //! The maximum receive message in bytes for gRPC channels.
-constexpr auto kRpcMaxReceiveMessageSize{64 * 1024 * 1024};  // 64 MiB
+static constexpr int kRpcMaxReceiveMessageSize = 64 * 1024 * 1024;  // 64 MiB
 
 //! The maximum number of concurrent readers allowed for MDBX datastore.
-static constexpr const int kDatabaseMaxReaders{32000};
+static constexpr int kDatabaseMaxReaders = 32000;
 
 void DaemonChecklist::success_or_throw() const {
     for (const auto& protocol_check : protocol_checklist) {
@@ -123,45 +122,36 @@ int Daemon::run(const DaemonSettings& settings) {
         }
 
         // Activate the local chaindata and snapshot access (if required)
-        std::optional<mdbx::env_managed> chaindata_env;
-        std::unique_ptr<snapshots::SnapshotRepository> snapshot_repository;
-        std::optional<db::DataStoreRef> data_store;
+        std::optional<db::DataStore> data_store;
         if (settings.datadir) {
-            DataDirectory data_folder{*settings.datadir};
+            DataDirectory data_dir{*settings.datadir};
 
-            // Create a new local chaindata environment
-            chaindata_env = std::make_optional<mdbx::env_managed>();
             silkworm::db::EnvConfig db_config{
-                .path = data_folder.chaindata().path().string(),
+                .path = data_dir.chaindata().path().string(),
                 .in_memory = true,
                 .shared = true,
                 .max_readers = kDatabaseMaxReaders};
-            *chaindata_env = silkworm::db::open_env(db_config);
 
-            // Create a new snapshot repository
-            snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(
-                data_folder.snapshots().path(),
-                std::make_unique<snapshots::StepToBlockNumConverter>(),
-                std::make_unique<db::SnapshotBundleFactoryImpl>());
-            snapshot_repository->reopen_folder();
+            data_store.emplace(db::DataStore{
+                db_config,
+                data_dir.snapshots().path(),
+            });
+
+            auto& snapshot_repository = data_store->ref().repository;
+            snapshot_repository.reopen_folder();
 
             // At startup check that chain configuration is valid
-            db::ROTxnManaged ro_txn{*chaindata_env};
-            db::DataModel data_access{ro_txn, *snapshot_repository};
+            db::ROTxnManaged ro_txn = data_store->chaindata().start_ro_tx();
+            db::DataModel data_access{ro_txn, snapshot_repository};
             if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
                 throw std::runtime_error{"invalid chain configuration"};
             }
-
-            data_store.emplace(db::DataStoreRef{
-                *chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
-                *snapshot_repository,
-            });
         }
 
         // Create the one-and-only Silkrpc daemon
         Daemon rpc_daemon{
             settings,
-            std::move(data_store),
+            data_store ? std::make_optional(data_store->ref()) : std::nullopt,
         };
 
         // Check protocol version compatibility with Core Services
@@ -367,7 +357,9 @@ void Daemon::start() {
     // Put the interface logs into the data folder
     std::filesystem::path data_folder{};
     if (data_store_) {
-        auto chaindata_path = data_store_->chaindata_env.get_path();
+        db::RWAccess& chaindata = data_store_->chaindata;
+        mdbx::env& chaindata_env = *chaindata;
+        auto chaindata_path = chaindata_env.get_path();
         // Trick to remove any empty filename because MDBX chaindata path ends with '/'
         if (chaindata_path.filename().empty()) {
             chaindata_path = chaindata_path.parent_path();

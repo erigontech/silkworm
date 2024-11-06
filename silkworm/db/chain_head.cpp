@@ -34,7 +34,7 @@ ChainHead read_chain_head(ROTxn& txn) {
     if (head_hash) {
         chain_head.hash = head_hash.value();
     } else {
-        log::Warning("db::ChainHead") << "canonical hash at height " << std::to_string(head_height) << " not found in db";
+        SILK_WARN_M("db::ChainHead") << "canonical hash at height " << std::to_string(head_height) << " not found in db";
         return chain_head;
     }
 
@@ -42,7 +42,7 @@ ChainHead read_chain_head(ROTxn& txn) {
     if (head_total_difficulty) {
         chain_head.total_difficulty = head_total_difficulty.value();
     } else {
-        log::Warning("db::ChainHead") << "total difficulty of canonical hash at height " << std::to_string(head_height) << " not found in db";
+        SILK_WARN_M("db::ChainHead") << "total difficulty of canonical hash at height " << std::to_string(head_height) << " not found in db";
     }
 
     return chain_head;

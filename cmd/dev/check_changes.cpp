@@ -25,8 +25,8 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -98,23 +98,24 @@ int main(int argc, char* argv[]) {
         ensure(from > 0, "Invalid input: from must be greater than zero");
 
         absl::Time t1{absl::Now()};
-        log::Info() << "Checking state change sets in " << chaindata;
+        SILK_INFO << "Checking state change sets in " << chaindata;
 
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
-        auto env{db::open_env(db_config)};
-        db::RWTxnManaged txn{env};
+
+        db::DataStore data_store{
+            db_config,
+            data_dir.snapshots().path(),
+        };
+
+        db::RWTxnManaged txn = data_store.chaindata_rw().start_rw_tx();
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        snapshots::SnapshotRepository repository{
-            data_dir.snapshots().path(),
-            std::make_unique<snapshots::StepToBlockNumConverter>(),
-            std::make_unique<db::SnapshotBundleFactoryImpl>(),
-        };
+        auto& repository = data_store.ref().repository;
         repository.reopen_folder();
         db::DataModel access_layer{txn, repository};
 
@@ -123,9 +124,9 @@ int main(int argc, char* argv[]) {
         auto rule_set{protocol::rule_set_factory(*chain_config)};
         Block block;
         for (; block_num <= to; ++block_num) {
-            log::Trace() << "Processing block " << block_num;
+            SILK_TRACE << "Processing block " << block_num;
             if (!access_layer.read_block(block_num, /*read_senders=*/true, block)) {
-                log::Error() << "Failed reading block " << block_num;
+                SILK_ERROR << "Failed reading block " << block_num;
                 break;
             }
 
@@ -136,7 +137,7 @@ int main(int argc, char* argv[]) {
             processor.evm().analysis_cache = &analysis_cache;
 
             if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
-                log::Error() << "Failed execution for block " << block_num << " result " << magic_enum::enum_name<>(res);
+                SILK_ERROR << "Failed execution for block " << block_num << " result " << magic_enum::enum_name<>(res);
                 continue;
             }
 
@@ -151,31 +152,32 @@ int main(int argc, char* argv[]) {
                     bool mismatch{false};
 
                     for (const auto& e : db_account_changes) {
-                        log::Info() << "key=" << to_hex(e.first.bytes) << " value=" << to_hex(e.second);
+                        SILK_INFO << "key=" << to_hex(e.first.bytes) << " value=" << to_hex(e.second);
                         if (!calculated_account_changes.contains(e.first)) {
                             if (!kPhantomAccounts.contains(e.first)) {
-                                log::Error() << e.first << " is missing";
+                                SILK_ERROR << e.first << " is missing";
                                 mismatch = true;
                             } else {
-                                log::Warning() << "Phantom account " << e.first << " skipped";
+                                SILK_WARN << "Phantom account " << e.first << " skipped";
                             }
                         } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
-                            log::Error() << "Value mismatch for " << e.first << ":\n"
-                                         << to_hex(val) << "\n"
-                                         << "vs DB\n"
-                                         << to_hex(e.second);
+                            SILK_ERROR
+                                << "Value mismatch for " << e.first << ":\n"
+                                << to_hex(val) << "\n"
+                                << "vs DB\n"
+                                << to_hex(e.second);
                             mismatch = true;
                         }
                     }
                     for (const auto& e : calculated_account_changes) {
                         if (!db_account_changes.contains(e.first)) {
-                            log::Error() << e.first << " is not in DB";
+                            SILK_ERROR << e.first << " is not in DB";
                             mismatch = true;
                         }
                     }
 
                     if (mismatch) {
-                        log::Error() << "Account change mismatch for block " << block_num << " 😲";
+                        SILK_ERROR << "Account change mismatch for block " << block_num << " 😲";
                     }
                 }
             } else {
@@ -188,7 +190,7 @@ int main(int argc, char* argv[]) {
                 calculated_storage_changes = buffer.storage_changes().at(block_num);
             }
             if (calculated_storage_changes != db_storage_changes) {
-                log::Error() << "Storage change mismatch for block " << block_num << " 😲";
+                SILK_ERROR << "Storage change mismatch for block " << block_num << " 😲";
                 if (full_mismatch_dump) {
                     std::cout << "calculated storage changes:\n";
                     print_all_storage_changes(calculated_storage_changes);
@@ -208,13 +210,13 @@ int main(int argc, char* argv[]) {
                         print_storage_changes(stored_change.first, stored_change.second);
                         ++mismatch_count;
                         if (!continue_after_mismatch) {
-                            log::Info() << "Use flag --continue_after_mismatch to see all mismatches for block " << block_num;
+                            SILK_INFO << "Use flag --continue_after_mismatch to see all mismatches for block " << block_num;
                             break;
                         }
                     }
                 }
                 if (continue_after_mismatch) {
-                    log::Error() << "Total mismatch count is " << mismatch_count << " for block " << block_num;
+                    SILK_ERROR << "Total mismatch count is " << mismatch_count << " for block " << block_num;
                 }
             }
 
@@ -224,15 +226,15 @@ int main(int argc, char* argv[]) {
 
             if (block_num % 100'000 == 0) {
                 absl::Time t2{absl::Now()};
-                log::Info() << "Checked blocks up to " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s";
+                SILK_INFO << "Checked blocks up to " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s";
                 t1 = t2;
             }
         }
     } catch (const std::exception& ex) {
-        log::Error() << ex.what();
+        SILK_ERROR << ex.what();
         return -5;
     }
 
-    log::Info() << "State changes for blocks [" << from << "; " << block_num - 1 << "] have been checked";
+    SILK_INFO << "State changes for blocks [" << from << "; " << block_num - 1 << "] have been checked";
     return 0;
 }

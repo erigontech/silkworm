@@ -85,7 +85,7 @@ Settings parse_cli_settings(int argc, char* argv[]) {
         cli.add_option("--topic", [&settings](const CLI::results_t& results) {
                const auto topic_bytes{from_hex(results[0])};
                if (!topic_bytes) {
-                   log::Critical() << "Invalid input for --topic option: " << results[0];
+                   SILK_CRIT << "Invalid input for --topic option: " << results[0];
                    return false;
                }
                settings.topic = to_bytes32(*topic_bytes);
@@ -130,10 +130,10 @@ std::string block_range(const Settings& settings) {
 }
 
 void trace(const Log& log) {
-    log::Trace() << "address: " << log.address << " topics: " << log.topics.size();
+    SILK_TRACE << "address: " << log.address << " topics: " << log.topics.size();
     int i{0};
     for (const auto& t : log.topics) {
-        log::Trace() << "topic[" << i << "]: " << to_hex(t);
+        SILK_TRACE << "topic[" << i << "]: " << to_hex(t);
         ++i;
     }
 }
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
         ensure(!settings.block_to || *settings.block_to >= settings.block_from, "Invalid input: block_from is greater than block_to");
 
         const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
-        log::Info() << "Build info: " << node_name;
+        SILK_INFO << "Build info: " << node_name;
 
         // Set up the measurement counters and data structures
         BlockNum reached_block_number{0};
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]) {
         auto log_address_cursor = txn.ro_cursor(table::kLogAddressIndex);
         auto log_topic_cursor = txn.ro_cursor(table::kLogTopicIndex);
 
-        log::Info() << "Check transaction log indices for blocks " << block_range(settings) << " ...";
+        SILK_INFO << "Check transaction log indices for blocks " << block_range(settings) << " ...";
 
         // Start from the key having block_from as key prefix and iterate over TransactionLog on all blocks up to block_to
         auto start_key_prefix{block_key(settings.block_from)};
@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
         while (logs_data.done) {
             const auto [block_number, tx_id] = split_log_key(logs_data.key);
             if (settings.block_to && block_number > *settings.block_to) {
-                log::Info() << "Target block " << *settings.block_to << " reached";
+                SILK_INFO << "Target block " << *settings.block_to << " reached";
                 break;
             }
             if (reached_block_number != block_number) {
@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
 
                 if (settings.index != TargetIndex::kLogTopic) {
                     if (log.address == settings.address) {
-                        log::Info() << "block " << block_number << " tx " << tx_id << " generated log for " << log.address;
+                        SILK_INFO << "block " << block_number << " tx " << tx_id << " generated log for " << log.address;
                     }
                     check_address_index(block_number, log.address, log_address_cursor.get());
                     ++processed_addresses_count;
@@ -245,7 +245,7 @@ int main(int argc, char* argv[]) {
                 if (settings.index != TargetIndex::kLogAddress) {
                     for (const auto& topic : log.topics) {
                         if (topic == settings.topic) {
-                            log::Info() << "block " << block_number << " tx " << tx_id << " generated topic " << to_hex(topic.bytes);
+                            SILK_INFO << "block " << block_number << " tx " << tx_id << " generated topic " << to_hex(topic.bytes);
                         }
                         check_topic_index(block_number, topic, log_topic_cursor.get());
                     }
@@ -256,7 +256,7 @@ int main(int argc, char* argv[]) {
 
             ++processed_transaction_count;
             if (processed_transaction_count % 100'000 == 0) {
-                log::Info() << "Scanned transactions " << processed_transaction_count << " processed logs " << processed_logs_count;
+                SILK_INFO << "Scanned transactions " << processed_transaction_count << " processed logs " << processed_logs_count;
             }
 
             if (SignalHandler::signalled()) {
@@ -266,16 +266,17 @@ int main(int argc, char* argv[]) {
             // Move to next transaction
             logs_data = logs_cursor->to_next(false);
         }
-        log::Info() << "LogBuilder: processed blocks " << processed_block_numbers
-                    << " transactions " << processed_transaction_count
-                    << " logs " << processed_logs_count
-                    << " addresses " << processed_addresses_count
-                    << " topics " << processed_topics_count;
+        SILK_INFO
+            << "LogBuilder: processed blocks " << processed_block_numbers
+            << " transactions " << processed_transaction_count
+            << " logs " << processed_logs_count
+            << " addresses " << processed_addresses_count
+            << " topics " << processed_topics_count;
 
-        log::Info() << "Check " << (SignalHandler::signalled() ? "aborted" : "completed");
+        SILK_INFO << "Check " << (SignalHandler::signalled() ? "aborted" : "completed");
 
     } catch (const std::exception& ex) {
-        log::Error() << ex.what();
+        SILK_ERROR << ex.what();
         return -1;
     }
 

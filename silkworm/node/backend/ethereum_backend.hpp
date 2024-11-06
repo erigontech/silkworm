@@ -29,20 +29,20 @@
 
 namespace silkworm {
 
-constexpr const char* kDefaultNodeName{"silkworm"};
+inline constexpr const char* kDefaultNodeName{"silkworm"};
 
 class EthereumBackEnd {
   public:
     explicit EthereumBackEnd(
         const NodeSettings& node_settings,
-        mdbx::env* chaindata_env,
+        db::ROAccess chaindata,
         std::shared_ptr<sentry::api::SentryClient> sentry_client);
     ~EthereumBackEnd();
 
     EthereumBackEnd(const EthereumBackEnd&) = delete;
     EthereumBackEnd& operator=(const EthereumBackEnd&) = delete;
 
-    mdbx::env* chaindata_env() const noexcept { return chaindata_env_; }
+    db::ROAccess chaindata() const noexcept { return chaindata_; }
     const std::string& node_name() const noexcept { return node_name_; }
     std::optional<uint64_t> chain_id() const noexcept { return chain_id_; }
     std::optional<evmc::address> etherbase() const noexcept { return node_settings_.etherbase; }
@@ -57,13 +57,13 @@ class EthereumBackEnd {
     //! Constructor for testability
     EthereumBackEnd(
         const NodeSettings& node_settings,
-        mdbx::env* chaindata_env,
+        db::ROAccess chaindata,
         std::shared_ptr<sentry::api::SentryClient> sentry_client,
         std::unique_ptr<StateChangeCollection> state_change_collection);
 
   private:
     const NodeSettings& node_settings_;
-    mdbx::env* chaindata_env_;
+    db::ROAccess chaindata_;
     std::string node_name_{kDefaultNodeName};
     std::optional<uint64_t> chain_id_{std::nullopt};
     std::shared_ptr<sentry::api::SentryClient> sentry_client_;

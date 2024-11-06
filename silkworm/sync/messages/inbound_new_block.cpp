@@ -17,16 +17,16 @@
 #include "inbound_new_block.hpp"
 
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
+#include <silkworm/sync/internals/random_number.hpp>
 
 namespace silkworm {
 
 InboundNewBlock::InboundNewBlock(ByteView data, PeerId peer_id)
     : peer_id_(std::move(peer_id)),
-      req_id_(Singleton<RandomNumber>::instance().generate_one())  // for trace purposes
+      req_id_(chainsync::random_number.generate_one())  // for trace purposes
 {
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;

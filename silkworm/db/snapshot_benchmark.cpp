@@ -19,9 +19,9 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/seg/decompressor.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/transactions/txn_index.hpp>
 #include <silkworm/db/transactions/txn_to_block_index.hpp>
@@ -32,11 +32,10 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
-using db::test_util::make_repository;
 using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 
-const Bytes kLoremIpsumDict{*from_hex(
+static const Bytes kLoremIpsumDict{*from_hex(
     "000000000000004200000000000000000000000000000000000000000000001e"
     "010003060409040b040a050d07100716071107050507060c0715070e04080f4c"
     "6f72656d20300f697073756d20310f646f6c6f72203201736974203307616d65"
@@ -69,6 +68,10 @@ static void open_snapshot(benchmark::State& state) {
     }
 }
 BENCHMARK(open_snapshot);
+
+static SnapshotRepository make_repository(std::filesystem::path dir_path) {
+    return db::blocks::make_blocks_repository(std::move(dir_path));
+}
 
 static void build_header_index(benchmark::State& state) {
     TemporaryDirectory tmp_dir;

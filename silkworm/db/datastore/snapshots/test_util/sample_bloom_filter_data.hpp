@@ -23,7 +23,7 @@
 namespace silkworm::snapshots::test_util {
 
 // Legend: MH = magic header, K = key count, N = inserted count, M = bits count
-const std::vector<std::pair<std::string_view, std::string_view>> kInvalidBloomFilters{
+inline const std::vector<std::pair<std::string_view, std::string_view>> kInvalidBloomFilters{
     {"", "empty"},
     {"0000000000000000763032", "MH too short"},
     {"00000000000000007630320c", "invalid MH"},
@@ -61,7 +61,7 @@ const std::vector<std::pair<std::string_view, std::string_view>> kInvalidBloomFi
      "invalid hash checksum"},
 };
 
-const std::vector<std::string_view> kValidBloomFilters{
+inline const std::vector<std::string_view> kValidBloomFilters{
     "00000000000000007630320a030000000000000001000000000000000200000000000000"
     "1F000000000000002F000000000000003F00000000000000"
     "AA00000000000000"

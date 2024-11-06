@@ -32,17 +32,17 @@ Task<void> run(sentry::api::SentryClient& client) {
     auto service = co_await client.service();
     try {
         auto eth_version = co_await service->handshake();
-        log::Info() << "handshake success!";
-        log::Info() << "protocol: eth/" << int{eth_version};
+        SILK_INFO << "handshake success!";
+        SILK_INFO << "protocol: eth/" << int{eth_version};
 
         auto node_infos = co_await service->node_infos();
         const auto& node_info = node_infos[0];
-        log::Info() << "client_id: " << node_info.client_id;
+        SILK_INFO << "client_id: " << node_info.client_id;
 
         auto peer_count = co_await service->peer_count();
-        log::Info() << "peer_count: " << peer_count;
+        SILK_INFO << "peer_count: " << peer_count;
     } catch (const rpc::GrpcStatusError& ex) {
-        log::Error() << ex.what();
+        SILK_ERROR << ex.what();
     }
 }
 

@@ -40,7 +40,7 @@ void InboundGetBlockBodies::execute(db::DataStoreRef db, HeaderChain&, BodySeque
     if (bs.highest_block_in_output() == 0)
         return;
 
-    db::ROTxnManaged tx = db::ROAccess{db.chaindata_env}.start_ro_tx();
+    db::ROTxnManaged tx = db.chaindata.start_ro_tx();
     BodyRetrieval body_retrieval{tx};
 
     BlockBodiesPacket66 reply;
@@ -48,7 +48,7 @@ void InboundGetBlockBodies::execute(db::DataStoreRef db, HeaderChain&, BodySeque
     reply.request = body_retrieval.recover(packet_.request);
 
     if (reply.request.empty()) {
-        log::Trace() << "[WARNING] Not replying to " << identify(*this) << ", no blocks found";
+        SILK_TRACE << "[WARNING] Not replying to " << identify(*this) << ", no blocks found";
         return;
     }
 

@@ -37,7 +37,7 @@ namespace silkworm::rpc::ws {
 
 using TcpStream = boost::beast::websocket::stream<boost::beast::tcp_stream>;
 
-static constexpr size_t kDefaultCapacity{5 * 1024 * 1024};
+inline constexpr size_t kDefaultCapacity = 5 * 1024 * 1024;
 
 //! Represents a single connection from a client via websocket.
 class Connection : public StreamWriter {

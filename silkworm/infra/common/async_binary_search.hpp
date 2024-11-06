@@ -14,23 +14,18 @@
    limitations under the License.
 */
 
-#include "binary_search.hpp"
+#pragma once
 
-namespace silkworm::rpc {
+#include <cstddef>
 
-Task<size_t> binary_search(size_t n, BinaryPredicate pred) {
-    size_t i{0};
-    size_t j{n};
-    while (j > i) {
-        const size_t count{j - i};
-        const size_t m{i + count / 2};
-        if (co_await pred(m)) {
-            j = m;
-        } else {
-            i = m + 1;
-        }
-    }
-    co_return i;
-}
+#include <silkworm/infra/concurrency/task.hpp>
 
-}  // namespace silkworm::rpc
+#include <absl/functional/function_ref.h>
+
+namespace silkworm {
+
+using BinaryPredicate = absl::FunctionRef<Task<bool>(size_t)>;
+
+Task<size_t> async_binary_search(size_t n, BinaryPredicate pred);
+
+}  // namespace silkworm

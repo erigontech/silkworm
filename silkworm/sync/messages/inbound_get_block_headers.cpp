@@ -40,7 +40,7 @@ void InboundGetBlockHeaders::execute(db::DataStoreRef db, HeaderChain&, BodySequ
     if (bs.highest_block_in_output() == 0)  // skip requests in the first sync even if we already saved some headers
         return;
 
-    db::ROTxnManaged tx = db::ROAccess{db.chaindata_env}.start_ro_tx();
+    db::ROTxnManaged tx = db.chaindata.start_ro_tx();
     db::DataModel data_model{tx, db.repository};
     HeaderRetrieval header_retrieval(data_model);
 
@@ -56,7 +56,7 @@ void InboundGetBlockHeaders::execute(db::DataStoreRef db, HeaderChain&, BodySequ
     }
 
     if (reply.request.empty()) {
-        log::Trace() << "[WARNING] Not replying to " << identify(*this) << ", no headers found";
+        SILK_TRACE << "[WARNING] Not replying to " << identify(*this) << ", no headers found";
         return;
     }
 

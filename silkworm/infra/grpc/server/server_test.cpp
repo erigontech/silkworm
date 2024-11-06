@@ -53,7 +53,7 @@ namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple t
 #ifndef SILKWORM_SANITIZE
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
-constexpr std::string_view kTestAddressUri{"localhost:12345"};
+static constexpr std::string_view kTestAddressUri{"localhost:12345"};
 
 TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};

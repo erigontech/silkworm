@@ -68,11 +68,17 @@ SnapshotSync::SnapshotSync(
     stagedsync::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
       snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
-      chaindata_env_{std::move(data_store.chaindata_env)},
-      repository_{data_store.repository},
+      data_store_{std::move(data_store)},
+      repository_{data_store_.repository},
       client_{settings_.bittorrent_settings},
-      snapshot_freezer_{ROAccess{chaindata_env_}, repository_, stage_scheduler, tmp_dir_path, settings_.keep_blocks},
-      snapshot_merger_{repository_, std::move(tmp_dir_path)},
+      snapshot_freezer_{
+          data_store_.chaindata,
+          data_store_.repository,
+          stage_scheduler,
+          tmp_dir_path,
+          settings_.keep_blocks,
+      },
+      snapshot_merger_{data_store_.repository, std::move(tmp_dir_path)},
       is_stopping_latch_{1} {
 }
 
@@ -82,7 +88,7 @@ Task<void> SnapshotSync::run() {
     [[maybe_unused]] auto _ = gsl::finally([this]() { this->is_stopping_latch_.count_down(); });
 
     if (!settings_.enabled) {
-        log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
+        SILK_INFO << "Snapshot sync disabled, no snapshot must be downloaded";
         co_return;
     }
 
@@ -128,7 +134,7 @@ Task<void> SnapshotSync::setup() {
     repository_.reopen_folder();
 
     // Update chain and stage progresses in database according to available snapshots
-    RWTxnManaged rw_txn{chaindata_env_};
+    RWTxnManaged rw_txn = data_store_.chaindata.start_rw_tx();
     update_database(rw_txn, repository_.max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
 

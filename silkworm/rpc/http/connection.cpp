@@ -42,11 +42,11 @@ namespace silkworm::rpc::http {
 using namespace std::chrono_literals;
 
 static constexpr std::string_view kMaxAge{"600"};
-static constexpr auto kMaxPayloadSize{30 * kMebi};  // 30MiB
+static constexpr uint64_t kMaxPayloadSize = 30 * kMebi;  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
-static constexpr auto kGzipEncoding{"gzip"};
-static constexpr auto kIdentity{"Identity"};
-static constexpr auto kBearerTokenPrefix{"Bearer "sv};  // space matters: format is `Bearer <token>`
+static constexpr const char* kGzipEncoding{"gzip"};
+static constexpr std::string_view kIdentity{"Identity"};
+static constexpr std::string_view kBearerTokenPrefix{"Bearer "};  // space matters: format is `Bearer <token>`
 
 Task<void> Connection::run_read_loop(std::shared_ptr<Connection> connection) {
     co_await connection->read_loop();
@@ -341,7 +341,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
 }
 
 Connection::AuthorizationResult Connection::is_request_authorized(const RequestWithStringBody& req) {
-    if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
+    if (!jwt_secret_ || jwt_secret_->empty()) {
         return {};
     }
 

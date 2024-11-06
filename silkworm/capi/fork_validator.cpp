@@ -121,16 +121,13 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
         silkworm::Environment::set_stop_before_stage(silkworm::db::stages::kSendersKey);
     }
 
-    silkworm::log::Info("Starting fork validator");
+    SILK_INFO << "Starting fork validator";
     set_node_settings(handle, *settings, mdbx_env);
-
-    silkworm::log::Info("Settings done");
 
     silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
     silkworm::db::RWAccess rw_access{unmanaged_env};
-    silkworm::db::DataModelFactory data_model_factory = [handle](silkworm::db::ROTxn& tx) {
-        return silkworm::db::DataModel{tx, *handle->snapshot_repository};
-    };
+    silkworm::db::DataStoreRef data_store{rw_access, *handle->snapshot_repository};
+    silkworm::db::DataModelFactory data_model_factory{std::move(data_store)};
 
     handle->execution_engine = std::make_unique<silkworm::stagedsync::ExecutionEngine>(
         /* executor = */ std::nullopt,  // ExecutionEngine manages an internal io_context
@@ -140,11 +137,11 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
         make_stages_factory(handle->node_settings, data_model_factory),
         rw_access);
 
-    silkworm::log::Info("Execution engine created");
+    SILK_DEBUG << "Execution engine created";
 
     handle->execution_engine->open();
 
-    silkworm::log::Info("Execution engine opened");
+    SILK_INFO << "Execution engine opened";
 
     return SILKWORM_OK;
 }

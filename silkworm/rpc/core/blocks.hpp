@@ -26,12 +26,12 @@
 
 namespace silkworm::rpc::core {
 
-constexpr const char* kEarliestBlockId{"earliest"};
-constexpr const char* kLatestBlockId{"latest"};
-constexpr const char* kPendingBlockId{"pending"};
-constexpr const char* kFinalizedBlockId{"finalized"};
-constexpr const char* kSafeBlockId{"safe"};
-constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
+inline constexpr const char* kEarliestBlockId{"earliest"};
+inline constexpr const char* kLatestBlockId{"latest"};
+inline constexpr const char* kPendingBlockId{"pending"};
+inline constexpr const char* kFinalizedBlockId{"finalized"};
+inline constexpr const char* kSafeBlockId{"safe"};
+inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 // TODO(canepat) migrate to ChainStorage?
 

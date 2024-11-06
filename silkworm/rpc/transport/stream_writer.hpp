@@ -34,7 +34,7 @@ class StreamWriter {
     virtual size_t get_capacity() const noexcept = 0;
 };
 
-static constexpr size_t kDefaultCapacity{4096};
+inline constexpr size_t kDefaultCapacity = 4096;
 
 class StringWriter : public StreamWriter {
   public:

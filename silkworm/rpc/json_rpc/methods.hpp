@@ -87,6 +87,8 @@ inline constexpr const char* k_eth_getBlockReceipts{"eth_getBlockReceipts"};
 inline constexpr const char* k_eth_getTransactionReceiptsByBlock{"eth_getTransactionReceiptsByBlock"};
 inline constexpr const char* k_eth_maxPriorityFeePerGas{"eth_maxPriorityFeePerGas"};
 inline constexpr const char* k_eth_feeHistory{"eth_feeHistory"};
+inline constexpr const char* k_eth_blobBaseFee{"eth_blobBaseFee"};
+inline constexpr const char* k_eth_baseFee{"eth_baseFee"};
 
 inline constexpr const char* k_debug_accountRange{"debug_accountRange"};
 inline constexpr const char* k_debug_getModifiedAccountsByNumber{"debug_getModifiedAccountsByNumber"};

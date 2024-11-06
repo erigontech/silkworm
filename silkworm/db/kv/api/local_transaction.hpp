@@ -40,7 +40,7 @@ class LocalTransaction : public BaseTransaction {
         StateCache* state_cache)
         : BaseTransaction(state_cache),
           data_store_{std::move(data_store)},
-          txn_{data_store_.chaindata_env} {}
+          txn_{data_store_.chaindata.start_ro_tx()} {}
 
     ~LocalTransaction() override = default;
 

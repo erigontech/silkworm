@@ -45,7 +45,7 @@ Task<void> timeout(
     }
 
     if (source_file_path) {
-        log::Trace() << "TimeoutExpiredError in " << source_file_path << ":" << source_file_line;
+        SILK_TRACE << "TimeoutExpiredError in " << source_file_path << ":" << source_file_line;
     }
 
     throw TimeoutExpiredError();

@@ -1,5 +1,5 @@
 /*
-   Copyright 2024 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,13 +14,23 @@
    limitations under the License.
 */
 
-#pragma once
+#include "async_binary_search.hpp"
 
-#include "../datastore/snapshots/snapshot_repository.hpp"
+namespace silkworm {
 
-namespace silkworm::db::test_util {
+Task<size_t> async_binary_search(size_t n, BinaryPredicate pred) {
+    size_t i{0};
+    size_t j{n};
+    while (j > i) {
+        const size_t count{j - i};
+        const size_t m{i + count / 2};
+        if (co_await pred(m)) {
+            j = m;
+        } else {
+            i = m + 1;
+        }
+    }
+    co_return i;
+}
 
-snapshots::SnapshotRepository make_repository(std::filesystem::path dir_path);
-snapshots::SnapshotRepository make_repository();
-
-}  // namespace silkworm::db::test_util
+}  // namespace silkworm

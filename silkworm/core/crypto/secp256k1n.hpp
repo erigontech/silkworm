@@ -26,10 +26,10 @@
 namespace silkworm {
 
 // See Appendix F "Signing Transactions" of the Yellow Paper.
-inline constexpr auto kSecp256k1n{
+inline constexpr intx::uint256 kSecp256k1n{
     intx::from_string<intx::uint256>("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")};
 
-inline constexpr auto kSecp256k1Halfn{kSecp256k1n >> 1};
+inline constexpr intx::uint256 kSecp256k1Halfn{kSecp256k1n >> 1};
 
 // Verifies whether the signature values are valid with
 // the given chain rules.

@@ -178,11 +178,12 @@ int main(int argc, char* argv[]) {
                  << " address: " << server_settings.address_uri
                  << " contexts: " << server_settings.context_pool_settings.num_contexts;
 
-        auto database_env = db::open_env(node_settings.chaindata_env_config);
-        SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
+        auto chaindata_env = db::open_env(node_settings.chaindata_env_config);
+        SILK_INFO << "BackEndKvServer MDBX max readers: " << chaindata_env.max_readers();
 
         // Read chain config from database (this allows for custom config)
-        db::ROTxnManaged ro_txn{database_env};
+        db::ROAccess chaindata{chaindata_env};
+        db::ROTxnManaged ro_txn = chaindata.start_ro_tx();
         node_settings.chain_config = db::read_chain_config(ro_txn);
         if (!node_settings.chain_config.has_value()) {
             throw std::runtime_error("invalid chain config in database");
@@ -201,11 +202,11 @@ int main(int argc, char* argv[]) {
             server_settings.context_pool_settings,
         };
 
-        auto sentry_client = make_sentry_client(node_settings, context_pool, db::ROAccess(database_env));
+        auto sentry_client = make_sentry_client(node_settings, context_pool, chaindata);
 
         EthereumBackEnd backend{
             node_settings,
-            &database_env,
+            chaindata,
             sentry_client,
         };
         backend.set_node_name(node_name);
@@ -218,9 +219,9 @@ int main(int argc, char* argv[]) {
             using namespace boost::asio::experimental::awaitable_operators;
             auto state_changes_simulator = [](auto& ctx_pool, auto& be) -> Task<void> {
                 boost::asio::steady_timer state_changes_timer{ctx_pool.next_io_context()};
-                constexpr auto kStateChangeInterval{std::chrono::seconds(10)};
-                constexpr silkworm::BlockNum kStartBlock{100'000'000};
-                constexpr uint64_t kGasLimit{30'000'000};
+                static constexpr std::chrono::seconds kStateChangeInterval{10};
+                static constexpr silkworm::BlockNum kStartBlock{100'000'000};
+                static constexpr uint64_t kGasLimit{30'000'000};
                 auto run = [&]() {
                     boost::system::error_code ec;
                     while (ec != boost::asio::error::operation_aborted) {

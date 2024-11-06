@@ -78,7 +78,7 @@ Task<void> PoSSync::download_blocks() {
 
     StopWatch timing(StopWatch::kStart);
     RepeatedMeasure<BlockNum> downloaded_headers(initial_block_progress);
-    log::Info() << "PoSSync: Waiting for blocks... from=" << initial_block_progress;
+    SILK_INFO << "PoSSync: Waiting for blocks... from=" << initial_block_progress;
 
     asio::steady_timer timer(executor);
 
@@ -104,15 +104,16 @@ Task<void> PoSSync::download_blocks() {
         // insert blocks into database
         const auto insert_result{co_await exec_engine_->insert_blocks(to_plain_blocks(blocks))};
         if (!insert_result) {
-            log::Error() << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
+            SILK_ERROR << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
             continue;
         }
 
         downloaded_headers.set(block_progress);
-        log::Info() << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
-                    << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
-                    << ", last=" << downloaded_headers.get()
-                    << ", lap.duration=" << StopWatch::format(timing.since_start());
+        SILK_INFO
+            << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
+            << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
+            << ", last=" << downloaded_headers.get()
+            << ", lap.duration=" << StopWatch::format(timing.since_start());
     }
 }
 
@@ -160,11 +161,11 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         if (payload.block_hash != block_hash) {
             co_return rpc::PayloadStatus::kInvalidBlockHash;
         }
-        log::Trace() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
+        SILK_TRACE << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
 
         if (active_chain_validations_ > 0) {
-            log::Info() << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number
-                        << " <- reply SYNCING";
+            SILK_INFO << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number
+                      << " <- reply SYNCING";
             co_return rpc::PayloadStatus::kSyncing;
         }
 
@@ -177,12 +178,12 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             // if not found, try to get it from the execution engine
             const auto parent = co_await exec_engine_->get_header(block->header.parent_hash);
             if (!parent) {
-                log::Trace() << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " NOT found, extend the chain";
+                SILK_TRACE << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " NOT found, extend the chain";
                 // send payload to the block exchange to extend the chain up to it
                 block_exchange_.new_target_block(std::move(block));
                 co_return rpc::PayloadStatus::kSyncing;
             }
-            log::Trace() << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " found, add to chain fork";
+            SILK_TRACE << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " found, add to chain fork";
             // if found, add it to the chain_fork_view_ and calc total difficulty
             parent_td = co_await exec_engine_->get_td(block->header.parent_hash);
             // TODO(canepat) either remove caching here or use a distinct cache (the same ChainForkView eats on itself)
@@ -198,7 +199,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         std::vector<std::shared_ptr<Block>> blocks{block};
         const auto insert_result{co_await exec_engine_->insert_blocks(blocks)};
         if (!insert_result) {
-            log::Error() << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
+            SILK_ERROR << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
             co_return rpc::PayloadStatus::kSyncing;
         }
 
@@ -206,7 +207,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         if (!block_number) {
             co_return rpc::PayloadStatus::kAccepted;
         }
-        log::Trace() << "PoSSync: new_payload block_number=" << *block_number << " inserted";
+        SILK_TRACE << "PoSSync: new_payload block_number=" << *block_number << " inserted";
 
         // NOTE: from here the method execution can be cancelled
         ++active_chain_validations_;
@@ -215,7 +216,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
 
         if (std::holds_alternative<execution::api::ValidChain>(verification)) {
             // VALID
-            log::Info() << "PoSSync: new_payload VALID current_head=" << std::get<execution::api::ValidChain>(verification).current_head.hash;
+            SILK_INFO << "PoSSync: new_payload VALID current_head=" << std::get<execution::api::ValidChain>(verification).current_head.hash;
             co_return rpc::PayloadStatus{.status = rpc::PayloadStatus::kValidStr, .latest_valid_hash = block_hash};
         } else if (std::holds_alternative<execution::api::InvalidChain>(verification)) {
             // INVALID
@@ -224,27 +225,27 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.unwind_point.hash;
-            log::Info() << "PoSSync: new_payload INVALID latest_valid_hash=" << latest_valid_hash;
+            SILK_INFO << "PoSSync: new_payload INVALID latest_valid_hash=" << latest_valid_hash;
             co_return rpc::PayloadStatus{.status = rpc::PayloadStatus::kInvalidStr, .latest_valid_hash = latest_valid_hash};
         } else {
             // ERROR
             const auto validation_error = std::get<execution::api::ValidationError>(verification);
-            log::Info() << "PoSSync: new_payload INVALID latest_valid_hash=" << validation_error.latest_valid_head.hash
-                        << " validation_error=" << validation_error.error;
+            SILK_INFO << "PoSSync: new_payload INVALID latest_valid_hash=" << validation_error.latest_valid_head.hash
+                      << " validation_error=" << validation_error.error;
             co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalidStr, no_latest_valid_hash, "unknown execution error"};
         }
 
     } catch (const PayloadValidationError& e) {
-        log::Info() << "PoSSync: new_payload payload validation error: " << e.what();
+        SILK_INFO << "PoSSync: new_payload payload validation error: " << e.what();
         co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalidStr, no_latest_valid_hash, e.what()};
     } catch (const concurrency::TimeoutExpiredError& tee) {
-        log::Warning() << "PoSSync: new_payload timeout expired: " << tee.what();
+        SILK_WARN << "PoSSync: new_payload timeout expired: " << tee.what();
         co_return rpc::PayloadStatus::kSyncing;
     } catch (const boost::system::system_error& e) {
-        log::Error() << "PoSSync: error processing payload: " << e.what();
+        SILK_ERROR << "PoSSync: error processing payload: " << e.what();
         throw;
     } catch (const std::exception& e) {
-        log::Error() << "PoSSync: unexpected error processing payload: " << e.what();
+        SILK_ERROR << "PoSSync: unexpected error processing payload: " << e.what();
         throw;
     }
 }
@@ -262,8 +263,8 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         if (!state.head_block_hash) {
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, no_latest_valid_hash, "invalid head block hash"}};
         }
-        log::Info() << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash)
-                    << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
+        SILK_INFO << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash)
+                  << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
 
         Hash head_header_hash = state.head_block_hash;
         const auto head_header = co_await exec_engine_->get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
@@ -271,7 +272,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
             auto [valid, last_valid] = has_valid_ancestor(head_header_hash);
             if (!valid) co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, last_valid, "bad ancestor"}};
 
-            log::Info() << "PoSSync: fork_choice_update head header not found => SYNCING";
+            SILK_INFO << "PoSSync: fork_choice_update head header not found => SYNCING";
             // send payload to the block exchange to extend the chain up to it
             // block_exchange_.new_target_block(head_header_hash);  // todo: implement this!
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::kSyncing};
@@ -281,13 +282,13 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
 
         const auto parent = co_await exec_engine_->get_header(head_header->parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!parent) {
-            log::Info() << "PoSSync: fork_choice_update parent header not found => SYNCING";
+            SILK_INFO << "PoSSync: fork_choice_update parent header not found => SYNCING";
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::kSyncing};
         }
         auto parent_td = chain_fork_view_.get_total_difficulty(head_header->number - 1, head_header->parent_hash);
         if (!parent_td) {
-            log::Info() << "PoSSync: fork_choice_update TD not found for parent block number=" << (head_header->number - 1)
-                        << " hash=" << Hash(head_header->parent_hash) << " => SYNCING";
+            SILK_INFO << "PoSSync: fork_choice_update TD not found for parent block number=" << (head_header->number - 1)
+                      << " hash=" << Hash(head_header->parent_hash) << " => SYNCING";
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::kSyncing};
         }
 
@@ -306,13 +307,13 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.unwind_point.hash;
-            log::Info() << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << latest_valid_hash;
+            SILK_INFO << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << latest_valid_hash;
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, latest_valid_hash}};
         } else if (std::holds_alternative<execution::api::ValidationError>(verification)) {
             // ERROR
             const auto validation_error = std::get<execution::api::ValidationError>(verification);
-            log::Info() << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << validation_error.latest_valid_head.hash
-                        << " validation_error=" << validation_error.error;
+            SILK_INFO << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << validation_error.latest_valid_head.hash
+                      << " validation_error=" << validation_error.error;
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, no_latest_valid_hash, "unknown execution error"}};
         }
 
@@ -330,9 +331,10 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         const auto result = co_await (exec_engine_->update_fork_choice(fork_choice_point) || concurrency::timeout(timeout));
         ensure(std::holds_alternative<api::ForkChoiceResult>(result), "PoSSync: unexpected awaitable operators outcome");
         const auto fcu_result{std::get<api::ForkChoiceResult>(result)};
-        log::Info() << "PoSSync: fork_choice_update " << (fcu_result ? "OK" : "KO")
-                    << " latest_valid_hash=" << (fcu_result ? Hash(state.head_block_hash).to_hex() : fcu_result.latest_valid_head.to_hex())
-                    << " current_head=" << fcu_result.latest_valid_head << " current_height=";
+        SILK_INFO
+            << "PoSSync: fork_choice_update " << (fcu_result ? "OK" : "KO")
+            << " latest_valid_hash=" << (fcu_result ? Hash(state.head_block_hash).to_hex() : fcu_result.latest_valid_head.to_hex())
+            << " current_head=" << fcu_result.latest_valid_head << " current_height=";
         if (!fcu_result) {
             // at the moment application doesn't carry information to disambiguate between invalid head and
             // finalized_block_hash not found, so we need additional calls:
@@ -363,13 +365,13 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kValidStr, state.head_block_hash}, buildProcessId};
 
     } catch (const concurrency::TimeoutExpiredError& tee) {
-        log::Info() << "PoSSync: new_payload timeout expired: " << tee.what();
+        SILK_INFO << "PoSSync: new_payload timeout expired: " << tee.what();
         co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::kSyncing};
     } catch (const boost::system::system_error& e) {
-        log::Error() << "PoSSync: error processing fork-choice: " << e.what();
+        SILK_ERROR << "PoSSync: error processing fork-choice: " << e.what();
         throw;
     } catch (const std::exception& e) {
-        log::Error() << "PoSSync: unexpected error processing fork-choice: " << e.what();
+        SILK_ERROR << "PoSSync: unexpected error processing fork-choice: " << e.what();
         throw;
     }
 }

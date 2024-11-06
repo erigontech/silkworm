@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 
         // Initialize epoch
         auto epoch_num{options.block_from / ethash::epoch_length};
-        log::Info() << "Initializing Light Cache for DAG epoch " << epoch_num;
+        SILK_INFO << "Initializing Light Cache for DAG epoch " << epoch_num;
         auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_num))};
 
         auto canonical_hashes{db::open_cursor(txn, db::table::kCanonicalHashes)};
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
              ++block_num) {
             if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
-                log::Info() << "Initializing Light Cache for DAG epoch " << epoch_num;
+                SILK_INFO << "Initializing Light Cache for DAG epoch " << epoch_num;
                 epoch_context = ethash::create_epoch_context(static_cast<int>(epoch_num));
             }
 
@@ -148,16 +148,16 @@ int main(int argc, char* argv[]) {
 
             if (!(block_num % 1000)) {
                 const auto interval{sw.lap()};
-                log::Info() << "At block height " << block_num << " in " << StopWatch::format(interval.second);
+                SILK_INFO << "At block height " << block_num << " in " << StopWatch::format(interval.second);
             }
         }
 
-        log::Info() << "Complete !";
+        SILK_INFO << "Complete !";
 
     } catch (const fs::filesystem_error& ex) {
-        log::Error() << ex.what() << " Check your filesystem permissions";
+        SILK_ERROR << ex.what() << " Check your filesystem permissions";
     } catch (const std::exception& ex) {
-        log::Error() << ex.what();
+        SILK_ERROR << ex.what();
     }
 
     return rc;

@@ -64,7 +64,7 @@ Task<void> TaskGroup::wait() {
         if (ex.code() == boost::system::errc::operation_canceled) {
             ex_ptr = std::current_exception();
         } else {
-            log::Error() << "TaskGroup::wait system_error: " << ex.what();
+            SILK_ERROR << "TaskGroup::wait system_error: " << ex.what();
             throw;
         }
     }

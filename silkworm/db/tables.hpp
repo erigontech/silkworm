@@ -430,4 +430,10 @@ inline constexpr const char* kStorageDomain{"storage"};
 //! \details Domain storing the account code information
 inline constexpr const char* kCodeDomain{"code"};
 
+//! \details History storing the account common information
+inline constexpr const char* kAccountsHistory{"AccountsHistory"};
+
+//! \details Inverted Index storing the account common information
+inline constexpr const char* kAccountsHistoryIdx{"AccountsHistoryIdx"};
+
 }  // namespace silkworm::db::table

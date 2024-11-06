@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,16 +16,10 @@
 
 #pragma once
 
-#include <cstddef>
+#include <silkworm/core/common/random_number.hpp>
 
-#include <silkworm/infra/concurrency/task.hpp>
+namespace silkworm::chainsync {
 
-#include <absl/functional/function_ref.h>
+inline RandomNumber random_number;
 
-namespace silkworm::rpc {
-
-using BinaryPredicate = absl::FunctionRef<Task<bool>(size_t)>;
-
-Task<size_t> binary_search(size_t n, BinaryPredicate pred);
-
-}  // namespace silkworm::rpc
+}  // namespace silkworm::chainsync

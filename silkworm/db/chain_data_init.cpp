@@ -67,7 +67,7 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
                 throw std::runtime_error("Could not initialize db for chain id " +
                                          std::to_string(node_settings.network_id) + " : unknown network");
             }
-            log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
+            log::Debug("Priming database", {"network id", std::to_string(node_settings.network_id)});
             initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
             tx.commit_and_renew();
             chain_config = read_chain_config(tx);

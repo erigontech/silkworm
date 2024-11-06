@@ -59,8 +59,9 @@ void FlatRequests::extract_deposits_from_logs(const std::vector<Log>& logs) {
     }
 }
 
-void FlatRequests::add_request(FlatRequestType type, Bytes data) {
-    requests_[magic_enum::enum_integer(type)] += data;
+void FlatRequests::add_request(const FlatRequestType type, Bytes data) {
+    auto& buffer = requests_[magic_enum::enum_integer(type)];
+    std::ranges::move(std::begin(data), std::end(data), std::back_inserter(buffer));
 }
 
 ByteView FlatRequests::preview_data_by_type(FlatRequestType type) const {

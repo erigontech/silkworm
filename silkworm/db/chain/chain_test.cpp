@@ -86,7 +86,7 @@ TEST_CASE_METHOD(ChainTest, "read_total_difficulty") {
         }));
         evmc::bytes32 block_hash{0xd268bdabee5eab4914d0de9b0e0071364582cfb3c952b19727f1ab429f4ba2a8_bytes32};
         const uint64_t block_number{4'000'000};
-        CHECK_THROWS_AS(spawn_and_wait(read_total_difficulty(transaction, block_hash, block_number)), std::invalid_argument);
+        CHECK(spawn_and_wait(read_total_difficulty(transaction, block_hash, block_number)) == std::nullopt);
     }
 
     SECTION("invalid RLP buffer") {

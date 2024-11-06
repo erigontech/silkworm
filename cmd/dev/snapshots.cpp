@@ -426,7 +426,7 @@ void open_index(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Open index for snapshot: " << segment_file_path;
     const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
     ensure(snapshot_path.has_value(), [&]() { return "open_index: invalid snapshot file " + segment_file_path.filename().string(); });
-    const auto index_path{snapshot_path->index_file()};
+    const auto index_path{snapshot_path->related_path_ext(kIdxExtension)};
     SILK_INFO << "Index file: " << index_path.path();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     rec_split::RecSplitIndex idx{index_path.path()};
@@ -768,7 +768,7 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
     SegmentFileReader body_segment{*snapshot_path};
     body_segment.reopen_segment();
 
-    Index idx_body_number{snapshot_path->index_file()};
+    Index idx_body_number{snapshot_path->related_path_ext(kIdxExtension)};
     idx_body_number.reopen_index();
 
     const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_number);
@@ -873,7 +873,7 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
     txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->index_file()};
+        Index idx_txn_hash{snapshot_path->related_path_ext(kIdxExtension)};
         idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}.exec(hash);
@@ -937,7 +937,7 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
     txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->index_file()};
+        Index idx_txn_hash{snapshot_path->related_path_ext(kIdxExtension)};
         idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByIdQuery{{txn_segment, idx_txn_hash}}.exec(txn_id);

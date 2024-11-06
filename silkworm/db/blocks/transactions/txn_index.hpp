@@ -66,7 +66,7 @@ class TransactionIndex {
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path, uint64_t first_tx_id) {
         return {
-            .index_file = segment_path.index_file(),
+            .index_file = segment_path.related_path_ext(kIdxExtension),
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
             .base_data_id = first_tx_id,
             .less_false_positives = true,

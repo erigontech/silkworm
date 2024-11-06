@@ -53,8 +53,8 @@ class SnapshotPath {
     bool exists() const { return std::filesystem::exists(path_); }
 
     SnapshotPath related_path(std::string tag, const char* ext) const;
-    SnapshotPath index_file() const {
-        return related_path(tag_, kIdxExtension);
+    SnapshotPath related_path_ext(const char* ext) const {
+        return related_path(tag_, ext);
     }
 
     friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);

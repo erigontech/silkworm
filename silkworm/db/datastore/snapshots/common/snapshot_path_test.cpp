@@ -69,7 +69,7 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
                 CHECK(snapshot_file->version() == 1);
                 CHECK(snapshot_file->step_range() == StepRange::from_block_num_range(filename_expectation.block_num_range));
                 CHECK(snapshot_file->tag() == filename_expectation.tag);
-                const SnapshotPath index_file = snapshot_file->index_file();
+                const SnapshotPath index_file = snapshot_file->related_path_ext(kIdxExtension);
                 CHECK(index_file.path().stem() == snapshot_file->path().stem());
                 CHECK(index_file.path().extension() == kIdxExtension);
                 CHECK(index_file.version() == 1);

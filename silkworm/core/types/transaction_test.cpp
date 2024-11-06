@@ -21,8 +21,6 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
 
-#include "silkworm/rpc/common/util.hpp"
-
 namespace silkworm {
 
 using namespace evmc::literals;

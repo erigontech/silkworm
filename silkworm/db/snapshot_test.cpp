@@ -50,7 +50,7 @@ class SnapshotPathForTest : public SnapshotPath {
                   tmp_dir,
                   kSnapshotV1,
                   step_range,
-                  SnapshotType::headers),
+                  "headers"),
           } {}
 };
 
@@ -236,7 +236,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     idx_txn_hash.reopen_index();
     TransactionFindByIdQuery txn_by_id{{txn_segment, idx_txn_hash}};
 
-    Index idx_txn_hash_2_block{txn_segment_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
+    Index idx_txn_hash_2_block{txn_segment_path.related_path(db::blocks::kIdxTxnHash2BlockName.to_string(), kIdxExtension)};
     idx_txn_hash_2_block.reopen_index();
     TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}};
 

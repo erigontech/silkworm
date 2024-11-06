@@ -51,7 +51,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
         if (name == db::blocks::kBodySegmentName)
             return {std::make_shared<IndexBuilder>(BodyIndex::make(segment_path))};
         if (name == db::blocks::kTxnSegmentName) {
-            auto bodies_segment_path = segment_path.related_path(SnapshotType::bodies, kSegmentExtension);
+            auto bodies_segment_path = segment_path.related_path(db::blocks::kBodySegmentName.to_string(), kSegmentExtension);
             if (!bodies_segment_path.exists()) return {};
             return {
                 std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, segment_path)),

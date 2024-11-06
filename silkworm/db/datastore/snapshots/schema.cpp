@@ -25,8 +25,8 @@ std::map<datastore::EntityName, SnapshotPath> Schema::RepositoryDef::make_segmen
     StepRange range) const {
     std::map<datastore::EntityName, SnapshotPath> results;
     for (auto& entry : segment_defs_) {
-        auto type = *magic_enum::enum_cast<SnapshotType>(entry.first.name);
-        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, type));
+        auto tag = entry.first.to_string();
+        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag)));
     }
     return results;
 }
@@ -46,8 +46,8 @@ std::map<datastore::EntityName, SnapshotPath> Schema::RepositoryDef::make_rec_sp
     StepRange range) const {
     std::map<datastore::EntityName, SnapshotPath> results;
     for (auto& entry : rec_split_index_defs_) {
-        auto type = *magic_enum::enum_cast<SnapshotType>(entry.first.name);
-        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, type, kIdxExtension));
+        auto tag = entry.first.to_string();
+        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag), kIdxExtension));
     }
     return results;
 }

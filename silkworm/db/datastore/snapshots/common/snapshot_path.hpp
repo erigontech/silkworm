@@ -45,13 +45,6 @@ class SnapshotPath {
         std::string tag,
         const char* ext = kSegmentExtension);
 
-    static SnapshotPath make(
-        const std::filesystem::path& dir,
-        uint8_t version,
-        StepRange step_range,
-        SnapshotType type,
-        const char* ext = kSegmentExtension);
-
     std::string filename() const { return path_.filename().string(); }
     const std::filesystem::path& path() const { return path_; }
     std::string extension() const { return path_.extension().string(); }
@@ -61,7 +54,6 @@ class SnapshotPath {
     bool exists() const { return std::filesystem::exists(path_); }
 
     SnapshotPath related_path(std::string tag, const char* ext) const;
-    SnapshotPath related_path(SnapshotType type, const char* ext) const;
     SnapshotPath index_file() const {
         return related_path(tag_, kIdxExtension);
     }

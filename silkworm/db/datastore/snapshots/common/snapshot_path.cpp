@@ -20,7 +20,6 @@
 #include <charconv>
 
 #include <absl/strings/str_format.h>
-#include <absl/strings/str_replace.h>
 #include <absl/strings/str_split.h>
 
 #include <silkworm/infra/common/log.hpp>
@@ -92,12 +91,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
 
-    // Expected tag format: headers|bodies|transactions|transactions-to-block
-    // parsing relies on magic_enum, so SnapshotType items must match exactly
-    std::string tag_str{tag.data(), tag.size()};
-    std::replace(tag_str.begin(), tag_str.end(), '-', '_');
-
-    return SnapshotPath{std::move(path), ver_num, *step_range, std::move(tag_str)};
+    return SnapshotPath{std::move(path), ver_num, *step_range, std::string{tag}};
 }
 
 SnapshotPath SnapshotPath::make(
@@ -113,14 +107,14 @@ SnapshotPath SnapshotPath::make(
 fs::path SnapshotPath::make_filename(
     uint8_t version,
     StepRange step_range,
-    std::string tag,
+    std::string_view tag,
     const char* ext) {
     std::string filename = absl::StrFormat(
         "v%d-%06d-%06d-%s%s",
         version,
         step_range.start.value,
         step_range.end.value,
-        absl::StrReplaceAll(tag, {{"_", "-"}}),
+        tag,
         ext);
     return fs::path{filename};
 }

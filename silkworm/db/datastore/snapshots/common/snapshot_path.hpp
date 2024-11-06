@@ -64,7 +64,7 @@ class SnapshotPath {
     static std::filesystem::path make_filename(
         uint8_t version,
         StepRange step_range,
-        std::string tag,
+        std::string_view tag,
         const char* ext);
 
     SnapshotPath(

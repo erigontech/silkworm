@@ -47,7 +47,7 @@ inline constexpr datastore::EntityName kTxnSegmentName{"transactions"};
 //! Index transaction_hash -> txn_id -> transactions_segment_offset
 inline constexpr datastore::EntityName kIdxTxnHashName{"transactions"};
 //! Index transaction_hash -> block_num
-inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions_to_block"};
+inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions-to-block"};
 
 struct BundleDataRef {
     const snapshots::SnapshotBundleData& data;

@@ -381,6 +381,9 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             if (!transaction) {
                 SILK_INFO << "No transaction found in block " << block_number << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
+            } else if (transaction.value().nonce != nonce) {
+                SILK_INFO << "Transaction nonce " << transaction.value().nonce << " doesn't match required nonce " << nonce;
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
             } else {
                 reply = make_json_content(request, transaction.value().hash());
             }

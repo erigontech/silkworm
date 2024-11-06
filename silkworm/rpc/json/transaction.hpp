@@ -19,10 +19,9 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/json/access_list_entry.hpp>
+#include <silkworm/rpc/json/authorization.hpp>
 #include <silkworm/rpc/json/glaze.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
-
-#include "authorization.hpp"
 
 namespace silkworm {
 

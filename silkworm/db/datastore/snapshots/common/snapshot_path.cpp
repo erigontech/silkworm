@@ -104,7 +104,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
 
-    return SnapshotPath{std::move(path), ver_num, *step_range, *type};
+    return SnapshotPath{std::move(path), ver_num, *step_range, std::move(tag_str), *type};
 }
 
 SnapshotPath SnapshotPath::make(
@@ -114,7 +114,8 @@ SnapshotPath SnapshotPath::make(
     SnapshotType type,
     const char* ext) {
     const auto filename = SnapshotPath::make_filename(version, step_range, type, ext);
-    return SnapshotPath{dir / filename, version, step_range, type};
+    std::string tag{magic_enum::enum_name(type)};
+    return SnapshotPath{dir / filename, version, step_range, std::move(tag), type};
 }
 
 fs::path SnapshotPath::make_filename(
@@ -141,10 +142,12 @@ SnapshotPath::SnapshotPath(
     fs::path path,
     uint8_t version,
     StepRange step_range,
+    std::string tag,
     SnapshotType type)
     : path_{std::move(path)},
       version_{version},
       step_range_{step_range},
+      tag_{std::move(tag)},
       type_{type} {
 }
 

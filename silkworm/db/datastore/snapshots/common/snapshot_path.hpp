@@ -50,6 +50,7 @@ class SnapshotPath {
     std::string extension() const { return path_.extension().string(); }
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }
+    const std::string& tag() const { return tag_; }
     SnapshotType type() const { return type_; }
     bool exists() const { return std::filesystem::exists(path_); }
 
@@ -72,11 +73,13 @@ class SnapshotPath {
         std::filesystem::path path,
         uint8_t version,
         StepRange step_range,
+        std::string tag,
         SnapshotType type);
 
     std::filesystem::path path_;
     uint8_t version_{0};
     StepRange step_range_;
+    std::string tag_;
     SnapshotType type_;
 };
 

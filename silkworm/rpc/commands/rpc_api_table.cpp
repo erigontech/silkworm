@@ -154,13 +154,13 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[json_rpc::method::k_eth_submitWork] = &commands::RpcApi::handle_eth_submit_work;
     method_handlers_[json_rpc::method::k_eth_subscribe] = &commands::RpcApi::handle_eth_subscribe;
     method_handlers_[json_rpc::method::k_eth_unsubscribe] = &commands::RpcApi::handle_eth_unsubscribe;
-    method_handlers_[json_rpc::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
-    method_handlers_[json_rpc::method::k_eth_getTransactionReceiptsByBlock] = &commands::RpcApi::handle_parity_get_block_receipts;
+    method_handlers_[json_rpc::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_eth_get_block_receipts;
+    method_handlers_[json_rpc::method::k_eth_getTransactionReceiptsByBlock] = &commands::RpcApi::handle_eth_get_block_receipts;
     method_handlers_[json_rpc::method::k_eth_maxPriorityFeePerGas] = &commands::RpcApi::handle_eth_max_priority_fee_per_gas;
     method_handlers_[json_rpc::method::k_eth_feeHistory] = &commands::RpcApi::handle_fee_history;
     method_handlers_[json_rpc::method::k_eth_callMany] = &commands::RpcApi::handle_eth_call_many;
-    method_handlers_[json_rpc::method::k_eth_baseFee] = &commands::RpcApi::handle_base_fee;
-    method_handlers_[json_rpc::method::k_eth_blobBaseFee] = &commands::RpcApi::handle_blob_base_fee;
+    method_handlers_[json_rpc::method::k_eth_baseFee] = &commands::RpcApi::handle_eth_base_fee;
+    method_handlers_[json_rpc::method::k_eth_blobBaseFee] = &commands::RpcApi::handle_eth_blob_base_fee;
 
     // GLAZE methods
     method_handlers_glaze_[json_rpc::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
@@ -179,7 +179,6 @@ void RpcApiTable::add_net_handlers() {
 }
 
 void RpcApiTable::add_parity_handlers() {
-    method_handlers_[json_rpc::method::k_parity_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
     method_handlers_[json_rpc::method::k_parity_listStorageKeys] = &commands::RpcApi::handle_parity_list_storage_keys;
 }
 

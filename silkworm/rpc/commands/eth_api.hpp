@@ -104,8 +104,9 @@ class EthereumRpcApi {
     Task<void> handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_fee_history(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_call_many(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_blob_base_fee(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_base_fee(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_blob_base_fee(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_base_fee(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
 
     // GLAZE format routine
     Task<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);

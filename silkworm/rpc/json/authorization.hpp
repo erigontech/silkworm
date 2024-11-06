@@ -46,6 +46,6 @@ struct GlazeJsonAuthorization {
 namespace silkworm {
 
 void from_json(const nlohmann::json& json, Authorization& entry);
-void to_json(nlohmann::json& json, const Authorization& access_list);
+void to_json(nlohmann::json& json, const Authorization& authorization);
 
 }  // namespace silkworm

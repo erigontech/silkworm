@@ -16,15 +16,19 @@
 
 #pragma once
 
+#include <memory>
 #include "../datastore/common/entity_name.hpp"
 #include "../datastore/snapshots/schema.hpp"
 #include "../datastore/snapshots/snapshot_repository.hpp"
+#include "../datastore/snapshots/snapshot_bundle_factory.hpp"
 
 namespace silkworm::db::blocks {
 
 inline constexpr datastore::EntityName kBlocksRepositoryName{"Blocks"};
 
 snapshots::Schema::RepositoryDef make_blocks_repository_schema();
+
+std::unique_ptr<snapshots::SnapshotBundleFactory> make_blocks_bundle_factory();
 
 snapshots::SnapshotRepository make_blocks_repository(
     std::filesystem::path dir_path,

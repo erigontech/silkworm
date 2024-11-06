@@ -344,7 +344,6 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
         if (settings.segment_file_name) {
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_bodies: invalid snapshot_file path format");
-            ensure(snapshot_path->type() == SnapshotType::bodies, "count_bodies: snapshot_file must point to body segment");
             SegmentFileReader body_segment{*snapshot_path};
             body_segment.reopen_segment();
             std::tie(num_bodies, num_txns) = count_bodies_in_one(settings, body_segment);
@@ -390,7 +389,6 @@ void count_headers(const SnapshotSubcommandSettings& settings, int repetitions) 
         if (settings.segment_file_name) {
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_headers: invalid snapshot_file path format");
-            ensure(snapshot_path->type() == SnapshotType::headers, "count_headers: snapshot_file must point to header segment");
             SegmentFileReader header_segment{*snapshot_path};
             header_segment.reopen_segment();
             num_headers = count_headers_in_one(settings, header_segment);
@@ -407,32 +405,12 @@ void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
     ensure(settings.segment_file_name.has_value(), "create_index: --snapshot_file must be specified");
     SILK_INFO << "Create index for snapshot: " << *settings.segment_file_name;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
+    auto bundle_factory = db::blocks::make_blocks_bundle_factory();
     const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name});
     if (snapshot_path) {
         for (int i{0}; i < repetitions; ++i) {
-            switch (snapshot_path->type()) {
-                case SnapshotType::headers: {
-                    auto index = HeaderIndex::make(*snapshot_path);
-                    index.build();
-                    break;
-                }
-                case SnapshotType::bodies: {
-                    auto index = BodyIndex::make(*snapshot_path);
-                    index.build();
-                    break;
-                }
-                case SnapshotType::transactions: {
-                    auto bodies_segment_path = snapshot_path->related_path(SnapshotType::bodies, kSegmentExtension);
-                    auto index = TransactionIndex::make(bodies_segment_path, *snapshot_path);
-                    index.build();
-
-                    auto index_hash_to_block = TransactionToBlockIndex::make(bodies_segment_path, *snapshot_path);
-                    index_hash_to_block.build();
-                    break;
-                }
-                default: {
-                    SILKWORM_ASSERT(false);
-                }
+            for (auto& builder : bundle_factory->index_builders(*snapshot_path)) {
+                builder->build();
             }
         }
     } else {

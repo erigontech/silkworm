@@ -71,4 +71,12 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
     return all_builders;
 }
 
+SnapshotPathList SnapshotBundleFactoryImpl::index_dependency_paths(const SnapshotPath& index_path) const {
+    SnapshotType snapshot_type = (index_path.type() == SnapshotType::transactions_to_block)
+                                     ? SnapshotType::transactions
+                                     : index_path.type();
+    SnapshotPath snapshot_path = index_path.related_path(snapshot_type, kSegmentExtension);
+    return {snapshot_path};
+}
+
 }  // namespace silkworm::db

@@ -123,6 +123,7 @@ class SnapshotRepository {
     SnapshotPathList get_files(const std::string& ext) const;
     std::vector<StepRange> list_dir_file_ranges() const;
 
+    bool is_stale_index_path(const SnapshotPath& index_path) const;
     SnapshotPathList stale_index_paths() const;
 
     //! Path to the snapshots directory

@@ -221,18 +221,19 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
     return results;
 }
 
-bool is_stale_index_path(const SnapshotPath& index_path) {
-    SnapshotType snapshot_type = (index_path.type() == SnapshotType::transactions_to_block)
-                                     ? SnapshotType::transactions
-                                     : index_path.type();
-    SnapshotPath snapshot_path = index_path.related_path(snapshot_type, kSegmentExtension);
-    return (fs::last_write_time(index_path.path()) < fs::last_write_time(snapshot_path.path()));
+bool SnapshotRepository::is_stale_index_path(const SnapshotPath& index_path) const {
+    return std::ranges::any_of(
+        bundle_factory_->index_dependency_paths(index_path),
+        [&](const SnapshotPath& dep_path) { return fs::last_write_time(index_path.path()) < fs::last_write_time(dep_path.path()); });
 }
 
 SnapshotPathList SnapshotRepository::stale_index_paths() const {
     SnapshotPathList results;
     auto all_files = this->get_idx_files();
-    std::copy_if(all_files.begin(), all_files.end(), std::back_inserter(results), is_stale_index_path);
+    std::copy_if(
+        all_files.begin(), all_files.end(),
+        std::back_inserter(results),
+        [this](const SnapshotPath& index_path) { return this->is_stale_index_path(index_path); });
     return results;
 }
 

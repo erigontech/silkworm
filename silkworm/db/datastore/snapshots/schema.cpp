@@ -16,8 +16,6 @@
 
 #include "schema.hpp"
 
-#include <magic_enum.hpp>
-
 namespace silkworm::snapshots {
 
 std::map<datastore::EntityName, SnapshotPath> Schema::RepositoryDef::make_segment_paths(

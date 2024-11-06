@@ -328,8 +328,8 @@ BodyCounters count_bodies_in_all(const SnapshotSubcommandSettings& settings) {
     int num_bodies = 0;
     uint64_t num_txns = 0;
     for (const auto& bundle_ptr : repository.view_bundles()) {
-        const auto& bundle = *bundle_ptr;
-        const auto [body_count, txn_count] = count_bodies_in_one(settings, bundle.body_segment);
+        db::blocks::BundleDataRef bundle{**bundle_ptr};
+        const auto [body_count, txn_count] = count_bodies_in_one(settings, bundle.body_segment());
         num_bodies += body_count;
         num_txns += txn_count;
     }
@@ -376,8 +376,8 @@ int count_headers_in_all(const SnapshotSubcommandSettings& settings) {
     auto repository = make_repository(settings.settings);
     int num_headers{0};
     for (const auto& bundle_ptr : repository.view_bundles()) {
-        const auto& bundle = *bundle_ptr;
-        const auto header_count = count_headers_in_one(settings, bundle.header_segment);
+        db::blocks::BundleDataRef bundle{**bundle_ptr};
+        const auto header_count = count_headers_in_one(settings, bundle.header_segment());
         num_headers += header_count;
     }
     return num_headers;

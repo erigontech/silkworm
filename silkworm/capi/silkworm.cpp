@@ -378,19 +378,25 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     snapshots::Index idx_txn_hash{transactions_segment_path->related_path(snapshots::SnapshotType::transactions, snapshots::kIdxExtension), make_region(ts.tx_hash_index)};
     snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(snapshots::SnapshotType::transactions_to_block, snapshots::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
 
+    snapshots::SnapshotBundleData bundle_data = [&]() {
+        snapshots::SnapshotBundleData data;
+
+        data.segments.emplace(db::blocks::kHeaderSegmentName, std::move(header_segment));
+        data.rec_split_indexes.emplace(db::blocks::kIdxHeaderHashName, std::move(idx_header_hash));
+
+        data.segments.emplace(db::blocks::kBodySegmentName, std::move(body_segment));
+        data.rec_split_indexes.emplace(db::blocks::kIdxBodyNumberName, std::move(idx_body_number));
+
+        data.segments.emplace(db::blocks::kTxnSegmentName, std::move(txn_segment));
+        data.rec_split_indexes.emplace(db::blocks::kIdxTxnHashName, std::move(idx_txn_hash));
+        data.rec_split_indexes.emplace(db::blocks::kIdxTxnHash2BlockName, std::move(idx_txn_hash_2_block));
+
+        return data;
+    }();
+
     snapshots::SnapshotBundle bundle{
         headers_segment_path->step_range(),
-        {
-            .header_segment = std::move(header_segment),
-            .idx_header_hash = std::move(idx_header_hash),
-
-            .body_segment = std::move(body_segment),
-            .idx_body_number = std::move(idx_body_number),
-
-            .txn_segment = std::move(txn_segment),
-            .idx_txn_hash = std::move(idx_txn_hash),
-            .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-        },
+        std::move(bundle_data),
     };
     handle->repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;

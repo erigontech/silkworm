@@ -113,62 +113,42 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
 
 void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << dir_path_.string();
-    SnapshotPathList all_snapshot_paths = get_segment_files();
-    SnapshotPathList all_index_paths = get_idx_files();
 
-    std::map<Step, std::map<bool, std::map<SnapshotType, size_t>>> groups;
+    auto file_ranges = list_dir_file_ranges();
+    if (file_ranges.empty()) return;
 
-    for (size_t i = 0; i < all_snapshot_paths.size(); ++i) {
-        auto& path = all_snapshot_paths[i];
-        auto& group = groups[path.step_range().start][false];
-        group[path.type()] = i;
-    }
-
-    for (size_t i = 0; i < all_index_paths.size(); ++i) {
-        auto& path = all_index_paths[i];
-        auto& group = groups[path.step_range().start][true];
-        group[path.type()] = i;
-    }
-
-    Step num{0};
-    if (!groups.empty()) {
-        num = groups.begin()->first;
-    }
+    // sort file_ranges by range.start
+    std::sort(file_ranges.begin(), file_ranges.end(), [](const StepRange& r1, const StepRange& r2) -> bool {
+        return r1.start < r2.start;
+    });
 
     std::unique_lock lock(*bundles_mutex_);
     // copy bundles prior to modification
     auto bundles = std::make_shared<Bundles>(*bundles_);
 
-    while (groups.contains(num) &&
-           (groups[num][false].size() == SnapshotBundle::kSnapshotsCount) &&
-           (groups[num][true].size() == SnapshotBundle::kIndexesCount)) {
+    Step num = file_ranges[0].start;
+    for (const auto& range : file_ranges) {
+        // avoid gaps/overlaps
+        if (range.start != num) continue;
+        if (range.size() == 0) continue;
+
         if (!bundles->contains(num)) {
-            auto snapshot_path = [&](SnapshotType type) {
-                return all_snapshot_paths[groups[num][false][type]];
-            };
-            auto index_path = [&](SnapshotType type) {
-                return all_index_paths[groups[num][true][type]];
-            };
-            SnapshotBundle bundle = bundle_factory_->make(snapshot_path, index_path);
-
-            bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
+            SnapshotBundlePaths bundle_paths = bundle_factory_->make_paths(dir_path_, range);
+            // if all bundle paths exist
+            if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
+                SnapshotBundle bundle = bundle_factory_->make(dir_path_, range);
+                bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
+            }
         }
 
-        auto& bundle = *bundles->at(num);
-
-        if (num < bundle.step_range().end) {
-            num = bundle.step_range().end;
-        } else {
-            break;
-        }
+        // avoid gaps/overlaps
+        num = range.end;
     }
 
     bundles_ = bundles;
     lock.unlock();
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
-              << " segments: " << total_segments_count()
-              << " indexes: " << total_indexes_count()
               << " max block available: " << max_block_available();
 }
 
@@ -219,6 +199,26 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
     std::sort(snapshot_files.begin(), snapshot_files.end());
 
     return snapshot_files;
+}
+
+std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
+    ensure(fs::exists(dir_path_),
+           [&]() { return "SnapshotRepository: " + dir_path_.string() + " does not exist"; });
+    ensure(fs::is_directory(dir_path_),
+           [&]() { return "SnapshotRepository: " + dir_path_.string() + " is a not folder"; });
+
+    std::vector<StepRange> results;
+    for (const auto& file : fs::directory_iterator{dir_path_}) {
+        if (!fs::is_regular_file(file.path())) {
+            continue;
+        }
+        const auto range = SnapshotPath::parse_step_range(file.path());
+        if (range) {
+            results.push_back(*range);
+        }
+    }
+
+    return results;
 }
 
 bool is_stale_index_path(const SnapshotPath& index_path) {

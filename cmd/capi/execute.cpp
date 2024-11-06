@@ -151,19 +151,19 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
 
     for (const auto& bundle_ptr : repository.view_bundles()) {
-        const auto& bundle = *bundle_ptr;
+        db::blocks::BundleDataRef bundle{**bundle_ptr};
         {
             {
                 SilkwormHeadersSnapshot raw_headers_snapshot{
                     .segment{
-                        .file_path = make_path(bundle.header_segment.path()),
-                        .memory_address = bundle.header_segment.memory_file_region().data(),
-                        .memory_length = bundle.header_segment.memory_file_region().size(),
+                        .file_path = make_path(bundle.header_segment().path()),
+                        .memory_address = bundle.header_segment().memory_file_region().data(),
+                        .memory_length = bundle.header_segment().memory_file_region().size(),
                     },
                     .header_hash_index{
-                        .file_path = make_path(bundle.idx_header_hash.path()),
-                        .memory_address = bundle.idx_header_hash.memory_file_region().data(),
-                        .memory_length = bundle.idx_header_hash.memory_file_region().size(),
+                        .file_path = make_path(bundle.idx_header_hash().path()),
+                        .memory_address = bundle.idx_header_hash().memory_file_region().data(),
+                        .memory_length = bundle.idx_header_hash().memory_file_region().size(),
                     },
                 };
                 headers_snapshot_sequence.push_back(raw_headers_snapshot);
@@ -171,14 +171,14 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
             {
                 SilkwormBodiesSnapshot raw_bodies_snapshot{
                     .segment{
-                        .file_path = make_path(bundle.body_segment.path()),
-                        .memory_address = bundle.body_segment.memory_file_region().data(),
-                        .memory_length = bundle.body_segment.memory_file_region().size(),
+                        .file_path = make_path(bundle.body_segment().path()),
+                        .memory_address = bundle.body_segment().memory_file_region().data(),
+                        .memory_length = bundle.body_segment().memory_file_region().size(),
                     },
                     .block_num_index{
-                        .file_path = make_path(bundle.idx_body_number.path()),
-                        .memory_address = bundle.idx_body_number.memory_file_region().data(),
-                        .memory_length = bundle.idx_body_number.memory_file_region().size(),
+                        .file_path = make_path(bundle.idx_body_number().path()),
+                        .memory_address = bundle.idx_body_number().memory_file_region().data(),
+                        .memory_length = bundle.idx_body_number().memory_file_region().size(),
                     },
                 };
                 bodies_snapshot_sequence.push_back(raw_bodies_snapshot);
@@ -186,19 +186,19 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
             {
                 SilkwormTransactionsSnapshot raw_transactions_snapshot{
                     .segment{
-                        .file_path = make_path(bundle.txn_segment.path()),
-                        .memory_address = bundle.txn_segment.memory_file_region().data(),
-                        .memory_length = bundle.txn_segment.memory_file_region().size(),
+                        .file_path = make_path(bundle.txn_segment().path()),
+                        .memory_address = bundle.txn_segment().memory_file_region().data(),
+                        .memory_length = bundle.txn_segment().memory_file_region().size(),
                     },
                     .tx_hash_index{
-                        .file_path = make_path(bundle.idx_txn_hash.path()),
-                        .memory_address = bundle.idx_txn_hash.memory_file_region().data(),
-                        .memory_length = bundle.idx_txn_hash.memory_file_region().size(),
+                        .file_path = make_path(bundle.idx_txn_hash().path()),
+                        .memory_address = bundle.idx_txn_hash().memory_file_region().data(),
+                        .memory_length = bundle.idx_txn_hash().memory_file_region().size(),
                     },
                     .tx_hash_2_block_index{
-                        .file_path = make_path(bundle.idx_txn_hash_2_block.path()),
-                        .memory_address = bundle.idx_txn_hash_2_block.memory_file_region().data(),
-                        .memory_length = bundle.idx_txn_hash_2_block.memory_file_region().size(),
+                        .file_path = make_path(bundle.idx_txn_hash_2_block().path()),
+                        .memory_address = bundle.idx_txn_hash_2_block().memory_file_region().data(),
+                        .memory_length = bundle.idx_txn_hash_2_block().memory_file_region().size(),
                     },
                 };
                 transactions_snapshot_sequence.push_back(raw_transactions_snapshot);

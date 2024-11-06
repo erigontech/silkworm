@@ -36,6 +36,7 @@ inline constexpr uint8_t kSnapshotV1{1};
 class SnapshotPath {
   public:
     static std::optional<SnapshotPath> parse(std::filesystem::path path);
+    static std::optional<StepRange> parse_step_range(const std::filesystem::path& path);
 
     static SnapshotPath make(
         const std::filesystem::path& dir,

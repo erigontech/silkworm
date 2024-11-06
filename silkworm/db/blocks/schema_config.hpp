@@ -44,4 +44,18 @@ inline constexpr datastore::EntityName kIdxTxnHashName{"transactions"};
 //! Index transaction_hash -> block_num
 inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions_to_block"};
 
+struct BundleDataRef {
+    const snapshots::SnapshotBundleData& data;
+
+    const snapshots::SegmentFileReader& header_segment() const { return data.segments.at(kHeaderSegmentName); }
+    const snapshots::Index& idx_header_hash() const { return data.rec_split_indexes.at(kIdxHeaderHashName); }
+
+    const snapshots::SegmentFileReader& body_segment() const { return data.segments.at(kBodySegmentName); }
+    const snapshots::Index& idx_body_number() const { return data.rec_split_indexes.at(kIdxBodyNumberName); }
+
+    const snapshots::SegmentFileReader& txn_segment() const { return data.segments.at(kTxnSegmentName); }
+    const snapshots::Index& idx_txn_hash() const { return data.rec_split_indexes.at(kIdxTxnHashName); }
+    const snapshots::Index& idx_txn_hash_2_block() const { return data.rec_split_indexes.at(kIdxTxnHash2BlockName); }
+};
+
 }  // namespace silkworm::db::blocks

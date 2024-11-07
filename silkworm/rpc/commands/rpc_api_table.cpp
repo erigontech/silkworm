@@ -157,7 +157,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[json_rpc::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_eth_get_block_receipts;
     method_handlers_[json_rpc::method::k_eth_getTransactionReceiptsByBlock] = &commands::RpcApi::handle_eth_get_block_receipts;
     method_handlers_[json_rpc::method::k_eth_maxPriorityFeePerGas] = &commands::RpcApi::handle_eth_max_priority_fee_per_gas;
-    method_handlers_[json_rpc::method::k_eth_feeHistory] = &commands::RpcApi::handle_fee_history;
+    method_handlers_[json_rpc::method::k_eth_feeHistory] = &commands::RpcApi::handle_eth_fee_history;
     method_handlers_[json_rpc::method::k_eth_callMany] = &commands::RpcApi::handle_eth_call_many;
     method_handlers_[json_rpc::method::k_eth_baseFee] = &commands::RpcApi::handle_eth_base_fee;
     method_handlers_[json_rpc::method::k_eth_blobBaseFee] = &commands::RpcApi::handle_eth_blob_base_fee;

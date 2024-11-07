@@ -1991,7 +1991,7 @@ Task<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& request,
 }
 
 // https://eth.wiki/json-rpc/API#eth_feehistory
-Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         const auto error_msg = "invalid eth_feeHistory params: " + params.dump();

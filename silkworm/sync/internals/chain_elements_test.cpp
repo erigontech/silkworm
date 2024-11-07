@@ -161,13 +161,13 @@ TEST_CASE("segments") {
 
     size_t start = 2;
     size_t end = 5;
-    auto startNum = segment[start]->number;
-    auto endNum = segment[end - 1]->number;
+    auto start_num = segment[start]->number;
+    auto end_num = segment[end - 1]->number;
 
     Segment::Slice segment_slice = segment.slice(start, end);
     REQUIRE(segment_slice.size() == end - start);
-    REQUIRE(segment_slice[0]->number == startNum);                       // headers in segment are ordered from highest to lowest
-    REQUIRE(segment_slice[segment_slice.size() - 1]->number == endNum);  // "
+    REQUIRE(segment_slice[0]->number == start_num);                       // headers in segment are ordered from highest to lowest
+    REQUIRE(segment_slice[segment_slice.size() - 1]->number == end_num);  // "
 
     segment.remove_headers_higher_than(3);
     REQUIRE(segment.size() == 4);

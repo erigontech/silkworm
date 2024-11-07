@@ -140,22 +140,22 @@ class DummyCursor : public CursorDupSort {
     }
 
     Task<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) override {
-        silkworm::Bytes key_{key};
-        key_ += value;
+        silkworm::Bytes key_val{key};
+        key_val += value;
 
         const nlohmann::json table = json_.value(table_name_, kEmpty);
-        const auto& entry = table.value(silkworm::to_hex(key_), "");
+        const auto& entry = table.value(silkworm::to_hex(key_val), "");
         auto out{*silkworm::from_hex(entry)};
 
         co_return out;
     }
 
     Task<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) override {
-        silkworm::Bytes key_{key};
-        key_ += value;
+        silkworm::Bytes key_val{key};
+        key_val += value;
 
         const nlohmann::json table = json_.value(table_name_, kEmpty);
-        const auto& entry = table.value(silkworm::to_hex(key_), "");
+        const auto& entry = table.value(silkworm::to_hex(key_val), "");
         auto out{*silkworm::from_hex(entry)};
         auto kv = KeyValue{silkworm::Bytes{}, out};
 

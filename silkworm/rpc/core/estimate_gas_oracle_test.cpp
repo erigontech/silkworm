@@ -78,17 +78,17 @@ TEST_CASE("estimate gas") {
 
     intx::uint256 kBalance{1'000'000'000};
 
-    silkworm::BlockHeader kBlockHeader;
-    kBlockHeader.gas_limit = kTxGas * 2;
+    silkworm::BlockHeader block_header;
+    block_header.gas_limit = kTxGas * 2;
 
-    silkworm::Account kAccount{0, kBalance};
+    silkworm::Account account{0, kBalance};
 
-    BlockHeaderProvider block_header_provider = [&kBlockHeader](BlockNum /*block_number*/) -> Task<std::optional<BlockHeader>> {
-        co_return kBlockHeader;
+    BlockHeaderProvider block_header_provider = [&block_header](BlockNum /*block_number*/) -> Task<std::optional<BlockHeader>> {
+        co_return block_header;
     };
 
-    AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, BlockNum /*block_number*/) -> Task<std::optional<silkworm::Account>> {
-        co_return kAccount;
+    AccountReader account_reader = [&account](const evmc::address& /*address*/, BlockNum /*block_number*/) -> Task<std::optional<silkworm::Account>> {
+        co_return account;
     };
 
     Call call;

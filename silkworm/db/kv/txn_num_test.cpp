@@ -162,9 +162,9 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
     }
     SECTION("wrong value format") {
         // Block 0 is last in MDBX and has max tx num equal to 1
-        const Bytes kBlock0Key = *from_hex("0000000000000000");
+        const Bytes block0_key = *from_hex("0000000000000000");
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock0Key, *from_hex("01")};
+            co_return kv::api::KeyValue{block0_key, *from_hex("01")};
         }));
         provider = [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; };
 
@@ -183,12 +183,12 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
     }
     SECTION("db_1_block: tx num 0 in block 0") {
         // Block 0 is last in MDBX and has max tx num equal to 1
-        const Bytes kBlock0Key = *from_hex("0000000000000000");
+        const Bytes block0_key = *from_hex("0000000000000000");
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock0Key, *from_hex("0000000000000001")};
+            co_return kv::api::KeyValue{block0_key, *from_hex("0000000000000001")};
         }));
-        EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock0Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock0Key, *from_hex("0000000000000001")};
+        EXPECT_CALL(*cursor, seek_exact(ByteView{block0_key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return kv::api::KeyValue{block0_key, *from_hex("0000000000000001")};
         }));
         provider = [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; };
 
@@ -196,19 +196,19 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
     }
     SECTION("db_3_blocks: tx num 1 in block 0") {
         // Block 2 is last in MDBX and has max tx num equal to 30
-        const Bytes kBlock2Key = *from_hex("0000000000000002");
+        const Bytes block2_key = *from_hex("0000000000000002");
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock2Key, *from_hex("000000000000001E")};
+            co_return kv::api::KeyValue{block2_key, *from_hex("000000000000001E")};
         }));
         // Block 1 is in MDBX and has max tx num equal to 14
-        const Bytes kBlock1Key = *from_hex("0000000000000001");
-        EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock1Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock1Key, *from_hex("000000000000000E")};
+        const Bytes block1_key = *from_hex("0000000000000001");
+        EXPECT_CALL(*cursor, seek_exact(ByteView{block1_key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return kv::api::KeyValue{block1_key, *from_hex("000000000000000E")};
         }));
         // Block 0 is in MDBX and has max tx num equal to 1
-        const Bytes kBlock0Key = *from_hex("0000000000000000");
-        EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock0Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock0Key, *from_hex("0000000000000001")};
+        const Bytes block0_key = *from_hex("0000000000000000");
+        EXPECT_CALL(*cursor, seek_exact(ByteView{block0_key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return kv::api::KeyValue{block0_key, *from_hex("0000000000000001")};
         }));
         provider = [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; };
 
@@ -216,19 +216,19 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
     }
     SECTION("db_3_blocks: tx num 14 in block 1") {
         // Block 2 is last in MDBX and has max tx num equal to 30
-        const Bytes kBlock2Key = *from_hex("0000000000000002");
+        const Bytes block2_key = *from_hex("0000000000000002");
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock2Key, *from_hex("000000000000001E")};
+            co_return kv::api::KeyValue{block2_key, *from_hex("000000000000001E")};
         }));
         // Block 1 is in MDBX and has max tx num equal to 14
-        const Bytes kBlock1Key = *from_hex("0000000000000001");
-        EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock1Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock1Key, *from_hex("000000000000000E")};
+        const Bytes block1_key = *from_hex("0000000000000001");
+        EXPECT_CALL(*cursor, seek_exact(ByteView{block1_key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return kv::api::KeyValue{block1_key, *from_hex("000000000000000E")};
         }));
         // Block 0 is in MDBX and has max tx num equal to 1
-        const Bytes kBlock0Key = *from_hex("0000000000000000");
-        EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock0Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock0Key, *from_hex("0000000000000001")};
+        const Bytes block0_key = *from_hex("0000000000000000");
+        EXPECT_CALL(*cursor, seek_exact(ByteView{block0_key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return kv::api::KeyValue{block0_key, *from_hex("0000000000000001")};
         }));
         provider = [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; };
 
@@ -236,17 +236,17 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
     }
     SECTION("db_3_blocks: tx num 15 in block 2") {
         // Block 2 is last in MDBX and has max tx num equal to 30
-        const Bytes kBlock2Key = *from_hex("0000000000000002");
+        const Bytes block2_key = *from_hex("0000000000000002");
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock2Key, *from_hex("000000000000001E")};
+            co_return kv::api::KeyValue{block2_key, *from_hex("000000000000001E")};
         }));
-        EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock2Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock2Key, *from_hex("000000000000001E")};
+        EXPECT_CALL(*cursor, seek_exact(ByteView{block2_key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return kv::api::KeyValue{block2_key, *from_hex("000000000000001E")};
         }));
         // Block 1 is in MDBX and has max tx num equal to 14
-        const Bytes kBlock1Key = *from_hex("0000000000000001");
-        EXPECT_CALL(*cursor, seek_exact(ByteView{kBlock1Key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{kBlock1Key, *from_hex("000000000000000E")};
+        const Bytes block1_key = *from_hex("0000000000000001");
+        EXPECT_CALL(*cursor, seek_exact(ByteView{block1_key})).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
+            co_return kv::api::KeyValue{block1_key, *from_hex("000000000000000E")};
         }));
         provider = [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; };
 

@@ -52,14 +52,14 @@ void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)
 // Function to compare two JSON objects while ignoring the order of elements in arrays
 bool are_equivalent(const nlohmann::json& obj1, const nlohmann::json& obj2) {
     // Create copies of the JSON objects and sort their arrays
-    nlohmann::json sortedObj1 = obj1;
-    nlohmann::json sortedObj2 = obj2;
-    sort_array(sortedObj1);
-    sort_array(sortedObj2);
+    nlohmann::json sorted_obj1 = obj1;
+    nlohmann::json sorted_obj2 = obj2;
+    sort_array(sorted_obj1);
+    sort_array(sorted_obj2);
 
     // Serialize the sorted JSON objects to strings
-    std::string str1 = sortedObj1.dump();
-    std::string str2 = sortedObj2.dump();
+    std::string str1 = sorted_obj1.dump();
+    std::string str2 = sorted_obj2.dump();
 
     // Compare the sorted JSON strings
     return str1 == str2;

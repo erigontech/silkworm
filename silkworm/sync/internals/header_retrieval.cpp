@@ -130,11 +130,11 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
     while (ancestor_delta != 0) {
         auto h = data_model_.read_canonical_header_hash(block_num);
         if (h == hash) {
-            auto ancestorHash = data_model_.read_canonical_header_hash(block_num - ancestor_delta);
-            if (!ancestorHash) {
+            auto ancestor_hash = data_model_.read_canonical_header_hash(block_num - ancestor_delta);
+            if (!ancestor_hash) {
                 return {Hash{}, 0};
             }
-            return {*ancestorHash, block_num - ancestor_delta};
+            return {*ancestor_hash, block_num - ancestor_delta};
         }
         if (max_non_canonical == 0) {
             return {Hash{}, 0};

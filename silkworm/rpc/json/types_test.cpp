@@ -121,9 +121,9 @@ TEST_CASE("serialize not empty Rlp", "[rpc][to_json]") {
 }
 
 TEST_CASE("serialize AccessListResult with gas_used", "[rpc][to_json]") {
-    AccessListResult accessListResult;
-    accessListResult.gas_used = 0x1234;
-    nlohmann::json j = accessListResult;
+    AccessListResult access_list_result;
+    access_list_result.gas_used = 0x1234;
+    nlohmann::json j = access_list_result;
     CHECK(j == R"({
         "accessList":[],
         "gasUsed":"0x1234"
@@ -131,10 +131,10 @@ TEST_CASE("serialize AccessListResult with gas_used", "[rpc][to_json]") {
 }
 
 TEST_CASE("serialize AccessListResult with error", "[rpc][to_json]") {
-    AccessListResult accessListResult;
-    accessListResult.gas_used = 0x1234;
-    accessListResult.error = "operation reverted";
-    nlohmann::json j = accessListResult;
+    AccessListResult access_list_result;
+    access_list_result.gas_used = 0x1234;
+    access_list_result.error = "operation reverted";
+    nlohmann::json j = access_list_result;
     CHECK(j == R"({
         "accessList":[],
         "error":"operation reverted",

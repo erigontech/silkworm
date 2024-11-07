@@ -661,39 +661,39 @@ std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
     });  // sort headers from the highest block height to the lowest
 
     std::vector<Segment> segments;
-    std::map<Hash, size_t> segmentMap;
-    std::map<Hash, std::vector<Header_Ref>> childrenMap;
-    std::set<Hash> dedupMap;
-    size_t segmentIdx = 0;
+    std::map<Hash, size_t> segment_map;
+    std::map<Hash, std::vector<Header_Ref>> children_map;
+    std::set<Hash> dedup_map;
+    size_t segment_idx = 0;
 
     for (auto& header : headers) {
         Hash header_hash = header->hash();
 
-        if (dedupMap.contains(header_hash)) {
+        if (dedup_map.contains(header_hash)) {
             return {std::vector<Segment>{}, Penalty::kDuplicateHeaderPenalty};
         }
 
-        dedupMap.insert(header_hash);
-        auto children = childrenMap[header_hash];
+        dedup_map.insert(header_hash);
+        auto children = children_map[header_hash];
         auto [valid, penalty] = HeaderList::children_parent_validity(children, header);
         if (!valid) {
             return {std::vector<Segment>{}, penalty};
         }
 
         if (children.size() == 1) {
-            // Single child, extract segmentIdx
-            segmentIdx = segmentMap[header_hash];
+            // Single child, extract segment_idx
+            segment_idx = segment_map[header_hash];
         } else {
             // No children, or more than one child, create new segment
-            segmentIdx = segments.size();
+            segment_idx = segments.size();
             segments.emplace_back(shared_from_this());  // add a void segment
         }
 
-        segments[segmentIdx].push_back(header);
+        segments[segment_idx].push_back(header);
 
-        segmentMap[header->parent_hash] = segmentIdx;
+        segment_map[header->parent_hash] = segment_idx;
 
-        auto& siblings = childrenMap[header->parent_hash];
+        auto& siblings = children_map[header->parent_hash];
         siblings.push_back(header);
     }
 
@@ -732,8 +732,8 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
         }
     }
 
-    auto startNum = segment[start]->number;
-    auto endNum = segment[end - 1]->number;
+    auto start_num = segment[start]->number;
+    auto end_num = segment[end - 1]->number;
 
     Segment::Slice segment_slice = segment.slice(start, end);
 
@@ -757,13 +757,13 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
             op = "new anchor";
             request_more = new_anchor(segment_slice, peerId);
         }
-        // SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
-        //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << request_more << ")";
+        // SILK_TRACE << "HeaderChain, segment " << op << " up=" << start_num << " (" << segment[start]->hash()
+        //            << ") down=" << end_num << " (" << segment[end - 1]->hash() << ") (more=" << request_more << ")";
     } catch (SegmentCutAndPasteError& e) {
         SILK_TRACE_M("HeaderChain")
             << "[WARNING] segment cut&paste error, " << op
-            << " up=" << startNum << " (" << Hash{segment[start]->hash()} << ")"
-            << " down=" << endNum << " (" << Hash{segment[end - 1]->hash()} << ")"
+            << " up=" << start_num << " (" << Hash{segment[start]->hash()} << ")"
+            << " down=" << end_num << " (" << Hash{segment[end - 1]->hash()} << ")"
             << " failed, reason: " << e.what();
         return false;
     }

@@ -106,11 +106,11 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value);
 
 //! \brief Parses prune mode from a string
 //! \param [in] mode : the string representation of PruneMode
-PruneMode parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
-                           const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
-                           const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
-                           const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
-                           const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
-                           const PruneThreshold& beforeCallTraces);
+PruneMode parse_prune_mode(const std::string& mode, const PruneDistance& older_history,
+                           const PruneDistance& older_receipts, const PruneDistance& older_senders,
+                           const PruneDistance& older_tx_index, const PruneDistance& older_call_traces,
+                           const PruneThreshold& before_history, const PruneThreshold& before_receipts,
+                           const PruneThreshold& before_senders, const PruneThreshold& before_tx_index,
+                           const PruneThreshold& before_call_traces);
 
 }  // namespace silkworm::db

@@ -229,12 +229,12 @@ TEST_CASE("Stage History Index") {
         SECTION("Prune") {
             // Prune from second block, so we delete block 1
             // Alter node settings pruning
-            PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-            PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
-            beforeHistory.emplace(2);  // Will delete any history before block 2
+            PruneDistance older_history, older_receipts, older_senders, older_tx_index, older_call_traces;
+            PruneThreshold before_history, before_receipts, before_senders, before_tx_index, before_call_traces;
+            before_history.emplace(2);  // Will delete any history before block 2
             context.set_prune_mode(
-                parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces));
+                parse_prune_mode("h", older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                                 before_history, before_receipts, before_senders, before_tx_index, before_call_traces));
 
             REQUIRE(context.prune_mode().history().enabled());
 
@@ -414,12 +414,12 @@ TEST_CASE("Stage History Index") {
 
         // Prune from block 3590
         // Alter node settings pruning
-        PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-        PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
-        beforeHistory.emplace(3590);  // Will delete any history before block 2
+        PruneDistance older_history, older_receipts, older_senders, older_tx_index, older_call_traces;
+        PruneThreshold before_history, before_receipts, before_senders, before_tx_index, before_call_traces;
+        before_history.emplace(3590);  // Will delete any history before block 2
         context.set_prune_mode(
-            parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                             beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces));
+            parse_prune_mode("h", older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                             before_history, before_receipts, before_senders, before_tx_index, before_call_traces));
         REQUIRE(context.prune_mode().history().enabled());
 
         // Recreate the stage with enabled pruning

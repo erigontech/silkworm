@@ -1043,9 +1043,9 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
     }
 
     BlockNum next_block = next();
-    bool has_next_ = has_next();
+    bool has_next_var = has_next();
 
-    if (!has_next_) {
+    if (!has_next_var) {
         auto chunk_provider_res = co_await chunk_provider_.get();
 
         if (chunk_provider_res.error) {
@@ -1057,7 +1057,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
             co_return BlockProviderResponse{next_block, false, false};
         }
 
-        has_next_ = true;
+        has_next_var = true;
 
         try {
             auto bitmap = bitmap::parse(chunk_provider_res.chunk);
@@ -1069,7 +1069,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
         }
     }
 
-    co_return BlockProviderResponse{next_block, has_next_, false};
+    co_return BlockProviderResponse{next_block, has_next_var, false};
 }
 
 bool ForwardBlockProvider::has_next() {
@@ -1170,9 +1170,9 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
     }
 
     BlockNum next_block = next();
-    bool has_next_ = has_next();
+    bool has_next_var = has_next();
 
-    if (!has_next_) {
+    if (!has_next_var) {
         auto chunk_provider_res = co_await chunk_provider_.get();
 
         if (chunk_provider_res.error) {
@@ -1184,7 +1184,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
             co_return BlockProviderResponse{next_block, false, false};
         }
 
-        has_next_ = true;
+        has_next_var = true;
 
         try {
             auto bitmap = bitmap::parse(chunk_provider_res.chunk);
@@ -1196,7 +1196,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
         }
     }
 
-    co_return BlockProviderResponse{next_block, has_next_, false};
+    co_return BlockProviderResponse{next_block, has_next_var, false};
 }
 
 bool BackwardBlockProvider::has_next() {

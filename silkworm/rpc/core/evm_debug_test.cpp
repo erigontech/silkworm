@@ -81,11 +81,11 @@ static const Bytes kConfigKey{kZeroHeaderHash.bytes, kHashLength};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df7030")};
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("0000000000000000000000000000000000000009")};
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_key1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df7030")};
+    static Bytes account_history_key2{*silkworm::from_hex("0000000000000000000000000000000000000009")};
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("010203ed03e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
+    static Bytes account_history_value1{*silkworm::from_hex("010203ed03e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
@@ -96,17 +96,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     SECTION("precompiled contract failure") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -123,7 +123,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return rsp1;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -169,13 +169,13 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
 }
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c7")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("0203430b141e903194951083c424fd0000")};
+    static Bytes account_history_key1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c7")};
+    static Bytes account_history_value1{*silkworm::from_hex("0203430b141e903194951083c424fd0000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e556")};
+    static Bytes account_history_key2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e556")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0x0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
+    static Bytes account_history_key3{*silkworm::from_hex("0x0000000000000000000000000000000000000000")};
+    static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
@@ -220,17 +220,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     SECTION("Call: full output") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
 
@@ -248,7 +248,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -260,7 +260,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -339,17 +339,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     SECTION("Call: no stack") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -366,7 +366,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -378,7 +378,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -449,17 +449,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     SECTION("Call: no memory") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -476,7 +476,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -488,7 +488,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -564,17 +564,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     SECTION("Call: no storage") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -591,7 +591,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -603,7 +603,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -680,17 +680,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     SECTION("Call: no stack, memory and storage") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -707,7 +707,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -719,7 +719,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -783,17 +783,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     SECTION("Call with stream") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -810,7 +810,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -822,7 +822,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -885,14 +885,14 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 }
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("8ced5ad0d8da4ec211c17355ed3dbfec4cf0e5b9")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("03038c330a01a098914888dc0516d20000")};
+    static Bytes account_history_key1{*silkworm::from_hex("8ced5ad0d8da4ec211c17355ed3dbfec4cf0e5b9")};
+    static Bytes account_history_value1{*silkworm::from_hex("03038c330a01a098914888dc0516d20000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("5e1f0c9ddbe3cb57b80c933fab5151627d7966fa")};
-    static Bytes kAccountHistoryValue2{*silkworm::from_hex("010408014219564ff26a000000")};
+    static Bytes account_history_key2{*silkworm::from_hex("5e1f0c9ddbe3cb57b80c933fab5151627d7966fa")};
+    static Bytes account_history_value2{*silkworm::from_hex("010408014219564ff26a000000")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("00094165832d46fa1082db0000")};
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value3{*silkworm::from_hex("00094165832d46fa1082db0000")};
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
@@ -903,17 +903,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     SECTION("Call: TO present") {
         db::kv::api::DomainPointQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::DomainPointQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -930,19 +930,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue2};
+                .value = account_history_value2};
             co_return response;
         }));
         EXPECT_CALL(transaction, domain_get(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -977,13 +977,13 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
 }
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("578f0a154b23be77fc2033197fbc775637648ad4")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("012f090207fbc719f215d7050000")};
+    static Bytes account_history_key1{*silkworm::from_hex("578f0a154b23be77fc2033197fbc775637648ad4")};
+    static Bytes account_history_value1{*silkworm::from_hex("012f090207fbc719f215d7050000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("6951c35e335fa18c97cb207119133cd8009580cd")};
+    static Bytes account_history_key2{*silkworm::from_hex("6951c35e335fa18c97cb207119133cd8009580cd")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
@@ -993,17 +993,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
 
     db::kv::api::DomainPointQuery query1{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818873,
     };
     db::kv::api::DomainPointQuery query2{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818873,
     };
     db::kv::api::DomainPointQuery query3{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818873,
     };
     EXPECT_CALL(backend, get_block_hash_from_block_number(_))
@@ -1020,7 +1020,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
             .success = true,
-            .value = kAccountHistoryValue1};
+            .value = account_history_value1};
         co_return response;
     }));
     EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
@@ -1032,7 +1032,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     EXPECT_CALL(transaction, domain_get(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
             .success = true,
-            .value = kAccountHistoryValue3};
+            .value = account_history_value3};
         co_return response;
     }));
 

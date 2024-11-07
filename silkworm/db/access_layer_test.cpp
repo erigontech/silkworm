@@ -244,9 +244,9 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
     auto& txn{context.txn()};
 
     SECTION("Prune Mode") {
-        BlockAmount blockAmount;
-        REQUIRE(blockAmount.value() == 0);
-        REQUIRE(blockAmount.value_from_head(1'000'000) == 0);
+        BlockAmount block_amount;
+        REQUIRE(block_amount.value() == 0);
+        REQUIRE(block_amount.value_from_head(1'000'000) == 0);
 
         // Uninitialized mode
         PruneMode default_mode{};
@@ -273,13 +273,13 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
             std::string db_key{"pruneHistoryType"};
             std::string db_value{"random"};
             target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
-            bool hasThrown{false};
+            bool has_thrown{false};
             try {
                 (void)read_prune_mode(txn);
             } catch (const std::runtime_error&) {
-                hasThrown = true;
+                has_thrown = true;
             }
-            REQUIRE(hasThrown);
+            REQUIRE(has_thrown);
             db_value = "older";
             target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
         }

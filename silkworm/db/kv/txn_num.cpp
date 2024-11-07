@@ -35,7 +35,7 @@ static Task<std::optional<TxNum>> last_tx_num_for_block(const std::shared_ptr<kv
                                                         BlockNum block_number,
                                                         chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) {
     const auto block_number_key = block_key(block_number);
-    auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
+    const auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
     if (key_value.value.empty()) {
         SILKWORM_ASSERT(canonical_body_for_storage_provider);
         auto block_body_data = co_await canonical_body_for_storage_provider(block_number);
@@ -131,8 +131,7 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
             const KeyValue last_key = co_await max_tx_num_cursor->last();
             const std::string first_value = first_key.value.empty() ? "0" : std::to_string(endian::load_big_u64(first_key.value.data()));
             const std::string last_value = last_key.value.empty() ? "0" : std::to_string(endian::load_big_u64(last_key.value.data()));
-            std::string msg = "Bad txNum: first: " + first_value + " last: " + last_value;
-            throw std::invalid_argument(msg);
+            throw std::invalid_argument("Bad txNum: first: " + first_value + " last: " + last_value);
         }
         co_return max_tx_num >= tx_num;
     });

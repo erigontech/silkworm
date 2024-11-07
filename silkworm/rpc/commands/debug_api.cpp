@@ -127,7 +127,13 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
         const auto start_block_number = co_await core::get_block_number(start_block_id, *tx);
         const auto end_block_number = co_await core::get_block_number(end_block_id, *tx);
 
-        const auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number);
+        if (end_block_number < start_block_number) {
+            std::stringstream msg;
+            msg << "start block (" << start_block_number << ") must be less or equal to end block (" << end_block_number << ")";
+            throw std::invalid_argument(msg.str());
+        }
+
+        const auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number + 1);
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -173,7 +179,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
         if (!end_block_number) {
             throw std::invalid_argument("end block " + silkworm::to_hex(end_hash) + " not found");
         }
-        const auto addresses = co_await get_modified_accounts(*tx, *start_block_number, *end_block_number);
+        const auto addresses = co_await get_modified_accounts(*tx, *start_block_number, *end_block_number + 1);
 
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
@@ -634,28 +640,33 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
 
     SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
 
-    std::set<evmc::address> addresses;
     if (start_block_number > latest_block_number) {
         std::stringstream msg;
         msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
         throw std::invalid_argument(msg.str());
     }
-    if (start_block_number <= end_block_number) {
-        auto walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
-            auto block_number = static_cast<BlockNum>(std::stol(silkworm::to_hex(key), nullptr, 16));
-            if (block_number <= end_block_number) {
-                auto address = bytes_to_address(value.substr(0, kAddressLength));
 
-                SILK_TRACE << "Walker: processing block " << block_number << " address " << address;
-                addresses.insert(address);
-            }
-            return block_number <= end_block_number;
-        };
+    if (end_block_number > latest_block_number) {
+        std::stringstream msg;
+        msg << "end block (" << end_block_number << ") is later than the latest block (" << latest_block_number << ")";
+        throw std::invalid_argument(msg.str());
+    }
 
-        const auto key = silkworm::db::block_key(start_block_number);
-        SILK_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key);
+    const auto start_txn_number = co_await tx.first_txn_num_in_block(start_block_number);
+    const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number == start_block_number ? end_block_number + 1 : end_block_number) - 1;
 
-        co_await walk(tx, db::table::kAccountChangeSetName, key, 0, walker);
+    db::kv::api::HistoryRangeQuery query{
+        .table = db::table::kAccountsHistory,
+        .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
+        .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
+        .ascending_order = true};
+
+    auto paginated_result = co_await tx.history_range(std::move(query));
+    auto it = co_await paginated_result.begin();
+
+    std::set<evmc::address> addresses;
+    while (const auto value = co_await it.next()) {
+        addresses.insert(bytes_to_address(value->first));
     }
 
     co_return addresses;

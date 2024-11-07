@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "snapshot_bundle_factory_impl.hpp"
+#include "blocks_index_builders_factory.hpp"
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
@@ -24,11 +24,11 @@
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
 
-namespace silkworm::db {
+namespace silkworm::db::blocks {
 
 using namespace snapshots;
 
-std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPath& segment_path) const {
+std::vector<std::shared_ptr<IndexBuilder>> BlocksIndexBuildersFactory::index_builders(const SnapshotPath& segment_path) const {
     datastore::EntityName name{segment_path.tag()};
     {
         if (name == db::blocks::kHeaderSegmentName)
@@ -48,7 +48,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
     }
 }
 
-SnapshotPathList SnapshotBundleFactoryImpl::index_dependency_paths(const SnapshotPath& index_path) const {
+SnapshotPathList BlocksIndexBuildersFactory::index_dependency_paths(const SnapshotPath& index_path) const {
     datastore::EntityName name{index_path.tag()};
     datastore::EntityName segment_name = [name]() -> datastore::EntityName {
         if (name == db::blocks::kIdxHeaderHashName)
@@ -66,4 +66,4 @@ SnapshotPathList SnapshotBundleFactoryImpl::index_dependency_paths(const Snapsho
     return {snapshot_path};
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::db::blocks

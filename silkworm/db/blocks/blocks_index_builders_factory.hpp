@@ -16,17 +16,16 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/snapshots/index_builders_factory.hpp>
 #include <silkworm/db/datastore/snapshots/schema.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_bundle_factory.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::db::blocks {
 
-class StateBundleFactory : public snapshots::SnapshotBundleFactory {
+class BlocksIndexBuildersFactory : public snapshots::IndexBuildersFactory {
   public:
-    StateBundleFactory() {}
-    StateBundleFactory(snapshots::Schema::RepositoryDef schema)
+    explicit BlocksIndexBuildersFactory(snapshots::Schema::RepositoryDef schema)
         : schema_{std::move(schema)} {}
-    ~StateBundleFactory() override = default;
+    ~BlocksIndexBuildersFactory() override = default;
 
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& segment_path) const override;
     snapshots::SnapshotPathList index_dependency_paths(const snapshots::SnapshotPath& index_path) const override;
@@ -35,4 +34,4 @@ class StateBundleFactory : public snapshots::SnapshotBundleFactory {
     snapshots::Schema::RepositoryDef schema_;
 };
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::db::blocks

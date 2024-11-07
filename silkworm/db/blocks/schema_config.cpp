@@ -16,7 +16,7 @@
 
 #include "schema_config.hpp"
 
-#include "../snapshot_bundle_factory_impl.hpp"
+#include "blocks_index_builders_factory.hpp"
 
 namespace silkworm::db::blocks {
 
@@ -35,8 +35,8 @@ snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
     return schema;
 }
 
-std::unique_ptr<snapshots::SnapshotBundleFactory> make_blocks_bundle_factory() {
-    return std::make_unique<db::SnapshotBundleFactoryImpl>(make_blocks_repository_schema());
+std::unique_ptr<snapshots::IndexBuildersFactory> make_blocks_index_builders_factory() {
+    return std::make_unique<BlocksIndexBuildersFactory>(make_blocks_repository_schema());
 }
 
 snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path, bool open) {
@@ -45,7 +45,7 @@ snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_p
         open,
         make_blocks_repository_schema(),
         std::make_unique<snapshots::StepToBlockNumConverter>(),
-        make_blocks_bundle_factory(),
+        make_blocks_index_builders_factory(),
     };
 }
 

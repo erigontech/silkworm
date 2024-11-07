@@ -32,11 +32,11 @@ SnapshotRepository::SnapshotRepository(
     bool open,
     Schema::RepositoryDef schema,
     std::unique_ptr<StepToTimestampConverter> step_converter,
-    std::unique_ptr<SnapshotBundleFactory> bundle_factory)
+    std::unique_ptr<IndexBuildersFactory> index_builders_factory)
     : dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
       step_converter_(std::move(step_converter)),
-      bundle_factory_(std::move(bundle_factory)),
+      index_builders_factory_(std::move(index_builders_factory)),
       bundles_(std::make_shared<Bundles>()),
       bundles_mutex_(std::make_unique<std::mutex>()) {
     if (open) reopen_folder();
@@ -107,7 +107,7 @@ std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> Snaps
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_files(schema_.segment_file_ext());
-    auto index_builders = bundle_factory_->index_builders(segment_files);
+    auto index_builders = index_builders_factory_->index_builders(segment_files);
 
     std::erase_if(index_builders, [&](const auto& builder) {
         return builder->path().exists();
@@ -233,7 +233,7 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
 
 bool SnapshotRepository::is_stale_index_path(const SnapshotPath& index_path) const {
     return std::ranges::any_of(
-        bundle_factory_->index_dependency_paths(index_path),
+        index_builders_factory_->index_dependency_paths(index_path),
         [&](const SnapshotPath& dep_path) { return fs::last_write_time(index_path.path()) < fs::last_write_time(dep_path.path()); });
 }
 
@@ -259,7 +259,7 @@ void SnapshotRepository::build_indexes(const SnapshotBundlePaths& bundle) const 
     for (auto& entry : bundle.segment_paths())
         segment_paths.push_back(std::move(entry.second));
 
-    for (auto& builder : bundle_factory_->index_builders(segment_paths)) {
+    for (auto& builder : index_builders_factory_->index_builders(segment_paths)) {
         builder->build();
     }
 }

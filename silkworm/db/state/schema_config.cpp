@@ -16,7 +16,7 @@
 
 #include "schema_config.hpp"
 
-#include "state_bundle_factory.hpp"
+#include "state_index_builders_factory.hpp"
 
 namespace silkworm::db::state {
 
@@ -25,8 +25,8 @@ snapshots::Schema::RepositoryDef make_state_repository_schema() {
     return schema;
 }
 
-std::unique_ptr<snapshots::SnapshotBundleFactory> make_state_bundle_factory() {
-    return std::make_unique<StateBundleFactory>(make_state_repository_schema());
+std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_factory() {
+    return std::make_unique<StateIndexBuildersFactory>(make_state_repository_schema());
 }
 
 snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_path, bool open) {
@@ -35,7 +35,7 @@ snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_pa
         open,
         make_state_repository_schema(),
         std::make_unique<snapshots::StepToTxnIdConverter>(),
-        make_state_bundle_factory(),
+        make_state_index_builders_factory(),
     };
 }
 

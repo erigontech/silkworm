@@ -405,11 +405,11 @@ void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
     ensure(settings.segment_file_name.has_value(), "create_index: --snapshot_file must be specified");
     SILK_INFO << "Create index for snapshot: " << *settings.segment_file_name;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    auto bundle_factory = db::blocks::make_blocks_bundle_factory();
+    auto index_builders_factory = db::blocks::make_blocks_index_builders_factory();
     const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name});
     if (snapshot_path) {
         for (int i{0}; i < repetitions; ++i) {
-            for (auto& builder : bundle_factory->index_builders(*snapshot_path)) {
+            for (auto& builder : index_builders_factory->index_builders(*snapshot_path)) {
                 builder->build();
             }
         }

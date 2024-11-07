@@ -31,9 +31,9 @@
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
+#include "index_builders_factory.hpp"
 #include "segment_and_index.hpp"
 #include "snapshot_bundle.hpp"
-#include "snapshot_bundle_factory.hpp"
 
 namespace silkworm::snapshots {
 
@@ -51,7 +51,7 @@ class SnapshotRepository {
         bool open,
         Schema::RepositoryDef schema,
         std::unique_ptr<StepToTimestampConverter> step_converter,
-        std::unique_ptr<SnapshotBundleFactory> bundle_factory);
+        std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
     SnapshotRepository(SnapshotRepository&&) = default;
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = default;
@@ -129,8 +129,8 @@ class SnapshotRepository {
     //! Converts timestamp units to steps
     std::unique_ptr<StepToTimestampConverter> step_converter_;
 
-    //! SnapshotBundle factory
-    std::unique_ptr<SnapshotBundleFactory> bundle_factory_;
+    //! Creates index builders
+    std::unique_ptr<IndexBuildersFactory> index_builders_factory_;
 
     //! Full snapshot bundles ordered by block_from
     std::shared_ptr<Bundles> bundles_;

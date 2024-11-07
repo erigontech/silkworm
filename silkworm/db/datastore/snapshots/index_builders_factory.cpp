@@ -14,26 +14,17 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include <filesystem>
-#include <functional>
-#include <memory>
-#include <vector>
-
-#include "common/snapshot_path.hpp"
-#include "index_builder.hpp"
-#include "snapshot_bundle.hpp"
+#include "index_builders_factory.hpp"
 
 namespace silkworm::snapshots {
 
-struct SnapshotBundleFactory {
-    virtual ~SnapshotBundleFactory() = default;
-
-    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPath& segment_path) const = 0;
-    std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& segment_paths) const;
-
-    virtual SnapshotPathList index_dependency_paths(const SnapshotPath& index_path) const = 0;
-};
+std::vector<std::shared_ptr<IndexBuilder>> IndexBuildersFactory::index_builders(const SnapshotPathList& segment_paths) const {
+    std::vector<std::shared_ptr<IndexBuilder>> all_builders;
+    for (const auto& path : segment_paths) {
+        auto builders = index_builders(path);
+        all_builders.insert(all_builders.end(), builders.begin(), builders.end());
+    }
+    return all_builders;
+}
 
 }  // namespace silkworm::snapshots

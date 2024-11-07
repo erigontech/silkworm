@@ -19,8 +19,8 @@
 #include <memory>
 
 #include "../datastore/common/entity_name.hpp"
+#include "../datastore/snapshots/index_builders_factory.hpp"
 #include "../datastore/snapshots/schema.hpp"
-#include "../datastore/snapshots/snapshot_bundle_factory.hpp"
 #include "../datastore/snapshots/snapshot_repository.hpp"
 
 namespace silkworm::db::blocks {
@@ -32,7 +32,7 @@ inline constexpr std::string_view kIdxExtension{".idx"};
 
 snapshots::Schema::RepositoryDef make_blocks_repository_schema();
 
-std::unique_ptr<snapshots::SnapshotBundleFactory> make_blocks_bundle_factory();
+std::unique_ptr<snapshots::IndexBuildersFactory> make_blocks_index_builders_factory();
 
 snapshots::SnapshotRepository make_blocks_repository(
     std::filesystem::path dir_path,

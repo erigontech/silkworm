@@ -640,7 +640,6 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
 
     SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
 
-    std::set<evmc::address> addresses;
     if (start_block_number > latest_block_number) {
         std::stringstream msg;
         msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
@@ -654,10 +653,10 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     }
 
     const auto start_txn_number = co_await tx.first_txn_num_in_block(start_block_number);
-    const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number) - 1;
+    const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number == start_block_number ? end_block_number + 1 : end_block_number) - 1;
 
     db::kv::api::HistoryRangeQuery query{
-        .table = db::table::kAccountsDomain,
+        .table = db::table::kAccountsHistory,
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
         .ascending_order = true};
@@ -665,11 +664,11 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     auto paginated_result = co_await tx.history_range(std::move(query));
     auto it = co_await paginated_result.begin();
 
-    std::vector<std::string> keys;
+    std::set<evmc::address> addresses;
     while (const auto value = co_await it.next()) {
-        SILKWORM_ASSERT(value->first.size() >= kAddressLength);
-        const auto address = bytes_to_address(value->first.substr(0, kAddressLength));
-        addresses.insert(address);
+        SILKWORM_ASSERT(value->second.size() >= kAddressLength);
+        const Bytes address_bytes = value->second.substr(0, kAddressLength);
+        addresses.insert(bytes_to_address(address_bytes));
     }
 
     co_return addresses;

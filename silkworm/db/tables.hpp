@@ -430,8 +430,6 @@ inline constexpr const char* kStorageDomain{"storage"};
 //! \details Domain storing the account code information
 inline constexpr const char* kCodeDomain{"code"};
 
-//! \details Domain storing the account storage information
-inline constexpr const char* kAccountsDomain{"AccountsHistory"};
 //! \details History storing the account common information
 inline constexpr const char* kAccountsHistory{"AccountsHistory"};
 

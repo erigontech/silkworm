@@ -49,7 +49,9 @@ using db::chain::ChainStorage;
 using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
+using testing::_;
 using testing::Invoke;
+using testing::InvokeWithoutArgs;
 using testing::Unused;
 using namespace evmc::literals;
 
@@ -378,38 +380,43 @@ TEST_CASE("get_modified_accounts") {
         {"000000000052a057", "f3a3956d084e3f2a24add02c35c8afd09e3e9bf5030105080c9eea7771667e25"},          // NOLINT
         {"000000000052a058", "053eafe07f12033715d31e1599bbf27dd1c05fb2030105080ddd58b6af8be86e"}           // NOLINT
     };
-    // std::cout << "json: " << json << "\n" << std::flush;
-
-    // auto database = DummyDatabase{json};
-    // auto begin_result = boost::asio::co_spawn(pool, database.begin(), boost::asio::use_future);
-    // auto tx = begin_result.get();
     db::test_util::MockTransaction transaction;
 
     auto& tx = transaction;
     SECTION("end == start") {
+        EXPECT_CALL(transaction, get(db::table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+            co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
+        }));
+        EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, ByteView{stages::kExecution}))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
+                co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("000000000052a010")};
+            }));
+        EXPECT_CALL(transaction, first_txn_num_in_block(0x52a010))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<TxnId> {
+                co_return 0;
+            }));
+        EXPECT_CALL(transaction, first_txn_num_in_block(0x52a011))
+            .WillOnce(InvokeWithoutArgs([]() -> Task<TxnId> {
+                co_return 20;
+            }));
         db::kv::api::HistoryRangeQuery query{
-            .table = db::table::kAccountsDomain,
+            .table = db::table::kAccountsHistory,
             .from_timestamp = static_cast<db::kv::api::Timestamp>(0),
-            .to_timestamp = static_cast<db::kv::api::Timestamp>(0),
+            .to_timestamp = static_cast<db::kv::api::Timestamp>(19),
             .ascending_order = true};
-
         EXPECT_CALL(transaction, history_range(std::move(query))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
-            PaginatorKV paginator = []() -> Task<PageResultKV> {
+            PaginatorKV paginator = [](auto next_page_token) -> Task<PageResultKV> {
                 co_return PageResultKV{
-                    .keys = {string_to_bytes("000000000052a010")},
-                    .values = {string_to_bytes("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")},
-                    .has_more = false};
+                    .keys = {*from_hex("000000000052a010")},
+                    .values = {*from_hex("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")},
+                    .next_page_token = std::move(next_page_token)};
             };
             db::kv::api::PaginatedKeysValues result{paginator};
             co_return result;
         }));
 
         auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx, 0x52a010, 0x52a010), boost::asio::use_future);
-        auto accounts = result.get();
-        std::cout << "size: " << accounts.size() << "\n";
-
-        CHECK(accounts.size() == 1);
-
+        const auto accounts = result.get();
         nlohmann::json j = accounts;
         CHECK(j == R"([
             "0x07aaec0b237ccf56b03a7c43c1c7a783da560642"

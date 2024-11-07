@@ -87,18 +87,30 @@ void MergeRuleSet::initialize(EVM& evm) {
         return;
     }
 
-    if (evm.revision() < EVMC_CANCUN) {
-        return;
+    if (evm.revision() >= EVMC_CANCUN) {
+        // EIP-4788: Beacon block root in the EVM
+        {
+            SILKWORM_ASSERT(header.parent_beacon_block_root);
+            Transaction system_txn{};
+            system_txn.type = TransactionType::kSystem;
+            system_txn.to = kBeaconRootsAddress;
+            system_txn.data = Bytes{ByteView{*header.parent_beacon_block_root}};
+            system_txn.set_sender(kSystemAddress);
+            evm.execute(system_txn, kSystemCallGasLimit);
+        }
     }
 
-    // EIP-4788: Beacon block root in the EVM
-    SILKWORM_ASSERT(header.parent_beacon_block_root);
-    Transaction system_txn{};
-    system_txn.type = TransactionType::kSystem;
-    system_txn.to = kBeaconRootsAddress;
-    system_txn.data = Bytes{ByteView{*header.parent_beacon_block_root}};
-    system_txn.set_sender(kSystemAddress);
-    evm.execute(system_txn, kSystemCallGasLimit);
+    if (evm.revision() >= EVMC_PRAGUE) {
+        // EIP-2935: Serve historical block hashes from state
+        {
+            Transaction system_txn{};
+            system_txn.type = TransactionType::kSystem;
+            system_txn.to = kHistoryStorageAddress;
+            system_txn.data = Bytes{ByteView{header.parent_hash}};
+            system_txn.set_sender(kSystemAddress);
+            evm.execute(system_txn, kSystemCallGasLimit);
+        }
+    }
 }
 
 void MergeRuleSet::finalize(IntraBlockState& state, const Block& block) {

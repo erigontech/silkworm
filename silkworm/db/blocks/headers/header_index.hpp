@@ -25,6 +25,8 @@
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
+#include "../schema_config.hpp"
+
 namespace silkworm::snapshots {
 
 class HeaderIndex {
@@ -43,7 +45,7 @@ class HeaderIndex {
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
         return {
-            .index_file = segment_path.index_file(),
+            .index_file = segment_path.related_path_ext(db::blocks::kIdxExtension),
             .key_factory = std::make_unique<KeyFactory>(),
             .base_data_id = segment_path.step_range().to_block_num_range().start,
         };

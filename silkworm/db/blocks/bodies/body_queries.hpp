@@ -19,6 +19,7 @@
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 
+#include "../schema_config.hpp"
 #include "body_segment.hpp"
 
 namespace silkworm::snapshots {
@@ -32,7 +33,7 @@ class BodyFindByBlockNumMultiQuery {
         : repository_{repository} {}
 
     std::optional<BlockBodyForStorage> exec(BlockNum block_num) {
-        const auto [segment_and_index, _] = repository_.find_segment(SnapshotType::bodies, block_num);
+        const auto [segment_and_index, _] = repository_.find_segment(db::blocks::kBodySegmentName, block_num);
         if (!segment_and_index) return std::nullopt;
         return BodyFindByBlockNumQuery{*segment_and_index}.exec(block_num);
     }

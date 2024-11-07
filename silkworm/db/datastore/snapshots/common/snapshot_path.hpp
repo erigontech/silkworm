@@ -22,13 +22,9 @@
 #include <string>
 #include <vector>
 
-#include "snapshot_type.hpp"
 #include "step.hpp"
 
 namespace silkworm::snapshots {
-
-inline constexpr const char* kSegmentExtension{".seg"};
-inline constexpr const char* kIdxExtension{".idx"};
 
 //! The snapshot version 1 aka v1
 inline constexpr uint8_t kSnapshotV1{1};
@@ -42,21 +38,20 @@ class SnapshotPath {
         const std::filesystem::path& dir,
         uint8_t version,
         StepRange step_range,
-        SnapshotType type,
-        const char* ext = kSegmentExtension);
+        std::string tag,
+        std::string_view ext);
 
     std::string filename() const { return path_.filename().string(); }
     const std::filesystem::path& path() const { return path_; }
     std::string extension() const { return path_.extension().string(); }
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }
-    SnapshotType type() const { return type_; }
-    std::string type_string() const;
+    const std::string& tag() const { return tag_; }
     bool exists() const { return std::filesystem::exists(path_); }
 
-    SnapshotPath related_path(SnapshotType type, const char* ext) const;
-    SnapshotPath index_file() const {
-        return related_path(type_, kIdxExtension);
+    SnapshotPath related_path(std::string tag, std::string_view ext) const;
+    SnapshotPath related_path_ext(std::string_view ext) const {
+        return related_path(tag_, ext);
     }
 
     friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);
@@ -66,19 +61,19 @@ class SnapshotPath {
     static std::filesystem::path make_filename(
         uint8_t version,
         StepRange step_range,
-        SnapshotType type,
-        const char* ext);
+        std::string_view tag,
+        std::string_view ext);
 
     SnapshotPath(
         std::filesystem::path path,
         uint8_t version,
         StepRange step_range,
-        SnapshotType type);
+        std::string tag);
 
     std::filesystem::path path_;
     uint8_t version_{0};
     StepRange step_range_;
-    SnapshotType type_;
+    std::string tag_;
 };
 
 using SnapshotPathList = std::vector<SnapshotPath>;

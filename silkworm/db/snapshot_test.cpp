@@ -50,7 +50,8 @@ class SnapshotPathForTest : public SnapshotPath {
                   tmp_dir,
                   kSnapshotV1,
                   step_range,
-                  SnapshotType::headers),
+                  "headers",
+                  ".seg"),
           } {}
 };
 
@@ -131,7 +132,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
     SegmentFileReader header_segment{header_segment_path};
     header_segment.reopen_segment();
 
-    Index idx_header_hash{header_segment_path.index_file()};
+    Index idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_header_hash.reopen_index();
     HeaderFindByBlockNumQuery header_by_number{{header_segment, idx_header_hash}};
 
@@ -174,7 +175,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     SegmentFileReader body_segment{body_segment_path};
     body_segment.reopen_segment();
 
-    Index idx_body_number{body_segment_path.index_file()};
+    Index idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_body_number.reopen_index();
     BodyFindByBlockNumQuery body_by_number{{body_segment, idx_body_number}};
 
@@ -203,7 +204,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
     SegmentFileReader txn_segment{txn_segment_path};
     txn_segment.reopen_segment();
 
-    Index idx_txn_hash{txn_segment_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_txn_hash.reopen_index();
     TransactionFindByIdQuery txn_by_id{{txn_segment, idx_txn_hash}};
 
@@ -232,11 +233,11 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     SegmentFileReader txn_segment{txn_segment_path};
     txn_segment.reopen_segment();
 
-    Index idx_txn_hash{txn_segment_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_txn_hash.reopen_index();
     TransactionFindByIdQuery txn_by_id{{txn_segment, idx_txn_hash}};
 
-    Index idx_txn_hash_2_block{txn_segment_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
+    Index idx_txn_hash_2_block{txn_segment_path.related_path(db::blocks::kIdxTxnHash2BlockName.to_string(), db::blocks::kIdxExtension)};
     idx_txn_hash_2_block.reopen_index();
     TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}};
 
@@ -274,7 +275,7 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
     SegmentFileReader txn_segment{txn_segment_path};
     txn_segment.reopen_segment();
 
-    Index idx_txn_hash{txn_segment_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_txn_hash.reopen_index();
     TransactionRangeFromIdQuery query{{txn_segment, idx_txn_hash}};
 
@@ -306,7 +307,7 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
     SegmentFileReader txn_segment{txn_segment_path};
     txn_segment.reopen_segment();
 
-    Index idx_txn_hash{txn_segment_path.index_file()};
+    Index idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_txn_hash.reopen_index();
     TransactionPayloadRlpRangeFromIdQuery query{{txn_segment, idx_txn_hash}};
 

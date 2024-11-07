@@ -16,15 +16,23 @@
 
 #pragma once
 
+#include <memory>
+
 #include "../datastore/common/entity_name.hpp"
 #include "../datastore/snapshots/schema.hpp"
+#include "../datastore/snapshots/snapshot_bundle_factory.hpp"
 #include "../datastore/snapshots/snapshot_repository.hpp"
 
 namespace silkworm::db::blocks {
 
 inline constexpr datastore::EntityName kBlocksRepositoryName{"Blocks"};
 
+inline constexpr std::string_view kSegmentExtension{".seg"};
+inline constexpr std::string_view kIdxExtension{".idx"};
+
 snapshots::Schema::RepositoryDef make_blocks_repository_schema();
+
+std::unique_ptr<snapshots::SnapshotBundleFactory> make_blocks_bundle_factory();
 
 snapshots::SnapshotRepository make_blocks_repository(
     std::filesystem::path dir_path,
@@ -42,7 +50,7 @@ inline constexpr datastore::EntityName kTxnSegmentName{"transactions"};
 //! Index transaction_hash -> txn_id -> transactions_segment_offset
 inline constexpr datastore::EntityName kIdxTxnHashName{"transactions"};
 //! Index transaction_hash -> block_num
-inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions_to_block"};
+inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions-to-block"};
 
 struct BundleDataRef {
     const snapshots::SnapshotBundleData& data;

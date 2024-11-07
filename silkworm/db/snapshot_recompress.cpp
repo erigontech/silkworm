@@ -21,6 +21,7 @@
 
 #include "blocks/bodies/body_segment.hpp"
 #include "blocks/headers/header_segment.hpp"
+#include "blocks/schema_config.hpp"
 #include "blocks/transactions/txn_segment.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
 
@@ -45,17 +46,16 @@ void snapshot_file_recompress(const std::filesystem::path& path) {
     TemporaryDirectory tmp_dir;
     SegmentFileWriter file_writer{*SnapshotPath::parse(out_path), tmp_dir.path()};
 
-    switch (path_opt->type()) {
-        case SnapshotType::headers:
+    const auto& tag = path_opt->tag();
+    datastore::EntityName name{tag};
+    {
+        if (name == db::blocks::kHeaderSegmentName)
             copy_reader_to_writer<HeaderSegmentReader, HeaderSegmentWriter>(file_reader, file_writer);
-            break;
-        case SnapshotType::bodies:
+        else if (name == db::blocks::kBodySegmentName)
             copy_reader_to_writer<BodySegmentReader, BodySegmentWriter>(file_reader, file_writer);
-            break;
-        case SnapshotType::transactions:
+        else if (name == db::blocks::kTxnSegmentName)
             copy_reader_to_writer<TransactionSegmentReader, TransactionSegmentWriter>(file_reader, file_writer);
-            break;
-        default:
+        else
             throw std::runtime_error{"invalid snapshot type"};
     }
 

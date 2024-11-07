@@ -265,20 +265,16 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
             return SILKWORM_INVALID_PATH;
         }
 
-        std::shared_ptr<snapshots::IndexBuilder> index;
-        switch (snapshot_path->type()) {
-            case snapshots::SnapshotType::headers: {
-                index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
+        datastore::EntityName name{snapshot_path->tag()};
+        {
+            if (name == db::blocks::kHeaderSegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
                 needed_indexes.push_back(index);
-                break;
-            }
-            case snapshots::SnapshotType::bodies: {
-                index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
+            } else if (name == db::blocks::kBodySegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
                 needed_indexes.push_back(index);
-                break;
-            }
-            case snapshots::SnapshotType::transactions: {
-                auto bodies_segment_path = snapshot_path->related_path(snapshots::SnapshotType::bodies, snapshots::kSegmentExtension);
+            } else if (name == db::blocks::kTxnSegmentName) {
+                auto bodies_segment_path = snapshot_path->related_path(db::blocks::kBodySegmentName.to_string(), db::blocks::kSegmentExtension);
                 auto bodies_file = std::find_if(segments, segments + len, [&](SilkwormMemoryMappedFile* file) -> bool {
                     return snapshots::SnapshotPath::parse(file->file_path) == bodies_segment_path;
                 });
@@ -286,7 +282,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                 if (bodies_file < segments + len) {
                     auto bodies_segment_region = make_region(**bodies_file);
 
-                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
+                    auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
                         bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
                     needed_indexes.push_back(index);
 
@@ -294,9 +290,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                         bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
                     needed_indexes.push_back(index);
                 }
-                break;
-            }
-            default: {
+            } else {
                 SILKWORM_ASSERT(false);
             }
         }
@@ -353,7 +347,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::SegmentFileReader header_segment{*headers_segment_path, make_region(hs.segment)};
-    snapshots::Index idx_header_hash{headers_segment_path->index_file(), make_region(hs.header_hash_index)};
+    snapshots::Index idx_header_hash{headers_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(hs.header_hash_index)};
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
     if (!bs.segment.file_path || !bs.block_num_index.file_path) {
@@ -364,7 +358,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::SegmentFileReader body_segment{*bodies_segment_path, make_region(bs.segment)};
-    snapshots::Index idx_body_number{bodies_segment_path->index_file(), make_region(bs.block_num_index)};
+    snapshots::Index idx_body_number{bodies_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(bs.block_num_index)};
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
     if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
@@ -375,8 +369,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::SegmentFileReader txn_segment{*transactions_segment_path, make_region(ts.segment)};
-    snapshots::Index idx_txn_hash{transactions_segment_path->related_path(snapshots::SnapshotType::transactions, snapshots::kIdxExtension), make_region(ts.tx_hash_index)};
-    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(snapshots::SnapshotType::transactions_to_block, snapshots::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
+    snapshots::Index idx_txn_hash{transactions_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(ts.tx_hash_index)};
+    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(db::blocks::kIdxTxnHash2BlockName.to_string(), db::blocks::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
 
     snapshots::SnapshotBundleData bundle_data = [&]() {
         snapshots::SnapshotBundleData data;

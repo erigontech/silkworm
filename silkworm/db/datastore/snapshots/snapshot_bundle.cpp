@@ -16,8 +16,6 @@
 
 #include "snapshot_bundle.hpp"
 
-#include <magic_enum.hpp>
-
 #include <silkworm/infra/common/ensure.hpp>
 
 namespace silkworm::snapshots {
@@ -64,13 +62,11 @@ void SnapshotBundle::close() {
     }
 }
 
-const SegmentFileReader& SnapshotBundle::segment(SnapshotType type) const {
-    datastore::EntityName name{magic_enum::enum_name(type)};
+const SegmentFileReader& SnapshotBundle::segment(datastore::EntityName name) const {
     return data_.segments.at(name);
 }
 
-const Index& SnapshotBundle::index(SnapshotType type) const {
-    datastore::EntityName name{magic_enum::enum_name(type)};
+const Index& SnapshotBundle::index(datastore::EntityName name) const {
     return data_.rec_split_indexes.at(name);
 }
 
@@ -93,11 +89,8 @@ std::vector<SnapshotPath> SnapshotBundle::segment_paths() {
     return paths;
 }
 
-std::vector<SnapshotPath> SnapshotBundlePaths::segment_paths() const {
-    std::vector<SnapshotPath> results;
-    for (auto& entry : schema_.make_segment_paths(dir_path_, step_range_))
-        results.push_back(std::move(entry.second));
-    return results;
+std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::segment_paths() const {
+    return schema_.make_segment_paths(dir_path_, step_range_);
 }
 
 std::vector<std::filesystem::path> SnapshotBundlePaths::files() const {

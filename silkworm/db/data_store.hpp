@@ -16,14 +16,62 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
+#include <optional>
+
+#include "blocks/schema_config.hpp"
+#include "datastore/data_store.hpp"
+#include "state/schema_config.hpp"
 
 namespace silkworm::db {
 
 struct DataStoreRef {
-    mdbx::env chaindata_env;
+    RWAccess chaindata;
     snapshots::SnapshotRepository& repository;
+};
+
+class DataStore {
+  public:
+    explicit DataStore(datastore::DataStore store) : store_{std::move(store)} {}
+    DataStore(
+        mdbx::env_managed chaindata_env,
+        snapshots::SnapshotRepository blocks_repository,
+        std::optional<snapshots::SnapshotRepository> state_repository = std::nullopt)
+        : store_{
+              std::move(chaindata_env),
+              make_repositories_map(std::move(blocks_repository), std::move(state_repository)),
+          } {}
+
+    DataStore(
+        const EnvConfig& chaindata_env_config,
+        std::filesystem::path repository_path)  // NOLINT(performance-unnecessary-value-param)
+        : DataStore{
+              db::open_env(chaindata_env_config),
+              blocks::make_blocks_repository(std::move(repository_path)),
+          } {}
+
+    void close() {
+        store_.close();
+    }
+
+    DataStoreRef ref() const {
+        return {store_.chaindata_rw(), store_.repository(blocks::kBlocksRepositoryName)};
+    }
+
+    db::ROAccess chaindata() const { return store_.chaindata(); }
+    db::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
+
+  private:
+    static std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> make_repositories_map(
+        snapshots::SnapshotRepository blocks_repository,
+        std::optional<snapshots::SnapshotRepository> state_repository) {
+        std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories;
+        repositories.emplace(blocks::kBlocksRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)));
+        if (state_repository)
+            repositories.emplace(state::kStateRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(*state_repository)));
+        return repositories;
+    }
+
+    datastore::DataStore store_;
 };
 
 }  // namespace silkworm::db

@@ -26,8 +26,13 @@ namespace silkworm::db::kv::grpc::server {
 
 using rpc::request_repeatedly;
 
-KvServer::KvServer(const rpc::ServerSettings& settings, mdbx::env* chaindata_env, StateChangeCollection* state_change_source)
-    : Server(settings), chaindata_env_{chaindata_env}, state_change_source_{state_change_source} {
+KvServer::KvServer(
+    const rpc::ServerSettings& settings,
+    ROAccess chaindata,
+    StateChangeCollection* state_change_source)
+    : Server(settings),
+      chaindata_{std::move(chaindata)},
+      state_change_source_{state_change_source} {
     setup_kv_calls();
     SILK_INFO << "KvServer created listening on: " << settings.address_uri;
 }
@@ -52,7 +57,7 @@ void KvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
                        [this, grpc_context](auto&&... args) -> Task<void> {
-                           co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}(chaindata_env_);
+                           co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}(chaindata_);
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
                        [this](auto&&... args) -> Task<void> {

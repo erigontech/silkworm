@@ -49,12 +49,6 @@ namespace types {
 class BlobsBundleV1;
 struct BlobsBundleV1DefaultTypeInternal;
 extern BlobsBundleV1DefaultTypeInternal _BlobsBundleV1_default_instance_;
-class ConsolidationRequest;
-struct ConsolidationRequestDefaultTypeInternal;
-extern ConsolidationRequestDefaultTypeInternal _ConsolidationRequest_default_instance_;
-class DepositRequest;
-struct DepositRequestDefaultTypeInternal;
-extern DepositRequestDefaultTypeInternal _DepositRequest_default_instance_;
 class ExecutionPayload;
 struct ExecutionPayloadDefaultTypeInternal;
 extern ExecutionPayloadDefaultTypeInternal _ExecutionPayload_default_instance_;
@@ -88,20 +82,18 @@ extern NodeInfoReplyDefaultTypeInternal _NodeInfoReply_default_instance_;
 class PeerInfo;
 struct PeerInfoDefaultTypeInternal;
 extern PeerInfoDefaultTypeInternal _PeerInfo_default_instance_;
+class RequestsBundle;
+struct RequestsBundleDefaultTypeInternal;
+extern RequestsBundleDefaultTypeInternal _RequestsBundle_default_instance_;
 class VersionReply;
 struct VersionReplyDefaultTypeInternal;
 extern VersionReplyDefaultTypeInternal _VersionReply_default_instance_;
 class Withdrawal;
 struct WithdrawalDefaultTypeInternal;
 extern WithdrawalDefaultTypeInternal _Withdrawal_default_instance_;
-class WithdrawalRequest;
-struct WithdrawalRequestDefaultTypeInternal;
-extern WithdrawalRequestDefaultTypeInternal _WithdrawalRequest_default_instance_;
 }  // namespace types
 PROTOBUF_NAMESPACE_OPEN
 template<> ::types::BlobsBundleV1* Arena::CreateMaybeMessage<::types::BlobsBundleV1>(Arena*);
-template<> ::types::ConsolidationRequest* Arena::CreateMaybeMessage<::types::ConsolidationRequest>(Arena*);
-template<> ::types::DepositRequest* Arena::CreateMaybeMessage<::types::DepositRequest>(Arena*);
 template<> ::types::ExecutionPayload* Arena::CreateMaybeMessage<::types::ExecutionPayload>(Arena*);
 template<> ::types::ExecutionPayloadBodyV1* Arena::CreateMaybeMessage<::types::ExecutionPayloadBodyV1>(Arena*);
 template<> ::types::H1024* Arena::CreateMaybeMessage<::types::H1024>(Arena*);
@@ -113,9 +105,9 @@ template<> ::types::H512* Arena::CreateMaybeMessage<::types::H512>(Arena*);
 template<> ::types::NodeInfoPorts* Arena::CreateMaybeMessage<::types::NodeInfoPorts>(Arena*);
 template<> ::types::NodeInfoReply* Arena::CreateMaybeMessage<::types::NodeInfoReply>(Arena*);
 template<> ::types::PeerInfo* Arena::CreateMaybeMessage<::types::PeerInfo>(Arena*);
+template<> ::types::RequestsBundle* Arena::CreateMaybeMessage<::types::RequestsBundle>(Arena*);
 template<> ::types::VersionReply* Arena::CreateMaybeMessage<::types::VersionReply>(Arena*);
 template<> ::types::Withdrawal* Arena::CreateMaybeMessage<::types::Withdrawal>(Arena*);
-template<> ::types::WithdrawalRequest* Arena::CreateMaybeMessage<::types::WithdrawalRequest>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace types {
 
@@ -1449,9 +1441,6 @@ class ExecutionPayload final :
   enum : int {
     kTransactionsFieldNumber = 15,
     kWithdrawalsFieldNumber = 16,
-    kDepositRequestsFieldNumber = 19,
-    kWithdrawalRequestsFieldNumber = 20,
-    kConsolidationRequestsFieldNumber = 21,
     kExtraDataFieldNumber = 12,
     kParentHashFieldNumber = 2,
     kCoinbaseFieldNumber = 3,
@@ -1510,60 +1499,6 @@ class ExecutionPayload final :
   ::types::Withdrawal* add_withdrawals();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
       withdrawals() const;
-
-  // repeated .types.DepositRequest deposit_requests = 19;
-  int deposit_requests_size() const;
-  private:
-  int _internal_deposit_requests_size() const;
-  public:
-  void clear_deposit_requests();
-  ::types::DepositRequest* mutable_deposit_requests(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::DepositRequest >*
-      mutable_deposit_requests();
-  private:
-  const ::types::DepositRequest& _internal_deposit_requests(int index) const;
-  ::types::DepositRequest* _internal_add_deposit_requests();
-  public:
-  const ::types::DepositRequest& deposit_requests(int index) const;
-  ::types::DepositRequest* add_deposit_requests();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::DepositRequest >&
-      deposit_requests() const;
-
-  // repeated .types.WithdrawalRequest withdrawal_requests = 20;
-  int withdrawal_requests_size() const;
-  private:
-  int _internal_withdrawal_requests_size() const;
-  public:
-  void clear_withdrawal_requests();
-  ::types::WithdrawalRequest* mutable_withdrawal_requests(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::WithdrawalRequest >*
-      mutable_withdrawal_requests();
-  private:
-  const ::types::WithdrawalRequest& _internal_withdrawal_requests(int index) const;
-  ::types::WithdrawalRequest* _internal_add_withdrawal_requests();
-  public:
-  const ::types::WithdrawalRequest& withdrawal_requests(int index) const;
-  ::types::WithdrawalRequest* add_withdrawal_requests();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::WithdrawalRequest >&
-      withdrawal_requests() const;
-
-  // repeated .types.ConsolidationRequest consolidation_requests = 21;
-  int consolidation_requests_size() const;
-  private:
-  int _internal_consolidation_requests_size() const;
-  public:
-  void clear_consolidation_requests();
-  ::types::ConsolidationRequest* mutable_consolidation_requests(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::ConsolidationRequest >*
-      mutable_consolidation_requests();
-  private:
-  const ::types::ConsolidationRequest& _internal_consolidation_requests(int index) const;
-  ::types::ConsolidationRequest* _internal_add_consolidation_requests();
-  public:
-  const ::types::ConsolidationRequest& consolidation_requests(int index) const;
-  ::types::ConsolidationRequest* add_consolidation_requests();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::ConsolidationRequest >&
-      consolidation_requests() const;
 
   // bytes extra_data = 12;
   void clear_extra_data();
@@ -1806,9 +1741,6 @@ class ExecutionPayload final :
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> transactions_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal > withdrawals_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::DepositRequest > deposit_requests_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::WithdrawalRequest > withdrawal_requests_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::ConsolidationRequest > consolidation_requests_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr extra_data_;
     ::types::H256* parent_hash_;
     ::types::H160* coinbase_;
@@ -1825,590 +1757,6 @@ class ExecutionPayload final :
     uint64_t blob_gas_used_;
     uint64_t excess_blob_gas_;
     uint32_t version_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_types_2ftypes_2eproto;
-};
-// -------------------------------------------------------------------
-
-class DepositRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.DepositRequest) */ {
- public:
-  inline DepositRequest() : DepositRequest(nullptr) {}
-  ~DepositRequest() override;
-  explicit PROTOBUF_CONSTEXPR DepositRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  DepositRequest(const DepositRequest& from);
-  DepositRequest(DepositRequest&& from) noexcept
-    : DepositRequest() {
-    *this = ::std::move(from);
-  }
-
-  inline DepositRequest& operator=(const DepositRequest& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline DepositRequest& operator=(DepositRequest&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const DepositRequest& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const DepositRequest* internal_default_instance() {
-    return reinterpret_cast<const DepositRequest*>(
-               &_DepositRequest_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    8;
-
-  friend void swap(DepositRequest& a, DepositRequest& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(DepositRequest* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(DepositRequest* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  DepositRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<DepositRequest>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const DepositRequest& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const DepositRequest& from) {
-    DepositRequest::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(DepositRequest* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "types.DepositRequest";
-  }
-  protected:
-  explicit DepositRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kPubkeyFieldNumber = 1,
-    kSignatureFieldNumber = 4,
-    kWithdrawalCredentialsFieldNumber = 2,
-    kAmountFieldNumber = 3,
-    kIndexFieldNumber = 5,
-  };
-  // bytes pubkey = 1;
-  void clear_pubkey();
-  const std::string& pubkey() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_pubkey(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_pubkey();
-  PROTOBUF_NODISCARD std::string* release_pubkey();
-  void set_allocated_pubkey(std::string* pubkey);
-  private:
-  const std::string& _internal_pubkey() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_pubkey(const std::string& value);
-  std::string* _internal_mutable_pubkey();
-  public:
-
-  // bytes signature = 4;
-  void clear_signature();
-  const std::string& signature() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_signature(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_signature();
-  PROTOBUF_NODISCARD std::string* release_signature();
-  void set_allocated_signature(std::string* signature);
-  private:
-  const std::string& _internal_signature() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_signature(const std::string& value);
-  std::string* _internal_mutable_signature();
-  public:
-
-  // .types.H256 withdrawal_credentials = 2;
-  bool has_withdrawal_credentials() const;
-  private:
-  bool _internal_has_withdrawal_credentials() const;
-  public:
-  void clear_withdrawal_credentials();
-  const ::types::H256& withdrawal_credentials() const;
-  PROTOBUF_NODISCARD ::types::H256* release_withdrawal_credentials();
-  ::types::H256* mutable_withdrawal_credentials();
-  void set_allocated_withdrawal_credentials(::types::H256* withdrawal_credentials);
-  private:
-  const ::types::H256& _internal_withdrawal_credentials() const;
-  ::types::H256* _internal_mutable_withdrawal_credentials();
-  public:
-  void unsafe_arena_set_allocated_withdrawal_credentials(
-      ::types::H256* withdrawal_credentials);
-  ::types::H256* unsafe_arena_release_withdrawal_credentials();
-
-  // uint64 amount = 3;
-  void clear_amount();
-  uint64_t amount() const;
-  void set_amount(uint64_t value);
-  private:
-  uint64_t _internal_amount() const;
-  void _internal_set_amount(uint64_t value);
-  public:
-
-  // uint64 index = 5;
-  void clear_index();
-  uint64_t index() const;
-  void set_index(uint64_t value);
-  private:
-  uint64_t _internal_index() const;
-  void _internal_set_index(uint64_t value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:types.DepositRequest)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pubkey_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr signature_;
-    ::types::H256* withdrawal_credentials_;
-    uint64_t amount_;
-    uint64_t index_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_types_2ftypes_2eproto;
-};
-// -------------------------------------------------------------------
-
-class WithdrawalRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.WithdrawalRequest) */ {
- public:
-  inline WithdrawalRequest() : WithdrawalRequest(nullptr) {}
-  ~WithdrawalRequest() override;
-  explicit PROTOBUF_CONSTEXPR WithdrawalRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  WithdrawalRequest(const WithdrawalRequest& from);
-  WithdrawalRequest(WithdrawalRequest&& from) noexcept
-    : WithdrawalRequest() {
-    *this = ::std::move(from);
-  }
-
-  inline WithdrawalRequest& operator=(const WithdrawalRequest& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline WithdrawalRequest& operator=(WithdrawalRequest&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const WithdrawalRequest& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const WithdrawalRequest* internal_default_instance() {
-    return reinterpret_cast<const WithdrawalRequest*>(
-               &_WithdrawalRequest_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    9;
-
-  friend void swap(WithdrawalRequest& a, WithdrawalRequest& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(WithdrawalRequest* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(WithdrawalRequest* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  WithdrawalRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<WithdrawalRequest>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const WithdrawalRequest& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const WithdrawalRequest& from) {
-    WithdrawalRequest::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(WithdrawalRequest* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "types.WithdrawalRequest";
-  }
-  protected:
-  explicit WithdrawalRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kValidatorPubkeyFieldNumber = 2,
-    kSourceAddressFieldNumber = 1,
-    kAmountFieldNumber = 3,
-  };
-  // bytes validator_pubkey = 2;
-  void clear_validator_pubkey();
-  const std::string& validator_pubkey() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_validator_pubkey(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_validator_pubkey();
-  PROTOBUF_NODISCARD std::string* release_validator_pubkey();
-  void set_allocated_validator_pubkey(std::string* validator_pubkey);
-  private:
-  const std::string& _internal_validator_pubkey() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_validator_pubkey(const std::string& value);
-  std::string* _internal_mutable_validator_pubkey();
-  public:
-
-  // .types.H160 source_address = 1;
-  bool has_source_address() const;
-  private:
-  bool _internal_has_source_address() const;
-  public:
-  void clear_source_address();
-  const ::types::H160& source_address() const;
-  PROTOBUF_NODISCARD ::types::H160* release_source_address();
-  ::types::H160* mutable_source_address();
-  void set_allocated_source_address(::types::H160* source_address);
-  private:
-  const ::types::H160& _internal_source_address() const;
-  ::types::H160* _internal_mutable_source_address();
-  public:
-  void unsafe_arena_set_allocated_source_address(
-      ::types::H160* source_address);
-  ::types::H160* unsafe_arena_release_source_address();
-
-  // uint64 amount = 3;
-  void clear_amount();
-  uint64_t amount() const;
-  void set_amount(uint64_t value);
-  private:
-  uint64_t _internal_amount() const;
-  void _internal_set_amount(uint64_t value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:types.WithdrawalRequest)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr validator_pubkey_;
-    ::types::H160* source_address_;
-    uint64_t amount_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_types_2ftypes_2eproto;
-};
-// -------------------------------------------------------------------
-
-class ConsolidationRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.ConsolidationRequest) */ {
- public:
-  inline ConsolidationRequest() : ConsolidationRequest(nullptr) {}
-  ~ConsolidationRequest() override;
-  explicit PROTOBUF_CONSTEXPR ConsolidationRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  ConsolidationRequest(const ConsolidationRequest& from);
-  ConsolidationRequest(ConsolidationRequest&& from) noexcept
-    : ConsolidationRequest() {
-    *this = ::std::move(from);
-  }
-
-  inline ConsolidationRequest& operator=(const ConsolidationRequest& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline ConsolidationRequest& operator=(ConsolidationRequest&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const ConsolidationRequest& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const ConsolidationRequest* internal_default_instance() {
-    return reinterpret_cast<const ConsolidationRequest*>(
-               &_ConsolidationRequest_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    10;
-
-  friend void swap(ConsolidationRequest& a, ConsolidationRequest& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(ConsolidationRequest* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(ConsolidationRequest* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  ConsolidationRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<ConsolidationRequest>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const ConsolidationRequest& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const ConsolidationRequest& from) {
-    ConsolidationRequest::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(ConsolidationRequest* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "types.ConsolidationRequest";
-  }
-  protected:
-  explicit ConsolidationRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kSourcePubkeyFieldNumber = 2,
-    kTargetPubkeyFieldNumber = 3,
-    kSourceAddressFieldNumber = 1,
-  };
-  // bytes source_pubkey = 2;
-  void clear_source_pubkey();
-  const std::string& source_pubkey() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_source_pubkey(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_source_pubkey();
-  PROTOBUF_NODISCARD std::string* release_source_pubkey();
-  void set_allocated_source_pubkey(std::string* source_pubkey);
-  private:
-  const std::string& _internal_source_pubkey() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_source_pubkey(const std::string& value);
-  std::string* _internal_mutable_source_pubkey();
-  public:
-
-  // bytes target_pubkey = 3;
-  void clear_target_pubkey();
-  const std::string& target_pubkey() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_target_pubkey(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_target_pubkey();
-  PROTOBUF_NODISCARD std::string* release_target_pubkey();
-  void set_allocated_target_pubkey(std::string* target_pubkey);
-  private:
-  const std::string& _internal_target_pubkey() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_target_pubkey(const std::string& value);
-  std::string* _internal_mutable_target_pubkey();
-  public:
-
-  // .types.H160 source_address = 1;
-  bool has_source_address() const;
-  private:
-  bool _internal_has_source_address() const;
-  public:
-  void clear_source_address();
-  const ::types::H160& source_address() const;
-  PROTOBUF_NODISCARD ::types::H160* release_source_address();
-  ::types::H160* mutable_source_address();
-  void set_allocated_source_address(::types::H160* source_address);
-  private:
-  const ::types::H160& _internal_source_address() const;
-  ::types::H160* _internal_mutable_source_address();
-  public:
-  void unsafe_arena_set_allocated_source_address(
-      ::types::H160* source_address);
-  ::types::H160* unsafe_arena_release_source_address();
-
-  // @@protoc_insertion_point(class_scope:types.ConsolidationRequest)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr source_pubkey_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr target_pubkey_;
-    ::types::H160* source_address_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_types_2ftypes_2eproto;
@@ -2463,7 +1811,7 @@ class Withdrawal final :
                &_Withdrawal_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    11;
+    8;
 
   friend void swap(Withdrawal& a, Withdrawal& b) {
     a.Swap(&b);
@@ -2653,7 +2001,7 @@ class BlobsBundleV1 final :
                &_BlobsBundleV1_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    12;
+    9;
 
   friend void swap(BlobsBundleV1& a, BlobsBundleV1& b) {
     a.Swap(&b);
@@ -2820,6 +2168,169 @@ class BlobsBundleV1 final :
 };
 // -------------------------------------------------------------------
 
+class RequestsBundle final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.RequestsBundle) */ {
+ public:
+  inline RequestsBundle() : RequestsBundle(nullptr) {}
+  ~RequestsBundle() override;
+  explicit PROTOBUF_CONSTEXPR RequestsBundle(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  RequestsBundle(const RequestsBundle& from);
+  RequestsBundle(RequestsBundle&& from) noexcept
+    : RequestsBundle() {
+    *this = ::std::move(from);
+  }
+
+  inline RequestsBundle& operator=(const RequestsBundle& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RequestsBundle& operator=(RequestsBundle&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const RequestsBundle& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const RequestsBundle* internal_default_instance() {
+    return reinterpret_cast<const RequestsBundle*>(
+               &_RequestsBundle_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    10;
+
+  friend void swap(RequestsBundle& a, RequestsBundle& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(RequestsBundle* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RequestsBundle* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  RequestsBundle* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<RequestsBundle>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const RequestsBundle& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const RequestsBundle& from) {
+    RequestsBundle::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(RequestsBundle* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.RequestsBundle";
+  }
+  protected:
+  explicit RequestsBundle(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kRequestsFieldNumber = 1,
+  };
+  // repeated bytes requests = 1;
+  int requests_size() const;
+  private:
+  int _internal_requests_size() const;
+  public:
+  void clear_requests();
+  const std::string& requests(int index) const;
+  std::string* mutable_requests(int index);
+  void set_requests(int index, const std::string& value);
+  void set_requests(int index, std::string&& value);
+  void set_requests(int index, const char* value);
+  void set_requests(int index, const void* value, size_t size);
+  std::string* add_requests();
+  void add_requests(const std::string& value);
+  void add_requests(std::string&& value);
+  void add_requests(const char* value);
+  void add_requests(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& requests() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_requests();
+  private:
+  const std::string& _internal_requests(int index) const;
+  std::string* _internal_add_requests();
+  public:
+
+  // @@protoc_insertion_point(class_scope:types.RequestsBundle)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> requests_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_types_2ftypes_2eproto;
+};
+// -------------------------------------------------------------------
+
 class NodeInfoPorts final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.NodeInfoPorts) */ {
  public:
@@ -2868,7 +2379,7 @@ class NodeInfoPorts final :
                &_NodeInfoPorts_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    13;
+    11;
 
   friend void swap(NodeInfoPorts& a, NodeInfoPorts& b) {
     a.Swap(&b);
@@ -3027,7 +2538,7 @@ class NodeInfoReply final :
                &_NodeInfoReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    12;
 
   friend void swap(NodeInfoReply& a, NodeInfoReply& b) {
     a.Swap(&b);
@@ -3280,7 +2791,7 @@ class PeerInfo final :
                &_PeerInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    13;
 
   friend void swap(PeerInfo& a, PeerInfo& b) {
     a.Swap(&b);
@@ -3572,7 +3083,7 @@ class ExecutionPayloadBodyV1 final :
                &_ExecutionPayloadBodyV1_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    14;
 
   friend void swap(ExecutionPayloadBodyV1& a, ExecutionPayloadBodyV1& b) {
     a.Swap(&b);
@@ -5727,718 +5238,6 @@ inline void ExecutionPayload::set_excess_blob_gas(uint64_t value) {
   // @@protoc_insertion_point(field_set:types.ExecutionPayload.excess_blob_gas)
 }
 
-// repeated .types.DepositRequest deposit_requests = 19;
-inline int ExecutionPayload::_internal_deposit_requests_size() const {
-  return _impl_.deposit_requests_.size();
-}
-inline int ExecutionPayload::deposit_requests_size() const {
-  return _internal_deposit_requests_size();
-}
-inline void ExecutionPayload::clear_deposit_requests() {
-  _impl_.deposit_requests_.Clear();
-}
-inline ::types::DepositRequest* ExecutionPayload::mutable_deposit_requests(int index) {
-  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.deposit_requests)
-  return _impl_.deposit_requests_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::DepositRequest >*
-ExecutionPayload::mutable_deposit_requests() {
-  // @@protoc_insertion_point(field_mutable_list:types.ExecutionPayload.deposit_requests)
-  return &_impl_.deposit_requests_;
-}
-inline const ::types::DepositRequest& ExecutionPayload::_internal_deposit_requests(int index) const {
-  return _impl_.deposit_requests_.Get(index);
-}
-inline const ::types::DepositRequest& ExecutionPayload::deposit_requests(int index) const {
-  // @@protoc_insertion_point(field_get:types.ExecutionPayload.deposit_requests)
-  return _internal_deposit_requests(index);
-}
-inline ::types::DepositRequest* ExecutionPayload::_internal_add_deposit_requests() {
-  return _impl_.deposit_requests_.Add();
-}
-inline ::types::DepositRequest* ExecutionPayload::add_deposit_requests() {
-  ::types::DepositRequest* _add = _internal_add_deposit_requests();
-  // @@protoc_insertion_point(field_add:types.ExecutionPayload.deposit_requests)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::DepositRequest >&
-ExecutionPayload::deposit_requests() const {
-  // @@protoc_insertion_point(field_list:types.ExecutionPayload.deposit_requests)
-  return _impl_.deposit_requests_;
-}
-
-// repeated .types.WithdrawalRequest withdrawal_requests = 20;
-inline int ExecutionPayload::_internal_withdrawal_requests_size() const {
-  return _impl_.withdrawal_requests_.size();
-}
-inline int ExecutionPayload::withdrawal_requests_size() const {
-  return _internal_withdrawal_requests_size();
-}
-inline void ExecutionPayload::clear_withdrawal_requests() {
-  _impl_.withdrawal_requests_.Clear();
-}
-inline ::types::WithdrawalRequest* ExecutionPayload::mutable_withdrawal_requests(int index) {
-  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.withdrawal_requests)
-  return _impl_.withdrawal_requests_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::WithdrawalRequest >*
-ExecutionPayload::mutable_withdrawal_requests() {
-  // @@protoc_insertion_point(field_mutable_list:types.ExecutionPayload.withdrawal_requests)
-  return &_impl_.withdrawal_requests_;
-}
-inline const ::types::WithdrawalRequest& ExecutionPayload::_internal_withdrawal_requests(int index) const {
-  return _impl_.withdrawal_requests_.Get(index);
-}
-inline const ::types::WithdrawalRequest& ExecutionPayload::withdrawal_requests(int index) const {
-  // @@protoc_insertion_point(field_get:types.ExecutionPayload.withdrawal_requests)
-  return _internal_withdrawal_requests(index);
-}
-inline ::types::WithdrawalRequest* ExecutionPayload::_internal_add_withdrawal_requests() {
-  return _impl_.withdrawal_requests_.Add();
-}
-inline ::types::WithdrawalRequest* ExecutionPayload::add_withdrawal_requests() {
-  ::types::WithdrawalRequest* _add = _internal_add_withdrawal_requests();
-  // @@protoc_insertion_point(field_add:types.ExecutionPayload.withdrawal_requests)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::WithdrawalRequest >&
-ExecutionPayload::withdrawal_requests() const {
-  // @@protoc_insertion_point(field_list:types.ExecutionPayload.withdrawal_requests)
-  return _impl_.withdrawal_requests_;
-}
-
-// repeated .types.ConsolidationRequest consolidation_requests = 21;
-inline int ExecutionPayload::_internal_consolidation_requests_size() const {
-  return _impl_.consolidation_requests_.size();
-}
-inline int ExecutionPayload::consolidation_requests_size() const {
-  return _internal_consolidation_requests_size();
-}
-inline void ExecutionPayload::clear_consolidation_requests() {
-  _impl_.consolidation_requests_.Clear();
-}
-inline ::types::ConsolidationRequest* ExecutionPayload::mutable_consolidation_requests(int index) {
-  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.consolidation_requests)
-  return _impl_.consolidation_requests_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::ConsolidationRequest >*
-ExecutionPayload::mutable_consolidation_requests() {
-  // @@protoc_insertion_point(field_mutable_list:types.ExecutionPayload.consolidation_requests)
-  return &_impl_.consolidation_requests_;
-}
-inline const ::types::ConsolidationRequest& ExecutionPayload::_internal_consolidation_requests(int index) const {
-  return _impl_.consolidation_requests_.Get(index);
-}
-inline const ::types::ConsolidationRequest& ExecutionPayload::consolidation_requests(int index) const {
-  // @@protoc_insertion_point(field_get:types.ExecutionPayload.consolidation_requests)
-  return _internal_consolidation_requests(index);
-}
-inline ::types::ConsolidationRequest* ExecutionPayload::_internal_add_consolidation_requests() {
-  return _impl_.consolidation_requests_.Add();
-}
-inline ::types::ConsolidationRequest* ExecutionPayload::add_consolidation_requests() {
-  ::types::ConsolidationRequest* _add = _internal_add_consolidation_requests();
-  // @@protoc_insertion_point(field_add:types.ExecutionPayload.consolidation_requests)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::ConsolidationRequest >&
-ExecutionPayload::consolidation_requests() const {
-  // @@protoc_insertion_point(field_list:types.ExecutionPayload.consolidation_requests)
-  return _impl_.consolidation_requests_;
-}
-
-// -------------------------------------------------------------------
-
-// DepositRequest
-
-// bytes pubkey = 1;
-inline void DepositRequest::clear_pubkey() {
-  _impl_.pubkey_.ClearToEmpty();
-}
-inline const std::string& DepositRequest::pubkey() const {
-  // @@protoc_insertion_point(field_get:types.DepositRequest.pubkey)
-  return _internal_pubkey();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void DepositRequest::set_pubkey(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.pubkey_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:types.DepositRequest.pubkey)
-}
-inline std::string* DepositRequest::mutable_pubkey() {
-  std::string* _s = _internal_mutable_pubkey();
-  // @@protoc_insertion_point(field_mutable:types.DepositRequest.pubkey)
-  return _s;
-}
-inline const std::string& DepositRequest::_internal_pubkey() const {
-  return _impl_.pubkey_.Get();
-}
-inline void DepositRequest::_internal_set_pubkey(const std::string& value) {
-  
-  _impl_.pubkey_.Set(value, GetArenaForAllocation());
-}
-inline std::string* DepositRequest::_internal_mutable_pubkey() {
-  
-  return _impl_.pubkey_.Mutable(GetArenaForAllocation());
-}
-inline std::string* DepositRequest::release_pubkey() {
-  // @@protoc_insertion_point(field_release:types.DepositRequest.pubkey)
-  return _impl_.pubkey_.Release();
-}
-inline void DepositRequest::set_allocated_pubkey(std::string* pubkey) {
-  if (pubkey != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.pubkey_.SetAllocated(pubkey, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.pubkey_.IsDefault()) {
-    _impl_.pubkey_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:types.DepositRequest.pubkey)
-}
-
-// .types.H256 withdrawal_credentials = 2;
-inline bool DepositRequest::_internal_has_withdrawal_credentials() const {
-  return this != internal_default_instance() && _impl_.withdrawal_credentials_ != nullptr;
-}
-inline bool DepositRequest::has_withdrawal_credentials() const {
-  return _internal_has_withdrawal_credentials();
-}
-inline void DepositRequest::clear_withdrawal_credentials() {
-  if (GetArenaForAllocation() == nullptr && _impl_.withdrawal_credentials_ != nullptr) {
-    delete _impl_.withdrawal_credentials_;
-  }
-  _impl_.withdrawal_credentials_ = nullptr;
-}
-inline const ::types::H256& DepositRequest::_internal_withdrawal_credentials() const {
-  const ::types::H256* p = _impl_.withdrawal_credentials_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
-}
-inline const ::types::H256& DepositRequest::withdrawal_credentials() const {
-  // @@protoc_insertion_point(field_get:types.DepositRequest.withdrawal_credentials)
-  return _internal_withdrawal_credentials();
-}
-inline void DepositRequest::unsafe_arena_set_allocated_withdrawal_credentials(
-    ::types::H256* withdrawal_credentials) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.withdrawal_credentials_);
-  }
-  _impl_.withdrawal_credentials_ = withdrawal_credentials;
-  if (withdrawal_credentials) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.DepositRequest.withdrawal_credentials)
-}
-inline ::types::H256* DepositRequest::release_withdrawal_credentials() {
-  
-  ::types::H256* temp = _impl_.withdrawal_credentials_;
-  _impl_.withdrawal_credentials_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::types::H256* DepositRequest::unsafe_arena_release_withdrawal_credentials() {
-  // @@protoc_insertion_point(field_release:types.DepositRequest.withdrawal_credentials)
-  
-  ::types::H256* temp = _impl_.withdrawal_credentials_;
-  _impl_.withdrawal_credentials_ = nullptr;
-  return temp;
-}
-inline ::types::H256* DepositRequest::_internal_mutable_withdrawal_credentials() {
-  
-  if (_impl_.withdrawal_credentials_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.withdrawal_credentials_ = p;
-  }
-  return _impl_.withdrawal_credentials_;
-}
-inline ::types::H256* DepositRequest::mutable_withdrawal_credentials() {
-  ::types::H256* _msg = _internal_mutable_withdrawal_credentials();
-  // @@protoc_insertion_point(field_mutable:types.DepositRequest.withdrawal_credentials)
-  return _msg;
-}
-inline void DepositRequest::set_allocated_withdrawal_credentials(::types::H256* withdrawal_credentials) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.withdrawal_credentials_;
-  }
-  if (withdrawal_credentials) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(withdrawal_credentials);
-    if (message_arena != submessage_arena) {
-      withdrawal_credentials = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, withdrawal_credentials, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  _impl_.withdrawal_credentials_ = withdrawal_credentials;
-  // @@protoc_insertion_point(field_set_allocated:types.DepositRequest.withdrawal_credentials)
-}
-
-// uint64 amount = 3;
-inline void DepositRequest::clear_amount() {
-  _impl_.amount_ = uint64_t{0u};
-}
-inline uint64_t DepositRequest::_internal_amount() const {
-  return _impl_.amount_;
-}
-inline uint64_t DepositRequest::amount() const {
-  // @@protoc_insertion_point(field_get:types.DepositRequest.amount)
-  return _internal_amount();
-}
-inline void DepositRequest::_internal_set_amount(uint64_t value) {
-  
-  _impl_.amount_ = value;
-}
-inline void DepositRequest::set_amount(uint64_t value) {
-  _internal_set_amount(value);
-  // @@protoc_insertion_point(field_set:types.DepositRequest.amount)
-}
-
-// bytes signature = 4;
-inline void DepositRequest::clear_signature() {
-  _impl_.signature_.ClearToEmpty();
-}
-inline const std::string& DepositRequest::signature() const {
-  // @@protoc_insertion_point(field_get:types.DepositRequest.signature)
-  return _internal_signature();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void DepositRequest::set_signature(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.signature_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:types.DepositRequest.signature)
-}
-inline std::string* DepositRequest::mutable_signature() {
-  std::string* _s = _internal_mutable_signature();
-  // @@protoc_insertion_point(field_mutable:types.DepositRequest.signature)
-  return _s;
-}
-inline const std::string& DepositRequest::_internal_signature() const {
-  return _impl_.signature_.Get();
-}
-inline void DepositRequest::_internal_set_signature(const std::string& value) {
-  
-  _impl_.signature_.Set(value, GetArenaForAllocation());
-}
-inline std::string* DepositRequest::_internal_mutable_signature() {
-  
-  return _impl_.signature_.Mutable(GetArenaForAllocation());
-}
-inline std::string* DepositRequest::release_signature() {
-  // @@protoc_insertion_point(field_release:types.DepositRequest.signature)
-  return _impl_.signature_.Release();
-}
-inline void DepositRequest::set_allocated_signature(std::string* signature) {
-  if (signature != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.signature_.SetAllocated(signature, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.signature_.IsDefault()) {
-    _impl_.signature_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:types.DepositRequest.signature)
-}
-
-// uint64 index = 5;
-inline void DepositRequest::clear_index() {
-  _impl_.index_ = uint64_t{0u};
-}
-inline uint64_t DepositRequest::_internal_index() const {
-  return _impl_.index_;
-}
-inline uint64_t DepositRequest::index() const {
-  // @@protoc_insertion_point(field_get:types.DepositRequest.index)
-  return _internal_index();
-}
-inline void DepositRequest::_internal_set_index(uint64_t value) {
-  
-  _impl_.index_ = value;
-}
-inline void DepositRequest::set_index(uint64_t value) {
-  _internal_set_index(value);
-  // @@protoc_insertion_point(field_set:types.DepositRequest.index)
-}
-
-// -------------------------------------------------------------------
-
-// WithdrawalRequest
-
-// .types.H160 source_address = 1;
-inline bool WithdrawalRequest::_internal_has_source_address() const {
-  return this != internal_default_instance() && _impl_.source_address_ != nullptr;
-}
-inline bool WithdrawalRequest::has_source_address() const {
-  return _internal_has_source_address();
-}
-inline void WithdrawalRequest::clear_source_address() {
-  if (GetArenaForAllocation() == nullptr && _impl_.source_address_ != nullptr) {
-    delete _impl_.source_address_;
-  }
-  _impl_.source_address_ = nullptr;
-}
-inline const ::types::H160& WithdrawalRequest::_internal_source_address() const {
-  const ::types::H160* p = _impl_.source_address_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H160&>(
-      ::types::_H160_default_instance_);
-}
-inline const ::types::H160& WithdrawalRequest::source_address() const {
-  // @@protoc_insertion_point(field_get:types.WithdrawalRequest.source_address)
-  return _internal_source_address();
-}
-inline void WithdrawalRequest::unsafe_arena_set_allocated_source_address(
-    ::types::H160* source_address) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.source_address_);
-  }
-  _impl_.source_address_ = source_address;
-  if (source_address) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.WithdrawalRequest.source_address)
-}
-inline ::types::H160* WithdrawalRequest::release_source_address() {
-  
-  ::types::H160* temp = _impl_.source_address_;
-  _impl_.source_address_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::types::H160* WithdrawalRequest::unsafe_arena_release_source_address() {
-  // @@protoc_insertion_point(field_release:types.WithdrawalRequest.source_address)
-  
-  ::types::H160* temp = _impl_.source_address_;
-  _impl_.source_address_ = nullptr;
-  return temp;
-}
-inline ::types::H160* WithdrawalRequest::_internal_mutable_source_address() {
-  
-  if (_impl_.source_address_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H160>(GetArenaForAllocation());
-    _impl_.source_address_ = p;
-  }
-  return _impl_.source_address_;
-}
-inline ::types::H160* WithdrawalRequest::mutable_source_address() {
-  ::types::H160* _msg = _internal_mutable_source_address();
-  // @@protoc_insertion_point(field_mutable:types.WithdrawalRequest.source_address)
-  return _msg;
-}
-inline void WithdrawalRequest::set_allocated_source_address(::types::H160* source_address) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.source_address_;
-  }
-  if (source_address) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(source_address);
-    if (message_arena != submessage_arena) {
-      source_address = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, source_address, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  _impl_.source_address_ = source_address;
-  // @@protoc_insertion_point(field_set_allocated:types.WithdrawalRequest.source_address)
-}
-
-// bytes validator_pubkey = 2;
-inline void WithdrawalRequest::clear_validator_pubkey() {
-  _impl_.validator_pubkey_.ClearToEmpty();
-}
-inline const std::string& WithdrawalRequest::validator_pubkey() const {
-  // @@protoc_insertion_point(field_get:types.WithdrawalRequest.validator_pubkey)
-  return _internal_validator_pubkey();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void WithdrawalRequest::set_validator_pubkey(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.validator_pubkey_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:types.WithdrawalRequest.validator_pubkey)
-}
-inline std::string* WithdrawalRequest::mutable_validator_pubkey() {
-  std::string* _s = _internal_mutable_validator_pubkey();
-  // @@protoc_insertion_point(field_mutable:types.WithdrawalRequest.validator_pubkey)
-  return _s;
-}
-inline const std::string& WithdrawalRequest::_internal_validator_pubkey() const {
-  return _impl_.validator_pubkey_.Get();
-}
-inline void WithdrawalRequest::_internal_set_validator_pubkey(const std::string& value) {
-  
-  _impl_.validator_pubkey_.Set(value, GetArenaForAllocation());
-}
-inline std::string* WithdrawalRequest::_internal_mutable_validator_pubkey() {
-  
-  return _impl_.validator_pubkey_.Mutable(GetArenaForAllocation());
-}
-inline std::string* WithdrawalRequest::release_validator_pubkey() {
-  // @@protoc_insertion_point(field_release:types.WithdrawalRequest.validator_pubkey)
-  return _impl_.validator_pubkey_.Release();
-}
-inline void WithdrawalRequest::set_allocated_validator_pubkey(std::string* validator_pubkey) {
-  if (validator_pubkey != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.validator_pubkey_.SetAllocated(validator_pubkey, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.validator_pubkey_.IsDefault()) {
-    _impl_.validator_pubkey_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:types.WithdrawalRequest.validator_pubkey)
-}
-
-// uint64 amount = 3;
-inline void WithdrawalRequest::clear_amount() {
-  _impl_.amount_ = uint64_t{0u};
-}
-inline uint64_t WithdrawalRequest::_internal_amount() const {
-  return _impl_.amount_;
-}
-inline uint64_t WithdrawalRequest::amount() const {
-  // @@protoc_insertion_point(field_get:types.WithdrawalRequest.amount)
-  return _internal_amount();
-}
-inline void WithdrawalRequest::_internal_set_amount(uint64_t value) {
-  
-  _impl_.amount_ = value;
-}
-inline void WithdrawalRequest::set_amount(uint64_t value) {
-  _internal_set_amount(value);
-  // @@protoc_insertion_point(field_set:types.WithdrawalRequest.amount)
-}
-
-// -------------------------------------------------------------------
-
-// ConsolidationRequest
-
-// .types.H160 source_address = 1;
-inline bool ConsolidationRequest::_internal_has_source_address() const {
-  return this != internal_default_instance() && _impl_.source_address_ != nullptr;
-}
-inline bool ConsolidationRequest::has_source_address() const {
-  return _internal_has_source_address();
-}
-inline void ConsolidationRequest::clear_source_address() {
-  if (GetArenaForAllocation() == nullptr && _impl_.source_address_ != nullptr) {
-    delete _impl_.source_address_;
-  }
-  _impl_.source_address_ = nullptr;
-}
-inline const ::types::H160& ConsolidationRequest::_internal_source_address() const {
-  const ::types::H160* p = _impl_.source_address_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H160&>(
-      ::types::_H160_default_instance_);
-}
-inline const ::types::H160& ConsolidationRequest::source_address() const {
-  // @@protoc_insertion_point(field_get:types.ConsolidationRequest.source_address)
-  return _internal_source_address();
-}
-inline void ConsolidationRequest::unsafe_arena_set_allocated_source_address(
-    ::types::H160* source_address) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.source_address_);
-  }
-  _impl_.source_address_ = source_address;
-  if (source_address) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ConsolidationRequest.source_address)
-}
-inline ::types::H160* ConsolidationRequest::release_source_address() {
-  
-  ::types::H160* temp = _impl_.source_address_;
-  _impl_.source_address_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::types::H160* ConsolidationRequest::unsafe_arena_release_source_address() {
-  // @@protoc_insertion_point(field_release:types.ConsolidationRequest.source_address)
-  
-  ::types::H160* temp = _impl_.source_address_;
-  _impl_.source_address_ = nullptr;
-  return temp;
-}
-inline ::types::H160* ConsolidationRequest::_internal_mutable_source_address() {
-  
-  if (_impl_.source_address_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H160>(GetArenaForAllocation());
-    _impl_.source_address_ = p;
-  }
-  return _impl_.source_address_;
-}
-inline ::types::H160* ConsolidationRequest::mutable_source_address() {
-  ::types::H160* _msg = _internal_mutable_source_address();
-  // @@protoc_insertion_point(field_mutable:types.ConsolidationRequest.source_address)
-  return _msg;
-}
-inline void ConsolidationRequest::set_allocated_source_address(::types::H160* source_address) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.source_address_;
-  }
-  if (source_address) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(source_address);
-    if (message_arena != submessage_arena) {
-      source_address = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, source_address, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  _impl_.source_address_ = source_address;
-  // @@protoc_insertion_point(field_set_allocated:types.ConsolidationRequest.source_address)
-}
-
-// bytes source_pubkey = 2;
-inline void ConsolidationRequest::clear_source_pubkey() {
-  _impl_.source_pubkey_.ClearToEmpty();
-}
-inline const std::string& ConsolidationRequest::source_pubkey() const {
-  // @@protoc_insertion_point(field_get:types.ConsolidationRequest.source_pubkey)
-  return _internal_source_pubkey();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void ConsolidationRequest::set_source_pubkey(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.source_pubkey_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:types.ConsolidationRequest.source_pubkey)
-}
-inline std::string* ConsolidationRequest::mutable_source_pubkey() {
-  std::string* _s = _internal_mutable_source_pubkey();
-  // @@protoc_insertion_point(field_mutable:types.ConsolidationRequest.source_pubkey)
-  return _s;
-}
-inline const std::string& ConsolidationRequest::_internal_source_pubkey() const {
-  return _impl_.source_pubkey_.Get();
-}
-inline void ConsolidationRequest::_internal_set_source_pubkey(const std::string& value) {
-  
-  _impl_.source_pubkey_.Set(value, GetArenaForAllocation());
-}
-inline std::string* ConsolidationRequest::_internal_mutable_source_pubkey() {
-  
-  return _impl_.source_pubkey_.Mutable(GetArenaForAllocation());
-}
-inline std::string* ConsolidationRequest::release_source_pubkey() {
-  // @@protoc_insertion_point(field_release:types.ConsolidationRequest.source_pubkey)
-  return _impl_.source_pubkey_.Release();
-}
-inline void ConsolidationRequest::set_allocated_source_pubkey(std::string* source_pubkey) {
-  if (source_pubkey != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.source_pubkey_.SetAllocated(source_pubkey, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.source_pubkey_.IsDefault()) {
-    _impl_.source_pubkey_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:types.ConsolidationRequest.source_pubkey)
-}
-
-// bytes target_pubkey = 3;
-inline void ConsolidationRequest::clear_target_pubkey() {
-  _impl_.target_pubkey_.ClearToEmpty();
-}
-inline const std::string& ConsolidationRequest::target_pubkey() const {
-  // @@protoc_insertion_point(field_get:types.ConsolidationRequest.target_pubkey)
-  return _internal_target_pubkey();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void ConsolidationRequest::set_target_pubkey(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.target_pubkey_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:types.ConsolidationRequest.target_pubkey)
-}
-inline std::string* ConsolidationRequest::mutable_target_pubkey() {
-  std::string* _s = _internal_mutable_target_pubkey();
-  // @@protoc_insertion_point(field_mutable:types.ConsolidationRequest.target_pubkey)
-  return _s;
-}
-inline const std::string& ConsolidationRequest::_internal_target_pubkey() const {
-  return _impl_.target_pubkey_.Get();
-}
-inline void ConsolidationRequest::_internal_set_target_pubkey(const std::string& value) {
-  
-  _impl_.target_pubkey_.Set(value, GetArenaForAllocation());
-}
-inline std::string* ConsolidationRequest::_internal_mutable_target_pubkey() {
-  
-  return _impl_.target_pubkey_.Mutable(GetArenaForAllocation());
-}
-inline std::string* ConsolidationRequest::release_target_pubkey() {
-  // @@protoc_insertion_point(field_release:types.ConsolidationRequest.target_pubkey)
-  return _impl_.target_pubkey_.Release();
-}
-inline void ConsolidationRequest::set_allocated_target_pubkey(std::string* target_pubkey) {
-  if (target_pubkey != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.target_pubkey_.SetAllocated(target_pubkey, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.target_pubkey_.IsDefault()) {
-    _impl_.target_pubkey_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:types.ConsolidationRequest.target_pubkey)
-}
-
 // -------------------------------------------------------------------
 
 // Withdrawal
@@ -6820,6 +5619,85 @@ inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
 BlobsBundleV1::mutable_proofs() {
   // @@protoc_insertion_point(field_mutable_list:types.BlobsBundleV1.proofs)
   return &_impl_.proofs_;
+}
+
+// -------------------------------------------------------------------
+
+// RequestsBundle
+
+// repeated bytes requests = 1;
+inline int RequestsBundle::_internal_requests_size() const {
+  return _impl_.requests_.size();
+}
+inline int RequestsBundle::requests_size() const {
+  return _internal_requests_size();
+}
+inline void RequestsBundle::clear_requests() {
+  _impl_.requests_.Clear();
+}
+inline std::string* RequestsBundle::add_requests() {
+  std::string* _s = _internal_add_requests();
+  // @@protoc_insertion_point(field_add_mutable:types.RequestsBundle.requests)
+  return _s;
+}
+inline const std::string& RequestsBundle::_internal_requests(int index) const {
+  return _impl_.requests_.Get(index);
+}
+inline const std::string& RequestsBundle::requests(int index) const {
+  // @@protoc_insertion_point(field_get:types.RequestsBundle.requests)
+  return _internal_requests(index);
+}
+inline std::string* RequestsBundle::mutable_requests(int index) {
+  // @@protoc_insertion_point(field_mutable:types.RequestsBundle.requests)
+  return _impl_.requests_.Mutable(index);
+}
+inline void RequestsBundle::set_requests(int index, const std::string& value) {
+  _impl_.requests_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:types.RequestsBundle.requests)
+}
+inline void RequestsBundle::set_requests(int index, std::string&& value) {
+  _impl_.requests_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:types.RequestsBundle.requests)
+}
+inline void RequestsBundle::set_requests(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.requests_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:types.RequestsBundle.requests)
+}
+inline void RequestsBundle::set_requests(int index, const void* value, size_t size) {
+  _impl_.requests_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:types.RequestsBundle.requests)
+}
+inline std::string* RequestsBundle::_internal_add_requests() {
+  return _impl_.requests_.Add();
+}
+inline void RequestsBundle::add_requests(const std::string& value) {
+  _impl_.requests_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:types.RequestsBundle.requests)
+}
+inline void RequestsBundle::add_requests(std::string&& value) {
+  _impl_.requests_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:types.RequestsBundle.requests)
+}
+inline void RequestsBundle::add_requests(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.requests_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:types.RequestsBundle.requests)
+}
+inline void RequestsBundle::add_requests(const void* value, size_t size) {
+  _impl_.requests_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:types.RequestsBundle.requests)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+RequestsBundle::requests() const {
+  // @@protoc_insertion_point(field_list:types.RequestsBundle.requests)
+  return _impl_.requests_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+RequestsBundle::mutable_requests() {
+  // @@protoc_insertion_point(field_mutable_list:types.RequestsBundle.requests)
+  return &_impl_.requests_;
 }
 
 // -------------------------------------------------------------------
@@ -7821,10 +6699,6 @@ ExecutionPayloadBodyV1::withdrawals() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
-// -------------------------------------------------------------------
-
-// -------------------------------------------------------------------
-
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -28,11 +28,13 @@
 #include <absl/functional/function_ref.h>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/receipt.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
@@ -357,6 +359,31 @@ class DataModel {
     snapshots::SnapshotRepository& repository_;
 };
 
-using DataModelFactory = std::function<DataModel(ROTxn& tx)>;
+class DataModelFactory {
+  public:
+    explicit DataModelFactory(DataStoreRef data_store)
+        : func_{[=](db::ROTxn& tx) { return db::DataModel{tx, data_store.repository}; }} {}
+
+    DataModel operator()(ROTxn& tx) const {
+        return func_(tx);
+    }
+
+    //! Null factory only for mocks
+    static DataModelFactory null() {
+        return DataModelFactory{};
+    }
+
+  private:
+    //! Null factory only for mocks
+    DataModelFactory()
+        : func_{
+              [](ROTxn&) -> db::DataModel {
+                  SILKWORM_ASSERT(false);
+                  std::abort();
+              },
+          } {}
+
+    std::function<DataModel(ROTxn& tx)> func_;
+};
 
 }  // namespace silkworm::db

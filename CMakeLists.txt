@@ -45,7 +45,19 @@ set(PROJECT_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(PROJECT_VERSION_MINOR ${CMAKE_MATCH_2})
 set(PROJECT_VERSION_PATCH ${CMAKE_MATCH_3})
 
-cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(CABLE_GIT_DESCRIBE "c0deadded1111111111111111111111111111111")
+  set(CABLE_GIT_BRANCH "dev")
+endif()
+
+cable_add_buildinfo_library(
+  PROJECT_NAME
+  "${PROJECT_NAME}"
+  GIT_DESCRIBE
+  "${CABLE_GIT_DESCRIBE}"
+  GIT_BRANCH
+  "${CABLE_GIT_BRANCH}"
+)
 
 option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
@@ -91,7 +103,7 @@ add_subdirectory(third_party)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_warnings.cmake)
 
 if(SILKWORM_CLANG_TIDY)
-  find_program(CLANG_TIDY clang-tidy REQUIRED)
+  find_program(CLANG_TIDY clang-tidy PATHS "${CMAKE_BINARY_DIR}/tidy/bin" NO_CACHE REQUIRED)
   set(CMAKE_C_CLANG_TIDY "${CLANG_TIDY}")
   set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY}")
 endif()

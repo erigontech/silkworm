@@ -2,7 +2,7 @@
 
 The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/API) implementation status in `Silkworm RPCDaemon`.
 
-| Command                                    | Availability |                                     Notes | Integration | Performance |
+| Command                                    | Availability |                   Notes                   | Integration | Performance |
 |:-------------------------------------------|:------------:|:-----------------------------------------:|:-----------:|------------:|
 | admin_nodeInfo                             |     Yes      |                                           |     Yes     |             |
 | admin_peers                                |     Yes      |                                           |     Yes     |             |
@@ -39,9 +39,9 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getRawTransactionByBlockHashAndIndex   |     Yes      |                                           |     Yes     |             |
 | eth_getTransactionByBlockNumberAndIndex    |     Yes      |                                           |     Yes     |             |
 | eth_getRawTransactionByBlockNumberAndIndex |     Yes      |                                           |     Yes     |             |
-| eth_getTransactionReceipt                  |     Yes      |    partial: retrieve receipts by exec txn |     Yes     |     Yes     |
-| eth_getBlockReceipts                       |     Yes      |           same as parity_getBlockReceipts |     Yes     |             |
-| eth_getTransactionReceiptsByBlock          |     Yes      |           same as parity_getBlockReceipts |             |             |
+| eth_getTransactionReceipt                  |     Yes      |  partial: retrieve receipts by exec txn   |     Yes     |     Yes     |
+| eth_getBlockReceipts                       |     Yes      |                                           |     Yes     |             |
+| eth_getTransactionReceiptsByBlock          |     Yes      |      same as eth_getBlockReceipts         |             |             |
 |                                            |              |                                           |             |             |
 | eth_estimateGas                            |     Yes      |                                           |     Yes     |             |
 | eth_getBalance                             |     Yes      |                                           |     Yes     |     Yes     |
@@ -49,26 +49,26 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getTransactionCount                    |     Yes      |                                           |     Yes     |             |
 | eth_getStorageAt                           |     Yes      |                                           |     Yes     |             |
 | eth_call                                   |     Yes      |                                           |     Yes     |     Yes     |
-| eth_callMany                               |     Yes      |   partial: timeout param handling missing |     Yes     |             |
+| eth_callMany                               |     Yes      |  partial: timeout param handling missing  |     Yes     |             |
 | eth_callBundle                             |     Yes      |                                           |     Yes     |             |
 | eth_createAccessList                       |     Yes      |                                           |     Yes     |     Yes     |
 |                                            |              |                                           |             |             |
 | eth_newFilter                              |     Yes      |                                           |             |             |
-| eth_newBlockFilter                         |      -       |                       not yet implemented |             |             |
-| eth_newPendingTransactionFilter            |      -       |                       not yet implemented |             |             |
+| eth_newBlockFilter                         |      -       |            not yet implemented            |             |             |
+| eth_newPendingTransactionFilter            |      -       |            not yet implemented            |             |             |
 | eth_getFilterChanges                       |     Yes      |                                           |             |             |
 | eth_getFilterLogs                          |     Yes      |                                           |             |             |
 | eth_uninstallFilter                        |     Yes      |                                           |             |             |
 | eth_getLogs                                |     Yes      |                                           |     Yes     |     Yes     |
 |                                            |              |                                           |             |             |
-| eth_accounts                               |      No      |                                deprecated |             |             |
-| eth_sendRawTransaction                     |     Yes      |                               remote only |     Yes     |             |
-| eth_sendTransaction                        |      -       |                       not yet implemented |             |             |
-| eth_sign                                   |      No      |                                deprecated |             |             |
-| eth_signTransaction                        |      -       |                                deprecated |             |             |
-| eth_signTypedData                          |      -       |                                      ???? |             |             |
+| eth_accounts                               |      No      |                deprecated                 |             |             |
+| eth_sendRawTransaction                     |     Yes      |                remote only                |     Yes     |             |
+| eth_sendTransaction                        |      -       |            not yet implemented            |             |             |
+| eth_sign                                   |      No      |                deprecated                 |             |             |
+| eth_signTransaction                        |      -       |                deprecated                 |             |             |
+| eth_signTypedData                          |      -       |                   ????                    |             |             |
 |                                            |              |                                           |             |             |
-| eth_getProof                               |      -       |                       not yet implemented |             |             |
+| eth_getProof                               |      -       |            not yet implemented            |             |             |
 |                                            |              |                                           |             |             |
 | eth_mining                                 |     Yes      |                                           |     Yes     |             |
 | eth_coinbase                               |     Yes      |                                           |     Yes     |             |
@@ -77,8 +77,8 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getWork                                |     Yes      |                                           |     Yes     |             |
 | eth_submitWork                             |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
-| eth_subscribe                              |      -       |     not yet implemented (WebSockets only) |             |             |
-| eth_unsubscribe                            |      -       |     not yet implemented (WebSockets only) |             |             |
+| eth_subscribe                              |      -       |   not yet implemented (WebSockets only)   |             |             |
+| eth_unsubscribe                            |      -       |   not yet implemented (WebSockets only)   |             |             |
 |                                            |              |                                           |             |             |
 | engine_newPayloadV1                        |     Yes      |                                           |     Yes     |             |
 | engine_newPayloadV2                        |     Yes      |                                           |     Yes     |             |
@@ -95,17 +95,17 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | debug_accountAt                            |     Yes      |                                           |     Yes     |             |
 | debug_getModifiedAccountsByHash            |     Yes      |                                           |     Yes     |             |
 | debug_getModifiedAccountsByNumber          |     Yes      |                                           |     Yes     |             |
-| debug_getBadBlocks                         |      No      |                        data not available |             |             |
-| debug_getRawBlock                          |     Yes      |     can be optimized to avoid re-encoding |             |             |
+| debug_getBadBlocks                         |      No      |            data not available             |             |             |
+| debug_getRawBlock                          |     Yes      |   can be optimized to avoid re-encoding   |             |             |
 | debug_getRawHeader                         |     Yes      |                                           |             |             |
-| debug_getRawReceipts                       |      No      |                  see eth_getBlockReceipts |             |             |
+| debug_getRawReceipts                       |      No      |         see eth_getBlockReceipts          |             |             |
 | debug_getRawTransaction                    |     Yes      |                                           |             |             |
 | debug_storageRangeAt                       |     Yes      |                                           |     Yes     |             |
-| debug_traceBlockByHash                     |     Yes      |                       uses JSON streaming |     Yes     |             |
-| debug_traceBlockByNumber                   |     Yes      |                       uses JSON streaming |     Yes     |             |
-| debug_traceTransaction                     |     Yes      |                       uses JSON streaming |     Yes     |             |
-| debug_traceCall                            |     Yes      |                       uses JSON streaming |     Yes     |             |
-| debug_traceCallMany                        |     Yes      |                       uses JSON streaming |     Yes     |             |
+| debug_traceBlockByHash                     |     Yes      |            uses JSON streaming            |     Yes     |             |
+| debug_traceBlockByNumber                   |     Yes      |            uses JSON streaming            |     Yes     |             |
+| debug_traceTransaction                     |     Yes      |            uses JSON streaming            |     Yes     |             |
+| debug_traceCall                            |     Yes      |            uses JSON streaming            |     Yes     |             |
+| debug_traceCallMany                        |     Yes      |            uses JSON streaming            |     Yes     |             |
 |                                            |              |                                           |             |             |
 | trace_call                                 |     Yes      |                                           |     Yes     |             |
 | trace_callMany                             |     Yes      |                                           |     Yes     |             |
@@ -113,33 +113,33 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | trace_replayBlockTransactions              |     Yes      |                                           |     Yes     |             |
 | trace_replayTransaction                    |     Yes      |                                           |     Yes     |             |
 | trace_block                                |     Yes      |                                           |     Yes     |             |
-| trace_filter                               |     Yes      |                       uses JSON streaming |     Yes     |             |
+| trace_filter                               |     Yes      |            uses JSON streaming            |     Yes     |             |
 | trace_get                                  |     Yes      |                                           |     Yes     |             |
 | trace_transaction                          |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
 | txpool_content                             |     Yes      |                                           |     Yes     |             |
 | txpool_status                              |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
-| eth_getCompilers                           |      No      |                                deprecated |             |             |
-| eth_compileLLL                             |      No      |                                deprecated |             |             |
-| eth_compileSolidity                        |      No      |                                deprecated |             |             |
-| eth_compileSerpent                         |      No      |                                deprecated |             |             |
+| eth_getCompilers                           |      No      |                deprecated                 |             |             |
+| eth_compileLLL                             |      No      |                deprecated                 |             |             |
+| eth_compileSolidity                        |      No      |                deprecated                 |             |             |
+| eth_compileSerpent                         |      No      |                deprecated                 |             |             |
 |                                            |              |                                           |             |             |
-| db_putString                               |      No      |                                deprecated |             |             |
-| db_getString                               |      No      |                                deprecated |             |             |
-| db_putHex                                  |      No      |                                deprecated |             |             |
-| db_getHex                                  |      No      |                                deprecated |             |             |
+| db_putString                               |      No      |                deprecated                 |             |             |
+| db_getString                               |      No      |                deprecated                 |             |             |
+| db_putHex                                  |      No      |                deprecated                 |             |             |
+| db_getHex                                  |      No      |                deprecated                 |             |             |
 |                                            |              |                                           |             |             |
-| shh_post                                   |      No      |                                deprecated |             |             |
-| shh_version                                |      No      |                                deprecated |             |             |
-| shh_newIdentity                            |      No      |                                deprecated |             |             |
-| shh_hasIdentity                            |      No      |                                deprecated |             |             |
-| shh_newGroup                               |      No      |                                deprecated |             |             |
-| shh_addToGroup                             |      No      |                                deprecated |             |             |
-| shh_newFilter                              |      No      |                                deprecated |             |             |
-| shh_uninstallFilter                        |      No      |                                deprecated |             |             |
-| shh_getFilterChanges                       |      No      |                                deprecated |             |             |
-| shh_getMessages                            |      No      |                                deprecated |             |             |
+| shh_post                                   |      No      |                deprecated                 |             |             |
+| shh_version                                |      No      |                deprecated                 |             |             |
+| shh_newIdentity                            |      No      |                deprecated                 |             |             |
+| shh_hasIdentity                            |      No      |                deprecated                 |             |             |
+| shh_newGroup                               |      No      |                deprecated                 |             |             |
+| shh_addToGroup                             |      No      |                deprecated                 |             |             |
+| shh_newFilter                              |      No      |                deprecated                 |             |             |
+| shh_uninstallFilter                        |      No      |                deprecated                 |             |             |
+| shh_getFilterChanges                       |      No      |                deprecated                 |             |             |
+| shh_getMessages                            |      No      |                deprecated                 |             |             |
 |                                            |              |                                           |             |             |
 | erigon_cumulativeChainTraffic              |     Yes      |                                           |     Yes     |             |
 | erigon_getHeaderByHash                     |     Yes      |                                           |     Yes     |             |
@@ -152,19 +152,18 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | erigon_watchTheBurn                        |     Yes      |                                           |     Yes     |             |
 | erigon_nodeInfo                            |     Yes      |                                           |     Yes     |             |
 | erigon_blockNumber                         |     Yes      |                                           |     Yes     |             |
-| erigon_cacheCheck                          |      -       |                       not yet implemented |             |             |
+| erigon_cacheCheck                          |      -       |            not yet implemented            |             |             |
 | erigon_getLatestLogs                       |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
-| bor_getSnapshot                            |      -       |                       not yet implemented |             |             |
-| bor_getAuthor                              |      -       |                       not yet implemented |             |             |
-| bor_getSnapshotAtHash                      |      -       |                       not yet implemented |             |             |
-| bor_getSigners                             |      -       |                       not yet implemented |             |             |
-| bor_getSignersAtHash                       |      -       |                       not yet implemented |             |             |
-| bor_getCurrentProposer                     |      -       |                       not yet implemented |             |             |
-| bor_getCurrentValidators                   |      -       |                       not yet implemented |             |             |
-| bor_getRootHash                            |      -       |                       not yet implemented |             |             |
+| bor_getSnapshot                            |      -       |            not yet implemented            |             |             |
+| bor_getAuthor                              |      -       |            not yet implemented            |             |             |
+| bor_getSnapshotAtHash                      |      -       |            not yet implemented            |             |             |
+| bor_getSigners                             |      -       |            not yet implemented            |             |             |
+| bor_getSignersAtHash                       |      -       |            not yet implemented            |             |             |
+| bor_getCurrentProposer                     |      -       |            not yet implemented            |             |             |
+| bor_getCurrentValidators                   |      -       |            not yet implemented            |             |             |
+| bor_getRootHash                            |      -       |            not yet implemented            |             |             |
 |                                            |              |                                           |             |             |
-| parity_getBlockReceipts                    |     Yes      |              same as eth_getBlockReceipts |     Yes     |             |
 | parity_listStorageKeys                     |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
 | ots_getApiLevel                            |     Yes      |                                           |     Yes     |             |

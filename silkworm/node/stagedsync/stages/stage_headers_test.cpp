@@ -21,7 +21,6 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 
 namespace silkworm {
@@ -35,11 +34,12 @@ class HeadersStageForTest : public stagedsync::HeadersStage {
 using HeaderDataModelForTest = HeadersStageForTest::HeaderDataModel;
 
 TEST_CASE("HeadersStage - data model") {
-    test_util::TempChainData context;
+    test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();
 
-    snapshots::SnapshotRepository repository = test_util::make_repository();
+    RWAccess chaindata = context.chaindata_rw();
+    auto data_model_factory = context.data_model_factory();
 
     /* status:
      *         h0
@@ -47,8 +47,8 @@ TEST_CASE("HeadersStage - data model") {
      *         h0 <----- h1
      */
     SECTION("one header after the genesis") {
-        RWTxnManaged tx(context.env());
-        DataModel data_model{tx, repository};
+        RWTxnManaged tx = chaindata.start_rw_tx();
+        DataModel data_model = data_model_factory(tx);
 
         auto header0_hash = read_canonical_header_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -91,8 +91,8 @@ TEST_CASE("HeadersStage - data model") {
      *                |-- h1'
      */
     SECTION("some header after the genesis") {
-        RWTxnManaged tx(context.env());
-        DataModel data_model{tx, repository};
+        RWTxnManaged tx = chaindata.start_rw_tx();
+        DataModel data_model = data_model_factory(tx);
 
         // starting from an initial status
         auto header0 = read_canonical_header(tx, 0);

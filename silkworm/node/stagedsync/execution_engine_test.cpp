@@ -27,7 +27,6 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/test_util/make_repository.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/environment.hpp>
@@ -54,29 +53,26 @@ using silkworm::test_util::TaskRunner;
 class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::ExecutionEngine;
-    using stagedsync::ExecutionEngine::forks_;
-    using stagedsync::ExecutionEngine::main_chain_;
+    MainChain& main_chain() { return main_chain_; }
 };
 
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
     SetLogVerbosityGuard log_guard(log::Level::kNone);
+    TemporaryDirectory tmp_dir;
     TaskRunner runner;
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
-    auto db_context = db::test_util::TestDatabaseContext();
-
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
-    db::DataModelFactory data_model_factory = [&](ROTxn& tx) { return DataModel{tx, repository}; };
+    db::test_util::TestDataStore db_context{tmp_dir};
+    db::DataModelFactory data_model_factory = db_context.data_model_factory();
 
     auto node_settings = NodeSettings{
-        .data_directory = std::make_unique<DataDirectory>(db_context.mdbx_env().get_path(), false),
-        .chaindata_env_config = db_context.get_env_config(),
+        .data_directory = std::make_unique<DataDirectory>(tmp_dir.path(), false),
         .chain_config = db_context.get_chain_config(),
         .parallel_fork_tracking_enabled = false,
         .keep_db_txn_open = true,
     };
 
-    RWAccess db_access{db_context.mdbx_env()};
+    RWAccess db_access = db_context.chaindata_rw();
 
     ExecutionEngineForTest exec_engine{
         runner.executor(),
@@ -88,7 +84,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     };
     exec_engine.open();
 
-    auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+    auto& tx = exec_engine.main_chain().tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     const auto header0_hash = exec_engine.get_canonical_hash(0).value();
     const silkworm::Hash header1_hash{0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4_bytes32};
@@ -819,12 +815,11 @@ TEST_CASE("ExecutionEngine") {
 
     TaskRunner runner;
 
-    db::test_util::TempChainData context;
+    db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();
 
-    snapshots::SnapshotRepository repository = db::test_util::make_repository();
-    db::DataModelFactory data_model_factory = [&](ROTxn& tx) { return DataModel{tx, repository}; };
+    db::DataModelFactory data_model_factory = context.data_model_factory();
 
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
@@ -836,11 +831,11 @@ TEST_CASE("ExecutionEngine") {
         data_model_factory,
         /* log_timer_factory = */ std::nullopt,
         make_stages_factory(node_settings, data_model_factory),
-        RWAccess{context.env()},
+        context.chaindata_rw(),
     };
     exec_engine.open();
 
-    auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+    auto& tx = exec_engine.main_chain().tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     auto header0_hash = read_canonical_header_hash(tx, 0);
     REQUIRE(header0_hash.has_value());
@@ -1071,7 +1066,7 @@ TEST_CASE("ExecutionEngine") {
 
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_finalized_block() == block0_id);
-            CHECK(exec_engine.main_chain_.last_chosen_head() == BlockId{2, block2b_hash});
+            CHECK(exec_engine.main_chain().last_chosen_head() == BlockId{2, block2b_hash});
 
             CHECK(exec_engine.get_canonical_hash(2) == block2b_hash);
             CHECK(exec_engine.get_canonical_header(2).has_value());

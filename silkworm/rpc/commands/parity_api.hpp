@@ -48,7 +48,6 @@ class ParityRpcApi {
     ParityRpcApi(ParityRpcApi&&) = default;
 
   protected:
-    Task<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
 
   private:

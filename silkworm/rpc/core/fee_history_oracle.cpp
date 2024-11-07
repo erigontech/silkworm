@@ -254,12 +254,9 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         co_return;  // rewards were not requested, return
     }
 
-    /*
-    // TODO: waiting fix on erigon to evalute MaxBlobGasPerBlock
-    if (header.blob_gas_used &&  protocol::kMaxBlobGasPerBlock) {
+    if (header.blob_gas_used) {
         block_fees.blob_gas_used_ratio = static_cast<double>(*(header.blob_gas_used)) / static_cast<double>(protocol::kMaxBlobGasPerBlock);
     }
-    */
 
     if (block_fees.receipts.size() != block_fees.block->block.transactions.size()) {
         co_return;

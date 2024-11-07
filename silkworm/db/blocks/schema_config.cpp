@@ -14,26 +14,18 @@
    limitations under the License.
 */
 
-#include "make_repository.hpp"
+#include "schema_config.hpp"
 
-#include "../datastore/snapshots/snapshot_settings.hpp"
 #include "../snapshot_bundle_factory_impl.hpp"
 
-namespace silkworm::db::test_util {
+namespace silkworm::db::blocks {
 
-using namespace silkworm::snapshots;
-
-SnapshotRepository make_repository(std::filesystem::path dir_path) {
-    return SnapshotRepository{
+snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path) {
+    return snapshots::SnapshotRepository{
         std::move(dir_path),
-        std::make_unique<StepToBlockNumConverter>(),
-        std::make_unique<SnapshotBundleFactoryImpl>(),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<db::SnapshotBundleFactoryImpl>(),
     };
 }
 
-SnapshotRepository make_repository() {
-    SnapshotSettings settings;
-    return make_repository(settings.repository_dir);
-}
-
-}  // namespace silkworm::db::test_util
+}  // namespace silkworm::db::blocks

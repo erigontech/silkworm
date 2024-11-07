@@ -174,8 +174,8 @@ TEST_CASE("KV protocol version minor mismatch", "[rpc][protocol][wait_for_kv_pro
 TEST_CASE("KV protocol version match", "[rpc][protocol][wait_for_kv_protocol_check]") {
     std::unique_ptr<::remote::KV::StubInterface> stub{std::make_unique<::remote::FixIssue24351_MockKVStub>()};
     types::VersionReply reply;
-    reply.set_major(6);
-    reply.set_minor(2);
+    reply.set_major(7);
+    reply.set_minor(0);
 
     EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_kv_protocol_check(stub)};
@@ -188,8 +188,8 @@ TEST_CASE("KV protocol version with server stub", "[rpc][protocol][wait_for_kv_p
     class TestService : public ::remote::KV::Service {
       public:
         ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
-            response->set_major(6);
-            response->set_minor(2);
+            response->set_major(7);
+            response->set_minor(0);
             response->set_patch(0);
             return ::grpc::Status::OK;
         }

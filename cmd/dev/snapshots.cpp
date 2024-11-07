@@ -38,6 +38,7 @@
 #include <silkworm/db/blocks/bodies/body_queries.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/datastore/snapshot_merger.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
@@ -48,7 +49,6 @@
 #include <silkworm/db/datastore/snapshots/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/tables.hpp>
@@ -81,7 +81,7 @@ struct SnapshotSubcommandSettings {
     std::optional<BlockNum> lookup_number;
     bool verbose{false};
 
-    const std::filesystem::path& repository_dir() const { return settings.repository_dir; }
+    const std::filesystem::path& repository_path() const { return settings.repository_path; }
 };
 
 //! The settings for handling BitTorrent protocol customized for this tool
@@ -164,7 +164,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     }
     app.require_subcommand(1);
 
-    app.add_option("--snapshot_dir", snapshot_settings.settings.repository_dir, "Path to snapshot repository")
+    app.add_option("--snapshot_dir", snapshot_settings.settings.repository_path, "Path to snapshot repository")
         ->capture_default_str();
     app.add_option("--repetitions", settings.repetitions, "How many times to repeat the execution")
         ->capture_default_str()
@@ -255,8 +255,8 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
     app.parse(argc, argv);
 
-    bittorrent_settings.repository_path = snapshot_settings.repository_dir() / kTorrentRepoPath;
-    snapshot_settings.settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir() / kTorrentRepoPath;
+    bittorrent_settings.repository_path = snapshot_settings.repository_path() / kTorrentRepoPath;
+    snapshot_settings.settings.bittorrent_settings.repository_path = snapshot_settings.repository_path() / kTorrentRepoPath;
 }
 
 //! Convert one duration into another one returning the number of ticks for the latter one
@@ -296,11 +296,7 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
 }
 
 static SnapshotRepository make_repository(const SnapshotSettings& settings) {
-    return SnapshotRepository{
-        settings.repository_dir,
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<silkworm::db::SnapshotBundleFactoryImpl>(),
-    };
+    return db::blocks::make_blocks_repository(settings.repository_path);
 }
 
 using BodyCounters = std::pair<int, uint64_t>;
@@ -450,7 +446,7 @@ void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
 
 void open_index(const SnapshotSubcommandSettings& settings) {
     ensure(settings.segment_file_name.has_value(), "open_index: --snapshot_file must be specified");
-    std::filesystem::path segment_file_path{settings.repository_dir() / *settings.segment_file_name};
+    std::filesystem::path segment_file_path{settings.repository_path() / *settings.segment_file_name};
     SILK_INFO << "Open index for snapshot: " << segment_file_path;
     const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
     ensure(snapshot_path.has_value(), [&]() { return "open_index: invalid snapshot file " + segment_file_path.filename().string(); });
@@ -791,7 +787,7 @@ static void print_body(const BlockBodyForStorage& body, const std::string& filen
 }
 
 void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum block_number, const std::string& file_name) {
-    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir() / file_name);
+    const auto snapshot_path = SnapshotPath::parse(settings.repository_path() / file_name);
     ensure(snapshot_path.has_value(), "lookup_body: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -896,7 +892,7 @@ static void print_txn(const Transaction& txn, const std::string& filename) {
 }
 
 void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const Hash& hash, const std::string& file_name) {
-    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir() / file_name);
+    const auto snapshot_path = SnapshotPath::parse(settings.repository_path() / file_name);
     ensure(snapshot_path.has_value(), "lookup_tx_by_hash_in_one: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -961,7 +957,7 @@ void lookup_txn_by_hash(const SnapshotSubcommandSettings& settings, const std::s
 }
 
 void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_t txn_id, const std::string& file_name) {
-    const auto snapshot_path = SnapshotPath::parse(settings.repository_dir() / file_name);
+    const auto snapshot_path = SnapshotPath::parse(settings.repository_path() / file_name);
     ensure(snapshot_path.has_value(), "lookup_txn_by_id_in_one: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
@@ -1055,17 +1051,10 @@ void sync(const SnapshotSettings& settings) {
 
     TemporaryDirectory tmp_dir;
     db::EnvConfig chaindata_env_config{tmp_dir.path()};
-    auto chaindata_env = db::open_env(chaindata_env_config);
 
-    SnapshotRepository repository{
-        settings.repository_dir,
-        std::make_unique<StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>(),
-    };
-
-    db::DataStoreRef data_store{
-        chaindata_env,  // NOLINT(cppcoreguidelines-slicing)
-        repository,
+    db::DataStore data_store{
+        chaindata_env_config,
+        settings.repository_path,
     };
 
     test_util::TaskRunner runner;
@@ -1073,7 +1062,7 @@ void sync(const SnapshotSettings& settings) {
     db::SnapshotSync snapshot_sync{
         settings,
         kMainnetConfig.chain_id,
-        data_store,
+        data_store.ref(),
         tmp_dir.path(),
         stage_scheduler,
     };

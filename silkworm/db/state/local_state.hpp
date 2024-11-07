@@ -36,7 +36,9 @@ namespace silkworm::db::state {
 class LocalState : public State {
   public:
     explicit LocalState(BlockNum block_number, DataStoreRef data_store)
-        : block_number_{block_number}, txn_{data_store.chaindata_env}, data_model_{txn_, data_store.repository} {}
+        : block_number_{block_number},
+          txn_{data_store.chaindata.start_ro_tx()},
+          data_model_{txn_, data_store.repository} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 

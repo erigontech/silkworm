@@ -25,13 +25,15 @@
 namespace silkworm::snapshots {
 
 struct SnapshotSettings {
-    std::filesystem::path repository_dir{DataDirectory{}.snapshots().path()};  // Path to the snapshot repository on disk
-    bool enabled{true};                                                        // Flag indicating if snapshots are enabled
-    bool no_downloader{false};                                                 // Flag indicating if snapshots download is disabled
-    bittorrent::BitTorrentSettings bittorrent_settings;                        // The Bittorrent protocol settings
-    bool keep_blocks{false};                                                   // Flag indicating if exported blocks should be kept in mdbx
-    bool stop_freezer{false};                                                  // Stop producing new snapshots
-    bool verify_on_startup{false};                                             // Flag indicating if snapshots will be verified on startup
+    std::filesystem::path repository_path{DataDirectory{}.snapshots().path()};
+    bool enabled{true};
+    bool no_downloader{false};
+    bittorrent::BitTorrentSettings bittorrent_settings;
+    // Keep collated data in mdbx
+    bool keep_blocks{false};
+    // Stop producing new snapshots
+    bool stop_freezer{false};
+    bool verify_on_startup{false};
 };
 
 }  // namespace silkworm::snapshots

@@ -407,8 +407,8 @@ TEST_CASE("get_modified_accounts") {
         EXPECT_CALL(transaction, history_range(std::move(query))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
             PaginatorKV paginator = [](auto next_page_token) -> Task<PageResultKV> {
                 co_return PageResultKV{
-                    .keys = {*from_hex("000000000052a010")},
-                    .values = {*from_hex("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")},
+                    .keys = {*from_hex("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")},
+                    .values = {Bytes{}},  // encoded account value doesn't care
                     .next_page_token = std::move(next_page_token)};
             };
             db::kv::api::PaginatedKeysValues result{paginator};

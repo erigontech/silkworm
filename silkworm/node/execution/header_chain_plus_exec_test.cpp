@@ -69,7 +69,7 @@ class DummyRuleSet : public protocol::RuleSet {
 
     void initialize(EVM&) override {}
 
-    ValidationResult finalize(IntraBlockState&, const Block&, EVM&) override { return ValidationResult::kOk; }
+    ValidationResult finalize(IntraBlockState&, const Block&, EVM&, const std::vector<Log>&) override { return ValidationResult::kOk; }
 
   protected:
     ValidationResult validate_difficulty_and_seal(const BlockHeader&, const BlockHeader&) override {

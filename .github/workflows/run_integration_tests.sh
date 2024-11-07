@@ -10,7 +10,6 @@ set +e # Disable exit on error
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-# eth_estimateGas new fields
 # eth_getBlockReceipts/test_07.json new blobFields   
 # debug_accountRange: new algo using TKV
 # debug_getModifiedAccounts: new algo using TKV
@@ -47,7 +46,6 @@ debug_traceTransaction/test_96.json,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
-eth_estimateGas,\
 eth_getBlockReceipts/test_07.json,\
 eth_getLogs,\
 ots_getTransactionBySenderAndNonce/test_04.json,\

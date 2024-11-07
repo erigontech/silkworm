@@ -17,11 +17,12 @@
 #pragma once
 
 #include <map>
-#include <variant>
+#include <optional>
 #include <vector>
 
 #include "../common/entity_name.hpp"
 #include "common/snapshot_path.hpp"
+#include "kv_segment/kv_segment_reader.hpp"
 #include "rec_split_index/index.hpp"
 #include "segment/segment_reader.hpp"
 
@@ -29,48 +30,100 @@ namespace silkworm::snapshots {
 
 class Schema {
   public:
-    class RepositoryDef {
+    class SnapshotPathDef {
       public:
-        RepositoryDef& segment(datastore::EntityName name) {
-            segment_defs_.try_emplace(name);
+        SnapshotPathDef& file_ext(std::string_view ext) {
+            file_ext_ = ext;
             return *this;
         }
 
-        RepositoryDef& segment_file_ext(std::string_view ext) {
-            segment_file_ext_ = ext;
-            return *this;
+        const std::string& file_ext() const { return file_ext_; }
+
+      private:
+        std::string file_ext_;
+    };
+
+    class EntityDef {
+      public:
+        SnapshotPathDef& segment(datastore::EntityName name) {
+            return segment_defs_[name];
         }
 
-        RepositoryDef& rec_split_index(datastore::EntityName name) {
-            rec_split_index_defs_.try_emplace(name);
-            return *this;
+        SnapshotPathDef& kv_segment(datastore::EntityName name) {
+            return kv_segment_defs_[name];
         }
 
-        RepositoryDef& rec_split_index_file_ext(std::string_view ext) {
-            rec_split_index_file_ext_ = ext;
-            return *this;
+        SnapshotPathDef& rec_split_index(datastore::EntityName name) {
+            return rec_split_index_defs_[name];
         }
 
         std::map<datastore::EntityName, SnapshotPath> make_segment_paths(const std::filesystem::path& dir_path, StepRange range) const;
         std::map<datastore::EntityName, SegmentFileReader> make_segments(const std::filesystem::path& dir_path, StepRange range) const;
+        std::map<datastore::EntityName, SnapshotPath> make_kv_segment_paths(const std::filesystem::path& dir_path, StepRange range) const;
+        std::map<datastore::EntityName, KVSegmentFileReader> make_kv_segments(const std::filesystem::path& dir_path, StepRange range) const;
         std::map<datastore::EntityName, SnapshotPath> make_rec_split_index_paths(const std::filesystem::path& dir_path, StepRange range) const;
         std::map<datastore::EntityName, Index> make_rec_split_indexes(const std::filesystem::path& dir_path, StepRange range) const;
         std::vector<SnapshotPath> make_all_paths(const std::filesystem::path& dir_path, StepRange range) const;
 
-        std::string_view segment_file_ext() const { return segment_file_ext_; }
-        std::string_view rec_split_index_file_ext() const { return rec_split_index_file_ext_; }
+        std::vector<std::string> file_extensions() const;
+
+      protected:
+        std::map<datastore::EntityName, SnapshotPathDef> segment_defs_;
+        std::map<datastore::EntityName, SnapshotPathDef> kv_segment_defs_;
+        std::map<datastore::EntityName, SnapshotPathDef> rec_split_index_defs_;
+    };
+
+    class RepositoryDef {
+      public:
+        EntityDef& default_entity() {
+            return entity_defs_[kDefaultEntityName];
+        }
+
+        void domain(datastore::EntityName name) {
+            entity_defs_.try_emplace(name, make_domain_schema());
+        }
+
+        void inverted_index(datastore::EntityName name) {
+            entity_defs_.try_emplace(name, make_inverted_index_schema());
+        }
+
+        const std::map<datastore::EntityName, EntityDef>& entities() const { return entity_defs_; }
         std::vector<std::string> file_extensions() const;
 
       private:
-        std::map<datastore::EntityName, std::monostate> segment_defs_;
-        std::string segment_file_ext_;
-        std::map<datastore::EntityName, std::monostate> rec_split_index_defs_;
-        std::string rec_split_index_file_ext_;
+        static EntityDef make_domain_schema();
+        static EntityDef make_history_schema();
+        static void define_history_schema(EntityDef& schema);
+        static EntityDef make_inverted_index_schema();
+        static void define_inverted_index_schema(EntityDef& schema);
+
+        std::map<datastore::EntityName, EntityDef> entity_defs_;
     };
 
     RepositoryDef& repository(datastore::EntityName name) {
         return repository_defs_[name];
     }
+
+    static constexpr datastore::EntityName kDefaultEntityName{"_"};
+
+    static constexpr datastore::EntityName kDomainKVSegmentName{"DomainKVSegment"};
+    static constexpr std::string_view kDomainKVSegmentFileExt{".kv"};
+    static constexpr datastore::EntityName kDomainAccessorIndexName{"DomainAccessorIndex"};
+    static constexpr std::string_view kDomainAccessorIndexFileExt{".kvi"};
+    static constexpr datastore::EntityName kDomainExistenceIndexName{"DomainExistenceIndex"};
+    static constexpr std::string_view kDomainExistenceIndexFileExt{".kvei"};
+    static constexpr datastore::EntityName kDomainBTreeIndexName{"DomainBTreeIndex"};
+    static constexpr std::string_view kDomainBTreeIndexFileExt{".bt"};
+
+    static constexpr datastore::EntityName kHistorySegmentName{"HistorySegment"};
+    static constexpr std::string_view kHistorySegmentFileExt{".v"};
+    static constexpr datastore::EntityName kHistoryAccessorIndexName{"HistoryAccessorIndex"};
+    static constexpr std::string_view kHistoryAccessorIndexFileExt{".vi"};
+
+    static constexpr datastore::EntityName kInvIdxKVSegmentName{"InvIdxKVSegment"};
+    static constexpr std::string_view kInvIdxKVSegmentFileExt{".ef"};
+    static constexpr datastore::EntityName kInvIdxAccessorIndexName{"InvIdxAccessorIndex"};
+    static constexpr std::string_view kInvIdxAccessorIndexFileExt{".efi"};
 
   private:
     std::map<datastore::EntityName, RepositoryDef> repository_defs_;

@@ -21,18 +21,16 @@
 namespace silkworm::db::blocks {
 
 snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
-    snapshots::Schema::RepositoryDef schema;
-    schema
-        .segment_file_ext(kSegmentExtension)
-        .rec_split_index_file_ext(kIdxExtension)
-        .segment(kHeaderSegmentName)
-        .rec_split_index(kIdxHeaderHashName)
-        .segment(kBodySegmentName)
-        .rec_split_index(kIdxBodyNumberName)
-        .segment(kTxnSegmentName)
-        .rec_split_index(kIdxTxnHashName)
-        .rec_split_index(kIdxTxnHash2BlockName);
-    return schema;
+    snapshots::Schema::RepositoryDef repository_schema;
+    snapshots::Schema::EntityDef& schema = repository_schema.default_entity();
+    schema.segment(kHeaderSegmentName).file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxHeaderHashName).file_ext(kIdxExtension);
+    schema.segment(kBodySegmentName).file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxBodyNumberName).file_ext(kIdxExtension);
+    schema.segment(kTxnSegmentName).file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxTxnHashName).file_ext(kIdxExtension);
+    schema.rec_split_index(kIdxTxnHash2BlockName).file_ext(kIdxExtension);
+    return repository_schema;
 }
 
 std::unique_ptr<snapshots::IndexBuildersFactory> make_blocks_index_builders_factory() {

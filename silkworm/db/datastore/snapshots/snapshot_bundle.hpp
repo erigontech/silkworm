@@ -23,6 +23,7 @@
 
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
+#include "kv_segment/kv_segment_reader.hpp"
 #include "rec_split_index/index.hpp"
 #include "schema.hpp"
 #include "segment/segment_reader.hpp"
@@ -30,9 +31,14 @@
 
 namespace silkworm::snapshots {
 
-struct SnapshotBundleData {
+struct SnapshotBundleEntityData {
     std::map<datastore::EntityName, SegmentFileReader> segments;
+    std::map<datastore::EntityName, KVSegmentFileReader> kv_segments;
     std::map<datastore::EntityName, Index> rec_split_indexes;
+};
+
+struct SnapshotBundleData {
+    std::map<datastore::EntityName, SnapshotBundleEntityData> entities;
 };
 
 SnapshotBundleData make_bundle_data(
@@ -79,11 +85,8 @@ struct SnapshotBundle {
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
-    auto segments() const {
-        return make_map_values_view(data_.segments);
-    }
-    auto rec_split_indexes() const {
-        return make_map_values_view(data_.rec_split_indexes);
+    auto segments() {
+        return make_map_values_view(data_.entities[Schema::kDefaultEntityName].segments);
     }
     const SegmentFileReader& segment(datastore::EntityName name) const;
     const Index& index(datastore::EntityName name) const;
@@ -93,8 +96,8 @@ struct SnapshotBundle {
 
     StepRange step_range() const { return step_range_; }
 
-    std::vector<std::filesystem::path> files() const;
-    std::vector<SnapshotPath> segment_paths() const;
+    std::vector<std::filesystem::path> files();
+    std::vector<SnapshotPath> segment_paths();
 
     void reopen();
     void close();

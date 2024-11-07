@@ -25,15 +25,6 @@ namespace silkworm::db::state {
 
 inline constexpr datastore::EntityName kStateRepositoryName{"State"};
 
-inline constexpr std::string_view kFileExtKV{".kv"};
-inline constexpr std::string_view kFileExtKVI{".kvi"};
-inline constexpr std::string_view kFileExtKVEI{".kvei"};
-inline constexpr std::string_view kFileExtBT{".bt"};
-inline constexpr std::string_view kFileExtV{".v"};
-inline constexpr std::string_view kFileExtVI{".vi"};
-inline constexpr std::string_view kFileExtEF{".ef"};
-inline constexpr std::string_view kFileExtEFI{".efi"};
-
 snapshots::Schema::RepositoryDef make_state_repository_schema();
 
 std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_factory();

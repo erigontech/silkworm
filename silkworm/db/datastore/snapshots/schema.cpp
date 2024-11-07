@@ -16,20 +16,23 @@
 
 #include "schema.hpp"
 
+#include <set>
+
 namespace silkworm::snapshots {
 
-std::map<datastore::EntityName, SnapshotPath> Schema::RepositoryDef::make_segment_paths(
+std::map<datastore::EntityName, SnapshotPath> Schema::EntityDef::make_segment_paths(
     const std::filesystem::path& dir_path,
     StepRange range) const {
     std::map<datastore::EntityName, SnapshotPath> results;
     for (auto& entry : segment_defs_) {
         auto tag = entry.first.to_string();
-        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag), segment_file_ext_));
+        auto& file_ext = entry.second.file_ext();
+        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag), file_ext));
     }
     return results;
 }
 
-std::map<datastore::EntityName, SegmentFileReader> Schema::RepositoryDef::make_segments(
+std::map<datastore::EntityName, SegmentFileReader> Schema::EntityDef::make_segments(
     const std::filesystem::path& dir_path,
     StepRange range) const {
     std::map<datastore::EntityName, SegmentFileReader> results;
@@ -39,18 +42,41 @@ std::map<datastore::EntityName, SegmentFileReader> Schema::RepositoryDef::make_s
     return results;
 }
 
-std::map<datastore::EntityName, SnapshotPath> Schema::RepositoryDef::make_rec_split_index_paths(
+std::map<datastore::EntityName, SnapshotPath> Schema::EntityDef::make_kv_segment_paths(
+    const std::filesystem::path& dir_path,
+    StepRange range) const {
+    std::map<datastore::EntityName, SnapshotPath> results;
+    for (auto& entry : kv_segment_defs_) {
+        auto tag = entry.first.to_string();
+        auto& file_ext = entry.second.file_ext();
+        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag), file_ext));
+    }
+    return results;
+}
+
+std::map<datastore::EntityName, KVSegmentFileReader> Schema::EntityDef::make_kv_segments(
+    const std::filesystem::path& dir_path,
+    StepRange range) const {
+    std::map<datastore::EntityName, KVSegmentFileReader> results;
+    for (auto& entry : make_kv_segment_paths(dir_path, range)) {
+        results.emplace(entry.first, KVSegmentFileReader{entry.second, seg::CompressionKind::kAll});
+    }
+    return results;
+}
+
+std::map<datastore::EntityName, SnapshotPath> Schema::EntityDef::make_rec_split_index_paths(
     const std::filesystem::path& dir_path,
     StepRange range) const {
     std::map<datastore::EntityName, SnapshotPath> results;
     for (auto& entry : rec_split_index_defs_) {
         auto tag = entry.first.to_string();
-        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag), rec_split_index_file_ext_));
+        auto& file_ext = entry.second.file_ext();
+        results.emplace(entry.first, SnapshotPath::make(dir_path, kSnapshotV1, range, std::move(tag), file_ext));
     }
     return results;
 }
 
-std::map<datastore::EntityName, Index> Schema::RepositoryDef::make_rec_split_indexes(
+std::map<datastore::EntityName, Index> Schema::EntityDef::make_rec_split_indexes(
     const std::filesystem::path& dir_path,
     StepRange range) const {
     std::map<datastore::EntityName, Index> results;
@@ -60,24 +86,68 @@ std::map<datastore::EntityName, Index> Schema::RepositoryDef::make_rec_split_ind
     return results;
 }
 
-std::vector<SnapshotPath> Schema::RepositoryDef::make_all_paths(
+std::vector<SnapshotPath> Schema::EntityDef::make_all_paths(
     const std::filesystem::path& dir_path,
     StepRange range) const {
     std::vector<SnapshotPath> results;
     for (auto& entry : make_segment_paths(dir_path, range))
+        results.push_back(std::move(entry.second));
+    for (auto& entry : make_kv_segment_paths(dir_path, range))
         results.push_back(std::move(entry.second));
     for (auto& entry : make_rec_split_index_paths(dir_path, range))
         results.push_back(std::move(entry.second));
     return results;
 }
 
+std::vector<std::string> Schema::EntityDef::file_extensions() const {
+    std::set<std::string> results;
+    for (const auto& entry : segment_defs_)
+        results.insert(entry.second.file_ext());
+    for (const auto& entry : kv_segment_defs_)
+        results.insert(entry.second.file_ext());
+    for (const auto& entry : rec_split_index_defs_)
+        results.insert(entry.second.file_ext());
+    return std::vector<std::string>{results.begin(), results.end()};
+}
+
 std::vector<std::string> Schema::RepositoryDef::file_extensions() const {
-    std::vector<std::string> results;
-    if (!segment_defs_.empty())
-        results.push_back(segment_file_ext_);
-    if (!rec_split_index_defs_.empty())
-        results.push_back(rec_split_index_file_ext_);
-    return results;
+    std::set<std::string> results;
+    for (const auto& entry : entities())
+        for (const auto& file_ext : entry.second.file_extensions())
+            results.insert(file_ext);
+    return std::vector<std::string>{results.begin(), results.end()};
+}
+
+Schema::EntityDef Schema::RepositoryDef::make_domain_schema() {
+    Schema::EntityDef schema;
+    schema.kv_segment(kDomainKVSegmentName).file_ext(kDomainKVSegmentFileExt);
+    schema.rec_split_index(kDomainAccessorIndexName).file_ext(kDomainAccessorIndexFileExt);
+    // TODO: add .kvei and .bt
+    define_history_schema(schema);
+    return schema;
+}
+
+Schema::EntityDef Schema::RepositoryDef::make_history_schema() {
+    Schema::EntityDef schema;
+    define_history_schema(schema);
+    return schema;
+}
+
+void Schema::RepositoryDef::define_history_schema(Schema::EntityDef& schema) {
+    schema.segment(kHistorySegmentName).file_ext(kHistorySegmentFileExt);
+    schema.rec_split_index(kHistoryAccessorIndexName).file_ext(kHistoryAccessorIndexFileExt);
+    define_inverted_index_schema(schema);
+}
+
+Schema::EntityDef Schema::RepositoryDef::make_inverted_index_schema() {
+    Schema::EntityDef schema;
+    define_inverted_index_schema(schema);
+    return schema;
+}
+
+void Schema::RepositoryDef::define_inverted_index_schema(EntityDef& schema) {
+    schema.kv_segment(kInvIdxKVSegmentName).file_ext(kInvIdxKVSegmentFileExt);
+    schema.rec_split_index(kInvIdxAccessorIndexName).file_ext(kInvIdxAccessorIndexFileExt);
 }
 
 }  // namespace silkworm::snapshots

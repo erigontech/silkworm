@@ -95,7 +95,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
     auto range = merger_command.range;
     auto step_range = StepRange::from_block_num_range(range);
 
-    auto new_bundle = snapshots_.bundle_factory().make_paths(tmp_dir_path_, step_range);
+    SnapshotBundlePaths new_bundle{snapshots_.schema(), tmp_dir_path_, step_range};
     for (const auto& [name, path] : new_bundle.segment_paths()) {
         SILK_DEBUG_M("SnapshotMerger") << "merging " << name.to_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
@@ -132,7 +132,7 @@ void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
 
     move_files(bundle.files(), snapshots_.path());
 
-    auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.step_range());
+    SnapshotBundle final_bundle{snapshots_.schema(), snapshots_.path(), bundle.step_range()};
     snapshots_.replace_snapshot_bundles(std::move(final_bundle));
 
     for (auto& merged_bundle : merged_bundles) {

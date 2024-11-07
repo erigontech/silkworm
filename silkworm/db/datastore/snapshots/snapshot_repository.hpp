@@ -57,7 +57,7 @@ class SnapshotRepository {
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = default;
 
     const std::filesystem::path& path() const { return dir_path_; }
-    const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
+    const Schema::RepositoryDef& schema() const { return schema_; };
 
     void reopen_folder();
     void close();

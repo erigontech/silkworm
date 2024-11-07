@@ -109,7 +109,7 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
     auto range = freezer_command.range;
     auto step_range = StepRange::from_block_num_range(range);
 
-    auto bundle = snapshots_.bundle_factory().make_paths(tmp_dir_path_, step_range);
+    SnapshotBundlePaths bundle{snapshots_.schema(), tmp_dir_path_, step_range};
     for (const auto& [name, path] : bundle.segment_paths()) {
         SegmentFileWriter file_writer{path, tmp_dir_path_};
         {
@@ -133,7 +133,7 @@ void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& bundle = freezer_result.bundle_paths;
     move_files(bundle.files(), snapshots_.path());
 
-    auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.step_range());
+    SnapshotBundle final_bundle{snapshots_.schema(), snapshots_.path(), bundle.step_range()};
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
 }
 

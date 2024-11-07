@@ -41,7 +41,10 @@ SnapshotBundleData make_bundle_data(
     StepRange step_range);
 
 struct SnapshotBundlePaths {
-    SnapshotBundlePaths(Schema::RepositoryDef schema, std::filesystem::path dir_path, StepRange step_range)
+    SnapshotBundlePaths(
+        Schema::RepositoryDef schema,
+        std::filesystem::path dir_path,
+        StepRange step_range)
         : schema_{std::move(schema)},
           dir_path_{std::move(dir_path)},
           step_range_{step_range} {}
@@ -63,6 +66,14 @@ struct SnapshotBundle {
           data_{std::move(data)} {
         reopen();
     }
+    SnapshotBundle(
+        const Schema::RepositoryDef& schema,
+        const std::filesystem::path& dir_path,
+        StepRange range)
+        : SnapshotBundle{
+              range,
+              make_bundle_data(schema, dir_path, range),
+          } {}
     virtual ~SnapshotBundle();
 
     SnapshotBundle(SnapshotBundle&&) = default;

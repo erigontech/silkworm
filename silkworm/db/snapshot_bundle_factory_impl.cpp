@@ -28,21 +28,6 @@ namespace silkworm::db {
 
 using namespace snapshots;
 
-SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    return SnapshotBundle{
-        range,
-        make_bundle_data(schema_, dir_path, range),
-    };
-}
-
-SnapshotBundlePaths SnapshotBundleFactoryImpl::make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    return SnapshotBundlePaths{
-        schema_,
-        dir_path,
-        range,
-    };
-}
-
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPath& segment_path) const {
     datastore::EntityName name{segment_path.tag()};
     {

@@ -28,8 +28,6 @@ class StateBundleFactory : public snapshots::SnapshotBundleFactory {
         : schema_{std::move(schema)} {}
     ~StateBundleFactory() override = default;
 
-    snapshots::SnapshotBundle make(const std::filesystem::path& dir_path, snapshots::StepRange range) const override;
-    snapshots::SnapshotBundlePaths make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const override;
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& segment_path) const override;
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPathList& segment_paths) const override;
     snapshots::SnapshotPathList index_dependency_paths(const snapshots::SnapshotPath& index_path) const override;

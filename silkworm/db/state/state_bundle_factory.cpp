@@ -20,22 +20,7 @@ namespace silkworm::db::state {
 
 using namespace snapshots;
 
-SnapshotBundle StateBundleFactory::make(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    return SnapshotBundle{
-        range,
-        make_bundle_data(schema_, dir_path, range),
-    };
-}
-
-SnapshotBundlePaths StateBundleFactory::make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    return SnapshotBundlePaths{
-        schema_,
-        dir_path,
-        range,
-    };
-}
-
-std::vector<std::shared_ptr<IndexBuilder>> StateBundleFactory::index_builders(const SnapshotPath& segment_path) const {
+std::vector<std::shared_ptr<IndexBuilder>> StateBundleFactory::index_builders(const SnapshotPath& /*segment_path*/) const {
     return {};
 }
 
@@ -48,7 +33,7 @@ std::vector<std::shared_ptr<IndexBuilder>> StateBundleFactory::index_builders(co
     return all_builders;
 }
 
-SnapshotPathList StateBundleFactory::index_dependency_paths(const SnapshotPath& index_path) const {
+SnapshotPathList StateBundleFactory::index_dependency_paths(const SnapshotPath& /*index_path*/) const {
     return {};
 }
 

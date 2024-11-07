@@ -137,10 +137,10 @@ void SnapshotRepository::reopen_folder() {
         if (range.size() == 0) continue;
 
         if (!bundles->contains(num)) {
-            SnapshotBundlePaths bundle_paths = bundle_factory_->make_paths(dir_path_, range);
+            SnapshotBundlePaths bundle_paths{schema_, dir_path_, range};
             // if all bundle paths exist
             if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
-                SnapshotBundle bundle = bundle_factory_->make(dir_path_, range);
+                SnapshotBundle bundle{schema_, dir_path_, range};
                 bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
             }
         }

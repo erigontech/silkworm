@@ -106,7 +106,9 @@ class SnapshotRepository {
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
-    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(datastore::EntityName name, Timestamp t) const;
+    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
+        std::pair<datastore::EntityName, datastore::EntityName> names,
+        Timestamp t) const;
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;
 
     std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const;

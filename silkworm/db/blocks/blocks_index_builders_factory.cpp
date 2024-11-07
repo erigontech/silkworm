@@ -29,14 +29,19 @@ namespace silkworm::db::blocks {
 using namespace snapshots;
 
 std::vector<std::shared_ptr<IndexBuilder>> BlocksIndexBuildersFactory::index_builders(const SnapshotPath& segment_path) const {
-    datastore::EntityName name{segment_path.tag()};
+    auto names = schema_.entity_name_by_path(segment_path);
+    if (!names) {
+        SILKWORM_ASSERT(false);
+        return {};
+    }
+    datastore::EntityName name = names->second;
     {
         if (name == db::blocks::kHeaderSegmentName)
             return {std::make_shared<IndexBuilder>(HeaderIndex::make(segment_path))};
         if (name == db::blocks::kBodySegmentName)
             return {std::make_shared<IndexBuilder>(BodyIndex::make(segment_path))};
         if (name == db::blocks::kTxnSegmentName) {
-            auto bodies_segment_path = segment_path.related_path(db::blocks::kBodySegmentName.to_string(), db::blocks::kSegmentExtension);
+            auto bodies_segment_path = segment_path.related_path(std::string{db::blocks::kBodySegmentTag}, db::blocks::kSegmentExtension);
             if (!bodies_segment_path.exists()) return {};
             return {
                 std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, segment_path)),
@@ -49,7 +54,12 @@ std::vector<std::shared_ptr<IndexBuilder>> BlocksIndexBuildersFactory::index_bui
 }
 
 SnapshotPathList BlocksIndexBuildersFactory::index_dependency_paths(const SnapshotPath& index_path) const {
-    datastore::EntityName name{index_path.tag()};
+    auto names = schema_.entity_name_by_path(index_path);
+    if (!names) {
+        SILKWORM_ASSERT(false);
+        std::abort();
+    }
+    datastore::EntityName name = names->second;
     datastore::EntityName segment_name = [name]() -> datastore::EntityName {
         if (name == db::blocks::kIdxHeaderHashName)
             return db::blocks::kHeaderSegmentName;
@@ -62,7 +72,8 @@ SnapshotPathList BlocksIndexBuildersFactory::index_dependency_paths(const Snapsh
         SILKWORM_ASSERT(false);
         std::abort();
     }();
-    SnapshotPath snapshot_path = index_path.related_path(segment_name.to_string(), db::blocks::kSegmentExtension);
+    auto& segment_tag = schema_.entities().at(Schema::kDefaultEntityName).entities().at(segment_name).tag();
+    SnapshotPath snapshot_path = index_path.related_path(segment_tag, db::blocks::kSegmentExtension);
     return {snapshot_path};
 }
 

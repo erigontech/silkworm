@@ -35,16 +35,19 @@ snapshots::SnapshotRepository make_state_repository(
     std::filesystem::path dir_path,
     bool open = true);
 
-inline constexpr datastore::EntityName kDomainNameAccounts{"Accounts"};
+inline constexpr datastore::EntityName kDomainNameAccounts{"Account"};
 inline constexpr datastore::EntityName kDomainNameStorage{"Storage"};
 inline constexpr datastore::EntityName kDomainNameCode{"Code"};
 inline constexpr datastore::EntityName kDomainNameCommitment{"Commitment"};
-inline constexpr datastore::EntityName kDomainNameReceipts{"Receipts"};
+inline constexpr datastore::EntityName kDomainNameReceipts{"Receipt"};
 
 inline constexpr datastore::EntityName kInvIdxNameLogAddress{"LogAddress"};
 inline constexpr datastore::EntityName kInvIdxNameLogTopics{"LogTopics"};
 inline constexpr datastore::EntityName kInvIdxNameTracesFrom{"TracesFrom"};
 inline constexpr datastore::EntityName kInvIdxNameTracesTo{"TracesTo"};
+
+inline constexpr std::string_view kDomainAccountsTag{"accounts"};
+inline constexpr std::string_view kInvIdxLogAddressTag{"logaddrs"};
 
 struct BundleDataRef {
     const snapshots::SnapshotBundle& bundle;

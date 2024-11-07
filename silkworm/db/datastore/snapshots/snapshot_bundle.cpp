@@ -90,7 +90,7 @@ const SegmentFileReader& SnapshotBundle::segment(datastore::EntityName name) con
     return data_.entities.at(Schema::kDefaultEntityName).segments.at(name);
 }
 
-const Index& SnapshotBundle::index(datastore::EntityName name) const {
+const Index& SnapshotBundle::rec_split_index(datastore::EntityName name) const {
     return data_.entities.at(Schema::kDefaultEntityName).rec_split_indexes.at(name);
 }
 

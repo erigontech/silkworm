@@ -23,13 +23,31 @@ namespace silkworm::db::blocks {
 snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
     snapshots::Schema::RepositoryDef repository_schema;
     snapshots::Schema::EntityDef& schema = repository_schema.default_entity();
-    schema.segment(kHeaderSegmentName).file_ext(kSegmentExtension);
-    schema.rec_split_index(kIdxHeaderHashName).file_ext(kIdxExtension);
-    schema.segment(kBodySegmentName).file_ext(kSegmentExtension);
-    schema.rec_split_index(kIdxBodyNumberName).file_ext(kIdxExtension);
-    schema.segment(kTxnSegmentName).file_ext(kSegmentExtension);
-    schema.rec_split_index(kIdxTxnHashName).file_ext(kIdxExtension);
-    schema.rec_split_index(kIdxTxnHash2BlockName).file_ext(kIdxExtension);
+
+    schema.segment(kHeaderSegmentName)
+        .tag(kHeaderSegmentTag)
+        .file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxHeaderHashName)
+        .tag(kIdxHeaderHashTag)
+        .file_ext(kIdxExtension);
+
+    schema.segment(kBodySegmentName)
+        .tag(kBodySegmentTag)
+        .file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxBodyNumberName)
+        .tag(kIdxBodyNumberTag)
+        .file_ext(kIdxExtension);
+
+    schema.segment(kTxnSegmentName)
+        .tag(kTxnSegmentTag)
+        .file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxTxnHashName)
+        .tag(kIdxTxnHashTag)
+        .file_ext(kIdxExtension);
+    schema.rec_split_index(kIdxTxnHash2BlockName)
+        .tag(kIdxTxnHash2BlockTag)
+        .file_ext(kIdxExtension);
+
     return repository_schema;
 }
 

@@ -39,18 +39,37 @@ snapshots::SnapshotRepository make_blocks_repository(
     bool open = true);
 
 inline constexpr datastore::EntityName kHeaderSegmentName{"headers"};
+inline constexpr std::string_view kHeaderSegmentTag = kHeaderSegmentName.name;
 //! Index header_hash -> block_num -> headers_segment_offset
-inline constexpr datastore::EntityName kIdxHeaderHashName{"headers"};
+inline constexpr datastore::EntityName kIdxHeaderHashName{"headers.idx"};
+inline constexpr std::string_view kIdxHeaderHashTag = kHeaderSegmentTag;
+inline constexpr std::pair<datastore::EntityName, datastore::EntityName> kHeaderSegmentAndIdxNames{
+    kHeaderSegmentName,
+    kIdxHeaderHashName,
+};
 
 inline constexpr datastore::EntityName kBodySegmentName{"bodies"};
+inline constexpr std::string_view kBodySegmentTag = kBodySegmentName.name;
 //! Index block_num -> bodies_segment_offset
-inline constexpr datastore::EntityName kIdxBodyNumberName{"bodies"};
+inline constexpr datastore::EntityName kIdxBodyNumberName{"bodies.idx"};
+inline constexpr std::string_view kIdxBodyNumberTag = kBodySegmentTag;
+inline constexpr std::pair<datastore::EntityName, datastore::EntityName> kBodySegmentAndIdxNames{
+    kBodySegmentName,
+    kIdxBodyNumberName,
+};
 
 inline constexpr datastore::EntityName kTxnSegmentName{"transactions"};
+inline constexpr std::string_view kTxnSegmentTag = kTxnSegmentName.name;
 //! Index transaction_hash -> txn_id -> transactions_segment_offset
-inline constexpr datastore::EntityName kIdxTxnHashName{"transactions"};
+inline constexpr datastore::EntityName kIdxTxnHashName{"transactions.idx"};
+inline constexpr std::string_view kIdxTxnHashTag = kTxnSegmentTag;
+inline constexpr std::pair<datastore::EntityName, datastore::EntityName> kTxnSegmentAndIdxNames{
+    kTxnSegmentName,
+    kIdxTxnHashName,
+};
 //! Index transaction_hash -> block_num
-inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions-to-block"};
+inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions-to-block.idx"};
+inline constexpr std::string_view kIdxTxnHash2BlockTag{"transactions-to-block"};
 
 struct BundleDataRef {
     const snapshots::SnapshotBundleData& data;

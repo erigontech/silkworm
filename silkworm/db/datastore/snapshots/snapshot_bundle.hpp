@@ -91,9 +91,10 @@ struct SnapshotBundle {
         return make_map_values_view(data_.entities[Schema::kDefaultEntityName].segments);
     }
     const SegmentFileReader& segment(datastore::EntityName name) const;
-    const Index& index(datastore::EntityName name) const;
-    SegmentAndIndex segment_and_index(datastore::EntityName name) const {
-        return {segment(name), index(name)};
+    const Index& rec_split_index(datastore::EntityName name) const;
+    SegmentAndIndex segment_and_rec_split_index(
+        std::pair<datastore::EntityName, datastore::EntityName> names) const {
+        return {segment(names.first), rec_split_index(names.second)};
     }
 
     Domain domain(datastore::EntityName name) const;

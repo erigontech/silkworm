@@ -127,7 +127,6 @@ inline constexpr const char* k_erigon_forks{"erigon_forks"};
 inline constexpr const char* k_erigon_watchTheBurn{"erigon_watchTheBurn"};
 inline constexpr const char* k_erigon_nodeInfo{"erigon_nodeInfo"};
 
-inline constexpr const char* k_parity_getBlockReceipts{"parity_getBlockReceipts"};
 inline constexpr const char* k_parity_listStorageKeys{"parity_listStorageKeys"};
 
 inline constexpr const char* k_engine_exchangeCapabilities{"engine_exchangeCapabilities"};

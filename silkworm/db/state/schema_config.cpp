@@ -16,11 +16,27 @@
 
 #include "schema_config.hpp"
 
+#include "state_bundle_factory.hpp"
+
 namespace silkworm::db::state {
 
 snapshots::Schema::RepositoryDef make_state_repository_schema() {
     snapshots::Schema::RepositoryDef schema;
     return schema;
+}
+
+std::unique_ptr<snapshots::SnapshotBundleFactory> make_state_bundle_factory() {
+    return std::make_unique<StateBundleFactory>(make_state_repository_schema());
+}
+
+snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_path, bool open) {
+    return snapshots::SnapshotRepository{
+        std::move(dir_path),
+        open,
+        make_state_repository_schema(),
+        std::make_unique<snapshots::StepToTxnIdConverter>(),
+        make_state_bundle_factory(),
+    };
 }
 
 }  // namespace silkworm::db::state

@@ -59,6 +59,7 @@ class Schema {
 
         std::string_view segment_file_ext() const { return segment_file_ext_; }
         std::string_view rec_split_index_file_ext() const { return rec_split_index_file_ext_; }
+        std::vector<std::string> file_extensions() const;
 
       private:
         std::map<datastore::EntityName, std::monostate> segment_defs_;

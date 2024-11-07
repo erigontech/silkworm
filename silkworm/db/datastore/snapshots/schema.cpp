@@ -71,4 +71,13 @@ std::vector<SnapshotPath> Schema::RepositoryDef::make_all_paths(
     return results;
 }
 
+std::vector<std::string> Schema::RepositoryDef::file_extensions() const {
+    std::vector<std::string> results;
+    if (!segment_defs_.empty())
+        results.push_back(segment_file_ext_);
+    if (!rec_split_index_defs_.empty())
+        results.push_back(rec_split_index_file_ext_);
+    return results;
+}
+
 }  // namespace silkworm::snapshots

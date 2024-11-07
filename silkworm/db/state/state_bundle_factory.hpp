@@ -19,13 +19,14 @@
 #include <silkworm/db/datastore/snapshots/schema.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_bundle_factory.hpp>
 
-namespace silkworm::db {
+namespace silkworm::db::state {
 
-class SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
+class StateBundleFactory : public snapshots::SnapshotBundleFactory {
   public:
-    explicit SnapshotBundleFactoryImpl(snapshots::Schema::RepositoryDef schema)
+    StateBundleFactory() {}
+    StateBundleFactory(snapshots::Schema::RepositoryDef schema)
         : schema_{std::move(schema)} {}
-    ~SnapshotBundleFactoryImpl() override = default;
+    ~StateBundleFactory() override = default;
 
     snapshots::SnapshotBundle make(const std::filesystem::path& dir_path, snapshots::StepRange range) const override;
     snapshots::SnapshotBundlePaths make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const override;
@@ -37,4 +38,4 @@ class SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
     snapshots::Schema::RepositoryDef schema_;
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::db::state

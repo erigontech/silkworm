@@ -211,9 +211,15 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
     ensure(fs::is_directory(dir_path_),
            [&]() { return "SnapshotRepository: " + dir_path_.string() + " is a not folder"; });
 
+    auto supported_file_extensions = schema_.file_extensions();
+    if (supported_file_extensions.empty()) return {};
+
     std::vector<StepRange> results;
     for (const auto& file : fs::directory_iterator{dir_path_}) {
         if (!fs::is_regular_file(file.path())) {
+            continue;
+        }
+        if (std::ranges::find(supported_file_extensions, file.path().extension().string()) == supported_file_extensions.end()) {
             continue;
         }
         const auto range = SnapshotPath::parse_step_range(file.path());

@@ -1991,7 +1991,7 @@ Task<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& request,
 }
 
 // https://eth.wiki/json-rpc/API#eth_feehistory
-Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         const auto error_msg = "invalid eth_feeHistory params: " + params.dump();
@@ -2061,7 +2061,7 @@ Task<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlo
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-Task<void> EthereumRpcApi::handle_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (!params.empty()) {
         const auto error_msg = "invalid eth_baseFee params: " + params.dump();
@@ -2104,7 +2104,7 @@ Task<void> EthereumRpcApi::handle_base_fee(const nlohmann::json& request, nlohma
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-Task<void> EthereumRpcApi::handle_blob_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> EthereumRpcApi::handle_eth_blob_base_fee(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (!params.empty()) {
         const auto error_msg = "invalid eth_blobBaseFee params: " + params.dump();
@@ -2134,6 +2134,56 @@ Task<void> EthereumRpcApi::handle_blob_base_fee(const nlohmann::json& request, n
         }
         reply = make_json_content(request, to_quantity(blob_base_fee));
 
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+// https://eth.wiki/json-rpc/API#eth_getblockreceipts
+Task<void> EthereumRpcApi::handle_eth_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid eth_getBlockReceipts params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+    const auto block_id = params[0].get<std::string>();
+    SILK_DEBUG << "block_id: " << block_id;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        const auto chain_storage{tx->create_storage()};
+
+        const auto bnoh = BlockNumberOrHash{block_id};
+        const auto block_number = co_await core::get_block_number(bnoh, *tx);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number.first);
+        if (block_with_hash) {
+            auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+            SILK_TRACE << "#receipts: " << receipts.size();
+
+            const auto block{block_with_hash->block};
+            if (receipts.size() == block.transactions.size()) {
+                for (size_t i{0}; i < block.transactions.size(); ++i) {
+                    receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+                }
+                reply = make_json_content(request, receipts);
+            } else {
+                reply = make_json_content(request, {});
+            }
+        } else {
+            reply = make_json_content(request, {});
+        }
+    } catch (const std::invalid_argument& iv) {
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_content(request, {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

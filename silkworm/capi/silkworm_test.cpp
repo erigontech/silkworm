@@ -42,11 +42,13 @@ namespace silkworm {
 namespace snapshot_test = snapshots::test_util;
 using namespace silkworm::db;
 
-struct CApiTest : public db::test_util::TestDatabaseContext {
+struct CApiTest {
     TemporaryDirectory tmp_dir;
+    db::test_util::TestDatabaseContext database{tmp_dir};
+
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
-    mdbx::env env{*chaindata_rw()};
-    const std::filesystem::path& env_path() { return chaindata_dir_path(); }
+    mdbx::env env{*database.chaindata_rw()};
+    const std::filesystem::path& env_path() const { return database.chaindata_dir_path(); }
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array

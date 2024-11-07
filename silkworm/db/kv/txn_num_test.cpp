@@ -174,12 +174,9 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         EXPECT_CALL(*cursor, last()).WillOnce(Invoke([=]() -> Task<kv::api::KeyValue> {
             co_return kv::api::KeyValue{*from_hex(""), *from_hex("")};
         }));
-        EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
-            co_return kv::api::KeyValue{*from_hex(""), *from_hex("")};
-        }));
         provider = [](BlockNum) -> Task<std::optional<Bytes>> { co_return Bytes{}; };
 
-        CHECK_THROWS_AS(spawn_and_wait(block_num_from_tx_num(transaction, 0, provider)), std::exception);
+        CHECK(spawn_and_wait(block_num_from_tx_num(transaction, 0, provider)) == std::nullopt);
     }
     SECTION("db_1_block: tx num 0 in block 0") {
         // Block 0 is last in MDBX and has max tx num equal to 1

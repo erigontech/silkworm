@@ -166,7 +166,7 @@ namespace {
         const auto tests_dir = get_tests_dir();
 
         EnvConfig env_config{
-            .path = chaindata_dir_path,
+            .path = chaindata_dir_path.string(),
             .create = true,
             .exclusive = true,
             .in_memory = true,
@@ -184,10 +184,6 @@ namespace {
     }
 
 }  // namespace
-
-TestDatabaseContext::TestDatabaseContext()
-    : chaindata_dir_path_{TemporaryDirectory::get_unique_temporary_path()},
-      env_{std::make_unique<mdbx::env_managed>(initialize_test_database(chaindata_dir_path_))} {}
 
 TestDatabaseContext::TestDatabaseContext(const TemporaryDirectory& tmp_dir)
     : chaindata_dir_path_{DataDirectory{tmp_dir.path()}.chaindata().path()},

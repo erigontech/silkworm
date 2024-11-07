@@ -94,6 +94,34 @@ const Index& SnapshotBundle::index(datastore::EntityName name) const {
     return data_.entities.at(Schema::kDefaultEntityName).rec_split_indexes.at(name);
 }
 
+Domain SnapshotBundle::domain(datastore::EntityName name) const {
+    auto& data = data_.entities.at(name);
+    Domain domain{
+        data.kv_segments.at(Schema::kDomainKVSegmentName),
+        data.rec_split_indexes.at(Schema::kDomainAccessorIndexName),
+        // TODO: bt & kvei
+    };
+    if (data.segments.contains(Schema::kHistorySegmentName)) {
+        domain.history.emplace(History{
+            data.segments.at(Schema::kHistorySegmentName),
+            data.rec_split_indexes.at(Schema::kHistoryAccessorIndexName),
+            InvertedIndex{
+                data.kv_segments.at(Schema::kInvIdxKVSegmentName),
+                data.rec_split_indexes.at(Schema::kInvIdxAccessorIndexName),
+            },
+        });
+    }
+    return domain;
+}
+
+InvertedIndex SnapshotBundle::inverted_index(datastore::EntityName name) const {
+    auto& data = data_.entities.at(name);
+    return {
+        data.kv_segments.at(Schema::kInvIdxKVSegmentName),
+        data.rec_split_indexes.at(Schema::kInvIdxAccessorIndexName),
+    };
+}
+
 std::vector<std::filesystem::path> SnapshotBundle::files() const {
     std::vector<std::filesystem::path> files;
     for (auto& entity_entry : data_.entities) {

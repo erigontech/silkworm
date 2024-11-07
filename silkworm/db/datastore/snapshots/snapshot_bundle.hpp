@@ -23,6 +23,8 @@
 
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
+#include "domain.hpp"
+#include "inverted_index.hpp"
 #include "kv_segment/kv_segment_reader.hpp"
 #include "rec_split_index/index.hpp"
 #include "schema.hpp"
@@ -93,6 +95,9 @@ struct SnapshotBundle {
     SegmentAndIndex segment_and_index(datastore::EntityName name) const {
         return {segment(name), index(name)};
     }
+
+    Domain domain(datastore::EntityName name) const;
+    InvertedIndex inverted_index(datastore::EntityName name) const;
 
     StepRange step_range() const { return step_range_; }
 

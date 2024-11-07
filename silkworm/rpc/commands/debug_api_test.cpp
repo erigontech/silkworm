@@ -50,7 +50,6 @@ using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 using testing::Invoke;
-using testing::InvokeWithoutArgs;
 using testing::Unused;
 using namespace evmc::literals;
 
@@ -395,11 +394,13 @@ TEST_CASE("get_modified_accounts") {
             .ascending_order = true};
 
         EXPECT_CALL(transaction, history_range(std::move(query))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
-            PaginatorKV empty_paginator = []() -> Task<PageResultKV> {
-                co_return PageResultKV{};
+            PaginatorKV paginator = []() -> Task<PageResultKV> {
+                co_return PageResultKV{
+                    .keys = {string_to_bytes("000000000052a010")},
+                    .values = {string_to_bytes("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")},
+                    .has_more = false};
             };
-            db::kv::api::PaginatedKeysValues result{empty_paginator};
-            //{PageK{string_to_bytes("000000000052a010"), string_to_bytes("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")}};
+            db::kv::api::PaginatedKeysValues result{paginator};
             co_return result;
         }));
 

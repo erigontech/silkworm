@@ -48,7 +48,7 @@ struct CApiTest {
 
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
     mdbx::env env{*database.chaindata_rw()};
-    const std::filesystem::path& env_path() { return database.chaindata_dir_path(); }
+    const std::filesystem::path& env_path() const { return database.chaindata_dir_path(); }
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array

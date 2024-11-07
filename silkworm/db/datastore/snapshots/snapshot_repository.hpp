@@ -47,6 +47,7 @@ class SnapshotRepository {
   public:
     SnapshotRepository(
         std::filesystem::path dir_path,
+        bool open,
         std::unique_ptr<StepToTimestampConverter> step_converter,
         std::unique_ptr<SnapshotBundleFactory> bundle_factory);
 
@@ -65,8 +66,6 @@ class SnapshotRepository {
     void replace_snapshot_bundles(SnapshotBundle bundle);
 
     size_t bundles_count() const;
-    size_t total_segments_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
-    size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
 
     //! All types of .seg and .idx files are available up to this block number
     BlockNum max_block_available() const;
@@ -74,7 +73,7 @@ class SnapshotRepository {
 
     std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
-    void build_indexes(SnapshotBundle& bundle) const;
+    void build_indexes(SnapshotBundlePaths& bundle) const;
 
     using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;
 
@@ -122,6 +121,7 @@ class SnapshotRepository {
     }
 
     SnapshotPathList get_files(const std::string& ext) const;
+    std::vector<StepRange> list_dir_file_ranges() const;
 
     SnapshotPathList stale_index_paths() const;
 

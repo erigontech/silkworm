@@ -29,22 +29,22 @@
 #include "blocks/bodies/body_queries.hpp"
 #include "blocks/bodies/body_segment_collation.hpp"
 #include "blocks/headers/header_segment_collation.hpp"
+#include "blocks/transactions/txn_segment_collation.hpp"
 #include "datastore/segment_collation.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
 #include "datastore/snapshots/segment/segment_writer.hpp"
 #include "datastore/snapshots/snapshot_bundle.hpp"
 #include "prune_mode.hpp"
-#include "transactions/txn_segment_collation.hpp"
 
 namespace silkworm::db {
 
 using namespace silkworm::snapshots;
 
 struct FreezerResult : public DataMigrationResult {
-    SnapshotBundle bundle;
+    SnapshotBundlePaths bundle_paths;
 
-    explicit FreezerResult(SnapshotBundle bundle1)
-        : bundle(std::move(bundle1)) {}
+    explicit FreezerResult(SnapshotBundlePaths bundle_paths1)
+        : bundle_paths(std::move(bundle_paths1)) {}
     ~FreezerResult() override = default;
 };
 
@@ -110,9 +110,8 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
     auto range = freezer_command.range;
     auto step_range = StepRange::from_block_num_range(range);
 
-    auto bundle = snapshots_.bundle_factory().make(tmp_dir_path_, step_range);
-    for (auto& segment_ref : bundle.segments()) {
-        auto path = segment_ref.get().path();
+    auto bundle = snapshots_.bundle_factory().make_paths(tmp_dir_path_, step_range);
+    for (auto& path : bundle.segment_paths()) {
         SegmentFileWriter file_writer{path, tmp_dir_path_};
         {
             auto db_tx = db_access_.start_ro_tx();
@@ -127,13 +126,12 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
 
 void Freezer::index(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
-    snapshots_.build_indexes(bundle);
+    snapshots_.build_indexes(freezer_result.bundle_paths);
 }
 
 void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
+    auto& bundle = freezer_result.bundle_paths;
     move_files(bundle.files(), snapshots_.path());
 
     auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.step_range());

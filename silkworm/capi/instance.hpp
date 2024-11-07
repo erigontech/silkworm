@@ -33,7 +33,7 @@ struct SilkwormInstance {
     silkworm::concurrency::ContextPoolSettings context_pool_settings;
     std::filesystem::path data_dir_path;
     silkworm::NodeSettings node_settings;
-    std::unique_ptr<silkworm::snapshots::SnapshotRepository> snapshot_repository;
+    std::unique_ptr<silkworm::snapshots::SnapshotRepository> repository;
     std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
     std::unique_ptr<silkworm::stagedsync::ExecutionEngine> execution_engine;
 

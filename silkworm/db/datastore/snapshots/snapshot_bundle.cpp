@@ -16,59 +16,95 @@
 
 #include "snapshot_bundle.hpp"
 
+#include <magic_enum.hpp>
+
 #include <silkworm/infra/common/ensure.hpp>
 
 namespace silkworm::snapshots {
+
+SnapshotBundleData make_bundle_data(
+    const Schema::RepositoryDef& schema,
+    const std::filesystem::path& dir_path,
+    StepRange step_range) {
+    return {
+        schema.make_segments(dir_path, step_range),
+        schema.make_rec_split_indexes(dir_path, step_range),
+    };
+}
 
 SnapshotBundle::~SnapshotBundle() {
     close();
 }
 
 void SnapshotBundle::reopen() {
-    for (auto& segment_ref : segments()) {
-        segment_ref.get().reopen_segment();
-        ensure(!segment_ref.get().empty(), [&]() {
-            return "invalid empty snapshot " + segment_ref.get().fs_path().string();
+    for (auto& entry : data_.segments) {
+        SegmentFileReader& segment = entry.second;
+        segment.reopen_segment();
+        ensure(!segment.empty(), [&]() {
+            return "invalid empty snapshot " + segment.fs_path().string();
         });
     }
-    for (auto& index_ref : indexes()) {
-        index_ref.get().reopen_index();
+    for (auto& entry : data_.rec_split_indexes) {
+        Index& index = entry.second;
+        index.reopen_index();
     }
 }
 
 void SnapshotBundle::close() {
-    for (auto& index_ref : indexes()) {
-        index_ref.get().close_index();
+    for (auto& entry : data_.rec_split_indexes) {
+        Index& index = entry.second;
+        index.close_index();
     }
-    for (auto& segment_ref : segments()) {
-        segment_ref.get().close();
+    for (auto& entry : data_.segments) {
+        SegmentFileReader& segment = entry.second;
+        segment.close();
     }
     if (on_close_callback_) {
         on_close_callback_(*this);
     }
 }
 
+const SegmentFileReader& SnapshotBundle::segment(SnapshotType type) const {
+    datastore::EntityName name{magic_enum::enum_name(type)};
+    return data_.segments.at(name);
+}
+
+const Index& SnapshotBundle::index(SnapshotType type) const {
+    datastore::EntityName name{magic_enum::enum_name(type)};
+    return data_.rec_split_indexes.at(name);
+}
+
 std::vector<std::filesystem::path> SnapshotBundle::files() {
     std::vector<std::filesystem::path> files;
-    files.reserve(kSnapshotsCount + kIndexesCount);
-
-    for (auto& segment_ref : segments()) {
-        files.push_back(segment_ref.get().path().path());
+    for (const SegmentFileReader& segment : segments()) {
+        files.push_back(segment.path().path());
     }
-    for (auto& index_ref : indexes()) {
-        files.push_back(index_ref.get().path().path());
+    for (const Index& index : rec_split_indexes()) {
+        files.push_back(index.path().path());
     }
     return files;
 }
 
-std::vector<SnapshotPath> SnapshotBundle::snapshot_paths() {
+std::vector<SnapshotPath> SnapshotBundle::segment_paths() {
     std::vector<SnapshotPath> paths;
-    paths.reserve(kSnapshotsCount);
-
-    for (auto& segment_ref : segments()) {
-        paths.push_back(segment_ref.get().path());
+    for (const SegmentFileReader& segment : segments()) {
+        paths.push_back(segment.path());
     }
     return paths;
+}
+
+std::vector<SnapshotPath> SnapshotBundlePaths::segment_paths() const {
+    std::vector<SnapshotPath> results;
+    for (auto& entry : schema_.make_segment_paths(dir_path_, step_range_))
+        results.push_back(std::move(entry.second));
+    return results;
+}
+
+std::vector<std::filesystem::path> SnapshotBundlePaths::files() const {
+    std::vector<std::filesystem::path> results;
+    for (auto& path : schema_.make_all_paths(dir_path_, step_range_))
+        results.push_back(path.path());
+    return results;
 }
 
 }  // namespace silkworm::snapshots

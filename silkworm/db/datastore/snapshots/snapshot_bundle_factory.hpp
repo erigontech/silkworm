@@ -30,9 +30,8 @@ namespace silkworm::snapshots {
 struct SnapshotBundleFactory {
     virtual ~SnapshotBundleFactory() = default;
 
-    using PathByTypeProvider = std::function<SnapshotPath(SnapshotType)>;
-    virtual SnapshotBundle make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const = 0;
     virtual SnapshotBundle make(const std::filesystem::path& dir_path, StepRange range) const = 0;
+    virtual SnapshotBundlePaths make_paths(const std::filesystem::path& dir_path, StepRange range) const = 0;
 
     virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPath& segment_path) const = 0;
     virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& segment_paths) const = 0;

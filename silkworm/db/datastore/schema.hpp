@@ -16,13 +16,12 @@
 
 #pragma once
 
-#include "../datastore/common/entity_name.hpp"
-#include "../datastore/snapshots/schema.hpp"
+#include "snapshots/schema.hpp"
 
-namespace silkworm::db::state {
+namespace silkworm::datastore {
 
-inline constexpr datastore::EntityName kStateRepositoryName{"State"};
+struct Schema {
+    snapshots::Schema snapshots;
+};
 
-snapshots::Schema::RepositoryDef make_state_repository_schema();
-
-}  // namespace silkworm::db::state
+}  // namespace silkworm::datastore

@@ -19,39 +19,27 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 
 namespace silkworm::db {
 
 using namespace snapshots;
 
-SnapshotBundle SnapshotBundleFactoryImpl::make(PathByTypeProvider snapshot_path, PathByTypeProvider index_path) const {
+SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
     return SnapshotBundle{
-        snapshot_path(SnapshotType::headers).step_range(),
-        {
-            .header_segment = SegmentFileReader(snapshot_path(SnapshotType::headers)),
-            .idx_header_hash = Index(index_path(SnapshotType::headers)),
-
-            .body_segment = SegmentFileReader(snapshot_path(SnapshotType::bodies)),
-            .idx_body_number = Index(index_path(SnapshotType::bodies)),
-
-            .txn_segment = SegmentFileReader(snapshot_path(SnapshotType::transactions)),
-            .idx_txn_hash = Index(index_path(SnapshotType::transactions)),
-            .idx_txn_hash_2_block = Index(index_path(SnapshotType::transactions_to_block)),
-        },
+        range,
+        make_bundle_data(schema_, dir_path, range),
     };
 }
 
-SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    PathByTypeProvider snapshot_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::make(dir_path, kSnapshotV1, range, type);
+SnapshotBundlePaths SnapshotBundleFactoryImpl::make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
+    return SnapshotBundlePaths{
+        schema_,
+        dir_path,
+        range,
     };
-    PathByTypeProvider index_path = [&](silkworm::snapshots::SnapshotType type) {
-        return SnapshotPath::make(dir_path, kSnapshotV1, range, type, kIdxExtension);
-    };
-    return make(std::move(snapshot_path), std::move(index_path));
 }
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPath& segment_path) const {

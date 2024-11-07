@@ -24,103 +24,60 @@
 #include <silkworm/core/common/assert.hpp>
 
 #include "common/snapshot_path.hpp"
+#include "common/util/iterator/map_values_view.hpp"
 #include "rec_split_index/index.hpp"
+#include "schema.hpp"
 #include "segment/segment_reader.hpp"
 #include "segment_and_index.hpp"
 
 namespace silkworm::snapshots {
 
 struct SnapshotBundleData {
-    SegmentFileReader header_segment;
-    //! Index header_hash -> block_num -> headers_segment_offset
-    Index idx_header_hash;
-
-    SegmentFileReader body_segment;
-    //! Index block_num -> bodies_segment_offset
-    Index idx_body_number;
-
-    SegmentFileReader txn_segment;
-    //! Index transaction_hash -> txn_id -> transactions_segment_offset
-    Index idx_txn_hash;
-    //! Index transaction_hash -> block_num
-    Index idx_txn_hash_2_block;
-
-    static constexpr size_t kSnapshotsCount = 3;
-    static constexpr size_t kIndexesCount = 4;
+    std::map<datastore::EntityName, SegmentFileReader> segments;
+    std::map<datastore::EntityName, Index> rec_split_indexes;
 };
 
-struct SnapshotBundle : public SnapshotBundleData {
-    explicit SnapshotBundle(StepRange step_range, SnapshotBundleData bundle)
-        : SnapshotBundleData{std::move(bundle)},
+SnapshotBundleData make_bundle_data(
+    const Schema::RepositoryDef& schema,
+    const std::filesystem::path& dir_path,
+    StepRange step_range);
+
+struct SnapshotBundlePaths {
+    SnapshotBundlePaths(Schema::RepositoryDef schema, std::filesystem::path dir_path, StepRange step_range)
+        : schema_{std::move(schema)},
+          dir_path_{std::move(dir_path)},
           step_range_{step_range} {}
+
+    StepRange step_range() const { return step_range_; }
+
+    std::vector<std::filesystem::path> files() const;
+    std::vector<SnapshotPath> segment_paths() const;
+
+  private:
+    Schema::RepositoryDef schema_;
+    std::filesystem::path dir_path_;
+    StepRange step_range_;
+};
+
+struct SnapshotBundle {
+    SnapshotBundle(StepRange step_range, SnapshotBundleData data)
+        : step_range_{step_range},
+          data_{std::move(data)} {
+        reopen();
+    }
     virtual ~SnapshotBundle();
 
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
-    std::array<std::reference_wrapper<SegmentFileReader>, kSnapshotsCount> segments() {
-        return {
-            header_segment,
-            body_segment,
-            txn_segment,
-        };
+    auto segments() {
+        return make_map_values_view(data_.segments);
     }
-
-    std::array<std::reference_wrapper<Index>, kIndexesCount> indexes() {
-        return {
-            idx_header_hash,
-            idx_body_number,
-            idx_txn_hash,
-            idx_txn_hash_2_block,
-        };
+    auto rec_split_indexes() {
+        return make_map_values_view(data_.rec_split_indexes);
     }
-
-    std::array<SnapshotType, kSnapshotsCount> snapshot_types() {
-        return {
-            SnapshotType::headers,
-            SnapshotType::bodies,
-            SnapshotType::transactions,
-        };
-    }
-
-    std::array<SnapshotType, kIndexesCount> index_types() {
-        return {
-            SnapshotType::headers,
-            SnapshotType::bodies,
-            SnapshotType::transactions,
-            SnapshotType::transactions_to_block,
-        };
-    }
-
-    const SegmentFileReader& segment(SnapshotType type) const {
-        switch (type) {
-            case headers:
-                return header_segment;
-            case bodies:
-                return body_segment;
-            case transactions:
-            case transactions_to_block:
-                return txn_segment;
-        }
-        SILKWORM_ASSERT(false);
-        return header_segment;
-    }
-
-    const Index& index(SnapshotType type) const {
-        switch (type) {
-            case headers:
-                return idx_header_hash;
-            case bodies:
-                return idx_body_number;
-            case transactions:
-                return idx_txn_hash;
-            case transactions_to_block:
-                return idx_txn_hash_2_block;
-        }
-        SILKWORM_ASSERT(false);
-        return idx_header_hash;
-    }
-
+    const SegmentFileReader& segment(SnapshotType type) const;
+    const Index& index(SnapshotType type) const;
     SegmentAndIndex segment_and_index(SnapshotType type) const {
         return {segment(type), index(type)};
     }
@@ -128,7 +85,7 @@ struct SnapshotBundle : public SnapshotBundleData {
     StepRange step_range() const { return step_range_; }
 
     std::vector<std::filesystem::path> files();
-    std::vector<SnapshotPath> snapshot_paths();
+    std::vector<SnapshotPath> segment_paths();
 
     void reopen();
     void close();
@@ -137,8 +94,12 @@ struct SnapshotBundle : public SnapshotBundleData {
         on_close_callback_ = std::move(callback);
     }
 
+    const SnapshotBundleData& operator*() const { return data_; }
+    const SnapshotBundleData* operator->() const { return &data_; }
+
   private:
     StepRange step_range_;
+    SnapshotBundleData data_;
     std::function<void(SnapshotBundle&)> on_close_callback_;
 };
 

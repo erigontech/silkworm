@@ -32,7 +32,7 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
-std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
+std::optional<StepRange> SnapshotPath::parse_step_range(const fs::path& path) {
     const std::string filename_no_ext = path.stem().string();
 
     // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
@@ -42,17 +42,6 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     }
 
     const auto [ver, from, to, tag] = std::tie(tokens[0], tokens[1], tokens[2], tokens[3]);
-
-    // Expected version format: v<x> (hence check length, check first char and parse w/ offset by one)
-    if (ver.empty() || ver[0] != 'v') {
-        return std::nullopt;
-    }
-
-    uint8_t ver_num = 0;
-    const auto ver_result = std::from_chars(ver.data() + 1, ver.data() + ver.size(), ver_num);
-    if (ver_result.ec == std::errc::invalid_argument) {
-        return std::nullopt;
-    }
 
     // Expected scaled block format: <dddddd>
     if (from.size() != 6 || to.size() != 6) {
@@ -76,6 +65,36 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
 
+    return StepRange{step_from, step_to};
+}
+
+std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
+    const std::string filename_no_ext = path.stem().string();
+
+    // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
+    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, absl::MaxSplits('-', 3));
+    if (tokens.size() != 4) {
+        return std::nullopt;
+    }
+
+    const auto [ver, from, to, tag] = std::tie(tokens[0], tokens[1], tokens[2], tokens[3]);
+
+    // Expected version format: v<x> (hence check length, check first char and parse w/ offset by one)
+    if (ver.empty() || ver[0] != 'v') {
+        return std::nullopt;
+    }
+
+    uint8_t ver_num = 0;
+    const auto ver_result = std::from_chars(ver.data() + 1, ver.data() + ver.size(), ver_num);
+    if (ver_result.ec == std::errc::invalid_argument) {
+        return std::nullopt;
+    }
+
+    auto step_range = parse_step_range(path);
+    if (!step_range) {
+        return std::nullopt;
+    }
+
     // Expected tag format: headers|bodies|transactions|transactions-to-block
     // parsing relies on magic_enum, so SnapshotType items must match exactly
     std::string tag_str{tag.data(), tag.size()};
@@ -85,7 +104,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
         return std::nullopt;
     }
 
-    return SnapshotPath{std::move(path), ver_num, {step_from, step_to}, *type};
+    return SnapshotPath{std::move(path), ver_num, *step_range, *type};
 }
 
 SnapshotPath SnapshotPath::make(

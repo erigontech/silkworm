@@ -25,7 +25,6 @@ rm -rf ./mainnet/results/
 # ots_searchTransactionsBefore: new algo using TKV
 # parity_listStorageKeys/test_12.json: fix required
 # trace_rawTransaction: different implementation
-# trace_replayTransaction/trace_replyBlockTransaction: silkworm has different response with erigon3 but could be erigon3 problem (to be analyzed)
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
 debug_accountRange,\

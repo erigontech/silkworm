@@ -48,15 +48,6 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
     }
 }
 
-std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPathList& segment_paths) const {
-    std::vector<std::shared_ptr<IndexBuilder>> all_builders;
-    for (const auto& path : segment_paths) {
-        auto builders = index_builders(path);
-        all_builders.insert(all_builders.end(), builders.begin(), builders.end());
-    }
-    return all_builders;
-}
-
 SnapshotPathList SnapshotBundleFactoryImpl::index_dependency_paths(const SnapshotPath& index_path) const {
     datastore::EntityName name{index_path.tag()};
     datastore::EntityName segment_name = [name]() -> datastore::EntityName {

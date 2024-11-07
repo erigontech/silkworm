@@ -29,7 +29,6 @@ class StateBundleFactory : public snapshots::SnapshotBundleFactory {
     ~StateBundleFactory() override = default;
 
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPath& segment_path) const override;
-    std::vector<std::shared_ptr<snapshots::IndexBuilder>> index_builders(const snapshots::SnapshotPathList& segment_paths) const override;
     snapshots::SnapshotPathList index_dependency_paths(const snapshots::SnapshotPath& index_path) const override;
 
   private:

@@ -31,7 +31,7 @@ struct SnapshotBundleFactory {
     virtual ~SnapshotBundleFactory() = default;
 
     virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPath& segment_path) const = 0;
-    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& segment_paths) const = 0;
+    std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& segment_paths) const;
 
     virtual SnapshotPathList index_dependency_paths(const SnapshotPath& index_path) const = 0;
 };

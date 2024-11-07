@@ -14,18 +14,17 @@
    limitations under the License.
 */
 
-#include "state_bundle_factory.hpp"
+#include "snapshot_bundle_factory.hpp"
 
-namespace silkworm::db::state {
+namespace silkworm::snapshots {
 
-using namespace snapshots;
-
-std::vector<std::shared_ptr<IndexBuilder>> StateBundleFactory::index_builders(const SnapshotPath& /*segment_path*/) const {
-    return {};
+std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactory::index_builders(const SnapshotPathList& segment_paths) const {
+    std::vector<std::shared_ptr<IndexBuilder>> all_builders;
+    for (const auto& path : segment_paths) {
+        auto builders = index_builders(path);
+        all_builders.insert(all_builders.end(), builders.begin(), builders.end());
+    }
+    return all_builders;
 }
 
-SnapshotPathList StateBundleFactory::index_dependency_paths(const SnapshotPath& /*index_path*/) const {
-    return {};
-}
-
-}  // namespace silkworm::db::state
+}  // namespace silkworm::snapshots

@@ -666,9 +666,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
 
     std::set<evmc::address> addresses;
     while (const auto value = co_await it.next()) {
-        SILKWORM_ASSERT(value->first.size() >= kAddressLength);
-        const Bytes address_bytes = value->first.substr(0, kAddressLength);
-        addresses.insert(bytes_to_address(address_bytes));
+        addresses.insert(bytes_to_address(value->first));
     }
 
     co_return addresses;

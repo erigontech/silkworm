@@ -379,10 +379,10 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
             const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_number, tx_index);
             if (!transaction) {
-                SILK_INFO << "No transaction found in block " << block_number << " for index " << tx_index;
+                SILK_DEBUG << "No transaction found in block " << block_number << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
             } else if (transaction.value().nonce != nonce) {
-                SILK_INFO << "Transaction nonce " << transaction.value().nonce << " doesn't match required nonce " << nonce;
+                SILK_DEBUG << "Transaction nonce " << transaction.value().nonce << " doesn't match required nonce " << nonce;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
             } else {
                 reply = make_json_content(request, transaction.value().hash());

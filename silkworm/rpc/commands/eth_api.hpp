@@ -102,7 +102,7 @@ class EthereumRpcApi {
     Task<void> handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_fee_history(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_fee_history(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_call_many(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_blob_base_fee(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_base_fee(const nlohmann::json& request, nlohmann::json& reply);

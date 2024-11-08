@@ -82,8 +82,8 @@ struct SnapshotBundle {
 
     StepRange step_range() const { return step_range_; }
 
-    std::vector<std::filesystem::path> files();
-    std::vector<SnapshotPath> segment_paths();
+    std::vector<std::filesystem::path> files() const;
+    std::vector<SnapshotPath> segment_paths() const;
 
     void reopen();
     void close();

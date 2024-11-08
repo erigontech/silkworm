@@ -744,6 +744,18 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             }
         }
 
+//        size_t count = 20;
+//        auto it_to1 = co_await paginated_result_to.begin();
+//        SILK_LOG << "TRACES TO IDX";
+//        while (const auto value = co_await it_to1.next()) {
+//            const auto txn_id = static_cast<TxnId>(*value);
+//            SILK_LOG << "txn_id: " << txn_id;
+//
+//            if (--count == 0) {
+//                break;
+//            }
+//        }
+
         db::kv::api::IndexRangeQuery query_from{
                 .table = db::table::kTracesFromIdx,
                 .key = key,
@@ -767,16 +779,27 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         auto it = db::kv::api::set_union(it_from, it_to, false);
         const auto chain_storage = tx->create_storage();
         auto count{0};
+//        auto it_from1 = co_await paginated_result_from.begin();
+//        count = 20;
+//        SILK_LOG << "TRACES FROM IDX";
+//        while (const auto value = co_await it_from1.next()) {
+//            const auto txn_id = static_cast<TxnId>(*value);
+//            SILK_LOG << "txn_id: " << txn_id;
+//
+//            if (--count == 0) {
+//                break;
+//            }
+//        }
+//
+//        auto it = db::kv::api::set_union(it_to, it_from, false, 20);
+//        std::vector<std::string> keys;
+//        std::uint64_t count = 0;
+//        TxnId prev_txn_id = 0;
+//        TxnId next_txn_id = 0;
         while (const auto value = co_await it.next()) {
-            if (!value.has_value()) {
-                SILK_LOG << "NO VALUE FROM ITR";
-                break;
-            }
             const auto txn_id = static_cast<TxnId>(*value);
-            SILK_LOG << "ITERATE: " << count++ << ", txn_id: " << txn_id;
             const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, txn_id, provider);
             if (!block_number_opt) {
-                SILK_LOG << "No block found for txn_id " << txn_id;
                 break; // TODO
             }
             const auto bn = block_number_opt.value();

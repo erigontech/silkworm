@@ -712,7 +712,8 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         const auto key = db::code_domain_key(address);
 
         const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_number, provider);
-        SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
+        const auto min_txn_num = co_await db::txn::min_tx_num(*tx, block_number, provider);
+        SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num << " min_txn_num: " << min_txn_num;
 
         db::kv::api::IndexRangeQuery query_to{
                 .table = db::table::kTracesToIdx,
@@ -723,29 +724,62 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         auto paginated_result_to = co_await tx->index_range(std::move(query_to));
         auto it_to = co_await paginated_result_to.begin();
 
+        size_t count = 20;
+//        auto it_to1 = co_await paginated_result_to.begin();
+//        SILK_LOG << "TRACES TO IDX";
+//        while (const auto value = co_await it_to1.next()) {
+//            const auto txn_id = static_cast<TxnId>(*value);
+//            SILK_LOG << "txn_id: " << txn_id;
+//
+//            if (--count == 0) {
+//                break;
+//            }
+//        }
+
         db::kv::api::IndexRangeQuery query_from{
                 .table = db::table::kTracesFromIdx,
                 .key = key,
-                .from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num),
+                .from_timestamp = -1,//static_cast<db::kv::api::Timestamp>(max_tx_num),
                 .to_timestamp = -1,
                 .ascending_order = false};
         auto paginated_result_from = co_await tx->index_range(std::move(query_from));
         auto it_from = co_await paginated_result_from.begin();
 
-//        auto it = db::kv::api::UnionIterator{it_from, it_to, false, 0};
-        auto it = db::kv::api::UnionIterator{it_to, it_from, false, 5};
+        auto it_from1 = co_await paginated_result_from.begin();
+        count = 20;
+        SILK_LOG << "TRACES FROM IDX";
+        while (const auto value = co_await it_from1.next()) {
+            const auto txn_id = static_cast<TxnId>(*value);
+            SILK_LOG << "txn_id: " << txn_id;
+
+            if (--count == 0) {
+                break;
+            }
+        }
+
+        auto it = db::kv::api::set_union(it_to, it_from, false, 20);
 //        std::vector<std::string> keys;
 //        std::uint64_t count = 0;
 //        TxnId prev_txn_id = 0;
 //        TxnId next_txn_id = 0;
         while (const auto value = co_await it.next()) {
             const auto txn_id = static_cast<TxnId>(*value);
-            SILK_LOG << "txn_id: " << txn_id;
             const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, txn_id, provider);
-            if (block_number_opt) {
-                const auto bn = block_number_opt.value();
-                SILK_LOG << "txn_id: " << txn_id << " block_number: " << bn;
+            if (!block_number_opt) {
+                break; // TODO
             }
+            const auto bn = block_number_opt.value();
+            const auto max_txn_id = co_await db::txn::max_tx_num(*tx, bn, provider);
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, bn, provider);
+            const auto txn_index = txn_id - min_txn_id - 1;
+            SILK_LOG
+                << "txn_id: " << txn_id
+                << " block_number: " << bn
+                << ", txn_index: " << txn_index
+                << ", max_txn_id: " << max_txn_id
+                << ", min_txn_id: " << min_txn_id
+                << ", final txn: " << (txn_id == max_txn_id);
+
         }
 
         TransactionsWithReceipts results{

@@ -56,7 +56,7 @@ struct PathHasher {
 static bool snapshot_file_is_fully_merged(std::string_view file_name) {
     const auto path = SnapshotPath::parse(std::filesystem::path{file_name});
     return path.has_value() &&
-           (path->extension() == kSegmentExtension) &&
+           (path->extension() == blocks::kSegmentExtension) &&
            (path->step_range().to_block_num_range().size() >= kMaxMergerSnapshotSize);
 }
 
@@ -279,9 +279,9 @@ void SnapshotSync::seed_frozen_local_snapshots() {
         auto& bundle = *bundle_ptr;
         auto block_range = bundle.step_range().to_block_num_range();
         bool is_frozen = block_range.size() >= kMaxMergerSnapshotSize;
-        const auto first_snapshot = bundle.segments()[0];
+        const SegmentFileReader& first_snapshot = *bundle.segments().begin();
         // assume that if one snapshot in the bundle is preverified, then all of them are
-        bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.get().path().filename());
+        bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.path().filename());
         if (is_frozen && !is_preverified) {
             seed_bundle(bundle);
         }
@@ -297,7 +297,7 @@ void SnapshotSync::seed_frozen_bundle(StepRange range) {
 }
 
 void SnapshotSync::seed_bundle(SnapshotBundle& bundle) {
-    for (auto& path : bundle.snapshot_paths()) {
+    for (auto& path : bundle.segment_paths()) {
         seed_snapshot(path);
     }
 }
@@ -336,8 +336,8 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
     uint64_t block_count{0};
 
     for (const auto& bundle_ptr : repository_.view_bundles()) {
-        const auto& bundle = *bundle_ptr;
-        for (const BlockHeader& header : HeaderSegmentReader{bundle.header_segment}) {
+        db::blocks::BundleDataRef bundle{**bundle_ptr};
+        for (const BlockHeader& header : HeaderSegmentReader{bundle.header_segment()}) {
             SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
             const auto block_number = header.number;
             if (block_number > max_block_available) continue;
@@ -390,7 +390,7 @@ void SnapshotSync::update_block_bodies(RWTxn& txn, BlockNum max_block_available)
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto [txn_segment, _] = repository_.find_segment(SnapshotType::transactions, max_block_available);
+    const auto [txn_segment, _] = repository_.find_segment(db::blocks::kTxnSegmentName, max_block_available);
     ensure(txn_segment.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
     const auto last_tx_id = txn_segment->index.base_data_id() + txn_segment->segment.item_count();
     reset_map_sequence(txn, table::kBlockTransactions.name, last_tx_id + 1);

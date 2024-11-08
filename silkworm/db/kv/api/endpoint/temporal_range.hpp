@@ -61,7 +61,21 @@ struct HistoryRangeQuery {
     int64_t limit{kUnlimited};
     uint32_t page_size{0};
     std::string page_token;
+
+    // TODO(canepat) we need clang >= 17 to use spaceship operator instead of hand-made operator== below
+    // auto operator<=>(const HistoryRangeQuery&) const = default;
 };
+
+inline bool operator==(const HistoryRangeQuery& lhs, const HistoryRangeQuery& rhs) {
+    return (lhs.tx_id == rhs.tx_id) &&
+           (lhs.table == rhs.table) &&
+           (lhs.from_timestamp == rhs.from_timestamp) &&
+           (lhs.to_timestamp == rhs.to_timestamp) &&
+           (lhs.ascending_order == rhs.ascending_order) &&
+           (lhs.limit == rhs.limit) &&
+           (lhs.page_size == rhs.page_size) &&
+           (lhs.page_token == rhs.page_token);
+}
 
 using HistoryRangeResult = RangeResult;
 

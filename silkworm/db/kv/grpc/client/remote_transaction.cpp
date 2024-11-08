@@ -149,16 +149,15 @@ Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQ
 }
 
 Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQuery&& query) {
-    auto paginator = [&, query = std::move(query)]() mutable -> Task<api::PaginatedTimestamps::PageResult> {
-        static std::string page_token{query.page_token};
+    auto paginator = [&, query = std::move(query)](api::PaginatedTimestamps::PageToken page_token) mutable -> Task<api::PaginatedTimestamps::PageResult> {
         query.tx_id = tx_id_;
-        query.page_token = page_token;
+        query.page_token = std::move(page_token);
         auto request = index_range_request_from_query(query);
         try {
             const auto reply = co_await rpc::unary_rpc(&Stub::AsyncIndexRange, stub_, std::move(request), grpc_context_);
             auto result = index_range_result_from_response(reply);
-            page_token = std::move(result.next_page_token);
-            co_return api::PaginatedTimestamps::PageResult{std::move(result.timestamps), !page_token.empty()};
+
+            co_return api::PaginatedTimestamps::PageResult{std::move(result.timestamps), std::move(result.next_page_token)};
         } catch (rpc::GrpcStatusError& gse) {
             SILK_WARN << "KV::IndexRange RPC failed status=" << gse.status();
             throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
@@ -168,16 +167,15 @@ Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQue
 }
 
 Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRangeQuery&& query) {
-    auto paginator = [&, query = std::move(query)]() mutable -> Task<api::PaginatedKeysValues::PageResult> {
-        static std::string page_token{query.page_token};
+    auto paginator = [&, query = std::move(query)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         query.tx_id = tx_id_;
-        query.page_token = page_token;
+        query.page_token = std::move(page_token);
         auto request = history_range_request_from_query(query);
         try {
             const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, stub_, std::move(request), grpc_context_);
             auto result = history_range_result_from_response(reply);
-            page_token = std::move(result.next_page_token);
-            co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), !page_token.empty()};
+
+            co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), std::move(result.next_page_token)};
         } catch (rpc::GrpcStatusError& gse) {
             SILK_WARN << "KV::HistoryRange RPC failed status=" << gse.status();
             throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
@@ -187,16 +185,15 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
 }
 
 Task<api::PaginatedKeysValues> RemoteTransaction::domain_range(api::DomainRangeQuery&& query) {
-    auto paginator = [&, query = std::move(query)]() mutable -> Task<api::PaginatedKeysValues::PageResult> {
-        static std::string page_token{query.page_token};
+    auto paginator = [&, query = std::move(query)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         query.tx_id = tx_id_;
-        query.page_token = page_token;
+        query.page_token = std::move(page_token);
         auto request = domain_range_request_from_query(query);
         try {
             const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, stub_, std::move(request), grpc_context_);
             auto result = history_range_result_from_response(reply);
-            page_token = std::move(result.next_page_token);
-            co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), !page_token.empty()};
+
+            co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), std::move(result.next_page_token)};
         } catch (rpc::GrpcStatusError& gse) {
             SILK_WARN << "KV::DomainRange RPC failed status=" << gse.status();
             throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};

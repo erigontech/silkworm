@@ -25,12 +25,12 @@
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
@@ -48,7 +48,7 @@ struct CApiTest {
 
     SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
     mdbx::env env{*database.chaindata_rw()};
-    const std::filesystem::path& env_path() { return database.chaindata_dir_path(); }
+    const std::filesystem::path& env_path() const { return database.chaindata_dir_path(); }
 };
 
 //! Utility to copy `src` C-string to `dst` fixed-size char array
@@ -821,7 +821,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     REQUIRE_NOTHROW(header_index_builder.build());
     snapshots::SegmentFileReader header_segment{header_segment_path};
     header_segment.reopen_segment();
-    snapshots::Index idx_header_hash{header_segment_path.index_file()};
+    snapshots::Index idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_header_hash.reopen_index();
 
     auto body_index_builder = snapshots::BodyIndex::make(body_segment_path);
@@ -829,7 +829,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     REQUIRE_NOTHROW(body_index_builder.build());
     snapshots::SegmentFileReader body_segment{body_segment_path};
     body_segment.reopen_segment();
-    snapshots::Index idx_body_number{body_segment_path.index_file()};
+    snapshots::Index idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_body_number.reopen_index();
 
     auto tx_index_builder = snapshots::TransactionIndex::make(body_segment_path, txn_segment_path);
@@ -838,7 +838,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     tx_index_hash_to_block_builder.build();
     snapshots::SegmentFileReader txn_segment{txn_segment_path};
     txn_segment.reopen_segment();
-    snapshots::Index idx_txn_hash{txn_segment_path.index_file()};
+    snapshots::Index idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     idx_txn_hash.reopen_index();
     snapshots::Index idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
     idx_txn_hash_2_block.reopen_index();

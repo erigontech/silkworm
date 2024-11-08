@@ -25,6 +25,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -117,6 +118,7 @@ static rpc::NewPayloadRequest make_payload_request_v3() {
 }
 
 TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std::chrono_literals;
     using testing::_;
     using testing::InvokeWithoutArgs;

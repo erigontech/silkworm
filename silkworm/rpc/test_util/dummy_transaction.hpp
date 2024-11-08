@@ -33,7 +33,7 @@ namespace silkworm::rpc::test {
 
 template <typename Paginated>
 inline Paginated empty_paginated_sequence() {
-    auto paginator = []() -> Task<typename Paginated::PageResult> {
+    auto paginator = [](typename Paginated::PageToken) -> Task<typename Paginated::PageResult> {
         co_return typename Paginated::PageResult{};
     };
     return Paginated{paginator};

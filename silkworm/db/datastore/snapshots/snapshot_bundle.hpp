@@ -61,6 +61,7 @@ struct SnapshotBundlePaths {
 
     std::vector<std::filesystem::path> files() const;
     std::map<datastore::EntityName, SnapshotPath> segment_paths() const;
+    std::map<datastore::EntityName, SnapshotPath> rec_split_index_paths() const;
 
   private:
     Schema::RepositoryDef schema_;

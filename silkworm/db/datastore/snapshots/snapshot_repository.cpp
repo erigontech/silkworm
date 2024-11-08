@@ -107,7 +107,8 @@ std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> Snaps
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
     // TODO: reimplement for state repository
-    auto segment_file_ext = schema_.entities().at(Schema::kDefaultEntityName).make_segment_paths(path(), {Step{0}, Step{1}}).begin()->second.extension();
+    SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
+    auto segment_file_ext = some_bundle_paths.segment_paths().begin()->second.extension();
     SnapshotPathList segment_files = get_files(segment_file_ext);
     auto index_builders = index_builders_factory_->index_builders(segment_files);
 
@@ -242,7 +243,8 @@ bool SnapshotRepository::is_stale_index_path(const SnapshotPath& index_path) con
 SnapshotPathList SnapshotRepository::stale_index_paths() const {
     SnapshotPathList results;
     // TODO: reimplement for state repository
-    auto rec_split_index_file_ext = schema_.entities().at(Schema::kDefaultEntityName).make_rec_split_index_paths(path(), {Step{0}, Step{1}}).begin()->second.extension();
+    SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
+    auto rec_split_index_file_ext = some_bundle_paths.rec_split_index_paths().begin()->second.extension();
     auto all_files = get_files(rec_split_index_file_ext);
     std::copy_if(
         all_files.begin(), all_files.end(),

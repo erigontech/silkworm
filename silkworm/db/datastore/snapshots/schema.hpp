@@ -22,9 +22,6 @@
 
 #include "../common/entity_name.hpp"
 #include "common/snapshot_path.hpp"
-#include "kv_segment/kv_segment_reader.hpp"
-#include "rec_split_index/index.hpp"
-#include "segment/segment_reader.hpp"
 
 namespace silkworm::snapshots {
 
@@ -81,19 +78,11 @@ class Schema {
 
         EntityDef& tag_override(std::string_view tag);
 
-        std::map<datastore::EntityName, SnapshotPath> make_segment_paths(const std::filesystem::path& dir_path, StepRange range) const;
-        std::map<datastore::EntityName, SegmentFileReader> make_segments(const std::filesystem::path& dir_path, StepRange range) const;
-        std::map<datastore::EntityName, SnapshotPath> make_kv_segment_paths(const std::filesystem::path& dir_path, StepRange range) const;
-        std::map<datastore::EntityName, KVSegmentFileReader> make_kv_segments(const std::filesystem::path& dir_path, StepRange range) const;
-        std::map<datastore::EntityName, SnapshotPath> make_rec_split_index_paths(const std::filesystem::path& dir_path, StepRange range) const;
-        std::map<datastore::EntityName, Index> make_rec_split_indexes(const std::filesystem::path& dir_path, StepRange range) const;
-        std::vector<SnapshotPath> make_all_paths(const std::filesystem::path& dir_path, StepRange range) const;
-
         const std::map<datastore::EntityName, SnapshotFileDef>& entities() const { return file_defs_; }
         std::vector<std::string> file_extensions() const;
         std::optional<datastore::EntityName> entity_name_by_path(const SnapshotPath& path) const;
 
-      protected:
+      private:
         std::map<datastore::EntityName, SnapshotFileDef> file_defs_;
     };
 

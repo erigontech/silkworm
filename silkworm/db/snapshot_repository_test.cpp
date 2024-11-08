@@ -22,12 +22,12 @@
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_queries.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_queries.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -44,6 +44,14 @@ static SnapshotRepository make_repository(std::filesystem::path dir_path) {
     return db::blocks::make_blocks_repository(std::move(dir_path));
 }
 
+// NOLINTBEGIN(readability-identifier-naming)
+struct SnapshotType {
+    static constexpr datastore::EntityName headers{db::blocks::kHeaderSegmentName};
+    static constexpr datastore::EntityName bodies{db::blocks::kBodySegmentName};
+    static constexpr datastore::EntityName transactions{db::blocks::kTxnSegmentName};
+};
+// NOLINTEND(readability-identifier-naming)
+
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
@@ -58,7 +66,6 @@ TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][
     test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
     test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
     auto repository = make_repository(tmp_dir.path());
-    repository.reopen_folder();
     CHECK(repository.bundles_count() == 0);
     CHECK(repository.max_block_available() == 0);
 }
@@ -67,10 +74,8 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
-    auto repository = make_repository(tmp_dir.path());
-
     SECTION("no snapshots") {
-        repository.reopen_folder();
+        auto repository = make_repository(tmp_dir.path());
 
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 14'500'000));
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 11'500'000));
@@ -91,7 +96,8 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
         test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir.path(), "v1-011500-012000-bodies.seg"};
         test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
-        repository.reopen_folder();
+
+        auto repository = make_repository(tmp_dir.path());
 
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 14'500'000));
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, 11'500'000));
@@ -114,6 +120,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
         test::SampleBodySnapshotFile tmp_snapshot_2{tmp_dir.path()};
         test::SampleTransactionSnapshotFile tmp_snapshot_3{tmp_dir.path()};
 
+        auto repository = make_repository(tmp_dir.path());
         for (auto& index_builder : repository.missing_indexes()) {
             index_builder->build();
         }
@@ -141,13 +148,14 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
     test::SampleHeaderSnapshotFile header_segment{tmp_dir.path()};
     test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
     test::SampleTransactionSnapshotFile txn_segment{tmp_dir.path()};
+
+    auto repository = make_repository(tmp_dir.path());
 
     SECTION("header w/o index") {
         CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::headers, 1'500'011));
@@ -207,7 +215,6 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
 TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]") {
     SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    auto repository = make_repository(tmp_dir.path());
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
     // file name format is not sufficient to support them (see checks commented out below)
@@ -226,7 +233,7 @@ TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]")
     REQUIRE_NOTHROW(TransactionIndex::make(body_segment_path, txn_segment_path).build());
     REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment.block_num_range().start).build());
 
-    REQUIRE_NOTHROW(repository.reopen_folder());
+    auto repository = make_repository(tmp_dir.path());
 
     TransactionBlockNumByTxnHashRepoQuery query{repository.view_bundles_reverse()};
 

@@ -115,9 +115,7 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        auto& repository = data_store.ref().repository;
-        repository.reopen_folder();
-        db::DataModel access_layer{txn, repository};
+        db::DataModel access_layer = db::DataModelFactory{data_store.ref()}(txn);
 
         AnalysisCache analysis_cache{/*max_size=*/5'000};
         std::vector<Receipt> receipts;

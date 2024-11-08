@@ -22,6 +22,7 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
 
+#include "../schema_config.hpp"
 #include "txn_segment.hpp"
 
 namespace silkworm::snapshots {
@@ -59,10 +60,10 @@ class TransactionBlockNumByTxnHashRepoQuery {
 
     std::optional<BlockNum> exec(const Hash& hash) {
         for (const TBundle& bundle_ptr : bundles_) {
-            const auto& bundle = *bundle_ptr;
-            const SegmentFileReader& segment = bundle.txn_segment;
-            const Index& idx_txn_hash = bundle.idx_txn_hash;
-            const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block;
+            db::blocks::BundleDataRef bundle{**bundle_ptr};
+            const SegmentFileReader& segment = bundle.txn_segment();
+            const Index& idx_txn_hash = bundle.idx_txn_hash();
+            const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block();
 
             TransactionFindByHashQuery cross_check_query{{segment, idx_txn_hash}};
             TransactionBlockNumByTxnHashQuery query{idx_txn_hash_2_block, cross_check_query};

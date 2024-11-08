@@ -34,6 +34,12 @@ debug_traceBlockByHash/test_09,\
 debug_traceBlockByHash/test_10,\
 debug_traceBlockByHash/test_11,\
 debug_traceBlockByHash/test_12,\
+debug_traceBlockByNumber/test_05,\
+debug_traceBlockByNumber/test_08,\
+debug_traceBlockByNumber/test_09,\
+debug_traceBlockByNumber/test_10,\
+debug_traceBlockByNumber/test_11,\
+debug_traceBlockByNumber/test_12,\
 debug_traceCall/test_02.json,\
 debug_traceTransaction/test_25.json,\
 debug_traceTransaction/test_36.json,\

@@ -68,10 +68,10 @@ struct SnapshotBundle {
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
-    auto segments() {
+    auto segments() const {
         return make_map_values_view(data_.segments);
     }
-    auto rec_split_indexes() {
+    auto rec_split_indexes() const {
         return make_map_values_view(data_.rec_split_indexes);
     }
     const SegmentFileReader& segment(datastore::EntityName name) const;

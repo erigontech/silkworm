@@ -24,6 +24,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
 
@@ -34,6 +35,7 @@ class BodiesStageForTest : public stagedsync::BodiesStage {
 using BodyDataModelForTest = BodiesStageForTest::BodyDataModel;
 
 TEST_CASE("BodiesStage - data model") {
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();

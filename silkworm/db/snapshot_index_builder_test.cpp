@@ -19,10 +19,10 @@
 
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>

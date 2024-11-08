@@ -37,12 +37,12 @@
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -224,8 +224,9 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
     auto data_dir_path = parse_path(settings->data_dir_path);
-    auto snapshot_repository = db::blocks::make_blocks_repository(
-        DataDirectory{data_dir_path}.snapshots().path());
+    auto repository = db::blocks::make_blocks_repository(
+        DataDirectory{data_dir_path}.snapshots().path(),
+        /* open = */ false);
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
@@ -235,7 +236,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         },
         .data_dir_path = std::move(data_dir_path),
         .node_settings = {},
-        .snapshot_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(snapshot_repository)),
+        .repository = std::make_unique<snapshots::SnapshotRepository>(std::move(repository)),
         .rpcdaemon = {},
         .execution_engine = {},
         .sentry_thread = {},
@@ -264,20 +265,16 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
             return SILKWORM_INVALID_PATH;
         }
 
-        std::shared_ptr<snapshots::IndexBuilder> index;
-        switch (snapshot_path->type()) {
-            case snapshots::SnapshotType::headers: {
-                index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
+        datastore::EntityName name{snapshot_path->tag()};
+        {
+            if (name == db::blocks::kHeaderSegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
                 needed_indexes.push_back(index);
-                break;
-            }
-            case snapshots::SnapshotType::bodies: {
-                index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
+            } else if (name == db::blocks::kBodySegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
                 needed_indexes.push_back(index);
-                break;
-            }
-            case snapshots::SnapshotType::transactions: {
-                auto bodies_segment_path = snapshot_path->related_path(snapshots::SnapshotType::bodies, snapshots::kSegmentExtension);
+            } else if (name == db::blocks::kTxnSegmentName) {
+                auto bodies_segment_path = snapshot_path->related_path(db::blocks::kBodySegmentName.to_string(), db::blocks::kSegmentExtension);
                 auto bodies_file = std::find_if(segments, segments + len, [&](SilkwormMemoryMappedFile* file) -> bool {
                     return snapshots::SnapshotPath::parse(file->file_path) == bodies_segment_path;
                 });
@@ -285,7 +282,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                 if (bodies_file < segments + len) {
                     auto bodies_segment_region = make_region(**bodies_file);
 
-                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
+                    auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
                         bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
                     needed_indexes.push_back(index);
 
@@ -293,9 +290,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                         bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
                     needed_indexes.push_back(index);
                 }
-                break;
-            }
-            default: {
+            } else {
                 SILKWORM_ASSERT(false);
             }
         }
@@ -337,7 +332,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
 }
 
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
-    if (!handle || !handle->snapshot_repository) {
+    if (!handle || !handle->repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     if (!snapshot) {
@@ -352,7 +347,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::SegmentFileReader header_segment{*headers_segment_path, make_region(hs.segment)};
-    snapshots::Index idx_header_hash{headers_segment_path->index_file(), make_region(hs.header_hash_index)};
+    snapshots::Index idx_header_hash{headers_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(hs.header_hash_index)};
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
     if (!bs.segment.file_path || !bs.block_num_index.file_path) {
@@ -363,7 +358,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::SegmentFileReader body_segment{*bodies_segment_path, make_region(bs.segment)};
-    snapshots::Index idx_body_number{bodies_segment_path->index_file(), make_region(bs.block_num_index)};
+    snapshots::Index idx_body_number{bodies_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(bs.block_num_index)};
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
     if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
@@ -374,24 +369,30 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         return SILKWORM_INVALID_PATH;
     }
     snapshots::SegmentFileReader txn_segment{*transactions_segment_path, make_region(ts.segment)};
-    snapshots::Index idx_txn_hash{transactions_segment_path->related_path(snapshots::SnapshotType::transactions, snapshots::kIdxExtension), make_region(ts.tx_hash_index)};
-    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(snapshots::SnapshotType::transactions_to_block, snapshots::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
+    snapshots::Index idx_txn_hash{transactions_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(ts.tx_hash_index)};
+    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(db::blocks::kIdxTxnHash2BlockName.to_string(), db::blocks::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
+
+    snapshots::SnapshotBundleData bundle_data = [&]() {
+        snapshots::SnapshotBundleData data;
+
+        data.segments.emplace(db::blocks::kHeaderSegmentName, std::move(header_segment));
+        data.rec_split_indexes.emplace(db::blocks::kIdxHeaderHashName, std::move(idx_header_hash));
+
+        data.segments.emplace(db::blocks::kBodySegmentName, std::move(body_segment));
+        data.rec_split_indexes.emplace(db::blocks::kIdxBodyNumberName, std::move(idx_body_number));
+
+        data.segments.emplace(db::blocks::kTxnSegmentName, std::move(txn_segment));
+        data.rec_split_indexes.emplace(db::blocks::kIdxTxnHashName, std::move(idx_txn_hash));
+        data.rec_split_indexes.emplace(db::blocks::kIdxTxnHash2BlockName, std::move(idx_txn_hash_2_block));
+
+        return data;
+    }();
 
     snapshots::SnapshotBundle bundle{
         headers_segment_path->step_range(),
-        {
-            .header_segment = std::move(header_segment),
-            .idx_header_hash = std::move(idx_header_hash),
-
-            .body_segment = std::move(body_segment),
-            .idx_body_number = std::move(idx_body_number),
-
-            .txn_segment = std::move(txn_segment),
-            .idx_txn_hash = std::move(idx_txn_hash),
-            .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-        },
+        std::move(bundle_data),
     };
-    handle->snapshot_repository->add_snapshot_bundle(std::move(bundle));
+    handle->repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }
 
@@ -489,7 +490,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
     try {
         auto txn = db::RWTxnUnmanaged{mdbx_txn};
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->snapshot_repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->repository})};
         state_buffer.set_memory_limit(batch_size);
 
         const size_t max_batch_size{batch_size};
@@ -498,7 +499,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         BlockNum block_number{start_block};
         BlockNum batch_start_block_number{start_block};
         BlockNum last_block_number = 0;
-        db::DataModel da_layer{txn, *handle->snapshot_repository};
+        db::DataModel da_layer{txn, *handle->repository};
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
@@ -609,13 +610,13 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         auto txn = rw_access.start_rw_tx();
         const auto env_path = unmanaged_env.get_path();
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->snapshot_repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->repository})};
         state_buffer.set_memory_limit(batch_size);
 
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
 
-        db::DataStoreRef data_store{rw_access, *handle->snapshot_repository};
+        db::DataStoreRef data_store{rw_access, *handle->repository};
         db::DataModelFactory data_model_factory{std::move(data_store)};
 
         BlockProvider block_provider{
@@ -718,7 +719,7 @@ SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
-    if (!handle->snapshot_repository) {
+    if (!handle->repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     delete handle;

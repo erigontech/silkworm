@@ -19,12 +19,14 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 
 namespace silkworm {
 
 // Switch off the null sanitizer because nullptr SentryClient is formally dereferenced in command->execute.
 [[clang::no_sanitize("null")]] TEST_CASE("internal message") {
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainDataStore context;
     // not used in the test execution
     db::DataStoreRef data_store = context->ref();

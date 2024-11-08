@@ -14,15 +14,22 @@
    limitations under the License.
 */
 
-#pragma once
+#include "data_store.hpp"
 
-#include "../datastore/common/entity_name.hpp"
-#include "../datastore/snapshots/schema.hpp"
+namespace silkworm::db {
 
-namespace silkworm::db::state {
+datastore::Schema DataStore::make_schema(
+    bool enabled_state_repository) {
+    snapshots::Schema snapshots;
+    snapshots.repository(blocks::kBlocksRepositoryName) = blocks::make_blocks_repository_schema();
 
-inline constexpr datastore::EntityName kStateRepositoryName{"State"};
+    if (enabled_state_repository) {
+        snapshots.repository(state::kStateRepositoryName) = state::make_state_repository_schema();
+    }
 
-snapshots::Schema::RepositoryDef make_state_repository_schema();
+    return {
+        std::move(snapshots),
+    };
+}
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::db

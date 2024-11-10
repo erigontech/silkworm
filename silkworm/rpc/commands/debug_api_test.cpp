@@ -49,6 +49,7 @@ using db::chain::ChainStorage;
 using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
+using testing::Invoke;
 using testing::Unused;
 using namespace evmc::literals;
 

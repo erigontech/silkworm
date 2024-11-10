@@ -49,7 +49,6 @@ using db::chain::ChainStorage;
 using db::kv::api::Cursor;
 using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
-using testing::Invoke;
 using testing::Unused;
 using namespace evmc::literals;
 
@@ -297,6 +296,10 @@ TEST_CASE("DebugRpcApi") {
 }
 
 #if !defined(__clang__)
+using testing::_;
+using testing::Invoke;
+using testing::InvokeWithoutArgs;
+
 TEST_CASE("get_modified_accounts") {
     WorkerPool pool{1};
     nlohmann::json json;

@@ -722,15 +722,15 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
             SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
         }
-//        const auto min_txn_num = co_await db::txn::min_tx_num(*tx, block_number, provider);
-//        SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num << " min_txn_num: " << min_txn_num;
+        //        const auto min_txn_num = co_await db::txn::min_tx_num(*tx, block_number, provider);
+        //        SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num << " min_txn_num: " << min_txn_num;
 
         db::kv::api::IndexRangeQuery query_to{
-                .table = db::table::kTracesToIdx,
-                .key = key,
-                .from_timestamp = from_timestamp,
-                .to_timestamp = -1,
-                .ascending_order = false};
+            .table = db::table::kTracesToIdx,
+            .key = key,
+            .from_timestamp = from_timestamp,
+            .to_timestamp = -1,
+            .ascending_order = false};
         auto paginated_result_to = co_await tx->index_range(std::move(query_to));
 
         SILK_LOG << "TEST *************************************";
@@ -745,11 +745,11 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         }
 
         db::kv::api::IndexRangeQuery query_from{
-                .table = db::table::kTracesFromIdx,
-                .key = key,
-                .from_timestamp = from_timestamp,
-                .to_timestamp = -1,
-                .ascending_order = false};
+            .table = db::table::kTracesFromIdx,
+            .key = key,
+            .from_timestamp = from_timestamp,
+            .to_timestamp = -1,
+            .ascending_order = false};
         auto paginated_result_from = co_await tx->index_range(std::move(query_from));
 
         const auto resultssss = co_await collect_results(*tx, block_number, provider, paginated_result_from, paginated_result_to, false, page_size);
@@ -758,8 +758,8 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         auto it_to = co_await paginated_result_to.begin();
         auto it_from = co_await paginated_result_from.begin();
         TransactionsWithReceipts results{
-                .first_page = block_number == 0,
-                .last_page = true};
+            .first_page = block_number == 0,
+            .last_page = true};
 
         std::map<std::string, Receipt> receipts;
         std::optional<BlockInfo> block_info;
@@ -777,7 +777,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, txn_id, provider);
             if (!block_number_opt) {
                 SILK_LOG << "No block found for txn_id " << txn_id;
-                break; // TODO
+                break;  // TODO
             }
             const auto bn = block_number_opt.value();
             const auto max_txn_id = co_await db::txn::max_tx_num(*tx, bn, provider);
@@ -841,9 +841,9 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         }
 
         SILK_LOG << "Results"
-            << " transactions size: " << results.transactions.size()
-            << " receipts size: " << results.receipts.size()
-            << " block details size: " << results.blocks.size();
+                 << " transactions size: " << results.transactions.size()
+                 << " receipts size: " << results.receipts.size()
+                 << " block details size: " << results.blocks.size();
 
         reply = make_json_content(request, results);
     } catch (const std::invalid_argument& iv) {
@@ -948,8 +948,8 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 }
 
 Task<TransactionsWithReceipts> OtsRpcApi::collect_results(kv::api::Transaction& tx, BlockNum block_number, db::chain::CanonicalBodyForStorageProvider& provider,
-                                                   db::kv::api::PaginatedTimestamps paginated_result_from, db::kv::api::PaginatedTimestamps paginated_result_to,
-                                                   bool ascending, uint64_t page_size) {
+                                                          db::kv::api::PaginatedTimestamps paginated_result_from, db::kv::api::PaginatedTimestamps paginated_result_to,
+                                                          bool ascending, uint64_t page_size) {
     SILK_LOG << "collect_results **************************************";
     auto it_from = co_await paginated_result_from.begin();
     auto it_to = co_await paginated_result_to.begin();
@@ -966,8 +966,8 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_results(kv::api::Transaction& 
     }
 
     TransactionsWithReceipts results{
-            .first_page = block_number == 0,
-            .last_page = true};
+        .first_page = block_number == 0,
+        .last_page = true};
 
     std::map<std::string, Receipt> receipts;
     std::optional<BlockInfo> block_info;
@@ -986,7 +986,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_results(kv::api::Transaction& 
         const auto block_number_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
         if (!block_number_opt) {
             SILK_LOG << "No block found for txn_id " << txn_id;
-            break; // TODO
+            break;  // TODO
         }
         const auto bn = block_number_opt.value();
         const auto max_txn_id = co_await db::txn::max_tx_num(tx, bn, provider);

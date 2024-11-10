@@ -231,14 +231,14 @@ class OtsRpcApi {
 
   private:
     Task<TransactionsWithReceipts> collect_results(
-            db::kv::api::Transaction& tx, BlockNum block_number,
-            db::chain::CanonicalBodyForStorageProvider& provider,
-            db::kv::api::PaginatedTimestamps paginated_result_from,
-            db::kv::api::PaginatedTimestamps paginated_result_to,
-            bool ascending,
-            uint64_t page_size);
+        db::kv::api::Transaction& tx, BlockNum block_number,
+        db::chain::CanonicalBodyForStorageProvider& provider,
+        db::kv::api::PaginatedTimestamps paginated_result_from,
+        db::kv::api::PaginatedTimestamps paginated_result_to,
+        bool ascending,
+        uint64_t page_size);
 
-        Task<bool> trace_blocks(
+    Task<bool> trace_blocks(
         FromToBlockProvider& from_to_provider,
         db::kv::api::Transaction& tx,
         const evmc::address& address,

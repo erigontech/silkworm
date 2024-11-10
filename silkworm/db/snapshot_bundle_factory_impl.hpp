@@ -22,7 +22,7 @@
 namespace silkworm::db {
 
 struct SnapshotBundleFactoryImpl : public snapshots::SnapshotBundleFactory {
-    SnapshotBundleFactoryImpl(snapshots::Schema::RepositoryDef schema)
+    explicit SnapshotBundleFactoryImpl(snapshots::Schema::RepositoryDef schema)
         : schema_{std::move(schema)} {}
     ~SnapshotBundleFactoryImpl() override = default;
 

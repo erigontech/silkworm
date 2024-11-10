@@ -30,7 +30,6 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
@@ -41,7 +40,6 @@
 #include <silkworm/rpc/core/evm_debug.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
-#include <silkworm/rpc/ethdb/walk.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/types/block.hpp>
@@ -49,8 +47,6 @@
 #include <silkworm/rpc/types/dump_account.hpp>
 
 namespace silkworm::rpc::commands {
-
-using rpc::ethdb::walk;
 
 static constexpr int16_t kAccountRangeMaxResults{256};
 

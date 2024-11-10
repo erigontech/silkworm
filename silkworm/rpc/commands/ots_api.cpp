@@ -681,6 +681,11 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
+struct BlockInfo {
+    uint64_t number{0};
+    BlockDetails details;
+};
+
 Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
@@ -711,61 +716,67 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
         const auto key = db::code_domain_key(address);
 
-        const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_number, provider);
-        const auto min_txn_num = co_await db::txn::min_tx_num(*tx, block_number, provider);
-        SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num << " min_txn_num: " << min_txn_num;
+        db::kv::api::Timestamp from_timestamp{-1};
+        if (block_number > 0) {
+            const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_number, provider);
+            from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
+            SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
+        }
+//        const auto min_txn_num = co_await db::txn::min_tx_num(*tx, block_number, provider);
+//        SILK_LOG << "block_number: " << block_number << " max_tx_num: " << max_tx_num << " min_txn_num: " << min_txn_num;
 
         db::kv::api::IndexRangeQuery query_to{
                 .table = db::table::kTracesToIdx,
                 .key = key,
-                .from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num),
+                .from_timestamp = from_timestamp,
                 .to_timestamp = -1,
                 .ascending_order = false};
         auto paginated_result_to = co_await tx->index_range(std::move(query_to));
-        auto it_to = co_await paginated_result_to.begin();
 
-        size_t count = 20;
-//        auto it_to1 = co_await paginated_result_to.begin();
-//        SILK_LOG << "TRACES TO IDX";
-//        while (const auto value = co_await it_to1.next()) {
-//            const auto txn_id = static_cast<TxnId>(*value);
-//            SILK_LOG << "txn_id: " << txn_id;
-//
-//            if (--count == 0) {
-//                break;
-//            }
-//        }
-
-        db::kv::api::IndexRangeQuery query_from{
-                .table = db::table::kTracesFromIdx,
-                .key = key,
-                .from_timestamp = -1,//static_cast<db::kv::api::Timestamp>(max_tx_num),
-                .to_timestamp = -1,
-                .ascending_order = false};
-        auto paginated_result_from = co_await tx->index_range(std::move(query_from));
-        auto it_from = co_await paginated_result_from.begin();
-
-        auto it_from1 = co_await paginated_result_from.begin();
-        count = 20;
-        SILK_LOG << "TRACES FROM IDX";
-        while (const auto value = co_await it_from1.next()) {
+        SILK_LOG << "TEST *************************************";
+        auto it_to1 = co_await paginated_result_to.begin();
+        auto cc{0};
+        while (const auto value = co_await it_to1.next()) {
             const auto txn_id = static_cast<TxnId>(*value);
-            SILK_LOG << "txn_id: " << txn_id;
-
-            if (--count == 0) {
+            SILK_LOG << "ITERATE: " << cc++ << ", txn_id: " << txn_id;
+            if (cc > 10) {
                 break;
             }
         }
 
-        auto it = db::kv::api::set_union(it_to, it_from, false, 20);
-//        std::vector<std::string> keys;
-//        std::uint64_t count = 0;
-//        TxnId prev_txn_id = 0;
-//        TxnId next_txn_id = 0;
+        db::kv::api::IndexRangeQuery query_from{
+                .table = db::table::kTracesFromIdx,
+                .key = key,
+                .from_timestamp = from_timestamp,
+                .to_timestamp = -1,
+                .ascending_order = false};
+        auto paginated_result_from = co_await tx->index_range(std::move(query_from));
+
+        const auto resultssss = co_await collect_results(*tx, block_number, provider, paginated_result_from, paginated_result_to, false, page_size);
+        SILK_LOG << "********************************** size: " << resultssss.transactions.size();
+
+        auto it_to = co_await paginated_result_to.begin();
+        auto it_from = co_await paginated_result_from.begin();
+        TransactionsWithReceipts results{
+                .first_page = block_number == 0,
+                .last_page = true};
+
+        std::map<std::string, Receipt> receipts;
+        std::optional<BlockInfo> block_info;
+        auto block_num_changed = false;
+        auto it = db::kv::api::set_union(it_from, it_to, false);
+        const auto chain_storage = tx->create_storage();
+        auto count{0};
         while (const auto value = co_await it.next()) {
+            if (!value.has_value()) {
+                SILK_LOG << "NO VALUE FROM ITR";
+                break;
+            }
             const auto txn_id = static_cast<TxnId>(*value);
+            SILK_LOG << "ITERATE: " << count++ << ", txn_id: " << txn_id;
             const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, txn_id, provider);
             if (!block_number_opt) {
+                SILK_LOG << "No block found for txn_id " << txn_id;
                 break; // TODO
             }
             const auto bn = block_number_opt.value();
@@ -780,57 +791,61 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
                 << ", min_txn_id: " << min_txn_id
                 << ", final txn: " << (txn_id == max_txn_id);
 
+            if (txn_id == max_txn_id) {
+                continue;
+            }
+
+            block_num_changed = false;
+            if (block_info && block_info.value().number != bn) {
+                block_info.reset();
+            }
+
+            if (!block_info) {
+                const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, bn);
+                if (!block_with_hash) {
+                    SILK_DEBUG << "Not found block no.  " << bn;
+                    co_return;
+                }
+
+                auto rr = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
+                SILK_LOG << "Read #" << rr.size() << " receipts from block " << bn;
+
+                std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
+                    receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
+                });
+
+                const Block extended_block{block_with_hash, false};
+                const auto block_size = extended_block.get_block_size();
+                const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header,
+                                                 block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
+                                                 block_with_hash->block.withdrawals};
+                block_info = BlockInfo{block_with_hash->block.header.number, block_details};
+                block_num_changed = true;
+            }
+
+            if (results.transactions.size() >= page_size && block_num_changed) {
+                results.last_page = false;
+                break;
+            }
+
+            auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(bn, txn_index);
+            if (!transaction) {
+                SILK_LOG << "No transaction found in block " << bn << " for index " << txn_index;
+                co_return;
+            }
+            results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));
+            results.transactions.push_back(std::move(transaction.value()));
+            results.blocks.push_back(block_info.value().details);
+
+            SILK_LOG << "PageSie " << page_size << ", result size: " << results.transactions.size();
         }
 
-        TransactionsWithReceipts results{
-            .first_page = false,
-            .last_page = false};
+        SILK_LOG << "Results"
+            << " transactions size: " << results.transactions.size()
+            << " receipts size: " << results.receipts.size()
+            << " block details size: " << results.blocks.size();
+
         reply = make_json_content(request, results);
-
-//    try {
-//        auto call_from_cursor = co_await tx->cursor(table::kCallFromIndexName);
-//        auto call_to_cursor = co_await tx->cursor(table::kCallToIndexName);
-//
-//        bool is_first_page = false;
-//
-//        if (block_number == 0) {
-//            is_first_page = true;
-//        } else {
-//            // Internal search code considers blockNum [including], so adjust the value
-//            --block_number;
-//        }
-//
-//        BackwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
-//        BackwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
-//        FromToBlockProvider from_to_provider{false, &from_provider, &to_provider};
-//
-//        uint64_t result_count = 0;
-//        bool has_more = true;
-//
-//        TransactionsWithReceipts results{
-//            .first_page = is_first_page};
-//
-//        while (result_count < page_size && has_more) {
-//            std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
-//
-//            has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
-//
-//            for (const auto& item : transactions_with_receipts_vec) {
-//                results.receipts.insert(results.receipts.end(), item.receipts.rbegin(), item.receipts.rend());
-//                results.transactions.insert(results.transactions.end(), item.transactions.rbegin(), item.transactions.rend());
-//                results.blocks.insert(results.blocks.end(), item.blocks.rbegin(), item.blocks.rend());
-//
-//                result_count += item.transactions.size();
-//
-//                if (result_count >= page_size) {
-//                    break;
-//                }
-//            }
-//        }
-//
-//        results.last_page = !has_more;
-//        reply = make_json_content(request, results);
-
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -930,6 +945,117 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+Task<TransactionsWithReceipts> OtsRpcApi::collect_results(kv::api::Transaction& tx, BlockNum block_number, db::chain::CanonicalBodyForStorageProvider& provider,
+                                                   db::kv::api::PaginatedTimestamps paginated_result_from, db::kv::api::PaginatedTimestamps paginated_result_to,
+                                                   bool ascending, uint64_t page_size) {
+    SILK_LOG << "collect_results **************************************";
+    auto it_from = co_await paginated_result_from.begin();
+    auto it_to = co_await paginated_result_to.begin();
+
+    SILK_LOG << "TEST *************************************";
+    auto it_to1 = co_await paginated_result_to.begin();
+    auto cc{0};
+    while (const auto value = co_await it_to1.next()) {
+        const auto txn_id = static_cast<TxnId>(*value);
+        SILK_LOG << "ITERATE: " << cc++ << ", txn_id: " << txn_id;
+        if (cc > 10) {
+            break;
+        }
+    }
+
+    TransactionsWithReceipts results{
+            .first_page = block_number == 0,
+            .last_page = true};
+
+    std::map<std::string, Receipt> receipts;
+    std::optional<BlockInfo> block_info;
+    auto block_num_changed = false;
+
+    auto it = db::kv::api::set_union(it_from, it_to, ascending);
+    const auto chain_storage = tx.create_storage();
+    auto count{0};
+    while (const auto value = co_await it.next()) {
+        if (!value.has_value()) {
+            SILK_LOG << "NO VALUE FROM ITR";
+            break;
+        }
+        const auto txn_id = static_cast<TxnId>(*value);
+        SILK_LOG << "ITERATE: " << count++ << ", txn_id: " << txn_id;
+        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
+        if (!block_number_opt) {
+            SILK_LOG << "No block found for txn_id " << txn_id;
+            break; // TODO
+        }
+        const auto bn = block_number_opt.value();
+        const auto max_txn_id = co_await db::txn::max_tx_num(tx, bn, provider);
+        const auto min_txn_id = co_await db::txn::min_tx_num(tx, bn, provider);
+        const auto txn_index = txn_id - min_txn_id - 1;
+        SILK_LOG
+            << "txn_id: " << txn_id
+            << " block_number: " << bn
+            << ", txn_index: " << txn_index
+            << ", max_txn_id: " << max_txn_id
+            << ", min_txn_id: " << min_txn_id
+            << ", final txn: " << (txn_id == max_txn_id)
+            << ", ascending: " << ascending;
+
+        if (txn_id == max_txn_id) {
+            continue;
+        }
+
+        block_num_changed = false;
+        if (block_info && block_info.value().number != bn) {
+            block_info.reset();
+        }
+
+        if (!block_info) {
+            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, bn);
+            if (!block_with_hash) {
+                SILK_DEBUG << "Not found block no.  " << bn;
+                co_return results;
+            }
+
+            auto rr = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
+            SILK_LOG << "Read #" << rr.size() << " receipts from block " << bn;
+
+            std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
+                receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
+            });
+
+            const Block extended_block{block_with_hash, false};
+            const auto block_size = extended_block.get_block_size();
+            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header,
+                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
+                                             block_with_hash->block.withdrawals};
+            block_info = BlockInfo{block_with_hash->block.header.number, block_details};
+            block_num_changed = true;
+        }
+
+        if (results.transactions.size() >= page_size && block_num_changed) {
+            results.last_page = false;
+            break;
+        }
+
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(bn, txn_index);
+        if (!transaction) {
+            SILK_LOG << "No transaction found in block " << bn << " for index " << txn_index;
+            co_return results;
+        }
+        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));
+        results.transactions.push_back(std::move(transaction.value()));
+        results.blocks.push_back(block_info.value().details);
+
+        SILK_LOG << "PageSie " << page_size << ", result size: " << results.transactions.size();
+    }
+
+    SILK_LOG << "Results"
+             << " transactions size: " << results.transactions.size()
+             << " receipts size: " << results.receipts.size()
+             << " block details size: " << results.blocks.size();
+
+    co_return results;
 }
 
 Task<bool> OtsRpcApi::trace_blocks(

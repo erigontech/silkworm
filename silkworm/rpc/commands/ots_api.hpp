@@ -23,10 +23,12 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
@@ -228,7 +230,15 @@ class OtsRpcApi {
     friend class silkworm::rpc::json_rpc::RequestHandler;
 
   private:
-    Task<bool> trace_blocks(
+    Task<TransactionsWithReceipts> collect_results(
+            db::kv::api::Transaction& tx, BlockNum block_number,
+            db::chain::CanonicalBodyForStorageProvider& provider,
+            db::kv::api::PaginatedTimestamps paginated_result_from,
+            db::kv::api::PaginatedTimestamps paginated_result_to,
+            bool ascending,
+            uint64_t page_size);
+
+        Task<bool> trace_blocks(
         FromToBlockProvider& from_to_provider,
         db::kv::api::Transaction& tx,
         const evmc::address& address,

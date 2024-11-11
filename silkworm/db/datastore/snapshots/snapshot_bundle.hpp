@@ -88,8 +88,8 @@ struct SnapshotBundle {
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
 
-    auto segments() {
-        return make_map_values_view(data_.entities[Schema::kDefaultEntityName].segments);
+    auto segments() const {
+        return make_map_values_view(data_.entities.at(Schema::kDefaultEntityName).segments);
     }
     const SegmentFileReader& segment(datastore::EntityName name) const;
     const Index& rec_split_index(datastore::EntityName name) const;
@@ -103,8 +103,8 @@ struct SnapshotBundle {
 
     StepRange step_range() const { return step_range_; }
 
-    std::vector<std::filesystem::path> files();
-    std::vector<SnapshotPath> segment_paths();
+    std::vector<std::filesystem::path> files() const;
+    std::vector<SnapshotPath> segment_paths() const;
 
     void reopen();
     void close();

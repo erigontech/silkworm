@@ -405,11 +405,11 @@ void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
     ensure(settings.segment_file_name.has_value(), "create_index: --snapshot_file must be specified");
     SILK_INFO << "Create index for snapshot: " << *settings.segment_file_name;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    auto bundle_factory = db::blocks::make_blocks_bundle_factory();
+    auto index_builders_factory = db::blocks::make_blocks_index_builders_factory();
     const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name});
     if (snapshot_path) {
         for (int i{0}; i < repetitions; ++i) {
-            for (auto& builder : bundle_factory->index_builders(*snapshot_path)) {
+            for (auto& builder : index_builders_factory->index_builders(*snapshot_path)) {
                 builder->build();
             }
         }
@@ -700,7 +700,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     auto repository = make_repository(settings.settings);
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_index(db::blocks::kHeaderSegmentName);
+        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kHeaderSegmentAndIdxNames);
         const auto header = HeaderFindByHashQuery{segment_and_index}.exec(*hash);
         if (header) {
             matching_header = header;
@@ -727,7 +727,7 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     auto repository = make_repository(settings.settings);
-    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kHeaderSegmentName, block_number);
+    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kHeaderSegmentAndIdxNames, block_number);
     if (segment_and_index) {
         const auto header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_number);
         ensure(header.has_value(),
@@ -788,7 +788,7 @@ void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum blo
     auto repository = make_repository(settings.settings);
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kBodySegmentName, block_number);
+    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kBodySegmentAndIdxNames, block_number);
     if (segment_and_index) {
         const auto body = BodyFindByBlockNumQuery{*segment_and_index}.exec(block_number);
         ensure(body.has_value(),
@@ -897,7 +897,7 @@ void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_index(db::blocks::kTxnSegmentName);
+        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByHashQuery{segment_and_index}.exec(hash);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();
@@ -961,7 +961,7 @@ void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_index(db::blocks::kTxnSegmentName);
+        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByIdQuery{segment_and_index}.exec(txn_id);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();

@@ -44,10 +44,11 @@ class DataStore {
 
     DataStore(
         const EnvConfig& chaindata_env_config,
-        std::filesystem::path repository_path)  // NOLINT(performance-unnecessary-value-param)
+        const std::filesystem::path& repository_path)
         : DataStore{
               db::open_env(chaindata_env_config),
-              blocks::make_blocks_repository(std::move(repository_path)),
+              blocks::make_blocks_repository(repository_path),
+              state::make_state_repository(repository_path),
           } {}
 
     void close() {

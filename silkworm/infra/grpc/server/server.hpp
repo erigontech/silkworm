@@ -28,6 +28,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
+#include <silkworm/infra/grpc/server/server_callbacks.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/infra/grpc/server/server_settings.hpp>
 
@@ -63,6 +64,10 @@ class Server {
         }
 
         grpc::ServerBuilder builder;
+
+        // Set server callbacks to check for port already in use
+        SILK_TRACE << "Server " << this << " setting gRPC server callbacks";
+        set_global_callbacks();
 
         // Disable SO_REUSEPORT socket option to obtain "address already in use" on Windows.
         builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);

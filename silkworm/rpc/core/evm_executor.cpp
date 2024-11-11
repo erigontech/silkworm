@@ -280,7 +280,7 @@ ExecutionResult EVMExecutor::call_with_receipt(
     receipt.bloom = logs_bloom(logs);
     receipt.gas_used = txn.gas_limit - exec_result.gas_left;
     receipt.type = static_cast<uint8_t>(txn.type);
-    for (size_t j{0}; j < logs.size(); j++) {
+    for (size_t j = 0; j < logs.size(); ++j) {
         Log rpc_log;
         rpc_log.address = logs[j].address;
         rpc_log.data = logs[j].data;

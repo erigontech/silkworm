@@ -30,13 +30,12 @@ class ServerGlobalCallbacks : public grpc::Server::GlobalCallbacks {
     /// Called after application callback for each synchronous server request
     void PostSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
     /// Called after a server port is added.
-    void AddPort([[maybe_unused]] grpc::Server* server, const std::string& addr, grpc::ServerCredentials*, int port) override {
+    void AddPort([[maybe_unused]] grpc::Server* server, const std::string& addr, grpc::ServerCredentials*, int port) noexcept override  {
         if (port != 0) {
             SILK_TRACE << "Successfully bound server to address: " << addr << " on port: " << port;
         } else {
             SILK_ERROR << "Failed to bind server to address " << addr
                        << ". Port is aready in use.";
-            throw std::runtime_error("Port in use at address " + addr + ". Try using a different port.");
         }
     }
 };

@@ -16,28 +16,36 @@
 
 #pragma once
 
-#include <stdexcept>
-
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc {
+
 class ServerGlobalCallbacks : public grpc::Server::GlobalCallbacks {
   public:
-    /// Called before application callback for each synchronous server request
+    static ServerGlobalCallbacks* create() {
+        static ServerGlobalCallbacks instance;
+        return &instance;
+    }
+
+    ~ServerGlobalCallbacks() override = default;
+
     void PreSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
-    /// Called after application callback for each synchronous server request
     void PostSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
-    /// Called after a server port is added.
-    void AddPort([[maybe_unused]] grpc::Server* server, const std::string& addr, grpc::ServerCredentials*, int port) noexcept override  {
+
+    void AddPort([[maybe_unused]] grpc::Server* server, const std::string& addr,
+                 [[maybe_unused]] grpc::ServerCredentials* creds, int port) override {
         if (port != 0) {
             SILK_TRACE << "Successfully bound server to address: " << addr << " on port: " << port;
         } else {
             SILK_ERROR << "Failed to bind server to address " << addr
-                       << ". Port is aready in use.";
+                       << ". Port is already in use.";
         }
     }
+
+  protected:
+    ServerGlobalCallbacks() = default;
 };
 
 void set_global_callbacks();

@@ -225,7 +225,6 @@ TEST_CASE("lookup_chain_config", "[rpc][common][util]") {
 }
 
 TEST_CASE("get_opcode_name") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     const char* names[256] = {
         /* 0x00 */ "STOP",
         /* 0x01 */ "ADD",
@@ -262,7 +261,6 @@ TEST_CASE("get_opcode_name") {
 }
 
 TEST_CASE("get_opcode_hex") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("1 digit opcode") {
         auto op_code = get_opcode_hex(0x00);
         CHECK(op_code == "0x0");

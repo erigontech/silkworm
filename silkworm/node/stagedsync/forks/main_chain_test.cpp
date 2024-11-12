@@ -59,8 +59,6 @@ TEST_CASE("MainChain transaction handling") {
         auto keep_db_txn_open = i == 1;
 
         SECTION("keep_db_txn_open = " + std::to_string(keep_db_txn_open)) {
-            silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-
             asio::io_context io;
             asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 

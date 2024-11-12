@@ -207,8 +207,7 @@ class TestableStateChangeCollection : public StateChangeCollection {
 using KvServer = db::kv::grpc::server::KvServer;
 
 struct KvEnd2EndTest {
-    explicit KvEnd2EndTest(silkworm::log::Level log_verbosity = silkworm::log::Level::kNone)
-        : set_verbosity_log_guard{log_verbosity} {
+    explicit KvEnd2EndTest() {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         kv_stub = remote::KV::NewStub(channel);
@@ -262,7 +261,6 @@ struct KvEnd2EndTest {
         server->join();
     }
 
-    test_util::SetLogVerbosityGuard set_verbosity_log_guard;
     rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
     std::unique_ptr<remote::KV::Stub> kv_stub;
     std::unique_ptr<KvClient> kv_client;
@@ -281,7 +279,6 @@ namespace silkworm::db::kv::grpc::server {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("KvServer", "[silkworm][node][rpc]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     rpc::Grpc2SilkwormLogGuard log_guard;
     rpc::ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;
@@ -697,7 +694,7 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
 TEST_CASE("KvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
-        KvEnd2EndTest test{silkworm::log::Level::kError};
+        KvEnd2EndTest test;
         test.fill_tables();
         auto kv_client = *test.kv_client;
 

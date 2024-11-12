@@ -24,7 +24,6 @@
 namespace silkworm {
 
 TEST_CASE("HeaderRetrieval") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();

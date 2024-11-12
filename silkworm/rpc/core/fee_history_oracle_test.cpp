@@ -24,8 +24,6 @@
 namespace silkworm::rpc::fee_history {
 
 TEST_CASE("FeeHistory: json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("default value") {
         FeeHistory fh;
 

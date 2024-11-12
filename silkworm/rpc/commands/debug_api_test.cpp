@@ -283,8 +283,6 @@ class DummyDatabase : public ethdb::Database {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("DebugRpcApi") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     boost::asio::io_context ioc;
     add_shared_service(ioc, std::make_shared<BlockCache>());
     add_shared_service<db::kv::api::StateCache>(ioc, std::make_shared<db::kv::api::CoherentStateCache>());

@@ -68,7 +68,6 @@ class InMemoryCollector : public etl::InMemoryCollector<CollectorStorage> {
 using etl::Entry;
 using etl::MapStorage;
 using etl::VectorStorage;
-using silkworm::test_util::SetLogVerbosityGuard;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
@@ -159,34 +158,28 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
 }
 
 TEST_CASE("collect_and_default_load_in_memory_map") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>(nullptr);
 }
 
 TEST_CASE("collect_and_default_load_in_memory_vector") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>(nullptr);
 }
 
 TEST_CASE("collect_and_default_load_move_in_memory_map") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>(nullptr, false);
 }
 
 TEST_CASE("collect_and_default_load_move_in_memory_vector") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>(nullptr, false);
 }
 
 TEST_CASE("collect_and_load_in_memory_map") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<MapStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
         table.upsert(to_slice(ekey), to_slice(evalue));
     });
 }
 
 TEST_CASE("collect_and_load_in_memory_vector") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test<InMemoryCollector<VectorStorage>>([](const Bytes& ekey, const Bytes& evalue, auto& table, MDBX_put_flags_t) {
         table.upsert(to_slice(ekey), to_slice(evalue));
     });

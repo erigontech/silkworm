@@ -32,6 +32,7 @@ if(NOT CMAKE_EXECUTABLE_SUFFIX)
   list(FILTER COMMANDS EXCLUDE REGEX "\\.")
 endif()
 list(FILTER COMMANDS EXCLUDE REGEX "core_test") # this is a unit test
+list(FILTER COMMANDS EXCLUDE REGEX "Makefile")
 
 # TODO: fix check_log_indices --help
 list(FILTER COMMANDS EXCLUDE REGEX "check_log_indices")

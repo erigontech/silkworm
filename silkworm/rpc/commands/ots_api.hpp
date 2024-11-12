@@ -230,24 +230,14 @@ class OtsRpcApi {
     friend class silkworm::rpc::json_rpc::RequestHandler;
 
   private:
-<<<<<<< HEAD
-    Task<TransactionsWithReceipts> collect_results(
-        db::kv::api::Transaction& tx, BlockNum block_number,
+    Task<TransactionsWithReceipts> collect_transactions_with_receipts(
+        db::kv::api::Transaction& tx,
         db::chain::CanonicalBodyForStorageProvider& provider,
-        db::kv::api::PaginatedTimestamps paginated_result_from,
-        db::kv::api::PaginatedTimestamps paginated_result_to,
+        BlockNum block_number,
+        const evmc::address& address,
+        db::kv::api::Timestamp from_timestamp,
         bool ascending,
         uint64_t page_size);
-=======
-    Task<TransactionsWithReceipts> collect_transactions_with_receipts(
-            db::kv::api::Transaction& tx,
-            db::chain::CanonicalBodyForStorageProvider& provider,
-            BlockNum block_number,
-            const evmc::address& address,
-            db::kv::api::Timestamp from_timestamp,
-            bool ascending,
-            uint64_t page_size);
->>>>>>> bed339eb (Review)
 
     Task<bool> trace_blocks(
         FromToBlockProvider& from_to_provider,

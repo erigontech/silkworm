@@ -48,7 +48,7 @@ class PoWSync : public ChainSync, ActiveComponent {
     void unwind(UnwindPoint, std::optional<Hash> bad_block);
     std::shared_ptr<InternalMessage<void>> update_bad_headers(std::set<Hash>);
 
-    void send_new_block_announcements(Blocks&& blocks);
+    void send_new_block_announcements(Blocks blocks);
     void send_new_block_hash_announcements();
 
     asio::io_context io_context_;

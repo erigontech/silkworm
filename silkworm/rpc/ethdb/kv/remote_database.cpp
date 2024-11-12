@@ -37,7 +37,7 @@ RemoteDatabase::RemoteDatabase(ethbackend::BackEnd* backend,
 RemoteDatabase::RemoteDatabase(ethbackend::BackEnd* backend,
                                StateCache* state_cache,
                                agrpc::GrpcContext& grpc_context,
-                               std::unique_ptr<remote::KV::StubInterface>&& stub)
+                               std::unique_ptr<remote::KV::StubInterface> stub)
     : backend_{backend}, state_cache_{state_cache}, grpc_context_{grpc_context}, stub_(std::move(stub)) {
     SILK_TRACE << "RemoteDatabase::ctor " << this;
 }

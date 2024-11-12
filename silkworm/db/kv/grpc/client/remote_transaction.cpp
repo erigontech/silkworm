@@ -122,7 +122,7 @@ Task<TxnId> RemoteTransaction::first_txn_num_in_block(BlockNum block_num) {
     co_return min_txn_num + /*txn_index*/ 0;
 }
 
-Task<api::DomainPointResult> RemoteTransaction::domain_get(api::DomainPointQuery&& query) {  // NOLINT(*-rvalue-reference-param-not-moved)
+Task<api::DomainPointResult> RemoteTransaction::domain_get(api::DomainPointQuery query) {
     try {
         query.tx_id = tx_id_;
         auto request = domain_get_request_from_query(query);
@@ -135,7 +135,7 @@ Task<api::DomainPointResult> RemoteTransaction::domain_get(api::DomainPointQuery
     }
 }
 
-Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQuery&& query) {  // NOLINT(*-rvalue-reference-param-not-moved)
+Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQuery query) {
     try {
         query.tx_id = tx_id_;
         auto request = history_seek_request_from_query(query);
@@ -148,7 +148,7 @@ Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQ
     }
 }
 
-Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQuery&& query) {
+Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQuery query) {
     auto paginator = [&, query = std::move(query)](api::PaginatedTimestamps::PageToken page_token) mutable -> Task<api::PaginatedTimestamps::PageResult> {
         query.tx_id = tx_id_;
         query.page_token = std::move(page_token);
@@ -166,7 +166,7 @@ Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQue
     co_return api::PaginatedTimestamps{std::move(paginator)};
 }
 
-Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRangeQuery&& query) {
+Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRangeQuery query) {
     auto paginator = [&, query = std::move(query)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         query.tx_id = tx_id_;
         query.page_token = std::move(page_token);
@@ -184,7 +184,7 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
-Task<api::PaginatedKeysValues> RemoteTransaction::domain_range(api::DomainRangeQuery&& query) {
+Task<api::PaginatedKeysValues> RemoteTransaction::domain_range(api::DomainRangeQuery query) {
     auto paginator = [&, query = std::move(query)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         query.tx_id = tx_id_;
         query.page_token = std::move(page_token);

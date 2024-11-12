@@ -32,7 +32,7 @@ class PrivateService : public BaseService<PrivateService<T>> {
     void shutdown() override { unique_.reset(); }
 
     //! Explicitly *take ownership* of \code std::unique_ptr to enforce isolation
-    void set_unique(std::unique_ptr<T>&& unique) {
+    void set_unique(std::unique_ptr<T> unique) {
         unique_ = std::move(unique);
     }
     T* ptr() { return unique_.get(); }
@@ -42,7 +42,7 @@ class PrivateService : public BaseService<PrivateService<T>> {
 };
 
 template <typename T>
-void add_private_service(boost::asio::execution_context& context, std::unique_ptr<T>&& unique) {
+void add_private_service(boost::asio::execution_context& context, std::unique_ptr<T> unique) {
     if (!has_service<PrivateService<T>>(context)) {
         make_service<PrivateService<T>>(context);
     }

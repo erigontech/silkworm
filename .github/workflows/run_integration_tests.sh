@@ -20,7 +20,6 @@ rm -rf ./mainnet/results/
 # ots_getContractCreator: new algo using TKV
 # ots_searchTransactionsAfter: new algo using TKV
 # ots_searchTransactionsBefore: new algo using TKV
-# trace_rawTransaction: different implementation
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
 debug_accountRange,\
@@ -56,8 +55,7 @@ eth_getBlockReceipts/test_07.json,\
 eth_getLogs,\
 ots_getContractCreator,\
 ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore,\
-trace_rawTransaction
+ots_searchTransactionsBefore
 
 failed_test=$?
 

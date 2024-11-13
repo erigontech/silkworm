@@ -53,7 +53,6 @@ class ContextTestBase {
     agrpc::GrpcContext& grpc_context() { return grpc_context_; }
 
   protected:
-    silkworm::test_util::SetLogVerbosityGuard log_guard_;
     rpc::ClientContext context_;
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;

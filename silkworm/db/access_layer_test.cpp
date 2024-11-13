@@ -114,10 +114,7 @@ static BlockBody block_body_17035047() {
 
 namespace silkworm::db {
 
-using silkworm::test_util::SetLogVerbosityGuard;
-
 TEST_CASE("Methods cursor_for_each/cursor_for_count", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -154,7 +151,6 @@ TEST_CASE("VersionBase primitives", "[db][access_layer]") {
 }
 
 TEST_CASE("Sequences", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -201,7 +197,6 @@ TEST_CASE("Sequences", "[db][access_layer]") {
 }
 
 TEST_CASE("Schema Version", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context(/*with_create_tables=*/false);
 
     SECTION("Read/Write") {
@@ -239,7 +234,6 @@ TEST_CASE("Schema Version", "[db][access_layer]") {
 }
 
 TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.txn()};
 
@@ -366,7 +360,6 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
 }
 
 TEST_CASE("Stages", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -410,7 +403,6 @@ TEST_CASE("Difficulty", "[db][access_layer]") {
 }
 
 TEST_CASE("Headers and bodies", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -528,7 +520,6 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
 }
 
 TEST_CASE("Storage", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -651,7 +642,6 @@ TEST_CASE("Account changes", "[db][access_layer]") {
 }
 
 TEST_CASE("Storage changes", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -731,7 +721,6 @@ TEST_CASE("Storage changes", "[db][access_layer]") {
 }
 
 TEST_CASE("Chain config", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -754,7 +743,6 @@ TEST_CASE("Chain config", "[db][access_layer]") {
 }
 
 TEST_CASE("Head header", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -764,7 +752,6 @@ TEST_CASE("Head header", "[db][access_layer]") {
 }
 
 TEST_CASE("Last Fork Choice", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -782,7 +769,6 @@ TEST_CASE("Last Fork Choice", "[db][access_layer]") {
 }
 
 TEST_CASE("read rlp encoded transactions", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -813,7 +799,6 @@ TEST_CASE("read rlp encoded transactions", "[db][access_layer]") {
 }
 
 TEST_CASE("write and read body w/ withdrawals", "[db][access_layer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -847,7 +832,6 @@ struct AccessLayerTest {
         expect_mock_ro_cursor(mock_ro_txn, mock_ro_cursor);
     }
 
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::MockROTxn mock_ro_txn;
     test_util::MockROCursor* mock_ro_cursor = new test_util::MockROCursor;
 };

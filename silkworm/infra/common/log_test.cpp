@@ -75,12 +75,16 @@ static std::string prettified_key_value(const std::string& key, const std::strin
 }
 
 TEST_CASE("LogBuffer", "[silkworm][common][log]") {
+    // After the test restore verbosity as it was before the test
+    test_util::SetLogVerbosityGuard log_guard{get_verbosity()};
+
     // Temporarily override std::cout and std::cerr with string streams to avoid terminal output
     std::stringstream string_cout, string_cerr;
     test_util::StreamSwap cout_swap{std::cout, string_cout};
     test_util::StreamSwap cerr_swap{std::cerr, string_cerr};
     // Make sure logging facility is initialized
-    init();
+    Settings settings{.log_verbosity = Level::kInfo};
+    init(settings);
 
     SECTION("LogBuffer stores nothing for verbosity higher than default") {
         check_log_empty<Level::kDebug>();
@@ -119,7 +123,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         CHECK(!absl::StrContains(log_buffer1.content(), thread_id_stream.str()));
 
         // Enable thread tracing
-        Settings log_settings;
+        Settings log_settings{.log_verbosity = Level::kInfo};
         log_settings.log_threads = true;
         init(log_settings);
         auto log_buffer2 = LogBufferForTest<Level::kInfo>();
@@ -153,6 +157,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         // Log file setting forcibly disables colors even if explicitly set
         Settings log_settings2{
             .log_nocolor = false,  // try to enable colorized output
+            .log_verbosity = Level::kInfo,
         };
         init(log_settings2);
         LogBufferForTest<Level::kInfo>{"test2", {"key3", "value3", "key4", "value4"}};  // temporary log object, flush on dtor
@@ -170,6 +175,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         // Log file setting forcibly disables colors even if explicitly set
         Settings log_settings2{
             .log_nocolor = false,  // try to enable colorized output
+            .log_verbosity = Level::kInfo,
             .log_file = temp_file.string(),
         };
         init(log_settings2);
@@ -198,9 +204,10 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     }
 }
 
+#ifdef SILKWORM_TEST_SKIP
 TEST_CASE("SILK_LOGBUFFER", "[silkworm][common][log]") {
-    SKIP();
-    init();
+    Settings settings{.log_verbosity = Level::kTrace};
+    init(settings);
 
     log::Trace() << "hello using log::Trace";
     log::Debug() << "hello using log::Debug";
@@ -234,5 +241,6 @@ TEST_CASE("SILK_LOGBUFFER", "[silkworm][common][log]") {
     SILK_CRIT_M("log_test") << "hello using SILK_CRIT_M(\"log_test\")";
     SILK_LOG_M("log_test") << "hello using SILK_LOG_M(\"log_test\")";
 }
+#endif  // SILKWORM_TEST_SKIP
 
 }  // namespace silkworm::log

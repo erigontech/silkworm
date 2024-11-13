@@ -78,8 +78,6 @@ TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
 }
 
 TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("reject size 0") {
         CHECK_THROWS_AS((ClientContextPool{0}), std::logic_error);
     }
@@ -120,8 +118,6 @@ TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][cli
 }
 
 TEST_CASE("ClientContextPool: start context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
         cp.start();
@@ -138,8 +134,6 @@ TEST_CASE("ClientContextPool: start context pool", "[silkworm][infra][grpc][clie
 }
 
 TEST_CASE("ClientContextPool: run context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
         auto context_pool_thread = std::thread([&]() { cp.run(); });
@@ -167,8 +161,6 @@ TEST_CASE("ClientContextPool: run context pool", "[silkworm][infra][grpc][client
 }
 
 TEST_CASE("ClientContextPool: stop context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("not yet running") {
         ClientContextPool cp{3};
         CHECK_NOTHROW(cp.stop());
@@ -193,8 +185,6 @@ TEST_CASE("ClientContextPool: stop context pool", "[silkworm][infra][grpc][clien
 }
 
 TEST_CASE("ClientContextPool: cannot restart context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
         cp.start();
@@ -213,8 +203,6 @@ TEST_CASE("ClientContextPool: cannot restart context pool", "[silkworm][infra][g
 }
 
 TEST_CASE("ClientContextPool: handle loop exception", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     ClientContextPool cp{3};
     std::exception_ptr run_exception;
     cp.set_exception_handler([&](std::exception_ptr eptr) {

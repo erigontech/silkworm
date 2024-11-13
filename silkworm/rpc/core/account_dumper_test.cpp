@@ -251,7 +251,6 @@ class DummyDatabase : public ethdb::Database {
 
 #ifdef TEST_DISABLED
 TEST_CASE("account dumper") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
     nlohmann::json json;
     BlockCache block_cache(100, true);

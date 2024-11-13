@@ -136,7 +136,6 @@ class RpcApiE2ETest : public TestDataStoreBase, RpcApiTestBase<RequestHandlerFor
     using RpcApiTestBase<RequestHandlerForTest>::run;
 
   private:
-    static inline silkworm::test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
     static inline bool jsonrpc_spec_loaded{false};
 };
 

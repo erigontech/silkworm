@@ -31,7 +31,6 @@
 namespace silkworm::db::etl {
 
 namespace fs = std::filesystem;
-using silkworm::test_util::SetLogVerbosityGuard;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
@@ -100,17 +99,14 @@ void run_collector_test(const etl_mdbx::LoadFunc& load_func, bool do_copy = true
 }
 
 TEST_CASE("collect_and_default_load") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test(nullptr);
 }
 
 TEST_CASE("collect_and_default_load_move") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test(nullptr, false);
 }
 
 TEST_CASE("collect_and_load") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test([](const Entry& entry, auto& table, MDBX_put_flags_t) {
         Bytes key{entry.key};
         key.at(0) = 1;

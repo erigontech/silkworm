@@ -36,7 +36,6 @@ namespace silkworm::concurrency {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     Context ctx{0};
 
     SECTION("ServerContext") {
@@ -75,8 +74,6 @@ TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
 }
 
 TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("ContextPool OK") {
         ContextPool context_pool{2};
         CHECK(context_pool.size() == 2);

@@ -47,7 +47,6 @@ using execution::api::ValidChain;
 
 using silkworm::stagedsync::test_util::make_stages_factory;
 using silkworm::test_util::generate_sample_child_blocks;
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
 
 class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
@@ -57,7 +56,6 @@ class ExecutionEngineForTest : public stagedsync::ExecutionEngine {
 };
 
 TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engine]") {
-    SetLogVerbosityGuard log_guard(log::Level::kNone);
     TemporaryDirectory tmp_dir;
     TaskRunner runner;
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
@@ -811,8 +809,6 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
 }
 
 TEST_CASE("ExecutionEngine") {
-    SetLogVerbosityGuard log_guard(log::Level::kNone);
-
     TaskRunner runner;
 
     db::test_util::TempChainDataStore context;

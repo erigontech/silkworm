@@ -25,8 +25,6 @@ namespace silkworm::rpc::commands {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("TraceRpcApi") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     boost::asio::io_context ioc;
     WorkerPool workers{1};
 

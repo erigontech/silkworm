@@ -39,8 +39,6 @@ class ConnectionForTest : public Connection {
 };
 
 TEST_CASE("connection creation", "[rpc][http][connection]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("field initialization") {
         boost::asio::io_context ioc;
         boost::asio::ip::tcp::socket socket{ioc};
@@ -86,7 +84,6 @@ static RequestWithStringBody create_request_with_bearer_token(const std::string&
 }
 
 TEST_CASE("is_request_authorized", "[rpc][http][connection]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::io_context ioc;
     RequestHandlerFactory handler_factory = [](auto*) -> RequestHandlerPtr { return nullptr; };
     std::vector<std::string> allowed_origins;

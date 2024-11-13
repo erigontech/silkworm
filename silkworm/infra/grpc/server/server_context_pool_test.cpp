@@ -34,7 +34,6 @@ using namespace concurrency;
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerContext", "[silkworm][infra][grpc][server][server_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::ServerCompletionQueue> scq = builder.AddCompletionQueue();
     grpc::ServerCompletionQueue* scq_ptr = scq.get();
@@ -80,7 +79,6 @@ TEST_CASE("ServerContext", "[silkworm][infra][grpc][server][server_context]") {
 }
 
 TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
 
     SECTION("ServerContextPool OK") {
@@ -133,7 +131,6 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
 }
 
 TEST_CASE("ServerContextPool: handle loop exception", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
 
     ServerContextPool cp{{3}, builder};

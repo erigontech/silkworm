@@ -26,7 +26,6 @@ namespace silkworm::rpc {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerConfig::ServerConfig", "[silkworm][rpc][server_settings]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     ServerSettings config;
     CHECK(config.address_uri == kDefaultAddressUri);
     CHECK(config.context_pool_settings.num_contexts > 0);

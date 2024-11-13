@@ -32,7 +32,6 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 
 static const Bytes kLoremIpsumDict{*from_hex(
@@ -123,7 +122,6 @@ static void build_tx_index(benchmark::State& state) {
 BENCHMARK(build_tx_index);
 
 static void reopen_folder(benchmark::State& state) {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot

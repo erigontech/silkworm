@@ -51,11 +51,11 @@ inline std::ostream& operator<<(std::ostream& out, const Status& status) {
 void gpr_default_log(gpr_log_func_args* args);
 
 //! Define an empty gRPC logging function
-static void gpr_no_log(gpr_log_func_args* /*args*/) {
+inline void gpr_no_log(gpr_log_func_args* /*args*/) {
 }
 
 //! Define a gRPC logging function delegating to Silkworm logging facility.
-static void gpr_silkworm_log(gpr_log_func_args* args) {
+inline void gpr_silkworm_log(gpr_log_func_args* args) {
     std::string log_message{"gRPC: "};
     log_message.append(args->message);
     if (args->severity == GPR_LOG_SEVERITY_ERROR) {
@@ -78,7 +78,7 @@ template <void (*F)(gpr_log_func_args*)>
 class GrpcLogGuard {
   public:
     explicit GrpcLogGuard() { gpr_set_log_function(F); }
-    ~GrpcLogGuard() { gpr_set_log_function(gpr_default_log); }
+    ~GrpcLogGuard() { gpr_set_log_function(gpr_silkworm_log); }
 };
 
 //! Utility class to disable gRPC logging for an instance lifetime.

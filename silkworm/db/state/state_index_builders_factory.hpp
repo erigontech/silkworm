@@ -23,8 +23,8 @@ namespace silkworm::db::state {
 
 class StateIndexBuildersFactory : public snapshots::IndexBuildersFactory {
   public:
-    StateIndexBuildersFactory() {}
-    StateIndexBuildersFactory(snapshots::Schema::RepositoryDef schema)
+    StateIndexBuildersFactory() = default;
+    explicit StateIndexBuildersFactory(snapshots::Schema::RepositoryDef schema)
         : schema_{std::move(schema)} {}
     ~StateIndexBuildersFactory() override = default;
 

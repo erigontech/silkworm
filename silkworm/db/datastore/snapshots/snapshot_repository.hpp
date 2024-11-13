@@ -31,9 +31,9 @@
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
+#include "index_builders_factory.hpp"
 #include "segment_and_index.hpp"
 #include "snapshot_bundle.hpp"
-#include "snapshot_bundle_factory.hpp"
 
 namespace silkworm::snapshots {
 
@@ -51,13 +51,13 @@ class SnapshotRepository {
         bool open,
         Schema::RepositoryDef schema,
         std::unique_ptr<StepToTimestampConverter> step_converter,
-        std::unique_ptr<SnapshotBundleFactory> bundle_factory);
+        std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
     SnapshotRepository(SnapshotRepository&&) = default;
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = default;
 
     const std::filesystem::path& path() const { return dir_path_; }
-    const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
+    const Schema::RepositoryDef& schema() const { return schema_; };
 
     void reopen_folder();
     void close();
@@ -106,7 +106,9 @@ class SnapshotRepository {
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
-    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(datastore::EntityName name, Timestamp t) const;
+    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
+        std::pair<datastore::EntityName, datastore::EntityName> names,
+        Timestamp t) const;
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;
 
     std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const;
@@ -129,8 +131,8 @@ class SnapshotRepository {
     //! Converts timestamp units to steps
     std::unique_ptr<StepToTimestampConverter> step_converter_;
 
-    //! SnapshotBundle factory
-    std::unique_ptr<SnapshotBundleFactory> bundle_factory_;
+    //! Creates index builders
+    std::unique_ptr<IndexBuildersFactory> index_builders_factory_;
 
     //! Full snapshot bundles ordered by block_from
     std::shared_ptr<Bundles> bundles_;

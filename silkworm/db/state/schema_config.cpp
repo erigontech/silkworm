@@ -16,11 +16,36 @@
 
 #include "schema_config.hpp"
 
+#include "state_index_builders_factory.hpp"
+
 namespace silkworm::db::state {
 
 snapshots::Schema::RepositoryDef make_state_repository_schema() {
     snapshots::Schema::RepositoryDef schema;
+    schema.domain(kDomainNameAccounts).tag_override(kDomainAccountsTag);
+    schema.domain(kDomainNameStorage);
+    schema.domain(kDomainNameCode);
+    schema.domain(kDomainNameCommitment);
+    schema.domain(kDomainNameReceipts);
+    schema.inverted_index(kInvIdxNameLogAddress).tag_override(kInvIdxLogAddressTag);
+    schema.inverted_index(kInvIdxNameLogTopics);
+    schema.inverted_index(kInvIdxNameTracesFrom);
+    schema.inverted_index(kInvIdxNameTracesTo);
     return schema;
+}
+
+std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_factory() {
+    return std::make_unique<StateIndexBuildersFactory>(make_state_repository_schema());
+}
+
+snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_path, bool open) {
+    return snapshots::SnapshotRepository{
+        std::move(dir_path),
+        open,
+        make_state_repository_schema(),
+        std::make_unique<snapshots::StepToTxnIdConverter>(),
+        make_state_index_builders_factory(),
+    };
 }
 
 }  // namespace silkworm::db::state

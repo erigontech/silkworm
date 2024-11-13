@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "snapshot_bundle_factory_impl.hpp"
+#include "blocks_index_builders_factory.hpp"
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
@@ -24,34 +24,24 @@
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
 
-namespace silkworm::db {
+namespace silkworm::db::blocks {
 
 using namespace snapshots;
 
-SnapshotBundle SnapshotBundleFactoryImpl::make(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    return SnapshotBundle{
-        range,
-        make_bundle_data(schema_, dir_path, range),
-    };
-}
-
-SnapshotBundlePaths SnapshotBundleFactoryImpl::make_paths(const std::filesystem::path& dir_path, snapshots::StepRange range) const {
-    return SnapshotBundlePaths{
-        schema_,
-        dir_path,
-        range,
-    };
-}
-
-std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPath& segment_path) const {
-    datastore::EntityName name{segment_path.tag()};
+std::vector<std::shared_ptr<IndexBuilder>> BlocksIndexBuildersFactory::index_builders(const SnapshotPath& segment_path) const {
+    auto names = schema_.entity_name_by_path(segment_path);
+    if (!names) {
+        SILKWORM_ASSERT(false);
+        return {};
+    }
+    datastore::EntityName name = names->second;
     {
         if (name == db::blocks::kHeaderSegmentName)
             return {std::make_shared<IndexBuilder>(HeaderIndex::make(segment_path))};
         if (name == db::blocks::kBodySegmentName)
             return {std::make_shared<IndexBuilder>(BodyIndex::make(segment_path))};
         if (name == db::blocks::kTxnSegmentName) {
-            auto bodies_segment_path = segment_path.related_path(db::blocks::kBodySegmentName.to_string(), db::blocks::kSegmentExtension);
+            auto bodies_segment_path = segment_path.related_path(std::string{db::blocks::kBodySegmentTag}, db::blocks::kSegmentExtension);
             if (!bodies_segment_path.exists()) return {};
             return {
                 std::make_shared<IndexBuilder>(TransactionIndex::make(bodies_segment_path, segment_path)),
@@ -63,17 +53,13 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_buil
     }
 }
 
-std::vector<std::shared_ptr<IndexBuilder>> SnapshotBundleFactoryImpl::index_builders(const SnapshotPathList& segment_paths) const {
-    std::vector<std::shared_ptr<IndexBuilder>> all_builders;
-    for (const auto& path : segment_paths) {
-        auto builders = index_builders(path);
-        all_builders.insert(all_builders.end(), builders.begin(), builders.end());
+SnapshotPathList BlocksIndexBuildersFactory::index_dependency_paths(const SnapshotPath& index_path) const {
+    auto names = schema_.entity_name_by_path(index_path);
+    if (!names) {
+        SILKWORM_ASSERT(false);
+        std::abort();
     }
-    return all_builders;
-}
-
-SnapshotPathList SnapshotBundleFactoryImpl::index_dependency_paths(const SnapshotPath& index_path) const {
-    datastore::EntityName name{index_path.tag()};
+    datastore::EntityName name = names->second;
     datastore::EntityName segment_name = [name]() -> datastore::EntityName {
         if (name == db::blocks::kIdxHeaderHashName)
             return db::blocks::kHeaderSegmentName;
@@ -86,8 +72,9 @@ SnapshotPathList SnapshotBundleFactoryImpl::index_dependency_paths(const Snapsho
         SILKWORM_ASSERT(false);
         std::abort();
     }();
-    SnapshotPath snapshot_path = index_path.related_path(segment_name.to_string(), db::blocks::kSegmentExtension);
+    auto& segment_tag = schema_.entities().at(Schema::kDefaultEntityName).entities().at(segment_name).tag();
+    SnapshotPath snapshot_path = index_path.related_path(segment_tag, db::blocks::kSegmentExtension);
     return {snapshot_path};
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::db::blocks

@@ -252,6 +252,8 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
         return SILKWORM_INVALID_HANDLE;
     }
 
+    auto schema = db::blocks::make_blocks_repository_schema();
+
     std::vector<std::shared_ptr<snapshots::IndexBuilder>> needed_indexes;
     for (size_t i = 0; i < len; ++i) {
         struct SilkwormMemoryMappedFile* segment = segments[i];
@@ -265,7 +267,11 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
             return SILKWORM_INVALID_PATH;
         }
 
-        datastore::EntityName name{snapshot_path->tag()};
+        auto names = schema.entity_name_by_path(*snapshot_path);
+        if (!names) {
+            return SILKWORM_INVALID_PATH;
+        }
+        datastore::EntityName name = names->second;
         {
             if (name == db::blocks::kHeaderSegmentName) {
                 auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
@@ -274,7 +280,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
                 auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
                 needed_indexes.push_back(index);
             } else if (name == db::blocks::kTxnSegmentName) {
-                auto bodies_segment_path = snapshot_path->related_path(db::blocks::kBodySegmentName.to_string(), db::blocks::kSegmentExtension);
+                auto bodies_segment_path = snapshot_path->related_path(std::string{db::blocks::kBodySegmentTag}, db::blocks::kSegmentExtension);
                 auto bodies_file = std::find_if(segments, segments + len, [&](SilkwormMemoryMappedFile* file) -> bool {
                     return snapshots::SnapshotPath::parse(file->file_path) == bodies_segment_path;
                 });
@@ -370,10 +376,10 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     }
     snapshots::SegmentFileReader txn_segment{*transactions_segment_path, make_region(ts.segment)};
     snapshots::Index idx_txn_hash{transactions_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(ts.tx_hash_index)};
-    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(db::blocks::kIdxTxnHash2BlockName.to_string(), db::blocks::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
+    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(std::string{db::blocks::kIdxTxnHash2BlockTag}, db::blocks::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
 
-    snapshots::SnapshotBundleData bundle_data = [&]() {
-        snapshots::SnapshotBundleData data;
+    auto bundle_data_provider = [&]() -> snapshots::SnapshotBundleEntityData {
+        snapshots::SnapshotBundleEntityData data;
 
         data.segments.emplace(db::blocks::kHeaderSegmentName, std::move(header_segment));
         data.rec_split_indexes.emplace(db::blocks::kIdxHeaderHashName, std::move(idx_header_hash));
@@ -386,7 +392,9 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         data.rec_split_indexes.emplace(db::blocks::kIdxTxnHash2BlockName, std::move(idx_txn_hash_2_block));
 
         return data;
-    }();
+    };
+    snapshots::SnapshotBundleData bundle_data;
+    bundle_data.entities.emplace(snapshots::Schema::kDefaultEntityName, bundle_data_provider());
 
     snapshots::SnapshotBundle bundle{
         headers_segment_path->step_range(),

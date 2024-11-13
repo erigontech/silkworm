@@ -152,7 +152,7 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, co
         Receipts rpc_receipts;
         uint64_t cumulative_gas_used{0};
 
-        for (size_t index = 0; index < transactions.size(); index++) {
+        for (size_t index = 0; index < transactions.size(); ++index) {
             Receipt receipt;
 
             const silkworm::Transaction& transaction{block.transactions[index]};

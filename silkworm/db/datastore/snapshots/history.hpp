@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@
    limitations under the License.
 */
 
-#include "web3_api.hpp"
+#pragma once
 
-#include <catch2/catch_test_macros.hpp>
+#include "inverted_index.hpp"
+#include "rec_split_index/index.hpp"
+#include "segment/segment_reader.hpp"
 
-namespace silkworm::rpc::commands {
+namespace silkworm::snapshots {
 
-#ifndef SILKWORM_SANITIZE
-TEST_CASE("Web3RpcApi::Web3RpcApi", "[rpc][erigon_api]") {
-    boost::asio::io_context ioc;
-    CHECK_THROWS_AS(Web3RpcApi(ioc), std::logic_error);
-}
-#endif  // SILKWORM_SANITIZE
+struct History {
+    const SegmentFileReader& segment;
+    const Index& accessor_index;
+    InvertedIndex inverted_index;
+};
 
-}  // namespace silkworm::rpc::commands
+}  // namespace silkworm::snapshots

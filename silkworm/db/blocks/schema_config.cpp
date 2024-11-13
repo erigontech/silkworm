@@ -16,27 +16,43 @@
 
 #include "schema_config.hpp"
 
-#include "../snapshot_bundle_factory_impl.hpp"
+#include "blocks_index_builders_factory.hpp"
 
 namespace silkworm::db::blocks {
 
 snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
-    snapshots::Schema::RepositoryDef schema;
-    schema
-        .segment_file_ext(kSegmentExtension)
-        .rec_split_index_file_ext(kIdxExtension)
-        .segment(kHeaderSegmentName)
-        .rec_split_index(kIdxHeaderHashName)
-        .segment(kBodySegmentName)
-        .rec_split_index(kIdxBodyNumberName)
-        .segment(kTxnSegmentName)
-        .rec_split_index(kIdxTxnHashName)
-        .rec_split_index(kIdxTxnHash2BlockName);
-    return schema;
+    snapshots::Schema::RepositoryDef repository_schema;
+    snapshots::Schema::EntityDef& schema = repository_schema.default_entity();
+
+    schema.segment(kHeaderSegmentName)
+        .tag(kHeaderSegmentTag)
+        .file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxHeaderHashName)
+        .tag(kIdxHeaderHashTag)
+        .file_ext(kIdxExtension);
+
+    schema.segment(kBodySegmentName)
+        .tag(kBodySegmentTag)
+        .file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxBodyNumberName)
+        .tag(kIdxBodyNumberTag)
+        .file_ext(kIdxExtension);
+
+    schema.segment(kTxnSegmentName)
+        .tag(kTxnSegmentTag)
+        .file_ext(kSegmentExtension);
+    schema.rec_split_index(kIdxTxnHashName)
+        .tag(kIdxTxnHashTag)
+        .file_ext(kIdxExtension);
+    schema.rec_split_index(kIdxTxnHash2BlockName)
+        .tag(kIdxTxnHash2BlockTag)
+        .file_ext(kIdxExtension);
+
+    return repository_schema;
 }
 
-std::unique_ptr<snapshots::SnapshotBundleFactory> make_blocks_bundle_factory() {
-    return std::make_unique<db::SnapshotBundleFactoryImpl>(make_blocks_repository_schema());
+std::unique_ptr<snapshots::IndexBuildersFactory> make_blocks_index_builders_factory() {
+    return std::make_unique<BlocksIndexBuildersFactory>(make_blocks_repository_schema());
 }
 
 snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path, bool open) {
@@ -45,7 +61,7 @@ snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_p
         open,
         make_blocks_repository_schema(),
         std::make_unique<snapshots::StepToBlockNumConverter>(),
-        make_blocks_bundle_factory(),
+        make_blocks_index_builders_factory(),
     };
 }
 

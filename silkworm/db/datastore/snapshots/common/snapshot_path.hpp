@@ -43,6 +43,7 @@ class SnapshotPath {
 
     std::string filename() const { return path_.filename().string(); }
     const std::filesystem::path& path() const { return path_; }
+    std::filesystem::path base_dir_path() const { return path_.parent_path(); }
     std::string extension() const { return path_.extension().string(); }
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }

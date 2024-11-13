@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@
    limitations under the License.
 */
 
-#include "web3_api.hpp"
+#include "state_index_builders_factory.hpp"
 
-#include <catch2/catch_test_macros.hpp>
+namespace silkworm::db::state {
 
-namespace silkworm::rpc::commands {
+using namespace snapshots;
 
-#ifndef SILKWORM_SANITIZE
-TEST_CASE("Web3RpcApi::Web3RpcApi", "[rpc][erigon_api]") {
-    boost::asio::io_context ioc;
-    CHECK_THROWS_AS(Web3RpcApi(ioc), std::logic_error);
+std::vector<std::shared_ptr<IndexBuilder>> StateIndexBuildersFactory::index_builders(const SnapshotPath& /*segment_path*/) const {
+    return {};
 }
-#endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::rpc::commands
+SnapshotPathList StateIndexBuildersFactory::index_dependency_paths(const SnapshotPath& /*index_path*/) const {
+    return {};
+}
+
+}  // namespace silkworm::db::state

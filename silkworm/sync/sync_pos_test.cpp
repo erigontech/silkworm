@@ -118,7 +118,6 @@ static rpc::NewPayloadRequest make_payload_request_v3() {
 }
 
 TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std::chrono_literals;
     using testing::_;
     using testing::InvokeWithoutArgs;

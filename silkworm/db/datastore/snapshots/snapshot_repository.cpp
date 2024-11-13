@@ -32,11 +32,11 @@ SnapshotRepository::SnapshotRepository(
     bool open,
     Schema::RepositoryDef schema,
     std::unique_ptr<StepToTimestampConverter> step_converter,
-    std::unique_ptr<SnapshotBundleFactory> bundle_factory)
+    std::unique_ptr<IndexBuildersFactory> index_builders_factory)
     : dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
       step_converter_(std::move(step_converter)),
-      bundle_factory_(std::move(bundle_factory)),
+      index_builders_factory_(std::move(index_builders_factory)),
       bundles_(std::make_shared<Bundles>()),
       bundles_mutex_(std::make_unique<std::mutex>()) {
     if (open) reopen_folder();
@@ -96,18 +96,21 @@ Step SnapshotRepository::max_end_step() const {
 }
 
 std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(
-    datastore::EntityName name,
+    std::pair<datastore::EntityName, datastore::EntityName> names,
     Timestamp t) const {
     auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
     if (bundle) {
-        return {bundle->segment_and_index(name), bundle};
+        return {bundle->segment_and_rec_split_index(names), bundle};
     }
     return {std::nullopt, {}};
 }
 
 std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes() const {
-    SnapshotPathList segment_files = get_files(schema_.segment_file_ext());
-    auto index_builders = bundle_factory_->index_builders(segment_files);
+    // TODO: reimplement for state repository
+    SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
+    auto segment_file_ext = some_bundle_paths.segment_paths().begin()->second.extension();
+    SnapshotPathList segment_files = get_files(segment_file_ext);
+    auto index_builders = index_builders_factory_->index_builders(segment_files);
 
     std::erase_if(index_builders, [&](const auto& builder) {
         return builder->path().exists();
@@ -137,10 +140,10 @@ void SnapshotRepository::reopen_folder() {
         if (range.size() == 0) continue;
 
         if (!bundles->contains(num)) {
-            SnapshotBundlePaths bundle_paths = bundle_factory_->make_paths(dir_path_, range);
+            SnapshotBundlePaths bundle_paths{schema_, dir_path_, range};
             // if all bundle paths exist
             if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
-                SnapshotBundle bundle = bundle_factory_->make(dir_path_, range);
+                SnapshotBundle bundle{schema_, dir_path_, range};
                 bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
             }
         }
@@ -211,9 +214,15 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
     ensure(fs::is_directory(dir_path_),
            [&]() { return "SnapshotRepository: " + dir_path_.string() + " is a not folder"; });
 
+    auto supported_file_extensions = schema_.file_extensions();
+    if (supported_file_extensions.empty()) return {};
+
     std::vector<StepRange> results;
     for (const auto& file : fs::directory_iterator{dir_path_}) {
         if (!fs::is_regular_file(file.path())) {
+            continue;
+        }
+        if (std::ranges::find(supported_file_extensions, file.path().extension().string()) == supported_file_extensions.end()) {
             continue;
         }
         const auto range = SnapshotPath::parse_step_range(file.path());
@@ -227,13 +236,16 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
 
 bool SnapshotRepository::is_stale_index_path(const SnapshotPath& index_path) const {
     return std::ranges::any_of(
-        bundle_factory_->index_dependency_paths(index_path),
+        index_builders_factory_->index_dependency_paths(index_path),
         [&](const SnapshotPath& dep_path) { return fs::last_write_time(index_path.path()) < fs::last_write_time(dep_path.path()); });
 }
 
 SnapshotPathList SnapshotRepository::stale_index_paths() const {
     SnapshotPathList results;
-    auto all_files = get_files(schema_.rec_split_index_file_ext());
+    // TODO: reimplement for state repository
+    SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
+    auto rec_split_index_file_ext = some_bundle_paths.rec_split_index_paths().begin()->second.extension();
+    auto all_files = get_files(rec_split_index_file_ext);
     std::copy_if(
         all_files.begin(), all_files.end(),
         std::back_inserter(results),
@@ -253,7 +265,7 @@ void SnapshotRepository::build_indexes(const SnapshotBundlePaths& bundle) const 
     for (auto& entry : bundle.segment_paths())
         segment_paths.push_back(std::move(entry.second));
 
-    for (auto& builder : bundle_factory_->index_builders(segment_paths)) {
+    for (auto& builder : index_builders_factory_->index_builders(segment_paths)) {
         builder->build();
     }
 }

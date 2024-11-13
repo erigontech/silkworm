@@ -46,8 +46,10 @@ void snapshot_file_recompress(const std::filesystem::path& path) {
     TemporaryDirectory tmp_dir;
     SegmentFileWriter file_writer{*SnapshotPath::parse(out_path), tmp_dir.path()};
 
-    const auto& tag = path_opt->tag();
-    datastore::EntityName name{tag};
+    auto schema = db::blocks::make_blocks_repository_schema();
+    auto names = schema.entity_name_by_path(*path_opt);
+    if (!names) throw std::runtime_error{"unsupported snapshot type"};
+    datastore::EntityName name = names->second;
     {
         if (name == db::blocks::kHeaderSegmentName)
             copy_reader_to_writer<HeaderSegmentReader, HeaderSegmentWriter>(file_reader, file_writer);

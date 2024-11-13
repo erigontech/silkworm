@@ -74,20 +74,17 @@ Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum /*block_num*/) {
     throw std::logic_error{"not yet implemented"};
 }
 
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<DomainPointResult> LocalTransaction::domain_get(DomainPointQuery&& /*query*/) {
+Task<DomainPointResult> LocalTransaction::domain_get(DomainPointQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     co_return DomainPointResult{};
 }
 
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery&& /*query*/) {
+Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     co_return HistoryPointResult{};
 }
 
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery&& /*query*/) {
+Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedTimestamps::PageToken) mutable -> Task<api::PaginatedTimestamps::PageResult> {
         co_return api::PaginatedTimestamps::PageResult{};
@@ -95,8 +92,7 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery&& /*quer
     co_return api::PaginatedTimestamps{std::move(paginator)};
 }
 
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery&& /*query*/) {
+Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         co_return api::PaginatedKeysValues::PageResult{};
@@ -104,8 +100,7 @@ Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery&& /*
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-Task<PaginatedKeysValues> LocalTransaction::domain_range(DomainRangeQuery&& /*query*/) {
+Task<PaginatedKeysValues> LocalTransaction::domain_range(DomainRangeQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         co_return api::PaginatedKeysValues::PageResult{};

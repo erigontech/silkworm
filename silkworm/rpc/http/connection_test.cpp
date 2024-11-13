@@ -91,14 +91,12 @@ TEST_CASE("is_request_authorized", "[rpc][http][connection]") {
     RequestHandlerFactory handler_factory = [](auto*) -> RequestHandlerPtr { return nullptr; };
     std::vector<std::string> allowed_origins;
     WorkerPool workers;
-    auto make_connection = [&](auto&& j) -> ConnectionForTest {
+    std::optional<std::string> jwt_secret{kSampleJWTKey};
+    ConnectionForTest connection = [&]() -> ConnectionForTest {
         boost::asio::ip::tcp::socket socket{ioc};
         socket.open(boost::asio::ip::tcp::v4());
-        return {std::move(socket), handler_factory, allowed_origins, std::forward<decltype(j)>(j), false, false, false, workers};
-    };
-    std::optional<std::string> jwt_secret{kSampleJWTKey};
-    // Pass the expected JWT secret to the HTTP connection
-    ConnectionForTest connection{make_connection(*jwt_secret)};
+        return {std::move(socket), handler_factory, allowed_origins, jwt_secret, false, false, false, workers};
+    }();
 
     SECTION("no HTTP Authorization header") {
         const auto auth_result{connection.is_request_authorized(RequestWithStringBody{})};

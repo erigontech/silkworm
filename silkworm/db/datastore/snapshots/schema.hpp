@@ -40,6 +40,11 @@ class Schema {
             return *this;
         }
 
+        SnapshotFileDef& sub_dir_name(std::string_view name) {
+            sub_dir_name_ = name;
+            return *this;
+        }
+
         SnapshotFileDef& tag(std::string_view tag) {
             tag_ = tag;
             return *this;
@@ -53,11 +58,13 @@ class Schema {
         SnapshotPath make_path(const std::filesystem::path& dir_path, StepRange range) const;
 
         Format format() const { return format_.value(); }
+        const std::optional<std::string>& sub_dir_name() const { return sub_dir_name_; }
         const std::string& tag() const { return tag_.value(); }
         const std::string& file_ext() const { return file_ext_.value(); }
 
       private:
         std::optional<Format> format_;
+        std::optional<std::string> sub_dir_name_;
         std::optional<std::string> tag_;
         std::optional<std::string> file_ext_;
     };
@@ -123,22 +130,30 @@ class Schema {
     static constexpr datastore::EntityName kDefaultEntityName{"_"};
 
     static constexpr datastore::EntityName kDomainKVSegmentName{"DomainKVSegment"};
+    static constexpr std::string_view kDomainKVSegmentSubDirName{"domain"};
     static constexpr std::string_view kDomainKVSegmentFileExt{".kv"};
     static constexpr datastore::EntityName kDomainAccessorIndexName{"DomainAccessorIndex"};
+    static constexpr std::string_view kDomainAccessorIndexSubDirName{"domain"};
     static constexpr std::string_view kDomainAccessorIndexFileExt{".kvi"};
     static constexpr datastore::EntityName kDomainExistenceIndexName{"DomainExistenceIndex"};
+    static constexpr std::string_view kDomainExistenceIndexSubDirName{"domain"};
     static constexpr std::string_view kDomainExistenceIndexFileExt{".kvei"};
     static constexpr datastore::EntityName kDomainBTreeIndexName{"DomainBTreeIndex"};
+    static constexpr std::string_view kDomainBTreeIndexSubDirName{"domain"};
     static constexpr std::string_view kDomainBTreeIndexFileExt{".bt"};
 
     static constexpr datastore::EntityName kHistorySegmentName{"HistorySegment"};
+    static constexpr std::string_view kHistorySegmentSubDirName{"history"};
     static constexpr std::string_view kHistorySegmentFileExt{".v"};
     static constexpr datastore::EntityName kHistoryAccessorIndexName{"HistoryAccessorIndex"};
+    static constexpr std::string_view kHistoryAccessorIndexSubDirName{"accessor"};
     static constexpr std::string_view kHistoryAccessorIndexFileExt{".vi"};
 
     static constexpr datastore::EntityName kInvIdxKVSegmentName{"InvIdxKVSegment"};
+    static constexpr std::string_view kInvIdxKVSegmentSubDirName{"idx"};
     static constexpr std::string_view kInvIdxKVSegmentFileExt{".ef"};
     static constexpr datastore::EntityName kInvIdxAccessorIndexName{"InvIdxAccessorIndex"};
+    static constexpr std::string_view kInvIdxAccessorIndexSubDirName{"accessor"};
     static constexpr std::string_view kInvIdxAccessorIndexFileExt{".efi"};
 
   private:

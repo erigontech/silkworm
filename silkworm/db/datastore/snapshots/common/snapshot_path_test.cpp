@@ -25,7 +25,7 @@ namespace silkworm::snapshots {
 
 TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
     SECTION("invalid") {
-        const char* invalid_filenames[]{
+        static constexpr std::string_view kInvalidFilenames[]{
             "",
             ".segment",
             ".seg",
@@ -46,46 +46,66 @@ TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
             "v1-014500-015000headers.seg",
             "v1-014500-015000-headers.seg.seg",
         };
-        for (const char* filename : invalid_filenames) {
+        for (const auto& filename : kInvalidFilenames) {
             CHECK_NOTHROW(SnapshotPath::parse(filename) == std::nullopt);
         }
     }
-    SECTION("valid") {
-        struct ValidFilenameExpectation {
-            const char* filename;
-            BlockNumRange block_num_range;
-            std::string tag;
-        };
-        const ValidFilenameExpectation valid_filenames[]{
-            {"v1-014500-015000-headers.seg", {14'500'000, 15'000'000}, "headers"},
-            {"v1-011500-012000-bodies.seg", {11'500'000, 12'000'000}, "bodies"},
-            {"v1-018300-018400-transactions.seg", {18'300'000, 18'400'000}, "transactions"},
-        };
-        for (const auto& filename_expectation : valid_filenames) {
-            const auto snapshot_file = SnapshotPath::parse(filename_expectation.filename);
-            CHECK(snapshot_file != std::nullopt);
-            if (snapshot_file) {
-                CHECK(snapshot_file->path() == filename_expectation.filename);
-                CHECK(snapshot_file->version() == 1);
-                CHECK(snapshot_file->step_range() == StepRange::from_block_num_range(filename_expectation.block_num_range));
-                CHECK(snapshot_file->tag() == filename_expectation.tag);
 
-                const SnapshotPath index_file = snapshot_file->related_path_ext(".idx");
-                CHECK(index_file.path().stem() == snapshot_file->path().stem());
-                CHECK(index_file.path().extension() == ".idx");
-                CHECK(index_file.version() == 1);
-                CHECK(index_file.step_range() == StepRange::from_block_num_range(filename_expectation.block_num_range));
-                CHECK(index_file.tag() == filename_expectation.tag);
-            }
+    SECTION("valid") {
+        struct TestExample {
+            std::string filename;
+            StepRange expected_range;
+            std::string expected_tag;
+        };
+        static const TestExample kExamples[]{
+            {"v1-014500-015000-headers.seg", {Step{14'500}, Step{15'000}}, "headers"},
+            {"v1-011500-012000-bodies.seg", {Step{11'500}, Step{12'000}}, "bodies"},
+            {"v1-018300-018400-transactions.seg", {Step{18'300}, Step{18'400}}, "transactions"},
+            {"v1-018300-018400-transactions-to-block.idx", {Step{18'300}, Step{18'400}}, "transactions-to-block"},
+            {"v1-commitment.0-1024.kv", {Step{0}, Step{1'024}}, "commitment"},
+            {"v1-receipt.64-128.ef", {Step{64}, Step{128}}, "receipt"},
+            {"v1-storage.1672-1673.vi", {Step{1'672}, Step{1'673}}, "storage"},
+        };
+        for (const auto& example : kExamples) {
+            const auto path = SnapshotPath::parse(example.filename);
+            REQUIRE(path);
+            CHECK(path->filename() == example.filename);
+            CHECK(path->version() == 1);
+            CHECK(path->step_range() == example.expected_range);
+            CHECK(path->tag() == example.expected_tag);
         }
+    }
+
+    SECTION("directory-E2") {
+        auto path = SnapshotPath::parse("/snapshots/v1-001000-002000-headers.seg");
+        REQUIRE(path);
+        CHECK(path->base_dir_path() == "/snapshots");
+        CHECK_FALSE(path->sub_dir_name());
+    }
+
+    SECTION("directory-E3") {
+        auto path = SnapshotPath::parse("/snapshots/accessor/v1-storage.5-155.vi", "/snapshots");
+        REQUIRE(path);
+        CHECK(path->base_dir_path() == "/snapshots");
+        CHECK(path->sub_dir_name() == "accessor");
     }
 }
 
-TEST_CASE("SnapshotPath::from", "[silkworm][node][snapshot]") {
-    SECTION("invalid") {
-        CHECK_THROWS_AS(SnapshotPath::make(std::filesystem::path{}, kSnapshotV1, StepRange{Step{1'000}, Step{999}}, "headers", ".seg"),
-                        std::logic_error);
-    }
+TEST_CASE("SnapshotPath::make", "[silkworm][node][snapshot]") {
+    CHECK(
+        SnapshotPath::make(
+            "/snapshots", std::nullopt,
+            SnapshotPath::FilenameFormat::kE2, kSnapshotV1,
+            StepRange{Step{1'000}, Step{2'000}},
+            "headers", ".seg")
+            .path() == "/snapshots/v1-001000-002000-headers.seg");
+    CHECK(
+        SnapshotPath::make(
+            "/snapshots", "accessor",
+            SnapshotPath::FilenameFormat::kE3, kSnapshotV1,
+            StepRange{Step{5}, Step{155}},
+            "storage", ".vi")
+            .path() == "/snapshots/accessor/v1-storage.5-155.vi");
 }
 
 }  // namespace silkworm::snapshots

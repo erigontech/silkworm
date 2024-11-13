@@ -18,9 +18,9 @@
 
 #include <algorithm>
 #include <charconv>
+#include <regex>
 
 #include <absl/strings/str_format.h>
-#include <absl/strings/str_split.h>
 
 #include <silkworm/infra/common/log.hpp>
 
@@ -28,107 +28,139 @@ namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
 
-std::optional<StepRange> SnapshotPath::parse_step_range(const fs::path& path) {
-    const std::string filename_no_ext = path.stem().string();
-
-    // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
-    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, absl::MaxSplits('-', 3));
-    if (tokens.size() != 4) {
-        return std::nullopt;
-    }
-
-    const auto [ver, from, to, tag] = std::tie(tokens[0], tokens[1], tokens[2], tokens[3]);
-
-    // Expected scaled block format: <dddddd>
-    if (from.size() != 6 || to.size() != 6) {
-        return std::nullopt;
-    }
-
-    Step step_from{0};
-    const auto from_result = std::from_chars(from.data(), from.data() + from.size(), step_from.value);
-    if (from_result.ec == std::errc::invalid_argument) {
-        return std::nullopt;
-    }
-
-    Step step_to{0};
-    const auto to_result = std::from_chars(to.data(), to.data() + to.size(), step_to.value);
-    if (to_result.ec == std::errc::invalid_argument) {
-        return std::nullopt;
-    }
-
-    // Expected proper range: [from, to)
-    if (step_to < step_from) {
-        return std::nullopt;
-    }
-
-    return StepRange{step_from, step_to};
+std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
+    auto base_dir = path.parent_path();
+    return parse(std::move(path), base_dir);
 }
 
-std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
-    const std::string filename_no_ext = path.stem().string();
+std::optional<SnapshotPath> SnapshotPath::parse(
+    fs::path path,
+    const fs::path& base_dir) {
+    auto filename = path.filename().string();
 
-    // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
-    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, absl::MaxSplits('-', 3));
-    if (tokens.size() != 4) {
+    // example: v1-009960-009970-transactions-to-block.idx
+    static const std::regex kFilenameRegexE2{R"(v(\d)-(\d{6})-(\d{6})-([\w\-]+)\.\w+)"};
+    // example: v1-commitment.0-1024.kv
+    static const std::regex kFilenameRegexE3{R"(v(\d)-([\w\-]+)\.(\d{1,6})-(\d{1,6})\.\w+)"};
+
+    FilenameFormat filename_format = FilenameFormat::kE2;
+    int step_start = 0;
+    int step_end = 0;
+    std::string tag;
+
+    std::smatch matches;
+    if (std::regex_match(filename, matches, kFilenameRegexE2)) {
+        filename_format = FilenameFormat::kE2;
+        step_start = std::stoi(matches[2]);
+        step_end = std::stoi(matches[3]);
+        tag = matches[4].str();
+    } else if (std::regex_match(filename, matches, kFilenameRegexE3)) {
+        filename_format = FilenameFormat::kE3;
+        step_start = std::stoi(matches[3]);
+        step_end = std::stoi(matches[4]);
+        tag = matches[2].str();
+    } else {
         return std::nullopt;
     }
 
-    const auto [ver, from, to, tag] = std::tie(tokens[0], tokens[1], tokens[2], tokens[3]);
+    uint8_t version = static_cast<uint8_t>(std::stoi(matches[1]));
 
-    // Expected version format: v<x> (hence check length, check first char and parse w/ offset by one)
-    if (ver.empty() || ver[0] != 'v') {
+    if (step_start > step_end) {
+        return std::nullopt;
+    }
+    StepRange step_range{
+        Step{static_cast<size_t>(step_start)},
+        Step{static_cast<size_t>(step_end)},
+    };
+
+    std::optional<std::string> sub_dir_name;
+    if (base_dir == path.parent_path()) {
+        sub_dir_name = std::nullopt;
+    } else if (base_dir == path.parent_path().parent_path()) {
+        sub_dir_name = path.parent_path().filename().string();
+    } else {
         return std::nullopt;
     }
 
-    uint8_t ver_num = 0;
-    const auto ver_result = std::from_chars(ver.data() + 1, ver.data() + ver.size(), ver_num);
-    if (ver_result.ec == std::errc::invalid_argument) {
-        return std::nullopt;
-    }
-
-    auto step_range = parse_step_range(path);
-    if (!step_range) {
-        return std::nullopt;
-    }
-
-    return SnapshotPath{std::move(path), ver_num, *step_range, std::string{tag}};
+    return SnapshotPath{
+        std::move(path),
+        std::move(sub_dir_name),
+        filename_format,
+        version,
+        step_range,
+        std::move(tag),
+    };
 }
 
 SnapshotPath SnapshotPath::make(
-    const fs::path& dir,
+    const fs::path& base_dir,
+    std::optional<std::string> sub_dir_name,
+    FilenameFormat filename_format,
     uint8_t version,
     StepRange step_range,
     std::string tag,
     std::string_view ext) {
-    const auto filename = SnapshotPath::make_filename(version, step_range, tag, ext);
-    return SnapshotPath{dir / filename, version, step_range, std::move(tag)};
+    auto path = base_dir;
+    if (sub_dir_name) {
+        path /= *sub_dir_name;
+    }
+    path /= SnapshotPath::make_filename(filename_format, version, step_range, tag, ext);
+
+    return SnapshotPath{
+        std::move(path),
+        std::move(sub_dir_name),
+        filename_format,
+        version,
+        step_range,
+        std::move(tag),
+    };
 }
 
 fs::path SnapshotPath::make_filename(
+    FilenameFormat format,
     uint8_t version,
     StepRange step_range,
     std::string_view tag,
     std::string_view ext) {
-    std::string filename = absl::StrFormat(
-        "v%d-%06d-%06d-%s%s",
-        version,
-        step_range.start.value,
-        step_range.end.value,
-        tag,
-        ext);
-    return fs::path{filename};
+    switch (format) {
+        case FilenameFormat::kE2:
+            // example: v1-009960-009970-transactions-to-block.idx
+            return absl::StrFormat(
+                "v%d-%06d-%06d-%s%s",
+                version,
+                step_range.start.value,
+                step_range.end.value,
+                tag,
+                ext);
+        case FilenameFormat::kE3:
+            // example: v1-commitment.0-1024.kv
+            return absl::StrFormat(
+                "v%d-%s.%d-%d%s",
+                version,
+                tag,
+                step_range.start.value,
+                step_range.end.value,
+                ext);
+        default:
+            SILKWORM_ASSERT(false);
+            return {};
+    }
 }
 
 SnapshotPath SnapshotPath::related_path(std::string tag, std::string_view ext) const {
-    return SnapshotPath::make(path_.parent_path(), version_, step_range_, std::move(tag), ext);
+    return SnapshotPath::make(base_dir_path(), sub_dir_name_, filename_format_, version_, step_range_, std::move(tag), ext);
 }
 
 SnapshotPath::SnapshotPath(
     fs::path path,
+    std::optional<std::string> sub_dir_name,
+    FilenameFormat filename_format,
     uint8_t version,
     StepRange step_range,
     std::string tag)
     : path_{std::move(path)},
+      sub_dir_name_{std::move(sub_dir_name)},
+      filename_format_{filename_format},
       version_{version},
       step_range_{step_range},
       tag_{std::move(tag)} {

@@ -218,16 +218,16 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
     if (supported_file_extensions.empty()) return {};
 
     std::vector<StepRange> results;
-    for (const auto& file : fs::directory_iterator{dir_path_}) {
+    for (const auto& file : fs::recursive_directory_iterator{dir_path_}) {
         if (!fs::is_regular_file(file.path())) {
             continue;
         }
         if (std::ranges::find(supported_file_extensions, file.path().extension().string()) == supported_file_extensions.end()) {
             continue;
         }
-        const auto range = SnapshotPath::parse_step_range(file.path());
-        if (range) {
-            results.push_back(*range);
+        const auto path = SnapshotPath::parse(file.path(), dir_path_);
+        if (path) {
+            results.push_back(path->step_range());
         }
     }
 

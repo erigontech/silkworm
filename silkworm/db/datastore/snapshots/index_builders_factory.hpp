@@ -27,14 +27,11 @@
 
 namespace silkworm::snapshots {
 
-struct SnapshotBundleFactory {
-    virtual ~SnapshotBundleFactory() = default;
-
-    virtual SnapshotBundle make(const std::filesystem::path& dir_path, StepRange range) const = 0;
-    virtual SnapshotBundlePaths make_paths(const std::filesystem::path& dir_path, StepRange range) const = 0;
+struct IndexBuildersFactory {
+    virtual ~IndexBuildersFactory() = default;
 
     virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPath& segment_path) const = 0;
-    virtual std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& segment_paths) const = 0;
+    std::vector<std::shared_ptr<IndexBuilder>> index_builders(const SnapshotPathList& segment_paths) const;
 
     virtual SnapshotPathList index_dependency_paths(const SnapshotPath& index_path) const = 0;
 };

@@ -30,7 +30,7 @@ SnapshotPath Schema::SnapshotFileDef::make_path(
 
 Schema::EntityDef& Schema::EntityDef::tag_override(std::string_view tag) {
     for (auto& entry : file_defs_) {
-        entry.second.tag(tag);
+        entry.second->tag(tag);
     }
     return *this;
 }
@@ -38,21 +38,21 @@ Schema::EntityDef& Schema::EntityDef::tag_override(std::string_view tag) {
 std::vector<std::string> Schema::EntityDef::file_extensions() const {
     std::set<std::string> results;
     for (const auto& entry : entities())
-        results.insert(entry.second.file_ext());
+        results.insert(entry.second->file_ext());
     return std::vector<std::string>{results.begin(), results.end()};
 }
 
 std::vector<std::string> Schema::RepositoryDef::file_extensions() const {
     std::set<std::string> results;
     for (const auto& entry : entities())
-        for (const auto& file_ext : entry.second.file_extensions())
+        for (const auto& file_ext : entry.second->file_extensions())
             results.insert(file_ext);
     return std::vector<std::string>{results.begin(), results.end()};
 }
 
 std::optional<datastore::EntityName> Schema::EntityDef::entity_name_by_path(const SnapshotPath& path) const {
     for (const auto& [name, def] : entities()) {
-        if (def.make_path(path.base_dir_path(), path.step_range()) == path) {
+        if (def->make_path(path.base_dir_path(), path.step_range()) == path) {
             return name;
         }
     }
@@ -61,7 +61,7 @@ std::optional<datastore::EntityName> Schema::EntityDef::entity_name_by_path(cons
 
 std::optional<std::pair<datastore::EntityName, datastore::EntityName>> Schema::RepositoryDef::entity_name_by_path(const SnapshotPath& path) const {
     for (const auto& [entity_name, def] : entities()) {
-        auto name = def.entity_name_by_path(path);
+        auto name = def->entity_name_by_path(path);
         if (name) {
             return std::make_pair(entity_name, *name);
         }
@@ -76,9 +76,10 @@ static std::string name2tag(datastore::EntityName name) {
     return tag;
 }
 
-Schema::EntityDef Schema::RepositoryDef::make_domain_schema(datastore::EntityName name) {
-    Schema::EntityDef schema;
+Schema::DomainDef Schema::RepositoryDef::make_domain_schema(datastore::EntityName name) {
+    Schema::DomainDef schema;
     schema.kv_segment(kDomainKVSegmentName)
+        .compression_kind(seg::CompressionKind::kNone)
         .sub_dir_name(kDomainKVSegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainKVSegmentFileExt);
@@ -124,6 +125,7 @@ Schema::EntityDef Schema::RepositoryDef::make_inverted_index_schema(datastore::E
 
 void Schema::RepositoryDef::define_inverted_index_schema(datastore::EntityName name, EntityDef& schema) {
     schema.kv_segment(kInvIdxKVSegmentName)
+        .compression_kind(seg::CompressionKind::kNone)
         .sub_dir_name(kInvIdxKVSegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kInvIdxKVSegmentFileExt);

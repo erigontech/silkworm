@@ -22,15 +22,23 @@ namespace silkworm::db::state {
 
 snapshots::Schema::RepositoryDef make_state_repository_schema() {
     snapshots::Schema::RepositoryDef schema;
-    schema.domain(kDomainNameAccounts).tag_override(kDomainAccountsTag);
-    schema.domain(kDomainNameStorage);
-    schema.domain(kDomainNameCode);
-    schema.domain(kDomainNameCommitment);
+
+    schema.domain(kDomainNameAccounts)
+        .tag_override(kDomainAccountsTag);
+    schema.domain(kDomainNameStorage)
+        .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
+    schema.domain(kDomainNameCode)
+        .kv_segment_compression_kind(snapshots::seg::CompressionKind::kValues);
+    schema.domain(kDomainNameCommitment)
+        .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
     schema.domain(kDomainNameReceipts);
-    schema.inverted_index(kInvIdxNameLogAddress).tag_override(kInvIdxLogAddressTag);
+
+    schema.inverted_index(kInvIdxNameLogAddress)
+        .tag_override(kInvIdxLogAddressTag);
     schema.inverted_index(kInvIdxNameLogTopics);
     schema.inverted_index(kInvIdxNameTracesFrom);
     schema.inverted_index(kInvIdxNameTracesTo);
+
     return schema;
 }
 

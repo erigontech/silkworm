@@ -58,10 +58,10 @@ struct BundleDataRef {
     datastore::Domain commitment_domain() const { return {bundle.domain(kDomainNameCommitment)}; }
     datastore::Domain receipts_domain() const { return {bundle.domain(kDomainNameReceipts)}; }
 
-    datastore::InvertedIndex log_address_inv_idx() const { return {bundle.inverted_index(kInvIdxNameLogAddress)}; }
-    datastore::InvertedIndex log_topics_inv_idx() const { return {bundle.inverted_index(kInvIdxNameLogTopics)}; }
-    datastore::InvertedIndex traces_from_inv_idx() const { return {bundle.inverted_index(kInvIdxNameTracesFrom)}; }
-    datastore::InvertedIndex traces_to_inv_idx() const { return {bundle.inverted_index(kInvIdxNameTracesTo)}; }
+    datastore::InvertedIndex log_address_inverted_index() const { return {bundle.inverted_index(kInvIdxNameLogAddress)}; }
+    datastore::InvertedIndex log_topics_inverted_index() const { return {bundle.inverted_index(kInvIdxNameLogTopics)}; }
+    datastore::InvertedIndex traces_from_inverted_index() const { return {bundle.inverted_index(kInvIdxNameTracesFrom)}; }
+    datastore::InvertedIndex traces_to_inverted_index() const { return {bundle.inverted_index(kInvIdxNameTracesTo)}; }
 };
 
 }  // namespace silkworm::db::state

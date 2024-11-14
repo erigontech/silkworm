@@ -86,7 +86,8 @@ class SegmentFileReader {
 
     explicit SegmentFileReader(
         SnapshotPath path,
-        std::optional<MemoryMappedRegion> segment_region = std::nullopt);
+        std::optional<MemoryMappedRegion> segment_region = std::nullopt,
+        bool is_compressed = true);
     ~SegmentFileReader();
 
     SegmentFileReader(SegmentFileReader&&) = default;

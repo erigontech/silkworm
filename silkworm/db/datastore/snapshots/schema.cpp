@@ -107,6 +107,7 @@ Schema::EntityDef Schema::RepositoryDef::make_history_schema(datastore::EntityNa
 
 void Schema::RepositoryDef::define_history_schema(datastore::EntityName name, EntityDef& schema) {
     schema.segment(kHistorySegmentName)
+        .compression_enabled(false)
         .sub_dir_name(kHistorySegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kHistorySegmentFileExt);

@@ -28,6 +28,7 @@ snapshots::Schema::RepositoryDef make_state_repository_schema() {
     schema.domain(kDomainNameStorage)
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
     schema.domain(kDomainNameCode)
+        .history_compression_enabled(true)
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kValues);
     schema.domain(kDomainNameCommitment)
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);

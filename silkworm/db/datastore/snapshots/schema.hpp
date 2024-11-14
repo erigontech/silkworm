@@ -70,6 +70,22 @@ class Schema {
         std::optional<std::string> file_ext_;
     };
 
+    class SegmentDef : public SnapshotFileDef {
+      public:
+        explicit SegmentDef() : SnapshotFileDef{SnapshotFileDef::Format::kSegment} {}
+        ~SegmentDef() override = default;
+
+        SegmentDef& compression_enabled(bool value) {
+            compression_enabled_ = value;
+            return *this;
+        }
+
+        bool compression_enabled() const { return compression_enabled_; }
+
+      private:
+        bool compression_enabled_{true};
+    };
+
     class KVSegmentDef : public SnapshotFileDef {
       public:
         explicit KVSegmentDef() : SnapshotFileDef{SnapshotFileDef::Format::kKVSegment} {}
@@ -90,9 +106,9 @@ class Schema {
       public:
         virtual ~EntityDef() = default;
 
-        SnapshotFileDef& segment(datastore::EntityName name) {
-            file_defs_.try_emplace(name, std::make_shared<SnapshotFileDef>(SnapshotFileDef::Format::kSegment));
-            return *file_defs_.at(name);
+        SegmentDef& segment(datastore::EntityName name) {
+            file_defs_.try_emplace(name, std::make_shared<SegmentDef>());
+            return dynamic_cast<SegmentDef&>(*file_defs_.at(name));
         }
 
         KVSegmentDef& kv_segment(datastore::EntityName name) {
@@ -131,6 +147,11 @@ class Schema {
 
         DomainDef& kv_segment_compression_kind(seg::CompressionKind compression_kind) {
             kv_segment(kDomainKVSegmentName).compression_kind(compression_kind);
+            return *this;
+        }
+
+        DomainDef& history_compression_enabled(bool value) {
+            segment(kHistorySegmentName).compression_enabled(value);
             return *this;
         }
     };

@@ -40,8 +40,11 @@ static std::map<datastore::EntityName, SegmentFileReader> make_segments(
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, SegmentFileReader> results;
-    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kSegment, entity, dir_path, range)) {
-        results.emplace(name, SegmentFileReader{path});
+    for (auto& [name, anyDef] : entity.entities()) {
+        if (anyDef->format() != Schema::SnapshotFileDef::Format::kSegment) continue;
+        auto& def = dynamic_cast<const Schema::SegmentDef&>(*anyDef);
+        auto path = def.make_path(dir_path, range);
+        results.emplace(name, SegmentFileReader{std::move(path), std::nullopt, def.compression_enabled()});
     }
     return results;
 }

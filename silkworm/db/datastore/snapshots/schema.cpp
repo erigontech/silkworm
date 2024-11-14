@@ -118,6 +118,12 @@ void Schema::RepositoryDef::define_history_schema(datastore::EntityName name, En
     define_inverted_index_schema(name, schema);
 }
 
+void Schema::RepositoryDef::undefine_history_schema(EntityDef& schema) {
+    schema.undefine(kHistorySegmentName);
+    schema.undefine(kHistoryAccessorIndexName);
+    undefine_inverted_index_schema(schema);
+}
+
 Schema::EntityDef Schema::RepositoryDef::make_inverted_index_schema(datastore::EntityName name) {
     Schema::EntityDef schema;
     define_inverted_index_schema(name, schema);
@@ -134,6 +140,11 @@ void Schema::RepositoryDef::define_inverted_index_schema(datastore::EntityName n
         .sub_dir_name(kInvIdxAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kInvIdxAccessorIndexFileExt);
+}
+
+void Schema::RepositoryDef::undefine_inverted_index_schema(EntityDef& schema) {
+    schema.undefine(kInvIdxKVSegmentName);
+    schema.undefine(kInvIdxAccessorIndexName);
 }
 
 }  // namespace silkworm::snapshots

@@ -131,6 +131,11 @@ class Schema {
             return *file_defs_.at(name);
         }
 
+        EntityDef& undefine(datastore::EntityName name) {
+            file_defs_.erase(name);
+            return *this;
+        }
+
         EntityDef& tag_override(std::string_view tag);
 
         const std::map<datastore::EntityName, std::shared_ptr<SnapshotFileDef>>& entities() const { return file_defs_; }
@@ -152,6 +157,11 @@ class Schema {
 
         DomainDef& history_compression_enabled(bool value) {
             segment(kHistorySegmentName).compression_enabled(value);
+            return *this;
+        }
+
+        DomainDef& without_history() {
+            RepositoryDef::undefine_history_schema(*this);
             return *this;
         }
     };
@@ -178,11 +188,14 @@ class Schema {
         std::optional<std::pair<datastore::EntityName, datastore::EntityName>> entity_name_by_path(const SnapshotPath& path) const;
 
       private:
+        friend DomainDef;
         static DomainDef make_domain_schema(datastore::EntityName name);
         static EntityDef make_history_schema(datastore::EntityName name);
         static void define_history_schema(datastore::EntityName name, EntityDef& schema);
+        static void undefine_history_schema(EntityDef& schema);
         static EntityDef make_inverted_index_schema(datastore::EntityName name);
         static void define_inverted_index_schema(datastore::EntityName name, EntityDef& schema);
+        static void undefine_inverted_index_schema(EntityDef& schema);
 
         std::map<datastore::EntityName, std::shared_ptr<EntityDef>> entity_defs_;
     };

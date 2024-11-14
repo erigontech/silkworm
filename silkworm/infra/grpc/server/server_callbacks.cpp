@@ -16,10 +16,16 @@
 
 #include "server_callbacks.hpp"
 
+#include <mutex>
+
 namespace silkworm::rpc {
 
+std::once_flag global_callback_flag;
+
 void set_global_callbacks() {
-    grpc::Server::SetGlobalCallbacks(ServerGlobalCallbacks::create());
+    std::call_once(global_callback_flag, []() {
+        grpc::Server::SetGlobalCallbacks(ServerGlobalCallbacks::create());
+    });
 }
 
 }  // namespace silkworm::rpc

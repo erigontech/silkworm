@@ -130,7 +130,7 @@ namespace server {
 
     class CallException : public std::runtime_error {
       public:
-        explicit CallException(grpc::Status&& status)
+        explicit CallException(grpc::Status status)
             : std::runtime_error(status.error_message()), status_(std::move(status)) {}
 
         grpc::Status status() const { return status_; }

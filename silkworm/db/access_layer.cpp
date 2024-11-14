@@ -129,14 +129,14 @@ bool read_header(ROTxn& txn, const evmc::bytes32& hash, BlockNum number, BlockHe
 
 std::vector<BlockHeader> read_headers(ROTxn& txn, BlockNum height) {
     std::vector<BlockHeader> headers;
-    process_headers_at_height(txn, height, [&](BlockHeader&& header) {
+    process_headers_at_height(txn, height, [&](BlockHeader header) {
         headers.emplace_back(std::move(header));
     });
     return headers;
 }
 
 // process headers at specific height
-size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func) {
+size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader)> process_func) {
     auto headers_cursor = txn.ro_cursor(table::kHeaders);
     auto key_prefix{block_key(height)};
 
@@ -1105,7 +1105,7 @@ std::vector<BlockHeader> DataModel::read_sibling_headers(BlockNum block_number) 
     std::vector<BlockHeader> sibling_headers;
 
     // Read all siblings headers at specified height from db
-    process_headers_at_height(txn_, block_number, [&](BlockHeader&& header) {
+    process_headers_at_height(txn_, block_number, [&](BlockHeader header) {
         sibling_headers.push_back(std::move(header));
     });
 
@@ -1193,7 +1193,7 @@ bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& bl
     return read_block_from_snapshot(number, block);
 }
 
-void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
+void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader)> callback) const {
     const bool throw_notfound{false};
 
     // Try to read N headers from the database

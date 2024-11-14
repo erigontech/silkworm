@@ -37,16 +37,26 @@ enum class Level {
 
 //! \brief Holds logging configuration
 struct Settings {
-    bool log_std_out{false};            // Whether console logging goes to std::cout or std::cerr (default)
-    bool log_utc{true};                 // Whether timestamps should be in UTC or imbue local timezone
-    bool log_timezone{true};            // Whether timestamps should include the timezone identifier
-    bool log_nocolor{false};            // Whether to disable colorized output
-    bool log_trim{false};               // Whether to trim log level
-    bool log_threads{false};            // Whether to print thread ids in log lines
-    Level log_verbosity{Level::kInfo};  // Log verbosity level
-    std::string log_file;               // Log to file
-    char log_thousands_sep{'\''};       // Thousands separator
-    bool log_grpc{true};                // Include GRPC library internal logs
+    //! Whether console logging goes to std::cout or std::cerr (default)
+    bool log_std_out{false};
+    //! Whether timestamps should be in UTC or imbue local timezone
+    bool log_utc{true};
+    //! Whether timestamps should include the timezone identifier
+    bool log_timezone{true};
+    //! Whether to disable colorized output
+    bool log_nocolor{false};
+    //! Whether to trim log level
+    bool log_trim{false};
+    //! Whether to print thread ids in log lines
+    bool log_threads{false};
+    //! Log verbosity level
+    Level log_verbosity{Level::kNone};
+    //! Log to file
+    std::string log_file;
+    //! Thousands separator
+    char log_thousands_sep{'\''};
+    //! Include GRPC library internal logs
+    bool log_grpc{true};
 };
 
 //! \brief Initializes logging facilities

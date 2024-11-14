@@ -43,15 +43,16 @@ std::ostream& operator<<(std::ostream& out, const Block& b);
 
 class BlockNumberOrHash {
   public:
-    explicit BlockNumberOrHash(std::string const& bnoh) { build(bnoh); }
+    explicit BlockNumberOrHash(const std::string& bnoh) { build(bnoh); }
     explicit BlockNumberOrHash(BlockNum number) noexcept : value_{number} {}
 
     virtual ~BlockNumberOrHash() noexcept = default;
 
-    BlockNumberOrHash(BlockNumberOrHash&& bnoh) = default;
-    BlockNumberOrHash(BlockNumberOrHash const& bnoh) noexcept = default;
+    BlockNumberOrHash(const BlockNumberOrHash&) noexcept = default;
+    BlockNumberOrHash& operator=(const BlockNumberOrHash&) = default;
 
-    BlockNumberOrHash& operator=(BlockNumberOrHash const& bnoh) = default;
+    BlockNumberOrHash(BlockNumberOrHash&&) = default;
+    BlockNumberOrHash& operator=(BlockNumberOrHash&&) noexcept = default;
 
     bool is_number() const {
         return std::holds_alternative<uint64_t>(value_);

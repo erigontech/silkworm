@@ -24,7 +24,6 @@
 namespace silkworm::db {
 
 TEST_CASE("open_env") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     // Empty dir
     std::string empty{};
     EnvConfig db_config{empty};

@@ -45,7 +45,7 @@ class ExtendingFork {
     ~ExtendingFork();
 
     // opening & closing
-    void start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&&);
+    void start_with(BlockId new_head, std::list<std::shared_ptr<Block>> blocks);
     void close();
 
     // extension

@@ -54,7 +54,7 @@ void ExtendingFork::execution_loop() {
     if (fork_) fork_->close();  // close the fork here, in the same thread where was created to comply to mdbx limitations
 }
 
-void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) {
+void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>> blocks) {
     propagate_exception_if_any();
 
     executor_ = std::make_unique<io_context>();

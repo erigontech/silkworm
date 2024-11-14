@@ -1057,8 +1057,6 @@ static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
 static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};
 

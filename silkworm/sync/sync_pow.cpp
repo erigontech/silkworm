@@ -224,7 +224,7 @@ void PoWSync::send_new_block_hash_announcements() {
 }
 
 // New block announcements propagation
-void PoWSync::send_new_block_announcements(Blocks&& blocks) {
+void PoWSync::send_new_block_announcements(Blocks blocks) {
     if (blocks.empty()) return;
 
     auto message = std::make_shared<OutboundNewBlock>(std::move(blocks), is_first_sync_);

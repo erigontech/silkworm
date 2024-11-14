@@ -39,7 +39,6 @@ using namespace silkworm::db;
 
 using silkworm::execution::api::ValidChain;
 using silkworm::stagedsync::test_util::make_stages_factory;
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
 
 class HeaderChainForTest : public HeaderChain {
@@ -78,8 +77,6 @@ class DummyRuleSet : public protocol::RuleSet {
 };
 
 TEST_CASE("Headers receiving and saving") {
-    SetLogVerbosityGuard log_guard(log::Level::kNone);
-
     TaskRunner runner;
 
     db::test_util::TempChainDataStore context;

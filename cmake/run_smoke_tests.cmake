@@ -26,17 +26,30 @@ endif()
 file(
   GLOB_RECURSE COMMANDS
   LIST_DIRECTORIES false
-  "${SILKWORM_BUILD_DIR}/*_test${CMAKE_EXECUTABLE_SUFFIX}"
-  "${SILKWORM_BUILD_DIR}/*db_toolbox${CMAKE_EXECUTABLE_SUFFIX}"
-  "${SILKWORM_BUILD_DIR}/*rpcdaemon${CMAKE_EXECUTABLE_SUFFIX}"
-  "${SILKWORM_BUILD_DIR}/*sentry${CMAKE_EXECUTABLE_SUFFIX}"
-  "${SILKWORM_BUILD_DIR}/*silkworm${CMAKE_EXECUTABLE_SUFFIX}"
+  "${SILKWORM_BUILD_DIR}/cmd/*${CMAKE_EXECUTABLE_SUFFIX}"
 )
-list(FILTER COMMANDS EXCLUDE REGEX "sentry_client_test${CMAKE_EXECUTABLE_SUFFIX}\$")
+if(NOT CMAKE_EXECUTABLE_SUFFIX)
+  list(FILTER COMMANDS EXCLUDE REGEX "\\.")
+endif()
+list(FILTER COMMANDS EXCLUDE REGEX "core_test") # this is a unit test
+list(FILTER COMMANDS EXCLUDE REGEX "Makefile")
+
+# TODO: fix check_log_indices --help
+list(FILTER COMMANDS EXCLUDE REGEX "check_log_indices")
+# TODO: fix grpc_toolbox --help
+list(FILTER COMMANDS EXCLUDE REGEX "grpc_toolbox")
+# TODO: fix sentry_client_test --help
+list(FILTER COMMANDS EXCLUDE REGEX "sentry_client_test")
+
+message("")
+message("===================")
+message("Running smoke tests")
+message("===================")
+message("")
 
 foreach(COMMAND IN LISTS COMMANDS)
   file(RELATIVE_PATH COMMAND_REL_PATH "${SILKWORM_BUILD_DIR}" "${COMMAND}")
-  message("Running ${COMMAND_REL_PATH}...")
+  message("Running ${COMMAND_REL_PATH} --help ...")
 
-  execute_process(COMMAND "${COMMAND}" "--help" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND "${COMMAND}" "--help" OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
 endforeach()

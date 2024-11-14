@@ -68,6 +68,7 @@ unsigned char v1_000000_000500_bodies_seg_torrent[] = {
     0xb6, 0x2a, 0x85, 0xd4, 0x79, 0x65, 0x65};
 unsigned int v1_000000_000500_bodies_seg_torrent_len = 487;
 
+#ifdef SILKWORM_TEST_SKIP
 TEST_CASE("TorrentFile") {
     SKIP("Needs a valid snapshot file at the kInputFilePath");
     static const std::filesystem::path kInputFilePath{"/erigon-data/snapshots/v1-000000-000500-bodies.seg"};
@@ -84,5 +85,6 @@ TEST_CASE("TorrentFile") {
 
     CHECK(actual.substr(actual_offset) == expected.substr(expected_offset));
 }
+#endif  // SILKWORM_TEST_SKIP
 
 }  // namespace silkworm::snapshots::bittorrent

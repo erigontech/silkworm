@@ -33,7 +33,7 @@ namespace asio = boost::asio;
 
 class PoWSync : public ChainSync, ActiveComponent {
   public:
-    PoWSync(BlockExchange&, execution::api::Client&);
+    PoWSync(IBlockExchange&, execution::api::Client&);
 
     Task<void> async_run() override;
 

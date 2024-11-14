@@ -29,7 +29,7 @@ namespace silkworm::chainsync {
 
 using concurrency::spawn_future_and_wait;
 
-PoWSync::PoWSync(BlockExchange& block_exchange, execution::api::Client& exec_engine)
+PoWSync::PoWSync(IBlockExchange& block_exchange, execution::api::Client& exec_engine)
     : ChainSync(block_exchange, exec_engine) {}
 
 Task<void> PoWSync::async_run() {

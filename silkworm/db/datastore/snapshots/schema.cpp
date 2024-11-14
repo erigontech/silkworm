@@ -86,7 +86,14 @@ Schema::EntityDef Schema::RepositoryDef::make_domain_schema(datastore::EntityNam
         .sub_dir_name(kDomainAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainAccessorIndexFileExt);
-    // TODO: add .kvei and .bt
+    schema.existence_index(kDomainExistenceIndexName)
+        .sub_dir_name(kDomainExistenceIndexSubDirName)
+        .tag(name2tag(name))
+        .file_ext(kDomainExistenceIndexFileExt);
+    schema.btree_index(kDomainBTreeIndexName)
+        .sub_dir_name(kDomainBTreeIndexSubDirName)
+        .tag(name2tag(name))
+        .file_ext(kDomainBTreeIndexFileExt);
     define_history_schema(name, schema);
     return schema;
 }

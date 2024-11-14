@@ -33,6 +33,8 @@ class Schema {
             kSegment,
             kKVSegment,
             kRecSplitIndex,
+            kExistenceIndex,
+            kBTreeIndex,
         };
 
         SnapshotFileDef& format(Format format) {
@@ -81,6 +83,14 @@ class Schema {
 
         SnapshotFileDef& rec_split_index(datastore::EntityName name) {
             return file_defs_[name].format(SnapshotFileDef::Format::kRecSplitIndex);
+        }
+
+        SnapshotFileDef& existence_index(datastore::EntityName name) {
+            return file_defs_[name].format(SnapshotFileDef::Format::kExistenceIndex);
+        }
+
+        SnapshotFileDef& btree_index(datastore::EntityName name) {
+            return file_defs_[name].format(SnapshotFileDef::Format::kBTreeIndex);
         }
 
         EntityDef& tag_override(std::string_view tag);

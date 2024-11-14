@@ -21,6 +21,8 @@
 #include <functional>
 #include <vector>
 
+#include "bloom_filter/bloom_filter.hpp"
+#include "btree/btree_index.hpp"
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "domain.hpp"
@@ -37,6 +39,8 @@ struct SnapshotBundleEntityData {
     std::map<datastore::EntityName, SegmentFileReader> segments;
     std::map<datastore::EntityName, KVSegmentFileReader> kv_segments;
     std::map<datastore::EntityName, Index> rec_split_indexes;
+    std::map<datastore::EntityName, bloom_filter::BloomFilter> existence_indexes;
+    std::map<datastore::EntityName, btree::BTreeIndex> btree_indexes;
 };
 
 struct SnapshotBundleData {

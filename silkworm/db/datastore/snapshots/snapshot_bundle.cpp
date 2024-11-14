@@ -68,6 +68,32 @@ std::map<datastore::EntityName, Index> make_rec_split_indexes(
     return results;
 }
 
+std::map<datastore::EntityName, bloom_filter::BloomFilter> make_existence_indexes(
+    const Schema::EntityDef& entity,
+    const std::filesystem::path& dir_path,
+    StepRange range) {
+    std::map<datastore::EntityName, bloom_filter::BloomFilter> results;
+    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kExistenceIndex, entity, dir_path, range)) {
+        SILK_TRACE << "make_existence_indexes opens " << name.to_string() << " at " << path.filename();
+        // TODO: wait for RAII refactoring
+        // results.emplace(name, bloom_filter::BloomFilter{path.path()});
+    }
+    return results;
+}
+
+std::map<datastore::EntityName, btree::BTreeIndex> make_btree_indexes(
+    const Schema::EntityDef& entity,
+    const std::filesystem::path& dir_path,
+    StepRange range) {
+    std::map<datastore::EntityName, btree::BTreeIndex> results;
+    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kBTreeIndex, entity, dir_path, range)) {
+        SILK_TRACE << "make_btree_indexes opens " << name.to_string() << " at " << path.filename();
+        // TODO: refactor to not require Decompressor, wait for RAII refactoring
+        // results.emplace(name, btree::BTreeIndex{?, path.path()});
+    }
+    return results;
+}
+
 SnapshotBundleData make_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
@@ -80,6 +106,8 @@ SnapshotBundleData make_bundle_data(
                 make_segments(entity_schema, dir_path, step_range),
                 make_kv_segments(entity_schema, dir_path, step_range),
                 make_rec_split_indexes(entity_schema, dir_path, step_range),
+                make_existence_indexes(entity_schema, dir_path, step_range),
+                make_btree_indexes(entity_schema, dir_path, step_range),
             });
     };
     return data;

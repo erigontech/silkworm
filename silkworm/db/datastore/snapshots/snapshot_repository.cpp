@@ -96,7 +96,7 @@ Step SnapshotRepository::max_end_step() const {
 }
 
 std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(
-    std::pair<datastore::EntityName, datastore::EntityName> names,
+    std::array<datastore::EntityName, 3> names,
     Timestamp t) const {
     auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
     if (bundle) {

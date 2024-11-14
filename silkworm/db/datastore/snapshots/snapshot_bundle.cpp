@@ -169,12 +169,16 @@ void SnapshotBundle::close() {
     }
 }
 
-const SegmentFileReader& SnapshotBundle::segment(datastore::EntityName name) const {
-    return data_.entities.at(Schema::kDefaultEntityName).segments.at(name);
+const SegmentFileReader& SnapshotBundle::segment(
+    datastore::EntityName entity_name,
+    datastore::EntityName segment_name) const {
+    return data_.entities.at(entity_name).segments.at(segment_name);
 }
 
-const Index& SnapshotBundle::rec_split_index(datastore::EntityName name) const {
-    return data_.entities.at(Schema::kDefaultEntityName).rec_split_indexes.at(name);
+const Index& SnapshotBundle::rec_split_index(
+    datastore::EntityName entity_name,
+    datastore::EntityName index_name) const {
+    return data_.entities.at(entity_name).rec_split_indexes.at(index_name);
 }
 
 Domain SnapshotBundle::domain(datastore::EntityName name) const {

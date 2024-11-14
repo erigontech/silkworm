@@ -107,7 +107,7 @@ class SnapshotRepository {
     }
 
     std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
-        std::pair<datastore::EntityName, datastore::EntityName> names,
+        std::array<datastore::EntityName, 3> names,
         Timestamp t) const;
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;
 

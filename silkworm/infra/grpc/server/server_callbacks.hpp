@@ -41,11 +41,11 @@ class ServerGlobalCallbacks {
         Callbacks() = default;
         ~Callbacks() override = default;
 
-        void PreSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
-        void PostSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
+        void PreSynchronousRequest(grpc::ServerContext*) override{};
+        void PostSynchronousRequest(grpc::ServerContext*) override{};
 
-        void AddPort([[maybe_unused]] grpc::Server* server, const std::string& addr,
-                     [[maybe_unused]] grpc::ServerCredentials* creds, int port) override {
+        void AddPort(grpc::Server*, const std::string& addr,
+                     grpc::ServerCredentials*, int port) override {
             if (port != 0) {
                 SILK_TRACE << "Successfully bound server to address: " << addr << " on port: " << port;
             } else {

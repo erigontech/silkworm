@@ -31,6 +31,8 @@
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/infra/grpc/server/server_settings.hpp>
 
+#include "silkworm/infra/grpc/server/server_callbacks.hpp"
+
 namespace silkworm::rpc {
 
 //! Base RPC server able to serve incoming requests for gRPC \ref AsyncService instances.
@@ -78,10 +80,16 @@ class Server {
         register_async_services(builder);
 
         server_ = builder.BuildAndStart();
-        SILK_TRACE << "Server " << this << " bound at selected port: " << selected_port;
+
         if (server_ == nullptr) {
+            std::string error_msg = "cannot start gRPC server at " + settings_.address_uri;
+
+            if (ServerGlobalCallbacks::check_and_clear_bad_port_error()) {
+                error_msg += " (port already in use)";
+            }
+
             SILK_ERROR << "Server " << this << " BuildAndStart failed [" << settings_.address_uri << "]";
-            throw std::runtime_error("cannot start gRPC server at " + settings_.address_uri);
+            throw std::runtime_error(error_msg);
         }
 
         // gRPC async model requires the server to register one request call for each RPC in advance.
@@ -173,6 +181,9 @@ class Server {
 
     //! The gRPC server instance tied to this Server lifetime.
     std::unique_ptr<grpc::Server> server_;
+
+    //! The global callbacks are shared between all instances of Servers
+    static inline const ServerGlobalCallbacks kGlobalCallbacks;
 
     //! Pool of server schedulers used to run the execution loops.
     std::unique_ptr<ServerContextPool> context_pool_;

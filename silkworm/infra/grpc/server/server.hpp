@@ -84,9 +84,8 @@ class Server {
         if (server_ == nullptr) {
             std::string error_msg = "cannot start gRPC server at " + settings_.address_uri;
 
-            if (ServerGlobalCallbacks::bad_port_error.load(std::memory_order_acquire)) {
+            if (ServerGlobalCallbacks::check_and_clear_bad_port_error()) {
                 error_msg += " (port already in use)";
-                ServerGlobalCallbacks::bad_port_error.store(false, std::memory_order_release);
             }
 
             SILK_ERROR << "Server " << this << " BuildAndStart failed [" << settings_.address_uri << "]";

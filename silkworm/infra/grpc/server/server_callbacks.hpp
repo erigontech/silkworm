@@ -27,8 +27,6 @@ namespace silkworm::rpc {
 
 class ServerGlobalCallbacks {
   public:
-    static inline std::atomic<bool> bad_port_error{false};
-
     ServerGlobalCallbacks() {
         // NOTE: Despite its documentation, SetGlobalCallbacks() does take the ownership
         // of the object pointer. So we just "new" and let underlying GRPC manage its lifetime.
@@ -38,7 +36,12 @@ class ServerGlobalCallbacks {
         });
     }
 
+    static bool check_and_clear_bad_port_error() {
+        return bad_port_error.exchange(false);
+    }
+
   private:
+    static inline std::atomic<bool> bad_port_error{false};
     class Callbacks final : public grpc::Server::GlobalCallbacks {
       public:
         Callbacks() = default;

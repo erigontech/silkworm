@@ -5,7 +5,9 @@ if [ "$#" -ne 3 ]; then
   exit 1
 fi
 
+# TODO: why is this disabled?
 set +e # Disable exit on error
+set -o pipefail
 
 cd "$1" || exit 1
 rm -rf ./mainnet/results/

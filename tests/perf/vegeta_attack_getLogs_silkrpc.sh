@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 RATE=${1:-200}
 DURATION=${2:-30}
 TIMEOUT=${3:-300}

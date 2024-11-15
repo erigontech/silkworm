@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 case $(uname -s) in
 	Linux)
 		nproc

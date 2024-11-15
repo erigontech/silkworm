@@ -22,13 +22,9 @@
 
 namespace silkworm::rpc {
 
-class ServerGlobalCallbacks : public grpc::Server::GlobalCallbacks {
+class ServerGlobalCallbacks final : public grpc::Server::GlobalCallbacks {
   public:
-    static ServerGlobalCallbacks* create() {
-        static ServerGlobalCallbacks instance;
-        return &instance;
-    }
-
+    ServerGlobalCallbacks() = default;
     ~ServerGlobalCallbacks() override = default;
 
     void PreSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
@@ -43,11 +39,17 @@ class ServerGlobalCallbacks : public grpc::Server::GlobalCallbacks {
                        << ". Port is already in use.";
         }
     }
-
-  protected:
-    ServerGlobalCallbacks() = default;
 };
 
-void set_global_callbacks();
+// NOTE: Despite its documentation, SetGlobalCallbacks() does take the ownership
+// of the object pointer. So we just "new" and let underlying GRPC manage its lifetime.
+struct GlobalCallbacksWrapper {
+    GlobalCallbacksWrapper() {
+        static std::once_flag callback_flag;
+        std::call_once(callback_flag, []() {
+            grpc::Server::SetGlobalCallbacks(new ServerGlobalCallbacks());
+        });
+    }
+};
 
 }  // namespace silkworm::rpc

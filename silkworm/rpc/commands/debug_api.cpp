@@ -48,7 +48,8 @@
 
 namespace silkworm::rpc::commands {
 
-static constexpr int16_t kAccountRangeMaxResults{256};
+static constexpr int16_t kAccountRangeMaxResults{8192};
+static constexpr int16_t kAccountRangeMaxResultsWithStorage{256};
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_accountrange
 Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply) {
@@ -68,8 +69,15 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     silkworm::Bytes start_key(start_key_array.data(), start_key_array.size());
     const auto start_address = bytes_to_address(start_key);
 
-    if (max_result > kAccountRangeMaxResults || max_result <= 0) {
-        max_result = kAccountRangeMaxResults;
+    // Determine how many results we will dump
+    if (exclude_storage) {
+        if (max_result > kAccountRangeMaxResults || max_result <= 0) {
+            max_result = kAccountRangeMaxResults;
+        }
+    } else {
+        if (max_result > kAccountRangeMaxResultsWithStorage || max_result <= 0) {
+            max_result = kAccountRangeMaxResultsWithStorage;
+        }
     }
 
     SILK_TRACE << "block_number_or_hash: " << block_number_or_hash
@@ -228,9 +236,6 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-
-        auto block_number = block_with_hash->block.header.number - 1;
-
         nlohmann::json storage({});
         silkworm::Bytes next_key;
         std::uint16_t count{0};
@@ -251,8 +256,12 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
 
             return count++ < max_result;
         };
+
+        const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
+        const auto from_tx_num = min_tx_num + tx_index + 1;  // for system txn in the beginning of block
+
         StorageWalker storage_walker{*tx};
-        co_await storage_walker.storage_range_at(block_number, address, start_key, max_result, collector);
+        co_await storage_walker.storage_range_at(from_tx_num, address, start_key, collector);
 
         nlohmann::json result = {{"storage", storage}};
         if (next_key.empty()) {

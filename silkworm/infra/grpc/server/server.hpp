@@ -66,9 +66,6 @@ class Server {
 
         grpc::ServerBuilder builder;
 
-        // Set server callbacks to check for port already in use
-        SILK_TRACE << "Server " << this << " setting gRPC server callbacks";
-
         // Disable SO_REUSEPORT socket option to obtain "address already in use" on Windows.
         builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
 
@@ -179,8 +176,8 @@ class Server {
     //! The gRPC server instance tied to this Server lifetime.
     std::unique_ptr<grpc::Server> server_;
 
-    //! The global callbacks setup
-    inline static GlobalCallbacksWrapper global_callbacks{};
+    //! The global callbacks are shared between all instances of Servers
+    inline static ServerGlobalCallbacks global_callbacks_{};
 
     //! Pool of server schedulers used to run the execution loops.
     std::unique_ptr<ServerContextPool> context_pool_;

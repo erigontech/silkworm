@@ -16,40 +16,44 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc {
 
-class ServerGlobalCallbacks final : public grpc::Server::GlobalCallbacks {
+class ServerGlobalCallbacks {
   public:
-    ServerGlobalCallbacks() = default;
-    ~ServerGlobalCallbacks() override = default;
-
-    void PreSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
-    void PostSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
-
-    void AddPort([[maybe_unused]] grpc::Server* server, const std::string& addr,
-                 [[maybe_unused]] grpc::ServerCredentials* creds, int port) override {
-        if (port != 0) {
-            SILK_TRACE << "Successfully bound server to address: " << addr << " on port: " << port;
-        } else {
-            SILK_ERROR << "Failed to bind server to address " << addr
-                       << ". Port is already in use.";
-        }
-    }
-};
-
-// NOTE: Despite its documentation, SetGlobalCallbacks() does take the ownership
-// of the object pointer. So we just "new" and let underlying GRPC manage its lifetime.
-struct GlobalCallbacksWrapper {
-    GlobalCallbacksWrapper() {
-        static std::once_flag callback_flag;
-        std::call_once(callback_flag, []() {
-            grpc::Server::SetGlobalCallbacks(new ServerGlobalCallbacks());
+    ServerGlobalCallbacks() {
+        // NOTE: Despite its documentation, SetGlobalCallbacks() does take the ownership
+        // of the object pointer. So we just "new" and let underlying GRPC manage its lifetime.
+        static std::once_flag callback_init_flag;
+        std::call_once(callback_init_flag, []() {
+            grpc::Server::SetGlobalCallbacks(new Callbacks());
         });
     }
+
+  private:
+    class Callbacks final : public grpc::Server::GlobalCallbacks {
+      public:
+        Callbacks() = default;
+        ~Callbacks() override = default;
+
+        void PreSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
+        void PostSynchronousRequest([[maybe_unused]] grpc::ServerContext* context) override{};
+
+        void AddPort([[maybe_unused]] grpc::Server* server, const std::string& addr,
+                     [[maybe_unused]] grpc::ServerCredentials* creds, int port) override {
+            if (port != 0) {
+                SILK_TRACE << "Successfully bound server to address: " << addr << " on port: " << port;
+            } else {
+                SILK_ERROR << "Failed to bind server to address " << addr
+                           << ". Port is already in use.";
+            }
+        }
+    };
 };
 
 }  // namespace silkworm::rpc

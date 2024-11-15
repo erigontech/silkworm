@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <mutex>
 
 #include <grpcpp/grpcpp.h>
@@ -26,6 +27,8 @@ namespace silkworm::rpc {
 
 class ServerGlobalCallbacks {
   public:
+    static inline std::atomic<bool> bad_port_error{false};
+
     ServerGlobalCallbacks() {
         // NOTE: Despite its documentation, SetGlobalCallbacks() does take the ownership
         // of the object pointer. So we just "new" and let underlying GRPC manage its lifetime.
@@ -44,13 +47,10 @@ class ServerGlobalCallbacks {
         void PreSynchronousRequest(grpc::ServerContext*) override{};
         void PostSynchronousRequest(grpc::ServerContext*) override{};
 
-        void AddPort(grpc::Server*, const std::string& addr,
+        void AddPort(grpc::Server*, const std::string&,
                      grpc::ServerCredentials*, int port) override {
-            if (port != 0) {
-                SILK_TRACE << "Successfully bound server to address: " << addr << " on port: " << port;
-            } else {
-                SILK_ERROR << "Failed to bind server to address " << addr
-                           << ". Port is already in use.";
+            if (port == 0) {
+                ServerGlobalCallbacks::bad_port_error.store(true, std::memory_order_release);
             }
         }
     };

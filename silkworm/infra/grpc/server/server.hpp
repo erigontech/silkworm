@@ -80,10 +80,17 @@ class Server {
         register_async_services(builder);
 
         server_ = builder.BuildAndStart();
-        SILK_TRACE << "Server " << this << " bound at selected port: " << selected_port;
+
         if (server_ == nullptr) {
+            std::string error_msg = "cannot start gRPC server at " + settings_.address_uri;
+
+            if (ServerGlobalCallbacks::bad_port_error.load(std::memory_order_acquire)) {
+                error_msg += " (port already in use)";
+                ServerGlobalCallbacks::bad_port_error.store(false, std::memory_order_release);
+            }
+
             SILK_ERROR << "Server " << this << " BuildAndStart failed [" << settings_.address_uri << "]";
-            throw std::runtime_error("cannot start gRPC server at " + settings_.address_uri);
+            throw std::runtime_error(error_msg);
         }
 
         // gRPC async model requires the server to register one request call for each RPC in advance.

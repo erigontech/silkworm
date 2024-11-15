@@ -177,7 +177,7 @@ class Server {
     std::unique_ptr<grpc::Server> server_;
 
     //! The global callbacks are shared between all instances of Servers
-    inline static ServerGlobalCallbacks global_callbacks_{};
+    static inline const ServerGlobalCallbacks kGlobalCallbacks;
 
     //! Pool of server schedulers used to run the execution loops.
     std::unique_ptr<ServerContextPool> context_pool_;

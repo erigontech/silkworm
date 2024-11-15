@@ -26,14 +26,6 @@ using namespace evmc::literals;
 
 namespace silkworm {
 
-TEST_CASE("test1") {
-    CHECK(false);
-}
-
-TEST_CASE("test2") {
-    abort();
-}
-
 TEST_CASE("Known configs") {
     static_assert(kKnownChainConfigs.size() == kKnownChainNameToId.size());
     for (const auto& [_, id] : kKnownChainNameToId) {

@@ -212,7 +212,7 @@ Task<void> StorageWalker::storage_range_at(
         const auto key = value->first.substr(20);
         auto hash = hash_of(key);
         const auto sec_key = ByteView{hash.bytes};
-        if (collector(key, sec_key, value->second) == false)
+        if (!collector(key, sec_key, value->second))
             co_return;
     }
     co_return;

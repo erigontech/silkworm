@@ -190,13 +190,13 @@ inline constexpr int kMaxPageSize = 25;
 
 class OtsRpcApi {
   public:
-    OtsRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
-        : io_context_(io_context),
+    OtsRpcApi(boost::asio::io_context& ioc, WorkerPool& workers)
+        : ioc_{ioc},
           workers_{workers},
-          database_(must_use_private_service<ethdb::Database>(io_context_)),
-          state_cache_(must_use_shared_service<StateCache>(io_context_)),
-          block_cache_(must_use_shared_service<BlockCache>(io_context_)),
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
+          database_(must_use_private_service<ethdb::Database>(ioc_)),
+          state_cache_(must_use_shared_service<StateCache>(ioc_)),
+          block_cache_(must_use_shared_service<BlockCache>(ioc_)),
+          backend_{must_use_private_service<ethbackend::BackEnd>(ioc_)} {}
 
     virtual ~OtsRpcApi() = default;
 
@@ -218,7 +218,7 @@ class OtsRpcApi {
     Task<void> handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply);
 
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioc_;
     WorkerPool& workers_;
     ethdb::Database* database_;
     StateCache* state_cache_;

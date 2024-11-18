@@ -41,7 +41,7 @@ using testing::Unused;
 
 struct RemoteStateTest : public silkworm::test_util::ContextTestBase {
     db::test_util::MockTransaction transaction;
-    boost::asio::any_io_executor current_executor{io_context_.get_executor()};
+    boost::asio::any_io_executor current_executor{ioc_.get_executor()};
     db::test_util::MockChainStorage chain_storage;
 };
 
@@ -90,14 +90,14 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState state(current_executor, transaction, chain_storage, block_number);
         const auto code_read = state.read_code(address, code_hash);
         CHECK(code_read.empty());
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("read_storage with empty response from db") {
@@ -110,14 +110,14 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto storage_read = remote_state.read_storage(address, 0, location);
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("read_account with empty response from db") {
@@ -130,17 +130,17 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto account_read = remote_state.read_account(address);
         CHECK(account_read == std::nullopt);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("read_header with empty response from chain storage") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         EXPECT_CALL(chain_storage, read_header(block_number, block_hash))
@@ -148,12 +148,12 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto header_read = remote_state.read_header(block_number, block_hash);
         CHECK(header_read == std::nullopt);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("read_body with empty response from from chain storage") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         BlockBody body;
@@ -163,12 +163,12 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         const auto success = remote_state.read_body(block_number, block_hash, body);
         CHECK(success);
         CHECK(body == BlockBody{});
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("total_difficulty with empty response from db") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
@@ -176,69 +176,69 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             .WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<intx::uint256>> { co_return std::nullopt; }));
         const auto total_difficulty = remote_state.total_difficulty(block_number, block_hash);
         CHECK(total_difficulty == std::nullopt);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("previous_incarnation returns ok") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         const auto prev_incarnation = remote_state.previous_incarnation(address);
         CHECK(prev_incarnation == 0);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("current_canonical_block throws not implemented") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         CHECK_THROWS_AS(remote_state.current_canonical_block(), std::logic_error);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("canonical_hash throws not implemented") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         CHECK_THROWS_AS(remote_state.canonical_hash(block_number), std::logic_error);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     SECTION("state_root_hash throws not implemented") {
-        std::thread io_context_thread{[&]() { io_context_.run(); }};
+        std::thread ioc_thread{[&]() { ioc_.run(); }};
         const BlockNum block_number = 1'000'000;
         RemoteState remote_state(current_executor, transaction, chain_storage, block_number);
         CHECK_THROWS_AS(remote_state.state_root_hash(), std::logic_error);
-        io_context_.stop();
-        io_context_thread.join();
+        ioc_.stop();
+        ioc_thread.join();
     }
 
     /*
         SECTION("read_code with exception") {
-            boost::asio::io_context io_context;
-            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
-            std::thread io_context_thread{[&io_context]() { io_context.run(); }};
+            boost::asio::io_context ioc;
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{ioc.get_executor()};
+            std::thread ioc_thread{[&ioc]() { ioc.run(); }};
 
             Bytes code{*from_hex("0x0608")};
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
             const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
-            RemoteState remote_state(io_context, transaction, storage, block_number);
+            RemoteState remote_state(ioc, transaction, storage, block_number);
             auto ret_code = remote_state.read_code(code_hash);
             CHECK(ret_code == ByteView{});
-            io_context.stop();
-            io_context_thread.join();
+            ioc.stop();
+            ioc_thread.join();
         }
 
         SECTION("read_storage with exception") {
-            boost::asio::io_context io_context;
-            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
-            std::thread io_context_thread{[&io_context]() { io_context.run(); }};
+            boost::asio::io_context ioc;
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{ioc.get_executor()};
+            std::thread ioc_thread{[&ioc]() { ioc.run(); }};
 
             Bytes storage{*from_hex("0x0608")};
             test::MockTransaction transaction; + EXPECT_CALL
@@ -246,27 +246,27 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
             const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
             const RemoteChainStorage storage{transaction, backend.get()};
-            RemoteState remote_state(io_context, transaction, storage, block_number);
+            RemoteState remote_state(ioc, transaction, storage, block_number);
             auto ret_storage = remote_state.read_storage(address, 0, location);
             CHECK(ret_storage == evmc::bytes32{});
-            io_context.stop();
-            io_context_thread.join();
+            ioc.stop();
+            ioc_thread.join();
         }
 
         SECTION("read_account with exception") {
-            boost::asio::io_context io_context;
-            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
-            std::thread io_context_thread{[&io_context]() { io_context.run(); }};
+            boost::asio::io_context ioc;
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{ioc.get_executor()};
+            std::thread ioc_thread{[&ioc]() { ioc.run(); }};
 
             test::MockTransaction transaction; + EXPECT_CALL
             const BlockNum block_number = 1'000'000;
             evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
             const RemoteChainStorage storage{transaction, backend.get()};
-            RemoteState remote_state(io_context, transaction, storage, block_number);
+            RemoteState remote_state(ioc, transaction, storage, block_number);
             auto account = remote_state.read_account(address);
             CHECK(account == std::nullopt);
-            io_context.stop();
-            io_context_thread.join();
+            ioc.stop();
+            ioc_thread.join();
         }
     */
 

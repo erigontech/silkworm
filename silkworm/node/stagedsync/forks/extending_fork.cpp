@@ -48,22 +48,22 @@ BlockId ExtendingFork::current_head() const {
 }
 
 void ExtendingFork::execution_loop() {
-    if (!executor_) return;
-    executor_work_guard<decltype(executor_->get_executor())> work{executor_->get_executor()};
-    executor_->run();
+    if (!ioc_) return;
+    executor_work_guard<decltype(ioc_->get_executor())> work{ioc_->get_executor()};
+    ioc_->run();
     if (fork_) fork_->close();  // close the fork here, in the same thread where was created to comply to mdbx limitations
 }
 
 void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>> blocks) {
     propagate_exception_if_any();
 
-    executor_ = std::make_unique<io_context>();
+    ioc_ = std::make_unique<io_context>();
     thread_ = std::thread{[this]() { execution_loop(); }};
 
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
                                // insertion and head computation is delayed but find_fork_by_head() is called immediately
 
-    post(*executor_, [this, new_head, blocks_ = std::move(blocks)]() {  // note: this requires a "stable" this pointer
+    post(*ioc_, [this, new_head, blocks_ = std::move(blocks)]() {  // note: this requires a "stable" this pointer
         try {
             if (exception_) return;
             // create the real fork
@@ -84,7 +84,7 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
 
 void ExtendingFork::close() {
     propagate_exception_if_any();
-    if (executor_) executor_->stop();
+    if (ioc_) ioc_->stop();
     if (thread_.joinable()) thread_.join();
 }
 
@@ -93,7 +93,7 @@ void ExtendingFork::extend_with(Hash head_hash, const Block& head) {
 
     current_head_ = {head.header.number, head_hash};  // setting this here is important, same as above
 
-    post(*executor_, [this, head]() {
+    post(*ioc_, [this, head]() {
         try {
             if (exception_) return;
             fork_->extend_with(head);
@@ -111,7 +111,7 @@ ExtendingFork::VerificationResultFuture ExtendingFork::verify_chain() {
     concurrency::AwaitablePromise<VerificationResult> promise{external_executor_};  // note: promise uses an external io_context
     auto awaitable_future = promise.get_future();
 
-    post(*executor_, [this, promise_ = std::move(promise)]() mutable {
+    post(*ioc_, [this, promise_ = std::move(promise)]() mutable {
         try {
             if (exception_) return;
             auto result = fork_->verify_chain();
@@ -133,7 +133,7 @@ concurrency::AwaitableFuture<bool> ExtendingFork::fork_choice(Hash head_block_ha
     concurrency::AwaitablePromise<bool> promise{external_executor_};  // note: promise uses an external io_context
     auto awaitable_future = promise.get_future();
 
-    post(*executor_, [this, promise_ = std::move(promise), head_block_hash, finalized_block_hash, safe_block_hash]() mutable {
+    post(*ioc_, [this, promise_ = std::move(promise), head_block_hash, finalized_block_hash, safe_block_hash]() mutable {
         try {
             if (exception_) return;
             auto updated = fork_->fork_choice(head_block_hash, finalized_block_hash, safe_block_hash);

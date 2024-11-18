@@ -29,7 +29,7 @@ class JsonApiTestBase : public ServiceContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        JsonApi api{io_context_};
+        JsonApi api{ioc_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 };
@@ -41,7 +41,7 @@ class JsonApiWithWorkersTestBase : public ServiceContextTestBase {
 
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        JsonApi api{io_context_, workers_};
+        JsonApi api{ioc_, workers_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 
@@ -54,7 +54,7 @@ class GrpcApiTestBase : public ServiceContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        GrpcApi api{io_context_.get_executor(), std::move(stub_), grpc_context_};
+        GrpcApi api{ioc_.get_executor(), std::move(stub_), grpc_context_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 

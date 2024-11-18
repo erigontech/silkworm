@@ -86,7 +86,7 @@ class NodeImpl final {
     db::DataStore data_store_;
 
     //! The execution layer server engine
-    boost::asio::io_context execution_context_;
+    boost::asio::io_context execution_ioc_;
     stagedsync::ExecutionEngine execution_engine_;
     std::shared_ptr<execution::api::ActiveDirectService> execution_service_;
     execution::grpc::server::Server execution_server_;
@@ -192,14 +192,14 @@ NodeImpl::NodeImpl(
           settings_.snapshot_settings.repository_path,
       },
       execution_engine_{
-          execution_context_.get_executor(),
+          execution_ioc_.get_executor(),
           settings_.node_settings,
           data_model_factory(),
           make_log_timer_factory(context_pool.any_executor(), settings_.node_settings.sync_loop_log_interval_seconds),
           make_stages_factory(settings_.node_settings, data_model_factory(), *this),
           data_store_.chaindata_rw(),
       },
-      execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_context_)},
+      execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_ioc_)},
       execution_server_{make_execution_server_settings(settings_.node_settings.exec_api_address), execution_service_},
       execution_direct_client_{execution_service_},
       snapshot_sync_{

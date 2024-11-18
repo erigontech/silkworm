@@ -33,8 +33,8 @@ Stage::Result TriggersStage::forward(db::RWTxn& tx) {
         current_tx_ = nullptr;
     });
 
-    io_context_.restart();
-    io_context_.run();
+    ioc_.restart();
+    ioc_.run();
 
     return Stage::Result::kSuccess;
 }
@@ -46,11 +46,11 @@ Task<void> TriggersStage::schedule(std::function<void(db::RWTxn&)> callback) {
         c(*tx);
         co_return;
     };
-    return concurrency::spawn_task(io_context_, task_caller());
+    return concurrency::spawn_task(ioc_, task_caller());
 }
 
 bool TriggersStage::stop() {
-    io_context_.stop();
+    ioc_.stop();
     return Stage::stop();
 }
 

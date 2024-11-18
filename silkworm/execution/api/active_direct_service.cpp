@@ -20,20 +20,20 @@
 
 namespace silkworm::execution::api {
 
-ActiveDirectService::ActiveDirectService(ExecutionEngine& exec_engine, boost::asio::io_context& context)
-    : DirectService{exec_engine}, context_{context}, executor_{context_.get_executor()} {}
+ActiveDirectService::ActiveDirectService(ExecutionEngine& exec_engine, boost::asio::io_context& ioc)
+    : DirectService{exec_engine}, ioc_{ioc}, executor_{ioc_.get_executor()} {}
 
 void ActiveDirectService::execution_loop() {
     exec_engine_.open();
 
     boost::asio::executor_work_guard<decltype(executor_)> work{executor_};
-    context_.run();
+    ioc_.run();
 
     exec_engine_.close();
 }
 
 bool ActiveDirectService::stop() {
-    context_.stop();
+    ioc_.stop();
     return ActiveComponent::stop();
 }
 

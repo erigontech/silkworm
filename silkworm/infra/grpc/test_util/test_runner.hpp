@@ -47,13 +47,13 @@ class TestRunner : public TaskRunner {
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> grpc_context_work_;
     std::unique_ptr<Stub> stub_{std::make_unique<Stub>()};
 
-    void restart_context() override {
-        TaskRunner::restart_context();
+    void restart_ioc() override {
+        TaskRunner::restart_ioc();
         grpc_context_.reset();
     }
 
-    void poll_context_once() override {
-        TaskRunner::poll_context_once();
+    void poll_ioc_once() override {
+        TaskRunner::poll_ioc_once();
         grpc_context_.poll_completion_queue();
     }
 

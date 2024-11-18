@@ -51,7 +51,7 @@ class PoWSync : public ChainSync, ActiveComponent {
     void send_new_block_announcements(Blocks blocks);
     void send_new_block_hash_announcements();
 
-    asio::io_context io_context_;
+    asio::io_context ioc_;
     bool is_first_sync_{true};
 };
 

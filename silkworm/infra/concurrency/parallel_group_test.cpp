@@ -72,7 +72,7 @@ awaitable<void> co_spawn_cancellation_handler_bug() {
 }
 
 TEST_CASE("parallel_group.co_spawn_cancellation_handler_bug") {
-    io_context context;
-    spawn_future(context, co_spawn_cancellation_handler_bug());
-    context.run();
+    io_context ioc;
+    spawn_future(ioc, co_spawn_cancellation_handler_bug());
+    ioc.run();
 }

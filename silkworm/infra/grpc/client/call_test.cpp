@@ -46,9 +46,9 @@ class CallTest : public silkworm::test_util::ContextTestBase {
         Request request,
         agrpc::GrpcContext& grpc_context) {
         const auto this_thread_id{std::this_thread::get_id()};
-        CHECK(io_context_.get_executor().running_in_this_thread());
+        CHECK(ioc_.get_executor().running_in_this_thread());
         const auto response = co_await unary_rpc(rpc, *stub, request, grpc_context);
-        CHECK(io_context_.get_executor().running_in_this_thread());
+        CHECK(ioc_.get_executor().running_in_this_thread());
         CHECK(this_thread_id == std::this_thread::get_id());
         co_return response;
     }
@@ -66,9 +66,9 @@ class CallTest : public silkworm::test_util::ContextTestBase {
 
         RPC::Response response;
         const auto this_thread_id{std::this_thread::get_id()};
-        CHECK(io_context_.get_executor().running_in_this_thread());
+        CHECK(ioc_.get_executor().running_in_this_thread());
         ::grpc::Status status = co_await RPC::request(grpc_context, stub, client_context, request, response);
-        CHECK(io_context_.get_executor().running_in_this_thread());
+        CHECK(ioc_.get_executor().running_in_this_thread());
         CHECK(this_thread_id == std::this_thread::get_id());
 
         if (!status.ok()) {

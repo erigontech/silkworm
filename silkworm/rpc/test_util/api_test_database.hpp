@@ -93,7 +93,7 @@ class LocalContextTestBase : public ServiceContextTestBase {
         db::DataStoreRef data_store,
         db::kv::api::StateCache* state_cache) {
         add_private_service<ethdb::Database>(
-            io_context_,
+            ioc_,
             std::make_unique<ethdb::file::LocalDatabase>(std::move(data_store), state_cache));
     }
 };
@@ -104,8 +104,8 @@ class RpcApiTestBase : public LocalContextTestBase {
     explicit RpcApiTestBase(db::DataStoreRef data_store)
         : LocalContextTestBase{std::move(data_store), &state_cache_},
           workers_{1},
-          socket_{io_context_},
-          rpc_api_{io_context_, workers_},
+          socket_{ioc_},
+          rpc_api_{ioc_, workers_},
           rpc_api_table_{kDefaultEth1ApiSpec} {
     }
 

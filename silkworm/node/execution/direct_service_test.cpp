@@ -63,7 +63,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::insert_blocks", "[node][exec
                     return;
                 }));
             auto future = spawn_future(direct_service->insert_blocks(blocks));
-            context().run();
+            ioc().run();
             CHECK(future.get().status == api::ExecutionStatus::kSuccess);
         }
     }
@@ -92,7 +92,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::verify_chain", "[node][execu
                     co_return result;
                 }));
             auto future = spawn_future(direct_service->validate_chain(new_head));
-            context().run();
+            ioc().run();
             const auto result{future.get()};
             if (std::holds_alternative<ValidChain>(stagedsync_result)) {
                 CHECK(std::holds_alternative<api::ValidChain>(result));
@@ -143,7 +143,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::update_fork_choice", "[node]
                     return result ? BlockId{10, head_block_hash} : BlockId{2, finalized_block_hash};
                 }));
             auto future = spawn_future(direct_service->update_fork_choice(fork_choice));
-            context().run();
+            ioc().run();
             const auto fork_choice_result{future.get()};
             CHECK(fork_choice_result.status == expected_choice_result.status);
             CHECK(fork_choice_result.latest_valid_head == expected_choice_result.latest_valid_head);
@@ -159,7 +159,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_block_number", "[node][e
                 return {};
             }));
         auto future = spawn_future(direct_service->get_header_hash_number(block_hash));
-        context().run();
+        ioc().run();
         CHECK(future.get() == std::nullopt);
     }
     SECTION("existent") {
@@ -169,7 +169,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_block_number", "[node][e
                 return block_number;
             }));
         auto future = spawn_future(direct_service->get_header_hash_number(block_hash));
-        context().run();
+        ioc().run();
         CHECK(future.get() == block_number);
     }
 }
@@ -197,7 +197,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_fork_choice", "[node][ex
             return {1, safe_block_hash};
         }));
     auto future = spawn_future(direct_service->get_fork_choice());
-    context().run();
+    ioc().run();
     const auto last_choice{future.get()};
     CHECK(last_choice.head_block_hash == expected_fork_choice.head_block_hash);
     CHECK(last_choice.timeout == expected_fork_choice.timeout);
@@ -217,7 +217,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::get_last_headers", "[node][e
                     return headers;
                 }));
             auto future = spawn_future(direct_service->get_last_headers(how_many));
-            context().run();
+            ioc().run();
             CHECK(future.get() == last_headers);
         }
     }
@@ -230,7 +230,7 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::block_progress", "[node][exe
             return progress;
         }));
     auto future = spawn_future(direct_service->block_progress());
-    context().run();
+    ioc().run();
     CHECK(future.get() == progress);
 }
 

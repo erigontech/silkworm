@@ -20,8 +20,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
-
 #include <silkworm/db/kv/api/transaction.hpp>
 
 namespace silkworm::rpc::ethdb {

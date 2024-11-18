@@ -57,6 +57,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 
 #include "../common/common.hpp"
@@ -581,32 +582,27 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
+    using namespace silkworm::concurrency::awaitable_wait_for_one;
+
     const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id)};
     WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots_as_pairs()};
 
-    boost::asio::io_context scheduler;
-    ShutdownSignal shutdown_signal{scheduler.get_executor()};
-    shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
-        scheduler.stop();
-        SILK_DEBUG << "Scheduler stopped";
-    });
+    boost::asio::io_context ioc;
+
+    TorrentInfoPtrList torrent_info_list;
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-    auto discover_torrent_and_stop = [&settings, &web_client, &shutdown_signal]() -> Task<TorrentInfoPtrList> {
-        TorrentInfoPtrList torrent_info_list;
+    auto discover_torrent_and_stop = [&]() -> Task<void> {
         try {
             torrent_info_list = co_await web_client.discover_torrents(/*fail_fast=*/true);
         } catch (const boost::system::system_error& se) {
             SILK_ERROR << "Cannot discover torrents at " + settings.url_seed + ": " + se.what();
         }
-        shutdown_signal.cancel();
-        co_return torrent_info_list;
+        ioc.stop();
     };
-    auto result{boost::asio::co_spawn(scheduler, discover_torrent_and_stop, boost::asio::use_future)};
 
-    std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
-    scheduler_thread.join();
+    boost::asio::co_spawn(ioc, discover_torrent_and_stop() || ShutdownSignal::wait(), boost::asio::use_future);
+    ioc.run();
 
-    const auto torrent_info_list = result.get();
     size_t i{0};
     for (const auto& torrent_info : torrent_info_list) {
         SILK_INFO << i++ << ") name: " << torrent_info->name() << " hash: " << torrent_info->info_hash();
@@ -615,21 +611,12 @@ static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
 }
 
 static void download_bittorrent(bittorrent::BitTorrentClient& client) {
+    using namespace silkworm::concurrency::awaitable_wait_for_one;
     SILK_INFO << "Bittorrent download started in repo: " << client.settings().repository_path.string();
 
-    boost::asio::io_context scheduler;
-    ShutdownSignal shutdown_signal{scheduler.get_executor()};
-    shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
-        client.stop();
-        SILK_DEBUG << "Torrent client stopped";
-        scheduler.stop();
-        SILK_DEBUG << "Scheduler stopped";
-    });
-    std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
-
-    client.execution_loop();
-
-    scheduler_thread.join();
+    boost::asio::io_context ioc;
+    boost::asio::co_spawn(ioc, client.async_run("bit-torrent") || ShutdownSignal::wait(), boost::asio::use_future);
+    ioc.run();
 }
 
 void download(const DownloadSettings& settings) {

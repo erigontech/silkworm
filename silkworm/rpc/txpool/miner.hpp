@@ -50,7 +50,7 @@ struct MiningResult {
 
 class Miner final {
   public:
-    Miner(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
+    Miner(boost::asio::io_context& ioc, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
     Miner(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Mining::StubInterface> stub,
           agrpc::GrpcContext& grpc_context);
 

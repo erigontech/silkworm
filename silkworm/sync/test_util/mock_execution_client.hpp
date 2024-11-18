@@ -22,7 +22,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>

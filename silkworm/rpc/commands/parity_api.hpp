@@ -36,10 +36,10 @@ namespace silkworm::rpc::commands {
 
 class ParityRpcApi {
   public:
-    explicit ParityRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
-        : block_cache_{must_use_shared_service<BlockCache>(io_context)},
-          database_{must_use_private_service<ethdb::Database>(io_context)},
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context)},
+    explicit ParityRpcApi(boost::asio::io_context& ioc, WorkerPool& workers)
+        : block_cache_{must_use_shared_service<BlockCache>(ioc)},
+          database_{must_use_private_service<ethdb::Database>(ioc)},
+          backend_{must_use_private_service<ethbackend::BackEnd>(ioc)},
           workers_{workers} {}
     virtual ~ParityRpcApi() = default;
 

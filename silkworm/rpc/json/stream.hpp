@@ -29,7 +29,6 @@
 #ifndef _WIN32  // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
 #include <boost/asio/experimental/promise.hpp>
 #endif  // _WIN32
-#include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/transport/stream_writer.hpp>

@@ -210,28 +210,23 @@ class DummyTransaction : public BaseTransaction {
         co_return;
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery&& /*query*/) override {
+    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery /*query*/) override {
         co_return db::kv::api::DomainPointResult{};
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery&& /*query*/) override {
+    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery /*query*/) override {
         co_return db::kv::api::HistoryPointResult{};
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& /*query*/) override {
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery /*query*/) override {
         co_return test::empty_paginated_timestamps();
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery&& /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery&& /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 
@@ -256,7 +251,6 @@ class DummyDatabase : public ethdb::Database {
 
 #ifdef TEST_DISABLED
 TEST_CASE("account dumper") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
     nlohmann::json json;
     BlockCache block_cache(100, true);

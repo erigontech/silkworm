@@ -33,9 +33,9 @@ namespace silkworm::rpc::commands {
 
 class Web3RpcApi {
   public:
-    explicit Web3RpcApi(boost::asio::io_context& io_context)
-        : database_{must_use_private_service<ethdb::Database>(io_context)},
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context)} {}
+    explicit Web3RpcApi(boost::asio::io_context& ioc)
+        : database_{must_use_private_service<ethdb::Database>(ioc)},
+          backend_{must_use_private_service<ethbackend::BackEnd>(ioc)} {}
     virtual ~Web3RpcApi() = default;
 
     Web3RpcApi(const Web3RpcApi&) = delete;

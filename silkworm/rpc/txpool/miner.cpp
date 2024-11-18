@@ -23,8 +23,8 @@
 
 namespace silkworm::rpc::txpool {
 
-Miner::Miner(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
-    : Miner(context.get_executor(), ::txpool::Mining::NewStub(channel), grpc_context) {}
+Miner::Miner(boost::asio::io_context& ioc, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
+    : Miner(ioc.get_executor(), ::txpool::Mining::NewStub(channel), grpc_context) {}
 
 Miner::Miner(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Mining::StubInterface> stub, agrpc::GrpcContext& grpc_context)
     : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {

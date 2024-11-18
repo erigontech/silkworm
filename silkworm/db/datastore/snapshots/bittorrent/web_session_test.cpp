@@ -210,8 +210,7 @@ std::string path_cat(beast::string_view base, beast::string_view path) {
 //! \brief Handle a response for the given request.
 //! \details The concrete type of the response message (which depends on the request) is type-erased in message_generator
 template <class Body, class Allocator>
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-http::message_generator handle_request(beast::string_view doc_root, http::request<Body, http::basic_fields<Allocator>>&& req) {
+http::message_generator handle_request(beast::string_view doc_root, http::request<Body, http::basic_fields<Allocator>> req) {
     // Return a bad request response
     const auto bad_request = [&req](beast::string_view why) {
         http::response<http::string_body> res{http::status::bad_request, req.version()};
@@ -518,7 +517,7 @@ TEST_CASE_METHOD(WebSessionTest, "WebSession::https_get", "[db][snapshot][bittor
     ssl::context ssl_ctx{ssl::context::tlsv13};
     load_server_certificate(ssl_ctx);
     // Create and launch an HTTP server supporting SSL connections
-    std::make_shared<Server>(io_context_,
+    std::make_shared<Server>(ioc_,
                              ssl_ctx,
                              tcp::endpoint{asio::ip::make_address("127.0.0.1"), 12345},
                              doc_root)

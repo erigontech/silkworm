@@ -43,7 +43,7 @@ Task<std::unique_ptr<Transaction>> DirectService::begin_transaction() {
 
 // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);
 Task<void> DirectService::state_changes(const api::StateChangeOptions& options, api::StateChangeConsumer consumer) {
-    auto executor = co_await ThisTask::executor;
+    auto executor = co_await boost::asio::this_coro::executor;
     api::StateChangesCall call{options, executor};
 
     auto unsubscribe_signal = call.unsubscribe_signal();

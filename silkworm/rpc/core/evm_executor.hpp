@@ -23,8 +23,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
-
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 if [ "$#" -ne 1 ]; then
   echo "Usage: $0 <rpcdaemon_pid>"
   exit 1

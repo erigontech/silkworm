@@ -30,7 +30,6 @@
 
 namespace silkworm::snapshots::rec_split {
 
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 using test_util::next_pseudo_random;
 
@@ -41,7 +40,6 @@ using test_util::next_pseudo_random;
 static constexpr int kTestSalt{1};
 
 TEST_CASE("RecSplit8: key_count=0", "[silkworm][snapshots][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 0,
@@ -54,7 +52,6 @@ TEST_CASE("RecSplit8: key_count=0", "[silkworm][snapshots][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: key_count=1", "[silkworm][snapshots][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 1,
@@ -68,7 +65,6 @@ TEST_CASE("RecSplit8: key_count=1", "[silkworm][snapshots][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: key_count=2", "[silkworm][snapshots][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 2,
@@ -130,7 +126,6 @@ using RecSplit4 = RecSplit<kTestLeaf>;
 auto seq_build_strategy_4() { return std::make_unique<RecSplit4::SequentialBuildingStrategy>(db::etl::kOptimalBufferSize); }
 
 TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][snapshots][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
 
     constexpr int kTestNumKeys{1'000};
@@ -168,7 +163,6 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][snapshots][recsplit]")
 }
 
 TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][snapshots][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
 
     struct RecSplitParams {
@@ -214,8 +208,8 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][snapshots][recsplit]")
     }
 }
 
-TEST_CASE("RecSplit8: index lookup", "[silkworm][snapshots][recsplit][ignore]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
+#ifdef SILKWORM_TEST_SKIP
+TEST_CASE("RecSplit8: index lookup", "[silkworm][snapshots][recsplit]") {
     TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,
@@ -236,9 +230,10 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][snapshots][recsplit][ignore]") 
         CHECK((rs2.lookup(key) == RecSplit8::LookupResult{i * 17, true}));
     }
 }
+#endif  // SILKWORM_TEST_SKIP
 
-TEST_CASE("RecSplit8: double index lookup", "[silkworm][snapshots][recsplit][ignore]") {
-    SetLogVerbosityGuard guard{log::Level::kInfo};
+#ifdef SILKWORM_TEST_SKIP
+TEST_CASE("RecSplit8: double index lookup", "[silkworm][snapshots][recsplit]") {
     TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,
@@ -260,10 +255,10 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][snapshots][recsplit][ign
         CHECK(rs2.lookup_by_ordinal(enumeration_index) == i * 17);
     }
 }
+#endif  // SILKWORM_TEST_SKIP
 
-TEST_CASE("RecSplit8: unsupported feature", "[silkworm][snapshots][recsplit][ignore]") {
-    SetLogVerbosityGuard guard{log::Level::kInfo};
-
+#ifdef SILKWORM_TEST_SKIP
+TEST_CASE("RecSplit8: unsupported feature", "[silkworm][snapshots][recsplit]") {
     // Generate valid RecSplit index
     TemporaryFile index_file;
     RecSplitSettings settings{
@@ -292,6 +287,7 @@ TEST_CASE("RecSplit8: unsupported feature", "[silkworm][snapshots][recsplit][ign
 
     CHECK_THROWS_AS(RecSplit8{index_file.path()}, std::runtime_error);
 }
+#endif  // SILKWORM_TEST_SKIP
 
 #endif  // _WIN32
 

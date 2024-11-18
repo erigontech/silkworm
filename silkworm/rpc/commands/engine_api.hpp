@@ -44,11 +44,11 @@ class EngineRpcApi {
                  ethbackend::BackEnd* backend,
                  ApplicationInfo build_info = {})
         : database_{database}, engine_{engine}, backend_{backend}, build_info_{std::move(build_info)} {}
-    explicit EngineRpcApi(boost::asio::io_context& io_context, ApplicationInfo build_info = {})
+    explicit EngineRpcApi(boost::asio::io_context& ioc, ApplicationInfo build_info = {})
         : EngineRpcApi(
-              must_use_private_service<ethdb::Database>(io_context),
-              must_use_shared_service<engine::ExecutionEngine>(io_context),
-              must_use_private_service<ethbackend::BackEnd>(io_context),
+              must_use_private_service<ethdb::Database>(ioc),
+              must_use_shared_service<engine::ExecutionEngine>(ioc),
+              must_use_private_service<ethbackend::BackEnd>(ioc),
               std::move(build_info)) {}
     virtual ~EngineRpcApi() = default;
 

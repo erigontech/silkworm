@@ -41,7 +41,7 @@ class RemoteDatabase : public Database {
     RemoteDatabase(ethbackend::BackEnd* backend,
                    StateCache* state_cache,
                    agrpc::GrpcContext& grpc_context,
-                   std::unique_ptr<remote::KV::StubInterface>&& stub);
+                   std::unique_ptr<remote::KV::StubInterface> stub);
     ~RemoteDatabase() override;
 
     RemoteDatabase(const RemoteDatabase&) = delete;

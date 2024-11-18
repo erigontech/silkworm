@@ -28,7 +28,6 @@
 namespace silkworm::snapshots::encoding {
 
 TEST_CASE("Uint64Sequence", "[silkworm][snapshots][recsplit][sequence]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     Uint64Sequence output_sequence{0, 11, 21, 31, 41, 51, 61};
 
     std::stringstream ss;
@@ -41,8 +40,6 @@ TEST_CASE("Uint64Sequence", "[silkworm][snapshots][recsplit][sequence]") {
 }
 
 TEST_CASE("Uint64Sequence: size too big", "[silkworm][snapshots][recsplit][sequence]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     std::stringstream ss;
     Bytes invalid_size_buffer(sizeof(uint64_t), '\0');
     endian::store_big_u64(invalid_size_buffer.data(), 49287623586282974);

@@ -45,7 +45,7 @@ void ClientContext::execute_loop() {
 
     std::exception_ptr run_exception;
     try {
-        io_context_->run();
+        ioc_->run();
     } catch (...) {
         run_exception = std::current_exception();
     }

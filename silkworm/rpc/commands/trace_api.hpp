@@ -38,13 +38,13 @@ namespace silkworm::rpc::commands {
 
 class TraceRpcApi {
   public:
-    TraceRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
-        : io_context_(io_context),
-          block_cache_{must_use_shared_service<BlockCache>(io_context_)},
-          state_cache_{must_use_shared_service<db::kv::api::StateCache>(io_context_)},
-          database_{must_use_private_service<ethdb::Database>(io_context_)},
+    TraceRpcApi(boost::asio::io_context& ioc, WorkerPool& workers)
+        : ioc_{ioc},
+          block_cache_{must_use_shared_service<BlockCache>(ioc_)},
+          state_cache_{must_use_shared_service<db::kv::api::StateCache>(ioc_)},
+          database_{must_use_private_service<ethdb::Database>(ioc_)},
           workers_{workers},
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
+          backend_{must_use_private_service<ethbackend::BackEnd>(ioc_)} {}
 
     virtual ~TraceRpcApi() = default;
 
@@ -65,7 +65,7 @@ class TraceRpcApi {
     Task<void> handle_trace_filter(const nlohmann::json& request, json::Stream& stream);
 
   private:
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioc_;
     BlockCache* block_cache_;
     db::kv::api::StateCache* state_cache_;
     ethdb::Database* database_;

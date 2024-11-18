@@ -70,13 +70,11 @@ void sentry_main(Settings settings) {
         settings.context_pool_settings,
     };
 
-    ShutdownSignal shutdown_signal{context_pool.any_executor()};
-
     Sentry sentry{std::move(settings), context_pool.as_executor_pool()};
 
     auto run_future = boost::asio::co_spawn(
         context_pool.any_executor(),
-        sentry.run() || shutdown_signal.wait(),
+        sentry.run() || ShutdownSignal::wait(),
         boost::asio::use_future);
 
     context_pool.start();

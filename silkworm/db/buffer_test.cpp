@@ -28,10 +28,7 @@
 
 namespace silkworm::db {
 
-using silkworm::test_util::SetLogVerbosityGuard;
-
 TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 
@@ -242,7 +239,6 @@ TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
 }
 
 TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 

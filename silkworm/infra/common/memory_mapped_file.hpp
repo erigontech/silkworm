@@ -82,8 +82,8 @@ class MemoryMappedFile {
     MemoryMappedFile& operator=(const MemoryMappedFile&) = delete;
 
     // Only movable
-    MemoryMappedFile(MemoryMappedFile&& source) noexcept = default;
-    MemoryMappedFile& operator=(MemoryMappedFile&& other) noexcept = default;
+    MemoryMappedFile(MemoryMappedFile&&) noexcept = default;
+    MemoryMappedFile& operator=(MemoryMappedFile&&) noexcept = default;
 
     std::filesystem::path path() const {
         return path_;

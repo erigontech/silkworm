@@ -35,7 +35,6 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
-using silkworm::test_util::SetLogVerbosityGuard;
 
 #define CHECK_FIRST(x) CHECK((x).first)
 #define CHECK_FALSE_FIRST(x) CHECK_FALSE((x).first)
@@ -53,13 +52,11 @@ struct SnapshotType {
 // NOLINTEND(readability-identifier-naming)
 
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     CHECK_NOTHROW(make_repository(tmp_dir.path()));
 }
 
 TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir.path(), "v1-014500-015000-headers.seg"};
@@ -71,7 +68,6 @@ TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][
 }
 
 TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     SECTION("no snapshots") {
@@ -146,7 +142,6 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
 }
 
 TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
@@ -213,7 +208,6 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
 }
 
 TEST_CASE("SnapshotRepository::find_block_number", "[silkworm][node][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     // These sample snapshot files just contain data for block range [1'500'012, 1'500'013], hence current snapshot
@@ -261,7 +255,6 @@ static auto move_last_write_time(const std::filesystem::path& p, const std::file
 TEST_CASE("SnapshotRepository::remove_stale_indexes", "[silkworm][node][snapshot][index]") {
     using namespace std::chrono_literals;
 
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     auto repository = make_repository(tmp_dir.path());
 

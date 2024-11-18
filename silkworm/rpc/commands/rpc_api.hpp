@@ -54,18 +54,21 @@ class RpcApi : protected EthereumRpcApi,
                TxPoolRpcApi,
                OtsRpcApi {
   public:
-    explicit RpcApi(boost::asio::io_context& io_context, WorkerPool& workers, ApplicationInfo build_info = {})
-        : EthereumRpcApi{io_context, workers},
-          NetRpcApi{io_context},
-          AdminRpcApi{io_context},
-          Web3RpcApi{io_context},
-          DebugRpcApi{io_context, workers},
-          ParityRpcApi{io_context, workers},
-          ErigonRpcApi{io_context, workers},
-          TraceRpcApi{io_context, workers},
-          EngineRpcApi(io_context, std::move(build_info)),
-          TxPoolRpcApi(io_context),
-          OtsRpcApi{io_context, workers} {}
+    explicit RpcApi(
+        boost::asio::io_context& ioc,
+        WorkerPool& workers,
+        ApplicationInfo build_info = {})
+        : EthereumRpcApi{ioc, workers},
+          NetRpcApi{ioc},
+          AdminRpcApi{ioc},
+          Web3RpcApi{ioc},
+          DebugRpcApi{ioc, workers},
+          ParityRpcApi{ioc, workers},
+          ErigonRpcApi{ioc, workers},
+          TraceRpcApi{ioc, workers},
+          EngineRpcApi(ioc, std::move(build_info)),
+          TxPoolRpcApi(ioc),
+          OtsRpcApi{ioc, workers} {}
 
     ~RpcApi() override = default;
 

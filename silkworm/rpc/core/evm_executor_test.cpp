@@ -52,7 +52,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     db::test_util::MockTransaction transaction;
     WorkerPool workers{1};
     ClientContextPool pool{1};
-    boost::asio::any_io_executor io_executor{pool.next_io_context().get_executor()};
+    boost::asio::any_io_executor io_executor{pool.next_ioc().get_executor()};
     test::BackEndMock backend;
     RemoteChainStorage storage{transaction, ethdb::kv::make_backend_providers(&backend)};
     const uint64_t chain_id{11155111};

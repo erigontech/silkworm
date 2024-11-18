@@ -26,12 +26,12 @@
 namespace silkworm::db::kv {
 
 StateChangesStream::StateChangesStream(rpc::ClientContext& context, api::Client& client)
-    : scheduler_(*context.io_context()),
+    : ioc_(*context.ioc()),
       client_(client),
-      cache_(must_use_shared_service<api::StateCache>(scheduler_)) {}
+      cache_(must_use_shared_service<api::StateCache>(ioc_)) {}
 
 std::future<void> StateChangesStream::open() {
-    return concurrency::spawn_future(scheduler_, run());
+    return concurrency::spawn_future(ioc_, run());
 }
 
 void StateChangesStream::close() {

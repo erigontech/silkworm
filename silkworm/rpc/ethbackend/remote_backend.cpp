@@ -32,9 +32,11 @@
 
 namespace silkworm::rpc::ethbackend {
 
-RemoteBackEnd::RemoteBackEnd(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel,
-                             agrpc::GrpcContext& grpc_context)
-    : RemoteBackEnd(context.get_executor(), ::remote::ETHBACKEND::NewStub(channel), grpc_context) {}
+RemoteBackEnd::RemoteBackEnd(
+    boost::asio::io_context& ioc,
+    const std::shared_ptr<grpc::Channel>& channel,
+    agrpc::GrpcContext& grpc_context)
+    : RemoteBackEnd(ioc.get_executor(), ::remote::ETHBACKEND::NewStub(channel), grpc_context) {}
 
 RemoteBackEnd::RemoteBackEnd(boost::asio::io_context::executor_type executor,
                              std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,

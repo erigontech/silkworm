@@ -47,27 +47,27 @@ class TaskRunner {
     //! co_spawn with use_future
     template <typename TResult>
     std::future<TResult> spawn_future(Task<TResult> task) {
-        return co_spawn(io_context_, std::move(task), boost::asio::use_future);
+        return co_spawn(ioc_, std::move(task), boost::asio::use_future);
     }
 
     //! Poll until the spawned future completes
     template <typename TResult>
     void poll_context_until_future_is_ready(std::future<TResult>& future) {
         using namespace std::chrono_literals;
-        restart_context();
+        restart_ioc();
         while (future.wait_for(0s) != std::future_status::ready) {
-            poll_context_once();
+            poll_ioc_once();
         }
     }
 
-    boost::asio::io_context& context() { return io_context_; }
-    boost::asio::any_io_executor executor() { return io_context_.get_executor(); }
+    boost::asio::io_context& ioc() { return ioc_; }
+    boost::asio::any_io_executor executor() { return ioc_.get_executor(); }
 
   protected:
-    virtual void restart_context() { io_context_.restart(); }
-    virtual void poll_context_once() { io_context_.poll_one(); }
+    virtual void restart_ioc() { ioc_.restart(); }
+    virtual void poll_ioc_once() { ioc_.poll_one(); }
 
-    boost::asio::io_context io_context_;
+    boost::asio::io_context ioc_;
 };
 
 }  // namespace silkworm::test_util

@@ -50,8 +50,6 @@ class HeaderChainForTest : public HeaderChain {
 // ----------------------------------------------------------------------------
 
 TEST_CASE("HeaderList::split_into_segments no headers") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     std::vector<BlockHeader> headers;
     auto headerList = HeaderList::make(headers);
 
@@ -62,8 +60,6 @@ TEST_CASE("HeaderList::split_into_segments no headers") {
 }
 
 TEST_CASE("HeaderList::split_into_segments single header") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     std::vector<BlockHeader> headers;
     BlockHeader header;
     header.number = 5;
@@ -78,8 +74,6 @@ TEST_CASE("HeaderList::split_into_segments single header") {
 }
 
 TEST_CASE("HeaderList::split_into_segments single header repeated twice") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     std::vector<BlockHeader> headers;
     BlockHeader header;
     header.number = 5;
@@ -95,7 +89,6 @@ TEST_CASE("HeaderList::split_into_segments single header repeated twice") {
 }
 
 TEST_CASE("HeaderList::split_into_segments two connected headers") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -121,7 +114,6 @@ TEST_CASE("HeaderList::split_into_segments two connected headers") {
 }
 
 TEST_CASE("HeaderList::split_into_segments two connected headers with wrong numbers") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -150,7 +142,6 @@ TEST_CASE("HeaderList::split_into_segments two connected headers with wrong numb
  *         3 segments: {h3}, {h2}, {h1}   (in this order)
  */
 TEST_CASE("HeaderList::split_into_segments two headers connected to the third header") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -187,7 +178,6 @@ TEST_CASE("HeaderList::split_into_segments two headers connected to the third he
 }
 
 TEST_CASE("HeaderList::split_into_segments same three headers, but in a reverse order") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -229,7 +219,6 @@ TEST_CASE("HeaderList::split_into_segments same three headers, but in a reverse 
  *         2 segments: {h3?}, {h2?}
  */
 TEST_CASE("HeaderList::split_into_segments two headers not connected to each other") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -268,7 +257,6 @@ TEST_CASE("HeaderList::split_into_segments two headers not connected to each oth
  *        1 segment: {h3, h2, h1}   (with header in this order)
  */
 TEST_CASE("HeaderList::split_into_segments three headers connected") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -308,7 +296,6 @@ TEST_CASE("HeaderList::split_into_segments three headers connected") {
  *        3 segments: {h3?}, {h4?}, {h2, h1}
  */
 TEST_CASE("HeaderList::split_into_segments four headers connected") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -354,8 +341,6 @@ TEST_CASE("HeaderList::split_into_segments four headers connected") {
 
 TEST_CASE("HeaderChain: (1) simple chain") {
     using namespace std;
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
@@ -1239,7 +1224,6 @@ TEST_CASE("HeaderChain: (6) (malicious) siblings") {
 }
 
 TEST_CASE("HeaderChain: (7) invalidating anchor") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -1340,7 +1324,6 @@ TEST_CASE("HeaderChain: (7) invalidating anchor") {
 }
 
 TEST_CASE("HeaderChain: (8) sibling with anchor invalidation and links reduction") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};

@@ -36,7 +36,7 @@ bool operator==(const NodeAddress& lhs, const NodeAddress& rhs) {
 TEST_CASE("NodeDbSqlite") {
     test_util::TaskRunner runner;
 
-    NodeDbSqlite db_sqlite{any_io_executor{runner.context().get_executor()}};
+    NodeDbSqlite db_sqlite{any_io_executor{runner.ioc().get_executor()}};
     db_sqlite.setup_in_memory();
     NodeDb& db = db_sqlite.interface();
 

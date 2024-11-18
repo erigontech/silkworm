@@ -39,11 +39,11 @@ TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
     Context ctx{0};
 
     SECTION("ServerContext") {
-        CHECK(ctx.io_context() != nullptr);
+        CHECK(ctx.ioc() != nullptr);
     }
 
     SECTION("execute_loop") {
-        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*ctx.io_context());
+        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*ctx.ioc());
         std::atomic_bool context_thread_failed{false};
         std::thread context_thread{[&]() {
             try {
@@ -58,14 +58,14 @@ TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
     }
 
     SECTION("stop") {
-        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*ctx.io_context());
+        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*ctx.ioc());
         std::thread context_thread{[&]() { ctx.execute_loop(); }};
-        CHECK(!ctx.io_context()->stopped());
+        CHECK(!ctx.ioc()->stopped());
         ctx.stop();
-        CHECK(ctx.io_context()->stopped());
+        CHECK(ctx.ioc()->stopped());
         context_thread.join();
         ctx.stop();
-        CHECK(ctx.io_context()->stopped());
+        CHECK(ctx.ioc()->stopped());
     }
 
     SECTION("print") {
@@ -86,17 +86,17 @@ TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
     SECTION("next_context") {
         ContextPool context_pool{2};
         auto& context1 = context_pool.next_context();
-        CHECK(context1.io_context() != nullptr);
+        CHECK(context1.ioc() != nullptr);
         auto& context2 = context_pool.next_context();
-        CHECK(context2.io_context() != nullptr);
+        CHECK(context2.ioc() != nullptr);
     }
 
-    SECTION("next_io_context") {
+    SECTION("next_ioc") {
         ContextPool context_pool{2};
         auto& context1 = context_pool.next_context();
         auto& context2 = context_pool.next_context();
-        CHECK(&context_pool.next_io_context() == context1.io_context());
-        CHECK(&context_pool.next_io_context() == context2.io_context());
+        CHECK(&context_pool.next_ioc() == context1.ioc());
+        CHECK(&context_pool.next_ioc() == context2.ioc());
     }
 
     SECTION("start/stop w/ contexts") {

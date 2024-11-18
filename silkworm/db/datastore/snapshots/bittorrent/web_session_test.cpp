@@ -517,7 +517,7 @@ TEST_CASE_METHOD(WebSessionTest, "WebSession::https_get", "[db][snapshot][bittor
     ssl::context ssl_ctx{ssl::context::tlsv13};
     load_server_certificate(ssl_ctx);
     // Create and launch an HTTP server supporting SSL connections
-    std::make_shared<Server>(io_context_,
+    std::make_shared<Server>(ioc_,
                              ssl_ctx,
                              tcp::endpoint{asio::ip::make_address("127.0.0.1"), 12345},
                              doc_root)

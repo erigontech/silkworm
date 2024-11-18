@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/asio/io_context.hpp>
 #include <boost/url/url.hpp>
 // Disable warnings raised during compilation of libtorrent
 #pragma GCC diagnostic push
@@ -75,7 +74,6 @@ class WebSeedClient {
                                          std::string_view torrent_content);
     bool is_whitelisted(std::string_view file_name, std::string_view torrent_hash);
 
-    boost::asio::io_context io_ctx_;
     std::vector<std::string> url_seeds_;
     Whitelist whitelist_;
     std::unique_ptr<WebSession> web_session_;

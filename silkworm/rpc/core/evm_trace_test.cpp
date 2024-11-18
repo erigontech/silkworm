@@ -49,7 +49,7 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     WorkerPool workers{1};
     test::MockBlockCache block_cache;
     StringWriter writer{4096};
-    boost::asio::any_io_executor io_executor{io_context_.get_executor()};
+    boost::asio::any_io_executor io_executor{ioc_.get_executor()};
     test::BackEndMock backend;
     RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};
 };

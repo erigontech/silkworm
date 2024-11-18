@@ -41,17 +41,17 @@ Task<void> dummy_task() {
 }
 
 class DummyEngine {
-    asio::io_context& io_;
+    asio::io_context& ioc_;
 
   public:
-    explicit DummyEngine(asio::io_context& io) : io_{io} {}
+    explicit DummyEngine(asio::io_context& ioc) : ioc_{ioc} {}
 
     static Task<int> do_work() {
         co_return 42;
     }
 
     asio::io_context& get_executor() {
-        return io_;
+        return ioc_;
     }
 };
 

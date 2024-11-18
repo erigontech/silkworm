@@ -161,9 +161,9 @@ class Server {
     }
 
     //! Get the next server scheduler in round-robin scheme.
-    boost::asio::io_context& next_io_context() {
+    boost::asio::io_context& next_ioc() {
         SILKWORM_ASSERT(context_pool_);
-        return context_pool_->next_io_context();
+        return context_pool_->next_ioc();
     }
 
   protected:

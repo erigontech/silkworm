@@ -19,6 +19,7 @@
 #include <memory>
 
 #include <boost/asio/execution_context.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/infra/concurrency/base_service.hpp>
 

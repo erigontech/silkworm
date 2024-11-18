@@ -238,13 +238,10 @@ int main(int argc, char* argv[]) {
             settings,
         };
 
-        // Trap OS signals
-        ShutdownSignal shutdown_signal{context_pool.any_executor()};
-
         // Go!
         auto run_future = boost::asio::co_spawn(
             context_pool.any_executor(),
-            execution_node.run() || shutdown_signal.wait(),
+            execution_node.run() || ShutdownSignal::wait(),
             boost::asio::use_future);
         context_pool.start();
         SILK_INFO << "Silkworm is now running";

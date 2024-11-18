@@ -31,7 +31,7 @@ StateChangeRunner::StateChangeRunner(const boost::asio::any_io_executor& executo
     : state_changes_calls_channel_{executor}, strand_{executor} {}
 
 Task<void> StateChangeRunner::handle_calls() {
-    auto executor = co_await ThisTask::executor;
+    auto executor = co_await boost::asio::this_coro::executor;
 
     // Loop until receive() throws a cancelled exception
     while (true) {

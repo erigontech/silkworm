@@ -42,7 +42,7 @@ class PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
         mdbx::env_managed{},
         db::blocks::make_blocks_repository(tmp_dir.path()),
     };
-    SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
+    SentryClient sentry_client{ioc_.get_executor(), nullptr};  // TODO(canepat) mock
     test_util::MockBlockExchange block_exchange{data_store.ref(), sentry_client, kSepoliaConfig};
     std::shared_ptr<test_util::MockExecutionService> execution_service{std::make_shared<test_util::MockExecutionService>()};
     test_util::MockExecutionClient execution_client{execution_service};

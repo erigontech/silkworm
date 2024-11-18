@@ -42,13 +42,13 @@ TEST_CASE("ServerContext", "[silkworm][infra][grpc][server][server_context]") {
     SECTION("ServerContext") {
         CHECK(server_context.server_grpc_context() != nullptr);
         CHECK(server_context.client_grpc_context() != nullptr);
-        CHECK(server_context.io_context() != nullptr);
+        CHECK(server_context.ioc() != nullptr);
         CHECK(server_context.server_grpc_context()->get_completion_queue() == scq_ptr);
         CHECK(server_context.client_grpc_context()->get_completion_queue() != nullptr);
     }
 
     SECTION("execute_loop") {
-        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*server_context.io_context());
+        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*server_context.ioc());
         std::atomic_bool context_thread_failed{false};
         std::thread context_thread{[&]() {
             try {
@@ -63,14 +63,14 @@ TEST_CASE("ServerContext", "[silkworm][infra][grpc][server][server_context]") {
     }
 
     SECTION("stop") {
-        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*server_context.io_context());
+        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*server_context.ioc());
         std::thread context_thread{[&]() { server_context.execute_loop(); }};
-        CHECK(!server_context.io_context()->stopped());
+        CHECK(!server_context.ioc()->stopped());
         server_context.stop();
-        CHECK(server_context.io_context()->stopped());
+        CHECK(server_context.ioc()->stopped());
         context_thread.join();
         server_context.stop();
-        CHECK(server_context.io_context()->stopped());
+        CHECK(server_context.ioc()->stopped());
     }
 
     SECTION("print") {
@@ -98,14 +98,14 @@ TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]"
         CHECK(&server_context_pool.next_context() == &context2);
     }
 
-    SECTION("next_io_context") {
+    SECTION("next_ioc") {
         ServerContextPool server_context_pool{{2}, builder};
         auto& context1 = server_context_pool.next_context();
-        CHECK(context1.io_context() != nullptr);
+        CHECK(context1.ioc() != nullptr);
         auto& context2 = server_context_pool.next_context();
-        CHECK(context2.io_context() != nullptr);
-        CHECK(&server_context_pool.next_io_context() == context1.io_context());
-        CHECK(&server_context_pool.next_io_context() == context2.io_context());
+        CHECK(context2.ioc() != nullptr);
+        CHECK(&server_context_pool.next_ioc() == context1.ioc());
+        CHECK(&server_context_pool.next_ioc() == context2.ioc());
     }
 
     SECTION("start/stop w/ contexts") {
@@ -141,7 +141,7 @@ TEST_CASE("ServerContextPool: handle loop exception", "[silkworm][infra][grpc][c
         cp.stop();
     });
     auto context_pool_thread = std::thread([&]() { cp.run(); });
-    boost::asio::post(cp.next_io_context(), [&]() { throw std::logic_error{"unexpected"}; });
+    boost::asio::post(cp.next_ioc(), [&]() { throw std::logic_error{"unexpected"}; });
     CHECK_NOTHROW(context_pool_thread.join());
     CHECK(bool(run_exception));
 }

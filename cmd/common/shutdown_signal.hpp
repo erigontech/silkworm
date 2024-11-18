@@ -36,7 +36,8 @@ class ShutdownSignal {
 
     void on_signal(std::function<void(SignalNumber)> callback);
 
-    Task<SignalNumber> wait();
+    Task<SignalNumber> wait_me();
+    static Task<SignalNumber> wait();
 
   private:
     boost::asio::signal_set signals_;

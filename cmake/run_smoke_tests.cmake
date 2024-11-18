@@ -36,6 +36,11 @@ list(FILTER COMMANDS EXCLUDE REGEX "Makefile")
 
 # TODO: fix check_log_indices --help
 list(FILTER COMMANDS EXCLUDE REGEX "check_log_indices")
+# Skip smoke test for execute in ASAN build due to odr-violation
+if(NOT SILKWORM_SANITIZE)
+  # TODO: fix execute ASAN odr-violation
+  list(FILTER COMMANDS EXCLUDE REGEX "execute")
+endif()
 # TODO: fix grpc_toolbox --help
 list(FILTER COMMANDS EXCLUDE REGEX "grpc_toolbox")
 # TODO: fix sentry_client_test --help

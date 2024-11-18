@@ -20,12 +20,8 @@ rm -rf ./mainnet/results/
 # erigon_getLatestLogs: new algo using TKV
 # eth_getLogs: new algo using TKV
 # ots_getContractCreator: new algo using TKV
-# ots_getTransactionBySenderAndNonce/test_04.json: erigon3 bug in limit and page_size management in IndexRangeQuery query
-# ots_getTransactionBySenderAndNonce/test_07.json: erigon3 bug in limit and page_size management in IndexRangeQuery query
 # ots_searchTransactionsAfter: new algo using TKV
 # ots_searchTransactionsBefore: new algo using TKV
-# parity_listStorageKeys/test_12.json: fix required
-# trace_rawTransaction: different implementation
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
 debug_accountRange,\
@@ -59,13 +55,9 @@ erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
 eth_getBlockReceipts/test_07.json,\
 eth_getLogs,\
-ots_getTransactionBySenderAndNonce/test_04.json,\
-ots_getTransactionBySenderAndNonce/test_07.json,\
 ots_getContractCreator,\
 ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore,\
-parity_listStorageKeys/test_12.json,\
-trace_rawTransaction
+ots_searchTransactionsBefore
 
 failed_test=$?
 

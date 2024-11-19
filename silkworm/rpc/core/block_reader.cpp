@@ -16,6 +16,8 @@
 
 #include "block_reader.hpp"
 
+#include <fmt/core.h>
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
@@ -47,22 +49,47 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     SILK_TRACE << "read_balance_changes: block_number: " << block_number;
 
-    StateReader state_reader{transaction_, block_number + 1};
+    StateReader state_reader{transaction_, block_number};
 
-    co_await load_addresses(block_number, balance_changes);
-    BalanceChanges::iterator it;
-    for (it = balance_changes.begin(); it != balance_changes.end();) {
-        auto account = co_await state_reader.read_account(it->first);
-        if (account.has_value()) {
-            auto balance = account.value().balance;
-            if (it->second == balance) {
-                it = balance_changes.erase(it);
-            } else {
-                SILK_DEBUG << "Address "
-                           << it->first << ": balance changed from " << to_quantity(it->second) << " to " << to_quantity(balance);
-                it->second = balance;
-                ++it;
+    const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_number);
+    const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_number + 1);
+
+    db::kv::api::HistoryRangeQuery query{
+        .table = db::table::kAccountsHistory,
+        .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
+        .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
+        .ascending_order = true};
+
+    auto paginated_result = co_await transaction_.history_range(std::move(query));
+    auto it = co_await paginated_result.begin();
+
+
+    while (const auto value = co_await it.next()) {
+        intx::uint256 old_balance{0};
+        intx::uint256 current_balance{0};
+
+        auto address = value->first;
+
+        if (!value->second.empty()) {
+            auto account{Account::from_encoded_storage_v3(value->second)};
+            if (account) {
+                old_balance = account->balance;
             }
+        }
+
+        ByteView address_view{address.data(), address.size()};
+        evmc::address new_address = silkworm::bytes_to_address(address_view);
+
+        if (auto current_account = co_await state_reader.read_account(new_address)) {
+            current_balance = current_account->balance;
+        }
+
+        if (current_balance != old_balance) {
+            balance_changes[new_address] = current_balance;
+            std::cout << "address: " << silkworm::to_hex(address) << "\n";
+            std::cout << "old_balance: " << old_balance << "\n";
+            std::cout << "current_balance: " << current_balance << "\n";
+            std::cout << "add entry[balance]=value: " << new_address << " " << current_balance << "\n";
         }
     }
 
@@ -71,29 +98,5 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
     co_return;
 }
 
-Task<void> BlockReader::load_addresses(BlockNum block_number, BalanceChanges& balance_changes) const {
-    auto acs_cursor = co_await transaction_.cursor(db::table::kAccountChangeSetName);
-    const auto block_number_key = silkworm::db::block_key(block_number);
-
-    auto decode = [](silkworm::ByteView value) {
-        auto address = bytes_to_address(value.substr(0, kAddressLength));
-        auto remain = value.substr(silkworm::kAddressLength);
-        auto account{silkworm::Account::from_encoded_storage(remain)};
-
-        return std::pair<evmc::address, intx::uint256>{address, account.value().balance};
-    };
-
-    auto kv = co_await acs_cursor->seek(block_number_key);
-    auto pair = decode(kv.value);
-    balance_changes.emplace(pair.first, pair.second);
-
-    auto number = block_number;
-    while (number == block_number) {
-        kv = co_await acs_cursor->next();
-        pair = decode(kv.value);
-        balance_changes.emplace(pair.first, pair.second);
-        number = static_cast<BlockNum>(std::stol(silkworm::to_hex(kv.key), nullptr, 16));
-    }
-}
 
 }  // namespace silkworm::rpc

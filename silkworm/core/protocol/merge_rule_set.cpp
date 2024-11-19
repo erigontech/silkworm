@@ -98,6 +98,16 @@ void MergeRuleSet::initialize(EVM& evm) {
         system_txn.set_sender(kSystemAddress);
         evm.execute(system_txn, kSystemCallGasLimit);
     }
+
+    if (evm.revision() >= EVMC_PRAGUE) {
+        // EIP-2935: Serve historical block hashes from state
+        Transaction system_txn{};
+        system_txn.type = TransactionType::kSystem;
+        system_txn.to = kHistoryStorageAddress;
+        system_txn.data = Bytes{ByteView{header.parent_hash}};
+        system_txn.set_sender(kSystemAddress);
+        evm.execute(system_txn, kSystemCallGasLimit);
+    }
 }
 
 ValidationResult MergeRuleSet::finalize(IntraBlockState& state, const Block& block, EVM& evm, const std::vector<Log>& logs) {

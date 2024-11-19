@@ -47,6 +47,8 @@ class SnapshotPathForTest : public SnapshotPath {
         : SnapshotPath{
               SnapshotPath::make(
                   tmp_dir,
+                  std::nullopt,
+                  SnapshotPath::FilenameFormat::kE2,
                   kSnapshotV1,
                   step_range,
                   "headers",

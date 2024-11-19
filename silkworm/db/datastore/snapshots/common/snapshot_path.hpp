@@ -31,11 +31,20 @@ inline constexpr uint8_t kSnapshotV1{1};
 
 class SnapshotPath {
   public:
+    enum class FilenameFormat {
+        kE2,
+        kE3,
+    };
+
     static std::optional<SnapshotPath> parse(std::filesystem::path path);
-    static std::optional<StepRange> parse_step_range(const std::filesystem::path& path);
+    static std::optional<SnapshotPath> parse(
+        std::filesystem::path path,
+        const std::filesystem::path& base_dir);
 
     static SnapshotPath make(
-        const std::filesystem::path& dir,
+        const std::filesystem::path& base_dir,
+        std::optional<std::string> sub_dir_name,
+        FilenameFormat filename_format,
         uint8_t version,
         StepRange step_range,
         std::string tag,
@@ -43,7 +52,11 @@ class SnapshotPath {
 
     std::string filename() const { return path_.filename().string(); }
     const std::filesystem::path& path() const { return path_; }
-    std::filesystem::path base_dir_path() const { return path_.parent_path(); }
+    std::filesystem::path base_dir_path() const {
+        auto dir = path_.parent_path();
+        return sub_dir_name_ ? dir.parent_path() : dir;
+    }
+    const std::optional<std::string>& sub_dir_name() const { return sub_dir_name_; }
     std::string extension() const { return path_.extension().string(); }
     uint8_t version() const { return version_; }
     StepRange step_range() const { return step_range_; }
@@ -60,6 +73,7 @@ class SnapshotPath {
 
   protected:
     static std::filesystem::path make_filename(
+        FilenameFormat format,
         uint8_t version,
         StepRange step_range,
         std::string_view tag,
@@ -67,11 +81,15 @@ class SnapshotPath {
 
     SnapshotPath(
         std::filesystem::path path,
+        std::optional<std::string> sub_dir_name,
+        FilenameFormat filename_format,
         uint8_t version,
         StepRange step_range,
         std::string tag);
 
     std::filesystem::path path_;
+    std::optional<std::string> sub_dir_name_;
+    FilenameFormat filename_format_;
     uint8_t version_{0};
     StepRange step_range_;
     std::string tag_;

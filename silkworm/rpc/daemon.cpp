@@ -165,10 +165,9 @@ int Daemon::run(const DaemonSettings& settings) {
         }
 
         // Start execution context dedicated to handling termination signals
-        boost::asio::io_context signal_context;
-        boost::asio::signal_set signals{signal_context, SIGINT, SIGTERM};
-        SILK_DEBUG << "Signals registered on signal_context " << &signal_context;
-        signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
+        boost::asio::io_context shutdown_signal_ioc;
+        boost::asio::signal_set shutdown_signal{shutdown_signal_ioc, SIGINT, SIGTERM};
+        shutdown_signal.async_wait([&](const boost::system::error_code& error, int signal_number) {
             if (signal_number == SIGINT) std::cout << "\n";
             SILK_INFO << "Signal number: " << signal_number << " caught, error: " << error.message();
             rpc_daemon.stop();
@@ -180,7 +179,7 @@ int Daemon::run(const DaemonSettings& settings) {
 
         SILK_LOG << "Silkrpc is now running [pid=" << pid << ", main thread=" << tid << "]";
 
-        signal_context.run();
+        shutdown_signal_ioc.run();
 
         rpc_daemon.join();
     } catch (const std::exception& e) {
@@ -250,14 +249,14 @@ void Daemon::add_private_services() {
     // Add the private state to each execution context
     for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& context = context_pool_.next_context();
-        auto& io_context{*context.io_context()};
+        auto& ioc = *context.ioc();
         auto& grpc_context{*context.grpc_context()};
 
-        auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
+        auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc)};
 
-        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
-        auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
-        auto miner{std::make_unique<txpool::Miner>(io_context, grpc_channel, grpc_context)};
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(ioc, grpc_channel, grpc_context)};
+        auto tx_pool{std::make_unique<txpool::TransactionPool>(ioc, grpc_channel, grpc_context)};
+        auto miner{std::make_unique<txpool::Miner>(ioc, grpc_channel, grpc_context)};
         std::unique_ptr<ethdb::Database> database;
         if (data_store_) {
             database = std::make_unique<ethdb::file::LocalDatabase>(*data_store_, state_cache);
@@ -265,10 +264,10 @@ void Daemon::add_private_services() {
             database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), state_cache, grpc_context, grpc_channel);
         }
 
-        add_private_service<ethdb::Database>(io_context, std::move(database));
-        add_private_service<rpc::ethbackend::BackEnd>(io_context, std::move(backend));
-        add_private_service(io_context, std::move(tx_pool));
-        add_private_service(io_context, std::move(miner));
+        add_private_service<ethdb::Database>(ioc, std::move(database));
+        add_private_service<rpc::ethbackend::BackEnd>(ioc, std::move(backend));
+        add_private_service(ioc, std::move(tx_pool));
+        add_private_service(ioc, std::move(miner));
     }
 }
 
@@ -283,28 +282,28 @@ void Daemon::add_shared_services() {
     // Add the shared state to the execution contexts
     for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& context = context_pool_.next_context();
-        auto& io_context = *context.io_context();
+        auto& ioc = *context.ioc();
 
         auto engine{std::make_shared<engine::RemoteExecutionEngine>(settings_.private_api_addr, *context.grpc_context())};
 
-        add_shared_service(io_context, block_cache);
-        add_shared_service<db::kv::api::StateCache>(io_context, std::move(state_cache));
-        add_shared_service(io_context, filter_storage);
-        add_shared_service<engine::ExecutionEngine>(io_context, std::move(engine));
+        add_shared_service(ioc, block_cache);
+        add_shared_service<db::kv::api::StateCache>(ioc, std::move(state_cache));
+        add_shared_service(ioc, filter_storage);
+        add_shared_service<engine::ExecutionEngine>(ioc, std::move(engine));
     }
 }
 
 std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& context) {
-    auto& io_context = *context.io_context();
+    auto& ioc = *context.ioc();
     auto& grpc_context = *context.grpc_context();
-    auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(io_context)};
-    auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(io_context)};
+    auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc)};
+    auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(ioc)};
     if (settings_.standalone) {
         return std::make_unique<db::kv::grpc::client::RemoteClient>(
             create_channel_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
     }
     // TODO(canepat) finish implementation and clean-up composition of objects here
-    db::kv::api::StateChangeRunner runner{io_context.get_executor()};
+    db::kv::api::StateChangeRunner runner{ioc.get_executor()};
     db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
     return std::make_unique<db::kv::api::DirectClient>(
         std::make_shared<db::kv::api::DirectService>(router, *data_store_, state_cache));
@@ -316,8 +315,8 @@ void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::Ex
 
     // Add the Engine API execution service to each execution context
     for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
-        auto& io_context = context_pool_.next_io_context();
-        add_shared_service<engine::ExecutionEngine>(io_context, engines[i]);
+        auto& ioc = context_pool_.next_ioc();
+        add_shared_service<engine::ExecutionEngine>(ioc, engines[i]);
     }
 }
 
@@ -371,7 +370,7 @@ void Daemon::start() {
 
     // Create and start the configured RPC services for each execution context
     for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
-        auto& ioc = context_pool_.next_io_context();
+        auto& ioc = context_pool_.next_ioc();
 
         if (!settings_.eth_end_point.empty()) {
             // ETH RPC API accepts customized namespaces and does not support JWT authentication

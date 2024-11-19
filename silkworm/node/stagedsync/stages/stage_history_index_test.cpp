@@ -35,7 +35,6 @@ namespace silkworm {
 using namespace evmc::literals;
 using namespace silkworm::db;
 using db::test_util::TempChainData;
-using silkworm::test_util::SetLogVerbosityGuard;
 
 stagedsync::HistoryIndex make_stage_history_index(
     stagedsync::SyncContext* sync_context,
@@ -52,8 +51,6 @@ stagedsync::HistoryIndex make_stage_history_index(
 }
 
 TEST_CASE("Stage History Index") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     TempChainData context;
     RWTxn& txn{context.rw_txn()};
     txn.disable_commit();
@@ -440,12 +437,9 @@ TEST_CASE("Stage History Index") {
             REQUIRE(count == 1);
         }
     }
-
-    log::set_verbosity(log::Level::kInfo);
 }
 
 TEST_CASE("HistoryIndex + Account access_layer") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     TempChainData context;
     RWTxn& txn{context.rw_txn()};
 

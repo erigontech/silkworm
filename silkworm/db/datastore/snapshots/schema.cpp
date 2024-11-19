@@ -24,7 +24,8 @@ namespace silkworm::snapshots {
 SnapshotPath Schema::SnapshotFileDef::make_path(
     const std::filesystem::path& dir_path,
     StepRange range) const {
-    return SnapshotPath::make(dir_path, kSnapshotV1, range, tag(), file_ext());
+    auto filename_format = sub_dir_name() ? SnapshotPath::FilenameFormat::kE3 : SnapshotPath::FilenameFormat::kE2;
+    return SnapshotPath::make(dir_path, sub_dir_name(), filename_format, kSnapshotV1, range, tag(), file_ext());
 }
 
 Schema::EntityDef& Schema::EntityDef::tag_override(std::string_view tag) {
@@ -78,9 +79,11 @@ static std::string name2tag(datastore::EntityName name) {
 Schema::EntityDef Schema::RepositoryDef::make_domain_schema(datastore::EntityName name) {
     Schema::EntityDef schema;
     schema.kv_segment(kDomainKVSegmentName)
+        .sub_dir_name(kDomainKVSegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainKVSegmentFileExt);
     schema.rec_split_index(kDomainAccessorIndexName)
+        .sub_dir_name(kDomainAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainAccessorIndexFileExt);
     // TODO: add .kvei and .bt
@@ -96,9 +99,11 @@ Schema::EntityDef Schema::RepositoryDef::make_history_schema(datastore::EntityNa
 
 void Schema::RepositoryDef::define_history_schema(datastore::EntityName name, EntityDef& schema) {
     schema.segment(kHistorySegmentName)
+        .sub_dir_name(kHistorySegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kHistorySegmentFileExt);
     schema.rec_split_index(kHistoryAccessorIndexName)
+        .sub_dir_name(kHistoryAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kHistoryAccessorIndexFileExt);
     define_inverted_index_schema(name, schema);
@@ -112,9 +117,11 @@ Schema::EntityDef Schema::RepositoryDef::make_inverted_index_schema(datastore::E
 
 void Schema::RepositoryDef::define_inverted_index_schema(datastore::EntityName name, EntityDef& schema) {
     schema.kv_segment(kInvIdxKVSegmentName)
+        .sub_dir_name(kInvIdxKVSegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kInvIdxKVSegmentFileExt);
     schema.rec_split_index(kInvIdxAccessorIndexName)
+        .sub_dir_name(kInvIdxAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kInvIdxAccessorIndexFileExt);
 }

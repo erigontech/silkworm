@@ -46,7 +46,6 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     using namespace std::chrono_literals;
     using intx::operator""_u256;
 
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainData context;
     context.add_genesis_data();
 

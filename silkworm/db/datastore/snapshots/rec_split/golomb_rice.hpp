@@ -168,7 +168,7 @@ class GolombRiceVector {
     };
 
     GolombRiceVector() = default;
-    explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data_(std::move(input_data)) {}
+    explicit GolombRiceVector(std::vector<uint64_t> input_data) : data_(std::move(input_data)) {}
 
     size_t size() const { return data_.size(); }
 

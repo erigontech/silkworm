@@ -19,4 +19,4 @@
 #include <string>
 #include <system_error>
 
-std::error_code make_error_code(int error_code, std::string&& error_message);
+std::error_code make_error_code(int error_code, std::string error_message);

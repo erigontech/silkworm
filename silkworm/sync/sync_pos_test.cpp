@@ -18,17 +18,12 @@
 
 #include <array>
 
-#include <silkworm/infra/concurrency/task.hpp>
-
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/infra/test_util/log.hpp>
+#include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
 #include <silkworm/sync/block_exchange.hpp>
-#include <silkworm/sync/sentry_client.hpp>
 
 #include "test_util/mock_block_exchange.hpp"
 #include "test_util/mock_execution_client.hpp"
@@ -37,26 +32,20 @@ namespace silkworm::chainsync {
 
 class PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
   public:
-    TemporaryDirectory tmp_dir;
-    db::DataStore data_store{
-        mdbx::env_managed{},
-        db::blocks::make_blocks_repository(tmp_dir.path()),
-    };
-    SentryClient sentry_client{io_context_.get_executor(), nullptr};  // TODO(canepat) mock
-    test_util::MockBlockExchange block_exchange{data_store.ref(), sentry_client, kSepoliaConfig};
+    std::unique_ptr<test_util::MockBlockExchange> block_exchange{make_block_exchange()};
     std::shared_ptr<test_util::MockExecutionService> execution_service{std::make_shared<test_util::MockExecutionService>()};
     test_util::MockExecutionClient execution_client{execution_service};
 
   protected:
-    PoSSync sync_{block_exchange, execution_client};
-};
+    PoSSync sync_{*block_exchange, execution_client};
 
-Task<void> sleep(std::chrono::milliseconds duration) {
-    auto executor = co_await boost::asio::this_coro::executor;
-    boost::asio::steady_timer timer(executor);
-    timer.expires_after(duration);
-    co_await timer.async_wait(boost::asio::use_awaitable);
-}
+    static std::unique_ptr<test_util::MockBlockExchange> make_block_exchange() {
+        auto block_exchange = std::make_unique<test_util::MockBlockExchange>();
+        EXPECT_CALL(*block_exchange, chain_config)
+            .WillRepeatedly([]() -> const ChainConfig& { return kSepoliaConfig; });
+        return block_exchange;
+    }
+};
 
 static rpc::NewPayloadRequest make_fixed_payload_request(rpc::ExecutionPayload::Version version) {
     return {

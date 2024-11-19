@@ -649,7 +649,7 @@ void TxCall::throw_with_internal_error(const std::string& message) {
     throw_with_error(::grpc::Status{::grpc::StatusCode::INTERNAL, message});
 }
 
-void TxCall::throw_with_error(::grpc::Status&& status) {
+void TxCall::throw_with_error(::grpc::Status status) {
     SILK_ERROR << "Tx peer: " << peer() << " " << status.error_message();
     throw rpc::server::CallException{std::move(status)};
 }

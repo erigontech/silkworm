@@ -88,9 +88,6 @@ class MemoryMutationCursorTest {
     RWTxnManaged main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_txn, table::get_map_config, table::kSequenceName};
     MemoryMutation mutation{overlay};
-
-  private:
-    silkworm::test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };
 
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814

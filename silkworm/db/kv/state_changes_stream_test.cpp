@@ -55,7 +55,7 @@ namespace test = rpc::test;
 #ifndef SILKWORM_SANITIZE
 struct StateCacheTestBase : public test_util::KVTestBase {
     StateCacheTestBase() {
-        add_shared_service<api::StateCache>(io_context_, std::make_shared<api::CoherentStateCache>());
+        add_shared_service<api::StateCache>(ioc_, std::make_shared<api::CoherentStateCache>());
     }
 };
 
@@ -66,8 +66,8 @@ using StrictMockKVStub = testing::StrictMock<proto::FixIssue24351_MockKVStub>;
 using RemoteClientTestRunner = TestRunner<RemoteClient, StrictMockKVStub>;
 
 struct StateChangesStreamTest : public StateCacheTestBase {
-    api::StateChangeChannelPtr channel{std::make_shared<api::StateChangeChannel>(io_context_.get_executor())};
-    concurrency::Channel<api::StateChangesCall> state_changes_calls_channel{io_context_.get_executor()};
+    api::StateChangeChannelPtr channel{std::make_shared<api::StateChangeChannel>(ioc_.get_executor())};
+    concurrency::Channel<api::StateChangesCall> state_changes_calls_channel{ioc_.get_executor()};
     api::ServiceRouter router{state_changes_calls_channel};
     std::unique_ptr<api::StateCache> state_cache{std::make_unique<api::CoherentStateCache>()};
 };

@@ -26,7 +26,7 @@ namespace silkworm::chainsync {
 
 class ChainSync {
   public:
-    ChainSync(BlockExchange&, execution::api::Client&);
+    ChainSync(IBlockExchange&, execution::api::Client&);
     virtual ~ChainSync() = default;
 
     ChainSync(const ChainSync&) = delete;
@@ -35,7 +35,7 @@ class ChainSync {
     virtual Task<void> async_run() = 0;
 
   protected:
-    BlockExchange& block_exchange_;
+    IBlockExchange& block_exchange_;
     std::shared_ptr<execution::api::Service> exec_engine_;
     ChainForkView chain_fork_view_;
 };

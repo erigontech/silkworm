@@ -18,7 +18,7 @@
 
 namespace silkworm::chainsync {
 
-ChainSync::ChainSync(BlockExchange& block_exchange, execution::api::Client& exec_client)
+ChainSync::ChainSync(IBlockExchange& block_exchange, execution::api::Client& exec_client)
     : block_exchange_{block_exchange},
       exec_engine_{exec_client.service()},
       chain_fork_view_{ChainForkView::head_at_genesis(block_exchange.chain_config())} {

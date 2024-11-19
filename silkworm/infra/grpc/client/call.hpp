@@ -64,7 +64,7 @@ Task<Response> unary_rpc(
         });
     }
 
-    auto io_context_executor = co_await ThisTask::executor;
+    auto task_executor = co_await boost::asio::this_coro::executor;
 
     std::unique_ptr<grpc::ClientAsyncResponseReaderInterface<Response>> reader =
         agrpc::request(rpc, stub, client_context, request, grpc_context);
@@ -72,7 +72,7 @@ Task<Response> unary_rpc(
     Response reply;
     grpc::Status status;
     co_await agrpc::finish(reader, reply, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
-    co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
+    co_await boost::asio::dispatch(boost::asio::bind_executor(task_executor, boost::asio::use_awaitable));
 
     if (!status.ok()) {
         throw GrpcStatusError(std::move(status));
@@ -96,7 +96,7 @@ Task<void> server_streaming_rpc(
         });
     }
 
-    auto io_context_executor = co_await ThisTask::executor;
+    auto task_executor = co_await boost::asio::this_coro::executor;
 
     std::unique_ptr<grpc::ClientAsyncReaderInterface<Response>> reader;
     bool ok = co_await agrpc::request(
@@ -106,12 +106,12 @@ Task<void> server_streaming_rpc(
         std::move(request),
         reader,
         boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
-    co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
+    co_await boost::asio::dispatch(boost::asio::bind_executor(task_executor, boost::asio::use_awaitable));
 
     while (ok) {
         Response response;
         ok = co_await agrpc::read(reader, response, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
-        co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
+        co_await boost::asio::dispatch(boost::asio::bind_executor(task_executor, boost::asio::use_awaitable));
         if (ok) {
             co_await consumer(std::move(response));
         }
@@ -119,7 +119,7 @@ Task<void> server_streaming_rpc(
 
     grpc::Status status;
     co_await agrpc::finish(reader, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
-    co_await boost::asio::dispatch(boost::asio::bind_executor(io_context_executor, boost::asio::use_awaitable));
+    co_await boost::asio::dispatch(boost::asio::bind_executor(task_executor, boost::asio::use_awaitable));
 
     if (!status.ok()) {
         throw GrpcStatusError(std::move(status));

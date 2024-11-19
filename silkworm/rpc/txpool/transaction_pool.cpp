@@ -25,9 +25,11 @@
 
 namespace silkworm::rpc::txpool {
 
-TransactionPool::TransactionPool(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel,
-                                 agrpc::GrpcContext& grpc_context)
-    : TransactionPool(context.get_executor(), ::txpool::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
+TransactionPool::TransactionPool(
+    boost::asio::io_context& ioc,
+    const std::shared_ptr<grpc::Channel>& channel,
+    agrpc::GrpcContext& grpc_context)
+    : TransactionPool(ioc.get_executor(), ::txpool::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
 
 TransactionPool::TransactionPool(boost::asio::io_context::executor_type executor,
                                  std::unique_ptr<::txpool::Txpool::StubInterface> stub,

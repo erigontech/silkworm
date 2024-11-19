@@ -54,16 +54,14 @@ class ForkForTest : public Fork {
 };
 
 TEST_CASE("Fork") {
-    SetLogVerbosityGuard log_guard(log::Level::kNone);
-
     db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();
 
     db::DataModelFactory data_model_factory = context.data_model_factory();
 
-    asio::io_context io;
-    asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
+    asio::io_context ioc;
+    asio::executor_work_guard<decltype(ioc.get_executor())> work{ioc.get_executor()};
 
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
@@ -71,7 +69,7 @@ TEST_CASE("Fork") {
     db::RWAccess db_access = context.chaindata_rw();
 
     MainChain main_chain{
-        io.get_executor(),
+        ioc.get_executor(),
         node_settings,
         data_model_factory,
         /* log_timer_factory = */ std::nullopt,

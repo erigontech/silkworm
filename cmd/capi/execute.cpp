@@ -18,7 +18,6 @@
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
-#include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
 
@@ -39,6 +38,7 @@
 #include <silkworm/rpc/daemon.hpp>
 
 #include "../common/common.hpp"
+#include "../common/shutdown_signal.hpp"
 
 using namespace silkworm;
 using namespace silkworm::snapshots;
@@ -367,12 +367,11 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
 
 int start_rpcdaemon(SilkwormHandle handle, const rpc::DaemonSettings& /*settings*/, const DataDirectory& data_dir) {
     // Start execution context dedicated to handling termination signals
-    boost::asio::io_context signal_context;
-    boost::asio::signal_set signals{signal_context, SIGINT, SIGTERM};
-    SILK_DEBUG << "Signals registered on signal_context " << &signal_context;
-    signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
-        if (signal_number == SIGINT) std::cout << "\n";
-        SILK_INFO << "Signal number: " << signal_number << " caught, error: " << error.message();
+    boost::asio::io_context shutdown_signal_ioc;
+    cmd::common::ShutdownSignal shutdown_signal{shutdown_signal_ioc.get_executor()};
+    SILK_DEBUG << "Signals registered on signal_context " << &shutdown_signal_ioc;
+    shutdown_signal.on_signal([&](cmd::common::ShutdownSignal::SignalNumber signal_number) {
+        SILK_INFO << "Signal number: " << signal_number << " caught";
         const int status_code{silkworm_stop_rpcdaemon(handle)};
         if (status_code != SILKWORM_OK) {
             SILK_ERROR << "silkworm_stop_rpcdaemon failed [code=" << std::to_string(status_code) << "]";
@@ -392,7 +391,7 @@ int start_rpcdaemon(SilkwormHandle handle, const rpc::DaemonSettings& /*settings
         SILK_ERROR << "silkworm_start_rpcdaemon failed [code=" << std::to_string(status_code) << "]";
     }
 
-    signal_context.run();
+    shutdown_signal_ioc.run();
 
     return SILKWORM_OK;
 }

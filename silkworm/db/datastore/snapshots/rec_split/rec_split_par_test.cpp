@@ -28,7 +28,6 @@
 
 namespace silkworm::snapshots::rec_split {
 
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 using test_util::next_pseudo_random;
 
@@ -39,7 +38,6 @@ using test_util::next_pseudo_random;
 static constexpr int kTestSalt{1};
 
 TEST_CASE("RecSplit8-Par: key_count=0", "[silkworm][node][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     ThreadPool thread_pool{2};
     RecSplitSettings settings{
@@ -53,7 +51,6 @@ TEST_CASE("RecSplit8-Par: key_count=0", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8-Par: key_count=1", "[silkworm][node][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     ThreadPool thread_pool{2};
     RecSplitSettings settings{
@@ -68,7 +65,6 @@ TEST_CASE("RecSplit8-Par: key_count=1", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8-Par key_count=2", "[silkworm][node][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     ThreadPool thread_pool{2};
     RecSplitSettings settings{
@@ -131,7 +127,6 @@ const std::array<uint32_t, kMaxBucketSize> RecSplit4::kMemo;
 auto par_build_strategy_4(ThreadPool& tp) { return std::make_unique<RecSplit4::ParallelBuildingStrategy>(tp); }
 
 TEST_CASE("RecSplit4-Par: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     ThreadPool thread_pool{2};
 
@@ -170,7 +165,6 @@ TEST_CASE("RecSplit4-Par: keys=1000 buckets=128", "[silkworm][node][recsplit]") 
 }
 
 TEST_CASE("RecSplit4-Par: multiple keys-buckets", "[silkworm][node][recsplit]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile index_file;
     ThreadPool thread_pool{2};
 
@@ -217,8 +211,8 @@ TEST_CASE("RecSplit4-Par: multiple keys-buckets", "[silkworm][node][recsplit]") 
     }
 }
 
-TEST_CASE("RecSplit8-Par: index lookup", "[silkworm][node][recsplit][ignore]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
+#ifdef SILKWORM_TEST_SKIP
+TEST_CASE("RecSplit8-Par: index lookup", "[silkworm][node][recsplit]") {
     TemporaryFile index_file;
     ThreadPool thread_pool{2};
     RecSplitSettings settings{
@@ -240,9 +234,10 @@ TEST_CASE("RecSplit8-Par: index lookup", "[silkworm][node][recsplit][ignore]") {
         CHECK(rs2.lookup(key) == RecSplit8::LookupResult{i * 17, true});
     }
 }
+#endif  // SILKWORM_TEST_SKIP
 
-TEST_CASE("RecSplit8-Par: double index lookup", "[silkworm][node][recsplit][ignore]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
+#ifdef SILKWORM_TEST_SKIP
+TEST_CASE("RecSplit8-Par: double index lookup", "[silkworm][node][recsplit]") {
     TemporaryFile index_file;
     ThreadPool thread_pool{2};
     RecSplitSettings settings{
@@ -265,6 +260,7 @@ TEST_CASE("RecSplit8-Par: double index lookup", "[silkworm][node][recsplit][igno
         CHECK(rs2.lookup_by_ordinal(enumeration_index) == i * 17);
     }
 }
+#endif
 
 #endif  // _WIN32
 

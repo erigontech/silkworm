@@ -27,9 +27,6 @@
 
 namespace silkworm {
 
-//! \brief Read the lasdt n headers, in forward order, processing each via a user defined callback
-void for_last_n_headers(const db::DataModel&, size_t n, std::function<void(BlockHeader&&)> callback);
-
 //! \brief Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
 std::tuple<BlockNum, Hash> header_with_biggest_td(db::ROTxn& txn, const std::set<Hash>* bad_headers = nullptr);
 

@@ -38,7 +38,6 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
-using silkworm::test_util::SetLogVerbosityGuard;
 
 static const SnapshotPath kValidHeadersSegmentPath{*SnapshotPath::parse("v1-014500-015000-headers.seg")};
 
@@ -48,6 +47,8 @@ class SnapshotPathForTest : public SnapshotPath {
         : SnapshotPath{
               SnapshotPath::make(
                   tmp_dir,
+                  std::nullopt,
+                  SnapshotPath::FilenameFormat::kE2,
                   kSnapshotV1,
                   step_range,
                   "headers",
@@ -84,7 +85,6 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
 }
 
 TEST_CASE("Snapshot::reopen_segment", "[silkworm][node][snapshot][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename(), test::SnapshotHeader{}};
     SnapshotForTest snapshot{tmp_snapshot_file.path()};
@@ -92,7 +92,6 @@ TEST_CASE("Snapshot::reopen_segment", "[silkworm][node][snapshot][snapshot]") {
 }
 
 TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::HelloWorldSnapshotFile hello_world_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename()};
     SnapshotForTest tmp_snapshot{hello_world_snapshot_file.path()};
@@ -110,7 +109,6 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
 }
 
 TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::HelloWorldSnapshotFile hello_world_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename()};
     seg::Decompressor decoder{hello_world_snapshot_file.fs_path()};
@@ -121,7 +119,6 @@ TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
 
 // https://etherscan.io/block/1500013
 TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};  // contains headers for [1'500'012, 1'500'013]
     auto& header_segment_path = header_segment_file.path();
@@ -164,7 +161,6 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
 
 // https://etherscan.io/block/1500013
 TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};  // contains bodies for [1'500'012, 1'500'013]
     auto& body_segment_path = body_segment_file.path();
@@ -192,7 +188,6 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
 
 // https://etherscan.io/block/1500013
 TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
     auto& body_segment_path = body_segment.path();
@@ -219,7 +214,6 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
 
 // https://etherscan.io/block/1500012
 TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
     auto& body_segment_path = body_segment.path();
@@ -263,7 +257,6 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
 
 // https://etherscan.io/block/1500012
 TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
     auto& body_segment_path = body_segment.path();
@@ -295,7 +288,6 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
 }
 
 TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleBodySnapshotFile body_segment{tmp_dir.path()};
     auto& body_segment_path = body_segment.path();
@@ -327,7 +319,6 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
 }
 
 TEST_CASE("slice_tx_payload", "[silkworm][node][snapshot]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     const std::vector<AccessListEntry> access_list{
         {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
          {

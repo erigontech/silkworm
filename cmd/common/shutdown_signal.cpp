@@ -18,6 +18,7 @@
 
 #include <iostream>
 
+#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/system/system_error.hpp>
 
@@ -49,10 +50,16 @@ void ShutdownSignal::on_signal(std::function<void(SignalNumber)> callback) {
     });
 }
 
-Task<ShutdownSignal::SignalNumber> ShutdownSignal::wait() {
+Task<ShutdownSignal::SignalNumber> ShutdownSignal::wait_me() {
     int signal_number = co_await signals_.async_wait(boost::asio::use_awaitable);
     log_signal(signal_number);
     co_return signal_number;
+}
+
+Task<ShutdownSignal::SignalNumber> ShutdownSignal::wait() {
+    auto executor = co_await boost::asio::this_coro::executor;
+    ShutdownSignal signal{executor};
+    co_return (co_await signal.wait_me());
 }
 
 }  // namespace silkworm::cmd::common

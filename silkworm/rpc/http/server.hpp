@@ -42,7 +42,7 @@ class Server {
     // Construct the server to listen on the specified local TCP end-point
     Server(const std::string& end_point,
            RequestHandlerFactory&& handler_factory,
-           boost::asio::io_context& io_context,
+           boost::asio::io_context& ioc,
            WorkerPool& workers,
            std::vector<std::string> allowed_origins,
            std::optional<std::string> jwt_secret,

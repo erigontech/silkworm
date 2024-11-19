@@ -40,13 +40,13 @@ namespace silkworm::rpc::commands {
 
 class DebugRpcApi {
   public:
-    DebugRpcApi(boost::asio::io_context& context, WorkerPool& workers)
-        : io_context_{context},
-          block_cache_{must_use_shared_service<BlockCache>(io_context_)},
-          state_cache_{must_use_shared_service<db::kv::api::StateCache>(io_context_)},
-          database_{must_use_private_service<ethdb::Database>(io_context_)},
+    DebugRpcApi(boost::asio::io_context& ioc, WorkerPool& workers)
+        : ioc_{ioc},
+          block_cache_{must_use_shared_service<BlockCache>(ioc_)},
+          state_cache_{must_use_shared_service<db::kv::api::StateCache>(ioc_)},
+          database_{must_use_private_service<ethdb::Database>(ioc_)},
           workers_{workers},
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
+          backend_{must_use_private_service<ethbackend::BackEnd>(ioc_)} {}
     virtual ~DebugRpcApi() = default;
 
     DebugRpcApi(const DebugRpcApi&) = delete;
@@ -71,7 +71,7 @@ class DebugRpcApi {
     Task<void> handle_debug_get_raw_transaction(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioc_;
     BlockCache* block_cache_;
     db::kv::api::StateCache* state_cache_;
     ethdb::Database* database_;

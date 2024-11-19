@@ -40,7 +40,6 @@ namespace silkworm::snapshots {
 using Catch::Matchers::Message;
 namespace test = test_util;
 using silkworm::test_util::null_stream;
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 using namespace snapshots::seg;
 
@@ -230,7 +229,6 @@ TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][seg][decompr
 }
 
 TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
     MemoryMappedFile mmf{tmp_snapshot.fs_path()};
@@ -242,8 +240,6 @@ TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][seg][decom
 }
 
 TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("empty file") {
         TemporaryFile tmp_file;
         Decompressor decoder{tmp_file.path()};
@@ -290,7 +286,6 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompresso
 }
 
 TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     std::map<std::string, test::SnapshotHeader> header_tests{
@@ -347,7 +342,6 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]
 }
 
 TEST_CASE("Decompressor::begin", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
     Decompressor decoder{tmp_snapshot.fs_path()};
@@ -360,7 +354,6 @@ TEST_CASE("Decompressor::begin", "[silkworm][node][seg][decompressor]") {
 }
 
 TEST_CASE("Decompressor::close", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
     Decompressor decoder{tmp_snapshot.fs_path()};
@@ -379,7 +372,6 @@ TEST_CASE("Decompressor::close", "[silkworm][node][seg][decompressor]") {
 }
 
 TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot = create_empty_snapshot_file(tmp_dir);
     Decompressor decoder{tmp_snapshot.fs_path()};
@@ -440,7 +432,6 @@ static const Bytes kLoremIpsumDict{*from_hex(
     "73742036340d6c61626f72756d203635")};
 
 TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
@@ -467,7 +458,6 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][
 }
 
 TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
@@ -494,7 +484,6 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]
 }
 
 TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};

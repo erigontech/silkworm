@@ -37,7 +37,6 @@ using testing::NiceMock;
 
 using silkworm::db::test_util::TempChainData;
 using silkworm::node::test_util::make_node_settings_from_temp_chain_data;
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
 
 class ActiveDirectServiceForTest : public ActiveDirectService {
@@ -47,30 +46,31 @@ class ActiveDirectServiceForTest : public ActiveDirectService {
 
 struct ActiveDirectServiceTest : public TaskRunner {
     explicit ActiveDirectServiceTest()
-        : log_guard{log::Level::kNone},
-          settings{make_node_settings_from_temp_chain_data(tmp_chaindata)} {
-        tmp_chaindata.add_genesis_data();
-        tmp_chaindata.commit_txn();
-        mock_execution_engine = std::make_unique<NiceMock<MockExecutionEngine>>(executor(), settings, tmp_chaindata.chaindata_rw());
-        direct_service = std::make_unique<ActiveDirectServiceForTest>(*mock_execution_engine, execution_context);
-        execution_context_thread = std::thread{[this]() {
+        : settings_{make_node_settings_from_temp_chain_data(tmp_chaindata_)} {
+        tmp_chaindata_.add_genesis_data();
+        tmp_chaindata_.commit_txn();
+        mock_execution_engine = std::make_unique<NiceMock<MockExecutionEngine>>(executor(), settings_, tmp_chaindata_.chaindata_rw());
+        direct_service = std::make_unique<ActiveDirectServiceForTest>(*mock_execution_engine, service_ioc_);
+        service_thread_ = std::thread{[this]() {
             direct_service->execution_loop();
         }};
     }
     ~ActiveDirectServiceTest() override {
         direct_service->stop();
-        if (execution_context_thread.joinable()) {
-            execution_context_thread.join();
+        if (service_thread_.joinable()) {
+            service_thread_.join();
         }
     }
 
-    SetLogVerbosityGuard log_guard;
-    TempChainData tmp_chaindata;
-    NodeSettings settings;
+  private:
+    TempChainData tmp_chaindata_;
+    NodeSettings settings_;
+    boost::asio::io_context service_ioc_;
+    std::thread service_thread_;
+
+  public:
     std::unique_ptr<MockExecutionEngine> mock_execution_engine;
-    boost::asio::io_context execution_context;
     std::unique_ptr<ActiveDirectServiceForTest> direct_service;
-    std::thread execution_context_thread;
 };
 
 TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::insert_blocks", "[node][execution][api]") {
@@ -85,7 +85,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::insert_block
                     return;
                 }));
             auto future = spawn_future(direct_service->insert_blocks(blocks));
-            context().run();
+            ioc().run();
             CHECK(future.get().status == api::ExecutionStatus::kSuccess);
         }
     }
@@ -114,7 +114,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::verify_chain
                     co_return result;
                 }));
             auto future = spawn_future(direct_service->validate_chain(new_head));
-            context().run();
+            ioc().run();
             const auto result{future.get()};
             if (std::holds_alternative<ValidChain>(stagedsync_result)) {
                 CHECK(std::holds_alternative<api::ValidChain>(result));
@@ -165,7 +165,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::update_fork_
                     return result ? BlockId{10, head_block_hash} : BlockId{2, finalized_block_hash};
                 }));
             auto future = spawn_future(direct_service->update_fork_choice(fork_choice));
-            context().run();
+            ioc().run();
             const auto fork_choice_result{future.get()};
             CHECK(fork_choice_result.status == expected_choice_result.status);
             CHECK(fork_choice_result.latest_valid_head == expected_choice_result.latest_valid_head);
@@ -181,7 +181,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_block_nu
                 return {};
             }));
         auto future = spawn_future(direct_service->get_header_hash_number(block_hash));
-        context().run();
+        ioc().run();
         CHECK(future.get() == std::nullopt);
     }
     SECTION("existent") {
@@ -191,7 +191,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_block_nu
                 return block_number;
             }));
         auto future = spawn_future(direct_service->get_header_hash_number(block_hash));
-        context().run();
+        ioc().run();
         CHECK(future.get() == block_number);
     }
 }
@@ -219,7 +219,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_fork_cho
             return {1, safe_block_hash};
         }));
     auto future = spawn_future(direct_service->get_fork_choice());
-    context().run();
+    ioc().run();
     const auto last_choice{future.get()};
     CHECK(last_choice.head_block_hash == expected_fork_choice.head_block_hash);
     CHECK(last_choice.timeout == expected_fork_choice.timeout);
@@ -239,7 +239,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_last_hea
                     return headers;
                 }));
             auto future = spawn_future(direct_service->get_last_headers(how_many));
-            context().run();
+            ioc().run();
             CHECK(future.get() == last_headers);
         }
     }
@@ -252,7 +252,7 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::block_progre
             return progress;
         }));
     auto future = spawn_future(direct_service->block_progress());
-    context().run();
+    ioc().run();
     CHECK(future.get() == progress);
 }
 

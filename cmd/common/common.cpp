@@ -54,10 +54,9 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
     };
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
     log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity")
-        ->capture_default_str()
         ->check(CLI::Range(log::Level::kCritical, log::Level::kTrace))
         ->transform(CLI::Transformer(level_mapping, CLI::ignore_case))
-        ->default_val(log_settings.log_verbosity);
+        ->default_val(log::Level::kInfo);
     log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
     log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines");
     log_opts.add_flag("--log.utc", log_settings.log_utc, "Prints log timings in UTC");

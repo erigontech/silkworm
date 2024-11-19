@@ -70,8 +70,6 @@ static std::vector<uint64_t> generate_contiguous_offsets(uint64_t count) {
 }
 
 TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     std::vector<EliasFanoList32Test> ef_test_vector{
         // Test Pattern 1
         {
@@ -134,7 +132,6 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
 }
 
 TEST_CASE("DoubleEliasFanoList16", "[silkworm][recsplit][elias_fano]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     DoubleEliasFanoList16 double_ef_list;
     std::vector<uint64_t> cum_keys{1, 1, 2, 6, 7, 11, 13, 20};
     std::vector<uint64_t> position{1, 2, 5, 5, 6, 7, 9, 9};

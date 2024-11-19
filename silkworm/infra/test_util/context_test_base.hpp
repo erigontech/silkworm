@@ -36,7 +36,7 @@ class ContextTestBase {
 
     template <typename AwaitableOrFunction>
     auto spawn(AwaitableOrFunction&& awaitable) {
-        return concurrency::spawn_future(io_context_, std::forward<AwaitableOrFunction>(awaitable));
+        return concurrency::spawn_future(ioc_, std::forward<AwaitableOrFunction>(awaitable));
     }
 
     template <typename AwaitableOrFunction>
@@ -53,9 +53,8 @@ class ContextTestBase {
     agrpc::GrpcContext& grpc_context() { return grpc_context_; }
 
   protected:
-    silkworm::test_util::SetLogVerbosityGuard log_guard_;
     rpc::ClientContext context_;
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioc_;
     agrpc::GrpcContext& grpc_context_;
     std::thread context_thread_;
 };

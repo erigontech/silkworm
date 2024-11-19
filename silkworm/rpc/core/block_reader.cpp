@@ -49,7 +49,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     SILK_TRACE << "read_balance_changes: block_number: " << block_number;
 
-    StateReader state_reader{transaction_, block_number};
+    StateReader state_reader{transaction_, block_number + 1};
 
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_number);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_number + 1);
@@ -62,8 +62,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     auto paginated_result = co_await transaction_.history_range(std::move(query));
     auto it = co_await paginated_result.begin();
-
-
+    
     while (const auto value = co_await it.next()) {
         intx::uint256 old_balance{0};
         intx::uint256 current_balance{0};
@@ -86,10 +85,6 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
         if (current_balance != old_balance) {
             balance_changes[new_address] = current_balance;
-            std::cout << "address: " << silkworm::to_hex(address) << "\n";
-            std::cout << "old_balance: " << old_balance << "\n";
-            std::cout << "current_balance: " << current_balance << "\n";
-            std::cout << "add entry[balance]=value: " << new_address << " " << current_balance << "\n";
         }
     }
 

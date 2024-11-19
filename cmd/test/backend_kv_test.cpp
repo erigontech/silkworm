@@ -1023,17 +1023,17 @@ int main(int argc, char* argv[]) {
             SILK_TRACE << "Completion thread: " << completion_thread.get_id() << " end";
         }};
 
-        boost::asio::io_context scheduler;
-        silkworm::cmd::common::ShutdownSignal shutdown_signal{scheduler.get_executor()};
+        boost::asio::io_context shutdown_signal_ioc;
+        silkworm::cmd::common::ShutdownSignal shutdown_signal{shutdown_signal_ioc.get_executor()};
         shutdown_signal.on_signal([&](silkworm::cmd::common::ShutdownSignal::SignalNumber /*num*/) {
             pump_stop = true;
             completion_stop = true;
             shutdown_requested.notify_one();
-            scheduler.stop();
+            shutdown_signal_ioc.stop();
         });
 
         SILK_LOG << "ETHBACKEND & KV interface test running [pid=" << pid << ", main thread=" << tid << "]";
-        scheduler.run();
+        shutdown_signal_ioc.run();
 
         // Order matters here: 1) wait for pump thread exit 2) shutdown gRPC CQ 3) wait for completion thread exit
         if (pump_thread.joinable()) {

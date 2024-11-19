@@ -69,13 +69,25 @@ class ExtendingFork {
     void save_exception(std::exception_ptr);
     void propagate_exception_if_any();
 
-    BlockId forking_point_;                              // starting point
-    MainChain& main_chain_;                              // main chain
-    boost::asio::any_io_executor external_executor_;     // for promises
-    std::unique_ptr<Fork> fork_;                         // for domain logic
-    std::unique_ptr<boost::asio::io_context> executor_;  // for pipeline execution
-    std::thread thread_;                                 // for executor
-    std::exception_ptr exception_{};                     // last exception
+    // starting point
+    BlockId forking_point_;
+
+    MainChain& main_chain_;
+
+    // for promises
+    boost::asio::any_io_executor external_executor_;
+
+    // for domain logic
+    std::unique_ptr<Fork> fork_;
+
+    // for pipeline execution
+    std::unique_ptr<boost::asio::io_context> ioc_;
+
+    // for executor
+    std::thread thread_;
+
+    // last exception
+    std::exception_ptr exception_{};
 
     // cached values provided to avoid thread synchronization
     BlockId current_head_{};

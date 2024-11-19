@@ -49,7 +49,7 @@ using TaskCompletionHandler = typename CompletionHandler<std::invoke_result_t<F,
 template <typename Executor, typename F, typename... Args>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) because of https://github.com/llvm/llvm-project/issues/68105
 Task<std::invoke_result_t<F, Args...>> async_task(Executor runner, F&& fn, Args&&... args) {
-    auto this_executor = co_await ThisTask::executor;
+    auto this_executor = co_await boost::asio::this_coro::executor;
     co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), TaskCompletionHandler<F, Args...>>(
         [&this_executor, &runner, fn = std::forward<F>(fn), ... args = std::forward<Args>(args)](auto& self) mutable {
             boost::asio::post(runner, [&, fn = std::forward<decltype(fn)>(fn), ... args = std::forward<Args>(args), self = std::move(self)]() mutable {

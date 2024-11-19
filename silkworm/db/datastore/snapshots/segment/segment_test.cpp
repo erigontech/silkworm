@@ -26,7 +26,7 @@ namespace silkworm::snapshots {
 
 TEST_CASE("SegmentFile") {
     TemporaryDirectory tmp_dir;
-    auto path = SnapshotPath::make(tmp_dir.path(), kSnapshotV1, StepRange{Step{0}, Step{1}}, "headers", ".seg");
+    auto path = SnapshotPath::make(tmp_dir.path(), std::nullopt, SnapshotPath::FilenameFormat::kE2, kSnapshotV1, StepRange{Step{0}, Step{1}}, "headers", ".seg");
 
     std::vector<std::string> items = {
         "first",

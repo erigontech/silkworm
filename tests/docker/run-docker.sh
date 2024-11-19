@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 while [ True ]; do
 if [ "$1" = "--refresh-cache" -o "$1" = "-r" ]; then
     RENEW=1

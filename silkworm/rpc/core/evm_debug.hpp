@@ -24,7 +24,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <gsl/narrow>

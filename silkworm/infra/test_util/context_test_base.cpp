@@ -20,7 +20,7 @@ namespace silkworm::test_util {
 
 ContextTestBase::ContextTestBase()
     : context_{0},
-      io_context_{*context_.io_context()},
+      ioc_{*context_.ioc()},
       grpc_context_{*context_.grpc_context()},
       context_thread_{[&]() { context_.execute_loop(); }} {}
 

@@ -33,8 +33,8 @@ namespace silkworm::rpc::commands {
 class NetRpcApi {
   public:
     explicit NetRpcApi(ethbackend::BackEnd* backend) : backend_(backend) {}
-    explicit NetRpcApi(boost::asio::io_context& io_context)
-        : NetRpcApi(must_use_private_service<ethbackend::BackEnd>(io_context)) {}
+    explicit NetRpcApi(boost::asio::io_context& ioc)
+        : NetRpcApi(must_use_private_service<ethbackend::BackEnd>(ioc)) {}
     virtual ~NetRpcApi() = default;
 
     NetRpcApi(const NetRpcApi&) = delete;

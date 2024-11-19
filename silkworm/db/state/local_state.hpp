@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/asio/io_context.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/util.hpp>

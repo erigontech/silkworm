@@ -32,7 +32,7 @@ struct AsyncTaskBenchTest : test_util::ServiceContextTestBase {
 
 template <typename Executor>
 Task<size_t> async_compose_factorial(const Executor runner, const size_t number) {
-    const auto this_executor = co_await ThisTask::executor;
+    const auto this_executor = co_await boost::asio::this_coro::executor;
     co_return co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::exception_ptr, size_t)>(
         [&](auto& self) {
             boost::asio::post(runner, [&, self = std::move(self)]() mutable {

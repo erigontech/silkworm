@@ -33,9 +33,9 @@ namespace silkworm::rpc::commands {
 
 class TxPoolRpcApi {
   public:
-    explicit TxPoolRpcApi(boost::asio::io_context& io_context)
-        : database_{must_use_private_service<ethdb::Database>(io_context)},
-          tx_pool_{must_use_private_service<txpool::TransactionPool>(io_context)} {}
+    explicit TxPoolRpcApi(boost::asio::io_context& ioc)
+        : database_{must_use_private_service<ethdb::Database>(ioc)},
+          tx_pool_{must_use_private_service<txpool::TransactionPool>(ioc)} {}
     virtual ~TxPoolRpcApi() = default;
 
     TxPoolRpcApi(const TxPoolRpcApi&) = delete;

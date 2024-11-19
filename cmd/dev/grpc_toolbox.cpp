@@ -238,10 +238,10 @@ int ethbackend_coroutines(const std::string& target) {
     try {
         ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
-        auto io_context = context.io_context();
+        auto ioc = context.ioc();
         auto grpc_context = context.grpc_context();
 
-        boost::asio::signal_set signals(*io_context, SIGINT, SIGTERM);
+        boost::asio::signal_set signals(*ioc, SIGINT, SIGTERM);
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
             std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl
                       << std::flush;
@@ -251,8 +251,8 @@ int ethbackend_coroutines(const std::string& target) {
         const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
 
         // Etherbase
-        ethbackend::RemoteBackEnd eth_backend{*io_context, channel, *grpc_context};
-        boost::asio::co_spawn(*io_context, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
+        ethbackend::RemoteBackEnd eth_backend{*ioc, channel, *grpc_context};
+        boost::asio::co_spawn(*ioc, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
             context_pool.stop();
         });
 
@@ -508,17 +508,17 @@ class GrpcKvCallbackReactor final : public grpc::ClientBidiReactor<remote::Curso
 };
 
 int kv_seek_async_callback(const std::string& target, const std::string& table_name, silkworm::ByteView key, uint32_t timeout) {
-    boost::asio::io_context context;
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{context.get_executor()};
+    boost::asio::io_context ioc;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{ioc.get_executor()};
 
     const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
     auto stub = remote::KV::NewStub(channel);
 
-    boost::asio::signal_set signals(context, SIGINT, SIGTERM);
+    boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
     signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
         std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl
                   << std::flush;
-        context.stop();
+        ioc.stop();
     });
 
     GrpcKvCallbackReactor reactor{*stub, std::chrono::milliseconds{timeout}};
@@ -580,7 +580,7 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                                     return;
                                 }
                                 std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursor_id() << "\n";
-                                context.stop();
+                                ioc.stop();
                             });
                         });
                     });
@@ -589,7 +589,7 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
         });
     });
 
-    context.run();
+    ioc.run();
 
     return 0;
 }
@@ -966,10 +966,10 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
     try {
         ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
-        auto io_context = context.io_context();
+        auto ioc = context.ioc();
         auto grpc_context = context.grpc_context();
 
-        boost::asio::signal_set signals(*io_context, SIGINT, SIGTERM);
+        boost::asio::signal_set signals(*ioc, SIGINT, SIGTERM);
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
             std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl
                       << std::flush;
@@ -981,7 +981,7 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
         };
 
         // ETHBACKEND
-        ethbackend::RemoteBackEnd eth_backend{*io_context, channel_factory(), *grpc_context};
+        ethbackend::RemoteBackEnd eth_backend{*ioc, channel_factory(), *grpc_context};
         // DB KV API client
         CoherentStateCache state_cache;
         db::kv::grpc::client::RemoteClient client{channel_factory,
@@ -990,7 +990,7 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
                                                   ethdb::kv::make_backend_providers(&eth_backend)};
         auto kv_service = client.service();
 
-        boost::asio::co_spawn(*io_context, query_func(kv_service, std::forward<Q>(query), verbose), [&](std::exception_ptr) {
+        boost::asio::co_spawn(*ioc, query_func(kv_service, std::forward<Q>(query), verbose), [&](std::exception_ptr) {
             context_pool.stop();
         });
 

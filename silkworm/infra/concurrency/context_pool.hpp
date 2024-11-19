@@ -38,7 +38,7 @@ class Context {
     explicit Context(size_t context_id);
     virtual ~Context() = default;
 
-    boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
+    boost::asio::io_context* ioc() const noexcept { return ioc_.get(); }
     size_t id() const noexcept { return context_id_; }
 
     //! Execute the scheduler loop until stopped.
@@ -52,7 +52,7 @@ class Context {
     size_t context_id_;
 
     //! The asio asynchronous event loop scheduler.
-    std::shared_ptr<boost::asio::io_context> io_context_;
+    std::shared_ptr<boost::asio::io_context> ioc_;
 
     //! The work-tracking executor that keep the asio scheduler running.
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
@@ -110,7 +110,7 @@ class ContextPool : public ExecutorPool {
                 }
                 SILK_TRACE << "Thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
             });
-            SILK_TRACE << "ContextPool::start context[" << i << "] started: " << context.io_context();
+            SILK_TRACE << "ContextPool::start context[" << i << "] started: " << context.ioc();
         }
 
         SILK_TRACE << "ContextPool::start END";
@@ -136,7 +136,7 @@ class ContextPool : public ExecutorPool {
             // Explicitly stop all context runnable components
             for (size_t i{0}; i < contexts_.size(); ++i) {
                 contexts_[i].stop();
-                SILK_TRACE << "ContextPool::stop context[" << i << "] stopped: " << contexts_[i].io_context();
+                SILK_TRACE << "ContextPool::stop context[" << i << "] stopped: " << contexts_[i].ioc();
             }
         }
 
@@ -159,14 +159,14 @@ class ContextPool : public ExecutorPool {
         return contexts_[index];
     }
 
-    boost::asio::io_context& next_io_context() {
+    boost::asio::io_context& next_ioc() {
         const auto& context = next_context();
-        return *context.io_context();
+        return *context.ioc();
     }
 
     // ExecutorPool
     boost::asio::any_io_executor any_executor() override {
-        return this->next_io_context().get_executor();
+        return this->next_ioc().get_executor();
     }
 
     ExecutorPool& as_executor_pool() {

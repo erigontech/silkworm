@@ -97,8 +97,8 @@ std::map<datastore::EntityName, btree::BTreeIndex> make_btree_indexes(
     std::map<datastore::EntityName, btree::BTreeIndex> results;
     for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kBTreeIndex, entity, dir_path, range)) {
         SILK_TRACE << "make_btree_indexes opens " << name.to_string() << " at " << path.filename();
-        // TODO: refactor to not require Decompressor, wait for RAII refactoring
-        // results.emplace(name, btree::BTreeIndex{?, path.path()});
+        // TODO: wait for RAII refactoring
+        // results.emplace(name, btree::BTreeIndex{path.path()});
     }
     return results;
 }

@@ -23,6 +23,7 @@
 #include <silkworm/infra/common/filesystem.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "snapshots/common/raw_codec.hpp"
 #include "snapshots/common/snapshot_path.hpp"
 #include "snapshots/segment/seg/compressor.hpp"
 #include "snapshots/segment/segment_writer.hpp"
@@ -82,14 +83,6 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
     return {};
 }
 
-struct RawDecoder : public Decoder {
-    ByteView value;
-    ~RawDecoder() override = default;
-    void decode_word(ByteView word) override {
-        value = word;
-    }
-};
-
 std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& merger_command = dynamic_cast<SnapshotMergerCommand&>(*command);
     auto range = merger_command.range;
@@ -102,7 +95,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(StepRange::from_block_num_range(range))) {
             auto& bundle = *bundle_ptr;
-            segment::SegmentReader<RawDecoder> reader{bundle.segment(Schema::kDefaultEntityName, name)};
+            segment::SegmentReader<RawDecoder<ByteView>> reader{bundle.segment(Schema::kDefaultEntityName, name)};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 

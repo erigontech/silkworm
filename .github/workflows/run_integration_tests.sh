@@ -12,7 +12,6 @@ set -o pipefail
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-# eth_getBlockReceipts/test_07.json new blobFields   
 # debug_accountRange: new algo using TKV
 # debug_storageRangeAt: new algo using TKV
 # debug_traceCall/test_02.json: requested is_latest fix to support ethbackend
@@ -53,7 +52,6 @@ debug_traceTransaction/test_96.json,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
-eth_getBlockReceipts/test_07.json,\
 eth_getLogs,\
 ots_getContractCreator,\
 ots_searchTransactionsAfter,\

@@ -15,7 +15,6 @@ rm -rf ./mainnet/results/
 # debug_accountRange: new algo using TKV
 # debug_storageRangeAt: new algo using TKV
 # debug_traceCall/test_02.json: requested is_latest fix to support ethbackend
-# erigon_getBalanceChangesInBlock: new algo using TKV
 # erigon_getLatestLogs: new algo using TKV
 # eth_getLogs: new algo using TKV
 # ots_getContractCreator: new algo using TKV
@@ -50,7 +49,6 @@ debug_traceTransaction/test_91.tar,\
 debug_traceTransaction/test_92.tar,\
 debug_traceTransaction/test_96.json,\
 engine_,\
-erigon_getBalanceChangesInBlock,\
 erigon_getLatestLogs,\
 eth_getLogs,\
 ots_getContractCreator,\

@@ -16,8 +16,6 @@
 
 #include "block_reader.hpp"
 
-#include <fmt/core.h>
-
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
@@ -67,30 +65,25 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
         intx::uint256 old_balance{0};
         intx::uint256 current_balance{0};
 
-        auto address = value->first;
-
         if (!value->second.empty()) {
-            auto account{Account::from_encoded_storage_v3(value->second)};
+            const auto account{Account::from_encoded_storage_v3(value->second)};
             if (account) {
                 old_balance = account->balance;
             }
         }
 
-        ByteView address_view{address.data(), address.size()};
-        evmc::address new_address = silkworm::bytes_to_address(address_view);
+        evmc::address address = bytes_to_address(value->first);
 
-        if (auto current_account = co_await state_reader.read_account(new_address)) {
+        if (auto current_account = co_await state_reader.read_account(address)) {
             current_balance = current_account->balance;
         }
 
         if (current_balance != old_balance) {
-            balance_changes[new_address] = current_balance;
+            balance_changes[address] = current_balance;
         }
     }
 
-    SILK_DEBUG << "Changed balances " << balance_changes.size();
-
-    co_return;
+    SILK_DEBUG << "Changed balances: " << balance_changes.size();
 }
 
 }  // namespace silkworm::rpc

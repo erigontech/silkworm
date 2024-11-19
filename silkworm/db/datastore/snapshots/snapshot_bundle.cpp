@@ -20,6 +20,7 @@
 
 namespace silkworm::snapshots {
 
+using namespace rec_split;
 using namespace segment;
 
 static std::map<datastore::EntityName, SnapshotPath> make_snapshot_paths(
@@ -65,13 +66,13 @@ std::map<datastore::EntityName, KVSegmentFileReader> make_kv_segments(
     return results;
 }
 
-std::map<datastore::EntityName, Index> make_rec_split_indexes(
+std::map<datastore::EntityName, AccessorIndex> make_accessor_indexes(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
     StepRange range) {
-    std::map<datastore::EntityName, Index> results;
-    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kRecSplitIndex, entity, dir_path, range)) {
-        results.emplace(name, Index{path});
+    std::map<datastore::EntityName, AccessorIndex> results;
+    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kAccessorIndex, entity, dir_path, range)) {
+        results.emplace(name, AccessorIndex{path});
     }
     return results;
 }
@@ -114,7 +115,7 @@ SnapshotBundleData make_bundle_data(
             SnapshotBundleEntityData{
                 make_segments(entity_schema, dir_path, step_range),
                 make_kv_segments(entity_schema, dir_path, step_range),
-                make_rec_split_indexes(entity_schema, dir_path, step_range),
+                make_accessor_indexes(entity_schema, dir_path, step_range),
                 make_existence_indexes(entity_schema, dir_path, step_range),
                 make_btree_indexes(entity_schema, dir_path, step_range),
             });
@@ -143,8 +144,8 @@ void SnapshotBundle::reopen() {
                 return "invalid empty snapshot " + segment.fs_path().string();
             });
         }
-        for (auto& entry : data.rec_split_indexes) {
-            Index& index = entry.second;
+        for (auto& entry : data.accessor_indexes) {
+            AccessorIndex& index = entry.second;
             index.reopen_index();
         }
     }
@@ -153,8 +154,8 @@ void SnapshotBundle::reopen() {
 void SnapshotBundle::close() {
     for (auto& entity_entry : data_.entities) {
         auto& data = entity_entry.second;
-        for (auto& entry : data.rec_split_indexes) {
-            Index& index = entry.second;
+        for (auto& entry : data.accessor_indexes) {
+            AccessorIndex& index = entry.second;
             index.close_index();
         }
         for (auto& entry : data.segments) {
@@ -177,26 +178,26 @@ const SegmentFileReader& SnapshotBundle::segment(
     return data_.entities.at(entity_name).segments.at(segment_name);
 }
 
-const Index& SnapshotBundle::rec_split_index(
+const AccessorIndex& SnapshotBundle::accessor_index(
     datastore::EntityName entity_name,
     datastore::EntityName index_name) const {
-    return data_.entities.at(entity_name).rec_split_indexes.at(index_name);
+    return data_.entities.at(entity_name).accessor_indexes.at(index_name);
 }
 
 Domain SnapshotBundle::domain(datastore::EntityName name) const {
     auto& data = data_.entities.at(name);
     Domain domain{
         data.kv_segments.at(Schema::kDomainKVSegmentName),
-        data.rec_split_indexes.at(Schema::kDomainAccessorIndexName),
+        data.accessor_indexes.at(Schema::kDomainAccessorIndexName),
         // TODO: bt & kvei
     };
     if (data.segments.contains(Schema::kHistorySegmentName)) {
         domain.history.emplace(History{
             data.segments.at(Schema::kHistorySegmentName),
-            data.rec_split_indexes.at(Schema::kHistoryAccessorIndexName),
+            data.accessor_indexes.at(Schema::kHistoryAccessorIndexName),
             InvertedIndex{
                 data.kv_segments.at(Schema::kInvIdxKVSegmentName),
-                data.rec_split_indexes.at(Schema::kInvIdxAccessorIndexName),
+                data.accessor_indexes.at(Schema::kInvIdxAccessorIndexName),
             },
         });
     }
@@ -207,7 +208,7 @@ InvertedIndex SnapshotBundle::inverted_index(datastore::EntityName name) const {
     auto& data = data_.entities.at(name);
     return {
         data.kv_segments.at(Schema::kInvIdxKVSegmentName),
-        data.rec_split_indexes.at(Schema::kInvIdxAccessorIndexName),
+        data.accessor_indexes.at(Schema::kInvIdxAccessorIndexName),
     };
 }
 
@@ -221,7 +222,7 @@ std::vector<std::filesystem::path> SnapshotBundle::files() const {
         for (const KVSegmentFileReader& segment : make_map_values_view(data.kv_segments)) {
             files.push_back(segment.path().path());
         }
-        for (const Index& index : make_map_values_view(data.rec_split_indexes)) {
+        for (const AccessorIndex& index : make_map_values_view(data.accessor_indexes)) {
             files.push_back(index.path().path());
         }
     }
@@ -241,9 +242,9 @@ std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::segment_paths
     return make_snapshot_paths(Schema::SnapshotFileDef::Format::kSegment, entity, dir_path_, step_range_);
 }
 
-std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::rec_split_index_paths() const {
+std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::accessor_index_paths() const {
     auto& entity = *schema_.entities().at(Schema::kDefaultEntityName);
-    return make_snapshot_paths(Schema::SnapshotFileDef::Format::kRecSplitIndex, entity, dir_path_, step_range_);
+    return make_snapshot_paths(Schema::SnapshotFileDef::Format::kAccessorIndex, entity, dir_path_, step_range_);
 }
 
 std::vector<std::filesystem::path> SnapshotBundlePaths::files() const {

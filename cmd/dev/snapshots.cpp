@@ -688,7 +688,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     auto repository = make_repository(settings.settings);
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kHeaderSegmentAndIdxNames);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kHeaderSegmentAndIdxNames);
         const auto header = HeaderFindByHashQuery{segment_and_index}.exec(*hash);
         if (header) {
             matching_header = header;
@@ -756,7 +756,7 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
     SegmentFileReader body_segment{*snapshot_path};
     body_segment.reopen_segment();
 
-    Index idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
+    rec_split::AccessorIndex idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
     idx_body_number.reopen_index();
 
     const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_number);
@@ -861,7 +861,7 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
     txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
+        rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
         idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}.exec(hash);
@@ -885,7 +885,7 @@ void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kTxnSegmentAndIdxNames);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByHashQuery{segment_and_index}.exec(hash);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();
@@ -925,7 +925,7 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
     txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
+        rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
         idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByIdQuery{{txn_segment, idx_txn_hash}}.exec(txn_id);
@@ -949,7 +949,7 @@ void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kTxnSegmentAndIdxNames);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByIdQuery{segment_and_index}.exec(txn_id);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();

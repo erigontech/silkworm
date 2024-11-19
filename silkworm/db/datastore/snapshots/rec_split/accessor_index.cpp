@@ -14,18 +14,18 @@
    limitations under the License.
 */
 
-#include "index.hpp"
+#include "accessor_index.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::rec_split {
 
-void Index::reopen_index() {
+void AccessorIndex::reopen_index() {
     close_index();
 
     index_ = std::make_unique<rec_split::RecSplitIndex>(path_.path(), region_);
 }
 
-void Index::close_index() {
+void AccessorIndex::close_index() {
     index_.reset();
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::rec_split

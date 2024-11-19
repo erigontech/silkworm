@@ -22,7 +22,7 @@
 #include <silkworm/core/types/hash.hpp>
 
 #include "segment/segment_reader.hpp"
-#include "segment_and_index.hpp"
+#include "segment_and_accessor_index.hpp"
 
 namespace silkworm::snapshots {
 
@@ -30,13 +30,13 @@ template <segment::SegmentReaderConcept TSegmentReader>
 class BasicQuery {
   public:
     explicit BasicQuery(
-        const SegmentAndIndex segment_and_index)
+        const SegmentAndAccessorIndex segment_and_index)
         : reader_{segment_and_index.segment},
           index_{segment_and_index.index} {}
 
   protected:
     TSegmentReader reader_;
-    const Index& index_;
+    const rec_split::AccessorIndex& index_;
 };
 
 template <segment::SegmentReaderConcept TSegmentReader>

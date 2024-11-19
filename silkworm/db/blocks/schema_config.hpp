@@ -80,14 +80,14 @@ struct BundleDataRef {
     const snapshots::SnapshotBundleEntityData& entity_data() const { return data.entities.at(snapshots::Schema::kDefaultEntityName); }
 
     const snapshots::segment::SegmentFileReader& header_segment() const { return entity_data().segments.at(kHeaderSegmentName); }
-    const snapshots::Index& idx_header_hash() const { return entity_data().rec_split_indexes.at(kIdxHeaderHashName); }
+    const snapshots::rec_split::AccessorIndex& idx_header_hash() const { return entity_data().accessor_indexes.at(kIdxHeaderHashName); }
 
     const snapshots::segment::SegmentFileReader& body_segment() const { return entity_data().segments.at(kBodySegmentName); }
-    const snapshots::Index& idx_body_number() const { return entity_data().rec_split_indexes.at(kIdxBodyNumberName); }
+    const snapshots::rec_split::AccessorIndex& idx_body_number() const { return entity_data().accessor_indexes.at(kIdxBodyNumberName); }
 
     const snapshots::segment::SegmentFileReader& txn_segment() const { return entity_data().segments.at(kTxnSegmentName); }
-    const snapshots::Index& idx_txn_hash() const { return entity_data().rec_split_indexes.at(kIdxTxnHashName); }
-    const snapshots::Index& idx_txn_hash_2_block() const { return entity_data().rec_split_indexes.at(kIdxTxnHash2BlockName); }
+    const snapshots::rec_split::AccessorIndex& idx_txn_hash() const { return entity_data().accessor_indexes.at(kIdxTxnHashName); }
+    const snapshots::rec_split::AccessorIndex& idx_txn_hash_2_block() const { return entity_data().accessor_indexes.at(kIdxTxnHash2BlockName); }
 };
 
 }  // namespace silkworm::db::blocks

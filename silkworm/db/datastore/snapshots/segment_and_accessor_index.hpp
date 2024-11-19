@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include "rec_split_index/index.hpp"
+#include "rec_split/accessor_index.hpp"
 #include "segment/segment_reader.hpp"
 
 namespace silkworm::snapshots {
 
-struct SegmentAndIndex {
+struct SegmentAndAccessorIndex {
     const segment::SegmentFileReader& segment;
-    const Index& index;
+    const rec_split::AccessorIndex& index;
 };
 
 }  // namespace silkworm::snapshots

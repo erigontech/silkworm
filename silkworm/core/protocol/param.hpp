@@ -80,6 +80,9 @@ inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
 inline constexpr evmc::address kSystemAddress{0xfffffffffffffffffffffffffffffffffffffffe_address};
 inline constexpr evmc::address kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02_address};
 
+// EIP-2935: Serve historical block hashes from state
+inline constexpr evmc::address kHistoryStorageAddress{0x0aae40965e6800cd9b1f4b05ff21581047e3f91e_address};
+
 // Used in Bor
 inline constexpr size_t kExtraSealSize{65};
 

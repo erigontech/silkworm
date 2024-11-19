@@ -22,7 +22,7 @@
 
 #include <silkworm/core/common/bytes.hpp>
 
-#include "../seg/decompressor.hpp"
+#include "../segment/seg/decompressor.hpp"
 
 namespace silkworm::snapshots::btree {
 

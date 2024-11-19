@@ -111,13 +111,13 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
 
     SnapshotBundlePaths bundle{snapshots_.schema(), tmp_dir_path_, step_range};
     for (const auto& [name, path] : bundle.segment_paths()) {
-        SegmentFileWriter file_writer{path, tmp_dir_path_};
+        segment::SegmentFileWriter file_writer{path, tmp_dir_path_};
         {
             auto db_tx = db_access_.start_ro_tx();
             auto& freezer = get_collation(name);
             freezer.copy(db_tx, freezer_command, file_writer);
         }
-        SegmentFileWriter::flush(std::move(file_writer));
+        segment::SegmentFileWriter::flush(std::move(file_writer));
     }
 
     return std::make_shared<FreezerResult>(std::move(bundle));

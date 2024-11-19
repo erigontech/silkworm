@@ -21,7 +21,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 SegmentFileReader::SegmentFileReader(
     SnapshotPath path,
@@ -117,4 +117,4 @@ void SegmentFileReader::close() {
     decompressor_.close();
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

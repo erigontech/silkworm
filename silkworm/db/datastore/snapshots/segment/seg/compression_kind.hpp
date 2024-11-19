@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-#include "../common/util/bitmask_operators.hpp"
+#include "../../common/util/bitmask_operators.hpp"
 
 namespace silkworm::snapshots::seg {
 

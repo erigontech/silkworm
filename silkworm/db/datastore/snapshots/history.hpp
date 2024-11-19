@@ -23,7 +23,7 @@
 namespace silkworm::snapshots {
 
 struct History {
-    const SegmentFileReader& segment;
+    const segment::SegmentFileReader& segment;
     const Index& accessor_index;
     InvertedIndex inverted_index;
 };

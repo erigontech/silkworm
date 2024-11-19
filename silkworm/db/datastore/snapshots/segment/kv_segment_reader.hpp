@@ -34,9 +34,9 @@
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
 #include "../common/util/iterator/iterator_read_into_vector.hpp"
-#include "../seg/decompressor.hpp"
+#include "seg/decompressor.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 class KVSegmentFileReader {
   public:
@@ -202,4 +202,4 @@ concept KVSegmentReaderConcept =
     std::same_as<TKVSegmentReader, KVSegmentReader<typename TKVSegmentReader::KeyDecoderType, typename TKVSegmentReader::ValueDecoderType>> ||
     std::derived_from<TKVSegmentReader, KVSegmentReader<typename TKVSegmentReader::KeyDecoderType, typename TKVSegmentReader::ValueDecoderType>>;
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

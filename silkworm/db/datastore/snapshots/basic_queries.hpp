@@ -26,7 +26,7 @@
 
 namespace silkworm::snapshots {
 
-template <SegmentReaderConcept TSegmentReader>
+template <segment::SegmentReaderConcept TSegmentReader>
 class BasicQuery {
   public:
     explicit BasicQuery(
@@ -39,7 +39,7 @@ class BasicQuery {
     const Index& index_;
 };
 
-template <SegmentReaderConcept TSegmentReader>
+template <segment::SegmentReaderConcept TSegmentReader>
 struct FindByIdQuery : public BasicQuery<TSegmentReader> {
     using BasicQuery<TSegmentReader>::BasicQuery;
 
@@ -53,7 +53,7 @@ struct FindByIdQuery : public BasicQuery<TSegmentReader> {
     }
 };
 
-template <SegmentReaderConcept TSegmentReader>
+template <segment::SegmentReaderConcept TSegmentReader>
 struct FindByHashQuery : public BasicQuery<TSegmentReader> {
     using BasicQuery<TSegmentReader>::BasicQuery;
 
@@ -74,7 +74,7 @@ struct FindByHashQuery : public BasicQuery<TSegmentReader> {
     }
 };
 
-template <SegmentReaderConcept TSegmentReader>
+template <segment::SegmentReaderConcept TSegmentReader>
 struct RangeFromIdQuery : public BasicQuery<TSegmentReader> {
     using BasicQuery<TSegmentReader>::BasicQuery;
 

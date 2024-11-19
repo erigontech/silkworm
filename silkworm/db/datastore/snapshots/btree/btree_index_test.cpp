@@ -26,8 +26,8 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
-#include "../seg/compressor.hpp"
-#include "../seg/decompressor.hpp"
+#include "../segment/seg/compressor.hpp"
+#include "../segment/seg/decompressor.hpp"
 
 namespace silkworm::snapshots::btree {
 

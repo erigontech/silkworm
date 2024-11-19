@@ -16,7 +16,7 @@
 
 #include "body_index.hpp"
 
-#include <silkworm/db/datastore/snapshots/seg/common/varint.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/common/varint.hpp>
 
 namespace silkworm::snapshots {
 

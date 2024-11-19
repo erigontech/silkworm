@@ -22,7 +22,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 KVSegmentFileReader::KVSegmentFileReader(
     SnapshotPath path,
@@ -141,4 +141,4 @@ void KVSegmentFileReader::close() {
     decompressor_.close();
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

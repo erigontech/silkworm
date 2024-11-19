@@ -79,13 +79,13 @@ struct BundleDataRef {
     const snapshots::SnapshotBundleData& data;
     const snapshots::SnapshotBundleEntityData& entity_data() const { return data.entities.at(snapshots::Schema::kDefaultEntityName); }
 
-    const snapshots::SegmentFileReader& header_segment() const { return entity_data().segments.at(kHeaderSegmentName); }
+    const snapshots::segment::SegmentFileReader& header_segment() const { return entity_data().segments.at(kHeaderSegmentName); }
     const snapshots::Index& idx_header_hash() const { return entity_data().rec_split_indexes.at(kIdxHeaderHashName); }
 
-    const snapshots::SegmentFileReader& body_segment() const { return entity_data().segments.at(kBodySegmentName); }
+    const snapshots::segment::SegmentFileReader& body_segment() const { return entity_data().segments.at(kBodySegmentName); }
     const snapshots::Index& idx_body_number() const { return entity_data().rec_split_indexes.at(kIdxBodyNumberName); }
 
-    const snapshots::SegmentFileReader& txn_segment() const { return entity_data().segments.at(kTxnSegmentName); }
+    const snapshots::segment::SegmentFileReader& txn_segment() const { return entity_data().segments.at(kTxnSegmentName); }
     const snapshots::Index& idx_txn_hash() const { return entity_data().rec_split_indexes.at(kIdxTxnHashName); }
     const snapshots::Index& idx_txn_hash_2_block() const { return entity_data().rec_split_indexes.at(kIdxTxnHash2BlockName); }
 };

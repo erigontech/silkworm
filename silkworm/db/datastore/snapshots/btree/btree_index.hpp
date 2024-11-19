@@ -24,7 +24,7 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "../elias_fano/elias_fano.hpp"
-#include "../seg/decompressor.hpp"
+#include "../segment/seg/decompressor.hpp"
 #include "btree.hpp"
 
 namespace silkworm::snapshots::btree {

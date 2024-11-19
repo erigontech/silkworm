@@ -27,17 +27,17 @@
 #include "common/util/iterator/map_values_view.hpp"
 #include "domain.hpp"
 #include "inverted_index.hpp"
-#include "kv_segment/kv_segment_reader.hpp"
 #include "rec_split_index/index.hpp"
 #include "schema.hpp"
+#include "segment/kv_segment_reader.hpp"
 #include "segment/segment_reader.hpp"
 #include "segment_and_index.hpp"
 
 namespace silkworm::snapshots {
 
 struct SnapshotBundleEntityData {
-    std::map<datastore::EntityName, SegmentFileReader> segments;
-    std::map<datastore::EntityName, KVSegmentFileReader> kv_segments;
+    std::map<datastore::EntityName, segment::SegmentFileReader> segments;
+    std::map<datastore::EntityName, segment::KVSegmentFileReader> kv_segments;
     std::map<datastore::EntityName, Index> rec_split_indexes;
     std::map<datastore::EntityName, bloom_filter::BloomFilter> existence_indexes;
     std::map<datastore::EntityName, btree::BTreeIndex> btree_indexes;
@@ -95,7 +95,7 @@ struct SnapshotBundle {
     auto segments() const {
         return make_map_values_view(data_.entities.at(Schema::kDefaultEntityName).segments);
     }
-    const SegmentFileReader& segment(
+    const segment::SegmentFileReader& segment(
         datastore::EntityName entity_name,
         datastore::EntityName segment_name) const;
     const Index& rec_split_index(

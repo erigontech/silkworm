@@ -61,7 +61,7 @@ class TransactionBlockNumByTxnHashRepoQuery {
     std::optional<BlockNum> exec(const Hash& hash) {
         for (const TBundle& bundle_ptr : bundles_) {
             db::blocks::BundleDataRef bundle{**bundle_ptr};
-            const SegmentFileReader& segment = bundle.txn_segment();
+            const segment::SegmentFileReader& segment = bundle.txn_segment();
             const Index& idx_txn_hash = bundle.idx_txn_hash();
             const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block();
 

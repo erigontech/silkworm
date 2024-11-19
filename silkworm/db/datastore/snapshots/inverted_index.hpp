@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "kv_segment/kv_segment_reader.hpp"
 #include "rec_split_index/index.hpp"
+#include "segment/kv_segment_reader.hpp"
 
 namespace silkworm::snapshots {
 
 struct InvertedIndex {
-    const KVSegmentFileReader& kv_segment;
+    const segment::KVSegmentFileReader& kv_segment;
     const Index& accessor_index;
 };
 

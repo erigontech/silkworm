@@ -49,7 +49,7 @@
 #include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
-#include <silkworm/db/datastore/snapshots/seg/seg_zip.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
@@ -67,6 +67,7 @@ using namespace silkworm;
 using namespace silkworm::cmd::common;
 using namespace silkworm::snapshots;
 using namespace silkworm::snapshots::bittorrent;
+using namespace silkworm::snapshots::segment;
 
 static constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 static constexpr int kDefaultRepetitions{1};

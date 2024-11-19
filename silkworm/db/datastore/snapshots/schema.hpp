@@ -22,7 +22,7 @@
 
 #include "../common/entity_name.hpp"
 #include "common/snapshot_path.hpp"
-#include "seg/compression_kind.hpp"
+#include "segment/seg/compression_kind.hpp"
 
 namespace silkworm::snapshots {
 

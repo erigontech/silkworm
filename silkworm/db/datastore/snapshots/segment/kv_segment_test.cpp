@@ -23,7 +23,7 @@
 #include "kv_segment_reader.hpp"
 #include "kv_segment_writer.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 struct CharCodec : public Encoder, public Decoder {
     char value{};
@@ -71,4 +71,4 @@ TEST_CASE("KVSegmentFile") {
     CHECK(entries.empty());
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

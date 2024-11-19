@@ -24,7 +24,7 @@
 #include <silkworm/infra/common/log.hpp>
 
 #include "snapshots/common/snapshot_path.hpp"
-#include "snapshots/seg/compressor.hpp"
+#include "snapshots/segment/seg/compressor.hpp"
 #include "snapshots/segment/segment_writer.hpp"
 #include "snapshots/snapshot_bundle.hpp"
 
@@ -102,7 +102,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(StepRange::from_block_num_range(range))) {
             auto& bundle = *bundle_ptr;
-            SegmentReader<RawDecoder> reader{bundle.segment(Schema::kDefaultEntityName, name)};
+            segment::SegmentReader<RawDecoder> reader{bundle.segment(Schema::kDefaultEntityName, name)};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 

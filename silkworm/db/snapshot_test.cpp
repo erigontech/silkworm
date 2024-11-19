@@ -38,6 +38,7 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
+using namespace segment;
 
 static const SnapshotPath kValidHeadersSegmentPath{*SnapshotPath::parse("v1-014500-015000-headers.seg")};
 

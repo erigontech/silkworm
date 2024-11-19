@@ -22,7 +22,7 @@
 #include "segment_reader.hpp"
 #include "segment_writer.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 TEST_CASE("SegmentFile") {
     TemporaryDirectory tmp_dir;
@@ -52,4 +52,4 @@ TEST_CASE("SegmentFile") {
     CHECK(items.empty());
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

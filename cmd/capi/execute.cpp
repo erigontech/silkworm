@@ -326,7 +326,7 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
 int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const DataDirectory& data_dir) {
     SILK_INFO << "Building indexes for segments: " << settings.segment_file_names;
 
-    std::vector<SegmentFileReader> segments;
+    std::vector<segment::SegmentFileReader> segments;
     std::vector<SilkwormMemoryMappedFile*> segment_mmap_files;
     // Parse snapshot paths and create memory mapped files
     for (auto& file_name : settings.segment_file_names) {
@@ -335,7 +335,7 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
         if (!snapshot_path.has_value())
             throw std::runtime_error("Invalid snapshot path");
 
-        SegmentFileReader& segment = segments.emplace_back(*snapshot_path);
+        segment::SegmentFileReader& segment = segments.emplace_back(*snapshot_path);
         segment.reopen_segment();
 
         auto mmf = new SilkwormMemoryMappedFile{

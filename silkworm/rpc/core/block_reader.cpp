@@ -62,7 +62,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     auto paginated_result = co_await transaction_.history_range(std::move(query));
     auto it = co_await paginated_result.begin();
-    
+
     while (const auto value = co_await it.next()) {
         intx::uint256 old_balance{0};
         intx::uint256 current_balance{0};
@@ -92,6 +92,5 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
 
     co_return;
 }
-
 
 }  // namespace silkworm::rpc

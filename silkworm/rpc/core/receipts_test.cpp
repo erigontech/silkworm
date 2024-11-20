@@ -64,7 +64,6 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
 static silkworm::Bytes kBody{*silkworm::from_hex("c68369e45a03c0")};
 
 TEST_CASE("read_receipts") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
     db::test_util::MockTransaction transaction;
 
@@ -226,7 +225,6 @@ TEST_CASE("read_receipts") {
 }
 
 TEST_CASE("get_receipts") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
     db::test_util::MockTransaction transaction;
     std::unique_ptr<ethbackend::BackEnd> backend = std::make_unique<test::BackEndMock>();

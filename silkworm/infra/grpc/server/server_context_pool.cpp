@@ -55,7 +55,7 @@ void ServerContext::execute_loop() {
 
     std::exception_ptr run_exception;
     try {
-        io_context()->run();
+        ioc()->run();
     } catch (...) {
         run_exception = std::current_exception();
     }

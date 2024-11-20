@@ -50,15 +50,15 @@ TEST_CASE("check configuration", "[silkworm][infra][concurrency]") {
 }
 
 TEST_CASE("coroutine co_return", "[silkworm][infra][concurrency]") {
-    io_context context;
+    io_context ioc;
     auto task = co_spawn(
-        context,
+        ioc,
         coroutine_return_123(),
         boost::asio::use_future);
 
     size_t work_count{0};
     do {
-        work_count = context.poll_one();
+        work_count = ioc.poll_one();
     } while (work_count > 0);
     CHECK(task.get() == 123);
 }

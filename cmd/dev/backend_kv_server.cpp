@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
         if (settings.simulate_state_changes) {
             using namespace boost::asio::experimental::awaitable_operators;
             auto state_changes_simulator = [](auto& ctx_pool, auto& be) -> Task<void> {
-                boost::asio::steady_timer state_changes_timer{ctx_pool.next_io_context()};
+                boost::asio::steady_timer state_changes_timer{ctx_pool.next_ioc()};
                 static constexpr std::chrono::seconds kStateChangeInterval{10};
                 static constexpr silkworm::BlockNum kStartBlock{100'000'000};
                 static constexpr uint64_t kGasLimit{30'000'000};
@@ -244,12 +244,10 @@ int main(int argc, char* argv[]) {
             tasks = server.async_run("bekv-server");
         }
 
-        ShutdownSignal shutdown_signal{context_pool.next_io_context().get_executor()};
-
         // Go!
         auto run_future = boost::asio::co_spawn(
-            context_pool.next_io_context(),
-            std::move(tasks) || shutdown_signal.wait(),
+            context_pool.next_ioc(),
+            std::move(tasks) || ShutdownSignal::wait(),
             boost::asio::use_future);
         context_pool.start();
 

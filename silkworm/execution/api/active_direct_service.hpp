@@ -18,6 +18,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <boost/asio/io_context.hpp>
+
 #include <silkworm/infra/concurrency/active_component.hpp>
 
 #include "direct_service.hpp"
@@ -25,10 +27,10 @@
 
 namespace silkworm::execution::api {
 
-//! Active \code DirectService implementation running on one \code TaskExecutor.
+//! Active DirectService implementation running on one Task executor.
 class ActiveDirectService : public DirectService, public ActiveComponent {
   public:
-    ActiveDirectService(ExecutionEngine& exec_engine, boost::asio::io_context& context);
+    ActiveDirectService(ExecutionEngine& exec_engine, boost::asio::io_context& ioc);
     ~ActiveDirectService() override = default;
 
     ActiveDirectService(const ActiveDirectService&) = delete;
@@ -113,8 +115,8 @@ class ActiveDirectService : public DirectService, public ActiveComponent {
     bool stop() override;
 
   private:
-    boost::asio::io_context& context_;
-    TaskExecutor executor_;
+    boost::asio::io_context& ioc_;
+    boost::asio::io_context::executor_type executor_;
 };
 
 }  // namespace silkworm::execution::api

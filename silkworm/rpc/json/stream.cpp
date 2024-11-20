@@ -24,6 +24,7 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/compose.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/io_context.hpp>
 #ifndef _WIN32  // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
 #include <boost/asio/experimental/use_promise.hpp>
 #endif  // _WIN32

@@ -30,7 +30,7 @@ commands:
           command: |
             if [[ <<parameters.ethereum_tests>> == false ]]
             then
-              git config submodule.ethereum-tests.update none
+                git config submodule.ethereum-tests.update none
             fi
 
             git submodule sync
@@ -71,12 +71,13 @@ commands:
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
-          command:  |
+          working_directory: ~/build
+          command: |
             if [[ "<<parameters.target>>" == "all" ]]
             then
-                cmake --build ~/build -j16
+                cmake --build . -j16 |& tee build.log
             else
-                cmake --build ~/build -j16 --target <<parameters.target>>
+                cmake --build . -j16 --target <<parameters.target>> |& tee build.log
             fi
 
   install_conan:
@@ -344,6 +345,9 @@ jobs:
           build_type: Debug
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
+      - run:
+          name: "Report"
+          command: tools/lint/clang_tidy_report.sh "$HOME/build/build.log"
 
   linux-clang-tidy-diff:
     environment:

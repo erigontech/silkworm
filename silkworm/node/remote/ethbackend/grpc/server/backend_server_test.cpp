@@ -225,9 +225,7 @@ using BackEndServer = ethbackend::grpc::server::BackEndServer;
 
 struct BackEndE2ETest {
     explicit BackEndE2ETest(
-        silkworm::log::Level log_verbosity = silkworm::log::Level::kNone,
-        const NodeSettings& options = {})
-        : set_verbosity_log_guard{log_verbosity} {
+        const NodeSettings& options = {}) {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
@@ -282,7 +280,6 @@ struct BackEndE2ETest {
         server->join();
     }
 
-    test_util::SetLogVerbosityGuard set_verbosity_log_guard;
     rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
     std::unique_ptr<remote::ETHBACKEND::Stub> ethbackend_stub;
     std::unique_ptr<BackEndClient> backend_client;
@@ -301,7 +298,6 @@ namespace silkworm::ethbackend::grpc::server {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndServer", "[silkworm][node][rpc]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     rpc::Grpc2SilkwormLogGuard log_guard;
     rpc::ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;
@@ -447,7 +443,7 @@ TEST_CASE("BackEndServer E2E: mainnet chain with zero etherbase", "[silkworm][no
     NodeSettings node_settings;
     node_settings.chain_config = kMainnetConfig;
     node_settings.etherbase = evmc::address{};
-    BackEndE2ETest test{silkworm::log::Level::kNone, node_settings};
+    BackEndE2ETest test{node_settings};
     auto backend_client = *test.backend_client;
 
     SECTION("Etherbase: return coinbase address") {

@@ -41,7 +41,7 @@ class WebSeedClientForTest : public WebSeedClient {
     using WebSeedClient::is_whitelisted;
     using WebSeedClient::validate_torrent_file;
     using WebSeedClient::web_session;
-    using WebSeedClient::WebSeedClient;  // NOLINT(*-rvalue-reference-param-not-moved)
+    using WebSeedClient::WebSeedClient;  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 };
 
 //! Content for manifest file containing one torrent file

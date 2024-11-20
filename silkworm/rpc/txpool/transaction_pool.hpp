@@ -65,7 +65,10 @@ using TransactionsInPool = std::vector<TransactionInfo>;
 
 class TransactionPool final {
   public:
-    explicit TransactionPool(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
+    explicit TransactionPool(
+        boost::asio::io_context& ioc,
+        const std::shared_ptr<grpc::Channel>& channel,
+        agrpc::GrpcContext& grpc_context);
 
     explicit TransactionPool(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Txpool::StubInterface> stub,
                              agrpc::GrpcContext& grpc_context);

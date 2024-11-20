@@ -43,15 +43,15 @@ using db::kv::api::StateCache;
 
 class EthereumRpcApi {
   public:
-    EthereumRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
-        : io_context_{io_context},
-          block_cache_{must_use_shared_service<BlockCache>(io_context_)},
-          state_cache_{must_use_shared_service<StateCache>(io_context_)},
-          database_{must_use_private_service<ethdb::Database>(io_context_)},
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)},
-          miner_{must_use_private_service<txpool::Miner>(io_context_)},
-          tx_pool_{must_use_private_service<txpool::TransactionPool>(io_context_)},
-          filter_storage_{must_use_shared_service<FilterStorage>(io_context_)},
+    EthereumRpcApi(boost::asio::io_context& ioc, WorkerPool& workers)
+        : ioc_{ioc},
+          block_cache_{must_use_shared_service<BlockCache>(ioc_)},
+          state_cache_{must_use_shared_service<StateCache>(ioc_)},
+          database_{must_use_private_service<ethdb::Database>(ioc_)},
+          backend_{must_use_private_service<ethbackend::BackEnd>(ioc_)},
+          miner_{must_use_private_service<txpool::Miner>(ioc_)},
+          tx_pool_{must_use_private_service<txpool::TransactionPool>(ioc_)},
+          filter_storage_{must_use_shared_service<FilterStorage>(ioc_)},
           workers_{workers} {}
 
     virtual ~EthereumRpcApi() = default;
@@ -117,7 +117,7 @@ class EthereumRpcApi {
     Task<void> handle_eth_get_uncle_by_block_number_and_index(const nlohmann::json& request, std::string& reply);
     Task<void> handle_eth_get_transaction_by_hash(const nlohmann::json& request, std::string& reply);
 
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioc_;
     BlockCache* block_cache_;
     StateCache* state_cache_;
     ethdb::Database* database_;

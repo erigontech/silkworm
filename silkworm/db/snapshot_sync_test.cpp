@@ -50,7 +50,6 @@ class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
 };
 
 struct SnapshotSyncTest {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     db::test_util::TempChainDataStore context;
     TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;

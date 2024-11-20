@@ -35,7 +35,6 @@ class HeadersStageForTest : public stagedsync::HeadersStage {
 using HeaderDataModelForTest = HeadersStageForTest::HeaderDataModel;
 
 TEST_CASE("HeadersStage - data model") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     db::test_util::TempChainDataStore context;
     context.add_genesis_data();
     context.commit_txn();

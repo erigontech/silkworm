@@ -22,7 +22,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>

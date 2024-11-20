@@ -95,8 +95,8 @@ Task<void> Sync::start_chain_sync() {
 
     // The ChainSync async loop *must* run onto the Engine RPC server unique execution context
     // This is *strictly* required by the current design assumptions in PoSSync
-    auto& engine_rpc_ioc = engine_rpc_server_->context_pool().next_io_context();
-    return boost::asio::co_spawn(engine_rpc_ioc, chain_sync_->async_run(), boost::asio::use_awaitable);
+    auto& ioc = engine_rpc_server_->context_pool().next_ioc();
+    return boost::asio::co_spawn(ioc, chain_sync_->async_run(), boost::asio::use_awaitable);
 }
 
 Task<void> Sync::start_engine_rpc_server() {

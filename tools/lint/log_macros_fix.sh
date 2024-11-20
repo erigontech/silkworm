@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 project_dir="$script_dir/../.."
 

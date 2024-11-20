@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 trap : SIGTERM SIGINT
 
 if [ "$#" -ne 2 ]; then

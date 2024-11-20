@@ -3,6 +3,9 @@
 # $1 - compiler ID: gcc or clang
 # $2 - compiler version
 
+set -e
+set -o pipefail
+
 function install_gcc {
     GCC_VERSION="$1"
     echo "Installing GCC $GCC_VERSION..."

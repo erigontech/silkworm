@@ -59,10 +59,8 @@ TEST_CASE("MainChain transaction handling") {
         auto keep_db_txn_open = i == 1;
 
         SECTION("keep_db_txn_open = " + std::to_string(keep_db_txn_open)) {
-            silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-
-            asio::io_context io;
-            asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
+            asio::io_context ioc;
+            asio::executor_work_guard<decltype(ioc.get_executor())> work{ioc.get_executor()};
 
             db::test_util::TempChainDataStore context;
             context.add_genesis_data();
@@ -75,7 +73,7 @@ TEST_CASE("MainChain transaction handling") {
             NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
             node_settings.keep_db_txn_open = keep_db_txn_open;
             MainChainForTest main_chain{
-                io.get_executor(),
+                ioc.get_executor(),
                 node_settings,
                 data_model_factory,
                 /* log_timer_factory = */ std::nullopt,
@@ -160,8 +158,8 @@ TEST_CASE("MainChain transaction handling") {
 TEST_CASE("MainChain") {
     silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
-    asio::io_context io;
-    asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
+    asio::io_context ioc;
+    asio::executor_work_guard<decltype(ioc.get_executor())> work{ioc.get_executor()};
 
     db::test_util::TempChainDataStore context;
     context.add_genesis_data();
@@ -174,7 +172,7 @@ TEST_CASE("MainChain") {
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
     RWAccess db_access = context.chaindata_rw();
     MainChainForTest main_chain{
-        io.get_executor(),
+        ioc.get_executor(),
         node_settings,
         data_model_factory,
         /* log_timer_factory = */ std::nullopt,
@@ -466,7 +464,7 @@ TEST_CASE("MainChain") {
 
         // opening another main chain (-> application start up)
         MainChainForTest main_chain2{
-            io.get_executor(),
+            ioc.get_executor(),
             node_settings,
             main_chain.data_model_factory(),
             /* log_timer_factory = */ std::nullopt,

@@ -63,19 +63,19 @@ class RemoteTransaction : public api::BaseTransaction {
     Task<void> close() override;
 
     // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    Task<api::DomainPointResult> domain_get(api::DomainPointQuery&&) override;
+    Task<api::DomainPointResult> domain_get(api::DomainPointQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
-    Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery&& query) override;
+    Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery query) override;
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    Task<api::PaginatedTimestamps> index_range(api::IndexRangeQuery&& query) override;
+    Task<api::PaginatedTimestamps> index_range(api::IndexRangeQuery query) override;
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> history_range(api::HistoryRangeQuery&& query) override;
+    Task<api::PaginatedKeysValues> history_range(api::HistoryRangeQuery query) override;
 
     // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> domain_range(api::DomainRangeQuery&& query) override;
+    Task<api::PaginatedKeysValues> domain_range(api::DomainRangeQuery query) override;
 
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);

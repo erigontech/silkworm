@@ -33,6 +33,16 @@ list(FILTER TEST_COMMANDS EXCLUDE REGEX "backend_kv_test${CMAKE_EXECUTABLE_SUFFI
 list(FILTER TEST_COMMANDS EXCLUDE REGEX "benchmark_test${CMAKE_EXECUTABLE_SUFFIX}\$")
 list(FILTER TEST_COMMANDS EXCLUDE REGEX "sentry_client_test${CMAKE_EXECUTABLE_SUFFIX}\$")
 
+message("")
+message("==================")
+message("Running unit tests")
+message("==================")
+message("")
+
+string(TIMESTAMP TIME "%s")
+message("For all tests --rng-seed=${TIME}")
+message("")
+
 foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
   file(RELATIVE_PATH TEST_COMMAND_REL_PATH "${SILKWORM_BUILD_DIR}" "${TEST_COMMAND}")
   message("Running ${TEST_COMMAND_REL_PATH}...")
@@ -42,5 +52,8 @@ foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
     set(ENV{LLVM_PROFILE_FILE} "${TEST_COMMAND_NAME}.profraw")
   endif()
 
-  execute_process(COMMAND "${TEST_COMMAND}" "~[ignore]" COMMAND_ERROR_IS_FATAL ANY)
+  execute_process(COMMAND "${TEST_COMMAND}" "--rng-seed=${TIME}" "--min-duration=2" RESULT_VARIABLE EXIT_CODE)
+  if(NOT (EXIT_CODE EQUAL 0))
+    message(FATAL_ERROR "${TEST_COMMAND_REL_PATH} has failed: ${EXIT_CODE}")
+  endif()
 endforeach()

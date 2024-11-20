@@ -138,7 +138,7 @@ class TxCall : public rpc::server::BidiStreamingCall<remote::Cursor, remote::Pai
 
     void throw_with_internal_error(const std::string& message);
 
-    void throw_with_error(::grpc::Status&& status);
+    void throw_with_error(::grpc::Status status);
 
     static std::chrono::milliseconds max_ttl_duration_;
     static inline uint64_t next_tx_id_{0};

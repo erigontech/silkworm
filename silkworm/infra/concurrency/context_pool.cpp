@@ -19,23 +19,23 @@
 namespace silkworm::concurrency {
 
 std::ostream& operator<<(std::ostream& out, const Context& c) {
-    out << "io_context: " << c.io_context() << " id: " << c.id();
+    out << "io_context: " << c.ioc() << " id: " << c.id();
     return out;
 }
 
 Context::Context(size_t context_id)
     : context_id_{context_id},
-      io_context_{std::make_shared<boost::asio::io_context>()},
-      work_{boost::asio::make_work_guard(*io_context_)} {}
+      ioc_{std::make_shared<boost::asio::io_context>()},
+      work_{boost::asio::make_work_guard(*ioc_)} {}
 
 void Context::execute_loop() {
     SILK_DEBUG << "Context execution loop start [" << std::this_thread::get_id() << "]";
-    io_context_->run();
+    ioc_->run();
     SILK_DEBUG << "Context execution loop end [" << std::this_thread::get_id() << "]";
 }
 
 void Context::stop() {
-    io_context_->stop();
+    ioc_->stop();
 }
 
 }  // namespace silkworm::concurrency

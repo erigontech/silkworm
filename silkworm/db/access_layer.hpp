@@ -68,7 +68,7 @@ std::optional<BlockHeader> read_header(ROTxn& txn, const evmc::bytes32& hash);
 std::vector<BlockHeader> read_headers(ROTxn& txn, BlockNum height);
 
 //! \brief Apply a user defined func to the headers at specific height
-size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func);
+size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader)> process_func);
 
 //! \brief Reads the canonical head
 std::tuple<BlockNum, evmc::bytes32> read_canonical_head(ROTxn& txn);
@@ -342,7 +342,7 @@ class DataModel {
     std::optional<intx::uint256> read_total_difficulty(ByteView key) const;
 
     //! Read all block headers up to limit in reverse order from last, processing each one via a user defined callback
-    void for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const;
+    void for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader)> callback) const;
 
   private:
     bool read_block_from_snapshot(BlockNum height, Block& block) const;

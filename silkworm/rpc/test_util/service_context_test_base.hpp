@@ -20,7 +20,6 @@
 #include <utility>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/infra/common/log.hpp>

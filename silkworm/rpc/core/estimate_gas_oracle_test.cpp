@@ -49,8 +49,6 @@ using testing::_;
 using testing::Return;
 
 TEST_CASE("EstimateGasException") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("EstimateGasException(int64_t, std::string const&)") {
         const char* kErrorMessage{"insufficient funds for transfer"};
         const int64_t kErrorCode{-1};
@@ -72,7 +70,6 @@ TEST_CASE("EstimateGasException") {
 }
 
 TEST_CASE("estimate gas") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     WorkerPool pool{1};
     WorkerPool workers{1};
 

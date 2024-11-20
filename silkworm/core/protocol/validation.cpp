@@ -105,7 +105,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
             return ValidationResult::kMaxFeePerBlobGasTooLow;
         }
         if (!txn.to) {
-            return ValidationResult::kBlobCreateTransaction;
+            return ValidationResult::kProhibitedContractCreation;
         }
     }
 
@@ -202,6 +202,9 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
     if (evm.revision() >= EVMC_PRAGUE) {
         if (txn.type == TransactionType::kSetCode && !txn.to) {
             return ValidationResult::kProhibitedContractCreation;
+        }
+        if (txn.type == TransactionType::kSetCode && std::empty(txn.authorizations)) {
+            return ValidationResult::kEmptyAuthorizations;
         }
     }
 

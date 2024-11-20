@@ -267,7 +267,7 @@ TEST_CASE("SetCodeTx parsing with authorizations") {
     Transaction decoded;
     ByteView view{encoded_rlp};
     const auto status = rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth,
-                                                rlp::Leftover::kAllow);
+                                                rlp::Leftover::kProhibit);
     REQUIRE(status);
 
     CHECK(decoded.type == TransactionType::kSetCode);

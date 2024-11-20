@@ -73,7 +73,7 @@ namespace rlp {
         encode(to, e.storage_keys);
     }
 
-    static Header header([[maybe_unused]] const Authorization& authorization) {
+    static Header header(const Authorization& authorization) {
         Header header{.list = true};
         header.payload_length = length(authorization.chain_id);
         header.payload_length += kAddressLength + 1;  // address is kAddressLength and one byte for size prefix
@@ -104,7 +104,7 @@ namespace rlp {
         return decode(from, mode, to.account.bytes, to.storage_keys);
     }
 
-    DecodingResult decode([[maybe_unused]] ByteView& from, [[maybe_unused]] Authorization& to, [[maybe_unused]] Leftover mode) noexcept {
+    DecodingResult decode(ByteView& from, Authorization& to, Leftover mode) noexcept {
         return decode(from, mode, to.chain_id, to.address.bytes, to.nonce, to.v, to.r, to.s);
     }
 

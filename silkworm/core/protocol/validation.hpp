@@ -100,10 +100,11 @@ enum class [[nodiscard]] ValidationResult {
     kTooManyBlobs,
     kWrongBlobCommitmentVersion,
     kMaxFeePerBlobGasTooLow,  // max_fee_per_blob_gas < blob_gas_price
-    kBlobCreateTransaction,   // Blob transactions cannot have the form of a create transaction
+
+    // EIP-4844 and EIP 7702
+    kProhibitedContractCreation,  // Blob and SetCode transactions cannot have the form of a create transaction
 
     // EIP-7702
-    kProhibitedContractCreation,  // contract creation is prohibited for SetCode transaction
     kEmptyAuthorizations,
 
     // Bor validation errors. See https://github.com/erigontech/erigon/blob/main/consensus/bor/bor.go

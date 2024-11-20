@@ -170,7 +170,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: error", "[db][kv
     CHECK_THROWS_AS(spawn_and_wait(paginated_to_vector(paginated)), std::runtime_error);
 }
 
-TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][paginated_sequence]") {
+TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: set_intersection", "[db][kv][api][paginated_sequence]") {
     const Fixtures<std::pair<PageUint64List, PageUint64List>, std::vector<uint64_t>> fixtures{
         {{/*v1=*/{}, /*v2=*/{}}, /*v1_and_v2=*/{}},                                                // both empty => empty
         {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_and_v2=*/{}},                    // one empty => empty
@@ -180,10 +180,10 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][pagin
     };
     int i = 0;
     for (const auto& [v1_v2_pair, expected_intersection_set] : fixtures) {
-        SECTION("test vector: " + std::to_string(++i)) {
-            const auto& [v1, v2] = v1_v2_pair;
-            TestPaginatorUint64 paginator1{v1}, paginator2{v2};
-            PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
+        const auto& [v1, v2] = v1_v2_pair;
+        TestPaginatorUint64 paginator1{v1}, paginator2{v2};
+        PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
+        SECTION("move: test vector " + std::to_string(i)) {
             const auto async_intersection = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
                 IntersectionIterator it = set_intersection(co_await ps1.begin(), co_await ps2.begin());
                 CHECK(co_await it.has_next() == !expected_intersection_set.empty());
@@ -191,30 +191,132 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "set_intersection", "[db][kv][api][pagin
             };
             CHECK(spawn_and_wait(async_intersection(paginated1, paginated2)) == expected_intersection_set);
         }
+        SECTION("copy: test vector " + std::to_string(i)) {
+            const auto async_intersection = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
+                auto it1 = co_await ps1.begin();
+                auto it2 = co_await ps2.begin();
+                IntersectionIterator it = set_intersection(it1, it2);
+                CHECK(co_await it.has_next() == !expected_intersection_set.empty());
+                co_return co_await paginated_iterator_to_vector(std::move(it));
+            };
+            CHECK(spawn_and_wait(async_intersection(paginated1, paginated2)) == expected_intersection_set);
+        }
+        ++i;
     }
 }
 
-TEST_CASE_METHOD(PaginatedSequenceTest, "set_union", "[db][kv][api][paginated_sequence]") {
-    const Fixtures<std::pair<PageUint64List, PageUint64List>, std::vector<uint64_t>> fixtures{
-        {{/*v1=*/{}, /*v2=*/{}}, /*v1_or_v2=*/{}},                                                    // both empty => empty
-        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},  // one empty => other
-        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13}},
-        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{7, 8, 9}, {10, 11, 12}, {13}}}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}},
-        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}}, /*v1_and_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},
+TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: set_union", "[db][kv][api][paginated_sequence]") {
+    const Fixtures<std::tuple<PageUint64List, PageUint64List, bool>, std::vector<uint64_t>> fixtures{
+        /* ASCENDING */
+        {{/*v1=*/{}, /*v2=*/{}, true}, /*v1_or_v2=*/{}},
+        {{/*v1=*/{{1}}, /*v2=*/{}, true}, /*v1_or_v2=*/{1}},
+        {{/*v1=*/{}, /*v2=*/{{1}}, true}, /*v1_or_v2=*/{1}},
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{}, true}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{10, 11, 12}, {13}}, true}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13}},
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{7, 8, 9}, {10, 11, 12}, {13}}, true}, /*v1_or_v2=*/{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}},
+        {{/*v1=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, /*v2=*/{{1, 2, 3}, {4, 5, 6}, {7, 8}}, true}, /*v1_and_v2=*/{1, 2, 3, 4, 5, 6, 7, 8}},
+
+        /* DESCENDING */
+        {{/*v1=*/{}, /*v2=*/{}, false}, /*v1_or_v2=*/{}},
+        {{/*v1=*/{{1}}, /*v2=*/{}, false}, /*v1_or_v2=*/{1}},
+        {{/*v1=*/{}, /*v2=*/{{1}}, false}, /*v1_or_v2=*/{1}},
+        {{/*v1=*/{{8, 7}, {6, 5, 4}, {3, 2, 1}}, /*v2=*/{}, false}, /*v1_or_v2=*/{8, 7, 6, 5, 4, 3, 2, 1}},
+        {{/*v1=*/{{8, 7}, {6, 5, 4}, {3, 2, 1}}, /*v2=*/{{13}, {12, 11, 10}}, false}, /*v1_or_v2=*/{13, 12, 11, 10, 8, 7, 6, 5, 4, 3, 2, 1}},
     };
     int i = 0;
-    for (const auto& [v1_v2_pair, expected_union_set] : fixtures) {
-        SECTION("test vector: " + std::to_string(++i)) {
-            const auto& [v1, v2] = v1_v2_pair;
+    for (const auto& [v1_v2_ascending, expected_union_set] : fixtures) {
+        const auto& [v1, v2, ascending] = v1_v2_ascending;
+        SECTION("move: test vector " + std::string{ascending ? "ascending" : "descending"} + ": " + std::to_string(i)) {
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
             PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
             const auto async_union = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
-                UnionIterator<PaginatedUint64::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin());
+                UnionIterator<PaginatedUint64::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin(), ascending);
                 CHECK(co_await it.has_next() == !expected_union_set.empty());
                 co_return co_await paginated_iterator_to_vector(std::move(it));
             };
             CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);
         }
+        SECTION("copy: test vector " + std::string{ascending ? "ascending" : "descending"} + ": " + std::to_string(i)) {
+            TestPaginatorUint64 paginator1{v1}, paginator2{v2};
+            PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
+            const auto async_union = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
+                auto it1 = co_await ps1.begin();
+                auto it2 = co_await ps2.begin();
+                UnionIterator<PaginatedUint64::Iterator> it = set_union(it1, it2, ascending);
+                CHECK(co_await it.has_next() == !expected_union_set.empty());
+                co_return co_await paginated_iterator_to_vector(std::move(it));
+            };
+            CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);
+        }
+        ++i;
+    }
+}
+
+struct TestPaginatorKV {
+    explicit TestPaginatorKV(const std::vector<PageK>& k_pages, const std::vector<PageV>& v_pages)
+        : k_pages_(k_pages), v_pages_(v_pages) {
+        SILKWORM_ASSERT(k_pages_.size() == v_pages_.size());
+    }
+
+    Task<PageResultKV> operator()(std::string /*page_token*/) {
+        if (count_ == 0 && k_pages_.empty()) {
+            co_return PageResultKV{};
+        }
+        if (count_ < k_pages_.size()) {
+            const auto next_token = (count_ != k_pages_.size() - 1) ? "next" : "";
+            PageResultKV page_result{k_pages_[count_], v_pages_[count_], next_token};
+            ++count_;
+            co_return page_result;
+        }
+        throw std::logic_error{"unexpected call to paginator"};
+    }
+
+  private:
+    const std::vector<PageK>& k_pages_;
+    const std::vector<PageV>& v_pages_;
+    size_t count_{0};
+};
+
+using KVPagesPair = std::pair<std::vector<PageK>, std::vector<PageV>>;
+
+TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: set_union", "[db][kv][api][paginated_sequence]") {
+    const Fixtures<std::tuple<KVPagesPair, KVPagesPair, bool>, std::vector<KeyValue>> fixtures{
+        /* ASCENDING */
+        {{/*v1=*/{{}, {}}, /*v2=*/{{}, {}}, true}, /*v1_or_v2=*/{}},
+        {{/*v1=*/{/*k_pages=*/{{kKey1}}, /*v_pages=*/{{kValue1}}}, /*v2=*/{}, true}, /*v1_or_v2=*/{{kKey1, kValue1}}},
+        {{/*v1=*/{/*k_pages=*/{{kKey1, kKey2}}, /*v_pages=*/{{kValue1, kValue2}}}, /*v2=*/{}, true}, /*v1_or_v2=*/{{kKey1, kValue1}, {kKey2, kValue2}}},
+        {{/*v1=*/{}, /*v2=*/{/*k_pages=*/{{kKey1, kKey2}}, /*v_pages=*/{{kValue1, kValue2}}}, true}, /*v1_or_v2=*/{{kKey1, kValue1}, {kKey2, kValue2}}},
+
+        /* DESCENDING */
+        {{/*v1=*/{{}, {}}, /*v2=*/{{}, {}}, false}, /*v1_or_v2=*/{}},
+        {{/*v1=*/{/*k_pages=*/{{kKey1}}, /*v_pages=*/{{kValue1}}}, /*v2=*/{}, false}, /*v1_or_v2=*/{{kKey1, kValue1}}},
+        {{/*v1=*/{/*k_pages=*/{{kKey2, kKey1}}, /*v_pages=*/{{kValue2, kValue1}}}, /*v2=*/{}, false}, /*v1_or_v2=*/{{kKey2, kValue2}, {kKey1, kValue1}}},
+        {{/*v1=*/{}, /*v2=*/{/*k_pages=*/{{kKey2, kKey1}}, /*v_pages=*/{{kValue2, kValue1}}}, false}, /*v1_or_v2=*/{{kKey2, kValue2}, {kKey1, kValue1}}},
+    };
+    int i = 0;
+    for (const auto& [v1_v2_ascending, expected_union_set] : fixtures) {
+        const auto& [v1, v2, ascending] = v1_v2_ascending;
+        TestPaginatorKV paginator1{v1.first, v1.second}, paginator2{v2.first, v2.second};
+        PaginatedKV paginated1{paginator1}, paginated2{paginator2};
+        SECTION("move: test vector " + std::string{ascending ? "ascending" : "descending"} + ": " + std::to_string(i)) {
+            const auto async_union = [&](PaginatedKV& ps1, PaginatedKV& ps2) -> Task<std::vector<KeyValue>> {
+                UnionIterator<PaginatedKV::Iterator> it = set_union(co_await ps1.begin(), co_await ps2.begin(), ascending);
+                CHECK(co_await it.has_next() == !expected_union_set.empty());
+                co_return co_await paginated_iterator_to_vector<UnionIterator<PaginatedKV::Iterator>, KeyValue>(std::move(it));
+            };
+            CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);
+        }
+        SECTION("copy: test vector " + std::string{ascending ? "ascending" : "descending"} + ": " + std::to_string(i)) {
+            const auto async_union = [&](PaginatedKV& ps1, PaginatedKV& ps2) -> Task<std::vector<KeyValue>> {
+                auto it1 = co_await ps1.begin();
+                auto it2 = co_await ps2.begin();
+                UnionIterator<PaginatedKV::Iterator> it = set_union(it1, it2, ascending);
+                CHECK(co_await it.has_next() == !expected_union_set.empty());
+                co_return co_await paginated_iterator_to_vector<UnionIterator<PaginatedKV::Iterator>, KeyValue>(std::move(it));
+            };
+            CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);
+        }
+        ++i;
     }
 }
 

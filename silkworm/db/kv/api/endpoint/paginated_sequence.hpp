@@ -75,7 +75,19 @@ class PaginatedSequence {
         }
 
         Iterator(Paginator& next_page_provider, PageResult current) noexcept
-            : next_page_provider_(next_page_provider), current_(std::move(current)), it_{current_.values.cbegin()} {}
+            : next_page_provider_(next_page_provider),
+              current_(std::move(current)),
+              it_(current_.values.cbegin()) {}
+        Iterator(const Iterator& other) noexcept
+            : next_page_provider_(other.next_page_provider_),
+              current_(other.current_),
+              it_(current_.values.cbegin() + std::distance(other.current_.values.cbegin(), other.it_)) {}
+        Iterator(Iterator&& other) noexcept
+            : next_page_provider_(other.next_page_provider_) {
+            const auto distance = std::distance(other.current_.values.cbegin(), other.it_);
+            current_ = std::move(other.current_);  // NOLINT(*-prefer-member-initializer)
+            it_ = current_.values.cbegin() + distance;
+        }
 
       private:
         Paginator& next_page_provider_;
@@ -157,8 +169,22 @@ class PaginatedSequencePair {
         Iterator(Paginator& next_page_provider, PageResult current) noexcept
             : next_page_provider_(next_page_provider),
               current_(std::move(current)),
-              key_it_{current_.keys.cbegin()},
-              value_it_{current_.values.cbegin()} {}
+              key_it_(current_.keys.cbegin()),
+              value_it_(current_.values.cbegin()) {}
+        Iterator(const Iterator& other) noexcept
+            : next_page_provider_(other.next_page_provider_),
+              current_(other.current_),
+              key_it_(current_.keys.cbegin() + std::distance(other.current_.keys.cbegin(), other.key_it_)),
+              value_it_(current_.values.cbegin() + std::distance(other.current_.values.cbegin(), other.value_it_)) {}
+        Iterator(Iterator&& other) noexcept
+            : next_page_provider_(other.next_page_provider_) {
+            const auto key_distance = std::distance(other.current_.keys.cbegin(), other.key_it_);
+            const auto value_distance = std::distance(other.current_.values.cbegin(), other.value_it_);
+            SILKWORM_ASSERT(key_distance == value_distance);
+            current_ = std::move(other.current_);  // NOLINT(*-prefer-member-initializer)
+            key_it_ = current_.keys.cbegin() + key_distance;
+            value_it_ = current_.values.cbegin() + value_distance;
+        }
 
       private:
         Paginator& next_page_provider_;

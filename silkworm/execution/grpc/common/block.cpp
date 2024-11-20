@@ -60,7 +60,7 @@ void header_from_proto(const ::execution::Header& proto_header, BlockHeader& hea
         header.excess_blob_gas = proto_header.excess_blob_gas();
     }
     if (proto_header.has_requests_hash()) {
-        header.receipts_root = rpc::bytes32_from_h256(proto_header.requests_hash());
+        header.requests_hash = rpc::bytes32_from_h256(proto_header.requests_hash());
     }
 }
 

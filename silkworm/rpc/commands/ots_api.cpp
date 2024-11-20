@@ -932,9 +932,9 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     }
 
     SILK_DEBUG << "Results"
-             << " transactions size: " << results.transactions.size()
-             << " receipts size: " << results.receipts.size()
-             << " block details size: " << results.blocks.size();
+               << " transactions size: " << results.transactions.size()
+               << " receipts size: " << results.receipts.size()
+               << " block details size: " << results.blocks.size();
 
     co_return results;
 }

@@ -16,7 +16,6 @@
 
 #include "block.hpp"
 
-#include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc {

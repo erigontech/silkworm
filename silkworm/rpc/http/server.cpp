@@ -21,7 +21,6 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/asio/dispatch.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/infra/common/log.hpp>

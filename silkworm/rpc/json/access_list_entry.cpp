@@ -16,9 +16,6 @@
 
 #include "access_list_entry.hpp"
 
-#include <cstring>
-#include <utility>
-
 #include <silkworm/core/common/util.hpp>
 
 #include "types.hpp"

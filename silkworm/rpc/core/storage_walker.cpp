@@ -16,7 +16,6 @@
 
 #include "storage_walker.hpp"
 
-#include <set>
 #include <sstream>
 
 #include <silkworm/core/common/endian.hpp>
@@ -24,7 +23,6 @@
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/split_cursor.hpp>

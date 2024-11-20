@@ -23,15 +23,12 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 

@@ -30,7 +30,6 @@
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -298,7 +297,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
             db::kv::api::HistoryPointQuery hpq{
-                .table = db::table::kAccountsHistory,
+                .table = db::table::kAccountDomain,
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -333,7 +332,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
             db::kv::api::HistoryPointQuery hpq{
-                .table = db::table::kAccountsHistory,
+                .table = db::table::kAccountDomain,
                 .key = key,
                 .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));

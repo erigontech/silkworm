@@ -428,12 +428,6 @@ inline constexpr const char* kCodeDomain{"code"};
 inline constexpr const char* kCommitment{"commitment"};
 inline constexpr const char* kReceiptDomain{"receipt"};
 
-//! \details History storing the account common information
-inline constexpr const char* kAccountsHistory{"AccountsHistory"};
-inline constexpr const char* kCodeHistory{"CodeHistory"};
-inline constexpr const char* kCommitmentHistory{"CommitmentHistory"};
-inline constexpr const char* kReceiptHistory{"ReceiptHistory"};
-
 //! \details Inverted Index storing the account common information
 inline constexpr const char* kAccountsHistoryIdx{"AccountsHistoryIdx"};
 inline constexpr const char* kStorageHistoryIdx{"StorageHistoryIdx"};

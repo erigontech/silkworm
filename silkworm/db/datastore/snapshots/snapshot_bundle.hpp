@@ -21,6 +21,8 @@
 #include <functional>
 #include <vector>
 
+#include "bloom_filter/bloom_filter.hpp"
+#include "btree/btree_index.hpp"
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "domain.hpp"
@@ -37,6 +39,8 @@ struct SnapshotBundleEntityData {
     std::map<datastore::EntityName, SegmentFileReader> segments;
     std::map<datastore::EntityName, KVSegmentFileReader> kv_segments;
     std::map<datastore::EntityName, Index> rec_split_indexes;
+    std::map<datastore::EntityName, bloom_filter::BloomFilter> existence_indexes;
+    std::map<datastore::EntityName, btree::BTreeIndex> btree_indexes;
 };
 
 struct SnapshotBundleData {
@@ -91,11 +95,18 @@ struct SnapshotBundle {
     auto segments() const {
         return make_map_values_view(data_.entities.at(Schema::kDefaultEntityName).segments);
     }
-    const SegmentFileReader& segment(datastore::EntityName name) const;
-    const Index& rec_split_index(datastore::EntityName name) const;
+    const SegmentFileReader& segment(
+        datastore::EntityName entity_name,
+        datastore::EntityName segment_name) const;
+    const Index& rec_split_index(
+        datastore::EntityName entity_name,
+        datastore::EntityName index_name) const;
     SegmentAndIndex segment_and_rec_split_index(
-        std::pair<datastore::EntityName, datastore::EntityName> names) const {
-        return {segment(names.first), rec_split_index(names.second)};
+        std::array<datastore::EntityName, 3> names) const {
+        return {
+            segment(names[0], names[1]),
+            rec_split_index(names[0], names[2]),
+        };
     }
 
     Domain domain(datastore::EntityName name) const;

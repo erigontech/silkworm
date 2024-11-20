@@ -64,7 +64,8 @@ class SegmentFileWriter {
 
     explicit SegmentFileWriter(
         SnapshotPath path,
-        const std::filesystem::path& tmp_dir_path);
+        const std::filesystem::path& tmp_dir_path,
+        bool is_compressed = true);
 
     SegmentFileWriter(SegmentFileWriter&&) = default;
     SegmentFileWriter& operator=(SegmentFileWriter&&) = default;

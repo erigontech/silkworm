@@ -27,8 +27,8 @@ static std::map<datastore::EntityName, SnapshotPath> make_snapshot_paths(
     StepRange range) {
     std::map<datastore::EntityName, SnapshotPath> results;
     for (auto& [name, def] : entity.entities()) {
-        if (def.format() == format) {
-            auto path = def.make_path(dir_path, range);
+        if (def->format() == format) {
+            auto path = def->make_path(dir_path, range);
             results.emplace(name, std::move(path));
         }
     }
@@ -40,8 +40,11 @@ static std::map<datastore::EntityName, SegmentFileReader> make_segments(
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, SegmentFileReader> results;
-    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kSegment, entity, dir_path, range)) {
-        results.emplace(name, SegmentFileReader{path});
+    for (auto& [name, anyDef] : entity.entities()) {
+        if (anyDef->format() != Schema::SnapshotFileDef::Format::kSegment) continue;
+        auto& def = dynamic_cast<const Schema::SegmentDef&>(*anyDef);
+        auto path = def.make_path(dir_path, range);
+        results.emplace(name, SegmentFileReader{std::move(path), std::nullopt, def.compression_enabled()});
     }
     return results;
 }
@@ -51,8 +54,11 @@ std::map<datastore::EntityName, KVSegmentFileReader> make_kv_segments(
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, KVSegmentFileReader> results;
-    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kKVSegment, entity, dir_path, range)) {
-        results.emplace(name, KVSegmentFileReader{path, seg::CompressionKind::kAll});
+    for (auto& [name, anyDef] : entity.entities()) {
+        if (anyDef->format() != Schema::SnapshotFileDef::Format::kKVSegment) continue;
+        auto& def = dynamic_cast<const Schema::KVSegmentDef&>(*anyDef);
+        auto path = def.make_path(dir_path, range);
+        results.emplace(name, KVSegmentFileReader{std::move(path), def.compression_kind()});
     }
     return results;
 }
@@ -68,18 +74,47 @@ std::map<datastore::EntityName, Index> make_rec_split_indexes(
     return results;
 }
 
+std::map<datastore::EntityName, bloom_filter::BloomFilter> make_existence_indexes(
+    const Schema::EntityDef& entity,
+    const std::filesystem::path& dir_path,
+    StepRange range) {
+    std::map<datastore::EntityName, bloom_filter::BloomFilter> results;
+    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kExistenceIndex, entity, dir_path, range)) {
+        SILK_TRACE << "make_existence_indexes opens " << name.to_string() << " at " << path.filename();
+        // TODO: wait for RAII refactoring
+        // results.emplace(name, bloom_filter::BloomFilter{path.path()});
+    }
+    return results;
+}
+
+std::map<datastore::EntityName, btree::BTreeIndex> make_btree_indexes(
+    const Schema::EntityDef& entity,
+    const std::filesystem::path& dir_path,
+    StepRange range) {
+    std::map<datastore::EntityName, btree::BTreeIndex> results;
+    for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kBTreeIndex, entity, dir_path, range)) {
+        SILK_TRACE << "make_btree_indexes opens " << name.to_string() << " at " << path.filename();
+        // TODO: refactor to not require Decompressor, wait for RAII refactoring
+        // results.emplace(name, btree::BTreeIndex{?, path.path()});
+    }
+    return results;
+}
+
 SnapshotBundleData make_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
     StepRange step_range) {
     SnapshotBundleData data;
-    for (auto& [name, entity_schema] : schema.entities()) {
+    for (auto& [name, entity_schema_ptr] : schema.entities()) {
+        auto& entity_schema = *entity_schema_ptr;
         data.entities.emplace(
             name,
             SnapshotBundleEntityData{
                 make_segments(entity_schema, dir_path, step_range),
                 make_kv_segments(entity_schema, dir_path, step_range),
                 make_rec_split_indexes(entity_schema, dir_path, step_range),
+                make_existence_indexes(entity_schema, dir_path, step_range),
+                make_btree_indexes(entity_schema, dir_path, step_range),
             });
     };
     return data;
@@ -134,12 +169,16 @@ void SnapshotBundle::close() {
     }
 }
 
-const SegmentFileReader& SnapshotBundle::segment(datastore::EntityName name) const {
-    return data_.entities.at(Schema::kDefaultEntityName).segments.at(name);
+const SegmentFileReader& SnapshotBundle::segment(
+    datastore::EntityName entity_name,
+    datastore::EntityName segment_name) const {
+    return data_.entities.at(entity_name).segments.at(segment_name);
 }
 
-const Index& SnapshotBundle::rec_split_index(datastore::EntityName name) const {
-    return data_.entities.at(Schema::kDefaultEntityName).rec_split_indexes.at(name);
+const Index& SnapshotBundle::rec_split_index(
+    datastore::EntityName entity_name,
+    datastore::EntityName index_name) const {
+    return data_.entities.at(entity_name).rec_split_indexes.at(index_name);
 }
 
 Domain SnapshotBundle::domain(datastore::EntityName name) const {
@@ -196,20 +235,20 @@ std::vector<SnapshotPath> SnapshotBundle::segment_paths() const {
 }
 
 std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::segment_paths() const {
-    auto& entity = schema_.entities().at(Schema::kDefaultEntityName);
+    auto& entity = *schema_.entities().at(Schema::kDefaultEntityName);
     return make_snapshot_paths(Schema::SnapshotFileDef::Format::kSegment, entity, dir_path_, step_range_);
 }
 
 std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::rec_split_index_paths() const {
-    auto& entity = schema_.entities().at(Schema::kDefaultEntityName);
+    auto& entity = *schema_.entities().at(Schema::kDefaultEntityName);
     return make_snapshot_paths(Schema::SnapshotFileDef::Format::kRecSplitIndex, entity, dir_path_, step_range_);
 }
 
 std::vector<std::filesystem::path> SnapshotBundlePaths::files() const {
     std::vector<std::filesystem::path> results;
     for (auto& entity_entry : schema_.entities()) {
-        for (auto& file_entry : entity_entry.second.entities()) {
-            auto path = file_entry.second.make_path(dir_path_, step_range_);
+        for (auto& file_entry : entity_entry.second->entities()) {
+            auto path = file_entry.second->make_path(dir_path_, step_range_);
             results.push_back(path.path());
         }
     }

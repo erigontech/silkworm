@@ -25,9 +25,14 @@ namespace silkworm::snapshots {
 
 SegmentFileReader::SegmentFileReader(
     SnapshotPath path,
-    std::optional<MemoryMappedRegion> segment_region)
+    std::optional<MemoryMappedRegion> segment_region,
+    bool is_compressed)
     : path_(std::move(path)),
-      decompressor_{path_.path(), segment_region} {}
+      decompressor_{
+          path_.path(),
+          segment_region,
+          is_compressed ? seg::CompressionKind::kAll : seg::CompressionKind::kNone,
+      } {}
 
 SegmentFileReader::~SegmentFileReader() {
     close();
@@ -61,7 +66,7 @@ SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
 
 SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator+=(size_t count) {
     while ((count > 1) && it_.has_next()) {
-        it_.skip();
+        it_.skip_auto();
         --count;
     }
     if (count > 0) {

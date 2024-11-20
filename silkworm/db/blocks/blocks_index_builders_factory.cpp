@@ -72,7 +72,7 @@ SnapshotPathList BlocksIndexBuildersFactory::index_dependency_paths(const Snapsh
         SILKWORM_ASSERT(false);
         std::abort();
     }();
-    auto& segment_tag = schema_.entities().at(Schema::kDefaultEntityName).entities().at(segment_name).tag();
+    auto& segment_tag = schema_.entities().at(Schema::kDefaultEntityName)->entities().at(segment_name)->tag();
     SnapshotPath snapshot_path = index_path.related_path(segment_tag, db::blocks::kSegmentExtension);
     return {snapshot_path};
 }

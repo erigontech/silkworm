@@ -50,10 +50,9 @@ class StorageWalker {
         AccountCollector& collector);
 
     Task<void> storage_range_at(
-        BlockNum block_number,
+        TxnId txn_number,
         const evmc::address& address,
         const evmc::bytes32& start_location,
-        size_t max_result,
         StorageCollector& collector);
 
   private:

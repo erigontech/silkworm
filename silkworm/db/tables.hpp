@@ -423,17 +423,22 @@ std::optional<MapConfig> get_map_config(const std::string& map_name);
 
 //! \details Domain storing the account common information
 inline constexpr const char* kAccountDomain{"accounts"};
-
-//! \details Domain storing the account storage information
 inline constexpr const char* kStorageDomain{"storage"};
-
-//! \details Domain storing the account code information
 inline constexpr const char* kCodeDomain{"code"};
+inline constexpr const char* kCommitment{"commitment"};
+inline constexpr const char* kReceiptDomain{"receipt"};
 
 //! \details History storing the account common information
 inline constexpr const char* kAccountsHistory{"AccountsHistory"};
+inline constexpr const char* kCodeHistory{"CodeHistory"};
+inline constexpr const char* kCommitmentHistory{"CommitmentHistory"};
+inline constexpr const char* kReceiptHistory{"ReceiptHistory"};
 
 //! \details Inverted Index storing the account common information
 inline constexpr const char* kAccountsHistoryIdx{"AccountsHistoryIdx"};
+inline constexpr const char* kStorageHistoryIdx{"StorageHistoryIdx"};
+inline constexpr const char* kCodeHistoryIdx{"CodeHistoryIdx"};
+inline constexpr const char* kCommitmentHistoryIdx{"CommitmentHistoryIdx"};
+inline constexpr const char* kReceiptHistoryIdx{"ReceiptHistoryIdx"};
 
 }  // namespace silkworm::db::table

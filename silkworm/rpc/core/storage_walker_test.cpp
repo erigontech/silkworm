@@ -391,7 +391,6 @@ TEST_CASE("StorageWalker::storage_range_at") {
     auto tx = result.get();
     StorageWalker walker{*tx};
 
-    const BlockNum block_number{0x52a0b3};
     const evmc::bytes32 start_location{};
 
     nlohmann::json storage({});
@@ -406,7 +405,7 @@ TEST_CASE("StorageWalker::storage_range_at") {
     SECTION("storage range 1") {
         const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
-        auto result1 = boost::asio::co_spawn(pool, walker.storage_range_at(block_number, start_address, start_location, 1, collector), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, walker.storage_range_at(10000, start_address, start_location, collector), boost::asio::use_future);
         result1.get();
 
         CHECK(storage.empty());

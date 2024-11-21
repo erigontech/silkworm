@@ -310,9 +310,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
-            const std::string error_msg = "block not found ";
-            SILK_TRACE << "handle_debug_account_at: core::read_block_by_hash: " << error_msg << request.dump();
-            reply = make_json_error(request, kServerError, error_msg);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }

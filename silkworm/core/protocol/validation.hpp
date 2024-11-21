@@ -107,6 +107,9 @@ enum class [[nodiscard]] ValidationResult {
     // EIP-7702
     kEmptyAuthorizations,
 
+    // EIP-7685: Requests root mismatch
+    kRequestsRootMismatch,
+
     // Bor validation errors. See https://github.com/erigontech/erigon/blob/main/consensus/bor/bor.go
     kMissingVanity,          // Block's extra-data section is shorter than 32 bytes, which is required to store the signer vanity
     kMissingSignature,       // Block's extra-data section doesn't seem to contain a 65 byte secp256k1 signature
@@ -156,6 +159,9 @@ namespace protocol {
 
     //! \brief Calculate the hash of ommers of a block body
     evmc::bytes32 compute_ommers_hash(const BlockBody& body);
+
+    //! \brief Calculates requests rook in block header
+    ValidationResult validate_requests_root(const BlockHeader& header, const std::vector<Log>& logs, EVM& evm);
 
 }  // namespace protocol
 

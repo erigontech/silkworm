@@ -134,11 +134,13 @@ inline constexpr const char* k_engine_getClientVersionV1{"engine_getClientVersio
 inline constexpr const char* k_engine_getPayloadV1{"engine_getPayloadV1"};
 inline constexpr const char* k_engine_getPayloadV2{"engine_getPayloadV2"};
 inline constexpr const char* k_engine_getPayloadV3{"engine_getPayloadV3"};
+inline constexpr const char* k_engine_getPayloadV4{"engine_getPayloadV4"};
 inline constexpr const char* k_engine_getPayloadBodiesByHashV1{"engine_getPayloadBodiesByHashV1"};
 inline constexpr const char* k_engine_getPayloadBodiesByRangeV1{"engine_getPayloadBodiesByRangeV1"};
 inline constexpr const char* k_engine_newPayloadV1{"engine_newPayloadV1"};
 inline constexpr const char* k_engine_newPayloadV2{"engine_newPayloadV2"};
 inline constexpr const char* k_engine_newPayloadV3{"engine_newPayloadV3"};
+inline constexpr const char* k_engine_newPayloadV4{"engine_newPayloadV4"};
 inline constexpr const char* k_engine_forkchoiceUpdatedV1{"engine_forkchoiceUpdatedV1"};
 inline constexpr const char* k_engine_forkchoiceUpdatedV2{"engine_forkchoiceUpdatedV2"};
 inline constexpr const char* k_engine_forkchoiceUpdatedV3{"engine_forkchoiceUpdatedV3"};

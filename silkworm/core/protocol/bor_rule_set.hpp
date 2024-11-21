@@ -30,7 +30,7 @@ class BorRuleSet : public RuleSet {
 
     void initialize(EVM&) override {}
 
-    void finalize(IntraBlockState&, const Block&) override;
+    ValidationResult finalize(IntraBlockState&, const Block&, EVM&, const std::vector<Log>& logs) override;
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
 

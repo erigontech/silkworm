@@ -214,6 +214,30 @@ TEST_CASE("Cancun Header RLP") {
     CHECK(decoded == h);
 }
 
+TEST_CASE("Prague Header RLP") {
+    BlockHeader h{
+        .ommers_hash = kEmptyListHash,
+        .number = 17'000'000,
+        .prev_randao = 0xd01681d2b3acdebff0288a02a1648b3910500961982d5ecdbef064af7c34090b_bytes32,
+        .base_fee_per_gas = 2'700'000'000,
+        .withdrawals_root = 0xbac9348581b0ee244d6eb61076b63c4e4afa70430c804ab0e6a0ab69d9a9d323_bytes32,
+        .blob_gas_used = 456,
+        .excess_blob_gas = 789633,
+        .parent_beacon_block_root = 0x22_bytes32,
+        .requests_hash = 0x33_bytes32,
+    };
+
+    Bytes rlp;
+    rlp::encode(rlp, h);
+
+    ByteView view{rlp};
+    BlockHeader decoded;
+    REQUIRE(rlp::decode(view, decoded));
+
+    CHECK(view.empty());
+    CHECK(decoded == h);
+}
+
 TEST_CASE("Hash header boundary computation") {
     BlockHeader h;
     h.difficulty = 0x13009de5666753258eb9306157680dc5da0d_u256;

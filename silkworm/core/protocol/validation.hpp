@@ -100,7 +100,12 @@ enum class [[nodiscard]] ValidationResult {
     kTooManyBlobs,
     kWrongBlobCommitmentVersion,
     kMaxFeePerBlobGasTooLow,  // max_fee_per_blob_gas < blob_gas_price
-    kBlobCreateTransaction,   // Blob transactions cannot have the form of a create transaction
+
+    // EIP-4844 and EIP 7702
+    kProhibitedContractCreation,  // Blob and SetCode transactions cannot have the form of a create transaction
+
+    // EIP-7702
+    kEmptyAuthorizations,
 
     // Bor validation errors. See https://github.com/erigontech/erigon/blob/main/consensus/bor/bor.go
     kMissingVanity,          // Block's extra-data section is shorter than 32 bytes, which is required to store the signer vanity

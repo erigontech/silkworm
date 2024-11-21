@@ -18,23 +18,19 @@
 
 #include <cstdint>
 
-#include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
+#include "../../common/util/bitmask_operators.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::seg {
 
-class BodyTxsAmountQuery {
-  public:
-    struct Result {
-        uint64_t first_tx_id{};
-        uint64_t count{};
-    };
-
-    explicit BodyTxsAmountQuery(const segment::SegmentFileReader& segment) : segment_(segment) {}
-
-    Result exec();
-
-  private:
-    const segment::SegmentFileReader& segment_;
+enum class CompressionKind : uint8_t {
+    kNone = 0b0,
+    kKeys = 0b1,
+    kValues = 0b10,
+    kAll = 0b11,
 };
 
-}  // namespace silkworm::snapshots
+consteval void enable_bitmask_operator_and(CompressionKind);
+consteval void enable_bitmask_operator_or(CompressionKind);
+consteval void enable_bitmask_operator_not(CompressionKind);
+
+}  // namespace silkworm::snapshots::seg

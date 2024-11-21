@@ -28,7 +28,7 @@ namespace silkworm::snapshots {
 TEST_CASE("BodyTxsAmountQuery") {
     TemporaryDirectory tmp_dir;
     test_util::SampleBodySnapshotFile snapshot_file{tmp_dir.path()};
-    SegmentFileReader snapshot{snapshot_file.path()};
+    segment::SegmentFileReader snapshot{snapshot_file.path()};
     snapshot.reopen_segment();
 
     BodyTxsAmountQuery query{snapshot};

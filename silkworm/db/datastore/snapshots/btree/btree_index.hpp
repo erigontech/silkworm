@@ -24,7 +24,7 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "../elias_fano/elias_fano.hpp"
-#include "../seg/decompressor.hpp"
+#include "../segment/kv_segment_reader.hpp"
 #include "btree.hpp"
 
 namespace silkworm::snapshots::btree {
@@ -34,8 +34,8 @@ class BTreeIndex {
     static constexpr uint64_t kDefaultFanout{256};
 
     using DataIndex = BTree::DataIndex;
-    using DataIterator = BTree::DataIterator;
     using EliasFanoList32 = elias_fano::EliasFanoList32;
+    using KVSegmentReader = segment::KVSegmentFileReader;
 
     class Cursor {
       public:
@@ -48,50 +48,78 @@ class BTreeIndex {
       private:
         friend class BTreeIndex;
 
-        Cursor(BTreeIndex* index, ByteView key, ByteView value, DataIndex data_index, DataIterator data_it);
-        bool to_next();
+        Cursor(
+            BTreeIndex* index,
+            ByteView key,
+            ByteView value,
+            DataIndex data_index,
+            const KVSegmentReader* kv_segment)
+            : index_{index},
+              key_{key},
+              value_{value},
+              data_index_{data_index},
+              kv_segment_{kv_segment} {}
 
         BTreeIndex* index_;
         Bytes key_;
         Bytes value_;
         DataIndex data_index_;
-        DataIterator data_it_;
+        const KVSegmentReader* kv_segment_;
     };
 
-    BTreeIndex(seg::Decompressor& kv_decompressor,
-               std::filesystem::path index_file_path,
-               std::optional<MemoryMappedRegion> index_region = {},
-               uint64_t btree_fanout = kDefaultFanout);
+    explicit BTreeIndex(
+        std::filesystem::path index_file_path,
+        std::optional<MemoryMappedRegion> index_region = {},
+        uint64_t btree_fanout = kDefaultFanout);
+
+    void warmup_if_empty_or_check(const KVSegmentReader& kv_segment);
 
     //! Return the Elias-Fano encoding of the sequence of key offsets or nullptr if not present
-    const EliasFanoList32* data_offsets() const { return data_offsets_.get(); }
+    std::shared_ptr<EliasFanoList32> data_offsets() const { return data_offsets_; }
 
     //! Return the number of keys included into this index
     size_t key_count() const { return data_offsets_->sequence_length(); };
 
+    const std::filesystem::path& path() const { return file_path_; }
+
     //! Seek and return a cursor at position where key >= \p seek_key
-    //! \param seek_key the given key at which the cursor must be seeked
-    //! \param data_it an iterator to the key-value data sequence
+    //! \param seek_key the given key at/after which the cursor must be positioned
+    //! \param kv_segment reader of the key-value data sequence
     //! \return a cursor positioned at key >= \p seek_key or nullptr
     //! \details if \p seek_key is empty, first key is returned
     //! \details if \p seek_key is greater than any other key, std::nullopt is returned
-    std::optional<Cursor> seek(ByteView seek_key, DataIterator data_it);
+    std::optional<Cursor> seek(ByteView seek_key, const KVSegmentReader& kv_segment);
 
     //! Get the value associated to the given key with exact match
     //! \param key the data key to match exactly
-    //! \param data_it an iterator to the key-value data sequence
+    //! \param kv_segment reader of the key-value data sequence
     //! \return the value associated at \p key or std::nullopt if not found
-    std::optional<Bytes> get(ByteView key, DataIterator data_it);
+    std::optional<Bytes> get(ByteView key, const KVSegmentReader& kv_segment);
 
   private:
-    Cursor new_cursor(ByteView key, ByteView value, DataIndex data_index, DataIterator data_it);
+    class KeyValueIndex : public BTree::KeyValueIndex {
+      public:
+        explicit KeyValueIndex(
+            const KVSegmentReader& kv_segment,
+            std::shared_ptr<EliasFanoList32> data_offsets,
+            const std::filesystem::path& file_path)
+            : kv_segment_{kv_segment},
+              data_offsets_{data_offsets},
+              file_path_{file_path} {}
+        ~KeyValueIndex() override = default;
 
-    BTree::LookupResult lookup_data(DataIndex data_index, DataIterator data_it);
-    BTree::CompareResult compare_key(ByteView key, DataIndex data_index, DataIterator data_it);
+        std::optional<BTree::KeyValue> lookup_key_value(DataIndex data_index) const override;
+        std::optional<Bytes> lookup_key(DataIndex data_index) const override;
+
+      private:
+        const KVSegmentReader& kv_segment_;
+        std::shared_ptr<EliasFanoList32> data_offsets_;
+        const std::filesystem::path& file_path_;
+    };
 
     std::filesystem::path file_path_;
     std::unique_ptr<MemoryMappedFile> memory_file_;
-    std::unique_ptr<EliasFanoList32> data_offsets_;
+    std::shared_ptr<EliasFanoList32> data_offsets_;
     std::unique_ptr<BTree> btree_;
 };
 

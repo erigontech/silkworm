@@ -27,6 +27,8 @@
 
 namespace silkworm::snapshots {
 
+using namespace segment;
+
 template <class TSegmentReader, class TSegmentWriter>
 void copy_reader_to_writer(const SegmentFileReader& file_reader, SegmentFileWriter& file_writer) {
     TSegmentReader reader{file_reader};

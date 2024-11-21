@@ -27,24 +27,24 @@ snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
     schema.segment(kHeaderSegmentName)
         .tag(kHeaderSegmentTag)
         .file_ext(kSegmentExtension);
-    schema.rec_split_index(kIdxHeaderHashName)
+    schema.accessor_index(kIdxHeaderHashName)
         .tag(kIdxHeaderHashTag)
         .file_ext(kIdxExtension);
 
     schema.segment(kBodySegmentName)
         .tag(kBodySegmentTag)
         .file_ext(kSegmentExtension);
-    schema.rec_split_index(kIdxBodyNumberName)
+    schema.accessor_index(kIdxBodyNumberName)
         .tag(kIdxBodyNumberTag)
         .file_ext(kIdxExtension);
 
     schema.segment(kTxnSegmentName)
         .tag(kTxnSegmentTag)
         .file_ext(kSegmentExtension);
-    schema.rec_split_index(kIdxTxnHashName)
+    schema.accessor_index(kIdxTxnHashName)
         .tag(kIdxTxnHashTag)
         .file_ext(kIdxExtension);
-    schema.rec_split_index(kIdxTxnHash2BlockName)
+    schema.accessor_index(kIdxTxnHash2BlockName)
         .tag(kIdxTxnHash2BlockTag)
         .file_ext(kIdxExtension);
 

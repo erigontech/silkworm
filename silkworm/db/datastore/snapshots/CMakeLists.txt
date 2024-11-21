@@ -17,7 +17,7 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(bittorrent)
-add_subdirectory(seg)
+add_subdirectory(segment/seg)
 
 find_package(absl REQUIRED COMPONENTS strings)
 find_package(Boost REQUIRED COMPONENTS headers url) # headers for signals2

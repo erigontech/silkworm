@@ -23,7 +23,7 @@ namespace silkworm::db {
 class BodySegmentCollation : public SegmentCollation {
   public:
     ~BodySegmentCollation() override = default;
-    void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const override;
+    void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const override;
     void prune(RWTxn& txn, BlockNumRange range) const override;
 };
 

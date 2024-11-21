@@ -352,8 +352,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!headers_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::SegmentFileReader header_segment{*headers_segment_path, make_region(hs.segment)};
-    snapshots::Index idx_header_hash{headers_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(hs.header_hash_index)};
+    snapshots::segment::SegmentFileReader header_segment{*headers_segment_path, make_region(hs.segment)};
+    snapshots::rec_split::AccessorIndex idx_header_hash{headers_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(hs.header_hash_index)};
 
     const SilkwormBodiesSnapshot& bs = snapshot->bodies;
     if (!bs.segment.file_path || !bs.block_num_index.file_path) {
@@ -363,8 +363,8 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!bodies_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::SegmentFileReader body_segment{*bodies_segment_path, make_region(bs.segment)};
-    snapshots::Index idx_body_number{bodies_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(bs.block_num_index)};
+    snapshots::segment::SegmentFileReader body_segment{*bodies_segment_path, make_region(bs.segment)};
+    snapshots::rec_split::AccessorIndex idx_body_number{bodies_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(bs.block_num_index)};
 
     const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
     if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
@@ -374,22 +374,22 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
     if (!transactions_segment_path) {
         return SILKWORM_INVALID_PATH;
     }
-    snapshots::SegmentFileReader txn_segment{*transactions_segment_path, make_region(ts.segment)};
-    snapshots::Index idx_txn_hash{transactions_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(ts.tx_hash_index)};
-    snapshots::Index idx_txn_hash_2_block{transactions_segment_path->related_path(std::string{db::blocks::kIdxTxnHash2BlockTag}, db::blocks::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
+    snapshots::segment::SegmentFileReader txn_segment{*transactions_segment_path, make_region(ts.segment)};
+    snapshots::rec_split::AccessorIndex idx_txn_hash{transactions_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(ts.tx_hash_index)};
+    snapshots::rec_split::AccessorIndex idx_txn_hash_2_block{transactions_segment_path->related_path(std::string{db::blocks::kIdxTxnHash2BlockTag}, db::blocks::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
 
     auto bundle_data_provider = [&]() -> snapshots::SnapshotBundleEntityData {
         snapshots::SnapshotBundleEntityData data;
 
         data.segments.emplace(db::blocks::kHeaderSegmentName, std::move(header_segment));
-        data.rec_split_indexes.emplace(db::blocks::kIdxHeaderHashName, std::move(idx_header_hash));
+        data.accessor_indexes.emplace(db::blocks::kIdxHeaderHashName, std::move(idx_header_hash));
 
         data.segments.emplace(db::blocks::kBodySegmentName, std::move(body_segment));
-        data.rec_split_indexes.emplace(db::blocks::kIdxBodyNumberName, std::move(idx_body_number));
+        data.accessor_indexes.emplace(db::blocks::kIdxBodyNumberName, std::move(idx_body_number));
 
         data.segments.emplace(db::blocks::kTxnSegmentName, std::move(txn_segment));
-        data.rec_split_indexes.emplace(db::blocks::kIdxTxnHashName, std::move(idx_txn_hash));
-        data.rec_split_indexes.emplace(db::blocks::kIdxTxnHash2BlockName, std::move(idx_txn_hash_2_block));
+        data.accessor_indexes.emplace(db::blocks::kIdxTxnHashName, std::move(idx_txn_hash));
+        data.accessor_indexes.emplace(db::blocks::kIdxTxnHash2BlockName, std::move(idx_txn_hash_2_block));
 
         return data;
     };

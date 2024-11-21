@@ -25,7 +25,7 @@
 
 namespace silkworm::db {
 
-void HeaderSegmentCollation::copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const {
+void HeaderSegmentCollation::copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
     snapshots::HeaderSegmentWriter writer{file_writer};
     auto out = writer.out();

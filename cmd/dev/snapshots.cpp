@@ -47,9 +47,10 @@
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
 #include <silkworm/db/datastore/snapshots/bloom_filter/bloom_filter.hpp>
 #include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
+#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
-#include <silkworm/db/datastore/snapshots/seg/seg_zip.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
@@ -67,6 +68,7 @@ using namespace silkworm;
 using namespace silkworm::cmd::common;
 using namespace silkworm::snapshots;
 using namespace silkworm::snapshots::bittorrent;
+using namespace silkworm::snapshots::segment;
 
 static constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 static constexpr int kDefaultRepetitions{1};
@@ -461,38 +463,43 @@ void open_btree_index(const SnapshotSubcommandSettings& settings) {
     ensure(!settings.input_file_path.empty(), "open_btree_index: --file must be specified");
     ensure(settings.input_file_path.extension() == ".kv", "open_btree_index: --file must be .kv file");
 
-    std::filesystem::path bt_index_file_path = settings.input_file_path;
-    bt_index_file_path.replace_extension(".bt");
-    SILK_INFO << "KV file: " << settings.input_file_path.string() << " BT file: " << bt_index_file_path.string();
+    auto kv_segment_path = SnapshotPath::parse(settings.input_file_path);
+    ensure(kv_segment_path.has_value(), "open_btree_index: invalid input file name format");
+
+    auto bt_index_path = kv_segment_path->related_path_ext(".bt");
+    SILK_INFO << "KV file: " << kv_segment_path->path().string()
+              << " BT file: " << bt_index_path.path().string();
+
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    seg::Decompressor kv_decompressor{settings.input_file_path};
-    kv_decompressor.open();
-    btree::BTreeIndex bt_index{kv_decompressor, bt_index_file_path};
+
+    segment::KVSegmentFileReader kv_segment{*kv_segment_path, seg::CompressionKind::kAll};
+    kv_segment.reopen_segment();
+
+    btree::BTreeIndex bt_index{bt_index_path.path()};
     SILK_INFO << "Starting KV scan and BTreeIndex check, total keys: " << bt_index.key_count();
+
+    segment::KVSegmentReader<RawDecoder<Bytes>, RawDecoder<Bytes>> reader{kv_segment};
     size_t matching_count{0}, key_count{0};
-    bool is_key{true};
-    Bytes key, value;
-    auto kv_iterator = kv_decompressor.begin();
-    while (kv_iterator != kv_decompressor.end()) {
-        if (is_key) {
-            key = *kv_iterator;
-            ++key_count;
-        } else {
-            value = *kv_iterator;
-            const auto v = bt_index.get(key, kv_iterator);
-            SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value) << " v=" << (v ? to_hex(*v) : "");
-            ensure(v == value,
-                   [&]() { return "open_btree_index: value mismatch for key=" + to_hex(key) + " position=" + std::to_string(key_count); });
-            if (v == value) {
-                ++matching_count;
-            }
-            if (key_count % 10'000'000 == 0) {
-                SILK_INFO << "BTreeIndex check progress: " << key_count << " different: " << (key_count - matching_count);
-            }
+    for (auto kv_pair : reader) {
+        ByteView key = kv_pair.first;
+        ByteView value = kv_pair.second;
+
+        const auto v = bt_index.get(key, kv_segment);
+        SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value) << " v=" << (v ? to_hex(*v) : "");
+        ensure(v == value, [&]() {
+            return "open_btree_index: value mismatch for key=" + to_hex(key) +
+                   " position=" + std::to_string(key_count);
+        });
+        if (v == value) {
+            ++matching_count;
         }
-        ++kv_iterator;
-        is_key = !is_key;
+
+        ++key_count;
+        if (key_count % 10'000'000 == 0) {
+            SILK_INFO << "BTreeIndex check progress: " << key_count << " different: " << (key_count - matching_count);
+        }
     }
+
     ensure(key_count == bt_index.key_count(), "open_btree_index: total key count does not match");
     SILK_INFO << "Open btree index matching: " << matching_count << " different: " << (key_count - matching_count);
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
@@ -687,7 +694,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     auto repository = make_repository(settings.settings);
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kHeaderSegmentAndIdxNames);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kHeaderSegmentAndIdxNames);
         const auto header = HeaderFindByHashQuery{segment_and_index}.exec(*hash);
         if (header) {
             matching_header = header;
@@ -755,7 +762,7 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
     SegmentFileReader body_segment{*snapshot_path};
     body_segment.reopen_segment();
 
-    Index idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
+    rec_split::AccessorIndex idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
     idx_body_number.reopen_index();
 
     const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_number);
@@ -876,7 +883,7 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
     txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
+        rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
         idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}.exec(hash);
@@ -900,7 +907,7 @@ void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kTxnSegmentAndIdxNames);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByHashQuery{segment_and_index}.exec(hash);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();
@@ -940,7 +947,7 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
     txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
+        rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
         idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByIdQuery{{txn_segment, idx_txn_hash}}.exec(txn_id);
@@ -964,7 +971,7 @@ void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_rec_split_index(db::blocks::kTxnSegmentAndIdxNames);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByIdQuery{segment_and_index}.exec(txn_id);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();

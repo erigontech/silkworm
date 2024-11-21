@@ -95,12 +95,12 @@ Step SnapshotRepository::max_end_step() const {
     return bundle.step_range().end;
 }
 
-std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(
+std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(
     std::array<datastore::EntityName, 3> names,
     Timestamp t) const {
     auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
     if (bundle) {
-        return {bundle->segment_and_rec_split_index(names), bundle};
+        return {bundle->segment_and_accessor_index(names), bundle};
     }
     return {std::nullopt, {}};
 }
@@ -244,8 +244,8 @@ SnapshotPathList SnapshotRepository::stale_index_paths() const {
     SnapshotPathList results;
     // TODO: reimplement for state repository
     SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
-    auto rec_split_index_file_ext = some_bundle_paths.rec_split_index_paths().begin()->second.extension();
-    auto all_files = get_files(rec_split_index_file_ext);
+    auto accessor_index_file_ext = some_bundle_paths.accessor_index_paths().begin()->second.extension();
+    auto all_files = get_files(accessor_index_file_ext);
     std::copy_if(
         all_files.begin(), all_files.end(),
         std::back_inserter(results),

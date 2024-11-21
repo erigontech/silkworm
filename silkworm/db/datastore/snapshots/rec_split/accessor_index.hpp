@@ -24,13 +24,13 @@
 #include <silkworm/core/types/hash.hpp>
 
 #include "../common/snapshot_path.hpp"
-#include "../rec_split/rec_split.hpp"
+#include "rec_split.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::rec_split {
 
-class Index {
+class AccessorIndex {
   public:
-    explicit Index(
+    explicit AccessorIndex(
         SnapshotPath path,
         std::optional<MemoryMappedRegion> region = std::nullopt)
         : path_(std::move(path)),
@@ -67,4 +67,4 @@ class Index {
     std::unique_ptr<rec_split::RecSplitIndex> index_;
 };
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::rec_split

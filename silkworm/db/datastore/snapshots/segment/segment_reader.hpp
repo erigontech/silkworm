@@ -34,9 +34,9 @@
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
 #include "../common/util/iterator/iterator_read_into_vector.hpp"
-#include "../seg/decompressor.hpp"
+#include "seg/decompressor.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 /**
  * SegmentFileReader is a type-safe wrapper on top of a seg::Decompressor.
@@ -202,4 +202,4 @@ concept SegmentReaderConcept =
     std::same_as<TSegmentReader, SegmentReader<typename TSegmentReader::DecoderType>> ||
     std::derived_from<TSegmentReader, SegmentReader<typename TSegmentReader::DecoderType>>;
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

@@ -27,18 +27,18 @@
 #include "common/util/iterator/map_values_view.hpp"
 #include "domain.hpp"
 #include "inverted_index.hpp"
-#include "kv_segment/kv_segment_reader.hpp"
-#include "rec_split_index/index.hpp"
+#include "rec_split/accessor_index.hpp"
 #include "schema.hpp"
+#include "segment/kv_segment_reader.hpp"
 #include "segment/segment_reader.hpp"
-#include "segment_and_index.hpp"
+#include "segment_and_accessor_index.hpp"
 
 namespace silkworm::snapshots {
 
 struct SnapshotBundleEntityData {
-    std::map<datastore::EntityName, SegmentFileReader> segments;
-    std::map<datastore::EntityName, KVSegmentFileReader> kv_segments;
-    std::map<datastore::EntityName, Index> rec_split_indexes;
+    std::map<datastore::EntityName, segment::SegmentFileReader> segments;
+    std::map<datastore::EntityName, segment::KVSegmentFileReader> kv_segments;
+    std::map<datastore::EntityName, rec_split::AccessorIndex> accessor_indexes;
     std::map<datastore::EntityName, bloom_filter::BloomFilter> existence_indexes;
     std::map<datastore::EntityName, btree::BTreeIndex> btree_indexes;
 };
@@ -65,7 +65,7 @@ struct SnapshotBundlePaths {
 
     std::vector<std::filesystem::path> files() const;
     std::map<datastore::EntityName, SnapshotPath> segment_paths() const;
-    std::map<datastore::EntityName, SnapshotPath> rec_split_index_paths() const;
+    std::map<datastore::EntityName, SnapshotPath> accessor_index_paths() const;
 
   private:
     Schema::RepositoryDef schema_;
@@ -95,17 +95,17 @@ struct SnapshotBundle {
     auto segments() const {
         return make_map_values_view(data_.entities.at(Schema::kDefaultEntityName).segments);
     }
-    const SegmentFileReader& segment(
+    const segment::SegmentFileReader& segment(
         datastore::EntityName entity_name,
         datastore::EntityName segment_name) const;
-    const Index& rec_split_index(
+    const rec_split::AccessorIndex& accessor_index(
         datastore::EntityName entity_name,
         datastore::EntityName index_name) const;
-    SegmentAndIndex segment_and_rec_split_index(
+    SegmentAndAccessorIndex segment_and_accessor_index(
         std::array<datastore::EntityName, 3> names) const {
         return {
             segment(names[0], names[1]),
-            rec_split_index(names[0], names[2]),
+            accessor_index(names[0], names[2]),
         };
     }
 

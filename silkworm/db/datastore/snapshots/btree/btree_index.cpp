@@ -16,6 +16,7 @@
 
 #include "btree_index.hpp"
 
+#include <cstdlib>
 #include <utility>
 
 #include <gsl/util>
@@ -24,15 +25,20 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
+#include "../common/raw_codec.hpp"
+
 namespace silkworm::snapshots::btree {
 
-BTreeIndex::BTreeIndex(seg::Decompressor& kv_decompressor,
-                       std::filesystem::path index_file_path,
-                       std::optional<MemoryMappedRegion> index_region,
-                       uint64_t btree_fanout)
-    : file_path_(std::move(index_file_path)) {
-    ensure(kv_decompressor.is_open(), "BTreeIndex: KV file decompressor must be opened");
+static bool is_btree_check_against_data_keys_enabled() {
+    const char* env_var = std::getenv("BT_ASSERT_OFFSETS");
+    return env_var ? (std::stoul(env_var) != 0) : false;
+}
 
+BTreeIndex::BTreeIndex(
+    std::filesystem::path index_file_path,
+    std::optional<MemoryMappedRegion> index_region,
+    uint64_t btree_fanout)
+    : file_path_(std::move(index_file_path)) {
     // Gracefully handle the case of empty index file before memory mapping to avoid error
     if (std::filesystem::file_size(file_path_) == 0) {
         throw std::runtime_error("index " + file_path_.filename().string() + " is empty");
@@ -48,96 +54,90 @@ BTreeIndex::BTreeIndex(seg::Decompressor& kv_decompressor,
     ensure(data_offsets_->sequence_length() > 0, "BTreeIndex: invalid zero-length data offsets");
 
     const auto encoded_nodes = memory_mapped_range.subspan(data_offsets_->encoded_data_size());
-    auto kv_it = kv_decompressor.begin();
 
     btree_ = std::make_unique<BTree>(
         data_offsets_->sequence_length(),
         btree_fanout,
-        [this](auto data_index, auto& data_it) { return lookup_data(data_index, data_it); },
-        [this](auto key, auto data_index, auto& data_it) { return compare_key(key, data_index, data_it); },
-        kv_it,
         encoded_nodes);
 }
 
-BTreeIndex::Cursor::Cursor(BTreeIndex* index, ByteView key, ByteView value, DataIndex data_index, DataIterator data_it)
-    : index_(index), key_(key), value_(value), data_index_(data_index), data_it_(std::move(data_it)) {}
+void BTreeIndex::warmup_if_empty_or_check(const KVSegmentReader& kv_segment) {
+    KeyValueIndex index{kv_segment, data_offsets_, file_path_};
+    if (btree_->empty()) {
+        btree_->warmup(index);
+    } else if (is_btree_check_against_data_keys_enabled()) {
+        btree_->check_against_data_keys(index);
+    }
+}
 
-std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, DataIterator data_it) {
-    const auto [found, key, value, data_index] = btree_->seek(seek_key, data_it);
+std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSegmentReader& kv_segment) {
+    KeyValueIndex index{kv_segment, data_offsets_, file_path_};
+    auto [found, key, value, data_index] = btree_->seek(seek_key, index);
     if (key.compare(seek_key) >= 0) {
-        return new_cursor(key, value, data_index, data_it);
+        return BTreeIndex::Cursor{
+            this,
+            std::move(key),
+            std::move(value),
+            data_index,
+            &kv_segment,
+        };
     }
     return std::nullopt;
 }
 
-std::optional<Bytes> BTreeIndex::get(ByteView key, DataIterator data_it) {
-    const auto [key_found, _, data_index] = btree_->get(key, data_it);
-    if (!key_found) {
+std::optional<Bytes> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_segment) {
+    KeyValueIndex index{kv_segment, data_offsets_, file_path_};
+    auto result = btree_->get(key, index);
+    if (!result) {
         return std::nullopt;
     }
-    const auto [kv_found, kv] = lookup_data(data_index, data_it);
-    if (!kv_found) {
-        return std::nullopt;
-    }
-    return kv.second;
+    return std::move(result->value);
 }
 
-BTree::LookupResult BTreeIndex::lookup_data(DataIndex data_index, DataIterator data_it) {
+std::optional<BTree::KeyValue> BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index) const {
     if (data_index >= data_offsets_->sequence_length()) {
-        return {/*found=*/false, {}};
+        return std::nullopt;
     }
-
     const auto data_offset = data_offsets_->get(data_index);
-    data_it.reset(data_offset);
-    if (!data_it.has_next()) {
-        throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
+
+    segment::KVSegmentReader<RawDecoder<Bytes>, RawDecoder<Bytes>> reader{kv_segment_};
+    auto data_it = reader.seek(data_offset);
+    if (data_it == reader.end()) {
+        throw std::runtime_error{"key/value not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
-    Bytes key;
-    data_it.next(key);
-    if (!data_it.has_next()) {
-        throw std::runtime_error{"value not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
-    }
-    Bytes value;
-    data_it.next(value);
-    return {/*found=*/true, {key, value}};
+    auto kv_pair = *data_it;
+
+    return BTree::KeyValue{std::move(kv_pair.first), std::move(kv_pair.second)};
 }
 
-BTree::CompareResult BTreeIndex::compare_key(ByteView key, DataIndex data_index, DataIterator data_it) {
-    ensure(data_index < data_offsets_->sequence_length(),
-           [&]() { return "out-of-bounds data_index=" + std::to_string(data_index) + " key=" + to_hex(key); });
-
+std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index) const {
+    if (data_index >= data_offsets_->sequence_length()) {
+        return std::nullopt;
+    }
     const auto data_offset = data_offsets_->get(data_index);
-    data_it.reset(data_offset);
-    if (!data_it.has_next()) {
+
+    segment::KVSegmentKeysReader<RawDecoder<Bytes>> reader{kv_segment_};
+    auto data_it = reader.seek(data_offset);
+    if (data_it == reader.end()) {
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
-    Bytes data_key;
-    data_it.next(data_key);
-    return {data_key.compare(key), data_key};
-}
+    Bytes key = std::move(*data_it);
 
-BTreeIndex::Cursor BTreeIndex::new_cursor(ByteView key, ByteView value, DataIndex data_index, DataIterator data_it) {
-    return BTreeIndex::Cursor{this, key, value, data_index, std::move(data_it)};
+    return key;
 }
 
 bool BTreeIndex::Cursor::next() {
-    if (!to_next()) {
-        return false;
-    }
-    const auto [found, kv] = index_->lookup_data(data_index_, data_it_);
-    if (!found) {
-        return false;
-    }
-    key_ = kv.first;
-    value_ = kv.second;
-    return true;
-}
-
-bool BTreeIndex::Cursor::to_next() {
-    if (data_index_ + 1 == index_->data_offsets_->sequence_length()) {
+    if (data_index_ + 1 >= index_->data_offsets_->sequence_length()) {
         return false;
     }
     ++data_index_;
+    KeyValueIndex index{*kv_segment_, index_->data_offsets(), index_->path()};
+    auto kv = index.lookup_key_value(data_index_);
+    if (!kv) {
+        return false;
+    }
+    key_ = std::move(kv->first);
+    value_ = std::move(kv->second);
     return true;
 }
 

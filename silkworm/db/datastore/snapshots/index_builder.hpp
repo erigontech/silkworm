@@ -27,7 +27,7 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "common/snapshot_path.hpp"
-#include "seg/decompressor.hpp"
+#include "segment/seg/decompressor.hpp"
 
 namespace silkworm::snapshots {
 

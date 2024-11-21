@@ -33,7 +33,7 @@
 
 namespace silkworm {
 
-void increment_key(Bytes& array);
+void increment(Bytes& array);
 
 std::string base64_encode(ByteView bytes_to_encode, bool url);
 

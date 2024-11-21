@@ -76,7 +76,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
             from.append(offset.value());
         }
         auto to = db::code_domain_key(address);
-        increment_key(to);
+        increment(to);
         SILK_DEBUG << "handle_parity_list_storage_keys: from " << from << ", to " << to;
 
         db::kv::api::DomainRangeQuery query{

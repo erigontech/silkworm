@@ -39,7 +39,7 @@ static const char* kBase64Chars[2] = {
     "0123456789"
     "-_"};
 
-void increment_key(Bytes& array) {
+void increment(Bytes& array) {
     for (auto& it : std::ranges::reverse_view(array)) {
         if (it < 0xFF) {
             ++it;

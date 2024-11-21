@@ -52,18 +52,11 @@ MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, std::optional<Mem
 }
 
 MemoryMappedFile::~MemoryMappedFile() {
-    if (!managed_) {
-        return;
-    }
-
-    unmap();
-
-#ifdef _WIN32
-    cleanup();
-#endif
+    close();
 }
 
 #ifdef _WIN32
+
 void MemoryMappedFile::map_existing(bool read_only) {
     DWORD desired_access = read_only ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);
     DWORD shared_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
@@ -99,6 +92,9 @@ void MemoryMappedFile::advise_random() const {
 void MemoryMappedFile::advise_sequential() const {
 }
 
+void MemoryMappedFile::advise(int /*advice*/) const {
+}
+
 void* MemoryMappedFile::mmap(FileDescriptor fd, size_t size, bool read_only) {
     DWORD protection = static_cast<DWORD>(read_only ? PAGE_READONLY : PAGE_READWRITE);
 
@@ -123,7 +119,15 @@ void MemoryMappedFile::unmap() {
     }
 }
 
-void MemoryMappedFile::cleanup() {
+void MemoryMappedFile::close() {
+    if (!managed_) return;
+
+    if (region_.data()) {
+        unmap();
+        region_ = {};
+        managed_ = false;
+    }
+
     if (mapping_) {
         ::CloseHandle(mapping_);
         mapping_ = nullptr;
@@ -134,7 +138,9 @@ void MemoryMappedFile::cleanup() {
         file_ = nullptr;
     }
 }
-#else
+
+#else  // !_WIN32
+
 void MemoryMappedFile::map_existing(bool read_only) {
     FileDescriptor fd = ::open(path_.c_str(), read_only ? O_RDONLY : O_RDWR);
     if (fd == -1) {
@@ -145,6 +151,16 @@ void MemoryMappedFile::map_existing(bool read_only) {
     auto size = std::filesystem::file_size(path_);
     auto address = static_cast<uint8_t*>(mmap(fd, size, read_only));
     region_ = {address, size};
+}
+
+void MemoryMappedFile::close() {
+    if (!managed_) return;
+
+    if (region_.data()) {
+        unmap();
+        region_ = {};
+        managed_ = false;
+    }
 }
 
 void MemoryMappedFile::advise_normal() const {
@@ -188,6 +204,7 @@ void MemoryMappedFile::advise(int advice) const {
         }
     }
 }
+
 #endif  // _WIN32
 
 }  // namespace silkworm

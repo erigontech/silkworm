@@ -386,6 +386,9 @@ class RecSplit {
         built_ = true;
     }
 
+    RecSplit(RecSplit&&) = default;
+    RecSplit& operator=(RecSplit&&) noexcept = default;
+
     void add_key(const Hash128& key_hash, uint64_t offset) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};

@@ -38,7 +38,7 @@ static std::map<datastore::EntityName, SnapshotPath> make_snapshot_paths(
     return results;
 }
 
-static std::map<datastore::EntityName, SegmentFileReader> make_segments(
+static std::map<datastore::EntityName, SegmentFileReader> open_segments(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
     StepRange range) {
@@ -52,7 +52,7 @@ static std::map<datastore::EntityName, SegmentFileReader> make_segments(
     return results;
 }
 
-std::map<datastore::EntityName, KVSegmentFileReader> make_kv_segments(
+static std::map<datastore::EntityName, KVSegmentFileReader> open_kv_segments(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
     StepRange range) {
@@ -66,7 +66,7 @@ std::map<datastore::EntityName, KVSegmentFileReader> make_kv_segments(
     return results;
 }
 
-std::map<datastore::EntityName, AccessorIndex> make_accessor_indexes(
+static std::map<datastore::EntityName, AccessorIndex> open_accessor_indexes(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
     StepRange range) {
@@ -77,33 +77,31 @@ std::map<datastore::EntityName, AccessorIndex> make_accessor_indexes(
     return results;
 }
 
-std::map<datastore::EntityName, bloom_filter::BloomFilter> make_existence_indexes(
+static std::map<datastore::EntityName, bloom_filter::BloomFilter> open_existence_indexes(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, bloom_filter::BloomFilter> results;
     for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kExistenceIndex, entity, dir_path, range)) {
         SILK_TRACE << "make_existence_indexes opens " << name.to_string() << " at " << path.filename();
-        // TODO: wait for RAII refactoring
-        // results.emplace(name, bloom_filter::BloomFilter{path.path()});
+        results.emplace(name, bloom_filter::BloomFilter{path.path()});
     }
     return results;
 }
 
-std::map<datastore::EntityName, btree::BTreeIndex> make_btree_indexes(
+static std::map<datastore::EntityName, btree::BTreeIndex> open_btree_indexes(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, btree::BTreeIndex> results;
     for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kBTreeIndex, entity, dir_path, range)) {
         SILK_TRACE << "make_btree_indexes opens " << name.to_string() << " at " << path.filename();
-        // TODO: wait for RAII refactoring
-        // results.emplace(name, btree::BTreeIndex{path.path()});
+        results.emplace(name, btree::BTreeIndex{path.path()});
     }
     return results;
 }
 
-SnapshotBundleData make_bundle_data(
+SnapshotBundleData open_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
     StepRange step_range) {
@@ -113,11 +111,11 @@ SnapshotBundleData make_bundle_data(
         data.entities.emplace(
             name,
             SnapshotBundleEntityData{
-                make_segments(entity_schema, dir_path, step_range),
-                make_kv_segments(entity_schema, dir_path, step_range),
-                make_accessor_indexes(entity_schema, dir_path, step_range),
-                make_existence_indexes(entity_schema, dir_path, step_range),
-                make_btree_indexes(entity_schema, dir_path, step_range),
+                open_segments(entity_schema, dir_path, step_range),
+                open_kv_segments(entity_schema, dir_path, step_range),
+                open_accessor_indexes(entity_schema, dir_path, step_range),
+                open_existence_indexes(entity_schema, dir_path, step_range),
+                open_btree_indexes(entity_schema, dir_path, step_range),
             });
     };
     return data;
@@ -127,48 +125,12 @@ SnapshotBundle::~SnapshotBundle() {
     close();
 }
 
-void SnapshotBundle::reopen() {
-    for (auto& entity_entry : data_.entities) {
-        auto& data = entity_entry.second;
-        for (auto& entry : data.segments) {
-            SegmentFileReader& segment = entry.second;
-            segment.reopen_segment();
-            ensure(!segment.empty(), [&]() {
-                return "invalid empty snapshot " + segment.fs_path().string();
-            });
-        }
-        for (auto& entry : data.kv_segments) {
-            KVSegmentFileReader& segment = entry.second;
-            segment.reopen_segment();
-            ensure(!segment.empty(), [&]() {
-                return "invalid empty snapshot " + segment.fs_path().string();
-            });
-        }
-        for (auto& entry : data.accessor_indexes) {
-            AccessorIndex& index = entry.second;
-            index.reopen_index();
-        }
-    }
-}
-
 void SnapshotBundle::close() {
-    for (auto& entity_entry : data_.entities) {
-        auto& data = entity_entry.second;
-        for (auto& entry : data.accessor_indexes) {
-            AccessorIndex& index = entry.second;
-            index.close_index();
-        }
-        for (auto& entry : data.segments) {
-            SegmentFileReader& segment = entry.second;
-            segment.close();
-        }
-        for (auto& entry : data.kv_segments) {
-            KVSegmentFileReader& segment = entry.second;
-            segment.close();
-        }
-    }
-    if (on_close_callback_) {
-        on_close_callback_(*this);
+    auto files = this->files();
+    data_.entities.clear();
+    auto on_close_callback = std::exchange(on_close_callback_, {});
+    if (on_close_callback) {
+        on_close_callback(std::move(files));
     }
 }
 
@@ -189,7 +151,8 @@ Domain SnapshotBundle::domain(datastore::EntityName name) const {
     Domain domain{
         data.kv_segments.at(Schema::kDomainKVSegmentName),
         data.accessor_indexes.at(Schema::kDomainAccessorIndexName),
-        // TODO: bt & kvei
+        data.existence_indexes.at(Schema::kDomainExistenceIndexName),
+        data.btree_indexes.at(Schema::kDomainBTreeIndexName),
     };
     if (data.segments.contains(Schema::kHistorySegmentName)) {
         domain.history.emplace(History{
@@ -216,15 +179,16 @@ std::vector<std::filesystem::path> SnapshotBundle::files() const {
     std::vector<std::filesystem::path> files;
     for (auto& entity_entry : data_.entities) {
         auto& data = entity_entry.second;
-        for (const SegmentFileReader& segment : make_map_values_view(data.segments)) {
-            files.push_back(segment.path().path());
-        }
-        for (const KVSegmentFileReader& segment : make_map_values_view(data.kv_segments)) {
-            files.push_back(segment.path().path());
-        }
-        for (const AccessorIndex& index : make_map_values_view(data.accessor_indexes)) {
-            files.push_back(index.path().path());
-        }
+        for (const auto& file : make_map_values_view(data.segments))
+            files.push_back(file.fs_path());
+        for (const auto& file : make_map_values_view(data.kv_segments))
+            files.push_back(file.fs_path());
+        for (const auto& file : make_map_values_view(data.accessor_indexes))
+            files.push_back(file.fs_path());
+        for (const auto& file : make_map_values_view(data.existence_indexes))
+            files.push_back(file.path());
+        for (const auto& file : make_map_values_view(data.btree_indexes))
+            files.push_back(file.path());
     }
     return files;
 }

@@ -30,23 +30,11 @@ KVSegmentFileReader::KVSegmentFileReader(
     seg::CompressionKind compression_kind,
     std::optional<MemoryMappedRegion> segment_region)
     : path_(std::move(path)),
-      decompressor_{path_.path(), segment_region, compression_kind} {}
-
-KVSegmentFileReader::~KVSegmentFileReader() {
-    close();
+      decompressor_{path_.path(), segment_region, compression_kind} {
 }
 
 MemoryMappedRegion KVSegmentFileReader::memory_file_region() const {
-    const auto memory_file = decompressor_.memory_file();
-    if (!memory_file) return MemoryMappedRegion{};
-    return memory_file->region();
-}
-
-void KVSegmentFileReader::reopen_segment() {
-    close();
-
-    // Open decompressor that opens the mapped file in turns
-    decompressor_.open();
+    return decompressor_.memory_file().region();
 }
 
 KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator++() {
@@ -156,11 +144,6 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
     }
 
     return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
-}
-
-void KVSegmentFileReader::close() {
-    // Close decompressor that closes the mapped file in turns
-    decompressor_.close();
 }
 
 }  // namespace silkworm::snapshots::segment

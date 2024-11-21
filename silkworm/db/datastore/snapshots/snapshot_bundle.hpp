@@ -47,7 +47,7 @@ struct SnapshotBundleData {
     std::map<datastore::EntityName, SnapshotBundleEntityData> entities;
 };
 
-SnapshotBundleData make_bundle_data(
+SnapshotBundleData open_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
     StepRange step_range);
@@ -77,7 +77,6 @@ struct SnapshotBundle {
     SnapshotBundle(StepRange step_range, SnapshotBundleData data)
         : step_range_{step_range},
           data_{std::move(data)} {
-        reopen();
     }
     SnapshotBundle(
         const Schema::RepositoryDef& schema,
@@ -85,7 +84,7 @@ struct SnapshotBundle {
         StepRange range)
         : SnapshotBundle{
               range,
-              make_bundle_data(schema, dir_path, range),
+              open_bundle_data(schema, dir_path, range),
           } {}
     virtual ~SnapshotBundle();
 
@@ -117,10 +116,7 @@ struct SnapshotBundle {
     std::vector<std::filesystem::path> files() const;
     std::vector<SnapshotPath> segment_paths() const;
 
-    void reopen();
-    void close();
-
-    void on_close(std::function<void(SnapshotBundle&)> callback) {
+    void on_close(std::function<void(std::vector<std::filesystem::path> files)> callback) {
         on_close_callback_ = std::move(callback);
     }
 
@@ -128,9 +124,11 @@ struct SnapshotBundle {
     const SnapshotBundleData* operator->() const { return &data_; }
 
   private:
+    void close();
+
     StepRange step_range_;
     SnapshotBundleData data_;
-    std::function<void(SnapshotBundle&)> on_close_callback_;
+    std::function<void(std::vector<std::filesystem::path> files)> on_close_callback_;
 };
 
 }  // namespace silkworm::snapshots

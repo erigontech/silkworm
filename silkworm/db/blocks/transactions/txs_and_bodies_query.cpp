@@ -116,7 +116,6 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() {
     std::string log_title = "TxsAndBodiesQuery for: " + txs_segment_path_.path().string();
 
     auto txs_decoder = std::make_shared<seg::Decompressor>(txs_segment_path_.path(), txs_segment_region_);
-    txs_decoder->open();
 
     const auto tx_count = txs_decoder->words_count();
     if (tx_count != expected_tx_count_) {
@@ -128,7 +127,6 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() {
     }
 
     auto bodies_decoder = std::make_shared<seg::Decompressor>(bodies_segment_path_.path(), bodies_segment_region_);
-    bodies_decoder->open();
 
     TxsAndBodiesQuery::Iterator it{
         txs_decoder,
@@ -149,13 +147,11 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() {
 }
 
 TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::end() {
-    auto txs_decoder = std::make_shared<seg::Decompressor>(txs_segment_path_.path(), txs_segment_region_);
-    auto bodies_decoder = std::make_shared<seg::Decompressor>(bodies_segment_path_.path(), bodies_segment_region_);
     return Iterator{
         {},
-        txs_decoder->end(),
+        seg::Decompressor::Iterator::make_end(),
         {},
-        bodies_decoder->end(),
+        seg::Decompressor::Iterator::make_end(),
         std::numeric_limits<uint64_t>::max(),
         first_tx_id_,
         expected_tx_count_,

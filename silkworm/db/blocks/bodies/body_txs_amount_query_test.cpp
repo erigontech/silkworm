@@ -29,7 +29,6 @@ TEST_CASE("BodyTxsAmountQuery") {
     TemporaryDirectory tmp_dir;
     test_util::SampleBodySnapshotFile snapshot_file{tmp_dir.path()};
     segment::SegmentFileReader snapshot{snapshot_file.path()};
-    snapshot.reopen_segment();
 
     BodyTxsAmountQuery query{snapshot};
     auto result = query.exec();

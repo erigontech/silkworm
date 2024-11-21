@@ -82,21 +82,17 @@ class KVSegmentFileReader {
         SnapshotPath path,
         seg::CompressionKind compression_kind,
         std::optional<MemoryMappedRegion> segment_region = std::nullopt);
-    ~KVSegmentFileReader();
 
     KVSegmentFileReader(KVSegmentFileReader&&) = default;
     KVSegmentFileReader& operator=(KVSegmentFileReader&&) = default;
 
     const SnapshotPath& path() const { return path_; }
-    std::filesystem::path fs_path() const { return path_.path(); }
+    const std::filesystem::path& fs_path() const { return path_.path(); }
 
     bool empty() const { return item_count() == 0; }
     size_t item_count() const { return decompressor_.words_count(); }
 
     MemoryMappedRegion memory_file_region() const;
-
-    void reopen_segment();
-    void close();
 
     Iterator begin(std::shared_ptr<Decoder> key_decoder, std::shared_ptr<Decoder> value_decoder) const;
     Iterator end() const;

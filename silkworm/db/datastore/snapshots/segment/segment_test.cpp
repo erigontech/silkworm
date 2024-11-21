@@ -43,7 +43,6 @@ TEST_CASE("SegmentFile") {
     SegmentFileWriter::flush(std::move(file_writer));
 
     SegmentFileReader file_reader{path};
-    file_reader.reopen_segment();
     SegmentReader<StringCodec> reader{file_reader};
     for (std::string& item : reader) {
         CHECK(item == items[0]);

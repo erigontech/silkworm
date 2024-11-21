@@ -16,7 +16,6 @@
 
 #include "call_bundle.hpp"
 
-
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/rpc/common/util.hpp>

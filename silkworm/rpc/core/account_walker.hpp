@@ -16,7 +16,6 @@
 
 #pragma once
 
-
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <evmc/evmc.hpp>

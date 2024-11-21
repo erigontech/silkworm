@@ -109,14 +109,16 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         }
     }
 
-    // EIP-7702
-    if (txn.type == TransactionType::kSetCode) {
-        // Contract creation is disallowed for SetCode transactions
-        if (contract_creation) {
-            return ValidationResult::kProhibitedContractCreation;
-        }
-        if (std::empty(txn.authorizations)) {
-            return ValidationResult::kEmptyAuthorizations;
+    if (rev >= EVMC_PRAGUE) {
+        // EIP-7702
+        if (txn.type == TransactionType::kSetCode) {
+            // Contract creation is disallowed for SetCode transactions
+            if (contract_creation) {
+                return ValidationResult::kProhibitedContractCreation;
+            }
+            if (std::empty(txn.authorizations)) {
+                return ValidationResult::kEmptyAuthorizations;
+            }
         }
     }
 

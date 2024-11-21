@@ -447,7 +447,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
 Task<void> EngineRpcApi::handle_engine_new_payload_v4(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 3) {
-        auto error_msg = "invalid engine_newPayloadV3 params: " + params.dump();
+        auto error_msg = "invalid engine_newPayloadV4 params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
@@ -469,7 +469,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v4(const nlohmann::json& requ
 
         // We MUST check that CL has sent the expected ExecutionPayload version [Specification for params]
         if (payload.timestamp < config.prague_time) {
-            const auto error_msg = "consensus layer must use ExecutionPayloadV3 if timestamp greater or equal to Prague";
+            const auto error_msg = "consensus layer must use ExecutionPayloadV4 if timestamp greater or equal to Prague";
             SILK_ERROR << error_msg;
             reply = make_json_error(request, kUnsupportedFork, error_msg);
             co_await tx->close();

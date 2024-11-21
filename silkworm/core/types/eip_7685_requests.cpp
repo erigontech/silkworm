@@ -78,8 +78,8 @@ Hash FlatRequests::calculate_sha256() const {
         to_sha.append(requests_[request_type]);
         intermediate.append(precompile::sha256_run(ByteView{to_sha}).value());
     }
-    const auto final = precompile::sha256_run(intermediate).value();
-    return Hash{final};
+    const auto final_bytes = precompile::sha256_run(intermediate).value();
+    return Hash{final_bytes};
 }
 
 }  // namespace silkworm

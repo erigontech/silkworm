@@ -33,6 +33,8 @@
 
 namespace silkworm {
 
+void increment_key(Bytes& array);
+
 std::string base64_encode(ByteView bytes_to_encode, bool url);
 
 bool check_tx_fee_less_cap(float cap, const intx::uint256& max_fee_per_gas, uint64_t gas_limit);

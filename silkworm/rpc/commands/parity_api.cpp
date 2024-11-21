@@ -36,16 +36,6 @@ namespace silkworm::rpc::commands {
 
 using db::state::StateReader;
 
-void increment(Bytes& array) {
-    for (auto& it : std::ranges::reverse_view(array)) {
-        if (it < 0xFF) {
-            ++it;
-            break;
-        }
-        it = 0x00;
-    }
-}
-
 Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() < 2) {
@@ -86,7 +76,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
             from.append(offset.value());
         }
         auto to = db::code_domain_key(address);
-        increment(to);
+        increment_key(to);
         SILK_DEBUG << "handle_parity_list_storage_keys: from " << from << ", to " << to;
 
         db::kv::api::DomainRangeQuery query{

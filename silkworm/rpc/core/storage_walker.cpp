@@ -175,16 +175,6 @@ Task<void> StorageWalker::walk_of_storages(
     co_return;
 }
 
-static void increment_key(Bytes& array) {
-    for (auto& it : std::ranges::reverse_view(array)) {
-        if (it < 0xFF) {
-            ++it;
-            break;
-        }
-        it = 0x00;
-    }
-}
-
 Task<void> StorageWalker::storage_range_at(
     TxnId txn_number,
     const evmc::address& address,

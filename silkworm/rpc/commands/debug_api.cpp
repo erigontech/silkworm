@@ -357,14 +357,14 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                 .key = db::account_domain_key(address),
                 .timestamp = min_tx_num + tx_index,
             };
-            
+
             const auto code = co_await tx->domain_get(std::move(query_code));
             json_result["code"] = "0x" + silkworm::to_hex(code.value);
         } else {
-                json_result["balance"] = "0x0";
-                json_result["code"] = "0x";
-                json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
-                json_result["nonce"] = "0x0";
+            json_result["balance"] = "0x0";
+            json_result["code"] = "0x";
+            json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+            json_result["nonce"] = "0x0";
         }
 
         reply = make_json_content(request, json_result);

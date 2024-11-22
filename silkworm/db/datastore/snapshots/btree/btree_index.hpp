@@ -20,9 +20,9 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <utility>
 
 #include <silkworm/infra/common/memory_mapped_file.hpp>
-#include <utility>
 
 #include "../elias_fano/elias_fano.hpp"
 #include "../segment/kv_segment_reader.hpp"

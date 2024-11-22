@@ -20,6 +20,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <utility>
 
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
@@ -50,13 +51,13 @@ class BTreeIndex {
 
         Cursor(
             BTreeIndex* index,
-            ByteView key,
-            ByteView value,
+            Bytes key,
+            Bytes value,
             DataIndex data_index,
             const KVSegmentReader* kv_segment)
             : index_{index},
-              key_{key},
-              value_{value},
+              key_{std::move(key)},
+              value_{std::move(value)},
               data_index_{data_index},
               kv_segment_{kv_segment} {}
 
@@ -104,7 +105,7 @@ class BTreeIndex {
             std::shared_ptr<EliasFanoList32> data_offsets,
             const std::filesystem::path& file_path)
             : kv_segment_{kv_segment},
-              data_offsets_{data_offsets},
+              data_offsets_{std::move(data_offsets)},
               file_path_{file_path} {}
         ~KeyValueIndex() override = default;
 

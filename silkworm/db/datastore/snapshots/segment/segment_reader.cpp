@@ -32,23 +32,11 @@ SegmentFileReader::SegmentFileReader(
           path_.path(),
           segment_region,
           is_compressed ? seg::CompressionKind::kAll : seg::CompressionKind::kNone,
-      } {}
-
-SegmentFileReader::~SegmentFileReader() {
-    close();
+      } {
 }
 
 MemoryMappedRegion SegmentFileReader::memory_file_region() const {
-    const auto memory_file{decompressor_.memory_file()};
-    if (!memory_file) return MemoryMappedRegion{};
-    return memory_file->region();
-}
-
-void SegmentFileReader::reopen_segment() {
-    close();
-
-    // Open decompressor that opens the mapped file in turns
-    decompressor_.open();
+    return decompressor_.memory_file().region();
 }
 
 SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
@@ -110,11 +98,6 @@ SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::option
     }
     decoder->check_sanity_with_metadata(path_);
     return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path()};
-}
-
-void SegmentFileReader::close() {
-    // Close decompressor that closes the mapped file in turns
-    decompressor_.close();
 }
 
 }  // namespace silkworm::snapshots::segment

@@ -16,10 +16,8 @@
 
 #pragma once
 
-#include <optional>
 #include <set>
 #include <string>
-#include <vector>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -44,18 +42,12 @@
 #include <silkworm/rpc/json/transition_configuration.hpp>
 #include <silkworm/rpc/json/withdrawal.hpp>
 #include <silkworm/rpc/types/block.hpp>
-#include <silkworm/rpc/types/call.hpp>
-#include <silkworm/rpc/types/call_bundle.hpp>
 #include <silkworm/rpc/types/chain_config.hpp>
 #include <silkworm/rpc/types/chain_traffic.hpp>
 #include <silkworm/rpc/types/error.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
-#include <silkworm/rpc/types/filter.hpp>
 #include <silkworm/rpc/types/issuance.hpp>
-#include <silkworm/rpc/types/log.hpp>
-#include <silkworm/rpc/types/node_info.hpp>
 #include <silkworm/rpc/types/peer_info.hpp>
-#include <silkworm/rpc/types/receipt.hpp>
 #include <silkworm/rpc/types/syncing_data.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 

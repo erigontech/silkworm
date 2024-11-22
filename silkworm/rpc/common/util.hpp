@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <iomanip>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -26,7 +24,6 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
@@ -35,6 +32,8 @@
 #include <silkworm/core/types/transaction.hpp>
 
 namespace silkworm {
+
+void increment(Bytes& array);
 
 std::string base64_encode(ByteView bytes_to_encode, bool url);
 

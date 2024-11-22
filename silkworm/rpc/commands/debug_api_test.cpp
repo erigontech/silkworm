@@ -33,10 +33,7 @@
 #include <silkworm/db/kv/api/endpoint/temporal_range.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/filter_storage.hpp>
 #if !defined(__clang__)
 #include <silkworm/rpc/stagedsync/stages.hpp>
@@ -394,7 +391,7 @@ TEST_CASE("get_modified_accounts") {
                 co_return 20;
             }));
         db::kv::api::HistoryRangeQuery query{
-            .table = db::table::kAccountsHistory,
+            .table = db::table::kAccountDomain,
             .from_timestamp = static_cast<db::kv::api::Timestamp>(0),
             .to_timestamp = static_cast<db::kv::api::Timestamp>(19),
             .ascending_order = true};

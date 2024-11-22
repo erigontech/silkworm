@@ -20,7 +20,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {

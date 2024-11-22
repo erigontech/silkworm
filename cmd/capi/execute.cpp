@@ -336,7 +336,6 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
             throw std::runtime_error("Invalid snapshot path");
 
         segment::SegmentFileReader& segment = segments.emplace_back(*snapshot_path);
-        segment.reopen_segment();
 
         auto mmf = new SilkwormMemoryMappedFile{
             .file_path = make_path(*snapshot_path),

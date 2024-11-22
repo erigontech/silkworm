@@ -22,7 +22,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/test_util/hex.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
 namespace silkworm {

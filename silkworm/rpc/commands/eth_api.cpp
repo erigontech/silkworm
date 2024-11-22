@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <cstring>
 #include <exception>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <string>
@@ -36,7 +35,6 @@
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>

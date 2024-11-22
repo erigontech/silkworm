@@ -63,7 +63,6 @@ static void open_snapshot(benchmark::State& state) {
     tmp_file.write(kLoremIpsumDict);
     for ([[maybe_unused]] auto _ : state) {
         seg::Decompressor decoder{tmp_file.path()};
-        decoder.open();
     }
 }
 BENCHMARK(open_snapshot);

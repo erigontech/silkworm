@@ -16,8 +16,6 @@
 
 #include "stream.hpp"
 
-#include <silkworm/infra/concurrency/task.hpp>
-
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/log.hpp>

@@ -36,6 +36,8 @@ class Environment {
 
     static bool are_pre_verified_hashes_disabled();
     static void set_pre_verified_hashes_disabled();
+
+    static std::string get(const std::string& var_name);
 };
 
 }  // namespace silkworm

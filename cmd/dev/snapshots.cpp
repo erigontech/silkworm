@@ -292,7 +292,6 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (int i = 0; i < repetitions; ++i) {
         SegmentFileReader snapshot{*snapshot_path};
-        snapshot.reopen_segment();
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Decode snapshot elapsed: " << as_milliseconds(elapsed) << " msec";
@@ -348,7 +347,6 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_bodies: invalid snapshot_file path format");
             SegmentFileReader body_segment{*snapshot_path};
-            body_segment.reopen_segment();
             std::tie(num_bodies, num_txns) = count_bodies_in_one(settings, body_segment);
         } else {
             std::tie(num_bodies, num_txns) = count_bodies_in_all(settings);
@@ -393,7 +391,6 @@ void count_headers(const SnapshotSubcommandSettings& settings, int repetitions) 
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_headers: invalid snapshot_file path format");
             SegmentFileReader header_segment{*snapshot_path};
-            header_segment.reopen_segment();
             num_headers = count_headers_in_one(settings, header_segment);
         } else {
             num_headers = count_headers_in_all(settings);
@@ -473,7 +470,6 @@ void open_btree_index(const SnapshotSubcommandSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     segment::KVSegmentFileReader kv_segment{*kv_segment_path, seg::CompressionKind::kAll};
-    kv_segment.reopen_segment();
 
     btree::BTreeIndex bt_index{bt_index_path.path()};
     SILK_INFO << "Starting KV scan and BTreeIndex check, total keys: " << bt_index.key_count();
@@ -526,7 +522,6 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Snapshot salt " << salt << " from " << salt_path.filename().string();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
-    kv_decompressor.open();
     bloom_filter::BloomFilter existence_index{existence_index_file_path};
 
     SILK_INFO << "Starting KV scan and existence index check";
@@ -760,10 +755,8 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SegmentFileReader body_segment{*snapshot_path};
-    body_segment.reopen_segment();
 
     rec_split::AccessorIndex idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
-    idx_body_number.reopen_index();
 
     const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_number);
     if (body) {
@@ -880,11 +873,9 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SegmentFileReader txn_segment{*snapshot_path};
-    txn_segment.reopen_segment();
 
     {
         rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
-        idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}.exec(hash);
         if (transaction) {
@@ -944,11 +935,9 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SegmentFileReader txn_segment{*snapshot_path};
-    txn_segment.reopen_segment();
 
     {
         rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
-        idx_txn_hash.reopen_index();
 
         const auto transaction = TransactionFindByIdQuery{{txn_segment, idx_txn_hash}}.exec(txn_id);
         if (transaction) {

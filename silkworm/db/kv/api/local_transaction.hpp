@@ -61,7 +61,7 @@ class LocalTransaction : public BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
+    // rpc DomainGet(GetLatestReq) returns (GetLatestReply);
     Task<DomainPointResult> domain_get(DomainPointQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
@@ -73,7 +73,7 @@ class LocalTransaction : public BaseTransaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) override;
 
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
+    // rpc DomainRange(RangeAsOfReq) returns (Pairs);
     Task<PaginatedKeysValues> domain_range(DomainRangeQuery query) override;
 
   private:

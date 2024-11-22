@@ -62,7 +62,7 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
+    // rpc DomainGet(GetLatestReq) returns (GetLatestReply);
     Task<api::DomainPointResult> domain_get(api::DomainPointQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
@@ -74,7 +74,7 @@ class RemoteTransaction : public api::BaseTransaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<api::PaginatedKeysValues> history_range(api::HistoryRangeQuery query) override;
 
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
+    // rpc DomainRange(RangeAsOfReq) returns (Pairs);
     Task<api::PaginatedKeysValues> domain_range(api::DomainRangeQuery query) override;
 
   private:

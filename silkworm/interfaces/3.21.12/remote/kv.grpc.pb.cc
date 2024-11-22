@@ -27,11 +27,11 @@ static const char* KV_method_names[] = {
   "/remote.KV/StateChanges",
   "/remote.KV/Snapshots",
   "/remote.KV/Range",
-  "/remote.KV/DomainGet",
+  "/remote.KV/GetLatest",
   "/remote.KV/HistorySeek",
   "/remote.KV/IndexRange",
   "/remote.KV/HistoryRange",
-  "/remote.KV/DomainRange",
+  "/remote.KV/RangeAsOf",
 };
 
 std::unique_ptr< KV::Stub> KV::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -46,11 +46,11 @@ KV::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const 
   , rpcmethod_StateChanges_(KV_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   , rpcmethod_Snapshots_(KV_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_Range_(KV_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_DomainGet_(KV_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetLatest_(KV_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_HistorySeek_(KV_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_IndexRange_(KV_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_HistoryRange_(KV_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_DomainRange_(KV_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RangeAsOf_(KV_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status KV::Stub::Version(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::types::VersionReply* response) {
@@ -154,25 +154,25 @@ void KV::Stub::async::Range(::grpc::ClientContext* context, const ::remote::Rang
   return result;
 }
 
-::grpc::Status KV::Stub::DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::remote::DomainGetReply* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::remote::DomainGetReq, ::remote::DomainGetReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_DomainGet_, context, request, response);
+::grpc::Status KV::Stub::GetLatest(::grpc::ClientContext* context, const ::remote::GetLatestReq& request, ::remote::GetLatestReply* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::GetLatestReq, ::remote::GetLatestReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetLatest_, context, request, response);
 }
 
-void KV::Stub::async::DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::remote::DomainGetReq, ::remote::DomainGetReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DomainGet_, context, request, response, std::move(f));
+void KV::Stub::async::GetLatest(::grpc::ClientContext* context, const ::remote::GetLatestReq* request, ::remote::GetLatestReply* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::GetLatestReq, ::remote::GetLatestReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetLatest_, context, request, response, std::move(f));
 }
 
-void KV::Stub::async::DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DomainGet_, context, request, response, reactor);
+void KV::Stub::async::GetLatest(::grpc::ClientContext* context, const ::remote::GetLatestReq* request, ::remote::GetLatestReply* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetLatest_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>* KV::Stub::PrepareAsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::DomainGetReply, ::remote::DomainGetReq, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_DomainGet_, context, request);
+::grpc::ClientAsyncResponseReader< ::remote::GetLatestReply>* KV::Stub::PrepareAsyncGetLatestRaw(::grpc::ClientContext* context, const ::remote::GetLatestReq& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::GetLatestReply, ::remote::GetLatestReq, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetLatest_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>* KV::Stub::AsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::remote::GetLatestReply>* KV::Stub::AsyncGetLatestRaw(::grpc::ClientContext* context, const ::remote::GetLatestReq& request, ::grpc::CompletionQueue* cq) {
   auto* result =
-    this->PrepareAsyncDomainGetRaw(context, request, cq);
+    this->PrepareAsyncGetLatestRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -246,25 +246,25 @@ void KV::Stub::async::HistoryRange(::grpc::ClientContext* context, const ::remot
   return result;
 }
 
-::grpc::Status KV::Stub::DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::remote::Pairs* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::remote::DomainRangeReq, ::remote::Pairs, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_DomainRange_, context, request, response);
+::grpc::Status KV::Stub::RangeAsOf(::grpc::ClientContext* context, const ::remote::RangeAsOfReq& request, ::remote::Pairs* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::RangeAsOfReq, ::remote::Pairs, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RangeAsOf_, context, request, response);
 }
 
-void KV::Stub::async::DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::remote::DomainRangeReq, ::remote::Pairs, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DomainRange_, context, request, response, std::move(f));
+void KV::Stub::async::RangeAsOf(::grpc::ClientContext* context, const ::remote::RangeAsOfReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::RangeAsOfReq, ::remote::Pairs, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RangeAsOf_, context, request, response, std::move(f));
 }
 
-void KV::Stub::async::DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DomainRange_, context, request, response, reactor);
+void KV::Stub::async::RangeAsOf(::grpc::ClientContext* context, const ::remote::RangeAsOfReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RangeAsOf_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::remote::Pairs>* KV::Stub::PrepareAsyncDomainRangeRaw(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::Pairs, ::remote::DomainRangeReq, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_DomainRange_, context, request);
+::grpc::ClientAsyncResponseReader< ::remote::Pairs>* KV::Stub::PrepareAsyncRangeAsOfRaw(::grpc::ClientContext* context, const ::remote::RangeAsOfReq& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::Pairs, ::remote::RangeAsOfReq, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_RangeAsOf_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::remote::Pairs>* KV::Stub::AsyncDomainRangeRaw(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::remote::Pairs>* KV::Stub::AsyncRangeAsOfRaw(::grpc::ClientContext* context, const ::remote::RangeAsOfReq& request, ::grpc::CompletionQueue* cq) {
   auto* result =
-    this->PrepareAsyncDomainRangeRaw(context, request, cq);
+    this->PrepareAsyncRangeAsOfRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -323,12 +323,12 @@ KV::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       KV_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< KV::Service, ::remote::DomainGetReq, ::remote::DomainGetReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< KV::Service, ::remote::GetLatestReq, ::remote::GetLatestReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](KV::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::remote::DomainGetReq* req,
-             ::remote::DomainGetReply* resp) {
-               return service->DomainGet(ctx, req, resp);
+             const ::remote::GetLatestReq* req,
+             ::remote::GetLatestReply* resp) {
+               return service->GetLatest(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       KV_method_names[6],
@@ -363,12 +363,12 @@ KV::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       KV_method_names[9],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< KV::Service, ::remote::DomainRangeReq, ::remote::Pairs, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< KV::Service, ::remote::RangeAsOfReq, ::remote::Pairs, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](KV::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::remote::DomainRangeReq* req,
+             const ::remote::RangeAsOfReq* req,
              ::remote::Pairs* resp) {
-               return service->DomainRange(ctx, req, resp);
+               return service->RangeAsOf(ctx, req, resp);
              }, this)));
 }
 
@@ -409,7 +409,7 @@ KV::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status KV::Service::DomainGet(::grpc::ServerContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response) {
+::grpc::Status KV::Service::GetLatest(::grpc::ServerContext* context, const ::remote::GetLatestReq* request, ::remote::GetLatestReply* response) {
   (void) context;
   (void) request;
   (void) response;
@@ -437,7 +437,7 @@ KV::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status KV::Service::DomainRange(::grpc::ServerContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response) {
+::grpc::Status KV::Service::RangeAsOf(::grpc::ServerContext* context, const ::remote::RangeAsOfReq* request, ::remote::Pairs* response) {
   (void) context;
   (void) request;
   (void) response;

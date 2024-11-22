@@ -176,8 +176,8 @@ class HistorySeekCall : public rpc::server::UnaryCall<remote::HistorySeekReq, re
 };
 
 //! Unary RPC for DomainGet method of 'kv' gRPC protocol.
-//! rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-class DomainGetCall : public rpc::server::UnaryCall<remote::DomainGetReq, remote::DomainGetReply> {
+//! rpc DomainGet(GetLatestReq) returns (GetLatestReply);
+class DomainGetCall : public rpc::server::UnaryCall<remote::GetLatestReq, remote::GetLatestReply> {
   public:
     using Base::UnaryCall;
 
@@ -203,8 +203,8 @@ class HistoryRangeCall : public rpc::server::UnaryCall<remote::HistoryRangeReq, 
 };
 
 //! Unary RPC for IndexRange method of 'kv' gRPC protocol.
-//! rpc DomainRange(DomainRangeReq) returns (Pairs);
-class DomainRangeCall : public rpc::server::UnaryCall<remote::DomainRangeReq, remote::Pairs> {
+//! rpc DomainRange(RangeAsOfReq) returns (Pairs);
+class DomainRangeCall : public rpc::server::UnaryCall<remote::RangeAsOfReq, remote::Pairs> {
   public:
     using Base::UnaryCall;
 

@@ -28,7 +28,7 @@ api::IndexRangeResult index_range_result_from_response(const ::remote::IndexRang
 ::remote::HistoryRangeReq history_range_request_from_query(const api::HistoryRangeQuery&);
 api::HistoryRangeResult history_range_result_from_response(const ::remote::Pairs&);
 
-::remote::DomainRangeReq domain_range_request_from_query(const api::DomainRangeQuery&);
+::remote::RangeAsOfReq domain_range_request_from_query(const api::DomainRangeQuery&);
 api::DomainRangeResult domain_range_result_from_response(const ::remote::Pairs&);
 
 }  // namespace silkworm::db::kv::grpc::client

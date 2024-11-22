@@ -72,7 +72,7 @@ class Transaction {
 
     /** Temporal Point Queries **/
 
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
+    // rpc DomainGet(GetLatestReq) returns (GetLatestReply);
     virtual Task<DomainPointResult> domain_get(DomainPointQuery query) = 0;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
@@ -86,7 +86,7 @@ class Transaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     virtual Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) = 0;
 
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
+    // rpc DomainRange(RangeAsOfReq) returns (Pairs);
     virtual Task<PaginatedKeysValues> domain_range(DomainRangeQuery query) = 0;
 };
 

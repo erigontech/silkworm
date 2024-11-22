@@ -734,7 +734,7 @@ Task<void> HistorySeekCall::operator()() {
 
 Task<void> DomainGetCall::operator()() {
     SILK_TRACE << "DomainGetCall START";
-    remote::DomainGetReply response;
+    remote::GetLatestReply response;
     // TODO(canepat) implement properly
     co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
     SILK_TRACE << "DomainGetCall END ok: " << response.ok() << " value: " << response.v();

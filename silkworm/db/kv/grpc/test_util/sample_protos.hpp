@@ -75,8 +75,8 @@ inline api::DomainPointQuery sample_domain_point_query() {
     };
 }
 
-inline proto::DomainGetReq sample_proto_domain_point_request() {
-    proto::DomainGetReq request;
+inline proto::GetLatestReq sample_proto_domain_point_request() {
+    proto::GetLatestReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
     request.set_k(ascii_from_hex("0011ff"));
@@ -85,8 +85,8 @@ inline proto::DomainGetReq sample_proto_domain_point_request() {
     return request;
 }
 
-inline proto::DomainGetReply sample_proto_domain_get_response() {
-    proto::DomainGetReply response;
+inline proto::GetLatestReply sample_proto_domain_get_response() {
+    proto::GetLatestReply response;
     response.set_ok(true);
     response.set_v(ascii_from_hex("ff00ff00"));
     return response;
@@ -212,14 +212,14 @@ inline api::DomainRangeQuery sample_domain_range_query() {
     };
 }
 
-inline proto::DomainRangeReq default_proto_domain_range_request() {
-    proto::DomainRangeReq request;
+inline proto::RangeAsOfReq default_proto_domain_range_request() {
+    proto::RangeAsOfReq request;
     request.set_limit(api::kUnlimited);  // default value for type is 0 whilst we're choosing unlimited (-1) in API
     return request;
 }
 
-inline proto::DomainRangeReq sample_proto_domain_range_request() {
-    proto::DomainRangeReq request;
+inline proto::RangeAsOfReq sample_proto_domain_range_request() {
+    proto::RangeAsOfReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
     request.set_from_key(ascii_from_hex("0011aa"));

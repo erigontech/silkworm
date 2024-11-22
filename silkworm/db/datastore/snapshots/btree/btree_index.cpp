@@ -76,8 +76,8 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSe
     if (key.compare(seek_key) >= 0) {
         return BTreeIndex::Cursor{
             this,
-            key,
-            value,
+            std::move(key),
+            std::move(value),
             data_index,
             &kv_segment,
         };

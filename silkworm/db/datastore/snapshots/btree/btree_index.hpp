@@ -51,13 +51,13 @@ class BTreeIndex {
 
         Cursor(
             BTreeIndex* index,
-            ByteView key,
-            ByteView value,
+            Bytes key,
+            Bytes value,
             DataIndex data_index,
             const KVSegmentReader* kv_segment)
             : index_{index},
-              key_{key},
-              value_{value},
+              key_{std::move(key)},
+              value_{std::move(value)},
               data_index_{data_index},
               kv_segment_{kv_segment} {}
 

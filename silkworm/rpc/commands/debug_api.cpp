@@ -341,12 +341,9 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             co_return;
         }
 
-        auto account{Account::from_encoded_storage_v3(result.value)};
-        //        .key = db::account_domain_key(silkworm::bytes_to_address(account->code_hash.bytes)),
+        const auto account{Account::from_encoded_storage_v3(result.value)};
         if (account) {
-            std::ostringstream oss;
-            oss << std::hex << account->nonce;
-            json_result["nonce"] = "0x" + oss.str();
+            json_result["nonce"] = rpc::to_quantity(account->nonce);
             json_result["balance"] = "0x" + intx::to_string(account->balance, 16);
             json_result["codeHash"] = account->code_hash;
 

@@ -50,8 +50,7 @@ engine_,\
 erigon_getLatestLogs,\
 eth_getLogs,\
 ots_getContractCreator,\
-ots_searchTransactionsAfter,\
-ots_searchTransactionsBefore
+ots_searchTransactionsAfter
 
 failed_test=$?
 

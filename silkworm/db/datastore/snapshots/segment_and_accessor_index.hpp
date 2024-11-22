@@ -16,21 +16,14 @@
 
 #pragma once
 
-#include <cstdint>
+#include "rec_split/accessor_index.hpp"
+#include "segment/segment_reader.hpp"
 
-#include "../common/util/bitmask_operators.hpp"
+namespace silkworm::snapshots {
 
-namespace silkworm::snapshots::seg {
-
-enum class CompressionKind : uint8_t {
-    kNone = 0b0,
-    kKeys = 0b1,
-    kValues = 0b10,
-    kAll = 0b11,
+struct SegmentAndAccessorIndex {
+    const segment::SegmentFileReader& segment;
+    const rec_split::AccessorIndex& index;
 };
 
-consteval void enable_bitmask_operator_and(CompressionKind);
-consteval void enable_bitmask_operator_or(CompressionKind);
-consteval void enable_bitmask_operator_not(CompressionKind);
-
-}  // namespace silkworm::snapshots::seg
+}  // namespace silkworm::snapshots

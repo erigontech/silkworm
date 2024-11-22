@@ -28,6 +28,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/rpc/json/access_list_entry.hpp>
+#include <silkworm/rpc/json/authorization.hpp>
 #include <silkworm/rpc/json/block.hpp>
 #include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/call_bundle.hpp>

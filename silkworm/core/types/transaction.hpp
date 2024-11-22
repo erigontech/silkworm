@@ -21,6 +21,7 @@
 
 #include <intx/intx.hpp>
 
+#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/concurrency/resettable_once_flag.hpp>
@@ -37,6 +38,18 @@ struct AccessListEntry {
     friend bool operator==(const AccessListEntry&, const AccessListEntry&) = default;
 };
 
+// EIP-7702 Authorization
+struct Authorization {
+    intx::uint256 chain_id;
+    evmc::address address;
+    uint64_t nonce{};
+    intx::uint256 v;
+    intx::uint256 r;
+    intx::uint256 s;
+
+    friend bool operator==(const Authorization&, const Authorization&) = default;
+};
+
 // EIP-2718 transaction type
 // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
 enum class TransactionType : uint8_t {
@@ -44,6 +57,7 @@ enum class TransactionType : uint8_t {
     kAccessList = 1,  // EIP-2930
     kDynamicFee = 2,  // EIP-1559
     kBlob = 3,        // EIP-4844
+    kSetCode = 4,     // EIP-7702
 
     // System transactions are used for internal protocol operations like storing parent beacon root (EIP-4788).
     // They do not pay the base fee.
@@ -68,6 +82,9 @@ struct UnsignedTransaction {
     // EIP-4844: Shard Blob Transactions
     intx::uint256 max_fee_per_blob_gas{0};
     std::vector<Hash> blob_versioned_hashes{};
+
+    // EIP-7702
+    std::vector<Authorization> authorizations;
 
     //! \brief Maximum possible cost of normal and data (EIP-4844) gas
     intx::uint512 maximum_gas_cost() const;
@@ -118,6 +135,9 @@ class Transaction : public UnsignedTransaction {
 namespace rlp {
     void encode(Bytes& to, const AccessListEntry&);
     size_t length(const AccessListEntry&);
+
+    void encode(Bytes& to, const Authorization&);
+    size_t length(const Authorization&);
 
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
     // (0x02 for EIP-1559 transactions); the same goes for receipts. This is true for signing and

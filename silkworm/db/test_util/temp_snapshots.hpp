@@ -21,7 +21,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/datastore/snapshots/seg/common/varint.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/common/varint.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 

@@ -62,11 +62,13 @@ class EngineRpcApi {
     Task<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v3(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_payload_v4(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v3(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_new_payload_v4(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v3(const nlohmann::json& request, nlohmann::json& reply);

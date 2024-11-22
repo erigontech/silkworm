@@ -108,4 +108,8 @@ TEST_CASE("SnapshotPath::make", "[silkworm][node][snapshot]") {
             .path() == "/snapshots/accessor/v1-storage.5-155.vi");
 }
 
+TEST_CASE("StepRange invalid") {
+    CHECK_THROWS_AS((StepRange{Step{1'000}, Step{999}}), std::logic_error);
+}
+
 }  // namespace silkworm::snapshots

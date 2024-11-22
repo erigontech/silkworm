@@ -17,14 +17,14 @@
 #pragma once
 
 #include "inverted_index.hpp"
-#include "rec_split_index/index.hpp"
+#include "rec_split/accessor_index.hpp"
 #include "segment/segment_reader.hpp"
 
 namespace silkworm::snapshots {
 
 struct History {
-    const SegmentFileReader& segment;
-    const Index& accessor_index;
+    const segment::SegmentFileReader& segment;
+    const rec_split::AccessorIndex& accessor_index;
     InvertedIndex inverted_index;
 };
 

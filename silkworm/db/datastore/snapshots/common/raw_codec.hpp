@@ -16,14 +16,23 @@
 
 #pragma once
 
-#include "rec_split_index/index.hpp"
-#include "segment/segment_reader.hpp"
+#include "codec.hpp"
 
 namespace silkworm::snapshots {
 
-struct SegmentAndIndex {
-    const SegmentFileReader& segment;
-    const Index& index;
+template <class TBytes>
+concept BytesOrByteView = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
+
+template <BytesOrByteView TBytes>
+struct RawDecoder : public Decoder {
+    TBytes value;
+    ~RawDecoder() override = default;
+    void decode_word(ByteView word) override {
+        value = std::move(TBytes{word});
+    }
 };
+
+static_assert(DecoderConcept<RawDecoder<Bytes>>);
+static_assert(DecoderConcept<RawDecoder<ByteView>>);
 
 }  // namespace silkworm::snapshots

@@ -23,6 +23,7 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/datastore/snapshots/common/codec.hpp>
+#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 
 namespace silkworm::snapshots {
 
@@ -72,9 +73,6 @@ struct TransactionSegmentWordDecoder : public Decoder {
 };
 
 static_assert(DecoderConcept<TransactionSegmentWordDecoder>);
-
-template <class TBytes>
-concept BytesOrByteView = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
 
 template <BytesOrByteView TBytes>
 struct TransactionSegmentWordPayloadRlpDecoder : public Decoder {

@@ -55,6 +55,12 @@ class Hash : public evmc::bytes32 {
 using HashAsSpan = std::span<const uint8_t, kHashLength>;
 using HashAsArray = const uint8_t (&)[kHashLength];
 
+namespace rlp {
+    inline DecodingResult decode(ByteView& from, Hash& to, Leftover mode = Leftover::kProhibit) {
+        return decode(from, to.bytes, mode);
+    }
+}  // namespace rlp
+
 }  // namespace silkworm
 
 namespace std {

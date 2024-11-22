@@ -43,7 +43,6 @@ void seg_zip(const std::filesystem::path& path) {
 
 void seg_unzip(const std::filesystem::path& path) {
     Decompressor decompressor{path};
-    decompressor.open();
 
     auto out_path = path;
     out_path.replace_extension("idt");

@@ -50,6 +50,7 @@
 #include <span>
 #include <streambuf>
 #include <tuple>
+#include <utility>
 
 #ifndef _WIN32
 #include <fcntl.h>
@@ -82,8 +83,26 @@ class MemoryMappedFile {
     MemoryMappedFile& operator=(const MemoryMappedFile&) = delete;
 
     // Only movable
-    MemoryMappedFile(MemoryMappedFile&&) noexcept = default;
-    MemoryMappedFile& operator=(MemoryMappedFile&&) noexcept = default;
+    MemoryMappedFile(MemoryMappedFile&& other) noexcept
+        : path_{std::move(other.path_)},
+          region_{std::exchange(other.region_, {})},
+#ifdef _WIN32
+          file_{std::exchange(other.file_, nullptr)},
+          mapping_{std::exchange(other.mapping_, nullptr)},
+#endif
+          managed_{std::exchange(other.managed_, false)} {
+    }
+
+    MemoryMappedFile& operator=(MemoryMappedFile&& other) noexcept {
+        path_ = std::move(other.path_);
+        region_ = std::exchange(other.region_, {});
+#ifdef _WIN32
+        file_ = std::exchange(other.file_, nullptr);
+        mapping_ = std::exchange(other.mapping_, nullptr);
+#endif
+        managed_ = std::exchange(other.managed_, false);
+        return *this;
+    }
 
     std::filesystem::path path() const {
         return path_;
@@ -107,9 +126,11 @@ class MemoryMappedFile {
 
   private:
     void map_existing(bool read_only);
+    void close();
 
     void* mmap(FileDescriptor fd, size_t size, bool read_only);
     void unmap();
+    void advise(int advice) const;
 
     //! The path to the file
     std::filesystem::path path_;
@@ -117,17 +138,13 @@ class MemoryMappedFile {
     //! The area mapped in memory
     MemoryMappedRegion region_;
 
-    //! Flag indicating if memory-mapping is managed internally or not
-    bool managed_;
-
 #ifdef _WIN32
-    void cleanup();
-
     HANDLE file_ = nullptr;
     HANDLE mapping_ = nullptr;
-#else
-    void advise(int advice) const;
 #endif
+
+    //! Flag indicating if memory-mapping is managed internally or not
+    bool managed_;
 };
 
 struct MemoryMappedStreamBuf : std::streambuf {

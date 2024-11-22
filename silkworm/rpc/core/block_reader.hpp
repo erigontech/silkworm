@@ -46,6 +46,7 @@ class BlockReader {
 
     Task<void> read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const;
 
+  private:
     const db::chain::ChainStorage& chain_storage_;
     db::kv::api::Transaction& transaction_;
 };

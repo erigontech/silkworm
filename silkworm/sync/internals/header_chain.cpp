@@ -42,8 +42,8 @@ class SegmentCutAndPasteError : public std::logic_error {
 };
 
 static PreverifiedHashes& default_preverified_hashes(ChainId chain_id, bool use_preverified_hashes) {
-    static PreverifiedHashes kEmpty;
-    return use_preverified_hashes ? PreverifiedHashes::load(chain_id) : kEmpty;
+    static PreverifiedHashes empty;
+    return use_preverified_hashes ? PreverifiedHashes::load(chain_id) : empty;
 }
 
 HeaderChain::HeaderChain(const ChainConfig& chain_config, bool use_preverified_hashes)

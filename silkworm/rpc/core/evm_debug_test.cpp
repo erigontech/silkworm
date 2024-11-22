@@ -119,19 +119,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         EXPECT_CALL(transaction, first_txn_num_in_block(10'336'007)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return rsp1;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
                 .value = Bytes{}};
             co_return rsp1;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult rsp1{
                 .success = true,
                 .value = Bytes{}};
@@ -244,19 +244,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
@@ -362,19 +362,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
@@ -472,19 +472,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
@@ -587,19 +587,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
@@ -703,19 +703,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
@@ -806,19 +806,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
@@ -926,19 +926,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         EXPECT_CALL(transaction, first_txn_num_in_block(4'417'197)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue2};
             co_return response;
         }));
-        EXPECT_CALL(transaction, domain_get(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
@@ -1016,19 +1016,19 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
-    EXPECT_CALL(transaction, domain_get(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+    EXPECT_CALL(transaction, get_latest(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
             .success = true,
             .value = kAccountHistoryValue1};
         co_return response;
     }));
-    EXPECT_CALL(transaction, domain_get(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+    EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
             .success = true,
             .value = Bytes{}};
         co_return response;
     }));
-    EXPECT_CALL(transaction, domain_get(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+    EXPECT_CALL(transaction, get_latest(std::move(query3))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
         db::kv::api::DomainPointResult response{
             .success = true,
             .value = kAccountHistoryValue3};

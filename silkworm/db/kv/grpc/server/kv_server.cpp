@@ -69,7 +69,7 @@ void KvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestGetLatest,
                        [](auto&&... args) -> Task<void> {
-                           co_await DomainGetCall{std::forward<decltype(args)>(args)...}();
+                           co_await GetLatestCall{std::forward<decltype(args)>(args)...}();
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestHistorySeek,
                        [](auto&&... args) -> Task<void> {
@@ -85,7 +85,7 @@ void KvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestRangeAsOf,
                        [](auto&&... args) -> Task<void> {
-                           co_await DomainRangeCall{std::forward<decltype(args)>(args)...}();
+                           co_await RangeAsOfCall{std::forward<decltype(args)>(args)...}();
                        });
     SILK_TRACE << "KvServer::register_kv_request_calls END";
 }

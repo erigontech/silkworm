@@ -62,8 +62,8 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc DomainGet(GetLatestReq) returns (GetLatestReply);
-    Task<api::DomainPointResult> domain_get(api::DomainPointQuery query) override;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply);
+    Task<api::DomainPointResult> get_latest(api::DomainPointQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery query) override;
@@ -74,8 +74,8 @@ class RemoteTransaction : public api::BaseTransaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<api::PaginatedKeysValues> history_range(api::HistoryRangeQuery query) override;
 
-    // rpc DomainRange(RangeAsOfReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> domain_range(api::DomainRangeQuery query) override;
+    // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
+    Task<api::PaginatedKeysValues> range_as_of(api::DomainRangeQuery query) override;
 
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);

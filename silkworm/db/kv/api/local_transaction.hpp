@@ -61,8 +61,8 @@ class LocalTransaction : public BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc DomainGet(GetLatestReq) returns (GetLatestReply);
-    Task<DomainPointResult> domain_get(DomainPointQuery query) override;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply);
+    Task<DomainPointResult> get_latest(DomainPointQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     Task<HistoryPointResult> history_seek(HistoryPointQuery query) override;
@@ -73,8 +73,8 @@ class LocalTransaction : public BaseTransaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) override;
 
-    // rpc DomainRange(RangeAsOfReq) returns (Pairs);
-    Task<PaginatedKeysValues> domain_range(DomainRangeQuery query) override;
+    // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
+    Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) override;
 
   private:
     Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);

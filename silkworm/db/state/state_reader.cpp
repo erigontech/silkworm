@@ -38,7 +38,7 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
         .key = db::account_domain_key(address),
         .timestamp = txn_number_,
     };
-    const auto result = co_await tx_.domain_get(std::move(query));
+    const auto result = co_await tx_.get_latest(std::move(query));
     if (!result.success) {
         co_return std::nullopt;
     }
@@ -59,7 +59,7 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
         .key = db::storage_domain_key(address, location_hash),
         .timestamp = txn_number_,
     };
-    const auto result = co_await tx_.domain_get(std::move(query));
+    const auto result = co_await tx_.get_latest(std::move(query));
     if (!result.success) {
         co_return evmc::bytes32{};
     }
@@ -79,7 +79,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
         .key = db::code_domain_key(address),
         .timestamp = txn_number_,
     };
-    const auto result = co_await tx_.domain_get(std::move(query));
+    const auto result = co_await tx_.get_latest(std::move(query));
     if (!result.success) {
         co_return std::nullopt;
     }

@@ -102,7 +102,7 @@ class KvClient {
         return stub_->HistorySeek(&context, request, response);
     }
 
-    grpc::Status domain_get(const remote::GetLatestReq& request, remote::GetLatestReply* response) {
+    grpc::Status get_latest(const remote::GetLatestReq& request, remote::GetLatestReply* response) {
         grpc::ClientContext context;
         return stub_->GetLatest(&context, request, response);
     }
@@ -117,7 +117,7 @@ class KvClient {
         return stub_->HistoryRange(&context, request, response);
     }
 
-    grpc::Status domain_range(const remote::RangeAsOfReq& request, remote::Pairs* response) {
+    grpc::Status range_as_of(const remote::RangeAsOfReq& request, remote::Pairs* response) {
         grpc::ClientContext context;
         return stub_->RangeAsOf(&context, request, response);
     }
@@ -661,10 +661,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(status.ok());
     }
 
-    SECTION("DomainGet: return value in target domain") {
+    SECTION("GetLatest: return value in target domain") {
         remote::GetLatestReq request;
         remote::GetLatestReply response;
-        const auto status = kv_client->domain_get(request, &response);
+        const auto status = kv_client->get_latest(request, &response);
         CHECK(status.ok());
     }
 
@@ -682,10 +682,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(status.ok());
     }
 
-    SECTION("DomainRange: return value in target domain range") {
+    SECTION("RangeAsOf: return value in target domain range") {
         remote::RangeAsOfReq request;
         remote::Pairs response;
-        const auto status = kv_client->domain_range(request, &response);
+        const auto status = kv_client->range_as_of(request, &response);
         CHECK(status.ok());
     }
 }

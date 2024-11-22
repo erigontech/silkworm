@@ -190,7 +190,7 @@ Task<void> StorageWalker::storage_range_at(
         .to_key = to,
         .timestamp = txn_number,
         .ascending_order = true};
-    auto paginated_result = co_await transaction_.domain_range(std::move(query));
+    auto paginated_result = co_await transaction_.range_as_of(std::move(query));
     auto it = co_await paginated_result.begin();
 
     while (const auto value = co_await it.next()) {

@@ -210,7 +210,7 @@ class DummyTransaction : public BaseTransaction {
         co_return;
     }
 
-    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery /*query*/) override {
+    Task<db::kv::api::DomainPointResult> get_latest(db::kv::api::DomainPointQuery /*query*/) override {
         co_return db::kv::api::DomainPointResult{};
     }
 
@@ -226,7 +226,7 @@ class DummyTransaction : public BaseTransaction {
         co_return test::empty_paginated_keys_and_values();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 

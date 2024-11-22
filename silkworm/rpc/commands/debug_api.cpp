@@ -325,7 +325,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             .timestamp = min_tx_num + tx_index + 1,
         };
 
-        const auto result = co_await tx->domain_get(std::move(query_account));
+        const auto result = co_await tx->get_latest(std::move(query_account));
         nlohmann::json json_result{};
 
         if (!result.success || result.value.empty()) {
@@ -350,7 +350,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
                 .timestamp = min_tx_num + tx_index,
             };
 
-            const auto code = co_await tx->domain_get(std::move(query_code));
+            const auto code = co_await tx->get_latest(std::move(query_code));
             json_result["code"] = "0x" + silkworm::to_hex(code.value);
         } else {
             json_result["balance"] = "0x0";

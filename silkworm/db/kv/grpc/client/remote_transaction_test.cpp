@@ -428,18 +428,18 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 }
 #endif  // SILKWORM_SANITIZE
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_get", "[db][kv][grpc][client][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][kv][grpc][client][remote_transaction]") {
     using db::kv::test_util::sample_proto_domain_get_response;
 
-    auto domain_get = [&]() -> Task<api::DomainPointResult> {
+    auto get_latest = [&]() -> Task<api::DomainPointResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
         // Before GCC 13, we must avoid passing api::DomainPointQuery as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainPointQuery query;
-        const api::DomainPointResult result = co_await remote_tx_.domain_get(std::move(query));
+        const api::DomainPointResult result = co_await remote_tx_.get_latest(std::move(query));
 #else
-        const api::DomainPointResult result = co_await remote_tx_.domain_get(api::DomainPointQuery{});
+        const api::DomainPointResult result = co_await remote_tx_.get_latest(api::DomainPointQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
@@ -449,25 +449,25 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_get", "[db][k
 
     api::DomainPointResult result;
 
-    SECTION("call domain_get and get result") {
+    SECTION("call get_latest and get result") {
         proto::GetLatestReply reply{sample_proto_domain_get_response()};
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
 
-        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK_NOTHROW((result = spawn_and_wait(get_latest)));
         CHECK(result.success);
         CHECK(result.value == from_hex("ff00ff00"));
     }
-    SECTION("call domain_get and get empty result") {
+    SECTION("call get_latest and get empty result") {
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
 
-        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK_NOTHROW((result = spawn_and_wait(get_latest)));
         CHECK_FALSE(result.success);
         CHECK(result.value.empty());
     }
-    SECTION("call domain_get and get error") {
+    SECTION("call get_latest and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
 
-        CHECK_THROWS_AS(spawn_and_wait(domain_get), boost::system::system_error);
+        CHECK_THROWS_AS(spawn_and_wait(get_latest), boost::system::system_error);
     }
 }
 
@@ -697,7 +697,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db][kv][grpc][client][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::range_as_of", "[db][kv][grpc][client][remote_transaction]") {
     const api::KeyValue kv1{*from_hex("0011FF0011AA"), *from_hex("0011")};
     const api::KeyValue kv2{*from_hex("0011FF0011BB"), *from_hex("0022")};
     const api::KeyValue kv3{*from_hex("0011FF0011CC"), *from_hex("0033")};
@@ -708,9 +708,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainRangeQuery query;
-        auto paginated_keys_and_values = co_await remote_tx_.domain_range(std::move(query));
+        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(std::move(query));
 #else
-        auto paginated_keys_and_values = co_await remote_tx_.domain_range(api::DomainRangeQuery{});
+        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(api::DomainRangeQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_keys_and_values);
     };

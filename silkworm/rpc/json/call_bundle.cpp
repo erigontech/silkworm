@@ -16,12 +16,8 @@
 
 #include "call_bundle.hpp"
 
-#include <cstring>
-#include <utility>
-
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/json/types.hpp>
 

@@ -20,7 +20,6 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc {

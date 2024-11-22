@@ -25,7 +25,6 @@
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
-#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>

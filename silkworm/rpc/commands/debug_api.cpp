@@ -25,15 +25,12 @@
 
 #include <evmc/evmc.hpp>
 
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
-#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/account_dumper.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -666,7 +663,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number == start_block_number ? end_block_number + 1 : end_block_number) - 1;
 
     db::kv::api::HistoryRangeQuery query{
-        .table = db::table::kAccountsHistory,
+        .table = db::table::kAccountDomain,
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
         .ascending_order = true};

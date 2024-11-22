@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <map>
-#include <optional>
-
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <evmc/evmc.hpp>
@@ -27,8 +24,6 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/ethdb/split_cursor.hpp>
 
 namespace silkworm::rpc {

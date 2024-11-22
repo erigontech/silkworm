@@ -41,7 +41,6 @@ void snapshot_file_recompress(const std::filesystem::path& path) {
     if (!path_opt) throw std::runtime_error{"bad snapshot path"};
 
     SegmentFileReader file_reader{*path_opt};
-    file_reader.reopen_segment();
 
     auto out_path = path;
     out_path.replace_extension("seg2");

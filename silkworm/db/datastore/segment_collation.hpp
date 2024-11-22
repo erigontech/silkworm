@@ -46,7 +46,7 @@ struct SegmentCollation {
     virtual ~SegmentCollation() = default;
 
     //! Copies data for a block range from db to the snapshot file.
-    virtual void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::SegmentFileWriter& file_writer) const = 0;
+    virtual void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const = 0;
 
     //! Cleans up data for a block range from db after it was copied to the snapshot file.
     virtual void prune(RWTxn& txn, BlockNumRange range) const = 0;

@@ -34,9 +34,9 @@
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
 #include "../common/util/iterator/iterator_read_into_vector.hpp"
-#include "../seg/decompressor.hpp"
+#include "seg/decompressor.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 class KVSegmentFileReader {
   public:
@@ -82,21 +82,17 @@ class KVSegmentFileReader {
         SnapshotPath path,
         seg::CompressionKind compression_kind,
         std::optional<MemoryMappedRegion> segment_region = std::nullopt);
-    ~KVSegmentFileReader();
 
     KVSegmentFileReader(KVSegmentFileReader&&) = default;
     KVSegmentFileReader& operator=(KVSegmentFileReader&&) = default;
 
     const SnapshotPath& path() const { return path_; }
-    std::filesystem::path fs_path() const { return path_.path(); }
+    const std::filesystem::path& fs_path() const { return path_.path(); }
 
     bool empty() const { return item_count() == 0; }
     size_t item_count() const { return decompressor_.words_count(); }
 
     MemoryMappedRegion memory_file_region() const;
-
-    void reopen_segment();
-    void close();
 
     Iterator begin(std::shared_ptr<Decoder> key_decoder, std::shared_ptr<Decoder> value_decoder) const;
     Iterator end() const;
@@ -197,9 +193,86 @@ class KVSegmentReader {
     const KVSegmentFileReader& reader_;
 };
 
+template <DecoderConcept TKeyDecoder>
+class KVSegmentKeysReader {
+  public:
+    class Iterator {
+      public:
+        using value_type = decltype(TKeyDecoder::value);
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using pointer = value_type*;
+        using reference = value_type&;
+
+        explicit Iterator(KVSegmentFileReader::Iterator it)
+            : it_(std::move(it)) {}
+
+        reference operator*() const { return value(); }
+        pointer operator->() const { return &value(); }
+
+        Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
+        Iterator& operator++() {
+            ++it_;
+            return *this;
+        }
+
+        Iterator& operator+=(size_t count) {
+            it_ += count;
+            return *this;
+        }
+
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs) = default;
+
+      private:
+        value_type& value() const {
+            Decoder& base_key_decoder = *(it_->first);
+            // dynamic_cast is safe because TKeyDecoder was used when creating the Iterator
+            auto& key_decoder = dynamic_cast<TKeyDecoder&>(base_key_decoder);
+            return key_decoder.value;
+        }
+
+        KVSegmentFileReader::Iterator it_;
+    };
+
+    static_assert(std::input_iterator<Iterator>);
+
+    using KeyDecoderType = TKeyDecoder;
+
+    explicit KVSegmentKeysReader(const KVSegmentFileReader& reader) : reader_(reader) {}
+
+    Iterator begin() const {
+        return Iterator{reader_.begin(std::make_shared<TKeyDecoder>(), {})};
+    }
+
+    Iterator end() const {
+        return Iterator{reader_.end()};
+    }
+
+    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
+        return Iterator{reader_.seek(offset, hash_prefix, std::make_shared<TKeyDecoder>(), {})};
+    }
+
+    std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
+        auto it = seek(offset, hash_prefix);
+        auto& [key, value] = *it;
+        return (it != end()) ? std::optional{it.move_value()} : std::nullopt;
+    }
+
+    const SnapshotPath& path() const { return reader_.path(); }
+
+  private:
+    const KVSegmentFileReader& reader_;
+};
+
 template <class TKVSegmentReader>
 concept KVSegmentReaderConcept =
     std::same_as<TKVSegmentReader, KVSegmentReader<typename TKVSegmentReader::KeyDecoderType, typename TKVSegmentReader::ValueDecoderType>> ||
     std::derived_from<TKVSegmentReader, KVSegmentReader<typename TKVSegmentReader::KeyDecoderType, typename TKVSegmentReader::ValueDecoderType>>;
 
-}  // namespace silkworm::snapshots
+template <class TKVSegmentKeysReader>
+concept KVSegmentKeysReaderConcept =
+    std::same_as<TKVSegmentKeysReader, KVSegmentKeysReader<typename TKVSegmentKeysReader::KeyDecoderType>> ||
+    std::derived_from<TKVSegmentKeysReader, KVSegmentKeysReader<typename TKVSegmentKeysReader::KeyDecoderType>>;
+
+}  // namespace silkworm::snapshots::segment

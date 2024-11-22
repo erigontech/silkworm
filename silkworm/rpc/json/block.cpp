@@ -16,7 +16,6 @@
 
 #include "block.hpp"
 
-#include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc {
@@ -106,6 +105,7 @@ struct GlazeJsonBlock {
     std::optional<std::string> excess_blob_gas;
     std::optional<std::string> parent_beacon_block_root;
     std::optional<std::string> total_difficulty;
+    std::optional<std::string> requests_hash;
 
     struct glaze {
         using T = GlazeJsonBlock;
@@ -204,6 +204,9 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
     }
     if (header.parent_beacon_block_root) {
         result.parent_beacon_block_root = std::make_optional("0x" + silkworm::to_hex(*(header.parent_beacon_block_root)));
+    }
+    if (header.requests_hash) {
+        result.requests_hash = std::make_optional("0x" + silkworm::to_hex(*(header.requests_hash)));
     }
     to_hex(std::span(result.state_root), header.state_root.bytes);
     to_hex(std::span(result.receipts_root), header.receipts_root.bytes);

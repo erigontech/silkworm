@@ -27,18 +27,18 @@
 #include "common/util/iterator/map_values_view.hpp"
 #include "domain.hpp"
 #include "inverted_index.hpp"
-#include "kv_segment/kv_segment_reader.hpp"
-#include "rec_split_index/index.hpp"
+#include "rec_split/accessor_index.hpp"
 #include "schema.hpp"
+#include "segment/kv_segment_reader.hpp"
 #include "segment/segment_reader.hpp"
-#include "segment_and_index.hpp"
+#include "segment_and_accessor_index.hpp"
 
 namespace silkworm::snapshots {
 
 struct SnapshotBundleEntityData {
-    std::map<datastore::EntityName, SegmentFileReader> segments;
-    std::map<datastore::EntityName, KVSegmentFileReader> kv_segments;
-    std::map<datastore::EntityName, Index> rec_split_indexes;
+    std::map<datastore::EntityName, segment::SegmentFileReader> segments;
+    std::map<datastore::EntityName, segment::KVSegmentFileReader> kv_segments;
+    std::map<datastore::EntityName, rec_split::AccessorIndex> accessor_indexes;
     std::map<datastore::EntityName, bloom_filter::BloomFilter> existence_indexes;
     std::map<datastore::EntityName, btree::BTreeIndex> btree_indexes;
 };
@@ -47,7 +47,7 @@ struct SnapshotBundleData {
     std::map<datastore::EntityName, SnapshotBundleEntityData> entities;
 };
 
-SnapshotBundleData make_bundle_data(
+SnapshotBundleData open_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
     StepRange step_range);
@@ -65,7 +65,7 @@ struct SnapshotBundlePaths {
 
     std::vector<std::filesystem::path> files() const;
     std::map<datastore::EntityName, SnapshotPath> segment_paths() const;
-    std::map<datastore::EntityName, SnapshotPath> rec_split_index_paths() const;
+    std::map<datastore::EntityName, SnapshotPath> accessor_index_paths() const;
 
   private:
     Schema::RepositoryDef schema_;
@@ -77,7 +77,6 @@ struct SnapshotBundle {
     SnapshotBundle(StepRange step_range, SnapshotBundleData data)
         : step_range_{step_range},
           data_{std::move(data)} {
-        reopen();
     }
     SnapshotBundle(
         const Schema::RepositoryDef& schema,
@@ -85,7 +84,7 @@ struct SnapshotBundle {
         StepRange range)
         : SnapshotBundle{
               range,
-              make_bundle_data(schema, dir_path, range),
+              open_bundle_data(schema, dir_path, range),
           } {}
     virtual ~SnapshotBundle();
 
@@ -95,17 +94,17 @@ struct SnapshotBundle {
     auto segments() const {
         return make_map_values_view(data_.entities.at(Schema::kDefaultEntityName).segments);
     }
-    const SegmentFileReader& segment(
+    const segment::SegmentFileReader& segment(
         datastore::EntityName entity_name,
         datastore::EntityName segment_name) const;
-    const Index& rec_split_index(
+    const rec_split::AccessorIndex& accessor_index(
         datastore::EntityName entity_name,
         datastore::EntityName index_name) const;
-    SegmentAndIndex segment_and_rec_split_index(
+    SegmentAndAccessorIndex segment_and_accessor_index(
         std::array<datastore::EntityName, 3> names) const {
         return {
             segment(names[0], names[1]),
-            rec_split_index(names[0], names[2]),
+            accessor_index(names[0], names[2]),
         };
     }
 
@@ -117,10 +116,7 @@ struct SnapshotBundle {
     std::vector<std::filesystem::path> files() const;
     std::vector<SnapshotPath> segment_paths() const;
 
-    void reopen();
-    void close();
-
-    void on_close(std::function<void(SnapshotBundle&)> callback) {
+    void on_close(std::function<void(std::vector<std::filesystem::path> files)> callback) {
         on_close_callback_ = std::move(callback);
     }
 
@@ -128,9 +124,11 @@ struct SnapshotBundle {
     const SnapshotBundleData* operator->() const { return &data_; }
 
   private:
+    void close();
+
     StepRange step_range_;
     SnapshotBundleData data_;
-    std::function<void(SnapshotBundle&)> on_close_callback_;
+    std::function<void(std::vector<std::filesystem::path> files)> on_close_callback_;
 };
 
 }  // namespace silkworm::snapshots

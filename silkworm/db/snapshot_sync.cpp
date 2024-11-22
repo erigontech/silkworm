@@ -279,7 +279,7 @@ void SnapshotSync::seed_frozen_local_snapshots() {
         auto& bundle = *bundle_ptr;
         auto block_range = bundle.step_range().to_block_num_range();
         bool is_frozen = block_range.size() >= kMaxMergerSnapshotSize;
-        const SegmentFileReader& first_snapshot = *bundle.segments().begin();
+        const segment::SegmentFileReader& first_snapshot = *bundle.segments().begin();
         // assume that if one snapshot in the bundle is preverified, then all of them are
         bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.path().filename());
         if (is_frozen && !is_preverified) {

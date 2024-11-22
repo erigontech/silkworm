@@ -23,7 +23,7 @@
 #include <silkworm/db/blocks/transactions/txn_index.hpp>
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
-#include <silkworm/db/datastore/snapshots/seg/decompressor.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/decompressor.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -63,7 +63,6 @@ static void open_snapshot(benchmark::State& state) {
     tmp_file.write(kLoremIpsumDict);
     for ([[maybe_unused]] auto _ : state) {
         seg::Decompressor decoder{tmp_file.path()};
-        decoder.open();
     }
 }
 BENCHMARK(open_snapshot);

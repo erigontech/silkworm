@@ -116,7 +116,7 @@ static void rewrite_code_if_needed(const SmallMap<BlockNum, SmallMap<evmc::addre
     }
 }
 
-void BorRuleSet::finalize(IntraBlockState& state, const Block& block) {
+ValidationResult BorRuleSet::finalize(IntraBlockState& state, const Block& block, EVM&, const std::vector<Log>&) {
     const BlockNum header_number{block.header.number};
     if (is_sprint_start(header_number, config().sprint_size(header_number))) {
         // TODO(yperbasis): implement
@@ -124,6 +124,8 @@ void BorRuleSet::finalize(IntraBlockState& state, const Block& block) {
     }
 
     rewrite_code_if_needed(config().rewrite_code, state, header_number);
+
+    return ValidationResult::kOk;
 }
 
 ValidationResult BorRuleSet::validate_difficulty_and_seal(const BlockHeader& header, const BlockHeader&) {

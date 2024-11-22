@@ -16,7 +16,7 @@
 
 #include "kv_segment_writer.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 KVSegmentFileWriter::KVSegmentFileWriter(
     SnapshotPath path,
@@ -47,4 +47,4 @@ void KVSegmentFileWriter::flush(KVSegmentFileWriter writer) {
     seg::Compressor::compress(std::move(writer.compressor_));
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

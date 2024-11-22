@@ -47,22 +47,18 @@ static IndexInputDataQuery::Iterator::value_type decompressor_index_query_entry(
 
 IndexInputDataQuery::Iterator DecompressorIndexInputDataQuery::begin() {
     auto decompressor = std::make_shared<seg::Decompressor>(segment_path_.path(), segment_region_);
-    decompressor->open();
 
     auto impl_it = std::make_shared<IteratorImpl>(IteratorImpl{decompressor, decompressor->begin()});
     return IndexInputDataQuery::Iterator{this, impl_it, decompressor_index_query_entry(impl_it->it)};
 }
 
 IndexInputDataQuery::Iterator DecompressorIndexInputDataQuery::end() {
-    auto decompressor = std::make_shared<seg::Decompressor>(segment_path_.path(), segment_region_);
-
-    auto impl_it = std::make_shared<IteratorImpl>(IteratorImpl{{}, decompressor->end()});
+    auto impl_it = std::make_shared<IteratorImpl>(IteratorImpl{{}, seg::Decompressor::Iterator::make_end()});
     return IndexInputDataQuery::Iterator{this, impl_it, decompressor_index_query_entry(impl_it->it)};
 }
 
 size_t DecompressorIndexInputDataQuery::keys_count() {
     seg::Decompressor decompressor{segment_path_.path(), segment_region_};
-    decompressor.open();
     return decompressor.words_count();
 }
 

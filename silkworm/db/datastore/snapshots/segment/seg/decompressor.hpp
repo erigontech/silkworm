@@ -244,7 +244,7 @@ class Decompressor {
         friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
         friend bool operator==(const Iterator& lhs, const Iterator& rhs);
 
-        static Iterator make_end(const Decompressor* decoder);
+        static Iterator make_end();
 
       private:
         //! View on the whole data stream.
@@ -288,7 +288,6 @@ class Decompressor {
         std::filesystem::path compressed_path,
         std::optional<MemoryMappedRegion> compressed_region = {},
         CompressionKind compression_kind = CompressionKind::kAll);
-    ~Decompressor();
 
     Decompressor(Decompressor&&) = default;
     Decompressor& operator=(Decompressor&&) = default;
@@ -302,29 +301,23 @@ class Decompressor {
     uint64_t empty_words_count() const { return empty_words_count_; }
 
     std::filesystem::file_time_type last_write_time() const {
-        return compressed_file_->last_write_time();
+        return compressed_file_.last_write_time();
     }
 
-    bool is_open() const { return compressed_file_ != nullptr; }
-
-    const MemoryMappedFile* memory_file() const { return compressed_file_.get(); }
-
-    void open();
+    const MemoryMappedFile& memory_file() const { return compressed_file_; }
 
     //! Get an iterator to the compressed data
     Iterator make_iterator() const { return Iterator{this, {}}; }
 
     //! Begin reading the words, expected to read in sequential order
     Iterator begin() const;
-    Iterator end() const { return Iterator::make_end(this); }
+    Iterator end() const { return Iterator::make_end(); }
 
     //! \brief Return an iterator at a given \p offset optionally starting with a given \p prefix.
     //! \param offset the offset in the data to place iterator at. If the offset is invalid, returns end()
     //! \param prefix the prefix which the result should start with
     //! \details Makes sure that the result starts with a given prefix, otherwise returns end()
     Iterator seek(uint64_t offset, ByteView prefix = {}) const;
-
-    void close();
 
   private:
     void read_patterns(ByteView dict);
@@ -341,7 +334,7 @@ class Decompressor {
     CompressionKind compression_kind_;
 
     //! The memory-mapped compressed file
-    std::unique_ptr<MemoryMappedFile> compressed_file_;
+    MemoryMappedFile compressed_file_;
 
     //! The number of words in the data
     uint64_t words_count_{0};

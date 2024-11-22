@@ -22,7 +22,7 @@
 
 #include "../common/entity_name.hpp"
 #include "common/snapshot_path.hpp"
-#include "seg/compression_kind.hpp"
+#include "segment/seg/compression_kind.hpp"
 
 namespace silkworm::snapshots {
 
@@ -33,7 +33,7 @@ class Schema {
         enum class Format {
             kSegment,
             kKVSegment,
-            kRecSplitIndex,
+            kAccessorIndex,
             kExistenceIndex,
             kBTreeIndex,
         };
@@ -116,8 +116,8 @@ class Schema {
             return dynamic_cast<KVSegmentDef&>(*file_defs_.at(name));
         }
 
-        SnapshotFileDef& rec_split_index(datastore::EntityName name) {
-            file_defs_.try_emplace(name, std::make_shared<SnapshotFileDef>(SnapshotFileDef::Format::kRecSplitIndex));
+        SnapshotFileDef& accessor_index(datastore::EntityName name) {
+            file_defs_.try_emplace(name, std::make_shared<SnapshotFileDef>(SnapshotFileDef::Format::kAccessorIndex));
             return *file_defs_.at(name);
         }
 

@@ -112,6 +112,9 @@ namespace rlp {
         if (header.parent_beacon_block_root) {
             rlp_head.payload_length += kHashLength + 1;
         }
+        if (header.requests_hash) {
+            rlp_head.payload_length += kHashLength + 1;
+        }
 
         return rlp_head;
     }
@@ -160,6 +163,9 @@ namespace rlp {
         }
         if (header.parent_beacon_block_root) {
             encode(to, *header.parent_beacon_block_root);
+        }
+        if (header.requests_hash) {
+            encode(to, *header.requests_hash);
         }
     }
 
@@ -227,6 +233,15 @@ namespace rlp {
             to.blob_gas_used = std::nullopt;
             to.excess_blob_gas = std::nullopt;
             to.parent_beacon_block_root = std::nullopt;
+        }
+
+        if (from.length() > leftover) {
+            to.requests_hash = evmc::bytes32{};
+            if (DecodingResult res{decode(from, *to.requests_hash, Leftover::kAllow)}; !res) {
+                return res;
+            }
+        } else {
+            to.requests_hash = std::nullopt;
         }
 
         if (from.length() != leftover) {

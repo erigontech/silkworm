@@ -16,7 +16,6 @@
 
 #include "call.hpp"
 
-#include <cstring>
 #include <utility>
 
 #include <silkworm/core/common/util.hpp>

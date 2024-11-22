@@ -19,7 +19,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -53,7 +52,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumbe
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_number + 1);
 
     db::kv::api::HistoryRangeQuery query{
-        .table = db::table::kAccountsHistory,
+        .table = db::table::kAccountDomain,
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
         .ascending_order = true};

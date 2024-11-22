@@ -23,7 +23,7 @@
 #include "kv_segment_reader.hpp"
 #include "kv_segment_writer.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 struct CharCodec : public Encoder, public Decoder {
     char value{};
@@ -61,7 +61,6 @@ TEST_CASE("KVSegmentFile") {
     KVSegmentFileWriter::flush(std::move(file_writer));
 
     KVSegmentFileReader file_reader{path, kCompressionKind};
-    file_reader.reopen_segment();
     KVSegmentReader<StringCodec, CharCodec> reader{file_reader};
     for (std::pair<std::string&, char&> entry : reader) {
         CHECK(entry.first == entries[0].first);
@@ -71,4 +70,4 @@ TEST_CASE("KVSegmentFile") {
     CHECK(entries.empty());
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

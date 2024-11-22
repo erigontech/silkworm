@@ -19,43 +19,39 @@
 #include <array>
 #include <stdexcept>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 KVSegmentFileReader::KVSegmentFileReader(
     SnapshotPath path,
     seg::CompressionKind compression_kind,
     std::optional<MemoryMappedRegion> segment_region)
     : path_(std::move(path)),
-      decompressor_{path_.path(), segment_region, compression_kind} {}
-
-KVSegmentFileReader::~KVSegmentFileReader() {
-    close();
+      decompressor_{path_.path(), segment_region, compression_kind} {
 }
 
 MemoryMappedRegion KVSegmentFileReader::memory_file_region() const {
-    const auto memory_file = decompressor_.memory_file();
-    if (!memory_file) return MemoryMappedRegion{};
-    return memory_file->region();
-}
-
-void KVSegmentFileReader::reopen_segment() {
-    close();
-
-    // Open decompressor that opens the mapped file in turns
-    decompressor_.open();
+    return decompressor_.memory_file().region();
 }
 
 KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator++() {
     for (auto& decoder : std::array{decoders_.first, decoders_.second}) {
         bool has_next = it_.has_next();
-        ++it_;
+
+        if (decoder) {
+            ++it_;
+        } else {
+            it_.skip_auto();
+        }
 
         if (has_next) {
-            decoder->decode_word(*it_);
-            decoder->check_sanity_with_metadata(path_);
+            if (decoder) {
+                decoder->decode_word(*it_);
+                decoder->check_sanity_with_metadata(path_);
+            }
         } else {
             decoders_.first.reset();
             decoders_.second.reset();
@@ -79,10 +75,11 @@ KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator+=(size_t 
 
 bool operator==(const KVSegmentFileReader::Iterator& lhs, const KVSegmentFileReader::Iterator& rhs) {
     return (lhs.decoders_ == rhs.decoders_) &&
-           (!lhs.decoders_.first || (lhs.it_ == rhs.it_));
+           ((!lhs.decoders_.first && !lhs.decoders_.second) || (lhs.it_ == rhs.it_));
 }
 
 KVSegmentFileReader::Iterator KVSegmentFileReader::begin(std::shared_ptr<Decoder> key_decoder, std::shared_ptr<Decoder> value_decoder) const {
+    SILKWORM_ASSERT(key_decoder || value_decoder);
     auto it = decompressor_.begin();
     if (it == decompressor_.end()) {
         return end();
@@ -91,12 +88,18 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::begin(std::shared_ptr<Decoder
         return end();
     }
 
-    key_decoder->decode_word(*it);
-    key_decoder->check_sanity_with_metadata(path_);
+    if (key_decoder) {
+        key_decoder->decode_word(*it);
+        key_decoder->check_sanity_with_metadata(path_);
+    }
 
-    ++it;
-    value_decoder->decode_word(*it);
-    value_decoder->check_sanity_with_metadata(path_);
+    if (value_decoder) {
+        ++it;
+        value_decoder->decode_word(*it);
+        value_decoder->check_sanity_with_metadata(path_);
+    } else {
+        it.skip_auto();
+    }
 
     return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
 }
@@ -114,6 +117,7 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
     std::optional<Hash> hash_prefix,
     std::shared_ptr<Decoder> key_decoder,
     std::shared_ptr<Decoder> value_decoder) const {
+    SILKWORM_ASSERT(key_decoder || value_decoder);
     auto it = seek_decompressor(offset, hash_prefix);
     if (it == decompressor_.end()) {
         return end();
@@ -122,23 +126,24 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
         return end();
     }
 
-    try {
-        key_decoder->decode_word(*it);
-    } catch (...) {
-        return end();
+    if (key_decoder) {
+        try {
+            key_decoder->decode_word(*it);
+        } catch (...) {
+            return end();
+        }
+        key_decoder->check_sanity_with_metadata(path_);
     }
-    key_decoder->check_sanity_with_metadata(path_);
 
-    ++it;
-    value_decoder->decode_word(*it);
-    value_decoder->check_sanity_with_metadata(path_);
+    if (value_decoder) {
+        ++it;
+        value_decoder->decode_word(*it);
+        value_decoder->check_sanity_with_metadata(path_);
+    } else {
+        it.skip_auto();
+    }
 
     return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
 }
 
-void KVSegmentFileReader::close() {
-    // Close decompressor that closes the mapped file in turns
-    decompressor_.close();
-}
-
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

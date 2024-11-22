@@ -14,18 +14,23 @@
    limitations under the License.
 */
 
-#include "index.hpp"
+#pragma once
 
-namespace silkworm::snapshots {
+#include <cstdint>
 
-void Index::reopen_index() {
-    close_index();
+#include "../../common/util/bitmask_operators.hpp"
 
-    index_ = std::make_unique<rec_split::RecSplitIndex>(path_.path(), region_);
-}
+namespace silkworm::snapshots::seg {
 
-void Index::close_index() {
-    index_.reset();
-}
+enum class CompressionKind : uint8_t {
+    kNone = 0b0,
+    kKeys = 0b1,
+    kValues = 0b10,
+    kAll = 0b11,
+};
 
-}  // namespace silkworm::snapshots
+consteval void enable_bitmask_operator_and(CompressionKind);
+consteval void enable_bitmask_operator_or(CompressionKind);
+consteval void enable_bitmask_operator_not(CompressionKind);
+
+}  // namespace silkworm::snapshots::seg

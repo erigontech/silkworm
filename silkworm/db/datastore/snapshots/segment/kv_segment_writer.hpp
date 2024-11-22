@@ -24,9 +24,9 @@
 
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
-#include "../seg/compressor.hpp"
+#include "seg/compressor.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 class KVSegmentFileWriter {
   public:
@@ -148,4 +148,4 @@ concept KVSegmentWriterConcept =
     std::same_as<TKVSegmentWriter, KVSegmentWriter<typename TKVSegmentWriter::KeyEncoderType, typename TKVSegmentWriter::ValueEncoderType>> ||
     std::derived_from<TKVSegmentWriter, KVSegmentWriter<typename TKVSegmentWriter::KeyEncoderType, typename TKVSegmentWriter::ValueEncoderType>>;
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

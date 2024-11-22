@@ -97,6 +97,7 @@ struct NewPayloadRequest {
     rpc::ExecutionPayload execution_payload;
     std::optional<std::vector<Hash>> expected_blob_versioned_hashes;
     std::optional<evmc::bytes32> parent_beacon_block_root;
+    std::optional<std::vector<Bytes>> execution_requests;
 };
 
 //! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1

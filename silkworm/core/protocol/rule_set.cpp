@@ -202,6 +202,12 @@ ValidationResult RuleSet::validate_block_header(const BlockHeader& header, const
         }
     }
 
+    if (rev < EVMC_PRAGUE) {
+        if (header.requests_hash) {
+            return ValidationResult::kFieldBeforeFork;
+        }
+    }
+
     return validate_difficulty_and_seal(header, *parent);
 }
 

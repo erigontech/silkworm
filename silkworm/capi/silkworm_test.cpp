@@ -819,29 +819,22 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     auto header_index_builder = snapshots::HeaderIndex::make(header_segment_path);
     header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    snapshots::SegmentFileReader header_segment{header_segment_path};
-    header_segment.reopen_segment();
-    snapshots::Index idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    idx_header_hash.reopen_index();
+    snapshots::segment::SegmentFileReader header_segment{header_segment_path};
+    snapshots::rec_split::AccessorIndex idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
 
     auto body_index_builder = snapshots::BodyIndex::make(body_segment_path);
     body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    snapshots::SegmentFileReader body_segment{body_segment_path};
-    body_segment.reopen_segment();
-    snapshots::Index idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    idx_body_number.reopen_index();
+    snapshots::segment::SegmentFileReader body_segment{body_segment_path};
+    snapshots::rec_split::AccessorIndex idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
 
     auto tx_index_builder = snapshots::TransactionIndex::make(body_segment_path, txn_segment_path);
     tx_index_builder.build();
     auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start);
     tx_index_hash_to_block_builder.build();
-    snapshots::SegmentFileReader txn_segment{txn_segment_path};
-    txn_segment.reopen_segment();
-    snapshots::Index idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    idx_txn_hash.reopen_index();
-    snapshots::Index idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
-    idx_txn_hash_2_block.reopen_index();
+    snapshots::segment::SegmentFileReader txn_segment{txn_segment_path};
+    snapshots::rec_split::AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
+    snapshots::rec_split::AccessorIndex idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
 
     const auto header_segment_path_string{header_segment_path.path().string()};
     const auto header_index_path_string{idx_header_hash.path().path().string()};

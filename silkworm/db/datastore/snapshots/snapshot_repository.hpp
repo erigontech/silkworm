@@ -32,7 +32,7 @@
 #include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
 #include "index_builders_factory.hpp"
-#include "segment_and_index.hpp"
+#include "segment_and_accessor_index.hpp"
 #include "snapshot_bundle.hpp"
 
 namespace silkworm::snapshots {
@@ -106,7 +106,7 @@ class SnapshotRepository {
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
-    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
+    std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
         std::array<datastore::EntityName, 3> names,
         Timestamp t) const;
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;

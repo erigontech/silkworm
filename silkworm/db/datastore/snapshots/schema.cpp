@@ -83,7 +83,7 @@ Schema::DomainDef Schema::RepositoryDef::make_domain_schema(datastore::EntityNam
         .sub_dir_name(kDomainKVSegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainKVSegmentFileExt);
-    schema.rec_split_index(kDomainAccessorIndexName)
+    schema.accessor_index(kDomainAccessorIndexName)
         .sub_dir_name(kDomainAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainAccessorIndexFileExt);
@@ -111,7 +111,7 @@ void Schema::RepositoryDef::define_history_schema(datastore::EntityName name, En
         .sub_dir_name(kHistorySegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kHistorySegmentFileExt);
-    schema.rec_split_index(kHistoryAccessorIndexName)
+    schema.accessor_index(kHistoryAccessorIndexName)
         .sub_dir_name(kHistoryAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kHistoryAccessorIndexFileExt);
@@ -136,7 +136,7 @@ void Schema::RepositoryDef::define_inverted_index_schema(datastore::EntityName n
         .sub_dir_name(kInvIdxKVSegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kInvIdxKVSegmentFileExt);
-    schema.rec_split_index(kInvIdxAccessorIndexName)
+    schema.accessor_index(kInvIdxAccessorIndexName)
         .sub_dir_name(kInvIdxAccessorIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kInvIdxAccessorIndexFileExt);

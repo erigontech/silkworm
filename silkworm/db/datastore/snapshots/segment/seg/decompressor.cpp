@@ -341,22 +341,16 @@ Decompressor::Decompressor(
     CompressionKind compression_kind)
     : compressed_path_{std::move(compressed_path)},
       compressed_region_{compressed_region},
-      compression_kind_{compression_kind} {}
-
-Decompressor::~Decompressor() {
-    close();
-}
-
-void Decompressor::open() {
-    compressed_file_ = std::make_unique<MemoryMappedFile>(compressed_path_, compressed_region_);
-    const auto compressed_file_size = compressed_file_->size();
+      compression_kind_{compression_kind},
+      compressed_file_{compressed_path_, compressed_region_} {
+    const auto compressed_file_size = compressed_file_.size();
     if (compressed_file_size < kMinimumFileSize) {
         throw std::runtime_error("compressed file is too short: " + std::to_string(compressed_file_size));
     }
 
-    const auto address = compressed_file_->region().data();
+    const auto address = compressed_file_.region().data();
 
-    compressed_file_->advise_sequential();
+    compressed_file_.advise_sequential();
 
     // Read header from compressed file
     words_count_ = endian::load_big_u64(address);
@@ -390,12 +384,11 @@ void Decompressor::open() {
     SILK_TRACE << "Decompressor words start offset: " << (words_start_ - address) << " words length: " << words_length_
                << " total size: " << compressed_file_size;
 
-    compressed_file_->advise_random();
+    compressed_file_.advise_random();
 }
 
 Decompressor::Iterator Decompressor::begin() const {
-    ensure(compressed_file_ != nullptr, "decompressor closed, call open first");
-    auto read_mode_guard = std::make_shared<ReadModeGuard>(*compressed_file_, ReadMode::kSequential, ReadMode::kRandom);
+    auto read_mode_guard = std::make_shared<ReadModeGuard>(compressed_file_, ReadMode::kSequential, ReadMode::kRandom);
     Iterator it{this, std::move(read_mode_guard)};
     if (it.has_next()) {
         ++it;
@@ -423,10 +416,6 @@ Decompressor::Iterator Decompressor::seek(uint64_t offset, ByteView prefix) cons
         SILK_WARN << "Decompressor::seek invalid offset: " << offset << " what: " << re.what();
         return end();
     }
-}
-
-void Decompressor::close() {
-    compressed_file_.reset();
 }
 
 void Decompressor::read_patterns(ByteView dict) {
@@ -883,7 +872,7 @@ Decompressor::Iterator& Decompressor::Iterator::operator++() {
             next_uncompressed(current_word_);
         }
     } else {
-        *this = make_end(decoder_);
+        *this = make_end();
     }
     return *this;
 }
@@ -895,14 +884,17 @@ uint64_t Decompressor::Iterator::skip_auto() {
 }
 
 bool operator==(const Decompressor::Iterator& lhs, const Decompressor::Iterator& rhs) {
+    if (lhs.decoder_ == nullptr) {
+        return (rhs.decoder_ == nullptr);
+    }
     return (lhs.decoder_ == rhs.decoder_) &&
            (lhs.current_word_offset_ == rhs.current_word_offset_) &&
            (lhs.word_offset_ == rhs.word_offset_) &&
            (lhs.bit_position_ == rhs.bit_position_);
 }
 
-Decompressor::Iterator Decompressor::Iterator::make_end(const Decompressor* decoder) {
-    Iterator it{decoder, {}};
+Decompressor::Iterator Decompressor::Iterator::make_end() {
+    Iterator it{nullptr, {}};
     it.current_word_offset_ = std::numeric_limits<uint64_t>::max();
     it.word_offset_ = std::numeric_limits<uint64_t>::max();
     it.bit_position_ = std::numeric_limits<uint8_t>::max();

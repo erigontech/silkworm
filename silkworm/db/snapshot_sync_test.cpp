@@ -135,7 +135,7 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     auto step_range = StepRange::from_block_num_range(snapshots::test_util::kSampleSnapshotBlockRange);
     SnapshotBundle bundle{
         step_range,
-        make_bundle_data(blocks::make_blocks_repository_schema(), tmp_dir_path, step_range),
+        open_bundle_data(blocks::make_blocks_repository_schema(), tmp_dir_path, step_range),
     };
     auto& repository = snapshot_sync.repository();
     repository.add_snapshot_bundle(std::move(bundle));

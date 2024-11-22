@@ -55,7 +55,7 @@ struct BodySegmentWordDecoder : public Decoder {
 
 static_assert(DecoderConcept<BodySegmentWordDecoder>);
 
-using BodySegmentReader = SegmentReader<BodySegmentWordDecoder>;
-using BodySegmentWriter = SegmentWriter<BodySegmentWordEncoder>;
+using BodySegmentReader = segment::SegmentReader<BodySegmentWordDecoder>;
+using BodySegmentWriter = segment::SegmentWriter<BodySegmentWordEncoder>;
 
 }  // namespace silkworm::snapshots

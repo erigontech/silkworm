@@ -1268,7 +1268,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
     for (const auto& bundle_ptr : repository_.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_rec_split_index(blocks::kHeaderSegmentAndIdxNames);
+        auto segment_and_index = bundle.segment_and_accessor_index(blocks::kHeaderSegmentAndIdxNames);
         block_header = HeaderFindByHashQuery{segment_and_index}.exec(hash);
         if (block_header) break;
     }

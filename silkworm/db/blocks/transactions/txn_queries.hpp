@@ -35,7 +35,7 @@ using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSegmen
 class TransactionBlockNumByTxnHashQuery {
   public:
     TransactionBlockNumByTxnHashQuery(
-        const Index& index,
+        const rec_split::AccessorIndex& index,
         TransactionFindByHashQuery cross_check_query)
         : index_(index),
           cross_check_query_(cross_check_query) {}
@@ -48,7 +48,7 @@ class TransactionBlockNumByTxnHashQuery {
     }
 
   private:
-    const Index& index_;
+    const rec_split::AccessorIndex& index_;
     TransactionFindByHashQuery cross_check_query_;
 };
 
@@ -61,9 +61,9 @@ class TransactionBlockNumByTxnHashRepoQuery {
     std::optional<BlockNum> exec(const Hash& hash) {
         for (const TBundle& bundle_ptr : bundles_) {
             db::blocks::BundleDataRef bundle{**bundle_ptr};
-            const SegmentFileReader& segment = bundle.txn_segment();
-            const Index& idx_txn_hash = bundle.idx_txn_hash();
-            const Index& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block();
+            const segment::SegmentFileReader& segment = bundle.txn_segment();
+            const rec_split::AccessorIndex& idx_txn_hash = bundle.idx_txn_hash();
+            const rec_split::AccessorIndex& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block();
 
             TransactionFindByHashQuery cross_check_query{{segment, idx_txn_hash}};
             TransactionBlockNumByTxnHashQuery query{idx_txn_hash_2_block, cross_check_query};

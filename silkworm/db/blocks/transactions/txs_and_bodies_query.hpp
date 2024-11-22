@@ -27,7 +27,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/db/datastore/snapshots/common/snapshot_path.hpp>
-#include <silkworm/db/datastore/snapshots/seg/decompressor.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/decompressor.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::snapshots {

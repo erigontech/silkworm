@@ -16,7 +16,7 @@
 
 #include "segment_writer.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 SegmentFileWriter::SegmentFileWriter(
     SnapshotPath path,
@@ -42,4 +42,4 @@ void SegmentFileWriter::flush(SegmentFileWriter writer) {
     seg::Compressor::compress(std::move(writer.compressor_));
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

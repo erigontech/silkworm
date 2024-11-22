@@ -22,6 +22,7 @@
 #include <optional>
 
 #include <silkworm/infra/common/memory_mapped_file.hpp>
+#include <utility>
 
 #include "../elias_fano/elias_fano.hpp"
 #include "../segment/kv_segment_reader.hpp"
@@ -104,7 +105,7 @@ class BTreeIndex {
             std::shared_ptr<EliasFanoList32> data_offsets,
             const std::filesystem::path& file_path)
             : kv_segment_{kv_segment},
-              data_offsets_{data_offsets},
+              data_offsets_{std::move(data_offsets)},
               file_path_{file_path} {}
         ~KeyValueIndex() override = default;
 

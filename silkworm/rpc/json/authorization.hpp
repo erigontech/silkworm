@@ -22,12 +22,13 @@
 #include <silkworm/rpc/json/glaze.hpp>
 
 namespace silkworm::rpc {
+
 struct GlazeJsonAuthorization {
-    char chain_id[kInt256HexSize];
-    char address[kAddressHexSize];
-    char v[kInt256HexSize];
-    char r[kInt256HexSize];
-    char s[kInt256HexSize];
+    char chain_id[kInt256HexSize]{};
+    char address[kAddressHexSize]{};
+    char v[kInt256HexSize]{};
+    char r[kInt256HexSize]{};
+    char s[kInt256HexSize]{};
     std::vector<std::string> storage_keys;
     struct glaze {
         using T = GlazeJsonAuthorization;

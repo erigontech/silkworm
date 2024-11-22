@@ -22,16 +22,16 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
+#include <silkworm/infra/common/environment.hpp>
 
 #include "../common/raw_codec.hpp"
 
 namespace silkworm::snapshots::btree {
 
 static bool is_btree_check_against_data_keys_enabled() {
-    const char* env_var = std::getenv("BT_ASSERT_OFFSETS");
-    return env_var ? (std::stoul(env_var) != 0) : false;
+    const auto btree_assert_offsets_var = Environment::get("BT_ASSERT_OFFSETS");
+    return !btree_assert_offsets_var.empty() && (std::stoul(btree_assert_offsets_var) != 0);
 }
 
 BTreeIndex::BTreeIndex(
@@ -76,8 +76,8 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSe
     if (key.compare(seek_key) >= 0) {
         return BTreeIndex::Cursor{
             this,
-            std::move(key),
-            std::move(value),
+            key,
+            value,
             data_index,
             &kv_segment,
         };

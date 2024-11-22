@@ -34,9 +34,13 @@ Bytes extract_deposit(const Bytes& data) {
     size_t offset_index = 0;
     for (size_t i = 0; i < 5; ++i) {
         SILKWORM_ASSERT(offset_index < input.size());
-        const auto offset = static_cast<uint64_t>(intx::be::unsafe::load<intx::uint256>(input.substr(offset_index).data()));
+        const ByteView offset_slice = input.substr(offset_index);
+        SILKWORM_ASSERT(offset_slice.size() >= sizeof(intx::uint256));
+        const auto offset = static_cast<size_t>(intx::be::unsafe::load<intx::uint256>(offset_slice.data()));
         SILKWORM_ASSERT(offset < input.size());
-        const auto size = static_cast<uint64_t>(intx::be::unsafe::load<intx::uint256>(input.substr(offset).data()));
+        const ByteView size_slice = input.substr(offset);
+        SILKWORM_ASSERT(size_slice.size() >= sizeof(intx::uint256));
+        const auto size = static_cast<size_t>(intx::be::unsafe::load<intx::uint256>(size_slice.data()));
 
         if (size > 0) {
             SILKWORM_ASSERT(offset + 32 + size < input.size());

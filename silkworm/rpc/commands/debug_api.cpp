@@ -307,9 +307,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
-            const std::string error_msg = "block not found ";
-            SILK_TRACE << "handle_debug_account_at: core::read_block_by_hash: " << error_msg << request.dump();
-            reply = make_json_error(request, kServerError, error_msg);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -320,41 +318,48 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         SILK_TRACE << "Block number: " << block_number << " #tnx: " << transactions.size();
 
-        const auto chain_config = co_await chain_storage->read_chain_config();
-        auto this_executor = co_await boost::asio::this_coro::executor;
-        auto result = co_await async_task(workers_.executor(), [&]() -> nlohmann::json {
-            auto state = tx->create_state(this_executor, *chain_storage, block_number - 1);
-            auto account_opt = state->read_account(address);
-            account_opt.value_or(silkworm::Account{});
+        const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
+        db::kv::api::DomainPointQuery query_account{
+            .table = db::table::kAccountDomain,
+            .key = db::account_domain_key(address),
+            .timestamp = min_tx_num + tx_index + 1,
+        };
 
-            EVMExecutor executor{block, chain_config, workers_, state};
+        const auto result = co_await tx->domain_get(std::move(query_account));
+        nlohmann::json json_result{};
 
-            uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index);
-            for (uint64_t idx{0}; idx < index; ++idx) {
-                rpc::Transaction txn{transactions[idx]};
-                executor.call(block, txn);
-            }
+        if (!result.success || result.value.empty()) {
+            json_result["balance"] = "0x0";
+            json_result["code"] = "0x";
+            json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+            json_result["nonce"] = "0x0";
+            reply = make_json_content(request, json_result);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
 
-            const auto& ibs = executor.intra_block_state();
+        const auto account{Account::from_encoded_storage_v3(result.value)};
+        if (account) {
+            json_result["nonce"] = rpc::to_quantity(account->nonce);
+            json_result["balance"] = "0x" + intx::to_string(account->balance, 16);
+            json_result["codeHash"] = account->code_hash;
 
-            nlohmann::json json_result;
-            if (ibs.exists(address)) {
-                std::ostringstream oss;
-                oss << std::hex << ibs.get_nonce(address);
-                json_result["nonce"] = "0x" + oss.str();
-                json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address), 16);
-                json_result["codeHash"] = ibs.get_code_hash(address);
-                json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
-            } else {
-                json_result["balance"] = "0x0";
-                json_result["code"] = "0x";
-                json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
-                json_result["nonce"] = "0x0";
-            }
-            return json_result;
-        });
+            db::kv::api::DomainPointQuery query_code{
+                .table = db::table::kCodeDomain,
+                .key = db::account_domain_key(address),
+                .timestamp = min_tx_num + tx_index,
+            };
 
-        reply = make_json_content(request, result);
+            const auto code = co_await tx->domain_get(std::move(query_code));
+            json_result["code"] = "0x" + silkworm::to_hex(code.value);
+        } else {
+            json_result["balance"] = "0x0";
+            json_result["code"] = "0x";
+            json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+            json_result["nonce"] = "0x0";
+        }
+
+        reply = make_json_content(request, json_result);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kServerError, e.what());

@@ -21,10 +21,13 @@
 
 #include "blocks/bodies/body_segment.hpp"
 #include "blocks/headers/header_segment.hpp"
+#include "blocks/schema_config.hpp"
+#include "blocks/transactions/txn_segment.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
-#include "transactions/txn_segment.hpp"
 
 namespace silkworm::snapshots {
+
+using namespace segment;
 
 template <class TSegmentReader, class TSegmentWriter>
 void copy_reader_to_writer(const SegmentFileReader& file_reader, SegmentFileWriter& file_writer) {
@@ -38,24 +41,24 @@ void snapshot_file_recompress(const std::filesystem::path& path) {
     if (!path_opt) throw std::runtime_error{"bad snapshot path"};
 
     SegmentFileReader file_reader{*path_opt};
-    file_reader.reopen_segment();
 
     auto out_path = path;
     out_path.replace_extension("seg2");
     TemporaryDirectory tmp_dir;
     SegmentFileWriter file_writer{*SnapshotPath::parse(out_path), tmp_dir.path()};
 
-    switch (path_opt->type()) {
-        case SnapshotType::headers:
+    auto schema = db::blocks::make_blocks_repository_schema();
+    auto names = schema.entity_name_by_path(*path_opt);
+    if (!names) throw std::runtime_error{"unsupported snapshot type"};
+    datastore::EntityName name = names->second;
+    {
+        if (name == db::blocks::kHeaderSegmentName)
             copy_reader_to_writer<HeaderSegmentReader, HeaderSegmentWriter>(file_reader, file_writer);
-            break;
-        case SnapshotType::bodies:
+        else if (name == db::blocks::kBodySegmentName)
             copy_reader_to_writer<BodySegmentReader, BodySegmentWriter>(file_reader, file_writer);
-            break;
-        case SnapshotType::transactions:
+        else if (name == db::blocks::kTxnSegmentName)
             copy_reader_to_writer<TransactionSegmentReader, TransactionSegmentWriter>(file_reader, file_writer);
-            break;
-        default:
+        else
             throw std::runtime_error{"invalid snapshot type"};
     }
 

@@ -21,10 +21,10 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
@@ -50,7 +50,6 @@ class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
 };
 
 struct SnapshotSyncTest {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     db::test_util::TempChainDataStore context;
     TaskRunner runner;
     NoopStageSchedulerAdapter stage_scheduler;
@@ -115,44 +114,28 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     // Create a sample Header snapshot+index
     snapshots::test_util::SampleHeaderSnapshotFile header_segment_file{tmp_dir_path};
     auto& header_segment_path = header_segment_file.path();
-    SegmentFileReader header_segment{header_segment_path};
     auto header_index_builder = HeaderIndex::make(header_segment_path);
     header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    Index idx_header_hash{header_segment_path.index_file()};
 
     // Create a sample Body snapshot+index
     snapshots::test_util::SampleBodySnapshotFile body_segment_file{tmp_dir_path};
     auto& body_segment_path = body_segment_file.path();
-    SegmentFileReader body_segment{body_segment_path};
     auto body_index_builder = BodyIndex::make(body_segment_path);
     body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    Index idx_body_number{body_segment_path.index_file()};
 
     // Create a sample Transaction snapshot+indexes
     snapshots::test_util::SampleTransactionSnapshotFile txn_segment_file{tmp_dir_path};
     auto& txn_segment_path = txn_segment_file.path();
-    SegmentFileReader txn_segment{txn_segment_path};
     REQUIRE_NOTHROW(TransactionIndex::make(body_segment_path, txn_segment_path).build());
     REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start).build());
-    Index idx_txn_hash{txn_segment_path.related_path(SnapshotType::transactions, kIdxExtension)};
-    Index idx_txn_hash_2_block{txn_segment_path.related_path(SnapshotType::transactions_to_block, kIdxExtension)};
 
     // Add a sample Snapshot bundle to the repository
+    auto step_range = StepRange::from_block_num_range(snapshots::test_util::kSampleSnapshotBlockRange);
     SnapshotBundle bundle{
-        header_segment_path.step_range(),
-        {
-            .header_segment = std::move(header_segment),
-            .idx_header_hash = std::move(idx_header_hash),
-
-            .body_segment = std::move(body_segment),
-            .idx_body_number = std::move(idx_body_number),
-
-            .txn_segment = std::move(txn_segment),
-            .idx_txn_hash = std::move(idx_txn_hash),
-            .idx_txn_hash_2_block = std::move(idx_txn_hash_2_block),
-        },
+        step_range,
+        open_bundle_data(blocks::make_blocks_repository_schema(), tmp_dir_path, step_range),
     };
     auto& repository = snapshot_sync.repository();
     repository.add_snapshot_bundle(std::move(bundle));

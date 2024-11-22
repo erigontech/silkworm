@@ -16,7 +16,6 @@
 
 #include "storage_walker.hpp"
 
-#include <set>
 #include <sstream>
 
 #include <silkworm/core/common/endian.hpp>
@@ -24,7 +23,6 @@
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/split_cursor.hpp>
@@ -178,45 +176,32 @@ Task<void> StorageWalker::walk_of_storages(
 }
 
 Task<void> StorageWalker::storage_range_at(
-    BlockNum block_number,
+    TxnId txn_number,
     const evmc::address& address,
     const evmc::bytes32& start_location,
-    size_t max_result,
     StorageCollector& collector) {
-    auto account_data = co_await transaction_.get_one(db::table::kPlainStateName, address.bytes);
+    auto from{make_key(address, start_location)};
+    auto to = db::code_domain_key(address);
+    increment(to);
 
-    auto account = silkworm::Account::from_encoded_storage(account_data);
-    silkworm::success_or_throw(account);
+    db::kv::api::DomainRangeQuery query{
+        .table = db::table::kStorageDomain,
+        .from_key = from,
+        .to_key = to,
+        .timestamp = txn_number,
+        .ascending_order = true};
+    auto paginated_result = co_await transaction_.domain_range(std::move(query));
+    auto it = co_await paginated_result.begin();
 
-    std::set<StorageItem> storage;
-    AccountCollector walker = [&](const evmc::address& addr, const silkworm::ByteView loc, const silkworm::ByteView data) {
-        if (addr != address) {
-            return false;
-        }
-        if (data.empty()) {
-            return true;
-        }
+    while (const auto value = co_await it.next()) {
+        if (value->second.empty())
+            continue;
 
-        auto hash = hash_of(loc);
-
-        StorageItem storage_item;
-        storage_item.key = loc;
-        storage_item.sec_key = ByteView{hash.bytes};
-        storage_item.value = data;
-
-        if (storage.find(storage_item) != storage.end()) {
-            return true;
-        }
-
-        storage.insert(storage_item);
-        return storage.size() <= max_result;
-    };
-
-    StorageWalker storage_walker{transaction_};
-    co_await storage_walker.walk_of_storages(block_number + 1, address, start_location, account->incarnation, walker);
-
-    for (const auto& item : storage) {
-        collector(item.key, item.sec_key, item.value);
+        const auto key = value->first.substr(20);
+        auto hash = hash_of(key);
+        const auto sec_key = ByteView{hash.bytes};
+        if (!collector(key, sec_key, value->second))
+            co_return;
     }
     co_return;
 }

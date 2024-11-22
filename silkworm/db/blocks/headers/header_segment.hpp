@@ -59,7 +59,7 @@ struct HeaderSegmentWordDecoder : public Decoder {
 
 static_assert(DecoderConcept<HeaderSegmentWordDecoder>);
 
-using HeaderSegmentReader = SegmentReader<HeaderSegmentWordDecoder>;
-using HeaderSegmentWriter = SegmentWriter<HeaderSegmentWordEncoder>;
+using HeaderSegmentReader = segment::SegmentReader<HeaderSegmentWordDecoder>;
+using HeaderSegmentWriter = segment::SegmentWriter<HeaderSegmentWordEncoder>;
 
 }  // namespace silkworm::snapshots

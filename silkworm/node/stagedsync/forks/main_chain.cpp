@@ -483,7 +483,7 @@ std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     std::vector<BlockHeader> headers;
 
-    data_model().for_last_n_headers(limit, [&headers](BlockHeader&& header) {
+    data_model().for_last_n_headers(limit, [&headers](BlockHeader header) {
         headers.emplace_back(std::move(header));
     });
 

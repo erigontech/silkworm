@@ -21,14 +21,13 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/datastore/snapshots/seg/common/varint.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/common/varint.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
 namespace silkworm::snapshots::test_util {
 
 using snapshots::SnapshotPath;
-using snapshots::SnapshotType;
 
 //! Big-endian encoder
 inline size_t encode_big_endian(uint64_t value, Bytes& output) {

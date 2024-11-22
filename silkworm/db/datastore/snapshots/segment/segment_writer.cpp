@@ -16,14 +16,18 @@
 
 #include "segment_writer.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 SegmentFileWriter::SegmentFileWriter(
     SnapshotPath path,
-    const std::filesystem::path& tmp_dir_path)
-    : path_(std::move(path)),
-      compressor_(path_.path(), tmp_dir_path) {
-}
+    const std::filesystem::path& tmp_dir_path,
+    bool is_compressed)
+    : path_{std::move(path)},
+      compressor_{
+          path_.path(),
+          tmp_dir_path,
+          is_compressed ? seg::CompressionKind::kAll : seg::CompressionKind::kNone,
+      } {}
 
 SegmentFileWriter::Iterator& SegmentFileWriter::Iterator::operator=(const SegmentFileWriter::Iterator::value_type& value) {
     *it_ = value->encode_word();
@@ -38,4 +42,4 @@ void SegmentFileWriter::flush(SegmentFileWriter writer) {
     seg::Compressor::compress(std::move(writer.compressor_));
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

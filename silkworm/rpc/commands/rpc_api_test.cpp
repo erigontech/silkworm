@@ -20,13 +20,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
 
 namespace silkworm::rpc::commands {
 
 #ifdef notdef  // commented Temporary wating implementaion local-transaction
-using silkworm::test_util::SetLogVerbosityGuard;
 using test_util::RequestHandlerForTest;
 using test_util::RpcApiTestBase;
 #endif
@@ -84,7 +82,6 @@ static const std::vector<std::string> kSubtestsToIgnore = {
 // Exclude tests from sanitizer builds due to ASAN/TSAN warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
     auto tests_dir = db::test_util::get_tests_dir();
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(tests_dir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
@@ -138,8 +135,8 @@ TEST_CASE("rpc_api io (all files)", "[rpc][rpc_api]") {
     }
 }
 
-TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
+#ifdef SILKWORM_TEST_SKIP
+TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api]") {
     TemporaryDirectory tmp_dir;
     auto context = db::test_util::TestDatabaseContext(tmp_dir);
     RpcApiTestBase<RequestHandlerForTest> test_base{context.mdbx_env()};
@@ -152,6 +149,8 @@ TEST_CASE("rpc_api io (individual)", "[rpc][rpc_api][ignore]") {
         CHECK(nlohmann::json::parse(response) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
     }
 }
+#endif  // SILKWORM_TEST_SKIP
+
 #endif  // SILKWORM_SANITIZE
 
 #endif

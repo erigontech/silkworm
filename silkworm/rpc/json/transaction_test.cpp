@@ -272,4 +272,56 @@ TEST_CASE("serialize EIP-1559 transaction (type=2)", "[rpc][to_json]") {
     })"_json);
 }
 
+TEST_CASE("serialize EIP-7702 transaction (type=4)", "[rpc][to_json]") {
+    silkworm::Transaction txn1{};
+    txn1.type = TransactionType::kSetCode;
+    txn1.chain_id = 1;
+    txn1.nonce = 0;
+    txn1.max_priority_fee_per_gas = 50'000 * kGiga;
+    txn1.max_fee_per_gas = 50'000 * kGiga;
+    txn1.gas_limit = 21'000;
+    txn1.to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address;
+    txn1.value = 31337;
+    txn1.data = *from_hex("001122aabbcc");
+    txn1.odd_y_parity = true;
+    txn1.r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0");
+    txn1.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
+    txn1.set_sender(0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address);
+    txn1.authorizations.emplace_back(Authorization{
+        .chain_id = 100,
+        .address = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
+        .v = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
+        .r = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
+        .s = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0")});
+    nlohmann::json j1 = txn1;
+    CHECK(j1 == R"({
+        "nonce":"0x0",
+        "chainId":"0x1",
+        "yParity":"0x1",
+        "gas":"0x5208",
+        "to":"0x5df9b87991262f6ba471f09758cde1c0fc1de734",
+        "from":"0x007fb8417eb9ad4d958b050fc3720d5b46a2c053",
+        "type":"0x4",
+        "value":"0x7a69",
+        "input":"0x001122aabbcc",
+        "hash":"0xf9ced4c686cdbe2e1c80bbd08bc454d7e2f06aea7dbd36dc27fb354bae9ab874",
+        "accessList":[],
+        "r":"0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0",
+        "s":"0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a",
+        "v":"0x1",
+        "maxPriorityFeePerGas":"0x2d79883d2000",
+        "maxFeePerGas":"0x2d79883d2000",
+        "authorizations":[
+            {
+                "chainId":"0x64",
+                "address":"0x5df9b87991262f6ba471f09758cde1c0fc1de734",
+                "v":"0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0",
+                "r":"0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a",
+                "s":"0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"
+
+            }
+        ]
+    })"_json);
+}
+
 }  // namespace silkworm::rpc

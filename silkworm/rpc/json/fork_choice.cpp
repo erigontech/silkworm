@@ -16,11 +16,6 @@
 
 #include "fork_choice.hpp"
 
-#include <cstring>
-#include <utility>
-
-#include <silkworm/core/common/util.hpp>
-
 #include "types.hpp"
 
 namespace silkworm::rpc {

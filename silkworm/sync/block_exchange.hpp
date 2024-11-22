@@ -32,8 +32,46 @@ namespace silkworm {
 
 class SentryClient;
 
+// public interface for block downloading
+struct IBlockExchange : public ActiveComponent {
+    ~IBlockExchange() override = default;
+
+    // set the initial state of the sync
+    virtual void initial_state(std::vector<BlockHeader> last_headers) = 0;
+
+    enum class TargetTracking : uint8_t {
+        kByAnnouncements,
+        kByNewPayloads
+    };
+
+    // start downloading blocks from current_height
+    virtual void download_blocks(BlockNum current_height, TargetTracking) = 0;
+
+    // set a new target block to download, to use with TargetTracking::kByNewPayloads
+    virtual void new_target_block(std::shared_ptr<Block> block) = 0;
+
+    virtual void stop_downloading() = 0;
+
+    // the queue to receive downloaded blocks
+    using ResultQueue = ConcurrentQueue<Blocks>;
+    virtual ResultQueue& result_queue() = 0;
+
+    // true if the sync is in sync with the network
+    virtual bool in_sync() const = 0;
+
+    // the current height of the sync
+    virtual BlockNum current_height() const = 0;
+
+    /*[[thread_safe]]*/
+    virtual void accept(std::shared_ptr<Message>) = 0;
+
+    virtual const ChainConfig& chain_config() const = 0;
+
+    virtual SentryClient& sentry() const = 0;
+};
+
 //! \brief Implement the logic needed to download headers and bodies
-class BlockExchange : public ActiveComponent {
+class BlockExchange : public IBlockExchange {
   public:
     BlockExchange(
         db::DataStoreRef data_store,
@@ -42,34 +80,21 @@ class BlockExchange : public ActiveComponent {
         bool use_preverified_hashes);
     ~BlockExchange() override;
 
-    // public interface for block downloading
+    void initial_state(std::vector<BlockHeader> last_headers) override;
+    void download_blocks(BlockNum current_height, TargetTracking) override;
+    void new_target_block(std::shared_ptr<Block> block) override;
+    void stop_downloading() override;
 
-    void initial_state(std::vector<BlockHeader> last_headers);  // set the initial state of the sync
+    ResultQueue& result_queue() override;
+    bool in_sync() const override;
+    BlockNum current_height() const override;
 
-    enum class TargetTracking : uint8_t {
-        kByAnnouncements,
-        kByNewPayloads
-    };
-    void download_blocks(BlockNum current_height, TargetTracking);  // start downloading blocks from current_height
+    void accept(std::shared_ptr<Message>) override;
+    /*[[long_running]]*/
+    void execution_loop() override;
 
-    void new_target_block(std::shared_ptr<Block> block);  // set a new target block to download, to use with TargetTracking::kByNewPayloads
-
-    void stop_downloading();  // stop downloading blocks
-
-    using ResultQueue = ConcurrentQueue<Blocks>;
-    ResultQueue& result_queue();  // get the queue where to receive downloaded blocks
-
-    bool in_sync() const;             // true if the sync is in sync with the network
-    BlockNum current_height() const;  // the current height of the sync
-
-    // public generic interface
-
-    void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
-    void execution_loop() override;        /*[[long_running]]*/
-
-    const ChainConfig& chain_config() const;
-    SentryClient& sentry() const;
-
+    const ChainConfig& chain_config() const override;
+    SentryClient& sentry() const override;
     BlockNum last_pre_validated_block() const;
 
   private:

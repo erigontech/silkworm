@@ -30,7 +30,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/test_util/null_stream.hpp>
-#include <silkworm/db/datastore/snapshots/seg/decompressor.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/decompressor.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -40,7 +40,6 @@ namespace silkworm::snapshots {
 using Catch::Matchers::Message;
 namespace test = test_util;
 using silkworm::test_util::null_stream;
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TemporaryFile;
 using namespace snapshots::seg;
 
@@ -216,81 +215,55 @@ static test::TemporarySnapshotFile create_empty_snapshot_file(const TemporaryDir
     return create_snapshot_file(tmp_dir, {}, {});
 }
 
-static test::TemporarySnapshotFile create_nonempty_snapshot_file(const TemporaryDirectory& tmp_dir) {
-    return create_snapshot_file(tmp_dir, {{0, {}}}, {{0, 1}});
-}
-
-TEST_CASE("Decompressor::Decompressor from path", "[silkworm][node][seg][decompressor]") {
-    const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
-    Decompressor decoder{tmp_file_path};
-    CHECK(!decoder.is_open());
-    CHECK(decoder.compressed_path() == tmp_file_path);
-    CHECK(decoder.words_count() == 0);
-    CHECK(decoder.empty_words_count() == 0);
-}
-
 TEST_CASE("Decompressor::Decompressor from memory", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
-    test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
+    test::TemporarySnapshotFile tmp_snapshot = create_empty_snapshot_file(tmp_dir);
     MemoryMappedFile mmf{tmp_snapshot.fs_path()};
     Decompressor decoder_from_memory{tmp_snapshot.fs_path(), mmf.region()};
-    CHECK(!decoder_from_memory.is_open());
     CHECK(decoder_from_memory.compressed_path() == tmp_snapshot.fs_path());
     CHECK(decoder_from_memory.words_count() == 0);
     CHECK(decoder_from_memory.empty_words_count() == 0);
 }
 
 TEST_CASE("Decompressor::open invalid files", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("empty file") {
         TemporaryFile tmp_file;
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_AS(decoder.open(), std::runtime_error);
+        CHECK_THROWS_AS((Decompressor{tmp_file.path()}), std::runtime_error);
     }
     SECTION("compressed file is too short: 1") {
         TemporaryFile tmp_file;
         tmp_file.write(*silkworm::from_hex("0"));
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("compressed file is too short: 1"));
+        CHECK_THROWS_MATCHES((Decompressor{tmp_file.path()}), std::runtime_error, Message("compressed file is too short: 1"));
     }
     SECTION("compressed file is too short: 31") {
         TemporaryFile tmp_file;
         tmp_file.write(*silkworm::from_hex("0x00000000000000000000000000000000000000000000000000000000000000"));
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("compressed file is too short: 31"));
+        CHECK_THROWS_MATCHES((Decompressor{tmp_file.path()}), std::runtime_error, Message("compressed file is too short: 31"));
     }
     SECTION("invalid pattern_dict_length for compressed file size: 32") {
         TemporaryFile tmp_file1;
         tmp_file1.write(*silkworm::from_hex("0x000000000000000C000000000000000400000000000000150309000000000000"));
-        Decompressor decoder1{tmp_file1.path()};
-        CHECK_THROWS_MATCHES(decoder1.open(), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 32"));
+        CHECK_THROWS_MATCHES((Decompressor{tmp_file1.path()}), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 32"));
         TemporaryFile tmp_file2;
         tmp_file2.write(*silkworm::from_hex("0x0000000000000000000000000000000000000000000000010000000000000000"));
-        Decompressor decoder2{tmp_file2.path()};
-        CHECK_THROWS_MATCHES(decoder2.open(), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 32"));
+        CHECK_THROWS_MATCHES((Decompressor{tmp_file2.path()}), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 32"));
     }
     SECTION("invalid pattern_dict_length for compressed file size: 34") {
         TemporaryFile tmp_file;
         tmp_file.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000016000000000000000003ff"));
-        Decompressor decoder{tmp_file.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 34"));
+        CHECK_THROWS_MATCHES((Decompressor{tmp_file.path()}), std::runtime_error, Message("invalid pattern_dict_length for compressed file size: 34"));
     }
     SECTION("invalid position_dict_length for compressed file size: 34") {
         TemporaryFile tmp_file1;
         tmp_file1.write(*silkworm::from_hex("0x000000000000000C0000000000000004000000000000000000000000000000160309"));
-        Decompressor decoder1{tmp_file1.path()};
-        CHECK_THROWS_MATCHES(decoder1.open(), std::runtime_error, Message("invalid position_dict_length for compressed file size: 34"));
+        CHECK_THROWS_MATCHES((Decompressor{tmp_file1.path()}), std::runtime_error, Message("invalid position_dict_length for compressed file size: 34"));
         TemporaryFile tmp_file2;
         tmp_file2.write(*silkworm::from_hex("0x000000000000000C00000000000000040000000000000000000000000000001603ff"));
-        Decompressor decoder2{tmp_file2.path()};
-        CHECK_THROWS_MATCHES(decoder2.open(), std::runtime_error, Message("invalid position_dict_length for compressed file size: 34"));
+        CHECK_THROWS_MATCHES((Decompressor{tmp_file2.path()}), std::runtime_error, Message("invalid position_dict_length for compressed file size: 34"));
     }
 }
 
 TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
 
     std::map<std::string, test::SnapshotHeader> header_tests{
@@ -340,51 +313,20 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][node][seg][decompressor]
         SECTION(test_name) {
             test::TemporarySnapshotFile tmp_snapshot{tmp_dir.path(), test::SampleHeaderSnapshotFile::kHeadersSnapshotFileName, header};
             Decompressor decoder{tmp_snapshot.fs_path()};
-            CHECK_NOTHROW(decoder.open());
-            CHECK(decoder.is_open());
         }
     }
 }
 
-TEST_CASE("Decompressor::begin", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
-    TemporaryDirectory tmp_dir;
-    test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
-    Decompressor decoder{tmp_snapshot.fs_path()};
-    CHECK_NOTHROW(decoder.open());
-
-    SECTION("failure after close") {
-        decoder.close();
-        CHECK_THROWS_AS(decoder.begin(), std::logic_error);
-    }
-}
-
-TEST_CASE("Decompressor::close", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
-    TemporaryDirectory tmp_dir;
-    test::TemporarySnapshotFile tmp_snapshot = create_nonempty_snapshot_file(tmp_dir);
-    Decompressor decoder{tmp_snapshot.fs_path()};
-    REQUIRE_NOTHROW(decoder.open());
-    REQUIRE(decoder.is_open());
-
-    SECTION("close after open") {
-        CHECK_NOTHROW(decoder.close());
-        CHECK(!decoder.is_open());
-    }
-
-    SECTION("close after close") {
-        CHECK_NOTHROW(decoder.close());
-        CHECK_NOTHROW(decoder.close());
-    }
-}
-
 TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot = create_empty_snapshot_file(tmp_dir);
     Decompressor decoder{tmp_snapshot.fs_path()};
-    CHECK_NOTHROW(decoder.open());
 
+    SECTION("init") {
+        CHECK(decoder.compressed_path() == tmp_snapshot.fs_path());
+        CHECK(decoder.words_count() == 0);
+        CHECK(decoder.empty_words_count() == 0);
+    }
     SECTION("data_size") {
         CHECK(decoder.make_iterator().data_size() == 0);
     }
@@ -440,11 +382,9 @@ static const Bytes kLoremIpsumDict{*from_hex(
     "73742036340d6c61626f72756d203635")};
 
 TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
-    CHECK_NOTHROW(decoder.open());
 
     {
         size_t i{0};
@@ -467,11 +407,9 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][
 }
 
 TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
-    CHECK_NOTHROW(decoder.open());
 
     {
         size_t i{0};
@@ -494,11 +432,9 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]
 }
 
 TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompressor]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
-    CHECK_NOTHROW(decoder.open());
 
     {
         size_t i{0};

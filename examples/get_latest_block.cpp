@@ -59,12 +59,12 @@ Task<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
     co_return block_height;
 }
 
-std::optional<uint64_t> get_latest_block(boost::asio::io_context& io_context, ethdb::Database& db) {
+std::optional<uint64_t> get_latest_block(boost::asio::io_context& ioc, ethdb::Database& db) {
     auto result = boost::asio::co_spawn(
-        io_context,
+        ioc,
         [&]() -> Task<std::optional<uint64_t>> {
             const auto block_number = co_await latest_block(db);
-            io_context.stop();
+            ioc.stop();
             co_return block_number;
         },
         boost::asio::use_future);
@@ -92,17 +92,17 @@ int main(int argc, char* argv[]) {
         // TODO(canepat): handle also local (shared-memory) database
         ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
-        auto* io_context = context.io_context();
+        auto* ioc = context.ioc();
         auto* grpc_context = context.grpc_context();
 
         kv::api::CoherentStateCache state_cache;
         auto channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
-        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(*io_context, channel, *grpc_context)};
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(*ioc, channel, *grpc_context)};
         auto database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), &state_cache, *grpc_context, channel);
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 
-        const auto latest_block_number = get_latest_block(*io_context, *database);
+        const auto latest_block_number = get_latest_block(*ioc, *database);
         if (latest_block_number) {
             std::cout << "latest_block_number: " << latest_block_number.value() << "\n";
         }

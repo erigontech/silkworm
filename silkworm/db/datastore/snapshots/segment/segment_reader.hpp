@@ -34,9 +34,9 @@
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
 #include "../common/util/iterator/iterator_read_into_vector.hpp"
-#include "../seg/decompressor.hpp"
+#include "seg/decompressor.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 /**
  * SegmentFileReader is a type-safe wrapper on top of a seg::Decompressor.
@@ -86,22 +86,19 @@ class SegmentFileReader {
 
     explicit SegmentFileReader(
         SnapshotPath path,
-        std::optional<MemoryMappedRegion> segment_region = std::nullopt);
-    ~SegmentFileReader();
+        std::optional<MemoryMappedRegion> segment_region = std::nullopt,
+        bool is_compressed = true);
 
     SegmentFileReader(SegmentFileReader&&) = default;
     SegmentFileReader& operator=(SegmentFileReader&&) = default;
 
     const SnapshotPath& path() const { return path_; }
-    std::filesystem::path fs_path() const { return path_.path(); }
+    const std::filesystem::path& fs_path() const { return path_.path(); }
 
     bool empty() const { return item_count() == 0; }
     size_t item_count() const { return decompressor_.words_count(); }
 
     MemoryMappedRegion memory_file_region() const;
-
-    void reopen_segment();
-    void close();
 
     Iterator begin(std::shared_ptr<Decoder> decoder) const;
     Iterator end() const;
@@ -201,4 +198,4 @@ concept SegmentReaderConcept =
     std::same_as<TSegmentReader, SegmentReader<typename TSegmentReader::DecoderType>> ||
     std::derived_from<TSegmentReader, SegmentReader<typename TSegmentReader::DecoderType>>;
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

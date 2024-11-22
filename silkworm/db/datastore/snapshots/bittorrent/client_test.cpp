@@ -147,8 +147,6 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
 }
 
 TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     TemporaryDirectory tmp_dir;
     BitTorrentSettings settings;
     settings.repository_path = tmp_dir.path();
@@ -170,8 +168,6 @@ TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]")
 }
 
 TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     TemporaryDirectory tmp_dir;
     BitTorrentSettings settings;
     settings.repository_path = tmp_dir.path();
@@ -228,8 +224,6 @@ TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]"
 }
 
 TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     TemporaryDirectory tmp_dir;
     BitTorrentSettings settings;
     settings.repository_path = tmp_dir.path();

@@ -38,6 +38,11 @@ TEST_CASE("Environment") {
         Environment::set_pre_verified_hashes_disabled();
         REQUIRE(Environment::are_pre_verified_hashes_disabled());
     }
+
+    SECTION("get env var") {
+        CHECK(Environment::get("UNEXISTING_ENV_VAR").empty());
+        CHECK_FALSE(Environment::get("PATH").empty());
+    }
 }
 
 }  // namespace silkworm

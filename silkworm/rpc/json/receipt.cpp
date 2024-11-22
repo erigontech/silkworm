@@ -47,6 +47,13 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
     json["logs"] = receipt.logs;
     json["logsBloom"] = "0x" + silkworm::to_hex(full_view(receipt.bloom));
     json["status"] = to_quantity(receipt.success ? 1 : 0);
+
+    if (receipt.blob_gas_used) {
+        json["blobGasUsed"] = to_quantity(*(receipt.blob_gas_used));
+    }
+    if (receipt.blob_gas_price) {
+        json["blobGasPrice"] = to_quantity(*(receipt.blob_gas_price));
+    }
 }
 
 void from_json(const nlohmann::json& json, Receipt& receipt) {

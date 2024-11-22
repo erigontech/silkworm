@@ -215,13 +215,18 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         ++receipt_it;
     }
 
+    std::vector<Log> logs;
+    logs.reserve(receipts.size());
+    for (const auto& receipt : receipts) {
+        std::ranges::copy(receipt.logs, std::back_inserter(logs));
+    }
     state_.clear_journal_and_substate();
-    rule_set_.finalize(state_, block);
+    const auto finalization_result = rule_set_.finalize(state_, block, evm_, logs);
     state_.finalize_transaction(rev);
 
     notify_block_execution_end(block);
 
-    return ValidationResult::kOk;
+    return finalization_result;
 }
 
 ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipts) noexcept {

@@ -18,17 +18,12 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <agrpc/grpc_context.hpp>
-#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/io_context.hpp>
 #include <evmc/evmc.hpp>
-#include <gsl/pointers>
-#include <nlohmann/json.hpp>
 
-#include <silkworm/interfaces/execution/execution.grpc.pb.h>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/rpc/ethbackend/backend.hpp>
@@ -38,7 +33,7 @@ namespace silkworm::rpc::ethbackend {
 
 class RemoteBackEnd final : public BackEnd {
   public:
-    RemoteBackEnd(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel,
+    RemoteBackEnd(boost::asio::io_context& ioc, const std::shared_ptr<grpc::Channel>& channel,
                   agrpc::GrpcContext& grpc_context);
     RemoteBackEnd(boost::asio::io_context::executor_type executor,
                   std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,

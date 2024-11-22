@@ -29,22 +29,23 @@
 #include "blocks/bodies/body_queries.hpp"
 #include "blocks/bodies/body_segment_collation.hpp"
 #include "blocks/headers/header_segment_collation.hpp"
+#include "blocks/schema_config.hpp"
+#include "blocks/transactions/txn_segment_collation.hpp"
 #include "datastore/segment_collation.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
 #include "datastore/snapshots/segment/segment_writer.hpp"
 #include "datastore/snapshots/snapshot_bundle.hpp"
 #include "prune_mode.hpp"
-#include "transactions/txn_segment_collation.hpp"
 
 namespace silkworm::db {
 
 using namespace silkworm::snapshots;
 
 struct FreezerResult : public DataMigrationResult {
-    SnapshotBundle bundle;
+    SnapshotBundlePaths bundle_paths;
 
-    explicit FreezerResult(SnapshotBundle bundle1)
-        : bundle(std::move(bundle1)) {}
+    explicit FreezerResult(SnapshotBundlePaths bundle_paths1)
+        : bundle_paths(std::move(bundle_paths1)) {}
     ~FreezerResult() override = default;
 };
 
@@ -87,22 +88,20 @@ std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
     return {};
 }
 
-static const SegmentCollation& get_collation(SnapshotType type) {
+static const SegmentCollation& get_collation(datastore::EntityName name) {
     static HeaderSegmentCollation header_collation;
     static BodySegmentCollation body_collation;
     static TransactionSegmentCollation txn_collation;
 
-    switch (type) {
-        case SnapshotType::headers:
-            return header_collation;
-        case SnapshotType::bodies:
-            return body_collation;
-        case SnapshotType::transactions:
-            return txn_collation;
-        default:
-            SILKWORM_ASSERT(false);
-            throw std::runtime_error("invalid type");
-    }
+    if (name == blocks::kHeaderSegmentName)
+        return header_collation;
+    if (name == blocks::kBodySegmentName)
+        return body_collation;
+    if (name == blocks::kTxnSegmentName)
+        return txn_collation;
+
+    SILKWORM_ASSERT(false);
+    throw std::runtime_error("invalid name");
 }
 
 std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrationCommand> command) {
@@ -110,16 +109,15 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
     auto range = freezer_command.range;
     auto step_range = StepRange::from_block_num_range(range);
 
-    auto bundle = snapshots_.bundle_factory().make(tmp_dir_path_, step_range);
-    for (auto& segment_ref : bundle.segments()) {
-        auto path = segment_ref.get().path();
-        SegmentFileWriter file_writer{path, tmp_dir_path_};
+    SnapshotBundlePaths bundle{snapshots_.schema(), tmp_dir_path_, step_range};
+    for (const auto& [name, path] : bundle.segment_paths()) {
+        segment::SegmentFileWriter file_writer{path, tmp_dir_path_};
         {
             auto db_tx = db_access_.start_ro_tx();
-            auto& freezer = get_collation(path.type());
+            auto& freezer = get_collation(name);
             freezer.copy(db_tx, freezer_command, file_writer);
         }
-        SegmentFileWriter::flush(std::move(file_writer));
+        segment::SegmentFileWriter::flush(std::move(file_writer));
     }
 
     return std::make_shared<FreezerResult>(std::move(bundle));
@@ -127,16 +125,15 @@ std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrat
 
 void Freezer::index(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
-    snapshots_.build_indexes(bundle);
+    snapshots_.build_indexes(freezer_result.bundle_paths);
 }
 
 void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<FreezerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
+    auto& bundle = freezer_result.bundle_paths;
     move_files(bundle.files(), snapshots_.path());
 
-    auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.step_range());
+    SnapshotBundle final_bundle{snapshots_.schema(), snapshots_.path(), bundle.step_range()};
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
 }
 
@@ -169,9 +166,9 @@ Task<void> Freezer::cleanup() {
 }
 
 void Freezer::prune_collations(RWTxn& db_tx, BlockNumRange range) const {
-    get_collation(SnapshotType::transactions).prune(db_tx, range);
-    get_collation(SnapshotType::bodies).prune(db_tx, range);
-    get_collation(SnapshotType::headers).prune(db_tx, range);
+    get_collation(blocks::kHeaderSegmentName).prune(db_tx, range);
+    get_collation(blocks::kBodySegmentName).prune(db_tx, range);
+    get_collation(blocks::kTxnSegmentName).prune(db_tx, range);
 }
 
 }  // namespace silkworm::db

@@ -56,7 +56,7 @@ class StateChangesStream {
 
   private:
     //! Asio execution scheduler running the register-and-receive asynchronous loop
-    boost::asio::io_context& scheduler_;
+    boost::asio::io_context& ioc_;
 
     //! The entry point as KV API user
     api::Client& client_;

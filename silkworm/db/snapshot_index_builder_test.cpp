@@ -19,10 +19,10 @@
 
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -30,11 +30,9 @@
 namespace silkworm::snapshots {
 
 namespace test = test_util;
-using silkworm::test_util::SetLogVerbosityGuard;
 using namespace Catch::Matchers;
 
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot_file{tmp_dir.path(), "v1-014500-015000-headers.seg"};
     auto header_index = HeaderIndex::make(tmp_snapshot_file.path());
@@ -43,7 +41,6 @@ TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
 
 // This unit test fails on Windows with error: SIGSEGV - Segmentation violation signal
 TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};
     auto body_index = BodyIndex::make(body_segment_file.path());
@@ -52,7 +49,6 @@ TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
 }
 
 TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     constexpr const char* kBodiesSnapshotFileName{"v1-014500-015000-bodies.seg"};
     constexpr const char* kTransactionsSnapshotFileName{"v1-014500-015000-transactions.seg"};
@@ -70,7 +66,6 @@ TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][in
 }
 
 TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     constexpr const char* kTransactionsSnapshotFileName{"v1-015000-015500-transactions.seg"};
 
@@ -186,7 +181,6 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 }
 
 TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
-    SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryDirectory tmp_dir;
     test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};
     auto& body_segment_path = body_segment_file.path();

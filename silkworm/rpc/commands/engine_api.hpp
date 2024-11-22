@@ -19,7 +19,6 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 #include <tl/expected.hpp>
 
@@ -44,11 +43,11 @@ class EngineRpcApi {
                  ethbackend::BackEnd* backend,
                  ApplicationInfo build_info = {})
         : database_{database}, engine_{engine}, backend_{backend}, build_info_{std::move(build_info)} {}
-    explicit EngineRpcApi(boost::asio::io_context& io_context, ApplicationInfo build_info = {})
+    explicit EngineRpcApi(boost::asio::io_context& ioc, ApplicationInfo build_info = {})
         : EngineRpcApi(
-              must_use_private_service<ethdb::Database>(io_context),
-              must_use_shared_service<engine::ExecutionEngine>(io_context),
-              must_use_private_service<ethbackend::BackEnd>(io_context),
+              must_use_private_service<ethdb::Database>(ioc),
+              must_use_shared_service<engine::ExecutionEngine>(ioc),
+              must_use_private_service<ethbackend::BackEnd>(ioc),
               std::move(build_info)) {}
     virtual ~EngineRpcApi() = default;
 
@@ -62,11 +61,13 @@ class EngineRpcApi {
     Task<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_v3(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_get_payload_v4(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_new_payload_v3(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_engine_new_payload_v4(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_engine_forkchoice_updated_v3(const nlohmann::json& request, nlohmann::json& reply);

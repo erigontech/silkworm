@@ -17,11 +17,10 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(bittorrent)
-add_subdirectory(seg)
+add_subdirectory(segment/seg)
 
 find_package(absl REQUIRED COMPONENTS strings)
 find_package(Boost REQUIRED COMPONENTS headers url) # headers for signals2
-find_package(magic_enum REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 
@@ -29,7 +28,6 @@ find_package(OpenSSL REQUIRED)
 set(LIBS_PRIVATE
     absl::strings
     Boost::headers
-    magic_enum::magic_enum
     OpenSSL::Crypto
     silkworm_snapshots_seg
 )

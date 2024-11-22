@@ -21,7 +21,6 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/asio/dispatch.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/infra/common/log.hpp>
@@ -43,7 +42,7 @@ std::tuple<std::string, std::string> Server::parse_endpoint(const std::string& t
 
 Server::Server(const std::string& end_point,
                RequestHandlerFactory&& handler_factory,
-               boost::asio::io_context& io_context,
+               boost::asio::io_context& ioc,
                WorkerPool& workers,
                std::vector<std::string> allowed_origins,
                std::optional<std::string> jwt_secret,
@@ -51,7 +50,7 @@ Server::Server(const std::string& end_point,
                bool ws_compression,
                bool http_compression)
     : handler_factory_{std::move(handler_factory)},
-      acceptor_{io_context},
+      acceptor_{ioc},
       allowed_origins_{std::move(allowed_origins)},
       jwt_secret_(std::move(jwt_secret)),
       use_websocket_{use_websocket},
@@ -76,7 +75,7 @@ void Server::start() {
 }
 
 Task<void> Server::run() {
-    auto this_executor = co_await ThisTask::executor;
+    auto this_executor = co_await boost::asio::this_coro::executor;
     try {
         acceptor_.listen();
         while (acceptor_.is_open()) {

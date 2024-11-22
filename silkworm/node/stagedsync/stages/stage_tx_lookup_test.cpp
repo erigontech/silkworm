@@ -28,7 +28,6 @@ namespace silkworm {
 using namespace silkworm::db;
 using namespace evmc::literals;
 using db::test_util::TempChainDataStore;
-using silkworm::test_util::SetLogVerbosityGuard;
 
 stagedsync::TxLookup make_tx_lookup_stage(
     stagedsync::SyncContext* sync_context,
@@ -42,8 +41,6 @@ stagedsync::TxLookup make_tx_lookup_stage(
 }
 
 TEST_CASE("Stage Transaction Lookups") {
-    SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     const evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
     const evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 

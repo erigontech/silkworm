@@ -39,7 +39,6 @@ using namespace silkworm::db;
 
 using silkworm::execution::api::ValidChain;
 using silkworm::stagedsync::test_util::make_stages_factory;
-using silkworm::test_util::SetLogVerbosityGuard;
 using silkworm::test_util::TaskRunner;
 
 class HeaderChainForTest : public HeaderChain {
@@ -69,7 +68,7 @@ class DummyRuleSet : public protocol::RuleSet {
 
     void initialize(EVM&) override {}
 
-    void finalize(IntraBlockState&, const Block&) override {}
+    ValidationResult finalize(IntraBlockState&, const Block&, EVM&, const std::vector<Log>&) override { return ValidationResult::kOk; }
 
   protected:
     ValidationResult validate_difficulty_and_seal(const BlockHeader&, const BlockHeader&) override {
@@ -78,8 +77,6 @@ class DummyRuleSet : public protocol::RuleSet {
 };
 
 TEST_CASE("Headers receiving and saving") {
-    SetLogVerbosityGuard log_guard(log::Level::kNone);
-
     TaskRunner runner;
 
     db::test_util::TempChainDataStore context;

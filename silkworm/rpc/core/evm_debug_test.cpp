@@ -25,7 +25,6 @@
 
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
-#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
@@ -44,7 +43,7 @@ struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     db::test_util::MockTransaction transaction;
     WorkerPool workers{1};
     StringWriter writer{4096};
-    boost::asio::any_io_executor io_executor{io_context_.get_executor()};
+    boost::asio::any_io_executor io_executor{ioc_.get_executor()};
     json::Stream stream{io_executor, writer};
     test::BackEndMock backend;
     RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};

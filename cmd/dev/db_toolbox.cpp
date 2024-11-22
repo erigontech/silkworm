@@ -603,7 +603,7 @@ void unwind(EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
 
     db::DataModelFactory data_model_factory{data_store.ref()};
 
-    boost::asio::io_context io_context;
+    boost::asio::io_context ioc;
 
     NodeSettings settings{
         .data_directory = std::move(data_directory),
@@ -611,7 +611,7 @@ void unwind(EnvConfig& config, BlockNum unwind_point, bool remove_blocks) {
         .chain_config = chain_config};
 
     stagedsync::TimerFactory log_timer_factory = [&](std::function<bool()> callback) {
-        return std::make_shared<Timer>(io_context.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
+        return std::make_shared<Timer>(ioc.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
     };
 
     stagedsync::ExecutionPipeline stage_pipeline{
@@ -2238,17 +2238,17 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
         ~StageSchedulerAdapter() override = default;
 
         void execution_loop() override {
-            auto work_guard = boost::asio::make_work_guard(io_context_.get_executor());
-            io_context_.run();
+            auto work_guard = boost::asio::make_work_guard(ioc_.get_executor());
+            ioc_.run();
         }
 
         bool stop() override {
-            io_context_.stop();
+            ioc_.stop();
             return ActiveComponent::stop();
         }
 
         Task<void> schedule(std::function<void(RWTxn&)> callback) override {
-            co_await concurrency::spawn_task(io_context_, [this, c = std::move(callback)]() -> Task<void> {
+            co_await concurrency::spawn_task(ioc_, [this, c = std::move(callback)]() -> Task<void> {
                 auto tx = this->db_access_.start_rw_tx();
                 c(tx);
                 tx.commit_and_stop();
@@ -2257,7 +2257,7 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
         }
 
       private:
-        boost::asio::io_context io_context_;
+        boost::asio::io_context ioc_;
         RWAccess db_access_;
     };
 
@@ -2267,10 +2267,13 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
     };
     StageSchedulerAdapter stage_scheduler{data_store.chaindata_rw()};
 
-    auto& repository = data_store.ref().repository;
-    repository.reopen_folder();
-
-    Freezer freezer{data_store.chaindata(), repository, stage_scheduler, data_dir.temp().path(), keep_blocks};
+    Freezer freezer{
+        data_store.chaindata(),
+        data_store.ref().repository,
+        stage_scheduler,
+        data_dir.temp().path(),
+        keep_blocks,
+    };
 
     test_util::TaskRunner runner;
     runner.run(freezer.exec() || stage_scheduler.async_run("StageSchedulerAdapter"));

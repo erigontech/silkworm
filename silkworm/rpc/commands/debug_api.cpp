@@ -25,23 +25,18 @@
 
 #include <evmc/evmc.hpp>
 
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
-#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/account_dumper.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_debug.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
-#include <silkworm/rpc/ethdb/walk.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/types/block.hpp>
@@ -50,9 +45,8 @@
 
 namespace silkworm::rpc::commands {
 
-using rpc::ethdb::walk;
-
-static constexpr int16_t kAccountRangeMaxResults{256};
+static constexpr int16_t kAccountRangeMaxResults{8192};
+static constexpr int16_t kAccountRangeMaxResultsWithStorage{256};
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_accountrange
 Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply) {
@@ -72,8 +66,15 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     silkworm::Bytes start_key(start_key_array.data(), start_key_array.size());
     const auto start_address = bytes_to_address(start_key);
 
-    if (max_result > kAccountRangeMaxResults || max_result <= 0) {
-        max_result = kAccountRangeMaxResults;
+    // Determine how many results we will dump
+    if (exclude_storage) {
+        if (max_result > kAccountRangeMaxResults || max_result <= 0) {
+            max_result = kAccountRangeMaxResults;
+        }
+    } else {
+        if (max_result > kAccountRangeMaxResultsWithStorage || max_result <= 0) {
+            max_result = kAccountRangeMaxResultsWithStorage;
+        }
     }
 
     SILK_TRACE << "block_number_or_hash: " << block_number_or_hash
@@ -127,7 +128,13 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
         const auto start_block_number = co_await core::get_block_number(start_block_id, *tx);
         const auto end_block_number = co_await core::get_block_number(end_block_id, *tx);
 
-        const auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number);
+        if (end_block_number < start_block_number) {
+            std::stringstream msg;
+            msg << "start block (" << start_block_number << ") must be less or equal to end block (" << end_block_number << ")";
+            throw std::invalid_argument(msg.str());
+        }
+
+        const auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number + 1);
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -173,7 +180,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
         if (!end_block_number) {
             throw std::invalid_argument("end block " + silkworm::to_hex(end_hash) + " not found");
         }
-        const auto addresses = co_await get_modified_accounts(*tx, *start_block_number, *end_block_number);
+        const auto addresses = co_await get_modified_accounts(*tx, *start_block_number, *end_block_number + 1);
 
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
@@ -226,9 +233,6 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-
-        auto block_number = block_with_hash->block.header.number - 1;
-
         nlohmann::json storage({});
         silkworm::Bytes next_key;
         std::uint16_t count{0};
@@ -249,8 +253,12 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
 
             return count++ < max_result;
         };
+
+        const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
+        const auto from_tx_num = min_tx_num + tx_index + 1;  // for system txn in the beginning of block
+
         StorageWalker storage_walker{*tx};
-        co_await storage_walker.storage_range_at(block_number, address, start_key, max_result, collector);
+        co_await storage_walker.storage_range_at(from_tx_num, address, start_key, collector);
 
         nlohmann::json result = {{"storage", storage}};
         if (next_key.empty()) {
@@ -299,9 +307,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
-            const std::string error_msg = "block not found ";
-            SILK_TRACE << "handle_debug_account_at: core::read_block_by_hash: " << error_msg << request.dump();
-            reply = make_json_error(request, kServerError, error_msg);
+            reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
@@ -312,41 +318,48 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         SILK_TRACE << "Block number: " << block_number << " #tnx: " << transactions.size();
 
-        const auto chain_config = co_await chain_storage->read_chain_config();
-        auto this_executor = co_await boost::asio::this_coro::executor;
-        auto result = co_await async_task(workers_.executor(), [&]() -> nlohmann::json {
-            auto state = tx->create_state(this_executor, *chain_storage, block_number - 1);
-            auto account_opt = state->read_account(address);
-            account_opt.value_or(silkworm::Account{});
+        const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
+        db::kv::api::DomainPointQuery query_account{
+            .table = db::table::kAccountDomain,
+            .key = db::account_domain_key(address),
+            .timestamp = min_tx_num + tx_index + 1,
+        };
 
-            EVMExecutor executor{block, chain_config, workers_, state};
+        const auto result = co_await tx->domain_get(std::move(query_account));
+        nlohmann::json json_result{};
 
-            uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index);
-            for (uint64_t idx{0}; idx < index; ++idx) {
-                rpc::Transaction txn{transactions[idx]};
-                executor.call(block, txn);
-            }
+        if (!result.success || result.value.empty()) {
+            json_result["balance"] = "0x0";
+            json_result["code"] = "0x";
+            json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+            json_result["nonce"] = "0x0";
+            reply = make_json_content(request, json_result);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
 
-            const auto& ibs = executor.intra_block_state();
+        const auto account{Account::from_encoded_storage_v3(result.value)};
+        if (account) {
+            json_result["nonce"] = rpc::to_quantity(account->nonce);
+            json_result["balance"] = "0x" + intx::to_string(account->balance, 16);
+            json_result["codeHash"] = account->code_hash;
 
-            nlohmann::json json_result;
-            if (ibs.exists(address)) {
-                std::ostringstream oss;
-                oss << std::hex << ibs.get_nonce(address);
-                json_result["nonce"] = "0x" + oss.str();
-                json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address), 16);
-                json_result["codeHash"] = ibs.get_code_hash(address);
-                json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
-            } else {
-                json_result["balance"] = "0x0";
-                json_result["code"] = "0x";
-                json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
-                json_result["nonce"] = "0x0";
-            }
-            return json_result;
-        });
+            db::kv::api::DomainPointQuery query_code{
+                .table = db::table::kCodeDomain,
+                .key = db::account_domain_key(address),
+                .timestamp = min_tx_num + tx_index,
+            };
 
-        reply = make_json_content(request, result);
+            const auto code = co_await tx->domain_get(std::move(query_code));
+            json_result["code"] = "0x" + silkworm::to_hex(code.value);
+        } else {
+            json_result["balance"] = "0x0";
+            json_result["code"] = "0x";
+            json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+            json_result["nonce"] = "0x0";
+        }
+
+        reply = make_json_content(request, json_result);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kServerError, e.what());
@@ -634,28 +647,33 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
 
     SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
 
-    std::set<evmc::address> addresses;
     if (start_block_number > latest_block_number) {
         std::stringstream msg;
         msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
         throw std::invalid_argument(msg.str());
     }
-    if (start_block_number <= end_block_number) {
-        auto walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
-            auto block_number = static_cast<BlockNum>(std::stol(silkworm::to_hex(key), nullptr, 16));
-            if (block_number <= end_block_number) {
-                auto address = bytes_to_address(value.substr(0, kAddressLength));
 
-                SILK_TRACE << "Walker: processing block " << block_number << " address " << address;
-                addresses.insert(address);
-            }
-            return block_number <= end_block_number;
-        };
+    if (end_block_number > latest_block_number) {
+        std::stringstream msg;
+        msg << "end block (" << end_block_number << ") is later than the latest block (" << latest_block_number << ")";
+        throw std::invalid_argument(msg.str());
+    }
 
-        const auto key = silkworm::db::block_key(start_block_number);
-        SILK_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key);
+    const auto start_txn_number = co_await tx.first_txn_num_in_block(start_block_number);
+    const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number == start_block_number ? end_block_number + 1 : end_block_number) - 1;
 
-        co_await walk(tx, db::table::kAccountChangeSetName, key, 0, walker);
+    db::kv::api::HistoryRangeQuery query{
+        .table = db::table::kAccountDomain,
+        .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
+        .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
+        .ascending_order = true};
+
+    auto paginated_result = co_await tx.history_range(std::move(query));
+    auto it = co_await paginated_result.begin();
+
+    std::set<evmc::address> addresses;
+    while (const auto value = co_await it.next()) {
+        addresses.insert(bytes_to_address(value->first));
     }
 
     co_return addresses;

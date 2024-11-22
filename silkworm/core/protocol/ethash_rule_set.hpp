@@ -34,7 +34,7 @@ class EthashRuleSet : public RuleSet {
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
-    void finalize(IntraBlockState& state, const Block& block) override;
+    ValidationResult finalize(IntraBlockState& state, const Block& block, EVM& evm, const std::vector<Log>& logs) override;
 
     BlockReward compute_reward(const Block& block) override;
 

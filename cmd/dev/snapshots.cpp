@@ -39,24 +39,26 @@
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_queries.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshot_merger.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/client.hpp>
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
 #include <silkworm/db/datastore/snapshots/bloom_filter/bloom_filter.hpp>
 #include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
+#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
-#include <silkworm/db/datastore/snapshots/seg/seg_zip.hpp>
+#include <silkworm/db/datastore/snapshots/segment/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_queries.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 
 #include "../common/common.hpp"
@@ -66,6 +68,7 @@ using namespace silkworm;
 using namespace silkworm::cmd::common;
 using namespace silkworm::snapshots;
 using namespace silkworm::snapshots::bittorrent;
+using namespace silkworm::snapshots::segment;
 
 static constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 static constexpr int kDefaultRepetitions{1};
@@ -289,7 +292,6 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (int i = 0; i < repetitions; ++i) {
         SegmentFileReader snapshot{*snapshot_path};
-        snapshot.reopen_segment();
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Decode snapshot elapsed: " << as_milliseconds(elapsed) << " msec";
@@ -324,13 +326,12 @@ BodyCounters count_bodies_in_one(const SnapshotSubcommandSettings& settings, con
 }
 
 BodyCounters count_bodies_in_all(const SnapshotSubcommandSettings& settings) {
-    auto snapshot_repository = make_repository(settings.settings);
-    snapshot_repository.reopen_folder();
+    auto repository = make_repository(settings.settings);
     int num_bodies = 0;
     uint64_t num_txns = 0;
-    for (const auto& bundle_ptr : snapshot_repository.view_bundles()) {
-        const auto& bundle = *bundle_ptr;
-        const auto [body_count, txn_count] = count_bodies_in_one(settings, bundle.body_segment);
+    for (const auto& bundle_ptr : repository.view_bundles()) {
+        db::blocks::BundleDataRef bundle{**bundle_ptr};
+        const auto [body_count, txn_count] = count_bodies_in_one(settings, bundle.body_segment());
         num_bodies += body_count;
         num_txns += txn_count;
     }
@@ -345,9 +346,7 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
         if (settings.segment_file_name) {
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_bodies: invalid snapshot_file path format");
-            ensure(snapshot_path->type() == SnapshotType::bodies, "count_bodies: snapshot_file must point to body segment");
             SegmentFileReader body_segment{*snapshot_path};
-            body_segment.reopen_segment();
             std::tie(num_bodies, num_txns) = count_bodies_in_one(settings, body_segment);
         } else {
             std::tie(num_bodies, num_txns) = count_bodies_in_all(settings);
@@ -374,12 +373,11 @@ int count_headers_in_one(const SnapshotSubcommandSettings& settings, const Segme
 }
 
 int count_headers_in_all(const SnapshotSubcommandSettings& settings) {
-    auto snapshot_repository = make_repository(settings.settings);
-    snapshot_repository.reopen_folder();
+    auto repository = make_repository(settings.settings);
     int num_headers{0};
-    for (const auto& bundle_ptr : snapshot_repository.view_bundles()) {
-        const auto& bundle = *bundle_ptr;
-        const auto header_count = count_headers_in_one(settings, bundle.header_segment);
+    for (const auto& bundle_ptr : repository.view_bundles()) {
+        db::blocks::BundleDataRef bundle{**bundle_ptr};
+        const auto header_count = count_headers_in_one(settings, bundle.header_segment());
         num_headers += header_count;
     }
     return num_headers;
@@ -392,9 +390,7 @@ void count_headers(const SnapshotSubcommandSettings& settings, int repetitions) 
         if (settings.segment_file_name) {
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_headers: invalid snapshot_file path format");
-            ensure(snapshot_path->type() == SnapshotType::headers, "count_headers: snapshot_file must point to header segment");
             SegmentFileReader header_segment{*snapshot_path};
-            header_segment.reopen_segment();
             num_headers = count_headers_in_one(settings, header_segment);
         } else {
             num_headers = count_headers_in_all(settings);
@@ -409,32 +405,12 @@ void create_index(const SnapshotSubcommandSettings& settings, int repetitions) {
     ensure(settings.segment_file_name.has_value(), "create_index: --snapshot_file must be specified");
     SILK_INFO << "Create index for snapshot: " << *settings.segment_file_name;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
+    auto index_builders_factory = db::blocks::make_blocks_index_builders_factory();
     const auto snapshot_path = SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name});
     if (snapshot_path) {
         for (int i{0}; i < repetitions; ++i) {
-            switch (snapshot_path->type()) {
-                case SnapshotType::headers: {
-                    auto index = HeaderIndex::make(*snapshot_path);
-                    index.build();
-                    break;
-                }
-                case SnapshotType::bodies: {
-                    auto index = BodyIndex::make(*snapshot_path);
-                    index.build();
-                    break;
-                }
-                case SnapshotType::transactions: {
-                    auto bodies_segment_path = snapshot_path->related_path(SnapshotType::bodies, kSegmentExtension);
-                    auto index = TransactionIndex::make(bodies_segment_path, *snapshot_path);
-                    index.build();
-
-                    auto index_hash_to_block = TransactionToBlockIndex::make(bodies_segment_path, *snapshot_path);
-                    index_hash_to_block.build();
-                    break;
-                }
-                default: {
-                    SILKWORM_ASSERT(false);
-                }
+            for (auto& builder : index_builders_factory->index_builders(*snapshot_path)) {
+                builder->build();
             }
         }
     } else {
@@ -450,7 +426,7 @@ void open_index(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Open index for snapshot: " << segment_file_path;
     const auto snapshot_path{snapshots::SnapshotPath::parse(segment_file_path)};
     ensure(snapshot_path.has_value(), [&]() { return "open_index: invalid snapshot file " + segment_file_path.filename().string(); });
-    const auto index_path{snapshot_path->index_file()};
+    const auto index_path{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
     SILK_INFO << "Index file: " << index_path.path();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     rec_split::RecSplitIndex idx{index_path.path()};
@@ -484,38 +460,42 @@ void open_btree_index(const SnapshotSubcommandSettings& settings) {
     ensure(!settings.input_file_path.empty(), "open_btree_index: --file must be specified");
     ensure(settings.input_file_path.extension() == ".kv", "open_btree_index: --file must be .kv file");
 
-    std::filesystem::path bt_index_file_path = settings.input_file_path;
-    bt_index_file_path.replace_extension(".bt");
-    SILK_INFO << "KV file: " << settings.input_file_path.string() << " BT file: " << bt_index_file_path.string();
+    auto kv_segment_path = SnapshotPath::parse(settings.input_file_path);
+    ensure(kv_segment_path.has_value(), "open_btree_index: invalid input file name format");
+
+    auto bt_index_path = kv_segment_path->related_path_ext(".bt");
+    SILK_INFO << "KV file: " << kv_segment_path->path().string()
+              << " BT file: " << bt_index_path.path().string();
+
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    seg::Decompressor kv_decompressor{settings.input_file_path};
-    kv_decompressor.open();
-    btree::BTreeIndex bt_index{kv_decompressor, bt_index_file_path};
+
+    segment::KVSegmentFileReader kv_segment{*kv_segment_path, seg::CompressionKind::kAll};
+
+    btree::BTreeIndex bt_index{bt_index_path.path()};
     SILK_INFO << "Starting KV scan and BTreeIndex check, total keys: " << bt_index.key_count();
+
+    segment::KVSegmentReader<RawDecoder<Bytes>, RawDecoder<Bytes>> reader{kv_segment};
     size_t matching_count{0}, key_count{0};
-    bool is_key{true};
-    Bytes key, value;
-    auto kv_iterator = kv_decompressor.begin();
-    while (kv_iterator != kv_decompressor.end()) {
-        if (is_key) {
-            key = *kv_iterator;
-            ++key_count;
-        } else {
-            value = *kv_iterator;
-            const auto v = bt_index.get(key, kv_iterator);
-            SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value) << " v=" << (v ? to_hex(*v) : "");
-            ensure(v == value,
-                   [&]() { return "open_btree_index: value mismatch for key=" + to_hex(key) + " position=" + std::to_string(key_count); });
-            if (v == value) {
-                ++matching_count;
-            }
-            if (key_count % 10'000'000 == 0) {
-                SILK_INFO << "BTreeIndex check progress: " << key_count << " different: " << (key_count - matching_count);
-            }
+    for (auto kv_pair : reader) {
+        ByteView key = kv_pair.first;
+        ByteView value = kv_pair.second;
+
+        const auto v = bt_index.get(key, kv_segment);
+        SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value) << " v=" << (v ? to_hex(*v) : "");
+        ensure(v == value, [&]() {
+            return "open_btree_index: value mismatch for key=" + to_hex(key) +
+                   " position=" + std::to_string(key_count);
+        });
+        if (v == value) {
+            ++matching_count;
         }
-        ++kv_iterator;
-        is_key = !is_key;
+
+        ++key_count;
+        if (key_count % 10'000'000 == 0) {
+            SILK_INFO << "BTreeIndex check progress: " << key_count << " different: " << (key_count - matching_count);
+        }
     }
+
     ensure(key_count == bt_index.key_count(), "open_btree_index: total key count does not match");
     SILK_INFO << "Open btree index matching: " << matching_count << " different: " << (key_count - matching_count);
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
@@ -542,7 +522,6 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Snapshot salt " << salt << " from " << salt_path.filename().string();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
-    kv_decompressor.open();
     bloom_filter::BloomFilter existence_index{existence_index_file_path};
 
     SILK_INFO << "Starting KV scan and existence index check";
@@ -605,32 +584,27 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
 }
 
 static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
+    using namespace silkworm::concurrency::awaitable_wait_for_one;
+
     const auto known_config{snapshots::Config::lookup_known_config(settings.chain_id)};
     WebSeedClient web_client{/*url_seeds=*/{settings.url_seed}, known_config.preverified_snapshots_as_pairs()};
 
-    boost::asio::io_context scheduler;
-    ShutdownSignal shutdown_signal{scheduler.get_executor()};
-    shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
-        scheduler.stop();
-        SILK_DEBUG << "Scheduler stopped";
-    });
+    boost::asio::io_context ioc;
+
+    TorrentInfoPtrList torrent_info_list;
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
-    auto discover_torrent_and_stop = [&settings, &web_client, &shutdown_signal]() -> Task<TorrentInfoPtrList> {
-        TorrentInfoPtrList torrent_info_list;
+    auto discover_torrent_and_stop = [&]() -> Task<void> {
         try {
             torrent_info_list = co_await web_client.discover_torrents(/*fail_fast=*/true);
         } catch (const boost::system::system_error& se) {
             SILK_ERROR << "Cannot discover torrents at " + settings.url_seed + ": " + se.what();
         }
-        shutdown_signal.cancel();
-        co_return torrent_info_list;
+        ioc.stop();
     };
-    auto result{boost::asio::co_spawn(scheduler, discover_torrent_and_stop, boost::asio::use_future)};
 
-    std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
-    scheduler_thread.join();
+    boost::asio::co_spawn(ioc, discover_torrent_and_stop() || ShutdownSignal::wait(), boost::asio::use_future);
+    ioc.run();
 
-    const auto torrent_info_list = result.get();
     size_t i{0};
     for (const auto& torrent_info : torrent_info_list) {
         SILK_INFO << i++ << ") name: " << torrent_info->name() << " hash: " << torrent_info->info_hash();
@@ -639,21 +613,12 @@ static TorrentInfoPtrList download_web_seed(const DownloadSettings& settings) {
 }
 
 static void download_bittorrent(bittorrent::BitTorrentClient& client) {
+    using namespace silkworm::concurrency::awaitable_wait_for_one;
     SILK_INFO << "Bittorrent download started in repo: " << client.settings().repository_path.string();
 
-    boost::asio::io_context scheduler;
-    ShutdownSignal shutdown_signal{scheduler.get_executor()};
-    shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
-        client.stop();
-        SILK_DEBUG << "Torrent client stopped";
-        scheduler.stop();
-        SILK_DEBUG << "Scheduler stopped";
-    });
-    std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
-
-    client.execution_loop();
-
-    scheduler_thread.join();
+    boost::asio::io_context ioc;
+    boost::asio::co_spawn(ioc, client.async_run("bit-torrent") || ShutdownSignal::wait(), boost::asio::use_future);
+    ioc.run();
 }
 
 void download(const DownloadSettings& settings) {
@@ -721,11 +686,10 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
 
     std::optional<SnapshotPath> matching_snapshot_path;
     std::optional<BlockHeader> matching_header;
-    auto snapshot_repository = make_repository(settings.settings);
-    snapshot_repository.reopen_folder();
-    for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
+    auto repository = make_repository(settings.settings);
+    for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_index(SnapshotType::headers);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kHeaderSegmentAndIdxNames);
         const auto header = HeaderFindByHashQuery{segment_and_index}.exec(*hash);
         if (header) {
             matching_header = header;
@@ -751,9 +715,8 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Lookup header number: " << block_number;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    auto snapshot_repository = make_repository(settings.settings);
-    snapshot_repository.reopen_folder();
-    const auto [segment_and_index, _] = snapshot_repository.find_segment(SnapshotType::headers, block_number);
+    auto repository = make_repository(settings.settings);
+    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kHeaderSegmentAndIdxNames, block_number);
     if (segment_and_index) {
         const auto header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_number);
         ensure(header.has_value(),
@@ -792,10 +755,8 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SegmentFileReader body_segment{*snapshot_path};
-    body_segment.reopen_segment();
 
-    Index idx_body_number{snapshot_path->index_file()};
-    idx_body_number.reopen_index();
+    rec_split::AccessorIndex idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
     const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_number);
     if (body) {
@@ -811,11 +772,10 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
 }
 
 void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum block_number) {
-    auto snapshot_repository = make_repository(settings.settings);
-    snapshot_repository.reopen_folder();
+    auto repository = make_repository(settings.settings);
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto [segment_and_index, _] = snapshot_repository.find_segment(SnapshotType::bodies, block_number);
+    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kBodySegmentAndIdxNames, block_number);
     if (segment_and_index) {
         const auto body = BodyFindByBlockNumQuery{*segment_and_index}.exec(block_number);
         ensure(body.has_value(),
@@ -888,6 +848,22 @@ static void print_txn(const Transaction& txn, const std::string& filename) {
                      return rep;
                  }())
               << "\n"
+              << "authorizations=" << ([&]() {
+                     std::string rep{"["};
+                     for (size_t i{0}; i < txn.authorizations.size(); ++i) {
+                         const auto& authorization{txn.authorizations[i]};
+                         rep.append(intx::to_string(authorization.chain_id));
+                         rep.append(address_to_hex(authorization.address));
+                         rep.append(std::to_string(authorization.nonce));
+                         rep.append(intx::to_string(authorization.v));
+                         rep.append(intx::to_string(authorization.r));
+                         rep.append(intx::to_string(authorization.s));
+                         if (i != txn.authorizations.size() - 1) rep.append("], ");
+                     }
+                     rep.append("]");
+                     return rep;
+                 }())
+              << "\n"
               << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, txn); return b; }()) << "\n";
 }
 
@@ -897,11 +873,9 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SegmentFileReader txn_segment{*snapshot_path};
-    txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->index_file()};
-        idx_txn_hash.reopen_index();
+        rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
         const auto transaction = TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}.exec(hash);
         if (transaction) {
@@ -918,14 +892,13 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
 }
 
 void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const Hash& hash) {
-    auto snapshot_repository = make_repository(settings.settings);
-    snapshot_repository.reopen_folder();
+    auto repository = make_repository(settings.settings);
 
     std::optional<SnapshotPath> matching_snapshot_path;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
+    for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_index(SnapshotType::transactions);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByHashQuery{segment_and_index}.exec(hash);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();
@@ -962,11 +935,9 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     SegmentFileReader txn_segment{*snapshot_path};
-    txn_segment.reopen_segment();
 
     {
-        Index idx_txn_hash{snapshot_path->index_file()};
-        idx_txn_hash.reopen_index();
+        rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
         const auto transaction = TransactionFindByIdQuery{{txn_segment, idx_txn_hash}}.exec(txn_id);
         if (transaction) {
@@ -983,14 +954,13 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
 }
 
 void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_t txn_id) {
-    auto snapshot_repository = make_repository(settings.settings);
-    snapshot_repository.reopen_folder();
+    auto repository = make_repository(settings.settings);
 
     std::optional<SnapshotPath> matching_snapshot_path;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    for (const auto& bundle_ptr : snapshot_repository.view_bundles_reverse()) {
+    for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_index(SnapshotType::transactions);
+        auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
         const auto transaction = TransactionFindByIdQuery{segment_and_index}.exec(txn_id);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();
@@ -1029,10 +999,9 @@ void lookup_transaction(const SnapshotSubcommandSettings& settings) {
 }
 
 void merge(const SnapshotSettings& settings) {
-    auto snapshot_repository = make_repository(settings);
-    snapshot_repository.reopen_folder();
+    auto repository = make_repository(settings);
     TemporaryDirectory tmp_dir;
-    db::SnapshotMerger merger{snapshot_repository, tmp_dir.path()};
+    db::SnapshotMerger merger{repository, tmp_dir.path()};
     test_util::TaskRunner runner;
     runner.run(merger.exec());
 }

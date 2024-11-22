@@ -19,6 +19,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/db/test_util/temp_chain_data.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
 

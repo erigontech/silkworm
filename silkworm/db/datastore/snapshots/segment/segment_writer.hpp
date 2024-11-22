@@ -24,9 +24,9 @@
 
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
-#include "../seg/compressor.hpp"
+#include "seg/compressor.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 class SegmentFileWriter {
   public:
@@ -64,7 +64,8 @@ class SegmentFileWriter {
 
     explicit SegmentFileWriter(
         SnapshotPath path,
-        const std::filesystem::path& tmp_dir_path);
+        const std::filesystem::path& tmp_dir_path,
+        bool is_compressed = true);
 
     SegmentFileWriter(SegmentFileWriter&&) = default;
     SegmentFileWriter& operator=(SegmentFileWriter&&) = default;
@@ -138,4 +139,4 @@ concept SegmentWriterConcept =
     std::same_as<TSegmentWriter, SegmentWriter<typename TSegmentWriter::EncoderType>> ||
     std::derived_from<TSegmentWriter, SegmentWriter<typename TSegmentWriter::EncoderType>>;
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

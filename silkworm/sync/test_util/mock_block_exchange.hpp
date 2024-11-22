@@ -32,27 +32,26 @@
 namespace silkworm::chainsync::test_util {
 
 //! \brief MockBlockExchange is the gMock mock class for BlockExchange.
-class MockBlockExchange : public BlockExchange {
+class MockBlockExchange : public IBlockExchange {
   public:
-    MockBlockExchange(db::DataStoreRef data_store, SentryClient& client, const ChainConfig& config)
-        : BlockExchange{std::move(data_store), client, config, /* use_preverified_hashes = */ false} {}
+    ~MockBlockExchange() override = default;
 
-    MOCK_METHOD((void), initial_state, (std::vector<BlockHeader>));
+    MOCK_METHOD((void), initial_state, (std::vector<BlockHeader>), (override));
 
-    MOCK_METHOD((void), download_blocks, (BlockNum, TargetTracking));
-    MOCK_METHOD((void), new_target_block, (std::shared_ptr<Block>));
-    MOCK_METHOD((void), stop_downloading, ());
+    MOCK_METHOD((void), download_blocks, (BlockNum, TargetTracking), (override));
+    MOCK_METHOD((void), new_target_block, (std::shared_ptr<Block>), (override));
+    MOCK_METHOD((void), stop_downloading, (), (override));
 
-    MOCK_METHOD((ResultQueue&), result_queue, (Hash));
+    MOCK_METHOD((ResultQueue&), result_queue, (), (override));
 
-    MOCK_METHOD((bool), in_sync, (), (const));
-    MOCK_METHOD((BlockNum), current_height, (), (const));
+    MOCK_METHOD((bool), in_sync, (), (const, override));
+    MOCK_METHOD((BlockNum), current_height, (), (const, override));
 
-    MOCK_METHOD((void), accept, (std::shared_ptr<Message>));
-    MOCK_METHOD((void), execution_loop, ());
+    MOCK_METHOD((void), accept, (std::shared_ptr<Message>), (override));
+    MOCK_METHOD((void), execution_loop, (), (override));
 
-    MOCK_METHOD((const ChainConfig&), chain_config, (), (const));
-    MOCK_METHOD((SentryClient&), sentry, (), (const));
+    MOCK_METHOD((const ChainConfig&), chain_config, (), (const, override));
+    MOCK_METHOD((SentryClient&), sentry, (), (const, override));
 };
 
 }  // namespace silkworm::chainsync::test_util

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <map>
-#include <memory>
 #include <string>
 
 #include <silkworm/infra/concurrency/task.hpp>

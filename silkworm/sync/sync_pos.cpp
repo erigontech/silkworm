@@ -46,7 +46,7 @@ class PayloadValidationError : public std::logic_error {
     explicit PayloadValidationError(const std::string& reason) : std::logic_error(reason) {}
 };
 
-PoSSync::PoSSync(BlockExchange& block_exchange, execution::api::Client& exec_client)
+PoSSync::PoSSync(IBlockExchange& block_exchange, execution::api::Client& exec_client)
     : ChainSync(block_exchange, exec_client) {}
 
 Task<void> PoSSync::async_run() {

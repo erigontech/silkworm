@@ -33,8 +33,8 @@ namespace silkworm::rpc::commands {
 class AdminRpcApi {
   public:
     explicit AdminRpcApi(ethbackend::BackEnd* backend) : backend_(backend) {}
-    explicit AdminRpcApi(boost::asio::io_context& io_context)
-        : AdminRpcApi(must_use_private_service<ethbackend::BackEnd>(io_context)) {}
+    explicit AdminRpcApi(boost::asio::io_context& ioc)
+        : AdminRpcApi(must_use_private_service<ethbackend::BackEnd>(ioc)) {}
     virtual ~AdminRpcApi() = default;
 
     AdminRpcApi(const AdminRpcApi&) = delete;

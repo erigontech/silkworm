@@ -1,6 +1,6 @@
 FormatStyle: file
 HeaderFilterRegex: 'silkworm/(capi|core|db|execution|infra|node|rpc|sentry|sync|wasm)/.+\.hpp$'
-WarningsAsErrors: '*'
+WarningsAsErrors: 'bugprone-use-after-move'
 Checks: >
   abseil-*,
   boost-*,

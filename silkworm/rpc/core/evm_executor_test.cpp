@@ -26,7 +26,6 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/db/chain/remote_chain_storage.hpp>
-#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
@@ -52,14 +51,13 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     db::test_util::MockTransaction transaction;
     WorkerPool workers{1};
     ClientContextPool pool{1};
-    boost::asio::any_io_executor io_executor{pool.next_io_context().get_executor()};
+    boost::asio::any_io_executor io_executor{pool.next_ioc().get_executor()};
     test::BackEndMock backend;
     RemoteChainStorage storage{transaction, ethdb::kv::make_backend_providers(&backend)};
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_number{6'000'000};
     std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number)};
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 };
 
 #ifndef SILKWORM_SANITIZE

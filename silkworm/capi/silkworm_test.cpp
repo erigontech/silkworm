@@ -25,12 +25,12 @@
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
-#include <silkworm/db/transactions/txn_index.hpp>
-#include <silkworm/db/transactions/txn_to_block_index.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/rpc/test_util/api_test_database.hpp>
@@ -819,29 +819,22 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[silkworm][capi]") {
     auto header_index_builder = snapshots::HeaderIndex::make(header_segment_path);
     header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    snapshots::SegmentFileReader header_segment{header_segment_path};
-    header_segment.reopen_segment();
-    snapshots::Index idx_header_hash{header_segment_path.index_file()};
-    idx_header_hash.reopen_index();
+    snapshots::segment::SegmentFileReader header_segment{header_segment_path};
+    snapshots::rec_split::AccessorIndex idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
 
     auto body_index_builder = snapshots::BodyIndex::make(body_segment_path);
     body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    snapshots::SegmentFileReader body_segment{body_segment_path};
-    body_segment.reopen_segment();
-    snapshots::Index idx_body_number{body_segment_path.index_file()};
-    idx_body_number.reopen_index();
+    snapshots::segment::SegmentFileReader body_segment{body_segment_path};
+    snapshots::rec_split::AccessorIndex idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
 
     auto tx_index_builder = snapshots::TransactionIndex::make(body_segment_path, txn_segment_path);
     tx_index_builder.build();
     auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start);
     tx_index_hash_to_block_builder.build();
-    snapshots::SegmentFileReader txn_segment{txn_segment_path};
-    txn_segment.reopen_segment();
-    snapshots::Index idx_txn_hash{txn_segment_path.index_file()};
-    idx_txn_hash.reopen_index();
-    snapshots::Index idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
-    idx_txn_hash_2_block.reopen_index();
+    snapshots::segment::SegmentFileReader txn_segment{txn_segment_path};
+    snapshots::rec_split::AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
+    snapshots::rec_split::AccessorIndex idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
 
     const auto header_segment_path_string{header_segment_path.path().string()};
     const auto header_index_path_string{idx_header_hash.path().path().string()};
@@ -1057,8 +1050,6 @@ static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
 static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};
 

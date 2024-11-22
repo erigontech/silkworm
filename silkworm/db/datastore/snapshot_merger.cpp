@@ -23,8 +23,9 @@
 #include <silkworm/infra/common/filesystem.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "snapshots/common/raw_codec.hpp"
 #include "snapshots/common/snapshot_path.hpp"
-#include "snapshots/seg/compressor.hpp"
+#include "snapshots/segment/seg/compressor.hpp"
 #include "snapshots/segment/segment_writer.hpp"
 #include "snapshots/snapshot_bundle.hpp"
 
@@ -47,10 +48,10 @@ struct SnapshotMergerCommand : public DataMigrationCommand {
 };
 
 struct SnapshotMergerResult : public DataMigrationResult {
-    SnapshotBundle bundle;
+    SnapshotBundlePaths bundle_paths;
 
-    explicit SnapshotMergerResult(SnapshotBundle bundle1)
-        : bundle(std::move(bundle1)) {}
+    explicit SnapshotMergerResult(SnapshotBundlePaths bundle_paths1)
+        : bundle_paths(std::move(bundle_paths1)) {}
     ~SnapshotMergerResult() override = default;
 };
 
@@ -82,28 +83,19 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
     return {};
 }
 
-struct RawDecoder : public Decoder {
-    ByteView value;
-    ~RawDecoder() override = default;
-    void decode_word(ByteView word) override {
-        value = word;
-    }
-};
-
 std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& merger_command = dynamic_cast<SnapshotMergerCommand&>(*command);
     auto range = merger_command.range;
     auto step_range = StepRange::from_block_num_range(range);
 
-    auto new_bundle = snapshots_.bundle_factory().make(tmp_dir_path_, step_range);
-    for (auto& segment_ref : new_bundle.segments()) {
-        auto path = segment_ref.get().path();
-        SILK_DEBUG_M("SnapshotMerger") << "merging " << path.type_string() << " range " << range.to_string();
+    SnapshotBundlePaths new_bundle{snapshots_.schema(), tmp_dir_path_, step_range};
+    for (const auto& [name, path] : new_bundle.segment_paths()) {
+        SILK_DEBUG_M("SnapshotMerger") << "merging " << name.to_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(StepRange::from_block_num_range(range))) {
             auto& bundle = *bundle_ptr;
-            SegmentReader<RawDecoder> reader{bundle.segment(path.type())};
+            segment::SegmentReader<RawDecoder<ByteView>> reader{bundle.segment(Schema::kDefaultEntityName, name)};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 
@@ -115,13 +107,12 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
 
 void SnapshotMerger::index(std::shared_ptr<DataMigrationResult> result) {
     auto& merger_result = dynamic_cast<SnapshotMergerResult&>(*result);
-    auto& bundle = merger_result.bundle;
-    snapshots_.build_indexes(bundle);
+    snapshots_.build_indexes(merger_result.bundle_paths);
 }
 
 static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
-    bundle.on_close([](SnapshotBundle& bundle1) {
-        for (auto& path : bundle1.files()) {
+    bundle.on_close([](std::vector<std::filesystem::path> files) {
+        for (auto& path : files) {
             [[maybe_unused]] bool removed = std::filesystem::remove(path);
         }
     });
@@ -129,12 +120,12 @@ static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
 
 void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& freezer_result = dynamic_cast<SnapshotMergerResult&>(*result);
-    auto& bundle = freezer_result.bundle;
+    auto& bundle = freezer_result.bundle_paths;
     auto merged_bundles = snapshots_.bundles_in_range(bundle.step_range());
 
     move_files(bundle.files(), snapshots_.path());
 
-    auto final_bundle = snapshots_.bundle_factory().make(snapshots_.path(), bundle.step_range());
+    SnapshotBundle final_bundle{snapshots_.schema(), snapshots_.path(), bundle.step_range()};
     snapshots_.replace_snapshot_bundles(std::move(final_bundle));
 
     for (auto& merged_bundle : merged_bundles) {

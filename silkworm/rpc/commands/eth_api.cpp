@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <cstring>
 #include <exception>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <string>
@@ -36,7 +35,6 @@
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
@@ -196,7 +194,9 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
-            const Block extended_block{block_with_hash, full_tx};
+            BlockNum block_number = block_with_hash->block.header.number;
+            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
+            const Block extended_block{block_with_hash, full_tx, total_difficulty};
             make_glaze_json_content(request, extended_block, reply);
         } else {
             make_glaze_json_null_content(request, reply);
@@ -234,7 +234,8 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
         if (block_with_hash) {
-            const Block extended_block{block_with_hash, full_tx};
+            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
+            const Block extended_block{block_with_hash, full_tx, total_difficulty};
 
             make_glaze_json_content(request, extended_block, reply);
         } else {

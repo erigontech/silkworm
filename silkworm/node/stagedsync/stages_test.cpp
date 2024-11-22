@@ -85,8 +85,6 @@ TEST_CASE("Sync Stages") {
                          std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
                          std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     db::DataStore data_store{
         node_settings.chaindata_env_config,
         node_settings.data_directory->snapshots().path(),

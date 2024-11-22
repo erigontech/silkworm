@@ -46,7 +46,7 @@ TEST_CASE("AwaitableConditionVariable.blocks_during_waiting") {
     // schedule waiting
     auto future = runner.spawn_future(waiter());
     // run until it blocks
-    while (runner.context().poll_one() > 0) {
+    while (runner.ioc().poll_one() > 0) {
     }
 
     CHECK(future.wait_for(0s) == std::future_status::timeout);
@@ -60,7 +60,7 @@ TEST_CASE("AwaitableConditionVariable.notify_all_awakes_waiter") {
     // schedule waiting
     auto future = runner.spawn_future(waiter());
     // run until it blocks
-    while (runner.context().poll_one() > 0) {
+    while (runner.ioc().poll_one() > 0) {
     }
 
     cond_var.notify_all();
@@ -79,7 +79,7 @@ TEST_CASE("AwaitableConditionVariable.notify_all_awakes_multiple_waiters") {
     auto future2 = runner.spawn_future(waiter2());
     auto future3 = runner.spawn_future(waiter3());
     // run until it blocks
-    while (runner.context().poll_one() > 0) {
+    while (runner.ioc().poll_one() > 0) {
     }
 
     cond_var.notify_all();

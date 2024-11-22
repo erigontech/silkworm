@@ -84,4 +84,10 @@ void Environment::set_pre_verified_hashes_disabled() {
     environment["DISABLE_PRE_VERIFIED_HASHES"] = "1";
 }
 
+std::string Environment::get(const std::string& var_name) {
+    auto environment = boost::this_process::environment();
+    const auto env_var = environment[var_name];
+    return env_var.to_string();
+}
+
 }  // namespace silkworm

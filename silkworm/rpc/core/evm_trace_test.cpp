@@ -49,7 +49,7 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     WorkerPool workers{1};
     test::MockBlockCache block_cache;
     StringWriter writer{4096};
-    boost::asio::any_io_executor io_executor{io_context_.get_executor()};
+    boost::asio::any_io_executor io_executor{ioc_.get_executor()};
     test::BackEndMock backend;
     RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};
 };
@@ -3077,8 +3077,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
 }
 
 TEST_CASE("VmTrace json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     TraceEx trace_ex;
     trace_ex.used = 5000;
     trace_ex.stack.emplace_back("0xdeadbeaf");
@@ -3165,8 +3163,6 @@ TEST_CASE("VmTrace json serialization") {
 }
 
 TEST_CASE("TraceAction json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     TraceAction trace_action;
     trace_action.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
     trace_action.gas = 1000;
@@ -3209,8 +3205,6 @@ TEST_CASE("TraceAction json serialization") {
 }
 
 TEST_CASE("TraceResult json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     TraceResult trace_result;
     trace_result.address = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
     trace_result.code = *silkworm::from_hex("0x1234567890abcdef");
@@ -3224,8 +3218,6 @@ TEST_CASE("TraceResult json serialization") {
 }
 
 TEST_CASE("Trace json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     TraceAction trace_action;
     trace_action.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
     trace_action.gas = 1000;
@@ -3314,8 +3306,6 @@ TEST_CASE("Trace json serialization") {
 }
 
 TEST_CASE("StateDiff json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     StateDiff state_diff;
 
     SECTION("basic") {
@@ -3339,8 +3329,6 @@ TEST_CASE("StateDiff json serialization") {
 }
 
 TEST_CASE("DiffValue json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("no entries") {
         DiffValue dv;
 
@@ -3373,8 +3361,6 @@ TEST_CASE("DiffValue json serialization") {
 }
 
 TEST_CASE("copy_stack") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     const size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
         {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
@@ -3559,8 +3545,6 @@ TEST_CASE("copy_stack") {
 }
 
 TEST_CASE("copy_memory") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     evmone::Memory memory;
     for (std::uint8_t idx = 0; idx < 16; ++idx) {
         memory[idx] = idx;
@@ -3591,8 +3575,6 @@ TEST_CASE("copy_memory") {
 }
 
 TEST_CASE("copy_store") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     const size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
         {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
@@ -3617,8 +3599,6 @@ TEST_CASE("copy_store") {
 }
 
 TEST_CASE("copy_memory_offset_len") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     const size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
         {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
@@ -3685,8 +3665,6 @@ TEST_CASE("copy_memory_offset_len") {
 }
 
 TEST_CASE("push_memory_offset_len") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     const size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
         {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
@@ -3744,7 +3722,6 @@ TEST_CASE("to_string") {
 }
 
 TEST_CASE("TraceConfig") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("dump on stream") {
         TraceConfig config{true, false, true};
 
@@ -3775,7 +3752,6 @@ TEST_CASE("TraceConfig") {
 }
 
 TEST_CASE("TraceFilter") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     SECTION("dump on stream: simple") {
         TraceFilter config;
 
@@ -3849,8 +3825,6 @@ TEST_CASE("TraceFilter") {
 }
 
 TEST_CASE("TraceCall") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     SECTION("json deserialization") {
         nlohmann::json json = R"([
             {
@@ -3881,8 +3855,6 @@ TEST_CASE("TraceCall") {
 }
 
 TEST_CASE("TraceCallTraces: json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
-
     TraceCallTraces tct;
     tct.output = "0xdeadbeaf";
 
@@ -3944,7 +3916,6 @@ TEST_CASE("TraceCallTraces: json serialization") {
 }
 
 TEST_CASE("TraceCallResult: json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     TraceCallResult tcr;
 
     SECTION("with traces") {
@@ -3959,7 +3930,6 @@ TEST_CASE("TraceCallResult: json serialization") {
 }
 
 TEST_CASE("TraceManyCallResult: json serialization") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     TraceManyCallResult tmcr;
 
     SECTION("with traces") {

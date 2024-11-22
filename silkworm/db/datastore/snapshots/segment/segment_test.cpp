@@ -22,11 +22,11 @@
 #include "segment_reader.hpp"
 #include "segment_writer.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 TEST_CASE("SegmentFile") {
     TemporaryDirectory tmp_dir;
-    auto path = SnapshotPath::make(tmp_dir.path(), kSnapshotV1, StepRange{Step{0}, Step{1}}, SnapshotType::headers);
+    auto path = SnapshotPath::make(tmp_dir.path(), std::nullopt, SnapshotPath::FilenameFormat::kE2, kSnapshotV1, StepRange{Step{0}, Step{1}}, "headers", ".seg");
 
     std::vector<std::string> items = {
         "first",
@@ -43,7 +43,6 @@ TEST_CASE("SegmentFile") {
     SegmentFileWriter::flush(std::move(file_writer));
 
     SegmentFileReader file_reader{path};
-    file_reader.reopen_segment();
     SegmentReader<StringCodec> reader{file_reader};
     for (std::string& item : reader) {
         CHECK(item == items[0]);
@@ -52,4 +51,4 @@ TEST_CASE("SegmentFile") {
     CHECK(items.empty());
 }
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

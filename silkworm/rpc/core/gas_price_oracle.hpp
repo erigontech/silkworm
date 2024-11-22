@@ -18,7 +18,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <string>
 #include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>

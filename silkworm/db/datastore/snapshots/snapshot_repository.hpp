@@ -27,12 +27,13 @@
 #include <utility>
 #include <vector>
 
+#include "../common/entity_name.hpp"
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "index_builder.hpp"
-#include "segment_and_index.hpp"
+#include "index_builders_factory.hpp"
+#include "segment_and_accessor_index.hpp"
 #include "snapshot_bundle.hpp"
-#include "snapshot_bundle_factory.hpp"
 
 namespace silkworm::snapshots {
 
@@ -47,14 +48,16 @@ class SnapshotRepository {
   public:
     SnapshotRepository(
         std::filesystem::path dir_path,
+        bool open,
+        Schema::RepositoryDef schema,
         std::unique_ptr<StepToTimestampConverter> step_converter,
-        std::unique_ptr<SnapshotBundleFactory> bundle_factory);
+        std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
     SnapshotRepository(SnapshotRepository&&) = default;
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = default;
 
     const std::filesystem::path& path() const { return dir_path_; }
-    const SnapshotBundleFactory& bundle_factory() const { return *bundle_factory_; }
+    const Schema::RepositoryDef& schema() const { return schema_; };
 
     void reopen_folder();
     void close();
@@ -65,8 +68,6 @@ class SnapshotRepository {
     void replace_snapshot_bundles(SnapshotBundle bundle);
 
     size_t bundles_count() const;
-    size_t total_segments_count() const { return bundles_count() * SnapshotBundle::kSnapshotsCount; }
-    size_t total_indexes_count() const { return bundles_count() * SnapshotBundle::kIndexesCount; }
 
     //! All types of .seg and .idx files are available up to this block number
     BlockNum max_block_available() const;
@@ -74,7 +75,7 @@ class SnapshotRepository {
 
     std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
-    void build_indexes(SnapshotBundle& bundle) const;
+    void build_indexes(const SnapshotBundlePaths& bundle) const;
 
     using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;
 
@@ -105,7 +106,9 @@ class SnapshotRepository {
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
-    std::pair<std::optional<SegmentAndIndex>, std::shared_ptr<SnapshotBundle>> find_segment(SnapshotType type, Timestamp t) const;
+    std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
+        std::array<datastore::EntityName, 3> names,
+        Timestamp t) const;
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;
 
     std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const;
@@ -113,26 +116,23 @@ class SnapshotRepository {
   private:
     Step max_end_step() const;
 
-    SnapshotPathList get_segment_files() const {
-        return get_files(kSegmentExtension);
-    }
+    SnapshotPathList get_files(std::string_view ext) const;
+    std::vector<StepRange> list_dir_file_ranges() const;
 
-    SnapshotPathList get_idx_files() const {
-        return get_files(kIdxExtension);
-    }
-
-    SnapshotPathList get_files(const std::string& ext) const;
-
+    bool is_stale_index_path(const SnapshotPath& index_path) const;
     SnapshotPathList stale_index_paths() const;
 
     //! Path to the snapshots directory
     std::filesystem::path dir_path_;
 
+    //! Schema
+    Schema::RepositoryDef schema_;
+
     //! Converts timestamp units to steps
     std::unique_ptr<StepToTimestampConverter> step_converter_;
 
-    //! SnapshotBundle factory
-    std::unique_ptr<SnapshotBundleFactory> bundle_factory_;
+    //! Creates index builders
+    std::unique_ptr<IndexBuildersFactory> index_builders_factory_;
 
     //! Full snapshot bundles ordered by block_from
     std::shared_ptr<Bundles> bundles_;

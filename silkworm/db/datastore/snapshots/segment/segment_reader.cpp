@@ -21,29 +21,22 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::snapshots::segment {
 
 SegmentFileReader::SegmentFileReader(
     SnapshotPath path,
-    std::optional<MemoryMappedRegion> segment_region)
+    std::optional<MemoryMappedRegion> segment_region,
+    bool is_compressed)
     : path_(std::move(path)),
-      decompressor_{path_.path(), segment_region} {}
-
-SegmentFileReader::~SegmentFileReader() {
-    close();
+      decompressor_{
+          path_.path(),
+          segment_region,
+          is_compressed ? seg::CompressionKind::kAll : seg::CompressionKind::kNone,
+      } {
 }
 
 MemoryMappedRegion SegmentFileReader::memory_file_region() const {
-    const auto memory_file{decompressor_.memory_file()};
-    if (!memory_file) return MemoryMappedRegion{};
-    return memory_file->region();
-}
-
-void SegmentFileReader::reopen_segment() {
-    close();
-
-    // Open decompressor that opens the mapped file in turns
-    decompressor_.open();
+    return decompressor_.memory_file().region();
 }
 
 SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
@@ -61,7 +54,7 @@ SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
 
 SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator+=(size_t count) {
     while ((count > 1) && it_.has_next()) {
-        it_.skip();
+        it_.skip_auto();
         --count;
     }
     if (count > 0) {
@@ -107,9 +100,4 @@ SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::option
     return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path()};
 }
 
-void SegmentFileReader::close() {
-    // Close decompressor that closes the mapped file in turns
-    decompressor_.close();
-}
-
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::snapshots::segment

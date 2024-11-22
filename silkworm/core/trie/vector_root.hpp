@@ -40,7 +40,7 @@ inline size_t adjust_index_for_rlp(size_t i, size_t len) {
 // Trie root hash of RLP-encoded values, the keys are RLP-encoded integers.
 // See Section 4.3.2. "Holistic Validity" of the Yellow Paper.
 template <class Value, std::invocable<Bytes&, const Value&> Encoder>
-evmc::bytes32 root_hash(const std::vector<Value>& v, Encoder&& value_encoder) {
+evmc::bytes32 root_hash(const std::vector<Value>& v, const Encoder& value_encoder) {
     Bytes index_rlp;
     Bytes value_rlp;
 

@@ -62,7 +62,6 @@ TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
 }
 
 TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     const char* file_name{"file.cpp"};
     const int line_number{10};
     Grpc2SilkwormLogGuard log_guard;

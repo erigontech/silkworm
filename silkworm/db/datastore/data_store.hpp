@@ -21,6 +21,7 @@
 
 #include "common/entity_name.hpp"
 #include "mdbx/mdbx.hpp"
+#include "schema.hpp"
 #include "snapshots/snapshot_repository.hpp"
 
 namespace silkworm::datastore {
@@ -28,9 +29,11 @@ namespace silkworm::datastore {
 class DataStore {
   public:
     DataStore(
+        Schema schema,
         mdbx::env_managed chaindata_env,
         std::map<EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories)
-        : chaindata_env_{std::move(chaindata_env)},
+        : schema_{std::move(schema)},
+          chaindata_env_{std::move(chaindata_env)},
           repositories_{std::move(repositories)} {}
 
     void close() {
@@ -39,11 +42,14 @@ class DataStore {
             entry.second->close();
     }
 
+    const Schema& schema() const { return schema_; }
     db::ROAccess chaindata() const { return db::ROAccess{chaindata_env_}; }
     db::RWAccess chaindata_rw() const { return db::RWAccess{chaindata_env_}; }
+
     snapshots::SnapshotRepository& repository(const EntityName& name) const { return *repositories_.at(name); }
 
   private:
+    Schema schema_;
     mdbx::env_managed chaindata_env_;
     std::map<EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories_;
 };

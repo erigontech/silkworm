@@ -16,8 +16,6 @@
 
 #include "stream.hpp"
 
-#include <silkworm/infra/concurrency/task.hpp>
-
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/log.hpp>
@@ -35,7 +33,7 @@ struct StreamTest : test_util::ServiceContextTestBase {
 };
 
 TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
-    boost::asio::any_io_executor io_executor = io_context_.get_executor();
+    boost::asio::any_io_executor io_executor = ioc_.get_executor();
 
     StringWriter string_writer;
 
@@ -80,7 +78,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
 }
 
 TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
-    boost::asio::any_io_executor io_executor = io_context_.get_executor();
+    boost::asio::any_io_executor io_executor = ioc_.get_executor();
 
     StringWriter string_writer;
     Stream stream(io_executor, string_writer);
@@ -329,7 +327,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
 }
 
 TEST_CASE_METHOD(StreamTest, "json::Stream threading", "[rpc][json]") {
-    boost::asio::any_io_executor io_executor = io_context_.get_executor();
+    boost::asio::any_io_executor io_executor = ioc_.get_executor();
     constexpr std::string_view kData{R"({"test":"test"})"};
 
     StringWriter string_writer;

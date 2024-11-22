@@ -24,9 +24,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
-#include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc {
 
@@ -50,10 +47,9 @@ class StorageWalker {
         AccountCollector& collector);
 
     Task<void> storage_range_at(
-        BlockNum block_number,
+        TxnId txn_number,
         const evmc::address& address,
         const evmc::bytes32& start_location,
-        size_t max_result,
         StorageCollector& collector);
 
   private:

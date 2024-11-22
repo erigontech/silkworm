@@ -22,13 +22,11 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/test_util/hex.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
 namespace silkworm {
 
 TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TemporaryFile tmp_jwt_file;
 
     SECTION("empty file path") {
@@ -83,7 +81,6 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
 }
 
 TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test_util::TemporaryFile tmp_jwt_file;
     std::ofstream tmp_jwt_ofs{tmp_jwt_file.path()};
 

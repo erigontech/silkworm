@@ -56,7 +56,6 @@ namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple t
 static constexpr std::string_view kTestAddressUri{"localhost:12345"};
 
 TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
     // Add *at least one non-empty* ServerCompletionQueue (otherwise: ASAN SIGSEGV error in Shutdown)
     std::unique_ptr<grpc::ServerCompletionQueue> cq = builder.AddCompletionQueue();
@@ -77,8 +76,6 @@ TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("OK: create an empty Server", "[silkworm][node][rpc]") {
         ServerSettings settings;
         settings.address_uri = kTestAddressUri;
@@ -87,8 +84,6 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
-    test_util::SetLogVerbosityGuard set_log_verbosity_guard{log::Level::kNone};
-
     // TODO(canepat): use GMock
     class TestServer : public EmptyServer {
       public:
@@ -142,7 +137,6 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     ServerSettings settings;
     settings.address_uri = kTestAddressUri;
     EmptyServer server{settings};
@@ -160,7 +154,6 @@ TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::join", "[silkworm][node][rpc]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     ServerSettings settings;
     settings.address_uri = kTestAddressUri;
     EmptyServer server{settings};

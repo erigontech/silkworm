@@ -44,14 +44,14 @@ TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
         ClientContext context{0};
 
         SECTION("Context::Context") {
-            CHECK_NOTHROW(context.io_context() != nullptr);
+            CHECK_NOTHROW(context.ioc() != nullptr);
             CHECK_NOTHROW(context.grpc_context() != nullptr);
         }
 
         SECTION("Context::execute_loop") {
             std::atomic_bool processed{false};
-            auto* io_context = context.io_context();
-            boost::asio::post(*io_context, [&]() {
+            auto* ioc = context.ioc();
+            boost::asio::post(*ioc, [&]() {
                 processed = true;
                 context.stop();
             });
@@ -62,8 +62,8 @@ TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
 
         SECTION("Context::stop") {
             std::atomic_bool processed{false};
-            auto* io_context = context.io_context();
-            boost::asio::post(*io_context, [&]() {
+            auto* ioc = context.ioc();
+            boost::asio::post(*ioc, [&]() {
                 processed = true;
             });
             auto context_thread = std::thread([&]() { context.execute_loop(); });
@@ -78,8 +78,6 @@ TEST_CASE("ClientContext", "[silkworm][infra][grpc][client][client_context]") {
 }
 
 TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("reject size 0") {
         CHECK_THROWS_AS((ClientContextPool{0}), std::logic_error);
     }
@@ -87,7 +85,7 @@ TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][cli
     SECTION("accept size 1") {
         ClientContextPool cp{1};
         CHECK(&cp.next_context() == &cp.next_context());
-        CHECK(&cp.next_io_context() == &cp.next_io_context());
+        CHECK(&cp.next_ioc() == &cp.next_ioc());
     }
 
     SECTION("accept size greater than 1") {
@@ -105,23 +103,21 @@ TEST_CASE("ClientContextPool: create context pool", "[silkworm][infra][grpc][cli
         CHECK(&context2 == &context5);
         CHECK(&context3 == &context6);
 
-        const auto& io_context1 = cp.next_io_context();
-        const auto& io_context2 = cp.next_io_context();
-        const auto& io_context3 = cp.next_io_context();
+        const auto& ioc1 = cp.next_ioc();
+        const auto& ioc2 = cp.next_ioc();
+        const auto& ioc3 = cp.next_ioc();
 
-        const auto& io_context4 = cp.next_io_context();
-        const auto& io_context5 = cp.next_io_context();
-        const auto& io_context6 = cp.next_io_context();
+        const auto& ioc4 = cp.next_ioc();
+        const auto& ioc5 = cp.next_ioc();
+        const auto& ioc6 = cp.next_ioc();
 
-        CHECK(&io_context1 == &io_context4);
-        CHECK(&io_context2 == &io_context5);
-        CHECK(&io_context3 == &io_context6);
+        CHECK(&ioc1 == &ioc4);
+        CHECK(&ioc2 == &ioc5);
+        CHECK(&ioc3 == &ioc6);
     }
 }
 
 TEST_CASE("ClientContextPool: start context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
         cp.start();
@@ -138,19 +134,17 @@ TEST_CASE("ClientContextPool: start context pool", "[silkworm][infra][grpc][clie
 }
 
 TEST_CASE("ClientContextPool: run context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
         auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::post(cp.next_io_context(), [&]() { cp.stop(); });
+        boost::asio::post(cp.next_ioc(), [&]() { cp.stop(); });
         CHECK_NOTHROW(context_pool_thread.join());
     }
 
     SECTION("running 3 thread") {
         ClientContextPool cp{3};
         auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::post(cp.next_io_context(), [&]() { cp.stop(); });
+        boost::asio::post(cp.next_ioc(), [&]() { cp.stop(); });
         CHECK_NOTHROW(context_pool_thread.join());
     }
 
@@ -159,16 +153,14 @@ TEST_CASE("ClientContextPool: run context pool", "[silkworm][infra][grpc][client
         ClientContextPool cp2{3};
         auto context_pool_thread1 = std::thread([&]() { cp1.run(); });
         auto context_pool_thread2 = std::thread([&]() { cp2.run(); });
-        boost::asio::post(cp1.next_io_context(), [&]() { cp1.stop(); });
-        boost::asio::post(cp2.next_io_context(), [&]() { cp2.stop(); });
+        boost::asio::post(cp1.next_ioc(), [&]() { cp1.stop(); });
+        boost::asio::post(cp2.next_ioc(), [&]() { cp2.stop(); });
         CHECK_NOTHROW(context_pool_thread1.join());
         CHECK_NOTHROW(context_pool_thread2.join());
     }
 }
 
 TEST_CASE("ClientContextPool: stop context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("not yet running") {
         ClientContextPool cp{3};
         CHECK_NOTHROW(cp.stop());
@@ -185,16 +177,14 @@ TEST_CASE("ClientContextPool: stop context pool", "[silkworm][infra][grpc][clien
     SECTION("already stopped after run in dedicated thread") {
         ClientContextPool cp{3};
         auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::post(cp.next_io_context(), [&]() { cp.stop(); });
-        boost::asio::post(cp.next_io_context(), [&]() { cp.stop(); });
+        boost::asio::post(cp.next_ioc(), [&]() { cp.stop(); });
+        boost::asio::post(cp.next_ioc(), [&]() { cp.stop(); });
         context_pool_thread.join();
-        boost::asio::post(cp.next_io_context(), [&]() { cp.stop(); });
+        boost::asio::post(cp.next_ioc(), [&]() { cp.stop(); });
     }
 }
 
 TEST_CASE("ClientContextPool: cannot restart context pool", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     SECTION("running 1 thread") {
         ClientContextPool cp{1};
         cp.start();
@@ -206,15 +196,13 @@ TEST_CASE("ClientContextPool: cannot restart context pool", "[silkworm][infra][g
     SECTION("running 3 thread") {
         ClientContextPool cp{3};
         auto context_pool_thread = std::thread([&]() { cp.run(); });
-        boost::asio::post(cp.next_io_context(), [&]() { cp.stop(); });
+        boost::asio::post(cp.next_ioc(), [&]() { cp.stop(); });
         CHECK_NOTHROW(context_pool_thread.join());
         CHECK_THROWS_AS(cp.start(), std::logic_error);
     }
 }
 
 TEST_CASE("ClientContextPool: handle loop exception", "[silkworm][infra][grpc][client][client_context]") {
-    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-
     ClientContextPool cp{3};
     std::exception_ptr run_exception;
     cp.set_exception_handler([&](std::exception_ptr eptr) {
@@ -223,7 +211,7 @@ TEST_CASE("ClientContextPool: handle loop exception", "[silkworm][infra][grpc][c
         cp.stop();
     });
     auto context_pool_thread = std::thread([&]() { cp.run(); });
-    boost::asio::post(cp.next_io_context(), [&]() { throw std::logic_error{"unexpected"}; });
+    boost::asio::post(cp.next_ioc(), [&]() { throw std::logic_error{"unexpected"}; });
     CHECK_NOTHROW(context_pool_thread.join());
     CHECK(bool(run_exception));
 }
@@ -236,7 +224,7 @@ TEST_CASE("ClientContextPool: start/stop/join w/ tasks enqueued") {
     SECTION("no dispatch interleaving: i-th GrpcContext notifies i-th asio::io_context") {
         for (size_t i = 0; i < context_pool.size(); ++i) {
             const auto& context = context_pool.next_context();
-            concurrency::spawn_future(*context.io_context(), [&]() -> Task<void> {
+            concurrency::spawn_future(*context.ioc(), [&]() -> Task<void> {
                 co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, *context.grpc_context());
             });
         }
@@ -265,7 +253,7 @@ TEST_CASE("ClientContextPool: start/destroy w/ tasks enqueued") {
     SECTION("no dispatch interleaving: i-th GrpcContext notifies i-th asio::io_context") {
         for (size_t i = 0; i < context_pool.size(); ++i) {
             const auto& context = context_pool.next_context();
-            concurrency::spawn_future(*context.io_context(), [&]() -> Task<void> {
+            concurrency::spawn_future(*context.ioc(), [&]() -> Task<void> {
                 co_await unary_rpc(&StubInterface::AsyncVersion, *stub, ::google::protobuf::Empty{}, *context.grpc_context());
             });
         }

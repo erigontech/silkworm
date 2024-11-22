@@ -46,6 +46,8 @@ struct Receipt {
     std::optional<evmc::address> to;
     std::optional<uint8_t> type{std::nullopt};  // EIP-2718
     intx::uint256 effective_gas_price{0};
+    std::optional<uint64_t> blob_gas_used{std::nullopt};          // EIP-4844
+    std::optional<intx::uint<256>> blob_gas_price{std::nullopt};  // EIP-4844
 };
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r);

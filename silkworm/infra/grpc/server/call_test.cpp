@@ -28,7 +28,6 @@ TEST_CASE("BaseRpc", "[silkworm][rpc][call][.]") {
         explicit FakeRpc(grpc::ServerContext& server_context) : server::Call(server_context) {}
     };
 
-    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     grpc::ServerContext server_context;
 
     SECTION("count live instances") {

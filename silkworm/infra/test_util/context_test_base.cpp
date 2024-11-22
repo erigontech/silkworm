@@ -19,9 +19,8 @@
 namespace silkworm::test_util {
 
 ContextTestBase::ContextTestBase()
-    : log_guard_{log::Level::kNone},
-      context_{0},
-      io_context_{*context_.io_context()},
+    : context_{0},
+      ioc_{*context_.ioc()},
       grpc_context_{*context_.grpc_context()},
       context_thread_{[&]() { context_.execute_loop(); }} {}
 

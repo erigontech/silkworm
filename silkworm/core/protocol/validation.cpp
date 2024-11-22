@@ -25,6 +25,7 @@
 
 #include "intrinsic_gas.hpp"
 #include "param.hpp"
+#include "silkworm/core/types/eip_7685_requests.hpp"
 
 namespace silkworm::protocol {
 
@@ -34,6 +35,7 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
         EVMC_BERLIN,    // kAccessList
         EVMC_LONDON,    // kDynamicFee
         EVMC_CANCUN,    // kBlob
+        EVMC_PRAGUE,    // kSetCode
     };
     const auto i{static_cast<size_t>(type)};
     return i < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[i];
@@ -104,7 +106,20 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
             return ValidationResult::kMaxFeePerBlobGasTooLow;
         }
         if (!txn.to) {
-            return ValidationResult::kBlobCreateTransaction;
+            return ValidationResult::kProhibitedContractCreation;
+        }
+    }
+
+    if (rev >= EVMC_PRAGUE) {
+        // EIP-7702
+        if (txn.type == TransactionType::kSetCode) {
+            // Contract creation is disallowed for SetCode transactions
+            if (contract_creation) {
+                return ValidationResult::kProhibitedContractCreation;
+            }
+            if (std::empty(txn.authorizations)) {
+                return ValidationResult::kEmptyAuthorizations;
+            }
         }
     }
 
@@ -184,6 +199,15 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
     if (evm.revision() >= EVMC_CANCUN) {
         if (!evm.block().header.excess_blob_gas) {
             return ValidationResult::kWrongBlobGasUsed;
+        }
+    }
+
+    if (evm.revision() >= EVMC_PRAGUE) {
+        if (txn.type == TransactionType::kSetCode && !txn.to) {
+            return ValidationResult::kProhibitedContractCreation;
+        }
+        if (txn.type == TransactionType::kSetCode && std::empty(txn.authorizations)) {
+            return ValidationResult::kEmptyAuthorizations;
         }
     }
 
@@ -302,6 +326,43 @@ evmc::bytes32 compute_ommers_hash(const BlockBody& body) {
     Bytes ommers_rlp;
     rlp::encode(ommers_rlp, body.ommers);
     return std::bit_cast<evmc_bytes32>(keccak256(ommers_rlp));
+}
+
+ValidationResult validate_requests_root(const BlockHeader& header, const std::vector<Log>& logs, EVM& evm) {
+    FlatRequests requests;
+
+    // Dequeue deposit requests by parsing logs
+    requests.extract_deposits_from_logs(logs);
+
+    // Withdrawal requests
+    {
+        Transaction system_txn{};
+        system_txn.type = TransactionType::kSystem;
+        system_txn.to = kWithdrawalRequestAddress;
+        system_txn.data = Bytes{};
+        system_txn.set_sender(kSystemAddress);
+        const auto withdrawals = evm.execute(system_txn, kSystemCallGasLimit);
+        requests.add_request(FlatRequestType::kWithdrawalRequest, withdrawals.data);
+    }
+
+    // Consolidation requests
+    {
+        Transaction system_txn{};
+        system_txn.type = TransactionType::kSystem;
+        system_txn.to = kConsolidationRequestAddress;
+        system_txn.data = Bytes{};
+        system_txn.set_sender(kSystemAddress);
+        const auto consolidations = evm.execute(system_txn, kSystemCallGasLimit);
+        requests.add_request(FlatRequestType::kConsolidationRequest, consolidations.data);
+    }
+
+    const auto computed_hash = requests.calculate_sha256();
+
+    if (computed_hash != header.requests_hash) {
+        return ValidationResult::kRequestsRootMismatch;
+    }
+
+    return ValidationResult::kOk;
 }
 
 }  // namespace silkworm::protocol

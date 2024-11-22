@@ -17,11 +17,8 @@
 #include "transaction.hpp"
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/json/types.hpp>
-
-#include "filter.hpp"
 
 namespace silkworm {
 
@@ -40,7 +37,9 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
     json["type"] = rpc::to_quantity(static_cast<uint64_t>(transaction.type));
 
-    if (transaction.type == silkworm::TransactionType::kDynamicFee) {
+    if (transaction.type == silkworm::TransactionType::kDynamicFee ||
+        transaction.type == silkworm::TransactionType::kBlob ||
+        transaction.type == silkworm::TransactionType::kSetCode) {
         json["maxPriorityFeePerGas"] = rpc::to_quantity(transaction.max_priority_fee_per_gas);
         json["maxFeePerGas"] = rpc::to_quantity(transaction.max_fee_per_gas);
     }
@@ -55,6 +54,10 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     } else {
         json["v"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.v()));
     }
+    if (transaction.type == TransactionType::kSetCode) {
+        json["authorizations"] = transaction.authorizations;  // EIP7702
+    }
+
     json["value"] = rpc::to_quantity(transaction.value);
     json["r"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.r));
     json["s"] = rpc::to_quantity(silkworm::endian::to_big_compact(transaction.s));
@@ -106,7 +109,8 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
         rpc::to_quantity(std::span(json_tx.v), silkworm::endian::to_big_compact(tx.v()));
     }
     if (tx.type == silkworm::TransactionType::kDynamicFee ||
-        tx.type == silkworm::TransactionType::kBlob) {
+        tx.type == silkworm::TransactionType::kBlob ||
+        tx.type == silkworm::TransactionType::kSetCode) {
         json_tx.max_pri_fee_per_gas = std::make_optional(rpc::to_quantity(tx.max_priority_fee_per_gas));
         json_tx.max_fee_per_gas = std::make_optional(rpc::to_quantity(tx.max_fee_per_gas));
     }
@@ -118,6 +122,21 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
             hashes.push_back(hash);
         }
         json_tx.blob_versioned_hashes = std::make_optional(hashes);
+    }
+    if (tx.type == silkworm::TransactionType::kSetCode) {
+        std::vector<GlazeJsonAuthorization> glaze_authorizations;
+        glaze_authorizations.reserve(tx.authorizations.size());
+        for (const auto& authorization : tx.authorizations) {
+            GlazeJsonAuthorization authorization_json_tx;
+            to_quantity(std::span(authorization_json_tx.chain_id), silkworm::endian::to_big_compact(authorization.chain_id));
+            to_hex(std::span(authorization_json_tx.address), authorization.address.bytes);
+            to_quantity(std::span(authorization_json_tx.v), silkworm::endian::to_big_compact(authorization.v));
+            to_quantity(std::span(authorization_json_tx.r), silkworm::endian::to_big_compact(authorization.r));
+            to_quantity(std::span(authorization_json_tx.s), silkworm::endian::to_big_compact(authorization.s));
+
+            glaze_authorizations.push_back(std::move(authorization_json_tx));
+        }
+        json_tx.authorizations = std::make_optional(std::move(glaze_authorizations));
     }
     to_quantity(std::span(json_tx.value), tx.value);
     to_quantity(std::span(json_tx.r), silkworm::endian::to_big_compact(tx.r));

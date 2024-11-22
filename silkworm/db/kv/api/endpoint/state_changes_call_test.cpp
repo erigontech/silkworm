@@ -39,11 +39,11 @@ struct StateChangesCallTest : public test_util::KVTestBase {
         co_return change_set_sequence;
     }
 
-    StateChangeChannelPtr channel{std::make_shared<StateChangeChannel>(io_context_.get_executor())};
+    StateChangeChannelPtr channel{std::make_shared<StateChangeChannel>(ioc_.get_executor())};
 };
 
 TEST_CASE_METHOD(StateChangesCallTest, "one state change set", "[db][kv][api][state_changes_call]") {
-    StateChangesCall call{StateChangeOptions{}, io_context_.get_executor()};
+    StateChangesCall call{StateChangeOptions{}, ioc_.get_executor()};
     call.set_result(channel);
     auto change_set_future = spawn(client_receive_one(call));
     const StateChangeSet empty_change_set{};
@@ -52,7 +52,7 @@ TEST_CASE_METHOD(StateChangesCallTest, "one state change set", "[db][kv][api][st
 }
 
 TEST_CASE_METHOD(StateChangesCallTest, "many state change sets", "[db][kv][api][state_changes_call]") {
-    StateChangesCall call{StateChangeOptions{}, io_context_.get_executor()};
+    StateChangesCall call{StateChangeOptions{}, ioc_.get_executor()};
     call.set_result(channel);
     auto change_set_vector_future = spawn(client_receive_all_until_closed(call));
     const std::vector<StateChangeSet> change_set_vector{StateChangeSet{}, StateChangeSet{}, StateChangeSet{}};

@@ -23,10 +23,12 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
@@ -190,13 +192,13 @@ inline constexpr int kMaxPageSize = 25;
 
 class OtsRpcApi {
   public:
-    OtsRpcApi(boost::asio::io_context& io_context, WorkerPool& workers)
-        : io_context_(io_context),
+    OtsRpcApi(boost::asio::io_context& ioc, WorkerPool& workers)
+        : ioc_{ioc},
           workers_{workers},
-          database_(must_use_private_service<ethdb::Database>(io_context_)),
-          state_cache_(must_use_shared_service<StateCache>(io_context_)),
-          block_cache_(must_use_shared_service<BlockCache>(io_context_)),
-          backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)} {}
+          database_(must_use_private_service<ethdb::Database>(ioc_)),
+          state_cache_(must_use_shared_service<StateCache>(ioc_)),
+          block_cache_(must_use_shared_service<BlockCache>(ioc_)),
+          backend_{must_use_private_service<ethbackend::BackEnd>(ioc_)} {}
 
     virtual ~OtsRpcApi() = default;
 
@@ -218,7 +220,7 @@ class OtsRpcApi {
     Task<void> handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply);
 
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioc_;
     WorkerPool& workers_;
     ethdb::Database* database_;
     StateCache* state_cache_;
@@ -228,6 +230,15 @@ class OtsRpcApi {
     friend class silkworm::rpc::json_rpc::RequestHandler;
 
   private:
+    Task<TransactionsWithReceipts> collect_transactions_with_receipts(
+        db::kv::api::Transaction& tx,
+        db::chain::CanonicalBodyForStorageProvider& provider,
+        BlockNum block_number,
+        const evmc::address& address,
+        db::kv::api::Timestamp from_timestamp,
+        bool ascending,
+        uint64_t page_size);
+
     Task<bool> trace_blocks(
         FromToBlockProvider& from_to_provider,
         db::kv::api::Transaction& tx,

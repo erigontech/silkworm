@@ -47,6 +47,7 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
     }
 
     auto& receipts = *raw_receipts;
+    auto& header = block_with_hash.block.header;
 
     // Add derived fields to the receipts
     auto& transactions = block_with_hash.block.transactions;
@@ -63,6 +64,13 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
 
         receipts[i].block_hash = block_hash;
         receipts[i].block_number = block_number;
+
+        if (!transactions[i].blob_versioned_hashes.empty()) {
+            receipts[i].blob_gas_used = kGasPerBlob * transactions[i].blob_versioned_hashes.size();
+            if (header.excess_blob_gas) {
+                receipts[i].blob_gas_price = header.blob_gas_price();
+            }
+        }
 
         // When tx receiver is not set, create a contract with address depending on tx sender and its nonce
         if (!transactions[i].to.has_value()) {
@@ -152,7 +160,7 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, co
         Receipts rpc_receipts;
         uint64_t cumulative_gas_used{0};
 
-        for (size_t index = 0; index < transactions.size(); index++) {
+        for (size_t index = 0; index < transactions.size(); ++index) {
             Receipt receipt;
 
             const silkworm::Transaction& transaction{block.transactions[index]};

@@ -210,28 +210,23 @@ class DummyTransaction : public BaseTransaction {
         co_return;
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery&& /*query*/) override {
+    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery /*query*/) override {
         co_return db::kv::api::DomainPointResult{};
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery&& /*query*/) override {
+    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery /*query*/) override {
         co_return db::kv::api::HistoryPointResult{};
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery&& /*query*/) override {
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery /*query*/) override {
         co_return test::empty_paginated_timestamps();
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery&& /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 
-    // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery&& /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 
@@ -396,7 +391,6 @@ TEST_CASE("StorageWalker::storage_range_at") {
     auto tx = result.get();
     StorageWalker walker{*tx};
 
-    const BlockNum block_number{0x52a0b3};
     const evmc::bytes32 start_location{};
 
     nlohmann::json storage({});
@@ -411,7 +405,7 @@ TEST_CASE("StorageWalker::storage_range_at") {
     SECTION("storage range 1") {
         const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
-        auto result1 = boost::asio::co_spawn(pool, walker.storage_range_at(block_number, start_address, start_location, 1, collector), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, walker.storage_range_at(10000, start_address, start_location, collector), boost::asio::use_future);
         result1.get();
 
         CHECK(storage.empty());

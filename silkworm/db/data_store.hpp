@@ -37,16 +37,18 @@ class DataStore {
         snapshots::SnapshotRepository blocks_repository,
         std::optional<snapshots::SnapshotRepository> state_repository = std::nullopt)
         : store_{
+              make_schema(state_repository.has_value()),
               std::move(chaindata_env),
               make_repositories_map(std::move(blocks_repository), std::move(state_repository)),
           } {}
 
     DataStore(
         const EnvConfig& chaindata_env_config,
-        std::filesystem::path repository_path)  // NOLINT(performance-unnecessary-value-param)
+        const std::filesystem::path& repository_path)
         : DataStore{
               db::open_env(chaindata_env_config),
-              blocks::make_blocks_repository(std::move(repository_path)),
+              blocks::make_blocks_repository(repository_path),
+              state::make_state_repository(repository_path),
           } {}
 
     void close() {
@@ -61,6 +63,8 @@ class DataStore {
     db::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
 
   private:
+    static datastore::Schema make_schema(bool enabled_state_repository);
+
     static std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> make_repositories_map(
         snapshots::SnapshotRepository blocks_repository,
         std::optional<snapshots::SnapshotRepository> state_repository) {

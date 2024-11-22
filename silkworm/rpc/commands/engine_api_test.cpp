@@ -42,7 +42,7 @@ using rpc::test::DummyDatabase;
 
 class EngineRpcApiForTest : public EngineRpcApi {
   public:
-    explicit EngineRpcApiForTest(boost::asio::io_context& io_context) : EngineRpcApi(io_context) {}
+    explicit EngineRpcApiForTest(boost::asio::io_context& ioc) : EngineRpcApi(ioc) {}
 
     using EngineRpcApi::handle_engine_exchange_capabilities;
     using EngineRpcApi::handle_engine_exchange_transition_configuration_v1;
@@ -58,11 +58,11 @@ using testing::InvokeWithoutArgs;
 struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApiForTest> {
     EngineRpcApiTest() : test_util::JsonApiTestBase<EngineRpcApiForTest>() {
         auto local_backend = std::make_unique<test::BackEndMock>();
-        add_private_service<ethbackend::BackEnd>(io_context_, std::move(local_backend));
-        mock_backend = dynamic_cast<test::BackEndMock*>(must_use_private_service<ethbackend::BackEnd>(io_context_));  // NOLINT
+        add_private_service<ethbackend::BackEnd>(ioc_, std::move(local_backend));
+        mock_backend = dynamic_cast<test::BackEndMock*>(must_use_private_service<ethbackend::BackEnd>(ioc_));  // NOLINT
 
-        add_private_service<ethdb::Database>(io_context_, std::make_unique<DummyDatabase>(mock_cursor, mock_cursor_dup_sort, mock_backend));
-        add_shared_service<engine::ExecutionEngine>(io_context_, mock_engine);
+        add_private_service<ethdb::Database>(ioc_, std::make_unique<DummyDatabase>(mock_cursor, mock_cursor_dup_sort, mock_backend));
+        add_shared_service<engine::ExecutionEngine>(ioc_, mock_engine);
     }
 
     test::BackEndMock* mock_backend{nullptr};
@@ -137,12 +137,14 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_exchangeCapabilities", "[silkworm][rp
                     "engine_newPayloadV1",
                     "engine_newPayloadV2",
                     "engine_newPayloadV3",
+                    "engine_newPayloadV4",
                     "engine_forkchoiceUpdatedV1",
                     "engine_forkchoiceUpdatedV2",
                     "engine_forkchoiceUpdatedV3",
                     "engine_getPayloadV1",
                     "engine_getPayloadV2",
                     "engine_getPayloadV3",
+                    "engine_getPayloadV4",
                     "engine_getPayloadBodiesByHashV1",
                     "engine_getPayloadBodiesByRangeV1",
                     "engine_exchangeTransitionConfigurationV1"

@@ -25,11 +25,11 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/blocks/bodies/body_queries.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
+#include <silkworm/db/blocks/transactions/txn_queries.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/transactions/txn_queries.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
@@ -129,14 +129,14 @@ bool read_header(ROTxn& txn, const evmc::bytes32& hash, BlockNum number, BlockHe
 
 std::vector<BlockHeader> read_headers(ROTxn& txn, BlockNum height) {
     std::vector<BlockHeader> headers;
-    process_headers_at_height(txn, height, [&](BlockHeader&& header) {
+    process_headers_at_height(txn, height, [&](BlockHeader header) {
         headers.emplace_back(std::move(header));
     });
     return headers;
 }
 
 // process headers at specific height
-size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func) {
+size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader)> process_func) {
     auto headers_cursor = txn.ro_cursor(table::kHeaders);
     auto key_prefix{block_key(height)};
 
@@ -1105,7 +1105,7 @@ std::vector<BlockHeader> DataModel::read_sibling_headers(BlockNum block_number) 
     std::vector<BlockHeader> sibling_headers;
 
     // Read all siblings headers at specified height from db
-    process_headers_at_height(txn_, block_number, [&](BlockHeader&& header) {
+    process_headers_at_height(txn_, block_number, [&](BlockHeader header) {
         sibling_headers.push_back(std::move(header));
     });
 
@@ -1193,7 +1193,7 @@ bool DataModel::read_block(const evmc::bytes32& hash, BlockNum number, Block& bl
     return read_block_from_snapshot(number, block);
 }
 
-void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader&&)> callback) const {
+void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader)> callback) const {
     const bool throw_notfound{false};
 
     // Try to read N headers from the database
@@ -1256,7 +1256,7 @@ bool DataModel::read_block_from_snapshot(BlockNum height, Block& block) const {
 std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum height) const {
     std::optional<BlockHeader> block_header;
     // We know the header snapshot in advance: find it based on target block number
-    const auto [segment_and_index, _] = repository_.find_segment(SnapshotType::headers, height);
+    const auto [segment_and_index, _] = repository_.find_segment(blocks::kHeaderSegmentAndIdxNames, height);
     if (segment_and_index) {
         block_header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(height);
     }
@@ -1268,7 +1268,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
     // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
     for (const auto& bundle_ptr : repository_.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_index(SnapshotType::headers);
+        auto segment_and_index = bundle.segment_and_accessor_index(blocks::kHeaderSegmentAndIdxNames);
         block_header = HeaderFindByHashQuery{segment_and_index}.exec(hash);
         if (block_header) break;
     }
@@ -1299,7 +1299,7 @@ bool DataModel::read_body_from_snapshot(BlockNum height, BlockBody& body) const 
 
 bool DataModel::is_body_in_snapshot(BlockNum height) const {
     // We know the body snapshot in advance: find it based on target block number
-    const auto [segment_and_index, _] = repository_.find_segment(SnapshotType::bodies, height);
+    const auto [segment_and_index, _] = repository_.find_segment(blocks::kBodySegmentAndIdxNames, height);
     if (segment_and_index) {
         const auto stored_body = BodyFindByBlockNumQuery{*segment_and_index}.exec(height);
         return stored_body.has_value();
@@ -1313,7 +1313,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
         return true;
     }
 
-    const auto [segment_and_index, _] = repository_.find_segment(SnapshotType::transactions, height);
+    const auto [segment_and_index, _] = repository_.find_segment(blocks::kTxnSegmentAndIdxNames, height);
     if (!segment_and_index) return false;
 
     txs = TransactionRangeFromIdQuery{*segment_and_index}.exec_into_vector(base_txn_id, txn_count);
@@ -1322,7 +1322,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_t
 }
 
 bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) const {
-    const auto [body_segment_and_index, _] = repository_.find_segment(SnapshotType::bodies, height);
+    const auto [body_segment_and_index, _] = repository_.find_segment(blocks::kBodySegmentAndIdxNames, height);
     if (body_segment_and_index) {
         auto stored_body = BodyFindByBlockNumQuery{*body_segment_and_index}.exec(height);
         if (!stored_body) return false;
@@ -1333,7 +1333,7 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector
 
         if (txn_count == 0) return true;
 
-        const auto [tx_segment_and_index, _2] = repository_.find_segment(SnapshotType::transactions, height);
+        const auto [tx_segment_and_index, _2] = repository_.find_segment(blocks::kTxnSegmentAndIdxNames, height);
         if (!tx_segment_and_index) return false;
 
         rlp_txs = TransactionPayloadRlpRangeFromIdQuery{*tx_segment_and_index}.exec_into_vector(base_txn_id, txn_count);

@@ -102,9 +102,9 @@ class KvClient {
         return stub_->HistorySeek(&context, request, response);
     }
 
-    grpc::Status domain_get(const remote::DomainGetReq& request, remote::DomainGetReply* response) {
+    grpc::Status get_latest(const remote::GetLatestReq& request, remote::GetLatestReply* response) {
         grpc::ClientContext context;
-        return stub_->DomainGet(&context, request, response);
+        return stub_->GetLatest(&context, request, response);
     }
 
     grpc::Status index_range(const remote::IndexRangeReq& request, remote::IndexRangeReply* response) {
@@ -117,9 +117,9 @@ class KvClient {
         return stub_->HistoryRange(&context, request, response);
     }
 
-    grpc::Status domain_range(const remote::DomainRangeReq& request, remote::Pairs* response) {
+    grpc::Status range_as_of(const remote::RangeAsOfReq& request, remote::Pairs* response) {
         grpc::ClientContext context;
-        return stub_->DomainRange(&context, request, response);
+        return stub_->RangeAsOf(&context, request, response);
     }
 
   private:
@@ -661,10 +661,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(status.ok());
     }
 
-    SECTION("DomainGet: return value in target domain") {
-        remote::DomainGetReq request;
-        remote::DomainGetReply response;
-        const auto status = kv_client->domain_get(request, &response);
+    SECTION("GetLatest: return value in target domain") {
+        remote::GetLatestReq request;
+        remote::GetLatestReply response;
+        const auto status = kv_client->get_latest(request, &response);
         CHECK(status.ok());
     }
 
@@ -682,10 +682,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(status.ok());
     }
 
-    SECTION("DomainRange: return value in target domain range") {
-        remote::DomainRangeReq request;
+    SECTION("RangeAsOf: return value in target domain range") {
+        remote::RangeAsOfReq request;
         remote::Pairs response;
-        const auto status = kv_client->domain_range(request, &response);
+        const auto status = kv_client->range_as_of(request, &response);
         CHECK(status.ok());
     }
 }

@@ -732,12 +732,12 @@ Task<void> HistorySeekCall::operator()() {
     SILK_TRACE << "HistorySeekCall END ok: " << response.ok() << " value: " << response.v();
 }
 
-Task<void> DomainGetCall::operator()() {
-    SILK_TRACE << "DomainGetCall START";
-    remote::DomainGetReply response;
+Task<void> GetLatestCall::operator()() {
+    SILK_TRACE << "GetLatestCall START";
+    remote::GetLatestReply response;
     // TODO(canepat) implement properly
     co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
-    SILK_TRACE << "DomainGetCall END ok: " << response.ok() << " value: " << response.v();
+    SILK_TRACE << "GetLatestCall END ok: " << response.ok() << " value: " << response.v();
 }
 
 Task<void> IndexRangeCall::operator()() {
@@ -757,12 +757,12 @@ Task<void> HistoryRangeCall::operator()() {
                << " next_page_token: " << response.next_page_token();
 }
 
-Task<void> DomainRangeCall::operator()() {
-    SILK_TRACE << "DomainRangeCall START";
+Task<void> RangeAsOfCall::operator()() {
+    SILK_TRACE << "RangeAsOfCall START";
     remote::Pairs response;
     // TODO(canepat) implement properly
     co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
-    SILK_TRACE << "DomainRangeCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
+    SILK_TRACE << "RangeAsOfCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
                << " next_page_token: " << response.next_page_token();
 }
 

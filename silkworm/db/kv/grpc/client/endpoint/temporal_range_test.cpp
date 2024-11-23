@@ -104,7 +104,7 @@ TEST_CASE("history_range_result_from_response", "[node][remote][kv][grpc]") {
 }
 
 TEST_CASE("domain_range_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::DomainRangeQuery, proto::DomainRangeReq> fixtures{
+    const Fixtures<api::DomainRangeQuery, proto::RangeAsOfReq> fixtures{
         {{}, default_proto_domain_range_request()},
         {sample_domain_range_query(), sample_proto_domain_range_request()},
     };

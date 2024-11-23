@@ -86,7 +86,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
             .timestamp = txn_number,
             .ascending_order = true,
             .limit = quantity};
-        auto paginated_result = co_await tx->domain_range(std::move(query));
+        auto paginated_result = co_await tx->range_as_of(std::move(query));
         auto it = co_await paginated_result.begin();
 
         std::vector<std::string> keys;

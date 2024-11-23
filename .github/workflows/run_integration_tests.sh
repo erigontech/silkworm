@@ -21,7 +21,6 @@ rm -rf ./mainnet/results/
 # ots_searchTransactionsBefore: new algo using TKV
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
-debug_accountAt,\
 debug_accountRange,\
 debug_traceBlockByHash/test_05,\
 debug_traceBlockByHash/test_08,\

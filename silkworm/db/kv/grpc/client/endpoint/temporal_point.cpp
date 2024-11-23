@@ -39,8 +39,8 @@ api::HistoryPointResult history_seek_result_from_response(const proto::HistorySe
     return result;
 }
 
-proto::DomainGetReq domain_get_request_from_query(const api::DomainPointQuery& query) {
-    proto::DomainGetReq request;
+proto::GetLatestReq domain_get_request_from_query(const api::DomainPointQuery& query) {
+    proto::GetLatestReq request;
     request.set_tx_id(query.tx_id);
     request.set_table(query.table);
     request.set_k(query.key.data(), query.key.size());
@@ -53,7 +53,7 @@ proto::DomainGetReq domain_get_request_from_query(const api::DomainPointQuery& q
     return request;
 }
 
-api::DomainPointResult domain_get_result_from_response(const proto::DomainGetReply& response) {
+api::DomainPointResult domain_get_result_from_response(const proto::GetLatestReply& response) {
     api::DomainPointResult result;
     result.success = response.ok();
     result.value = string_to_bytes(response.v());

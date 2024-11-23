@@ -72,8 +72,8 @@ class Transaction {
 
     /** Temporal Point Queries **/
 
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    virtual Task<DomainPointResult> domain_get(DomainPointQuery query) = 0;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply);
+    virtual Task<DomainPointResult> get_latest(DomainPointQuery query) = 0;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     virtual Task<HistoryPointResult> history_seek(HistoryPointQuery query) = 0;
@@ -86,8 +86,8 @@ class Transaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     virtual Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) = 0;
 
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    virtual Task<PaginatedKeysValues> domain_range(DomainRangeQuery query) = 0;
+    // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
+    virtual Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

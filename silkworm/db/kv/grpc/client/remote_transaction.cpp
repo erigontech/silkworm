@@ -122,15 +122,15 @@ Task<TxnId> RemoteTransaction::first_txn_num_in_block(BlockNum block_num) {
     co_return min_txn_num + /*txn_index*/ 0;
 }
 
-Task<api::DomainPointResult> RemoteTransaction::domain_get(api::DomainPointQuery query) {
+Task<api::DomainPointResult> RemoteTransaction::get_latest(api::DomainPointQuery query) {
     try {
         query.tx_id = tx_id_;
         auto request = domain_get_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainGet, stub_, std::move(request), grpc_context_);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetLatest, stub_, std::move(request), grpc_context_);
         auto result = domain_get_result_from_response(reply);
         co_return result;
     } catch (rpc::GrpcStatusError& gse) {
-        SILK_WARN << "KV::DomainGet RPC failed status=" << gse.status();
+        SILK_WARN << "KV::GetLatest RPC failed status=" << gse.status();
         throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
     }
 }
@@ -184,18 +184,18 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
-Task<api::PaginatedKeysValues> RemoteTransaction::domain_range(api::DomainRangeQuery query) {
+Task<api::PaginatedKeysValues> RemoteTransaction::range_as_of(api::DomainRangeQuery query) {
     auto paginator = [&, query = std::move(query)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         query.tx_id = tx_id_;
         query.page_token = std::move(page_token);
         auto request = domain_range_request_from_query(query);
         try {
-            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncDomainRange, stub_, std::move(request), grpc_context_);
+            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncRangeAsOf, stub_, std::move(request), grpc_context_);
             auto result = history_range_result_from_response(reply);
 
             co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), std::move(result.next_page_token)};
         } catch (rpc::GrpcStatusError& gse) {
-            SILK_WARN << "KV::DomainRange RPC failed status=" << gse.status();
+            SILK_WARN << "KV::RangeAsOf RPC failed status=" << gse.status();
             throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
         }
     };

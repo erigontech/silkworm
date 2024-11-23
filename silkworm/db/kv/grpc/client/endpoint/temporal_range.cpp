@@ -71,8 +71,8 @@ api::HistoryRangeResult history_range_result_from_response(const proto::Pairs& r
     return result;
 }
 
-::remote::DomainRangeReq domain_range_request_from_query(const api::DomainRangeQuery& query) {
-    ::remote::DomainRangeReq request;
+::remote::RangeAsOfReq domain_range_request_from_query(const api::DomainRangeQuery& query) {
+    ::remote::RangeAsOfReq request;
     request.set_tx_id(query.tx_id);
     request.set_table(query.table);
     request.set_from_key(query.from_key.data(), query.from_key.size());

@@ -74,7 +74,7 @@ Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum /*block_num*/) {
     throw std::logic_error{"not yet implemented"};
 }
 
-Task<DomainPointResult> LocalTransaction::domain_get(DomainPointQuery /*query*/) {
+Task<DomainPointResult> LocalTransaction::get_latest(DomainPointQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     co_return DomainPointResult{};
 }
@@ -100,7 +100,7 @@ Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery /*qu
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
-Task<PaginatedKeysValues> LocalTransaction::domain_range(DomainRangeQuery /*query*/) {
+Task<PaginatedKeysValues> LocalTransaction::range_as_of(DomainRangeQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         co_return api::PaginatedKeysValues::PageResult{};

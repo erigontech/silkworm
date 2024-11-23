@@ -45,7 +45,7 @@ debug_traceTransaction/test_90.tar,\
 debug_traceTransaction/test_91.tar,\
 debug_traceTransaction/test_92.tar,\
 debug_traceTransaction/test_96.json,\
-trace_replayBlockTransactions/test_29",\
+trace_replayBlockTransactions/test_29,\
 engine_,\
 erigon_getLatestLogs,\
 eth_getLogs,\

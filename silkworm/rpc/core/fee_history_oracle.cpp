@@ -44,16 +44,17 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     if (fh.blob_gas_used_ratio.empty()) {
         json["blobGasUsedRatio"] = nullptr;
     } else {
-        auto json1 = nlohmann::json::array();
+        std::vector<double> blob_gas_used_ratio_double{};
+        blob_gas_used_ratio_double.reserve(fh.blob_gas_used_ratio.size());
         for (size_t k{0}; k < fh.blob_gas_used_ratio.size(); ++k) {
             auto& value{fh.blob_gas_used_ratio[k]};
             if (value == 0) {
-                json1.push_back(0);
+                blob_gas_used_ratio_double.push_back(0);
             } else {
-                json1.push_back(value);
+                blob_gas_used_ratio_double.push_back(value);
             }
         }
-        json["blobGasUsedRatio"] = json1;
+        json["blobGasUsedRatio"] = blob_gas_used_ratio_double;
     }
     json["oldestBlock"] = to_quantity(fh.oldest_block);
 

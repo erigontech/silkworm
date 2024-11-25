@@ -448,9 +448,8 @@ size_t read_blocks(ROTxn& txn, BlockNum block_num, std::function<void(Block&)> p
                 parse_senders(txn, key_bytes, block.transactions);
             }
             // ...header
-            auto [block_num, hash] = split_block_key(key);
-            const bool present = read_header(txn, hash, block_num, block.header);
-            auto ref_block_num = block_num;
+            auto [ref_block_num, hash] = split_block_key(key);
+            const bool present = read_header(txn, hash, ref_block_num, block.header);
             auto ref_hash = hash;
             ensure(present, [&]() { return "header not found for body block_num= " + std::to_string(ref_block_num) + ", hash= " + silkworm::to_hex(ref_hash); });
             // invoke handler

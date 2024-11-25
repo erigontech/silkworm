@@ -377,9 +377,9 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
             return nullptr;
         }
         next_target = *lowest_anchor;
-    } else {                                    // there are no anchors
+    } else {                                // there are no anchors
         if (top - max_in_db_ <= kStride) {  // the top is too close to max_in_db
-            if (target_block_) {                // we are syncing to a specific block
+            if (target_block_) {            // we are syncing to a specific block
                 skeleton_condition_ = "near the top";
                 auto request_message = std::make_shared<OutboundGetBlockHeaders>();
                 request_message->packet().request_id = generate_request_id();
@@ -612,7 +612,7 @@ std::tuple<Penalty, HeaderChain::RequestMoreHeaders> HeaderChain::accept_headers
     statistics_.received_items += headers.size();
 
     if (headers.begin()->number < top_seen_block_num_ &&  // an old header announcement?
-        !is_valid_request_id(request_id)) {            // anyway is not requested by us...
+        !is_valid_request_id(request_id)) {               // anyway is not requested by us...
         statistics_.reject_causes.not_requested += headers.size();
         SILK_TRACE_M("HeaderChain")
             << "Rejecting message with reqId=" << request_id

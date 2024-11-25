@@ -166,7 +166,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_num_from_txn_hash", "[silkw
 
     SECTION("call get_block_num_from_txn_hash and get number") {
         ::remote::TxnLookupReply response;
-        response.set_block_num(5);
+        response.set_block_number(5);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto block_num = run<&ethbackend::RemoteBackEnd::get_block_num_from_txn_hash>(hash.bytes);
         CHECK(block_num == 5);
@@ -175,7 +175,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_num_from_txn_hash", "[silkw
     SECTION("call get_block_num_from_txn_hash and get zero count") {
         ::remote::TxnLookupReply response;
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        response.set_block_num(0);
+        response.set_block_number(0);
         const auto block_num = run<&ethbackend::RemoteBackEnd::get_block_num_from_txn_hash>(hash.bytes);
         CHECK(block_num == std::nullopt);
     }

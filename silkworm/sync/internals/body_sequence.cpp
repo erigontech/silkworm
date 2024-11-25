@@ -37,7 +37,7 @@ BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lo
 size_t BodySequence::ready_bodies() const { return ready_bodies_; }
 size_t BodySequence::requests() const { return body_requests_.size(); }
 bool BodySequence::has_completed() const {
-    return requests() == 0 &&                            // no more requests
+    return requests() == 0 &&                           // no more requests
            max_block_in_output() == target_block_num_;  // all bodies withdrawn
 }
 

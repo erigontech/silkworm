@@ -46,7 +46,7 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<B
                                                                  std::optional<Hash> hash) {
     proto::GetSegmentRequest request;
     if (number) {
-        request.set_block_num(*number);
+        request.set_block_number(*number);
     }
     if (hash) {
         request.set_allocated_block_hash(rpc::h256_from_bytes32(*hash).release());
@@ -64,9 +64,9 @@ TEST_CASE("request_from_block_num_or_hash", "[node][execution][grpc]") {
         SECTION("block_num_or_hash index: " + std::to_string(number_or_hash.index())) {
             const auto segment_request{request_from_block_num_or_hash(number_or_hash)};
             // CHECK(segment_request == expected_segment_request);  // requires operator== in gRPC generated code
-            CHECK(segment_request.has_block_num() == expected_segment_request.has_block_num());
-            if (segment_request.has_block_num()) {
-                CHECK(segment_request.block_num() == expected_segment_request.block_num());
+            CHECK(segment_request.has_block_number() == expected_segment_request.has_block_number());
+            if (segment_request.has_block_number()) {
+                CHECK(segment_request.block_number() == expected_segment_request.block_number());
             }
             CHECK(segment_request.has_block_hash() == expected_segment_request.has_block_hash());
             if (segment_request.has_block_hash()) {

@@ -82,7 +82,7 @@ TEST_CASE("BodiesStage - data model") {
         bm.update_tables(block1);
 
         // check internal status
-        REQUIRE(bm.max_block_num() == 0);    // block is not valid so no progress
+        REQUIRE(bm.max_block_num() == 0);     // block is not valid so no progress
         REQUIRE(bm.unwind_needed() == true);  // block is not valid -> unwind
         REQUIRE(bm.unwind_point() == 0);      // block-num - 1
         REQUIRE(bm.bad_block() == header1_hash);

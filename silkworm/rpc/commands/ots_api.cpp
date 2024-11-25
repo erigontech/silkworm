@@ -816,7 +816,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     kv::api::Transaction& tx,
     db::chain::CanonicalBodyForStorageProvider& provider,
-    BlockNum block_num,
+    BlockNum block_num_param,
     const evmc::address& address,
     db::kv::api::Timestamp from_timestamp,
     bool ascending, uint64_t page_size) {
@@ -843,9 +843,9 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     TransactionsWithReceipts results;
     if (ascending) {
         results.first_page = true;
-        results.last_page = block_num == 0;
+        results.last_page = block_num_param == 0;
     } else {
-        results.first_page = block_num == 0;
+        results.first_page = block_num_param == 0;
         results.last_page = true;
     }
 

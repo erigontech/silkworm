@@ -39,7 +39,7 @@ void header_from_proto(const ::execution::Header& proto_header, BlockHeader& hea
     header.transactions_root = rpc::bytes32_from_h256(proto_header.transaction_hash());
     header.receipts_root = rpc::bytes32_from_h256(proto_header.receipt_root());
     header.difficulty = rpc::uint256_from_h256(proto_header.difficulty());
-    header.number = proto_header.block_num();
+    header.number = proto_header.block_number();
     header.gas_limit = proto_header.gas_limit();
     header.gas_used = proto_header.gas_used();
     header.timestamp = proto_header.timestamp();
@@ -72,7 +72,7 @@ BlockHeader header_from_proto(const proto::Header& proto_header) {
 
 void body_from_proto(const ::execution::BlockBody& proto_body, BlockBody& body, Hash& block_hash, BlockNum& block_num) {
     block_hash = rpc::bytes32_from_h256(proto_body.block_hash());
-    block_num = proto_body.block_num();
+    block_num = proto_body.block_number();
     body.transactions.reserve(static_cast<size_t>(proto_body.transactions_size()));
     for (const auto& received_tx : proto_body.transactions()) {
         ByteView raw_tx_rlp{string_view_to_byte_view(received_tx)};
@@ -107,7 +107,7 @@ void proto_from_header(const BlockHeader& bh, proto::Header* header) {
     header->set_allocated_receipt_root(rpc::h256_from_bytes32(bh.receipts_root).release());
     header->set_allocated_logs_bloom(rpc::h2048_from_string(to_string(bh.logs_bloom)).release());
     header->set_allocated_prev_randao(rpc::h256_from_bytes32(bh.prev_randao).release());
-    header->set_block_num(bh.number);
+    header->set_block_number(bh.number);
     header->set_gas_limit(bh.gas_limit);
     header->set_gas_used(bh.gas_used);
     header->set_timestamp(bh.timestamp);
@@ -136,7 +136,7 @@ void proto_from_header(const BlockHeader& bh, proto::Header* header) {
 
 void proto_from_body(const BlockBody& body, const Hash& h, BlockNum n, proto::BlockBody* proto_body) {
     proto_body->set_allocated_block_hash(rpc::h256_from_bytes32(h).release());
-    proto_body->set_block_num(n);
+    proto_body->set_block_number(n);
     for (const auto& transaction : body.transactions) {
         Bytes tx_rlp;
         rlp::encode(tx_rlp, transaction);

@@ -694,7 +694,7 @@ Task<void> StateChangesCall::operator()(StateChangeCollection* source) {
         if (ec == boost::asio::error::operation_aborted) {
             // Notifying timer cancelled => incoming batch available
             if (incoming_batch) {
-                const auto block_num = incoming_batch->change_batch(0).block_num();
+                const auto block_num = incoming_batch->change_batch(0).block_height();
                 SILK_DEBUG << "Sending state change batch for block: " << block_num;
                 const bool write_ok = co_await agrpc::write(responder_, *incoming_batch);
                 SILK_DEBUG << "State change batch for block: " << block_num << " sent [write_ok=" << write_ok << "]";

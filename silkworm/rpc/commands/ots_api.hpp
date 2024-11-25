@@ -233,7 +233,7 @@ class OtsRpcApi {
     Task<TransactionsWithReceipts> collect_transactions_with_receipts(
         db::kv::api::Transaction& tx,
         db::chain::CanonicalBodyForStorageProvider& provider,
-        BlockNum block_num,
+        BlockNum block_num_param,
         const evmc::address& address,
         db::kv::api::Timestamp from_timestamp,
         bool ascending,

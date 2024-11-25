@@ -1130,8 +1130,8 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         silkworm::Transaction txn{call.to_transaction()};
 
         const auto execution_result = co_await EVMExecutor::call(
-            chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
-                return tx->create_state(io_executor, storage, block_num);
+            chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&tx](auto& io_executor, auto block_num1, auto& storage) {
+                return tx->create_state(io_executor, storage, block_num1);
             });
 
         if (execution_result.success()) {

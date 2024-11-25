@@ -459,7 +459,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     context.tx_origin = *evm_.txn_->sender();
     context.block_coinbase = evm_.beneficiary;
     SILKWORM_ASSERT(header.number <= INT64_MAX);  // EIP-1985
-    context.block_num = static_cast<int64_t>(header.number);
+    context.block_number = static_cast<int64_t>(header.number);
     context.block_timestamp = static_cast<int64_t>(header.timestamp);
     SILKWORM_ASSERT(header.gas_limit <= INT64_MAX);  // EIP-1985
     context.block_gas_limit = static_cast<int64_t>(header.gas_limit);

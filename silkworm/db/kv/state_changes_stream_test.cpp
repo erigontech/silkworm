@@ -111,7 +111,7 @@ static remote::StateChangeBatch make_batch() {
 
     remote::StateChangeBatch state_changes{};
     remote::StateChange* latest_change = state_changes.add_change_batch();
-    latest_change->set_block_num(++block_num);
+    latest_change->set_block_height(++block_num);
 
     return state_changes;
 }

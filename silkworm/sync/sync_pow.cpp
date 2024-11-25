@@ -36,7 +36,7 @@ Task<void> PoWSync::async_run() {
     return ActiveComponent::async_run("pow-sync-ex");
 }
 
-PoWSync::BlockId PoWSync::resume() {  // find the point (head) where we left off
+BlockId PoWSync::resume() {  // find the point (head) where we left off
     BlockId head{};
 
     // BlockExchange need a bunch of previous headers to attach the new ones
@@ -74,7 +74,7 @@ PoWSync::BlockId PoWSync::resume() {  // find the point (head) where we left off
     return head;
 }
 
-PoWSync::BlockId PoWSync::forward_and_insert_blocks() {
+BlockId PoWSync::forward_and_insert_blocks() {
     using namespace std::chrono_literals;
     using ResultQueue = BlockExchange::ResultQueue;
 
@@ -149,8 +149,8 @@ void PoWSync::execution_loop() {
     while (!is_stopping()) {
         // Resume from previous run or download new blocks
         BlockId new_block_num = is_starting_up
-                                   ? resume()                      // resuming, the following verify_chain is needed to check all stages
-                                   : forward_and_insert_blocks();  // downloads new blocks and inserts them into the db
+                                    ? resume()                      // resuming, the following verify_chain is needed to check all stages
+                                    : forward_and_insert_blocks();  // downloads new blocks and inserts them into the db
         if (new_block_num.number == 0) {
             // When starting from empty db there is no chain to verify, so go on downloading new blocks
             is_starting_up = false;

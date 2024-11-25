@@ -46,7 +46,7 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<B
                                                                  std::optional<Hash> hash) {
     proto::GetSegmentRequest request;
     if (number) {
-        request.set_block_num(*number);
+        request.set_block_number(*number);
     }
     if (hash) {
         request.set_allocated_block_hash(rpc::h256_from_bytes32(*hash).release());
@@ -121,7 +121,7 @@ TEST_CASE("response_from_header", "[node][execution][grpc]") {
             if (response.has_header()) {
                 const auto& header{response.header()};
                 const auto& expected_header{expected_response.header()};
-                CHECK(header.block_num() == expected_header.block_num());
+                CHECK(header.block_number() == expected_header.block_number());
                 CHECK(header.has_block_hash() == expected_header.has_block_hash());
                 CHECK(header.block_hash() == expected_header.block_hash());
                 CHECK(header.extra_data() == expected_header.extra_data());
@@ -151,7 +151,7 @@ TEST_CASE("response_from_body", "[node][execution][grpc]") {
                 const auto& body{response.body()};
                 const auto& expected_body{expected_response.body()};
                 CHECK(body.block_hash() == expected_body.block_hash());
-                CHECK(body.block_num() == expected_body.block_num());
+                CHECK(body.block_number() == expected_body.block_number());
                 CHECK(body.transactions_size() == expected_body.transactions_size());
                 CHECK(body.uncles_size() == expected_body.uncles_size());
                 CHECK(body.withdrawals_size() == expected_body.withdrawals_size());

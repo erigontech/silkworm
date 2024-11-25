@@ -36,7 +36,7 @@ namespace silkworm {
 // A link corresponds to a block header, links are connected to each other by reverse of parent_hash relation
 struct Link {
     std::shared_ptr<BlockHeader> header;      // Header to which this link point to
-    BlockNum block_num = 0;                // Block block_num of the header, repeated here for convenience (remove?)
+    BlockNum block_num = 0;                   // Block block_num of the header, repeated here for convenience (remove?)
     Hash hash;                                // Hash of the header
     std::vector<std::shared_ptr<Link>> next;  // Reverse of parent_hash,allows iter.over links in asc. block number order
     bool persisted = false;                   // Whether this link comes from the database record
@@ -63,12 +63,12 @@ struct Link {
 // An anchor is the bottom of a chain bundle that consists of one anchor and some chain links.
 struct Anchor {
     Hash parent_hash;                          // Hash of the header this anchor can be connected to (to disappear)
-    BlockNum block_num;                     // block number of the anchor
+    BlockNum block_num;                        // block number of the anchor
     time_point_t timestamp;                    // request/arrival time
     time_point_t prev_timestamp;               // Used to restore timestamp when a request fails for network reasons
     int timeouts{0};                           // Number of timeout that this anchor has experienced; after certain threshold, it gets invalidated
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor
-    BlockNum last_link_block_num{0};              // the block_num of the last link of the chain bundle anchored to this
+    BlockNum last_link_block_num{0};           // the block_num of the last link of the chain bundle anchored to this
     PeerId peer_id;
 
     Anchor(const BlockHeader& header, PeerId p)
@@ -107,14 +107,14 @@ struct Anchor {
 struct LinkOlderThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
         return x->block_num != y->block_num ? x->block_num < y->block_num :  // cause ordering
-                   x < y;                                                                // preserve identity
+                   x < y;                                                    // preserve identity
     }
 };
 
 struct LinkYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
         return x->block_num != y->block_num ? x->block_num > y->block_num :  // cause ordering
-                   x > y;                                                                // preserve identity
+                   x > y;                                                    // preserve identity
     }
 };
 
@@ -160,8 +160,8 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 }  // namespace silkworm
 template <>
-struct MbpqKey<std::shared_ptr<silkworm::Link>> {                                                  // extract key type and value
-    using type = silkworm::BlockNum;                                                               // type of the key
+struct MbpqKey<std::shared_ptr<silkworm::Link>> {                                               // extract key type and value
+    using type = silkworm::BlockNum;                                                            // type of the key
     static type value(const std::shared_ptr<silkworm::Link>& link) { return link->block_num; }  // value of the key
 };
 namespace silkworm {  // reopen namespace

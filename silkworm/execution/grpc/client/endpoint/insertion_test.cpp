@@ -69,7 +69,7 @@ TEST_CASE("insertion_request_from_blocks", "[node][execution][grpc]") {
                     if (block.has_header()) {
                         const auto& header{block.header()};
                         const auto& expected_header{expected_block.header()};
-                        CHECK(header.block_num() == expected_header.block_num());
+                        CHECK(header.block_number() == expected_header.block_number());
                     }
                     CHECK(block.has_body() == expected_block.has_body());
                 }

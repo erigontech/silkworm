@@ -49,7 +49,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[rpc][txpool][miner]") {
         response.set_header_hash("0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7");
         response.set_seed_hash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347");
         response.set_target("0xe7536c5b61ed0e0ab7f3ce7f085806d40f716689c0c086676757de401b595658");
-        response.set_block_num("0x00000000");
+        response.set_block_number("0x00000000");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto work_result = run<&Miner::get_work>();
         CHECK(work_result.header_hash == 0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32);

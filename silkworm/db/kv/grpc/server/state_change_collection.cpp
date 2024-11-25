@@ -55,7 +55,7 @@ void StateChangeCollection::start_new_batch(BlockNum block_num, const evmc::byte
     SILKWORM_ASSERT(latest_change_ == nullptr);
 
     latest_change_ = state_changes_.add_change_batch();
-    latest_change_->set_block_num(block_num);
+    latest_change_->set_block_height(block_num);
     latest_change_->set_allocated_block_hash(rpc::h256_from_bytes32(block_hash).release());
     latest_change_->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
     for (auto& tx_rlp : tx_rlps) {

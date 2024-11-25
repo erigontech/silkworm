@@ -49,9 +49,9 @@ TEST_CASE("links") {
         REQUIRE(link1.preverified == false);
         REQUIRE(link1.next.empty());
 
-        headers[1].number = 100;           // only for the following test
+        headers[1].number = 100;        // only for the following test
         REQUIRE(link1.block_num == 1);  // link1 has a copy of headers[1]
-        headers[1].number = 1;             // ok
+        headers[1].number = 1;          // ok
     }
 
     SECTION("children") {

@@ -150,12 +150,12 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(penalty == kNoPenalty);
         REQUIRE(request_status.ready);
         REQUIRE(request_status.body == block1);
-        REQUIRE(request_status.block_num == 1);           // same as before
+        REQUIRE(request_status.block_num == 1);              // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
-        REQUIRE(bs.max_block_in_memory() == 1);  // same as before
-        REQUIRE(bs.lowest_block_in_memory() == 1);   // same as before
+        REQUIRE(bs.max_block_in_memory() == 1);     // same as before
+        REQUIRE(bs.lowest_block_in_memory() == 1);  // same as before
 
         // check statistics
         auto& statistic = bs.statistics();
@@ -232,12 +232,12 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         // REQUIRE(penalty == kBadBlockPenalty); // for now we choose to not penalize the peer
         REQUIRE(!request_status.ready);
-        REQUIRE(request_status.block_num == 1);           // same as before
+        REQUIRE(request_status.block_num == 1);              // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
-        REQUIRE(bs.max_block_in_memory() == 1);  // same as before
-        REQUIRE(bs.lowest_block_in_memory() == 1);   // same as before
+        REQUIRE(bs.max_block_in_memory() == 1);     // same as before
+        REQUIRE(bs.lowest_block_in_memory() == 1);  // same as before
 
         auto& statistic = bs.statistics();
         REQUIRE(statistic.requested_items == 1);
@@ -274,12 +274,12 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         REQUIRE(penalty == kNoPenalty);                      // correct?
         REQUIRE(request_status.ready);                       // same as before
-        REQUIRE(request_status.block_num == 1);           // same as before
+        REQUIRE(request_status.block_num == 1);              // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
-        REQUIRE(bs.max_block_in_memory() == 1);  // same as before
-        REQUIRE(bs.lowest_block_in_memory() == 1);   // same as before
+        REQUIRE(bs.max_block_in_memory() == 1);     // same as before
+        REQUIRE(bs.lowest_block_in_memory() == 1);  // same as before
 
         auto& statistic = bs.statistics();
         REQUIRE(statistic.requested_items == 1);

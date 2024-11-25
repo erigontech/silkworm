@@ -30,7 +30,7 @@ namespace silkworm::execution::grpc::client {
     } else {
         SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
         const auto block_num{std::get<BlockNum>(number_or_hash)};
-        request.set_block_num(block_num);
+        request.set_block_number(block_num);
     }
     return request;
 }

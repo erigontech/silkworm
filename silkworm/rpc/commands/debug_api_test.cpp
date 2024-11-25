@@ -33,10 +33,7 @@
 #include <silkworm/db/kv/api/endpoint/temporal_range.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/infra/test_util/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/filter_storage.hpp>
 #if !defined(__clang__)
 #include <silkworm/rpc/stagedsync/stages.hpp>
@@ -234,7 +231,7 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return;
     }
 
-    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery /*query*/) override {
+    Task<db::kv::api::DomainPointResult> get_latest(db::kv::api::DomainPointQuery /*query*/) override {
         co_return db::kv::api::DomainPointResult{};
     }
 
@@ -250,7 +247,7 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return test::empty_paginated_keys_and_values();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 
@@ -394,7 +391,7 @@ TEST_CASE("get_modified_accounts") {
                 co_return 20;
             }));
         db::kv::api::HistoryRangeQuery query{
-            .table = db::table::kAccountsHistory,
+            .table = db::table::kAccountDomain,
             .from_timestamp = static_cast<db::kv::api::Timestamp>(0),
             .to_timestamp = static_cast<db::kv::api::Timestamp>(19),
             .ascending_order = true};

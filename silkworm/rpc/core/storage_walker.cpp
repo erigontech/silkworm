@@ -16,7 +16,6 @@
 
 #include "storage_walker.hpp"
 
-#include <set>
 #include <sstream>
 
 #include <silkworm/core/common/endian.hpp>
@@ -24,7 +23,6 @@
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/split_cursor.hpp>
@@ -177,16 +175,6 @@ Task<void> StorageWalker::walk_of_storages(
     co_return;
 }
 
-static void increment_key(Bytes& array) {
-    for (auto& it : std::ranges::reverse_view(array)) {
-        if (it < 0xFF) {
-            ++it;
-            break;
-        }
-        it = 0x00;
-    }
-}
-
 Task<void> StorageWalker::storage_range_at(
     TxnId txn_number,
     const evmc::address& address,
@@ -194,7 +182,7 @@ Task<void> StorageWalker::storage_range_at(
     StorageCollector& collector) {
     auto from{make_key(address, start_location)};
     auto to = db::code_domain_key(address);
-    increment_key(to);
+    increment(to);
 
     db::kv::api::DomainRangeQuery query{
         .table = db::table::kStorageDomain,
@@ -202,7 +190,7 @@ Task<void> StorageWalker::storage_range_at(
         .to_key = to,
         .timestamp = txn_number,
         .ascending_order = true};
-    auto paginated_result = co_await transaction_.domain_range(std::move(query));
+    auto paginated_result = co_await transaction_.range_as_of(std::move(query));
     auto it = co_await paginated_result.begin();
 
     while (const auto value = co_await it.next()) {

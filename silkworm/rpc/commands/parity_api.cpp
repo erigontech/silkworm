@@ -23,31 +23,18 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
-#include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::rpc::commands {
 
 using db::state::StateReader;
-
-void increment(Bytes& array) {
-    for (auto& it : std::ranges::reverse_view(array)) {
-        if (it < 0xFF) {
-            ++it;
-            break;
-        }
-        it = 0x00;
-    }
-}
 
 Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
@@ -99,7 +86,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
             .timestamp = txn_number,
             .ascending_order = true,
             .limit = quantity};
-        auto paginated_result = co_await tx->domain_range(std::move(query));
+        auto paginated_result = co_await tx->range_as_of(std::move(query));
         auto it = co_await paginated_result.begin();
 
         std::vector<std::string> keys;

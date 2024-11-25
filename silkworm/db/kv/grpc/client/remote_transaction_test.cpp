@@ -428,46 +428,46 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 }
 #endif  // SILKWORM_SANITIZE
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_get", "[db][kv][grpc][client][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][kv][grpc][client][remote_transaction]") {
     using db::kv::test_util::sample_proto_domain_get_response;
 
-    auto domain_get = [&]() -> Task<api::DomainPointResult> {
+    auto get_latest = [&]() -> Task<api::DomainPointResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
         // Before GCC 13, we must avoid passing api::DomainPointQuery as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainPointQuery query;
-        const api::DomainPointResult result = co_await remote_tx_.domain_get(std::move(query));
+        const api::DomainPointResult result = co_await remote_tx_.get_latest(std::move(query));
 #else
-        const api::DomainPointResult result = co_await remote_tx_.domain_get(api::DomainPointQuery{});
+        const api::DomainPointResult result = co_await remote_tx_.get_latest(api::DomainPointQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
 
-    rpc::test::StrictMockAsyncResponseReader<proto::DomainGetReply> reader;
-    EXPECT_CALL(*stub_, AsyncDomainGetRaw).WillOnce(testing::Return(&reader));
+    rpc::test::StrictMockAsyncResponseReader<proto::GetLatestReply> reader;
+    EXPECT_CALL(*stub_, AsyncGetLatestRaw).WillOnce(testing::Return(&reader));
 
     api::DomainPointResult result;
 
-    SECTION("call domain_get and get result") {
-        proto::DomainGetReply reply{sample_proto_domain_get_response()};
+    SECTION("call get_latest and get result") {
+        proto::GetLatestReply reply{sample_proto_domain_get_response()};
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
 
-        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK_NOTHROW((result = spawn_and_wait(get_latest)));
         CHECK(result.success);
         CHECK(result.value == from_hex("ff00ff00"));
     }
-    SECTION("call domain_get and get empty result") {
+    SECTION("call get_latest and get empty result") {
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
 
-        CHECK_NOTHROW((result = spawn_and_wait(domain_get)));
+        CHECK_NOTHROW((result = spawn_and_wait(get_latest)));
         CHECK_FALSE(result.success);
         CHECK(result.value.empty());
     }
-    SECTION("call domain_get and get error") {
+    SECTION("call get_latest and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
 
-        CHECK_THROWS_AS(spawn_and_wait(domain_get), boost::system::system_error);
+        CHECK_THROWS_AS(spawn_and_wait(get_latest), boost::system::system_error);
     }
 }
 
@@ -697,7 +697,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
     }
 }
 
-TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db][kv][grpc][client][remote_transaction]") {
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::range_as_of", "[db][kv][grpc][client][remote_transaction]") {
     const api::KeyValue kv1{*from_hex("0011FF0011AA"), *from_hex("0011")};
     const api::KeyValue kv2{*from_hex("0011FF0011BB"), *from_hex("0022")};
     const api::KeyValue kv3{*from_hex("0011FF0011CC"), *from_hex("0033")};
@@ -708,17 +708,17 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainRangeQuery query;
-        auto paginated_keys_and_values = co_await remote_tx_.domain_range(std::move(query));
+        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(std::move(query));
 #else
-        auto paginated_keys_and_values = co_await remote_tx_.domain_range(api::DomainRangeQuery{});
+        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(api::DomainRangeQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_keys_and_values);
     };
     rpc::test::StrictMockAsyncResponseReader<proto::Pairs> reader;
     SECTION("throw on error") {
         // Set the call expectations:
-        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillOnce(Return(&reader));
+        // 1. remote::KV::StubInterface::AsyncRangeAsOfRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncRangeAsOfRaw).WillOnce(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call fails
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_error_aborted(grpc_context_, proto::Pairs{}));
         // Execute the test: trying to *use* index_range lazy result should throw
@@ -726,8 +726,8 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
     }
     SECTION("success: empty") {
         // Set the call expectations:
-        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 1. remote::KV::StubInterface::AsyncRangeAsOfRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncRangeAsOfRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({}, /*has_more*/ false)));
@@ -737,8 +737,8 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
     }
     SECTION("success: one page") {
         // Set the call expectations:
-        // 1. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 1. remote::KV::StubInterface::AsyncRangeAsOfRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncRangeAsOfRaw).WillRepeatedly(Return(&reader));
         // 2. AsyncResponseReader<>::Finish call succeeds
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1}, /*has_more*/ false)));
@@ -758,8 +758,8 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::domain_range", "[db]
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status OK
         EXPECT_CALL(reader_writer_, Finish).WillOnce(test::finish_streaming_ok(grpc_context_));
-        // 5. remote::KV::StubInterface::AsyncDomainRangeRaw call succeeds
-        EXPECT_CALL(*stub_, AsyncDomainRangeRaw).WillRepeatedly(Return(&reader));
+        // 5. remote::KV::StubInterface::AsyncRangeAsOfRaw call succeeds
+        EXPECT_CALL(*stub_, AsyncRangeAsOfRaw).WillRepeatedly(Return(&reader));
         // 6. AsyncResponseReader<>::Finish call succeeds 3 times
         EXPECT_CALL(reader, Finish)
             .WillOnce(test::finish_with(grpc_context_, make_key_value_range_reply({kv1, kv2}, /*has_more*/ true)))

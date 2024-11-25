@@ -61,7 +61,6 @@ TEST_CASE("KVSegmentFile") {
     KVSegmentFileWriter::flush(std::move(file_writer));
 
     KVSegmentFileReader file_reader{path, kCompressionKind};
-    file_reader.reopen_segment();
     KVSegmentReader<StringCodec, CharCodec> reader{file_reader};
     for (std::pair<std::string&, char&> entry : reader) {
         CHECK(entry.first == entries[0].first);

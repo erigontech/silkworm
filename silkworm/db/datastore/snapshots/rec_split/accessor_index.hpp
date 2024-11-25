@@ -33,38 +33,37 @@ class AccessorIndex {
     explicit AccessorIndex(
         SnapshotPath path,
         std::optional<MemoryMappedRegion> region = std::nullopt)
-        : path_(std::move(path)),
-          region_(region) {}
+        : path_{std::move(path)},
+          index_{path_.path(), region} {
+    }
 
-    std::optional<size_t> lookup_by_data_id(uint64_t id) const { return index_->lookup_by_data_id(id); };
-    std::optional<size_t> lookup_by_hash(const Hash& hash) const { return index_->lookup_by_key(hash); };
+    std::optional<size_t> lookup_by_data_id(uint64_t id) const {
+        return index_.lookup_by_data_id(id);
+    }
+
+    std::optional<size_t> lookup_by_hash(const Hash& hash) const {
+        return index_.lookup_by_key(hash);
+    }
 
     std::optional<size_t> lookup_ordinal_by_hash(const Hash& hash) const {
-        auto [result, found] = index_->lookup(hash);
+        auto [result, found] = index_.lookup(hash);
         return found ? std::optional{result} : std::nullopt;
     }
 
-    void reopen_index();
-    void close_index();
-
-    bool is_open() const { return index_.get(); }
     const SnapshotPath& path() const { return path_; }
+    const std::filesystem::path& fs_path() const { return path_.path(); }
 
     MemoryMappedRegion memory_file_region() const {
-        return index_ ? index_->memory_file_region() : MemoryMappedRegion{};
+        return index_.memory_file_region();
     }
 
     uint64_t base_data_id() const {
-        SILKWORM_ASSERT(index_);
-        return index_->base_data_id();
+        return index_.base_data_id();
     }
 
   private:
     SnapshotPath path_;
-    //! External memory-mapped region of the index data
-    std::optional<MemoryMappedRegion> region_;
-
-    std::unique_ptr<rec_split::RecSplitIndex> index_;
+    rec_split::RecSplitIndex index_;
 };
 
 }  // namespace silkworm::snapshots::rec_split

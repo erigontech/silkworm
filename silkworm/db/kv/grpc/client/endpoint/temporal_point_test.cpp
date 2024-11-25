@@ -62,7 +62,7 @@ TEST_CASE("history_get_result_from_response", "[node][remote][kv][grpc]") {
 }
 
 TEST_CASE("domain_get_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::DomainPointQuery, proto::DomainGetReq> fixtures{
+    const Fixtures<api::DomainPointQuery, proto::GetLatestReq> fixtures{
         {sample_domain_point_query(), sample_proto_domain_point_request()},
     };
     for (const auto& [query, expected_point_request] : fixtures) {
@@ -80,7 +80,7 @@ TEST_CASE("domain_get_request_from_query", "[node][remote][kv][grpc]") {
 }
 
 TEST_CASE("domain_get_result_from_response", "[node][remote][kv][grpc]") {
-    const Fixtures<proto::DomainGetReply, api::DomainPointResult> fixtures{
+    const Fixtures<proto::GetLatestReply, api::DomainPointResult> fixtures{
         {{}, {}},
         {sample_proto_domain_get_response(), sample_domain_point_result()},
     };

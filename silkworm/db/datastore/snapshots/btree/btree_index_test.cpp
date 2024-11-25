@@ -109,7 +109,6 @@ TEST_CASE("BTreeIndex", "[db]") {
 
     // Open the KV and BT index files
     segment::KVSegmentFileReader kv_segment{kv_file_path, seg::CompressionKind::kNone};
-    kv_segment.reopen_segment();
     BTreeIndex bt_index{bt_file_path};
     bt_index.warmup_if_empty_or_check(kv_segment);
     REQUIRE(bt_index.key_count() == 3);

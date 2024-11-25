@@ -111,8 +111,8 @@ void SnapshotMerger::index(std::shared_ptr<DataMigrationResult> result) {
 }
 
 static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
-    bundle.on_close([](SnapshotBundle& bundle1) {
-        for (auto& path : bundle1.files()) {
+    bundle.on_close([](std::vector<std::filesystem::path> files) {
+        for (auto& path : files) {
             [[maybe_unused]] bool removed = std::filesystem::remove(path);
         }
     });

@@ -23,14 +23,12 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
-#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -298,7 +296,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
             db::kv::api::HistoryPointQuery hpq{
-                .table = db::table::kAccountsHistory,
+                .table = db::table::kAccountDomain,
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -333,7 +331,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
             db::kv::api::HistoryPointQuery hpq{
-                .table = db::table::kAccountsHistory,
+                .table = db::table::kAccountDomain,
                 .key = key,
                 .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -764,54 +762,22 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     auto tx = co_await database_->begin();
 
     try {
-        auto call_from_cursor = co_await tx->cursor(table::kCallFromIndexName);
-        auto call_to_cursor = co_await tx->cursor(table::kCallToIndexName);
+        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
 
-        bool is_last_page = false;
-
-        if (block_number == 0) {
-            is_last_page = true;
-        } else {
-            // Internal search code considers blockNum [including], so adjust the value
-            ++block_number;
+        db::kv::api::Timestamp from_timestamp{-1};
+        if (block_number > 0) {
+            const auto max_tx_num = co_await db::txn::min_tx_num(*tx, block_number + 1, provider);
+            from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
+            SILK_DEBUG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
         }
 
-        ForwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
-        ForwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
-        FromToBlockProvider from_to_provider{true, &from_provider, &to_provider};
+        auto results = co_await collect_transactions_with_receipts(*tx, provider, block_number, address, from_timestamp, true, page_size);
 
-        uint64_t result_count = 0;
-        bool has_more = true;
-
-        TransactionsWithReceipts results{
-            .last_page = is_last_page};
-
-        while (result_count < page_size && has_more) {
-            std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
-
-            has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
-
-            for (const auto& item : transactions_with_receipts_vec) {
-                results.receipts.insert(results.receipts.end(), item.receipts.begin(), item.receipts.end());
-                results.transactions.insert(results.transactions.end(), item.transactions.begin(), item.transactions.end());
-                results.blocks.insert(results.blocks.end(), item.blocks.begin(), item.blocks.end());
-
-                result_count += item.transactions.size();
-
-                if (result_count >= page_size) {
-                    break;
-                }
-            }
-        }
-
-        // Reverse results
         std::reverse(results.transactions.begin(), results.transactions.end());
         std::reverse(results.receipts.begin(), results.receipts.end());
         std::reverse(results.blocks.begin(), results.blocks.end());
 
-        results.first_page = !has_more;
         reply = make_json_content(request, results);
-
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -853,9 +819,14 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     auto it_from = co_await paginated_result_from.begin();
     auto it_to = co_await paginated_result_to.begin();
 
-    TransactionsWithReceipts results{
-        .first_page = block_number == 0,
-        .last_page = true};
+    TransactionsWithReceipts results;
+    if (ascending) {
+        results.first_page = true;
+        results.last_page = block_number == 0;
+    } else {
+        results.first_page = block_number == 0;
+        results.last_page = true;
+    }
 
     std::map<std::string, Receipt> receipts;
     std::optional<BlockInfo> block_info;
@@ -917,7 +888,11 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         }
 
         if (results.transactions.size() >= page_size && block_num_changed) {
-            results.last_page = false;
+            if (ascending) {
+                results.first_page = false;
+            } else {
+                results.last_page = false;
+            }
             break;
         }
 

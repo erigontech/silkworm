@@ -32,7 +32,7 @@ Task<ChainConfig> LocalChainStorage::read_chain_config() const {
 }
 
 Task<BlockNum> LocalChainStorage::highest_block_number() const {
-    co_return data_model_.highest_block_number();
+    co_return data_model_.max_block_number();
 }
 
 Task<std::optional<BlockNum>> LocalChainStorage::read_block_number(const Hash& hash) const {

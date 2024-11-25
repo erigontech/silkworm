@@ -51,7 +51,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
         // Log the new version of app at this height
         if (sync_context_->is_first_cycle) {
             Bytes build_info{byte_ptr_cast(build_info_.data()), build_info_.length()};
-            db::write_build_info_height(txn, build_info, execution_stage_progress);
+            db::write_build_info_block_num(txn, build_info, execution_stage_progress);
         }
         txn.commit_and_renew();
 

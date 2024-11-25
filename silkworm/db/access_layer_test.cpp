@@ -487,7 +487,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));
 
         size_t count = 0;
-        auto processed = process_blocks_at_height(
+        auto processed = read_blocks(
             txn,
             height,
             [&count, &height](const Block& block) {
@@ -507,7 +507,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));  // another body after the prev two
 
         count = 0;
-        processed = process_blocks_at_height(
+        processed = read_blocks(
             txn,
             height,
             [&count, &height](const Block& block) {

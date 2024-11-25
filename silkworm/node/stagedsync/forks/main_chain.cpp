@@ -476,7 +476,7 @@ std::optional<BlockBody> MainChain::get_body(Hash header_hash) const {
 
 BlockNum MainChain::get_block_progress() const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return data_model().highest_block_number();
+    return data_model().max_block_number();
 }
 
 std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
@@ -496,7 +496,7 @@ std::optional<BlockNum> MainChain::get_block_number(Hash header_hash) const {
 }
 
 BlockNum MainChain::highest_frozen_block_number() const {
-    return data_model().highest_frozen_block_number();
+    return data_model().max_frozen_block_number();
 }
 
 bool MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const {

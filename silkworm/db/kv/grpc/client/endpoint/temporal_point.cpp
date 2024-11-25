@@ -17,7 +17,6 @@
 #include "temporal_point.hpp"
 
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkworm::db::kv::grpc::client {
 
@@ -39,22 +38,35 @@ api::HistoryPointResult history_seek_result_from_response(const proto::HistorySe
     return result;
 }
 
-proto::GetLatestReq domain_get_request_from_query(const api::DomainPointQuery& query) {
+proto::GetLatestReq get_latest_request_from_query(const api::GetLatestQuery& query) {
     proto::GetLatestReq request;
     request.set_tx_id(query.tx_id);
     request.set_table(query.table);
     request.set_k(query.key.data(), query.key.size());
-    if (query.timestamp) {
-        request.set_ts(static_cast<uint64_t>(*query.timestamp));
-    } else {
-        request.set_latest(true);
-    }
+    request.set_latest(true);
     request.set_k2(query.sub_key.data(), query.sub_key.size());
     return request;
 }
 
-api::DomainPointResult domain_get_result_from_response(const proto::GetLatestReply& response) {
-    api::DomainPointResult result;
+api::GetLatestResult get_latest_result_from_response(const proto::GetLatestReply& response) {
+    api::GetLatestResult result;
+    result.success = response.ok();
+    result.value = string_to_bytes(response.v());
+    return result;
+}
+
+::remote::GetLatestReq get_as_of_request_from_query(const api::GetAsOfQuery& query) {
+    proto::GetLatestReq request;
+    request.set_tx_id(query.tx_id);
+    request.set_table(query.table);
+    request.set_k(query.key.data(), query.key.size());
+    request.set_ts(static_cast<uint64_t>(query.timestamp));
+    request.set_k2(query.sub_key.data(), query.sub_key.size());
+    return request;
+}
+
+api::GetAsOfResult get_as_of_result_from_response(const ::remote::GetLatestReply& response) {
+    api::GetAsOfResult result;
     result.success = response.ok();
     result.value = string_to_bytes(response.v());
     return result;

@@ -33,16 +33,17 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
         txn_number_ = co_await tx_.first_txn_num_in_block(block_num_);
     }
 
-    db::kv::api::DomainPointQuery query{
+    db::kv::api::GetAsOfQuery query{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(address),
-        .timestamp = txn_number_,
+        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
     };
-    const auto result = co_await tx_.get_latest(std::move(query));
+    const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
         co_return std::nullopt;
     }
-    auto account{Account::from_encoded_storage_v3(result.value)};
+
+    const auto account{Account::from_encoded_storage_v3(result.value)};
     success_or_throw(account);
     co_return *account;
 }
@@ -54,12 +55,12 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
         txn_number_ = co_await tx_.first_txn_num_in_block(block_num_);
     }
 
-    db::kv::api::DomainPointQuery query{
+    db::kv::api::GetAsOfQuery query{
         .table = table::kStorageDomain,
         .key = db::storage_domain_key(address, location_hash),
-        .timestamp = txn_number_,
+        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
     };
-    const auto result = co_await tx_.get_latest(std::move(query));
+    const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
         co_return evmc::bytes32{};
     }
@@ -74,12 +75,12 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
         txn_number_ = co_await tx_.first_txn_num_in_block(block_num_);
     }
 
-    db::kv::api::DomainPointQuery query{
+    db::kv::api::GetAsOfQuery query{
         .table = table::kCodeDomain,
         .key = db::code_domain_key(address),
-        .timestamp = txn_number_,
+        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
     };
-    const auto result = co_await tx_.get_latest(std::move(query));
+    const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
         co_return std::nullopt;
     }

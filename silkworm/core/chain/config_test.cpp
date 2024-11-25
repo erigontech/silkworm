@@ -128,7 +128,7 @@ TEST_CASE("distinct_fork_points") {
     kExpectedMainnetForkPoints.insert(kExpectedMainnetForkPoints.end(),
                                       kExpectedMainnetForkTimes.cbegin(), kExpectedMainnetForkTimes.cend());
 
-    CHECK(kMainnetConfig.distinct_fork_numbers() == kExpectedMainnetForkNumbers);
+    CHECK(kMainnetConfig.distinct_fork_block_nums() == kExpectedMainnetForkNumbers);
     CHECK(kMainnetConfig.distinct_fork_times() == kExpectedMainnetForkTimes);
     CHECK(kMainnetConfig.distinct_fork_points() == kExpectedMainnetForkPoints);
 }

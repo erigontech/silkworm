@@ -265,7 +265,7 @@ VerificationResult MainChain::verify_chain(Hash block_hash) {
     // the new head is on a new fork?
     BlockId forking_point = interim_canonical_chain_.find_forking_point(*block_header, block_hash);  // the forking origin
 
-    if (block_hash != interim_canonical_chain_.current_head().hash &&             // if the new head is not the current head
+    if (block_hash != interim_canonical_chain_.current_head().hash &&                   // if the new head is not the current head
         forking_point.block_num < interim_canonical_chain_.current_head().block_num) {  // and if the forking is behind the head
         // We need to do unwind to change canonical
         unwind(forking_point.block_num);

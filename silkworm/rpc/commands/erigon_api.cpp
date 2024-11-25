@@ -122,7 +122,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         const auto chain_storage = tx->create_storage();
 
         // Lookup the first and last block headers
-        const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNumber);
+        const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNum);
         ensure(first_header.has_value(), "cannot find earliest header");
         const auto head_header_hash = co_await db::chain::read_head_header_hash(*tx);
         const auto head_header_block_num = co_await chain_storage->read_block_num(head_header_hash);
@@ -136,7 +136,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         if (current_header->timestamp <= timestamp) {
             block_num = current_block_num;
         } else if (first_header->timestamp >= timestamp) {
-            block_num = kEarliestBlockNumber;
+            block_num = kEarliestBlockNum;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
             auto matching_block_num = co_await async_binary_search(current_block_num, [&](uint64_t block_num) -> Task<bool> {

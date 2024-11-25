@@ -32,7 +32,7 @@ RemoteChainStorage::RemoteChainStorage(kv::api::Transaction& tx, Providers provi
     : tx_{tx}, providers_{std::move(providers)} {}
 
 Task<ChainConfig> RemoteChainStorage::read_chain_config() const {
-    const auto genesis_block_hash{co_await providers_.canonical_block_hash_from_number(kEarliestBlockNumber)};
+    const auto genesis_block_hash{co_await providers_.canonical_block_hash_from_number(kEarliestBlockNum)};
     if (!genesis_block_hash) {
         throw std::runtime_error{"cannot read genesis block hash in read_chain_config"};
     }

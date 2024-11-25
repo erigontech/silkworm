@@ -86,7 +86,7 @@ std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& block_num_o
 void BlockNumberOrHash::build(const std::string& block_num_or_hash) {
     value_ = uint64_t{0};
     if (block_num_or_hash == core::kEarliestBlockId) {
-        value_ = kEarliestBlockNumber;
+        value_ = kEarliestBlockNum;
     } else if (block_num_or_hash == core::kLatestBlockId ||
                block_num_or_hash == core::kPendingBlockId ||
                block_num_or_hash == core::kFinalizedBlockId ||

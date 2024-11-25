@@ -20,8 +20,8 @@
 
 namespace silkworm {
 
-struct NewBlockHash {    // one particular block being announced
-    Hash hash;           // hash of the block
+struct NewBlockHash {       // one particular block being announced
+    Hash hash;              // hash of the block
     BlockNum block_num{0};  // number of the block
 };
 

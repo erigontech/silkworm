@@ -701,7 +701,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
 }
 
 struct BlockInfo {
-    uint64_t number{0};
+    BlockNum block_num{0};
     BlockDetails details;
 };
 
@@ -881,7 +881,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         }
 
         block_num_changed = false;
-        if (block_info && block_info.value().number != block_num) {
+        if (block_info && (block_info->block_num != block_num)) {
             block_info.reset();
         }
 

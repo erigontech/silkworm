@@ -51,7 +51,7 @@ Task<bool> is_latest_block_num(BlockNum block_num, kv::api::Transaction& tx) {
 Task<BlockNum> get_block_num_by_tag(const std::string& block_id, kv::api::Transaction& tx) {
     BlockNum block_num{0};
     if (block_id == kEarliestBlockId) {
-        block_num = kEarliestBlockNumber;
+        block_num = kEarliestBlockNum;
     } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {  // NOLINT(bugprone-branch-clone)
         block_num = co_await get_latest_block_num(tx);
     } else if (block_id == kFinalizedBlockId) {
@@ -70,7 +70,7 @@ Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, kv::a
     bool is_latest_block = false;
     bool check_if_latest = false;
     if (block_id == kEarliestBlockId) {
-        block_num = kEarliestBlockNumber;
+        block_num = kEarliestBlockNum;
     } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {  // NOLINT(bugprone-branch-clone)
         block_num = co_await get_latest_block_num(tx);
         is_latest_block = true;

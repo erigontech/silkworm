@@ -33,7 +33,7 @@ struct Forks {
     std::vector<uint64_t> block_times;
 
     explicit Forks(const ChainConfig& cc) : genesis_hash(cc.genesis_hash.value_or(evmc::bytes32{})) {
-        for (auto& fork_block_num : cc.distinct_fork_numbers()) {
+        for (auto& fork_block_num : cc.distinct_fork_block_nums()) {
             if (fork_block_num) {  // Skip any forks in block 0, that's the genesis ruleset
                 block_nums.push_back(fork_block_num);
             }

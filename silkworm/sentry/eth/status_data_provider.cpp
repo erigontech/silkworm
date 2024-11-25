@@ -43,7 +43,7 @@ StatusDataProvider::StatusData StatusDataProvider::make_status_data(
     ChainHead chain_head,
     uint8_t eth_version,
     const ChainConfig& chain_config) {
-    auto fork_block_nums = chain_config.distinct_fork_numbers();
+    auto fork_block_nums = chain_config.distinct_fork_block_nums();
     auto fork_times = chain_config.distinct_fork_times();
     auto best_block_hash = Bytes{ByteView{chain_head.hash}};
     auto genesis_hash = ByteView{chain_config.genesis_hash.value()};

@@ -81,7 +81,7 @@ struct SnapshotSubcommandSettings {
     int page_size{kDefaultPageSize};
     bool skip_system_txs{false};
     std::optional<std::string> lookup_hash;
-    std::optional<BlockNum> lookup_number;
+    std::optional<BlockNum> lookup_block_num;
     bool verbose{false};
 
     const std::filesystem::path& repository_path() const { return settings.repository_path; }
@@ -182,7 +182,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
                       commands[SnapshotTool::lookup_body],
                       commands[SnapshotTool::lookup_txn],
                       commands[SnapshotTool::open_index]}) {
-        cmd->add_option("--number", snapshot_settings.lookup_number, "Block number to lookup in snapshot files")
+        cmd->add_option("--number", snapshot_settings.lookup_block_num, "Block number to lookup in snapshot files")
             ->capture_default_str()
             ->check(BlockNumberValidator{});
     }
@@ -433,8 +433,8 @@ void open_index(const SnapshotSubcommandSettings& settings) {
     SILK_INFO << "Index properties: empty=" << idx.empty() << " base_data_id=" << idx.base_data_id()
               << " double_enum_index=" << idx.double_enum_index() << " less_false_positives=" << idx.less_false_positives();
     if (idx.double_enum_index()) {
-        if (settings.lookup_number) {
-            const uint64_t data_id{*settings.lookup_number};
+        if (settings.lookup_block_num) {
+            const uint64_t data_id{*settings.lookup_block_num};
             const uint64_t enumeration{data_id - idx.base_data_id()};
             if (enumeration < idx.key_count()) {
                 SILK_INFO << "Offset by ordinal lookup for " << data_id << ": " << idx.lookup_by_ordinal(enumeration);
@@ -711,7 +711,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
 }
 
 void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
-    const auto block_num{*settings.lookup_number};
+    const auto block_num{*settings.lookup_block_num};
     SILK_INFO << "Lookup header number: " << block_num;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
@@ -734,7 +734,7 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
 }
 
 void lookup_header(const SnapshotSubcommandSettings& settings) {
-    ensure(settings.lookup_hash || settings.lookup_number, "lookup_header: either --hash or --number must be used");
+    ensure(settings.lookup_hash || settings.lookup_block_num, "lookup_header: either --hash or --number must be used");
     if (settings.lookup_hash) {
         lookup_header_by_hash(settings);
     } else {
@@ -793,8 +793,8 @@ void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum blo
 }
 
 void lookup_body(const SnapshotSubcommandSettings& settings) {
-    ensure(settings.lookup_number.has_value(), "lookup_body: --number must be specified");
-    const auto block_num{*settings.lookup_number};
+    ensure(settings.lookup_block_num.has_value(), "lookup_body: --number must be specified");
+    const auto block_num{*settings.lookup_block_num};
     SILK_INFO << "Lookup body number: " << block_num;
 
     if (settings.segment_file_name) {
@@ -990,11 +990,11 @@ void lookup_txn_by_id(const SnapshotSubcommandSettings& settings, uint64_t txn_i
 }
 
 void lookup_transaction(const SnapshotSubcommandSettings& settings) {
-    ensure(settings.lookup_hash || settings.lookup_number, "lookup_transaction: either --hash or --number must be used");
+    ensure(settings.lookup_hash || settings.lookup_block_num, "lookup_transaction: either --hash or --number must be used");
     if (settings.lookup_hash) {
         lookup_txn_by_hash(settings, *settings.lookup_hash);
     } else {
-        lookup_txn_by_id(settings, *settings.lookup_number);
+        lookup_txn_by_id(settings, *settings.lookup_block_num);
     }
 }
 

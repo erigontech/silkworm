@@ -99,7 +99,7 @@ struct ChainConfig {
     //! returns whether specific HF have occurred
     evmc_revision revision(BlockNum block_num, uint64_t block_time) const noexcept;
 
-    std::vector<BlockNum> distinct_fork_numbers() const;
+    std::vector<BlockNum> distinct_fork_block_nums() const;
     std::vector<BlockTime> distinct_fork_times() const;
     std::vector<uint64_t> distinct_fork_points() const;
 

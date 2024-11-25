@@ -37,14 +37,14 @@ namespace proto = ::execution;
 
 static proto::GetHeaderHashNumberResponse sample_response() {
     proto::GetHeaderHashNumberResponse response;
-    response.set_block_number(kSampleBlockNumber);
+    response.set_block_number(kSampleBlockNum);
     return response;
 }
 
 TEST_CASE("block_num_from_response", "[node][execution][grpc]") {
     const Fixtures<proto::GetHeaderHashNumberResponse, std::optional<BlockNum>> fixtures{
         {{}, std::nullopt},
-        {sample_response(), kSampleBlockNumber},
+        {sample_response(), kSampleBlockNum},
     };
     for (const auto& [response, expected_block_num] : fixtures) {
         SECTION("response: " + std::to_string(response.block_number())) {

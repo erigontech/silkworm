@@ -24,7 +24,7 @@ namespace silkworm::execution::grpc::client {
 
 namespace proto = ::execution;
 
-proto::GetBodiesByRangeRequest bodies_request_from_block_range(BlockNumRange block_num_range) {
+proto::GetBodiesByRangeRequest bodies_request_from_block_num_range(BlockNumRange block_num_range) {
     SILKWORM_ASSERT(block_num_range.start <= block_num_range.end);
     proto::GetBodiesByRangeRequest request;
     request.set_start(block_num_range.start);

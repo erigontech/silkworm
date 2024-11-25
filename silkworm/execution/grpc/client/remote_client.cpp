@@ -132,7 +132,7 @@ class RemoteClientImpl final : public api::Service {
 
     // rpc GetBodiesByRange(GetBodiesByRangeRequest) returns(GetBodiesBatchResponse);
     Task<api::BlockBodies> get_bodies_by_range(BlockNumRange range) override {
-        auto request = bodies_request_from_block_range(range);
+        auto request = bodies_request_from_block_num_range(range);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBodiesByRange, *stub_, std::move(request), grpc_context_);
         co_return block_bodies_from_response(reply);
     }

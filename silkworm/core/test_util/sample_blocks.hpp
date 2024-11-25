@@ -40,7 +40,7 @@ inline constexpr evmc::bytes32 kSampleStateRoot{0xb02a3b0ee16c858afaa34bcd6770b3
 inline constexpr evmc::bytes32 kSampleTransactionsRoot{0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e_bytes32};
 inline constexpr evmc::bytes32 kSampleReceiptsRoot{0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32};
 inline constexpr intx::uint256 kSampleDifficulty{1234};
-inline constexpr BlockNum kSampleBlockNumber = 5u;
+inline constexpr BlockNum kSampleBlockNum = 5u;
 inline constexpr uint64_t kSampleGasLimit = 1000000u;
 inline constexpr uint64_t kSampleGasUsed = 1000000u;
 inline constexpr uint64_t kSampleTimestamp = 5405021u;
@@ -58,7 +58,7 @@ inline BlockHeader sample_block_header() {
         .transactions_root = kSampleTransactionsRoot,
         .receipts_root = kSampleReceiptsRoot,
         .difficulty = kSampleDifficulty,
-        .number = kSampleBlockNumber,
+        .number = kSampleBlockNum,
         .gas_limit = kSampleGasLimit,
         .gas_used = kSampleGasUsed,
         .timestamp = kSampleTimestamp,

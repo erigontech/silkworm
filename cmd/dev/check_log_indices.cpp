@@ -116,7 +116,7 @@ Settings parse_cli_settings(int argc, char* argv[]) {
     return settings;
 }
 
-std::string block_range(const Settings& settings) {
+std::string block_num_range_str(const Settings& settings) {
     std::stringstream stream;
     log::prepare_for_logging(stream);
     stream << "[" << settings.block_from << ", ";
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]) {
         auto log_address_cursor = txn.ro_cursor(table::kLogAddressIndex);
         auto log_topic_cursor = txn.ro_cursor(table::kLogTopicIndex);
 
-        SILK_INFO << "Check transaction log indices for blocks " << block_range(settings) << " ...";
+        SILK_INFO << "Check transaction log indices for blocks " << block_num_range_str(settings) << " ...";
 
         // Start from the key having block_from as key prefix and iterate over TransactionLog on all blocks up to block_to
         auto start_key_prefix{block_key(settings.block_from)};

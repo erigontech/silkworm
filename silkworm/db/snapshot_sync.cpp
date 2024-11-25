@@ -277,8 +277,8 @@ Task<void> SnapshotSync::build_missing_indexes() {
 void SnapshotSync::seed_frozen_local_snapshots() {
     for (auto& bundle_ptr : repository_.view_bundles()) {
         auto& bundle = *bundle_ptr;
-        auto block_range = bundle.step_range().to_block_num_range();
-        bool is_frozen = block_range.size() >= kMaxMergerSnapshotSize;
+        auto block_num_range = bundle.step_range().to_block_num_range();
+        bool is_frozen = block_num_range.size() >= kMaxMergerSnapshotSize;
         const segment::SegmentFileReader& first_snapshot = *bundle.segments().begin();
         // assume that if one snapshot in the bundle is preverified, then all of them are
         bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.path().filename());

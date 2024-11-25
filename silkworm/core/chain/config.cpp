@@ -210,7 +210,7 @@ evmc_revision ChainConfig::revision(uint64_t block_num, uint64_t block_time) con
     return EVMC_FRONTIER;
 }
 
-std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
+std::vector<BlockNum> ChainConfig::distinct_fork_block_nums() const {
     std::set<BlockNum> ret;
 
     // Add forks identified by *block number* in ascending order
@@ -250,7 +250,7 @@ std::vector<BlockTime> ChainConfig::distinct_fork_times() const {
 }
 
 std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
-    auto block_nums{distinct_fork_numbers()};
+    auto block_nums{distinct_fork_block_nums()};
     auto times{distinct_fork_times()};
 
     std::vector<uint64_t> points;

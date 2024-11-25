@@ -70,7 +70,7 @@ struct BlockNumRange {
 
 using BlockTime = uint64_t;
 
-inline constexpr BlockNum kEarliestBlockNumber{0ul};
+inline constexpr BlockNum kEarliestBlockNum{0ul};
 
 inline constexpr size_t kAddressLength{20};
 

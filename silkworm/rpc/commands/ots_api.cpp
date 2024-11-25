@@ -422,8 +422,8 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        auto block_number = co_await core::get_latest_block_number(*tx);
-        StateReader state_reader{*tx, block_number};
+        auto block_num = co_await core::get_latest_block_num(*tx);
+        StateReader state_reader{*tx, block_num};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
         if (!account_opt || account_opt.value().code_hash == kEmptyHash) {
             reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -510,12 +510,12 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
-        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
-        if (block_number_opt) {
-            block_number = block_number_opt.value();
-            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_number, provider);
-            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_number);
-            SILK_DEBUG << "block_number: " << block_number
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        if (block_num_opt) {
+            block_num = block_num_opt.value();
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, provider);
+            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_num);
+            SILK_DEBUG << "block_num: " << block_num
                        << ", min_txn_id: " << min_txn_id
                        << ", first_txn_id: " << first_txn_id;
 
@@ -527,15 +527,15 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             }
 
             const auto chain_storage{tx->create_storage()};
-            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_number, tx_index);
+            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, tx_index);
             if (!transaction) {
-                SILK_DEBUG << "No transaction found in block " << block_number << " for index " << tx_index;
+                SILK_DEBUG << "No transaction found in block " << block_num << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
 
-            const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+            const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
 
             if (block_with_hash) {
                 trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};

@@ -48,8 +48,7 @@ debug_traceTransaction/test_96.json,\
 trace_replayBlockTransactions/test_29,\
 engine_,\
 erigon_getLatestLogs,\
-eth_getLogs,\
-ots_getContractCreator
+eth_getLogs
 
 failed_test=$?
 

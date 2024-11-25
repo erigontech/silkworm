@@ -2106,7 +2106,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult > {
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
@@ -3015,7 +3015,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
             .value = kAccountHistoryValue2};
         co_return rsp1;
     }));
-    EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult > {
+    EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult rsp1{
             .success = true,
             .value = kAccountHistoryValue3};

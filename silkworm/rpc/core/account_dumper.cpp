@@ -29,7 +29,6 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/account_walker.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
 #include <silkworm/rpc/json/types.hpp>

@@ -39,13 +39,6 @@ class StorageWalker {
     StorageWalker(const StorageWalker&) = delete;
     StorageWalker& operator=(const StorageWalker&) = delete;
 
-    Task<void> walk_of_storages(
-        BlockNum block_number,
-        const evmc::address& address,
-        const evmc::bytes32& start_location,
-        uint64_t incarnation,
-        AccountCollector& collector);
-
     Task<void> storage_range_at(
         TxnId txn_number,
         const evmc::address& address,
@@ -53,8 +46,6 @@ class StorageWalker {
         StorageCollector& collector);
 
   private:
-    int compare_empty_greater(const ByteView& key1, const ByteView& key2);
-
     db::kv::api::Transaction& transaction_;
 };
 

@@ -66,7 +66,7 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const
     co_return block_with_hash;
 }
 
-Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumberOrHash& block_num_or_hash) {
+Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumberOrHash& block_num_or_hash) {
     if (block_num_or_hash.is_number()) {  // NOLINT(bugprone-branch-clone)
         co_return co_await read_block_by_number(cache, storage, block_num_or_hash.number());
     } else if (block_num_or_hash.is_hash()) {

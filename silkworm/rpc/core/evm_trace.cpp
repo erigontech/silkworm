@@ -1729,7 +1729,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     auto block_num = trace_filter.from_block.number();
     std::shared_ptr<BlockWithHash> block_with_hash;
     try {
-        block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
+        block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
     } catch (const std::invalid_argument& iv) {
         block_with_hash = nullptr;
     }

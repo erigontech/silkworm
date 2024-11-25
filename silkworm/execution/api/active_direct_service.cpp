@@ -88,31 +88,31 @@ Task<std::optional<BlockHeader>> ActiveDirectService::current_header() {
 }
 
 // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-Task<std::optional<TotalDifficulty>> ActiveDirectService::get_td(BlockNumberOrHash number_or_hash) {
+Task<std::optional<TotalDifficulty>> ActiveDirectService::get_td(BlockNumberOrHash block_num_or_hash) {
     return concurrency::spawn_task(executor_, [](auto* self, auto num_or_hash) {
         return self->DirectService::get_td(num_or_hash);
-    }(this, number_or_hash));
+    }(this, block_num_or_hash));
 }
 
 // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-Task<std::optional<BlockHeader>> ActiveDirectService::get_header(BlockNumberOrHash number_or_hash) {
+Task<std::optional<BlockHeader>> ActiveDirectService::get_header(BlockNumberOrHash block_num_or_hash) {
     return concurrency::spawn_task(executor_, [](auto* self, auto num_or_hash) {
         return self->DirectService::get_header(num_or_hash);
-    }(this, number_or_hash));
+    }(this, block_num_or_hash));
 }
 
 // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-Task<std::optional<BlockBody>> ActiveDirectService::get_body(BlockNumberOrHash number_or_hash) {
+Task<std::optional<BlockBody>> ActiveDirectService::get_body(BlockNumberOrHash block_num_or_hash) {
     return concurrency::spawn_task(executor_, [](auto* self, auto num_or_hash) {
         return self->DirectService::get_body(num_or_hash);
-    }(this, number_or_hash));
+    }(this, block_num_or_hash));
 }
 
 // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-Task<bool> ActiveDirectService::has_block(BlockNumberOrHash number_or_hash) {
+Task<bool> ActiveDirectService::has_block(BlockNumberOrHash block_num_or_hash) {
     return concurrency::spawn_task(executor_, [](auto* self, auto num_or_hash) {
         return self->DirectService::has_block(num_or_hash);
-    }(this, number_or_hash));
+    }(this, block_num_or_hash));
 }
 
 /** Ranges **/

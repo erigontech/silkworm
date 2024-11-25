@@ -66,16 +66,16 @@ class ActiveDirectService : public DirectService, public ActiveComponent {
     Task<std::optional<BlockHeader>> current_header() override;
 
     // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-    Task<std::optional<TotalDifficulty>> get_td(BlockNumberOrHash number_or_hash) override;
+    Task<std::optional<TotalDifficulty>> get_td(BlockNumberOrHash block_num_or_hash) override;
 
     // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-    Task<std::optional<BlockHeader>> get_header(BlockNumberOrHash number_or_hash) override;
+    Task<std::optional<BlockHeader>> get_header(BlockNumberOrHash block_num_or_hash) override;
 
     // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-    Task<std::optional<BlockBody>> get_body(BlockNumberOrHash number_or_hash) override;
+    Task<std::optional<BlockBody>> get_body(BlockNumberOrHash block_num_or_hash) override;
 
     // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-    Task<bool> has_block(BlockNumberOrHash number_or_hash) override;
+    Task<bool> has_block(BlockNumberOrHash block_num_or_hash) override;
 
     /** Ranges **/
 

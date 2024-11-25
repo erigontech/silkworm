@@ -22,14 +22,14 @@
 
 namespace silkworm::execution::grpc::client {
 
-::execution::GetSegmentRequest request_from_block_num_or_hash(const api::BlockNumberOrHash& number_or_hash) {
+::execution::GetSegmentRequest request_from_block_num_or_hash(const api::BlockNumberOrHash& block_num_or_hash) {
     ::execution::GetSegmentRequest request;
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        const auto& block_hash{std::get<Hash>(number_or_hash)};
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        const auto& block_hash{std::get<Hash>(block_num_or_hash)};
         request.set_allocated_block_hash(rpc::h256_from_bytes32(block_hash).release());
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
         request.set_block_number(block_num);
     }
     return request;

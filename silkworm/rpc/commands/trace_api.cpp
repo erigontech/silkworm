@@ -55,7 +55,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
     try {
         const auto chain_storage = tx->create_storage();
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -102,7 +102,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -238,7 +238,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (block_with_hash) {
             trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
@@ -320,7 +320,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines

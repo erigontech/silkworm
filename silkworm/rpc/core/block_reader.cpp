@@ -38,7 +38,7 @@ void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
 }
 
 Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumberOrHash& block_num_or_hash, BalanceChanges& balance_changes) const {
-    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, transaction_, block_num_or_hash);
+    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, chain_storage_, transaction_, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("read_balance_changes: block not found");
     }

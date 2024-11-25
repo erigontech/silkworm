@@ -121,13 +121,13 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
         const auto& request{requests[i]};
         const auto& payload{request.execution_payload};
         BlockId block_num_or_hash{payload.number, payload.block_hash};
-        execution::api::BlockNumberOrHash parent_number_or_hash{payload.parent_hash};
+        execution::api::BlockNumberOrHash parent_block_num_or_hash{payload.parent_hash};
         SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
-            EXPECT_CALL(*execution_service, get_header(parent_number_or_hash))
+            EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
                     co_return BlockHeader{};
                 }));
-            EXPECT_CALL(*execution_service, get_td(parent_number_or_hash))
+            EXPECT_CALL(*execution_service, get_td(parent_block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
                     co_return kSepoliaConfig.terminal_total_difficulty;
                 }));

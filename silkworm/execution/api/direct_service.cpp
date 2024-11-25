@@ -83,12 +83,12 @@ Task<std::optional<BlockHeader>> DirectService::current_header() {
 }
 
 // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_header_td(std::get<Hash>(number_or_hash), std::nullopt);
+Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_header_td(std::get<Hash>(block_num_or_hash), std::nullopt);
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
         const auto canonical_hash{exec_engine_.get_canonical_hash(block_num)};
         if (!canonical_hash) {
             co_return std::nullopt;
@@ -98,34 +98,34 @@ Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash num
 }
 
 // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_header(std::get<Hash>(number_or_hash));
+Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumberOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_header(std::get<Hash>(block_num_or_hash));
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
         co_return exec_engine_.get_canonical_header(block_num);
     }
 }
 
 // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-Task<std::optional<BlockBody>> DirectService::get_body(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_body(std::get<Hash>(number_or_hash));
+Task<std::optional<BlockBody>> DirectService::get_body(BlockNumberOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_body(std::get<Hash>(block_num_or_hash));
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
         co_return exec_engine_.get_canonical_body(block_num);
     }
 }
 
 // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-Task<bool> DirectService::has_block(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_header(std::get<Hash>(number_or_hash));
+Task<bool> DirectService::has_block(BlockNumberOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_header(std::get<Hash>(block_num_or_hash));
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
         const auto canonical_hash{exec_engine_.get_canonical_hash(block_num)};
         if (!canonical_hash) {
             co_return false;

@@ -60,9 +60,9 @@ TEST_CASE("request_from_block_num_or_hash", "[node][execution][grpc]") {
         {sample_block_num_or_hash(true), sample_proto_get_segment_request(kSampleBlockNumber, {})},
         {sample_block_num_or_hash(false), sample_proto_get_segment_request({}, kSampleBlockHash)},
     };
-    for (const auto& [number_or_hash, expected_segment_request] : fixtures) {
-        SECTION("block_num_or_hash index: " + std::to_string(number_or_hash.index())) {
-            const auto segment_request{request_from_block_num_or_hash(number_or_hash)};
+    for (const auto& [block_num_or_hash, expected_segment_request] : fixtures) {
+        SECTION("block_num_or_hash index: " + std::to_string(block_num_or_hash.index())) {
+            const auto segment_request{request_from_block_num_or_hash(block_num_or_hash)};
             // CHECK(segment_request == expected_segment_request);  // requires operator== in gRPC generated code
             CHECK(segment_request.has_block_number() == expected_segment_request.has_block_number());
             if (segment_request.has_block_number()) {

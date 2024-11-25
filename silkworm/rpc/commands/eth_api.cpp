@@ -1272,7 +1272,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
 
     try {
         const auto chain_storage{tx->create_storage()};
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -1381,7 +1381,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
     try {
         const auto chain_storage{tx->create_storage()};
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines

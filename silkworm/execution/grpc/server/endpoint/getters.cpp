@@ -25,13 +25,13 @@ namespace silkworm::execution::grpc::server {
 namespace proto = ::execution;
 
 api::BlockNumberOrHash block_num_or_hash_from_request(const proto::GetSegmentRequest& request) {
-    api::BlockNumberOrHash number_or_hash;
+    api::BlockNumberOrHash block_num_or_hash;
     if (request.has_block_number()) {
-        number_or_hash = request.block_number();
+        block_num_or_hash = request.block_number();
     } else if (request.has_block_hash()) {
-        number_or_hash = rpc::bytes32_from_h256(request.block_hash());
+        block_num_or_hash = rpc::bytes32_from_h256(request.block_hash());
     }
-    return number_or_hash;
+    return block_num_or_hash;
 }
 
 proto::GetTDResponse response_from_total_difficulty(const std::optional<TotalDifficulty>& total_difficulty) {

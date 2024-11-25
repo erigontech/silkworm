@@ -419,112 +419,125 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        const ByteView contract_address_byte_view{contract_address.bytes};
-        auto plain_state_cursor = co_await tx->cursor(table::kPlainStateName);
-        auto account_payload = co_await plain_state_cursor->seek(contract_address_byte_view);
-        auto plain_state_account = Account::from_encoded_storage(account_payload.value);
-
-        if (!plain_state_account.has_value()) {
+        auto block_number = co_await core::get_latest_block_number(*tx);
+        StateReader state_reader{*tx, block_number};
+        std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
+        if (!account_opt || account_opt.value().code_hash == kEmptyHash) {
             reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
         }
 
-        if (plain_state_account.value().code_hash == kEmptyHash) {
+        const auto key = db::code_domain_key(contract_address);
+        db::kv::api::IndexRangeQuery query{
+                .table = db::table::kAccountsHistoryIdx,
+                .key = key,
+                .from_timestamp = 0,
+                .to_timestamp = -1,
+                .ascending_order = true};
+        auto paginated_result = co_await tx->index_range(std::move(query));
+        auto it = co_await paginated_result.begin();
+
+        std::uint64_t count = 0;
+        TxnId prev_txn_id = 0;
+        TxnId next_txn_id = 0;
+        while (const auto value = co_await it.next()) {
+            const auto txn_id = static_cast<TxnId>(*value);
+            if (count++ % 4096 != 0) {
+                next_txn_id = txn_id;
+                continue;
+            }
+            SILK_DEBUG << "txn_id:"  << txn_id << ", count: " << count;
+
+            db::kv::api::HistoryPointQuery hpq{
+                    .table = db::table::kAccountDomain,
+                    .key = key,
+                    .timestamp = *value};
+            auto result = co_await tx->history_seek(std::move(hpq));
+            if (!result.success) {
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+
+            if (result.value.empty()) {
+                SILK_DEBUG << "history bytes empty";
+                prev_txn_id = txn_id;
+                continue;
+            }
+            const auto account{Account::from_encoded_storage_v3(result.value)};
+            SILK_DEBUG << "Decoded account: " << *account;
+
+            if (account->incarnation == account_opt.value().incarnation) {
+                next_txn_id = txn_id;
+                break;
+            }
+            prev_txn_id = txn_id;
+        }
+        if (next_txn_id == 0) {
+            next_txn_id = prev_txn_id + 1;
+        }
+
+        db::txn::TxNum creation_txn_id = 0;
+        auto index = co_await async_binary_search(static_cast<size_t>(next_txn_id - prev_txn_id), [&](size_t i) -> Task<bool> {
+            auto txn_id = i + prev_txn_id;
+
+            db::kv::api::HistoryPointQuery hpq{
+                    .table = db::table::kAccountDomain,
+                    .key = key,
+                    .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
+            auto result = co_await tx->history_seek(std::move(hpq));
+            if (!result.success) {
+                co_return false;
+            }
+            if (result.value.empty()) {
+                creation_txn_id = std::max(static_cast<uint64_t>(txn_id), creation_txn_id);
+                co_return false;
+            }
+            co_return true;
+        });
+
+        if (creation_txn_id == 0) {
+            SILK_DEBUG << "binary search in [" << prev_txn_id << ", " << next_txn_id << "] found nothing";
             reply = make_json_content(request, nlohmann::detail::value_t::null);
-            co_await tx->close();
-            co_return;
         }
+        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
+        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        if (block_number_opt) {
+            block_number = block_number_opt.value();
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_number, provider);
+            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_number);
+            SILK_DEBUG << "block_number: " << block_number
+                       << ", min_txn_id: " << min_txn_id
+                       << ", first_txn_id: " << first_txn_id;
 
-        auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);
-        auto account_change_set_cursor = co_await tx->cursor_dup_sort(table::kAccountChangeSetName);
+            TxnId tx_index{0};
+            if (creation_txn_id == min_txn_id) {
+                tx_index = index + prev_txn_id - min_txn_id - 1;
+            } else {
+                tx_index = creation_txn_id - min_txn_id - 1;
+            }
 
-        auto key_value = co_await account_history_cursor->seek(account_history_key(contract_address, 0));
-
-        std::vector<BlockNum> account_block_numbers;
-
-        BlockNum max_block_prev_chunk = 0;
-        roaring::Roaring64Map bitmap;
-
-        if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
-            reply = make_json_content(request, nlohmann::detail::value_t::null);
-            co_await tx->close();
-            co_return;
-        }
-        while (true) {
-            bitmap = bitmap::parse(key_value.value);
-            auto const max_block = bitmap.maximum();
-            auto block_key{db::block_key(max_block)};
-            auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
-            if (!address_and_payload.starts_with(contract_address_byte_view)) {
+            const auto chain_storage{tx->create_storage()};
+            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_number, tx_index);
+            if (!transaction) {
+                SILK_DEBUG << "No transaction found in block " << block_number << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
-                co_return;
+                co_return ;
             }
-            auto payload = address_and_payload.substr(contract_address_byte_view.length());
-            auto account = Account::from_encoded_storage(payload);
 
-            if (!account) {
+            const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+
+            if (block_with_hash) {
+                trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+                const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
+                reply = make_json_content(request, result);
+            } else {
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
             }
-
-            if (account->incarnation >= plain_state_account->incarnation) {
-                break;
-            }
-            max_block_prev_chunk = max_block;
-            key_value = co_await account_history_cursor->next();
-
-            if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
-                break;
-            }
-        }
-
-        uint64_t cardinality = bitmap.cardinality();
-        account_block_numbers.resize(cardinality);
-        bitmap.toUint64Array(account_block_numbers.data());
-
-        uint64_t idx = 0;
-        for (uint64_t i = 0; i < cardinality; ++i) {
-            auto block_number = account_block_numbers[i];
-            auto block_key{db::block_key(block_number)};
-            auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
-
-            if (!address_and_payload.starts_with(contract_address_byte_view)) {
-                reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
-            }
-
-            auto payload = address_and_payload.substr(contract_address_byte_view.length());
-            auto account = Account::from_encoded_storage(payload);
-
-            if (!account) {
-                reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
-            }
-
-            if (account.has_value() && account->incarnation >= plain_state_account->incarnation) {
-                idx = i;
-                break;
-            }
-        }
-
-        auto block_found = max_block_prev_chunk;
-        if (idx > 0) {
-            block_found = account_block_numbers[idx - 1];
-        }
-
-        const auto chain_storage{tx->create_storage()};
-
-        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_found);
-        if (block_with_hash) {
-            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-            const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
-            reply = make_json_content(request, result);
         } else {
+            SILK_DEBUG << "No block found for txn_id " << creation_txn_id;
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
     } catch (const std::invalid_argument& iv) {

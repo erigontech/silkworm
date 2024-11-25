@@ -26,7 +26,7 @@ namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const Receipt& receipt) {
     json["blockHash"] = receipt.block_hash;
-    json["blockNumber"] = to_quantity(receipt.block_number);
+    json["blockNumber"] = to_quantity(receipt.block_num);
     json["transactionHash"] = receipt.tx_hash;
     json["transactionIndex"] = to_quantity(receipt.tx_index);
     json["from"] = receipt.from.value_or(evmc::address{});

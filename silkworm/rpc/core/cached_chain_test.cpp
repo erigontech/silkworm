@@ -68,7 +68,7 @@ static void check_expected_transaction(const Transaction& transaction) {
     CHECK(tx_hash == 0x3ff7b8917f1941784c709d6e54db18500fddc2b4c1a90b5cdec675cd0f9fc042_bytes32);
     CHECK(transaction.access_list.empty());
     CHECK(transaction.block_hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
-    CHECK(transaction.block_number == 4'000'000);
+    CHECK(transaction.block_num == 4'000'000);
     CHECK(transaction.block_base_fee_per_gas == std::nullopt);
     CHECK(transaction.chain_id == 5);
     CHECK(transaction.data == *silkworm::from_hex(

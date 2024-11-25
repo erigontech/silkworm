@@ -136,7 +136,7 @@ void from_json(const nlohmann::json& json, Bundle& call) {
 }
 
 void from_json(const nlohmann::json& json, SimulationContext& sc) {
-    sc.block_number = json["blockNumber"].get<BlockNumberOrHash>();
+    sc.block_num = json["blockNumber"].get<BlockNumOrHash>();
 
     if (json.contains("transactionIndex")) {
         sc.transaction_index = json["transactionIndex"].get<std::int32_t>();
@@ -178,11 +178,11 @@ void from_json(const nlohmann::json& json, AccountOverrides& ao) {
 
 void from_json(const nlohmann::json& json, BlockOverrides& bo) {
     if (json.contains("blockNumber")) {
-        const auto& jbn = json["blockNumber"];
-        if (jbn.is_string()) {
-            bo.block_number = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        const auto& block_num_json = json["blockNumber"];
+        if (block_num_json.is_string()) {
+            bo.block_num = std::stoull(block_num_json.get<std::string>(), nullptr, /*base=*/16);
         } else {
-            bo.block_number = jbn.get<BlockNum>();
+            bo.block_num = block_num_json.get<BlockNum>();
         }
     }
     if (json.contains("coinbase")) {
@@ -195,19 +195,19 @@ void from_json(const nlohmann::json& json, BlockOverrides& bo) {
         bo.difficulty = json["difficulty"].get<intx::uint256>();
     }
     if (json.contains("gasLimit")) {
-        const auto& jbn = json["gasLimit"];
-        if (jbn.is_string()) {
-            bo.gas_limit = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        const auto& gas_limit_json = json["gasLimit"];
+        if (gas_limit_json.is_string()) {
+            bo.gas_limit = std::stoull(gas_limit_json.get<std::string>(), nullptr, /*base=*/16);
         } else {
-            bo.gas_limit = jbn.get<uint64_t>();
+            bo.gas_limit = gas_limit_json.get<uint64_t>();
         }
     }
     if (json.contains("baseFee")) {
-        const auto& jbn = json["baseFee"];
-        if (jbn.is_string()) {
-            bo.base_fee = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        const auto& base_fee_json = json["baseFee"];
+        if (base_fee_json.is_string()) {
+            bo.base_fee = std::stoull(base_fee_json.get<std::string>(), nullptr, /*base=*/16);
         } else {
-            bo.base_fee = jbn.get<uint64_t>();
+            bo.base_fee = base_fee_json.get<uint64_t>();
         }
     }
 }

@@ -61,7 +61,7 @@ class EthereumRpcApi {
     EthereumRpcApi(EthereumRpcApi&&) = default;
 
   protected:
-    Task<void> handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_block_num(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_syncing(const nlohmann::json& request, nlohmann::json& reply);
@@ -69,12 +69,12 @@ class EthereumRpcApi {
     Task<void> handle_eth_get_block_transaction_count_by_hash(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_block_transaction_count_by_number(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_uncle_count_by_block_hash(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_eth_get_uncle_count_by_block_number(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_get_uncle_count_by_block_num(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_eth_get_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_get_transaction_by_block_num_and_index(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_raw_transaction_by_hash(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_raw_transaction_by_block_hash_and_index(const nlohmann::json& request, nlohmann::json& reply);
-    Task<void> handle_eth_get_raw_transaction_by_block_number_and_index(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_eth_get_raw_transaction_by_block_num_and_index(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_transaction_receipt(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_eth_get_balance(const nlohmann::json& request, nlohmann::json& reply);
@@ -114,7 +114,7 @@ class EthereumRpcApi {
     Task<void> handle_eth_get_block_by_number(const nlohmann::json& request, std::string& reply);
     Task<void> handle_eth_get_block_by_hash(const nlohmann::json& request, std::string& reply);
     Task<void> handle_eth_get_uncle_by_block_hash_and_index(const nlohmann::json& request, std::string& reply);
-    Task<void> handle_eth_get_uncle_by_block_number_and_index(const nlohmann::json& request, std::string& reply);
+    Task<void> handle_eth_get_uncle_by_block_num_and_index(const nlohmann::json& request, std::string& reply);
     Task<void> handle_eth_get_transaction_by_hash(const nlohmann::json& request, std::string& reply);
 
     boost::asio::io_context& ioc_;

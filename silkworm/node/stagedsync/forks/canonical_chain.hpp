@@ -48,15 +48,15 @@ class CanonicalChain {
     BlockId find_forking_point(Hash header_hash) const;
     BlockId find_forking_point(const BlockHeader& header, Hash header_hash) const;
 
-    void advance(BlockNum height, Hash header_hash);
-    void update_up_to(BlockNum height, Hash hash);
+    void advance(BlockNum block_num, Hash header_hash);
+    void update_up_to(BlockNum block_num, Hash hash);
     void delete_down_to(BlockNum unwind_point);
     void set_current_head(BlockId);
 
     BlockId initial_head() const;
     BlockId current_head() const;
 
-    std::optional<Hash> get_hash(BlockNum height) const;
+    std::optional<Hash> get_hash(BlockNum block_num) const;
     bool has(Hash block_hash) const;
 
   private:

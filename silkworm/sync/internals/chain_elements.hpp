@@ -36,14 +36,14 @@ namespace silkworm {
 // A link corresponds to a block header, links are connected to each other by reverse of parent_hash relation
 struct Link {
     std::shared_ptr<BlockHeader> header;      // Header to which this link point to
-    BlockNum block_height = 0;                // Block height of the header, repeated here for convenience (remove?)
+    BlockNum block_num = 0;                   // Block block_num of the header, repeated here for convenience (remove?)
     Hash hash;                                // Hash of the header
-    std::vector<std::shared_ptr<Link>> next;  // Reverse of parent_hash,allows iter.over links in asc. block height order
+    std::vector<std::shared_ptr<Link>> next;  // Reverse of parent_hash,allows iter.over links in asc. block number order
     bool persisted = false;                   // Whether this link comes from the database record
     bool preverified = false;                 // Ancestor of pre-verified header
 
     Link(BlockHeader h, bool persisted_)
-        : block_height{h.number},
+        : block_num{h.number},
           hash{h.hash()},  // save computation
           persisted{persisted_} {
         header = std::make_shared<BlockHeader>(std::move(h));
@@ -63,23 +63,23 @@ struct Link {
 // An anchor is the bottom of a chain bundle that consists of one anchor and some chain links.
 struct Anchor {
     Hash parent_hash;                          // Hash of the header this anchor can be connected to (to disappear)
-    BlockNum block_height;                     // block height of the anchor
+    BlockNum block_num;                        // block number of the anchor
     time_point_t timestamp;                    // request/arrival time
     time_point_t prev_timestamp;               // Used to restore timestamp when a request fails for network reasons
     int timeouts{0};                           // Number of timeout that this anchor has experienced; after certain threshold, it gets invalidated
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor
-    BlockNum last_link_height{0};              // the block_height of the last link of the chain bundle anchored to this
+    BlockNum last_link_block_num{0};           // the block_num of the last link of the chain bundle anchored to this
     PeerId peer_id;
 
     Anchor(const BlockHeader& header, PeerId p)
         : parent_hash{header.parent_hash},
-          block_height{header.number},
-          last_link_height{block_height},
+          block_num{header.number},
+          last_link_block_num{block_num},
           // timestamp{0},  // ready to get extended
           peer_id{std::move(p)} {
     }
 
-    BlockNum chain_length() const { return last_link_height - block_height + 1; }
+    BlockNum chain_length() const { return last_link_block_num - block_num + 1; }
 
     void remove_child(const Link& child) {
         std::erase_if(links, [child](auto& link) { return (link->hash == child.hash); });
@@ -106,15 +106,15 @@ struct Anchor {
 // Binary relations to use in priority queues
 struct LinkOlderThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->block_height != y->block_height ? x->block_height < y->block_height :  // cause ordering
-                   x < y;                                                                // preserve identity
+        return x->block_num != y->block_num ? x->block_num < y->block_num :  // cause ordering
+                   x < y;                                                    // preserve identity
     }
 };
 
 struct LinkYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->block_height != y->block_height ? x->block_height > y->block_height :  // cause ordering
-                   x > y;                                                                // preserve identity
+        return x->block_num != y->block_num ? x->block_num > y->block_num :  // cause ordering
+                   x > y;                                                    // preserve identity
     }
 };
 
@@ -123,10 +123,10 @@ struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std:
         if (x->timestamp != y->timestamp) {
             return x->timestamp > y->timestamp;  // prefer smaller timestamp
         }
-        if (x->block_height != y->block_height) {
-            return x->block_height > y->block_height;  // when timestamps are the same prioritise low block_height
+        if (x->block_num != y->block_num) {
+            return x->block_num > y->block_num;  // when timestamps are the same prioritise low block_num
         }
-        return x > y;  // when block_height are the same preserve identity
+        return x > y;  // when block_num are the same preserve identity
     }
 };
 
@@ -135,10 +135,10 @@ struct AnchorOlderThan : public std::function<bool(std::shared_ptr<Anchor>, std:
         if (x->timestamp != y->timestamp) {
             return x->timestamp < y->timestamp;  // prefer smaller timestamp
         }
-        if (x->block_height != y->block_height) {
-            return x->block_height < y->block_height;  // when timestamps are the same prioritise low block_height
+        if (x->block_num != y->block_num) {
+            return x->block_num < y->block_num;  // when timestamps are the same prioritise low block_num
         }
-        return x < y;  // when block_height are the same preserve identity
+        return x < y;  // when block_num are the same preserve identity
     }
 };
 
@@ -148,10 +148,10 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 // Priority queue types
 
-// For persisted links, those with the lower block heights get evicted first. This means that more recently persisted
+// For persisted links, those with the lower block numbers get evicted first. This means that more recently persisted
 // links are preferred.
-// For non-persisted links, those with the highest block heights get evicted first. This is to prevent "holes" in the
-// block heights that may cause inability to insert headers in the ascending order of their block heights.
+// For non-persisted links, those with the max block numbers get evicted first. This is to prevent "holes" in the
+// block numbers that may cause inability to insert headers in the ascending order of their block numbers.
 
 // We need a queue for persisted links to
 // - get older links to evict when we need to free memory
@@ -160,9 +160,9 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 }  // namespace silkworm
 template <>
-struct MbpqKey<std::shared_ptr<silkworm::Link>> {                                                  // extract key type and value
-    using type = silkworm::BlockNum;                                                               // type of the key
-    static type value(const std::shared_ptr<silkworm::Link>& link) { return link->block_height; }  // value of the key
+struct MbpqKey<std::shared_ptr<silkworm::Link>> {                                               // extract key type and value
+    using type = silkworm::BlockNum;                                                            // type of the key
+    static type value(const std::shared_ptr<silkworm::Link>& link) { return link->block_num; }  // value of the key
 };
 namespace silkworm {  // reopen namespace
 
@@ -264,7 +264,7 @@ struct Segment
         });
     }
 
-    HeaderList::Header_Ref highest_header() const { return front(); }
+    HeaderList::Header_Ref max_header() const { return front(); }
     HeaderList::Header_Ref lowest_header() const { return back(); }
 
     using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice

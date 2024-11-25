@@ -43,13 +43,13 @@ void InboundNewBlockHashes::execute(db::DataStoreRef, HeaderChain& hc, BodySeque
 
     SILK_TRACE << "Processing message " << *this;
 
-    BlockNum max = hc.top_seen_block_height();
+    BlockNum max = hc.top_seen_block_num();
 
     for (auto& new_block_hash : packet_) {
         Hash hash = new_block_hash.hash;
 
-        // calculate top seen block height
-        max = std::max(max, new_block_hash.number);
+        // calculate top seen block number
+        max = std::max(max, new_block_hash.block_num);
 
         // save announcement
         auto packet = hc.save_external_announce(hash);
@@ -69,7 +69,7 @@ void InboundNewBlockHashes::execute(db::DataStoreRef, HeaderChain& hc, BodySeque
         }
     }
 
-    hc.top_seen_block_height(max);
+    hc.top_seen_block_num(max);
 }
 
 uint64_t InboundNewBlockHashes::req_id() const { return req_id_; }

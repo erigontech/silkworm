@@ -156,7 +156,7 @@ TEST_CASE("Bundle", "[silkworm::json][from_json]") {
         CHECK(call.nonce == intx::uint256{1});
 
         auto& bo = bundle.block_override;
-        CHECK(bo.block_number == std::nullopt);
+        CHECK(bo.block_num == std::nullopt);
         CHECK(bo.coin_base == std::nullopt);
         CHECK(bo.timestamp == std::nullopt);
         CHECK(bo.difficulty == std::nullopt);
@@ -208,7 +208,7 @@ TEST_CASE("Bundle", "[silkworm::json][from_json]") {
         CHECK(call.from == evmc::address{0x52c24586c31cff0485a6208bb63859290fba5bce_address});
 
         auto& bo = bundle.block_override;
-        CHECK(bo.block_number == 10);
+        CHECK(bo.block_num == 10);
         CHECK(bo.coin_base == evmc::address{0x52c24586c31cff0485a6208bb63859290fba5baa_address});
         CHECK(bo.timestamp == 1000);
         CHECK(bo.difficulty == intx::uint256{16777216});
@@ -281,8 +281,8 @@ TEST_CASE("SimulationContext", "[silkworm::json][from_json]") {
         })"_json;
 
         auto context = json.get<SimulationContext>();
-        CHECK(context.block_number.is_number());
-        CHECK(context.block_number.number() == 1000);
+        CHECK(context.block_num.is_number());
+        CHECK(context.block_num.number() == 1000);
         CHECK(context.transaction_index == -1);
     }
     SECTION("Block number and tx index") {
@@ -292,8 +292,8 @@ TEST_CASE("SimulationContext", "[silkworm::json][from_json]") {
         })"_json;
 
         auto context = json.get<SimulationContext>();
-        CHECK(context.block_number.is_number());
-        CHECK(context.block_number.number() == 1000);
+        CHECK(context.block_num.is_number());
+        CHECK(context.block_num.number() == 1000);
         CHECK(context.transaction_index == 5);
     }
 }

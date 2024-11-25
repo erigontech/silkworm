@@ -227,11 +227,11 @@ int main(int argc, char* argv[]) {
                     while (ec != boost::asio::error::operation_aborted) {
                         state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
                         state_changes_timer.wait(ec);
-                        static auto block_number = kStartBlock;
-                        be.state_change_source()->start_new_batch(block_number, evmc::bytes32{}, {}, false);
+                        static auto block_num = kStartBlock;
+                        be.state_change_source()->start_new_batch(block_num, evmc::bytes32{}, {}, false);
                         be.state_change_source()->notify_batch(0, kGasLimit);
-                        SILK_INFO << "New batch notified for block: " << block_number;
-                        ++block_number;
+                        SILK_INFO << "New batch notified for block: " << block_num;
+                        ++block_num;
                     }
                 };
                 auto stop = [&state_changes_timer]() {

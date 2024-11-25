@@ -1072,9 +1072,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        CHECK(current_head_id.number == 9);
+        CHECK(current_head_id.block_num == 9);
         CHECK(current_head_id.hash != Hash{});
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();
+        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
         auto new_block = silkworm::test_util::generate_sample_child_blocks(current_head);
         auto new_block_hash = new_block->header.hash();
 
@@ -1089,9 +1089,9 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        CHECK(current_head_id.number == 9);
+        CHECK(current_head_id.block_num == 9);
         CHECK(current_head_id.hash != Hash{});
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();
+        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
 
         auto new_block1 = silkworm::test_util::generate_sample_child_blocks(current_head);
         auto insert_block_success = silkworm_lib.execution_engine().insert_block(new_block1);
@@ -1112,7 +1112,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();
+        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
         auto new_block = silkworm::test_util::generate_sample_child_blocks(current_head);
         auto new_block_hash = new_block->header.hash();
 
@@ -1131,7 +1131,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
         auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.number, current_head_id.hash).value();
+        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
         auto new_block = silkworm::test_util::generate_sample_child_blocks(current_head);
         auto new_block_hash = new_block->header.hash();
 
@@ -1146,10 +1146,10 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         CHECK(headers[0].hash() == new_block_hash);
 
         auto final_header = silkworm_lib.execution_engine().last_finalized_block();
-        CHECK(final_header.number == new_block->header.number);
+        CHECK(final_header.block_num == new_block->header.number);
 
         auto safe_header = silkworm_lib.execution_engine().last_safe_block();
-        CHECK(safe_header.number == new_block->header.number);
+        CHECK(safe_header.block_num == new_block->header.number);
     }
 }
 

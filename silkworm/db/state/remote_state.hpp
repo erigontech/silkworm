@@ -36,8 +36,8 @@ namespace silkworm::db::state {
 
 class AsyncRemoteState {
   public:
-    explicit AsyncRemoteState(kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number)
-        : storage_(storage), state_reader_(tx, block_number + 1) {}
+    explicit AsyncRemoteState(kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_num)
+        : storage_(storage), state_reader_(tx, block_num + 1) {}
 
     Task<std::optional<Account>> read_account(const evmc::address& address) const noexcept;
 
@@ -47,17 +47,17 @@ class AsyncRemoteState {
 
     Task<uint64_t> previous_incarnation(const evmc::address& address) const noexcept;
 
-    Task<std::optional<BlockHeader>> read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept;
+    Task<std::optional<BlockHeader>> read_header(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept;
 
-    Task<bool> read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& filled_body) const noexcept;
+    Task<bool> read_body(BlockNum block_num, const evmc::bytes32& block_hash, BlockBody& filled_body) const noexcept;
 
-    Task<std::optional<intx::uint256>> total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept;
+    Task<std::optional<intx::uint256>> total_difficulty(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept;
 
     Task<evmc::bytes32> state_root_hash() const;
 
     Task<BlockNum> current_canonical_block() const;
 
-    Task<std::optional<evmc::bytes32>> canonical_hash(BlockNum block_number) const;
+    Task<std::optional<evmc::bytes32>> canonical_hash(BlockNum block_num) const;
 
   private:
     static std::unordered_map<evmc::bytes32, Bytes> code_;
@@ -68,8 +68,8 @@ class AsyncRemoteState {
 
 class RemoteState : public State {
   public:
-    explicit RemoteState(boost::asio::any_io_executor& executor, kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_number)
-        : executor_(executor), async_state_{tx, storage, block_number} {}
+    explicit RemoteState(boost::asio::any_io_executor& executor, kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_num)
+        : executor_(executor), async_state_{tx, storage, block_num} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -79,29 +79,29 @@ class RemoteState : public State {
 
     uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockHeader> read_header(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept override;
 
-    bool read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept override;
+    bool read_body(BlockNum block_num, const evmc::bytes32& block_hash, BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<intx::uint256> total_difficulty(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept override;
 
     evmc::bytes32 state_root_hash() const override;
 
     BlockNum current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const override;
+    std::optional<evmc::bytes32> canonical_hash(BlockNum block_num) const override;
 
     void insert_block(const Block& /*block*/, const evmc::bytes32& /*hash*/) override {}
 
-    void canonize_block(BlockNum /*block_number*/, const evmc::bytes32& /*block_hash*/) override {}
+    void canonize_block(BlockNum /*block_num*/, const evmc::bytes32& /*block_hash*/) override {}
 
-    void decanonize_block(BlockNum /*block_number*/) override {}
+    void decanonize_block(BlockNum /*block_num*/) override {}
 
-    void insert_receipts(BlockNum /*block_number*/, const std::vector<Receipt>& /*receipts*/) override {}
+    void insert_receipts(BlockNum /*block_num*/, const std::vector<Receipt>& /*receipts*/) override {}
 
-    void insert_call_traces(BlockNum /*block_number*/, const CallTraces& /*traces*/) override {}
+    void insert_call_traces(BlockNum /*block_num*/, const CallTraces& /*traces*/) override {}
 
-    void begin_block(BlockNum /*block_number*/, size_t /*updated_accounts_count*/) override {}
+    void begin_block(BlockNum /*block_num*/, size_t /*updated_accounts_count*/) override {}
 
     void update_account(
         const evmc::address& /*address*/,
@@ -121,7 +121,7 @@ class RemoteState : public State {
         const evmc::bytes32& /*initial*/,
         const evmc::bytes32& /*current*/) override {}
 
-    void unwind_state_changes(BlockNum /*block_number*/) override {}
+    void unwind_state_changes(BlockNum /*block_num*/) override {}
 
   private:
     boost::asio::any_io_executor executor_;

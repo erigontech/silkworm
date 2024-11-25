@@ -31,7 +31,7 @@ using namespace silkworm;
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
-    CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
+    CLI::App app{"Check Tx Hashes => BlockNum mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
     size_t block_from{0};
@@ -56,14 +56,14 @@ int main(int argc, char* argv[]) {
     auto tx_lookup_table{db::open_cursor(txn, db::table::kTxLookup)};
     auto transactions_table{db::open_cursor(txn, db::table::kBlockTransactions)};
 
-    uint64_t expected_block_number{0};
+    uint64_t expected_block_num{0};
 
     try {
         SILK_INFO << "Checking Transaction Lookups...";
 
         auto bodies_data{bodies_table.to_first(false)};
         while (bodies_data) {
-            auto block_number(endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data())));
+            auto block_num(endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data())));
             auto body_rlp{db::from_slice(bodies_data.value)};
             auto body{unwrap_or_throw(decode_stored_block_body(body_rlp))};
 
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
                 for (; i < body.txn_count && transaction_data.done;
                      ++i, transaction_data = transactions_table.to_next(false)) {
                     if (!transaction_data) {
-                        SILK_ERROR << "Block " << block_number << " transaction " << i << " not found in "
+                        SILK_ERROR << "Block " << block_num << " transaction " << i << " not found in "
                                    << db::table::kBlockTransactions.name << " table";
                         continue;
                     }
@@ -86,38 +86,38 @@ int main(int argc, char* argv[]) {
                     ByteView transaction_view{transaction_hash.bytes};
                     auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
                     if (!lookup_data) {
-                        SILK_ERROR << "Block " << block_number << " transaction " << i << " with hash "
+                        SILK_ERROR << "Block " << block_num << " transaction " << i << " with hash "
                                    << to_hex(transaction_view) << " not found in " << db::table::kTxLookup.name
                                    << " table";
                         continue;
                     }
 
-                    // Erigon stores block height as compact (no leading zeroes)
+                    // Erigon stores block_num as compact (no leading zeroes)
                     auto lookup_block_value{db::from_slice(lookup_data.value)};
-                    uint64_t actual_block_number{0};
-                    if (!endian::from_big_compact(lookup_block_value, actual_block_number)) {
+                    uint64_t actual_block_num{0};
+                    if (!endian::from_big_compact(lookup_block_value, actual_block_num)) {
                         SILK_ERROR << "Failed to read expected block number from: " << to_hex(lookup_block_value);
-                    } else if (actual_block_number != expected_block_number) {
+                    } else if (actual_block_num != expected_block_num) {
                         SILK_ERROR << "Mismatch: Expected block number for tx with hash: " << to_hex(transaction_view)
-                                   << " is " << expected_block_number << ", but got: " << actual_block_number;
+                                   << " is " << expected_block_num << ", but got: " << actual_block_num;
                     }
                 }
 
                 if (i != body.txn_count) {
-                    SILK_ERROR << "Block " << block_number << " claims " << body.txn_count
+                    SILK_ERROR << "Block " << block_num << " claims " << body.txn_count
                                << " transactions but only " << i << " read";
                 }
             }
 
-            if (expected_block_number % 100000 == 0) {
-                SILK_INFO << "Scanned blocks " << expected_block_number;
+            if (expected_block_num % 100000 == 0) {
+                SILK_INFO << "Scanned blocks " << expected_block_num;
             }
 
             if (SignalHandler::signalled()) {
                 break;
             }
 
-            ++expected_block_number;
+            ++expected_block_num;
             bodies_data = bodies_table.to_next(false);
         }
 

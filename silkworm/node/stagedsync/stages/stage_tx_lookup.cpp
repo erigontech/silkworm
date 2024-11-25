@@ -52,9 +52,9 @@ Stage::Result TxLookup::forward(RWTxn& txn) {
 
         // Snapshots already have TxLookup index, so we must start after max frozen block here
         DataModel data_model = data_model_factory_(txn);
-        const auto highest_frozen_block_number{data_model.highest_frozen_block_number()};
-        if (highest_frozen_block_number > previous_progress) {
-            previous_progress = std::min(highest_frozen_block_number, target_progress);
+        const auto max_frozen_block_num{data_model.max_frozen_block_num()};
+        if (max_frozen_block_num > previous_progress) {
+            previous_progress = std::min(max_frozen_block_num, target_progress);
             // If pruning is enabled, make it start from max frozen block as well
             if (prune_mode_tx_index_.enabled()) {
                 set_prune_progress(txn, previous_progress);
@@ -127,8 +127,8 @@ Stage::Result TxLookup::unwind(RWTxn& txn) {
 
         // Snapshots already have TxLookup index, so we must stop before max frozen block here
         DataModel data_model = data_model_factory_(txn);
-        const auto highest_frozen_block_number{data_model.highest_frozen_block_number()};
-        to = std::max(to, highest_frozen_block_number);
+        const auto max_frozen_block_num{data_model.max_frozen_block_num()};
+        to = std::max(to, max_frozen_block_num);
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
@@ -349,11 +349,11 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(RWTxn& txn,
     for (BlockNum current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
         auto current_hash = read_canonical_header_hash(txn, current_block_num);
         if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
-                                            "Canonical hash at height " + std::to_string(current_block_num) + " not found");
+                                            "Canonical hash at block_num " + std::to_string(current_block_num) + " not found");
         std::vector<Bytes> rlp_encoded_txs;
         auto found = data_model.read_rlp_transactions(current_block_num, *current_hash, rlp_encoded_txs);
         if (!found) throw StageError(Stage::Result::kBadChainSequence,
-                                     "Canonical block at height " + std::to_string(current_block_num) + " not found");
+                                     "Canonical block at block_num " + std::to_string(current_block_num) + " not found");
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {

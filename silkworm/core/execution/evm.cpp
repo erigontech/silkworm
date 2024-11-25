@@ -479,11 +479,11 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     return context;
 }
 
-evmc::bytes32 EvmHost::get_block_hash(int64_t block_number) const noexcept {
-    SILKWORM_ASSERT(block_number >= 0);
+evmc::bytes32 EvmHost::get_block_hash(int64_t block_num) const noexcept {
+    SILKWORM_ASSERT(block_num >= 0);
     const uint64_t current_block_num{evm_.block_.header.number};
-    SILKWORM_ASSERT(static_cast<uint64_t>(block_number) < current_block_num);
-    const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(block_number)};
+    SILKWORM_ASSERT(static_cast<uint64_t>(block_num) < current_block_num);
+    const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(block_num)};
     SILKWORM_ASSERT(std::in_range<size_t>(new_size_u64));
     const size_t new_size{static_cast<size_t>(new_size_u64)};
 

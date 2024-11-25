@@ -64,7 +64,7 @@ class StateChangeCollection : public StateChangeSource {
 
     void reset(uint64_t tx_id);
 
-    void start_new_batch(BlockNum block_height, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind);
+    void start_new_batch(BlockNum block_num, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind);
 
     void change_account(const evmc::address& address, uint64_t incarnation, const Bytes& data);
 

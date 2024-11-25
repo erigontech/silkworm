@@ -24,10 +24,10 @@ namespace silkworm::execution::grpc::client {
 
 namespace proto = ::execution;
 
-proto::ValidationRequest request_from_block_num_and_hash(const BlockId& number_and_hash) {
+proto::ValidationRequest request_from_block_id(const BlockId& block_id) {
     proto::ValidationRequest request;
-    request.set_number(number_and_hash.number);
-    request.set_allocated_hash(rpc::h256_from_bytes32(number_and_hash.hash).release());
+    request.set_number(block_id.block_num);
+    request.set_allocated_hash(rpc::h256_from_bytes32(block_id.hash).release());
     return request;
 }
 

@@ -49,7 +49,7 @@ struct ForksExampleSpec {
 
 static ForkId fork_id_at(uint64_t head_block_num_or_time, const ChainConfig& chain) {
     REQUIRE(chain.genesis_hash.has_value());
-    return ForkId{ByteView{*chain.genesis_hash}, chain.distinct_fork_numbers(), chain.distinct_fork_times(), head_block_num_or_time};
+    return ForkId{ByteView{*chain.genesis_hash}, chain.distinct_fork_block_nums(), chain.distinct_fork_times(), head_block_num_or_time};
 }
 
 TEST_CASE("ForkId.forks.mainnet") {
@@ -187,7 +187,7 @@ TEST_CASE("ForkId.is_compatible_with") {
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
     ByteView genesis_hash{*chain_config.genesis_hash};
-    const auto fork_numbers = chain_config.distinct_fork_numbers();
+    const auto fork_numbers = chain_config.distinct_fork_block_nums();
     const auto fork_times = chain_config.distinct_fork_times();
 
     for (auto& example : examples) {

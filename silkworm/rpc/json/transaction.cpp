@@ -162,7 +162,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Transacti
     GlazeJsonTransactionReply tx_json_data{};
     tx_json_data.id = make_jsonrpc_id(request_json);
     to_quantity(std::span(tx_json_data.result.transaction_index), tx.transaction_index);
-    to_quantity(std::span(tx_json_data.result.block_number), tx.block_number);
+    to_quantity(std::span(tx_json_data.result.block_num), tx.block_num);
     to_hex(std::span(tx_json_data.result.block_hash), tx.block_hash.bytes);
     to_quantity(std::span(tx_json_data.result.gas_price), tx.effective_gas_price());
     make_glaze_json_transaction(tx, tx_json_data.result);
@@ -180,7 +180,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
         json["transactionIndex"] = nullptr;
     } else {
         json["blockHash"] = transaction.block_hash;
-        json["blockNumber"] = to_quantity(transaction.block_number);
+        json["blockNumber"] = to_quantity(transaction.block_num);
         json["transactionIndex"] = to_quantity(transaction.transaction_index);
     }
 }

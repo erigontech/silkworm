@@ -147,12 +147,12 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     CHECK_NOTHROW(snapshot_sync.update_block_headers(tmp_db.rw_txn(), max_block_available, is_stopping));
 
     // Expect that the database is correctly populated (N.B. cannot check Difficulty table because of sample snapshots)
-    auto block_is_in_header_numbers = [&](Hash block_hash, BlockNum expected_block_number) {
-        const auto block_number = db::read_block_number(tmp_db.rw_txn(), block_hash);
-        return block_number == expected_block_number;
+    auto block_is_in_header_numbers = [&](Hash block_hash, BlockNum expected_block_num) {
+        const auto block_num = db::read_block_num(tmp_db.rw_txn(), block_hash);
+        return block_num == expected_block_num;
     };
-    auto block_is_canonical = [&](BlockNum block_number, Hash expected_block_hash) {
-        const auto canonical_block_hash = db::read_canonical_header_hash(tmp_db.rw_txn(), block_number);
+    auto block_is_canonical = [&](BlockNum block_num, Hash expected_block_hash) {
+        const auto canonical_block_hash = db::read_canonical_header_hash(tmp_db.rw_txn(), block_num);
         return canonical_block_hash == expected_block_hash;
     };
 

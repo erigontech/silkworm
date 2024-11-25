@@ -277,8 +277,8 @@ Task<void> SnapshotSync::build_missing_indexes() {
 void SnapshotSync::seed_frozen_local_snapshots() {
     for (auto& bundle_ptr : repository_.view_bundles()) {
         auto& bundle = *bundle_ptr;
-        auto block_range = bundle.step_range().to_block_num_range();
-        bool is_frozen = block_range.size() >= kMaxMergerSnapshotSize;
+        auto block_num_range = bundle.step_range().to_block_num_range();
+        bool is_frozen = block_num_range.size() >= kMaxMergerSnapshotSize;
         const segment::SegmentFileReader& first_snapshot = *bundle.segments().begin();
         // assume that if one snapshot in the bundle is preverified, then all of them are
         bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.path().filename());
@@ -331,7 +331,7 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
     SILK_INFO << "SnapshotSync: database update started";
 
     // Iterate on block header snapshots and write header-related tables
-    etl_mdbx::Collector hash2bn_collector{};
+    etl_mdbx::Collector hash_to_block_num_collector;
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
 
@@ -339,33 +339,33 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
         db::blocks::BundleDataRef bundle{**bundle_ptr};
         for (const BlockHeader& header : HeaderSegmentReader{bundle.header_segment()}) {
             SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
-            const auto block_number = header.number;
-            if (block_number > max_block_available) continue;
+            const auto block_num = header.number;
+            if (block_num > max_block_available) continue;
 
             const auto block_hash = header.hash();
 
             // Write block header into kDifficulty table
             total_difficulty += header.difficulty;
-            write_total_difficulty(txn, block_number, block_hash, total_difficulty);
+            write_total_difficulty(txn, block_num, block_hash, total_difficulty);
 
             // Write block header into kCanonicalHashes table
-            write_canonical_hash(txn, block_number, block_hash);
+            write_canonical_hash(txn, block_num, block_hash);
 
             // Collect entries for later loading kHeaderNumbers table
             Bytes block_hash_bytes{block_hash.bytes, kHashLength};
-            Bytes encoded_block_number(sizeof(BlockNum), '\0');
-            endian::store_big_u64(encoded_block_number.data(), block_number);
-            hash2bn_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_number)});
+            Bytes encoded_block_num(sizeof(BlockNum), '\0');
+            endian::store_big_u64(encoded_block_num.data(), block_num);
+            hash_to_block_num_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_num)});
 
             if (++block_count % 1'000'000 == 0) {
-                SILK_INFO << "SnapshotSync: processing block header=" << block_number << " count=" << block_count;
+                SILK_INFO << "SnapshotSync: processing block header=" << block_num << " count=" << block_count;
                 if (is_stopping()) return;
             }
         }
     }
 
     PooledCursor header_numbers_cursor{txn, table::kHeaderNumbers};
-    hash2bn_collector.load(header_numbers_cursor);
+    hash_to_block_num_collector.load(header_numbers_cursor);
     SILK_INFO << "SnapshotSync: database table HeaderNumbers updated";
 
     // Update head block header in kHeadHeader table

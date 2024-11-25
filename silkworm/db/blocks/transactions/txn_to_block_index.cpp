@@ -23,7 +23,7 @@ namespace silkworm::snapshots {
 static IndexInputDataQuery::Iterator::value_type query_entry(TxsAndBodiesQuery::Iterator& it) {
     return {
         .key_data = it->tx_buffer,
-        .value = it->block_number,
+        .value = it->block_num,
     };
 }
 

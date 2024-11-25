@@ -327,7 +327,7 @@ TEST_CASE("account dumper") {
     auto tx = begin_result.get();
     core::AccountDumper ad{*tx};
 
-    const BlockNumberOrHash bnoh{0x52a0b3};
+    const BlockNumOrHash block_num_or_hash{0x52a0b3};
     const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
     const evmc::bytes32 root{0x9aae6b27d42db5f0130981f83cb17a781cc3450926a1c5f3448776ab303a6062_bytes32};
@@ -348,7 +348,7 @@ TEST_CASE("account dumper") {
         int16_t max_result = 1;
         bool exclude_code = true;
         bool exclude_storage = true;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
@@ -370,7 +370,7 @@ TEST_CASE("account dumper") {
         int16_t max_result = 2;
         bool exclude_code = true;
         bool exclude_storage = true;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
@@ -401,7 +401,7 @@ TEST_CASE("account dumper") {
         int16_t max_result = 3;
         bool exclude_code = true;
         bool exclude_storage = true;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
@@ -442,7 +442,7 @@ TEST_CASE("account dumper") {
         int16_t max_result = 1;
         bool exclude_code = false;
         bool exclude_storage = true;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
@@ -464,7 +464,7 @@ TEST_CASE("account dumper") {
         int16_t max_result = 2;
         bool exclude_code = false;
         bool exclude_storage = true;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
@@ -496,7 +496,7 @@ TEST_CASE("account dumper") {
         int16_t max_result = 3;
         bool exclude_code = false;
         bool exclude_storage = true;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
@@ -538,7 +538,7 @@ TEST_CASE("account dumper") {
         int16_t max_result = 1;
         bool exclude_code = false;
         bool exclude_storage = false;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
@@ -560,7 +560,7 @@ TEST_CASE("account dumper") {
         uint64_t max_result = 2;
         bool exclude_code = false;
         bool exclude_storage = false;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts &da = result.get();
 
         CHECK(da.root == root);
@@ -596,7 +596,7 @@ TEST_CASE("account dumper") {
         uint64_t max_result = 3;
         bool exclude_code = false;
         bool exclude_storage = false;
-        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts &da = result.get();
 
         CHECK(da.root == root);

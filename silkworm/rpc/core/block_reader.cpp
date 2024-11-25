@@ -37,19 +37,19 @@ void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
     }
 }
 
-Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumberOrHash& bnoh, BalanceChanges& balance_changes) const {
-    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, chain_storage_, transaction_, bnoh);
+Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const {
+    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, chain_storage_, transaction_, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("read_balance_changes: block not found");
     }
-    const auto block_number = block_with_hash->block.header.number;
+    const auto block_num = block_with_hash->block.header.number;
 
-    SILK_TRACE << "read_balance_changes: block_number: " << block_number;
+    SILK_TRACE << "read_balance_changes: block_num: " << block_num;
 
-    StateReader state_reader{transaction_, block_number + 1};
+    StateReader state_reader{transaction_, block_num + 1};
 
-    const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_number);
-    const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_number + 1);
+    const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
+    const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
 
     db::kv::api::HistoryRangeQuery query{
         .table = db::table::kAccountDomain,

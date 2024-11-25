@@ -47,7 +47,7 @@ struct ExecutionPayload {
         kV3 = 3
     } version{kV1};
 
-    BlockNum number{0};
+    BlockNum block_num{0};
     uint64_t timestamp{0};
     uint64_t gas_limit{0};
     uint64_t gas_used{0};
@@ -139,7 +139,7 @@ struct ForkChoiceUpdatedReply {
 struct TransitionConfiguration {
     intx::uint256 terminal_total_difficulty;
     evmc::bytes32 terminal_block_hash;
-    BlockNum terminal_block_number{0};
+    BlockNum terminal_block_num{0};
 };
 
 //! Response for engine_getPayloadV2 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#response-2

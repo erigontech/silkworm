@@ -45,32 +45,32 @@ class InMemoryState : public State {
 
     uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(BlockNum block_number,
+    std::optional<BlockHeader> read_header(BlockNum block_num,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    [[nodiscard]] bool read_body(BlockNum block_number, const evmc::bytes32& block_hash,
+    [[nodiscard]] bool read_body(BlockNum block_num, const evmc::bytes32& block_hash,
                                  BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(BlockNum block_number,
+    std::optional<intx::uint256> total_difficulty(BlockNum block_num,
                                                   const evmc::bytes32& block_hash) const noexcept override;
 
     evmc::bytes32 state_root_hash() const override;
 
     BlockNum current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const override;
+    std::optional<evmc::bytes32> canonical_hash(BlockNum block_num) const override;
 
     void insert_block(const Block& block, const evmc::bytes32& hash) override;
 
-    void canonize_block(BlockNum block_number, const evmc::bytes32& block_hash) override;
+    void canonize_block(BlockNum block_num, const evmc::bytes32& block_hash) override;
 
-    void decanonize_block(BlockNum block_number) override;
+    void decanonize_block(BlockNum block_num) override;
 
-    void insert_receipts(BlockNum block_number, const std::vector<Receipt>& receipts) override;
+    void insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) override;
 
-    void insert_call_traces(BlockNum block_number, const CallTraces& traces) override;
+    void insert_call_traces(BlockNum block_num, const CallTraces& traces) override;
 
-    void begin_block(BlockNum block_number, size_t updated_accounts_count) override;
+    void begin_block(BlockNum block_num, size_t updated_accounts_count) override;
 
     void update_account(const evmc::address& address, std::optional<Account> initial,
                         std::optional<Account> current) override;
@@ -81,7 +81,7 @@ class InMemoryState : public State {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
-    void unwind_state_changes(BlockNum block_number) override;
+    void unwind_state_changes(BlockNum block_num) override;
 
     const FlatHashMap<BlockNum, AccountChanges>& account_changes() const { return account_changes_; }
     const FlatHashMap<evmc::address, Account>& accounts() const { return accounts_; }
@@ -115,7 +115,7 @@ class InMemoryState : public State {
     FlatHashMap<BlockNum, AccountChanges> account_changes_;  // per block
     FlatHashMap<BlockNum, StorageChanges> storage_changes_;  // per block
 
-    BlockNum block_number_{0};
+    BlockNum block_num_{0};
 };
 
 }  // namespace silkworm

@@ -70,8 +70,8 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return cursor_dup_sort_;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const db::chain::ChainStorage& storage, BlockNum block_number) override {
-        return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_number);
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const db::chain::ChainStorage& storage, BlockNum block_num) override {
+        return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_num);
     }
 
     std::shared_ptr<db::chain::ChainStorage> create_storage() override {

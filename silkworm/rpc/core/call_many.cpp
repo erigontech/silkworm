@@ -70,8 +70,8 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
         *block_with_hash_shared_copy = *block_with_hash;
 
         rpc::Block blockContext{{block_with_hash_shared_copy}};
-        if (block_override.block_number) {
-            blockContext.block_with_hash->block.header.number = block_override.block_number.value();
+        if (block_override.block_num) {
+            blockContext.block_with_hash->block.header.number = block_override.block_num.value();
         }
         if (block_override.coin_base) {
             blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
@@ -157,9 +157,9 @@ Task<CallManyResult> CallExecutor::execute(
     }
 
     const auto chain_config = co_await chain_storage->read_chain_config();
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, *chain_storage, transaction_, context.block_number);
+    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, *chain_storage, transaction_, context.block_num);
     if (!block_with_hash) {
-        throw std::invalid_argument("read_block_by_number_or_hash: block not found");
+        throw std::invalid_argument("read_block_by_block_num_or_hash: block not found");
     }
     auto transaction_index = context.transaction_index;
     if (transaction_index == -1) {

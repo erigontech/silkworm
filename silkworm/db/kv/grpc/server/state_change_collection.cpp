@@ -47,15 +47,15 @@ void StateChangeCollection::reset(uint64_t tx_id) {
     storage_change_index_.clear();
 }
 
-void StateChangeCollection::start_new_batch(BlockNum block_height, const evmc::bytes32& block_hash,
+void StateChangeCollection::start_new_batch(BlockNum block_num, const evmc::bytes32& block_hash,
                                             const std::vector<Bytes>&& tx_rlps, bool unwind) {
-    SILK_TRACE << "StateChangeCollection::start_new_batch " << this << " block: " << block_height
+    SILK_TRACE << "StateChangeCollection::start_new_batch " << this << " block: " << block_num
                << " unwind:" << unwind << " START";
 
     SILKWORM_ASSERT(latest_change_ == nullptr);
 
     latest_change_ = state_changes_.add_change_batch();
-    latest_change_->set_block_height(block_height);
+    latest_change_->set_block_height(block_num);
     latest_change_->set_allocated_block_hash(rpc::h256_from_bytes32(block_hash).release());
     latest_change_->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
     for (auto& tx_rlp : tx_rlps) {

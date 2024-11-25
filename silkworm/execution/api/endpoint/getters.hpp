@@ -23,6 +23,6 @@
 
 namespace silkworm::execution::api {
 
-using BlockNumberOrHash = std::variant<BlockNum, Hash>;
+using BlockNumOrHash = std::variant<BlockNum, Hash>;
 
 }  // namespace silkworm::execution::api

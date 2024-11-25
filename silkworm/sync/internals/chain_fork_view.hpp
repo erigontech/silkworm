@@ -43,14 +43,14 @@ class ChainForkView {
     TotalDifficulty add(const BlockHeader&, TotalDifficulty parent_td);
 
     ChainHead head() const;
-    BlockNum head_height() const;
+    BlockNum head_block_num() const;
     Hash head_hash() const;
     TotalDifficulty head_total_difficulty() const;
 
     bool head_changed() const;
 
     std::optional<TotalDifficulty> get_total_difficulty(const Hash& hash);
-    std::optional<TotalDifficulty> get_total_difficulty(BlockNum height, const Hash& hash);
+    std::optional<TotalDifficulty> get_total_difficulty(BlockNum block_num, const Hash& hash);
 
     static ChainHead head_at_genesis(const ChainConfig& chain_config);
 

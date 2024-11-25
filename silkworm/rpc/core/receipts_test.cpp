@@ -68,16 +68,16 @@ TEST_CASE("read_receipts") {
     db::test_util::MockTransaction transaction;
 
     SECTION("null receipts") {
-        const uint64_t block_number{0};
+        const uint64_t block_num{0};
         EXPECT_CALL(transaction, get_one(table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         CHECK(!result.get().has_value());
     }
 
     SECTION("zero receipts") {
-        const uint64_t block_number{0};
+        const uint64_t block_num{0};
         EXPECT_CALL(transaction, get_one(table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         const auto receipts = result.get();
         CHECK(receipts.has_value());
         if (receipts) {
@@ -86,7 +86,7 @@ TEST_CASE("read_receipts") {
     }
 
     SECTION("one receipt") {  // https://goerli.etherscan.io/block/3529600
-        const uint64_t block_number{3'529'600};
+        const uint64_t block_num{3'529'600};
         EXPECT_CALL(transaction, get_one(table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("818400f6011a0004a0c8");
         }));
@@ -120,13 +120,13 @@ TEST_CASE("read_receipts") {
             co_return KeyValue{std::move(key), std::move(value)};
         }));
         EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}}.size());
     }
 
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/3529600
-        const uint64_t block_number{3'529'604};
+        const uint64_t block_num{3'529'604};
         EXPECT_CALL(transaction, get_one(table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a");
         }));
@@ -177,13 +177,13 @@ TEST_CASE("read_receipts") {
             co_return KeyValue{std::move(key2), std::move(value2)};
         }));
         EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().value().size() == Receipts{Receipt{}, Receipt{}}.size());
     }
 
     SECTION("invalid receipt log") {  // https://goerli.etherscan.io/block/3529600
-        const uint64_t block_number{3'529'600};
+        const uint64_t block_num{3'529'600};
         EXPECT_CALL(transaction, get_one(table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> {
             co_return *silkworm::from_hex("818400f6011a0004a0c8");
         }));
@@ -216,7 +216,7 @@ TEST_CASE("read_receipts") {
                 "000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c363318f6")};
             co_return KeyValue{std::move(key), std::move(value)};
         }));
-        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs
         const Receipts receipts = result.get().value();
         CHECK(receipts.size() == 1);

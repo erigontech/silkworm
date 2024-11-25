@@ -33,7 +33,7 @@ struct Log {
     silkworm::Bytes data;
 
     /* derived fields */
-    BlockNum block_number{0};
+    BlockNum block_num{0};
     evmc::bytes32 tx_hash;
     uint32_t tx_index{0};
     evmc::bytes32 block_hash;

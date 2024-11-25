@@ -528,12 +528,12 @@ TEST_CASE("serialize filled SyncingData", "[rpc][to_json]") {
     StageData stage_data;
 
     syncing_data.current_block = "0x1";
-    syncing_data.highest_block = "0x2";
+    syncing_data.max_block = "0x2";
     stage_data.stage_name = "stage1";
-    stage_data.block_number = "0x3";
+    stage_data.block_num = "0x3";
     syncing_data.stages.push_back(stage_data);
     stage_data.stage_name = "stage2";
-    stage_data.block_number = "0x4";
+    stage_data.block_num = "0x4";
     syncing_data.stages.push_back(stage_data);
 
     nlohmann::json j = syncing_data;
@@ -568,55 +568,55 @@ TEST_CASE("serialize std::set<evmc::address>", "[rpc][to_json]") {
     }
 }
 
-TEST_CASE("deserialize block_number_or_hash", "[silkworm::json][from_json]") {
+TEST_CASE("deserialize block_num_or_hash", "[silkworm::json][from_json]") {
     SECTION("as hash") {
         auto json = R"("0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c")"_json;
-        auto bnoh = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
-        CHECK(bnoh.is_hash() == true);
-        CHECK(bnoh.is_number() == false);
-        CHECK(bnoh.is_tag() == false);
-        CHECK(bnoh.hash() == 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32);
+        CHECK(block_num_or_hash.is_hash() == true);
+        CHECK(block_num_or_hash.is_number() == false);
+        CHECK(block_num_or_hash.is_tag() == false);
+        CHECK(block_num_or_hash.hash() == 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32);
     }
 
     SECTION("as decimal number string") {
         auto json = R"("1966")"_json;
-        auto bnoh = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == true);
-        CHECK(bnoh.is_tag() == false);
-        CHECK(bnoh.number() == 1966);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == true);
+        CHECK(block_num_or_hash.is_tag() == false);
+        CHECK(block_num_or_hash.number() == 1966);
     }
 
     SECTION("as hex number string") {
         auto json = R"("0x374f3")"_json;
-        auto bnoh = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == true);
-        CHECK(bnoh.is_tag() == false);
-        CHECK(bnoh.number() == 0x374f3);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == true);
+        CHECK(block_num_or_hash.is_tag() == false);
+        CHECK(block_num_or_hash.number() == 0x374f3);
     }
 
     SECTION("as tag string") {
         auto json = R"("latest")"_json;
-        auto bnoh = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == false);
-        CHECK(bnoh.is_tag() == true);
-        CHECK(bnoh.tag() == "latest");
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == false);
+        CHECK(block_num_or_hash.is_tag() == true);
+        CHECK(block_num_or_hash.tag() == "latest");
     }
 
     SECTION("as number") {
         auto json = R"(123456)"_json;
-        auto bnoh = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == true);
-        CHECK(bnoh.is_tag() == false);
-        CHECK(bnoh.number() == 123456);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == true);
+        CHECK(block_num_or_hash.is_tag() == false);
+        CHECK(block_num_or_hash.number() == 123456);
     }
 }
 

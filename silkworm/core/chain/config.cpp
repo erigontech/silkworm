@@ -185,32 +185,32 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
 bool ChainConfig::withdrawals_activated(BlockTime block_time) const noexcept {
     return shanghai_time && block_time >= shanghai_time;
 }
-bool ChainConfig::is_london(BlockNum block_number) const noexcept {
-    return (london_block && block_number >= london_block);
+bool ChainConfig::is_london(BlockNum block_num) const noexcept {
+    return (london_block && block_num >= london_block);
 }
 
-evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) const noexcept {
+evmc_revision ChainConfig::revision(uint64_t block_num, uint64_t block_time) const noexcept {
     if (prague_time && block_time >= prague_time) return EVMC_PRAGUE;
     if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;
     if (shanghai_time && block_time >= shanghai_time) return EVMC_SHANGHAI;
 
     const auto* bor{std::get_if<protocol::bor::Config>(&rule_set_config)};
-    if (bor && block_number >= bor->agra_block) return EVMC_SHANGHAI;
+    if (bor && block_num >= bor->agra_block) return EVMC_SHANGHAI;
 
-    if (london_block && block_number >= london_block) return EVMC_LONDON;
-    if (berlin_block && block_number >= berlin_block) return EVMC_BERLIN;
-    if (istanbul_block && block_number >= istanbul_block) return EVMC_ISTANBUL;
-    if (petersburg_block && block_number >= petersburg_block) return EVMC_PETERSBURG;
-    if (constantinople_block && block_number >= constantinople_block) return EVMC_CONSTANTINOPLE;
-    if (byzantium_block && block_number >= byzantium_block) return EVMC_BYZANTIUM;
-    if (spurious_dragon_block && block_number >= spurious_dragon_block) return EVMC_SPURIOUS_DRAGON;
-    if (tangerine_whistle_block && block_number >= tangerine_whistle_block) return EVMC_TANGERINE_WHISTLE;
-    if (homestead_block && block_number >= homestead_block) return EVMC_HOMESTEAD;
+    if (london_block && block_num >= london_block) return EVMC_LONDON;
+    if (berlin_block && block_num >= berlin_block) return EVMC_BERLIN;
+    if (istanbul_block && block_num >= istanbul_block) return EVMC_ISTANBUL;
+    if (petersburg_block && block_num >= petersburg_block) return EVMC_PETERSBURG;
+    if (constantinople_block && block_num >= constantinople_block) return EVMC_CONSTANTINOPLE;
+    if (byzantium_block && block_num >= byzantium_block) return EVMC_BYZANTIUM;
+    if (spurious_dragon_block && block_num >= spurious_dragon_block) return EVMC_SPURIOUS_DRAGON;
+    if (tangerine_whistle_block && block_num >= tangerine_whistle_block) return EVMC_TANGERINE_WHISTLE;
+    if (homestead_block && block_num >= homestead_block) return EVMC_HOMESTEAD;
 
     return EVMC_FRONTIER;
 }
 
-std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
+std::vector<BlockNum> ChainConfig::distinct_fork_block_nums() const {
     std::set<BlockNum> ret;
 
     // Add forks identified by *block number* in ascending order
@@ -250,13 +250,13 @@ std::vector<BlockTime> ChainConfig::distinct_fork_times() const {
 }
 
 std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
-    auto numbers{distinct_fork_numbers()};
+    auto block_nums{distinct_fork_block_nums()};
     auto times{distinct_fork_times()};
 
     std::vector<uint64_t> points;
-    points.resize(numbers.size() + times.size());
-    std::ranges::move(numbers, points.begin());
-    std::ranges::move(times, points.begin() + (numbers.end() - numbers.begin()));
+    points.resize(block_nums.size() + times.size());
+    std::ranges::move(block_nums, points.begin());
+    std::ranges::move(times, points.begin() + (block_nums.end() - block_nums.begin()));
 
     return points;
 }

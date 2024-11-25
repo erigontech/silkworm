@@ -88,8 +88,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
         }));
 
     SECTION("precompiled contract failure") {
@@ -108,7 +108,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
         };
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -178,12 +178,12 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
         }));
 
     SECTION("Call: failed with intrinsic gas too low") {
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -192,14 +192,14 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
                 co_return kConfigValue;
             }));
 
-        const BlockNum block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_num = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 50'000;
         call.gas_price = 7;
         call.data = *silkworm::from_hex("602a60005500");
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         TestDebugExecutor executor{cache, workers, transaction};
 
@@ -233,7 +233,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .timestamp = 244087591818873,
         };
 
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return response;
         }));
 
-        const BlockNum block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_num = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -271,7 +271,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         call.data = *silkworm::from_hex("602a60005500");
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         TestDebugExecutor executor{cache, workers, transaction};
 
@@ -351,7 +351,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
         };
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -381,7 +381,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return response;
         }));
 
-        const BlockNum block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_num = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -389,7 +389,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         call.data = *silkworm::from_hex("602a60005500");
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         DebugConfig config{false, false, true};
         TestDebugExecutor executor{cache, workers, transaction, config};
@@ -461,7 +461,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
         };
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -491,7 +491,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return response;
         }));
 
-        const BlockNum block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_num = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -499,7 +499,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         call.data = *silkworm::from_hex("602a60005500");
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         DebugConfig config{false, true, false};
         TestDebugExecutor executor{cache, workers, transaction, config};
@@ -576,7 +576,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
         };
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -606,7 +606,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return response;
         }));
 
-        const BlockNum block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_num = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -614,7 +614,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         call.data = *silkworm::from_hex("602a60005500");
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         DebugConfig config{true, false, false};
         TestDebugExecutor executor{cache, workers, transaction, config};
@@ -692,7 +692,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
         };
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -722,7 +722,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return response;
         }));
 
-        const BlockNum block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_num = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -730,7 +730,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         call.data = *silkworm::from_hex("602a60005500");
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         DebugConfig config{true, true, true};
         TestDebugExecutor executor{cache, workers, transaction, config};
@@ -795,7 +795,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
         };
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -825,7 +825,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             co_return response;
         }));
 
-        const BlockNum block_number = 5'405'095;  // 0x5279A7
+        const BlockNum block_num = 5'405'095;  // 0x5279A7
         Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -833,7 +833,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         call.data = *silkworm::from_hex("602a60005500");
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         DebugConfig config{true, true, true};
         TestDebugExecutor executor{cache, workers, transaction, config};
@@ -895,8 +895,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
         }));
 
     SECTION("Call: TO present") {
@@ -915,7 +915,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
         };
-        EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+        EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
@@ -945,7 +945,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
             co_return response;
         }));
 
-        const BlockNum block_number = 4'417'196;  // 0x4366AC
+        const BlockNum block_num = 4'417'196;  // 0x4366AC
         Call call;
         call.from = 0x8ced5ad0d8da4ec211c17355ed3dbfec4cf0e5b9_address;
         call.to = 0x5e1f0c9ddbe3cb57b80c933fab5151627d7966fa_address;
@@ -955,7 +955,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         call.data = *silkworm::from_hex("00");
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         TestDebugExecutor executor{cache, workers, transaction};
 
@@ -986,8 +986,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
 
     auto& tx = transaction;
     EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_number) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
+        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
+            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
         }));
 
     db::kv::api::GetAsOfQuery query1{
@@ -1005,7 +1005,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 244087591818873,
     };
-    EXPECT_CALL(backend, get_block_hash_from_block_number(_))
+    EXPECT_CALL(backend, get_block_hash_from_block_num(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
             co_return kZeroHeaderHash;
         }));
@@ -1035,7 +1035,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
         co_return response;
     }));
 
-    BlockNum block_number = 5'405'095;  // 0x5279A7
+    BlockNum block_num = 5'405'095;  // 0x5279A7
 
     Call call;
     call.from = 0x578f0a154b23be77fc2033197fbc775637648ad4_address;
@@ -1050,7 +1050,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
         "00000000000002cdc48e6cca575707722c0000000000000000000000000000000000000000000000000000000000000000");
 
     silkworm::Block block{};
-    block.header.number = block_number;
+    block.header.number = block_num;
 
     TestDebugExecutor executor{cache, workers, transaction};
 

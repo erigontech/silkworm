@@ -57,7 +57,7 @@ class BodySequence {
     ~BodySequence() = default;
 
     // sync current state - this must be done at header forward
-    void current_state(BlockNum highest_in_db);
+    void current_state(BlockNum max_in_db);
 
     // set a downloading target - this must be done at body forward
     void download_bodies(const Headers& headers);
@@ -79,10 +79,10 @@ class BodySequence {
 
     //! minor functionalities
     bool has_completed() const;
-    BlockNum highest_block_in_output() const;
-    BlockNum highest_block_in_memory() const;
+    BlockNum max_block_in_output() const;
+    BlockNum max_block_in_memory() const;
     BlockNum lowest_block_in_memory() const;
-    BlockNum target_height() const;
+    BlockNum target_block_num() const;
     size_t outstanding_requests(time_point_t tp) const;
     size_t ready_bodies() const;
     size_t requests() const;
@@ -104,7 +104,7 @@ class BodySequence {
     struct BodyRequest {
         uint64_t request_id{0};
         Hash block_hash;
-        BlockNum block_height{0};
+        BlockNum block_num{0};
         BlockHeader header;
         BlockBody body;
         time_point_t request_time;
@@ -116,7 +116,7 @@ class BodySequence {
 
     struct AnnouncedBlocks {
         void add(Block block);
-        std::optional<BlockBody> remove(BlockNum bn);
+        std::optional<BlockBody> remove(BlockNum block_num);
         size_t size();
 
       private:
@@ -132,14 +132,14 @@ class BodySequence {
         Iter find_by_hash(Hash oh, Hash tr);
 
         BlockNum lowest_block() const;
-        BlockNum highest_block() const;
+        BlockNum max_block() const;
     };
 
     IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
 
-    BlockNum highest_body_in_output_{0};
-    BlockNum target_height_{0};
+    BlockNum max_body_in_output_{0};
+    BlockNum target_block_num_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};
     DownloadStatistics statistics_;

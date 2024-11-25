@@ -40,7 +40,7 @@ class StorageWalker {
     StorageWalker& operator=(const StorageWalker&) = delete;
 
     Task<void> walk_of_storages(
-        BlockNum block_number,
+        BlockNum target_block_num,
         const evmc::address& address,
         const evmc::bytes32& start_location,
         uint64_t incarnation,

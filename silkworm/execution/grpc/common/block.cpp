@@ -70,9 +70,9 @@ BlockHeader header_from_proto(const proto::Header& proto_header) {
     return header;
 }
 
-void body_from_proto(const ::execution::BlockBody& proto_body, BlockBody& body, Hash& block_hash, BlockNum& block_number) {
+void body_from_proto(const ::execution::BlockBody& proto_body, BlockBody& body, Hash& block_hash, BlockNum& block_num) {
     block_hash = rpc::bytes32_from_h256(proto_body.block_hash());
-    block_number = proto_body.block_number();
+    block_num = proto_body.block_number();
     body.transactions.reserve(static_cast<size_t>(proto_body.transactions_size()));
     for (const auto& received_tx : proto_body.transactions()) {
         ByteView raw_tx_rlp{string_view_to_byte_view(received_tx)};
@@ -96,7 +96,7 @@ void body_from_proto(const ::execution::BlockBody& proto_body, BlockBody& body, 
 
 api::Body body_from_proto(const proto::BlockBody& proto_body) {
     api::Body body;
-    body_from_proto(proto_body, body, body.block_hash, body.block_number);
+    body_from_proto(proto_body, body, body.block_hash, body.block_num);
     return body;
 }
 
@@ -155,7 +155,7 @@ void proto_from_body(const BlockBody& body, const Hash& h, BlockNum n, proto::Bl
 }
 
 void proto_from_body(const api::Body& body, proto::BlockBody* proto_body) {
-    proto_from_body(body, body.block_hash, body.block_number, proto_body);
+    proto_from_body(body, body.block_hash, body.block_num, proto_body);
 }
 
 void proto_from_body(const Block& block, ::execution::BlockBody* proto_body) {

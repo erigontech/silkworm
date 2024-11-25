@@ -85,9 +85,9 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
     chain::BlockProvider block_provider{
         [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
     // We're not testing blocks here, so we don't care about proper block-number-from-txn-hash provider
-    chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
+    chain::BlockNumFromTxnHashProvider block_num_from_txn_hash_provider{
         [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return 0; }};
-    chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
+    chain::BlockNumFromBlockHashProvider block_num_from_block_hash_provider{
         [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return std::nullopt; }};
     chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
         [](BlockNum) -> Task<std::optional<evmc::bytes32>> { co_return 0; }};
@@ -100,18 +100,18 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
             grpc_context_,
             state_cache.get(),
             {block_provider,
-             block_number_from_txn_hash_provider,
-             block_number_from_block_hash_provider,
+             block_num_from_txn_hash_provider,
+             block_num_from_block_hash_provider,
              canonical_block_hash_from_number_provider}};
     }
 };
 
 static remote::StateChangeBatch make_batch() {
-    static BlockNum block_height{14'000'010};
+    static BlockNum block_num{14'000'010};
 
     remote::StateChangeBatch state_changes{};
     remote::StateChange* latest_change = state_changes.add_change_batch();
-    latest_change->set_block_height(++block_height);
+    latest_change->set_block_height(++block_num);
 
     return state_changes;
 }

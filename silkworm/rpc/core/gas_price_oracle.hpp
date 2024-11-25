@@ -49,10 +49,10 @@ class GasPriceOracle {
     GasPriceOracle(const GasPriceOracle&) = delete;
     GasPriceOracle& operator=(const GasPriceOracle&) = delete;
 
-    Task<intx::uint256> suggested_price(BlockNum block_number);
+    Task<intx::uint256> suggested_price(BlockNum block_num);
 
   private:
-    Task<void> load_block_prices(BlockNum block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices);
+    Task<void> load_block_prices(BlockNum block_num, uint64_t limit, std::vector<intx::uint256>& tx_prices);
 
     const BlockProvider& block_provider_;
 };

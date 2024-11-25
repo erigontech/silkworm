@@ -91,8 +91,8 @@ static intx::uint256 block_reward_base(const evmc_revision rev) {
 }
 
 BlockReward EthashRuleSet::compute_reward(const Block& block) {
-    const BlockNum block_number{block.header.number};
-    const evmc_revision rev{chain_config_->revision(block_number, block.header.timestamp)};
+    const BlockNum block_num = block.header.number;
+    const evmc_revision rev{chain_config_->revision(block_num, block.header.timestamp)};
     const intx::uint256 base{block_reward_base(rev)};
 
     intx::uint256 miner_reward{base};
@@ -100,7 +100,7 @@ BlockReward EthashRuleSet::compute_reward(const Block& block) {
     ommer_rewards.reserve(block.ommers.size());
     // Accumulate the rewards for the miner and any included uncles
     for (const BlockHeader& ommer : block.ommers) {
-        const intx::uint256 ommer_reward{((8 + ommer.number - block_number) * base) >> 3};
+        const intx::uint256 ommer_reward{((8 + ommer.number - block_num) * base) >> 3};
         ommer_rewards.push_back(ommer_reward);
         miner_reward += base >> 5;  // div 32
     }
@@ -108,10 +108,14 @@ BlockReward EthashRuleSet::compute_reward(const Block& block) {
     return {miner_reward, ommer_rewards};
 }
 
-intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t block_timestamp,
-                                        const intx::uint256& parent_difficulty, const uint64_t parent_timestamp,
-                                        const bool parent_has_uncles, const ChainConfig& config) {
-    const evmc_revision rev{config.revision(block_number, block_timestamp)};
+intx::uint256 EthashRuleSet::difficulty(
+    uint64_t block_num,
+    const uint64_t block_timestamp,
+    const intx::uint256& parent_difficulty,
+    const uint64_t parent_timestamp,
+    const bool parent_has_uncles,
+    const ChainConfig& config) {
+    const evmc_revision rev = config.revision(block_num, block_timestamp);
 
     intx::uint256 difficulty{parent_difficulty};
 
@@ -142,16 +146,16 @@ intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t bl
     }
 
     uint64_t bomb_delay{0};
-    if (config.gray_glacier_block.has_value() && block_number >= config.gray_glacier_block) {
+    if (config.gray_glacier_block.has_value() && block_num >= config.gray_glacier_block) {
         // EIP-5133: Delaying Difficulty Bomb to mid-September 2022
         bomb_delay = 11'400'000;
-    } else if (config.arrow_glacier_block.has_value() && block_number >= config.arrow_glacier_block) {
+    } else if (config.arrow_glacier_block.has_value() && block_num >= config.arrow_glacier_block) {
         // EIP-4345: Difficulty Bomb Delay to June 2022
         bomb_delay = 10'700'000;
     } else if (rev >= EVMC_LONDON) {
         // EIP-3554: Difficulty Bomb Delay to December 2021
         bomb_delay = 9'700'000;
-    } else if (config.muir_glacier_block.has_value() && block_number >= config.muir_glacier_block) {
+    } else if (config.muir_glacier_block.has_value() && block_num >= config.muir_glacier_block) {
         // EIP-2384: Muir Glacier Difficulty Bomb Delay
         bomb_delay = 9'000'000;
     } else if (rev >= EVMC_CONSTANTINOPLE) {
@@ -162,13 +166,13 @@ intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t bl
         bomb_delay = 3'000'000;
     }
 
-    if (block_number > bomb_delay) {
-        block_number -= bomb_delay;
+    if (block_num > bomb_delay) {
+        block_num -= bomb_delay;
     } else {
-        block_number = 0;
+        block_num = 0;
     }
 
-    const uint64_t n{block_number / 100'000};
+    const uint64_t n = block_num / 100'000;
     if (n >= 2) {
         static constexpr intx::uint256 kOne{1};
         difficulty += kOne << (n - 2);

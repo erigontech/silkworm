@@ -33,7 +33,7 @@ std::ostream& operator<<(std::ostream& out, const Transaction& t) {
     out << " #access_list: " << t.access_list.size();
     out << " #authorizations: " << t.authorizations.size();
     out << " block_hash: " << to_hex(t.block_hash);
-    out << " block_number: " << t.block_number;
+    out << " block_num: " << t.block_num;
     out << " block_base_fee_per_gas: " << silkworm::to_hex(silkworm::endian::to_big_compact(t.block_base_fee_per_gas.value_or(0)));
     if (t.chain_id) {
         out << " chain_id: " << silkworm::to_hex(silkworm::endian::to_big_compact(*t.chain_id));

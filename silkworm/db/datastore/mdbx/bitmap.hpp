@@ -64,14 +64,14 @@ class IndexLoader {
 
     //! \brief Provided a list of keys for which the unwind should be applied this removes right values from shards
     //! \param txn [in] : An MDBX transaction holder
-    //! \param to [in] : The block height we should unwind index to
+    //! \param to [in] : The block number we should unwind index to
     //! \param keys [in] : The keys of index we should unwind
     void unwind_bitmaps(RWTxn& txn, BlockNum to, const std::map<Bytes, bool>& keys);
     void unwind_bitmaps32(RWTxn& txn, BlockNum to, const std::map<Bytes, bool>& keys);
 
     //! \brief Traverses all the index and for each bitmap removes left values <= threshold
     //! \param txn [in] : An MDBX transaction holder
-    //! \param threshold [in] : The block height before which bitmaps values need to be pruned
+    //! \param threshold [in] : The block number before which bitmaps values need to be pruned
     void prune_bitmaps(RWTxn& txn, BlockNum threshold);
     void prune_bitmaps32(RWTxn& txn, BlockNum threshold);
 

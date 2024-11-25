@@ -82,7 +82,7 @@ TEST_CASE("serialize legacy transaction (type=0)", "[rpc][to_json]") {
     txn2.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
     txn2.set_sender(0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address);
     txn2.block_hash = 0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32;
-    txn2.block_number = 46147;
+    txn2.block_num = 46147;
     txn2.block_base_fee_per_gas = intx::uint256{0};
     txn2.transaction_index = 0;
     nlohmann::json j2 = txn2;
@@ -116,7 +116,7 @@ TEST_CASE("serialize legacy transaction (type=0)", "[rpc][to_json]") {
     txn3.s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a");
     txn3.set_sender(0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address);
     txn3.block_hash = 0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32;
-    txn3.block_number = 46147;
+    txn3.block_num = 46147;
     txn3.block_base_fee_per_gas = intx::uint256{0};
     txn3.transaction_index = 0;
     txn3.queued_in_pool = true;
@@ -198,7 +198,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[rpc][to_json]") {
     txn2.s = 36;
     txn2.set_sender(0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address);
     txn2.block_hash = 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32;
-    txn2.block_number = 123123;
+    txn2.block_num = 123123;
     txn2.block_base_fee_per_gas = intx::uint256{12};
     txn2.transaction_index = 3;
     nlohmann::json j2 = txn2;

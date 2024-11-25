@@ -82,7 +82,7 @@ std::shared_ptr<Block> block_from_execution_payload(const rpc::ExecutionPayload&
     std::shared_ptr<Block> block = std::make_shared<Block>();
     BlockHeader& header = block->header;
 
-    header.number = payload.number;
+    header.number = payload.block_num;
     header.timestamp = payload.timestamp;
     header.parent_hash = payload.parent_hash;
     header.state_root = payload.state_root;

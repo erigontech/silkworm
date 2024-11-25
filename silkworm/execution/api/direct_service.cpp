@@ -37,8 +37,8 @@ Task<InsertionResult> DirectService::insert_blocks(const Blocks& blocks) {
 /** Chain Validation and ForkChoice **/
 
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-Task<ValidationResult> DirectService::validate_chain(BlockId number_and_hash) {
-    const auto verification = co_await exec_engine_.verify_chain(number_and_hash.hash);
+Task<ValidationResult> DirectService::validate_chain(BlockId block_id) {
+    const auto verification = co_await exec_engine_.verify_chain(block_id.hash);
     co_return verification;
 }
 
@@ -78,55 +78,55 @@ Task<AssembledBlockResult> DirectService::get_assembled_block(PayloadId) {
 
 // rpc CurrentHeader(google.protobuf.Empty) returns(GetHeaderResponse);
 Task<std::optional<BlockHeader>> DirectService::current_header() {
-    const auto last_number_and_hash{exec_engine_.last_finalized_block()};
-    co_return exec_engine_.get_header(last_number_and_hash.hash);
+    const auto block_id = exec_engine_.last_finalized_block();
+    co_return exec_engine_.get_header(block_id.hash);
 }
 
 // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_header_td(std::get<Hash>(number_or_hash), std::nullopt);
+Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_header_td(std::get<Hash>(block_num_or_hash), std::nullopt);
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        const auto canonical_hash{exec_engine_.get_canonical_hash(block_number)};
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
+        const auto canonical_hash{exec_engine_.get_canonical_hash(block_num)};
         if (!canonical_hash) {
             co_return std::nullopt;
         }
-        co_return exec_engine_.get_header_td(*canonical_hash, block_number);
+        co_return exec_engine_.get_header_td(*canonical_hash, block_num);
     }
 }
 
 // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_header(std::get<Hash>(number_or_hash));
+Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_header(std::get<Hash>(block_num_or_hash));
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        co_return exec_engine_.get_canonical_header(block_number);
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
+        co_return exec_engine_.get_canonical_header(block_num);
     }
 }
 
 // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-Task<std::optional<BlockBody>> DirectService::get_body(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_body(std::get<Hash>(number_or_hash));
+Task<std::optional<BlockBody>> DirectService::get_body(BlockNumOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_body(std::get<Hash>(block_num_or_hash));
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        co_return exec_engine_.get_canonical_body(block_number);
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
+        co_return exec_engine_.get_canonical_body(block_num);
     }
 }
 
 // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-Task<bool> DirectService::has_block(BlockNumberOrHash number_or_hash) {
-    if (std::holds_alternative<Hash>(number_or_hash)) {
-        co_return exec_engine_.get_header(std::get<Hash>(number_or_hash));
+Task<bool> DirectService::has_block(BlockNumOrHash block_num_or_hash) {
+    if (std::holds_alternative<Hash>(block_num_or_hash)) {
+        co_return exec_engine_.get_header(std::get<Hash>(block_num_or_hash));
     } else {
-        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        const auto canonical_hash{exec_engine_.get_canonical_hash(block_number)};
+        SILKWORM_ASSERT(std::holds_alternative<BlockNum>(block_num_or_hash));
+        const auto block_num{std::get<BlockNum>(block_num_or_hash)};
+        const auto canonical_hash{exec_engine_.get_canonical_hash(block_num)};
         if (!canonical_hash) {
             co_return false;
         }
@@ -137,18 +137,18 @@ Task<bool> DirectService::has_block(BlockNumberOrHash number_or_hash) {
 /** Ranges **/
 
 // rpc GetBodiesByRange(GetBodiesByRangeRequest) returns(GetBodiesBatchResponse);
-Task<BlockBodies> DirectService::get_bodies_by_range(BlockNumRange number_range) {
+Task<BlockBodies> DirectService::get_bodies_by_range(BlockNumRange block_num_range) {
     BlockBodies bodies;
-    const auto [start_block_number, end_block_number] = number_range;
-    if (start_block_number > end_block_number) {
+    const auto [start_block_num, end_block_num] = block_num_range;
+    if (start_block_num > end_block_num) {
         co_return bodies;
     }
-    bodies.reserve(end_block_number - start_block_number + 1);
-    for (BlockNum number{start_block_number}; number <= end_block_number; ++number) {
-        auto block_body{exec_engine_.get_canonical_body(number)};
-        auto block_hash{exec_engine_.get_canonical_hash(number)};
+    bodies.reserve(end_block_num - start_block_num + 1);
+    for (BlockNum block_num = start_block_num; block_num <= end_block_num; ++block_num) {
+        auto block_body{exec_engine_.get_canonical_body(block_num)};
+        auto block_hash{exec_engine_.get_canonical_hash(block_num)};
         if (block_body && block_hash) {
-            bodies.push_back(Body{std::move(*block_body), *block_hash, number});
+            bodies.push_back(Body{std::move(*block_body), *block_hash, block_num});
         } else {
             // Add an empty body anyway because we must respond w/ one payload for each number
             bodies.emplace_back();
@@ -163,9 +163,9 @@ Task<BlockBodies> DirectService::get_bodies_by_hashes(const BlockHashes& hashes)
     bodies.reserve(hashes.size());
     for (const auto& block_hash : hashes) {
         auto block_body{exec_engine_.get_body(block_hash)};
-        auto block_number{exec_engine_.get_block_number(block_hash)};
-        if (block_body && block_number) {
-            bodies.push_back(Body{std::move(*block_body), block_hash, *block_number});
+        auto block_num{exec_engine_.get_block_num(block_hash)};
+        if (block_body && block_num) {
+            bodies.push_back(Body{std::move(*block_body), block_hash, *block_num});
         } else {
             // Add an empty body anyway because we must respond w/ one payload for each hash
             bodies.emplace_back();
@@ -183,18 +183,18 @@ Task<bool> DirectService::is_canonical_hash(Hash block_hash) {
 
 // rpc GetHeaderHashNumber(types.H256) returns(GetHeaderHashNumberResponse);
 Task<std::optional<BlockNum>> DirectService::get_header_hash_number(Hash block_hash) {
-    co_return exec_engine_.get_block_number(block_hash);
+    co_return exec_engine_.get_block_num(block_hash);
 }
 
 // rpc GetForkChoice(google.protobuf.Empty) returns(ForkChoice);
 Task<ForkChoice> DirectService::get_fork_choice() {
-    const auto last_fork_choice_number_and_hash{exec_engine_.last_fork_choice()};
-    const auto last_finalized_number_and_hash{exec_engine_.last_finalized_block()};
-    const auto last_safe_number_and_hash{exec_engine_.last_safe_block()};
+    const auto last_fork_choice_block_id = exec_engine_.last_fork_choice();
+    const auto last_finalized_block_id = exec_engine_.last_finalized_block();
+    const auto last_safe_block_id = exec_engine_.last_safe_block();
     ForkChoice last_fork_choice{
-        .head_block_hash = last_fork_choice_number_and_hash.hash,
-        .finalized_block_hash = last_finalized_number_and_hash.hash,
-        .safe_block_hash = last_safe_number_and_hash.hash,
+        .head_block_hash = last_fork_choice_block_id.hash,
+        .finalized_block_hash = last_finalized_block_id.hash,
+        .safe_block_hash = last_safe_block_id.hash,
     };
     co_return last_fork_choice;
 }
@@ -209,7 +209,7 @@ Task<bool> DirectService::ready() {
 
 // rpc FrozenBlocks(google.protobuf.Empty) returns(FrozenBlocksResponse);
 Task<uint64_t> DirectService::frozen_blocks() {
-    co_return exec_engine_.highest_frozen_block_number();
+    co_return exec_engine_.max_frozen_block_num();
 }
 
 /** Additional non-RPC methods **/

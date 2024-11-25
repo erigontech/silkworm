@@ -56,7 +56,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumOrHash>();
     const auto start_key_array = params[1].get<std::vector<std::uint8_t>>();
     auto max_result = params[2].get<int16_t>();
     const auto exclude_code = params[3].get<bool>();
@@ -76,7 +76,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
         }
     }
 
-    SILK_TRACE << "block_number_or_hash: " << block_number_or_hash
+    SILK_TRACE << "block_num_or_hash: " << block_num_or_hash
                << " start_address: " << start_address
                << " max_result: " << max_result
                << " exclude_code: " << exclude_code
@@ -87,7 +87,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     try {
         auto start = std::chrono::system_clock::now();
         core::AccountDumper dumper{*tx};
-        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
+        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
         SILK_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec";
@@ -124,16 +124,16 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
     auto tx = co_await database_->begin();
 
     try {
-        const auto start_block_number = co_await core::get_block_number(start_block_id, *tx);
-        const auto end_block_number = co_await core::get_block_number(end_block_id, *tx);
+        const auto start_block_num = co_await core::get_block_num(start_block_id, *tx);
+        const auto end_block_num = co_await core::get_block_num(end_block_id, *tx);
 
-        if (end_block_number < start_block_number) {
+        if (end_block_num < start_block_num) {
             std::stringstream msg;
-            msg << "start block (" << start_block_number << ") must be less or equal to end block (" << end_block_number << ")";
+            msg << "start block (" << start_block_num << ") must be less or equal to end block (" << end_block_num << ")";
             throw std::invalid_argument(msg.str());
         }
 
-        const auto addresses = co_await get_modified_accounts(*tx, start_block_number, end_block_number + 1);
+        const auto addresses = co_await get_modified_accounts(*tx, start_block_num, end_block_num + 1);
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -171,15 +171,15 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
     try {
         const auto chain_storage = tx->create_storage();
 
-        const auto start_block_number = co_await chain_storage->read_block_number(start_hash);
-        if (!start_block_number) {
+        const auto start_block_num = co_await chain_storage->read_block_num(start_hash);
+        if (!start_block_num) {
             throw std::invalid_argument("start block " + silkworm::to_hex(start_hash) + " not found");
         }
-        const auto end_block_number = co_await chain_storage->read_block_number(end_hash);
-        if (!end_block_number) {
+        const auto end_block_num = co_await chain_storage->read_block_num(end_hash);
+        if (!end_block_num) {
             throw std::invalid_argument("end block " + silkworm::to_hex(end_hash) + " not found");
         }
-        const auto addresses = co_await get_modified_accounts(*tx, *start_block_number, *end_block_number + 1);
+        const auto addresses = co_await get_modified_accounts(*tx, *start_block_num, *end_block_num + 1);
 
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
@@ -312,10 +312,10 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         }
 
         const auto& block = block_with_hash->block;
-        auto block_number = block.header.number;
+        auto block_num = block.header.number;
         const auto& transactions = block.transactions;
 
-        SILK_TRACE << "Block number: " << block_number << " #tnx: " << transactions.size();
+        SILK_TRACE << "Block number: " << block_num << " #tnx: " << transactions.size();
 
         const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
         db::kv::api::GetAsOfQuery query_account{
@@ -430,13 +430,13 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
         co_return;
     }
     const auto call = params[0].get<Call>();
-    const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[1].get<BlockNumOrHash>();
     debug::DebugConfig config;
     if (params.size() > 2) {
         config = params[2].get<debug::DebugConfig>();
     }
 
-    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: {" << config << "}";
+    SILK_DEBUG << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_json_field("id", request["id"]);
@@ -447,18 +447,18 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     try {
         const auto chain_storage = tx->create_storage();
 
-        const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, *tx);
+        const bool is_latest_block = co_await core::is_latest_block_num(block_num_or_hash, *tx);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
-        co_await executor.trace_call(stream, block_number_or_hash, *chain_storage, call);
+        co_await executor.trace_call(stream, block_num_or_hash, *chain_storage, call);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
-        if (block_number_or_hash.hash())
-            oss << "block " << silkworm::to_hex(block_number_or_hash.hash()) << " not found";
+        if (block_num_or_hash.hash())
+            oss << "block " << silkworm::to_hex(block_num_or_hash.hash()) << " not found";
         else {
-            oss << "block " << block_number_or_hash.number() << " not found";
+            oss << "block " << block_num_or_hash.number() << " not found";
         }
         const Error error{kServerError, oss.str()};
         stream.write_json_field("error", error);
@@ -544,7 +544,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-    const BlockNum block_number =
+    const BlockNum block_num =
         params[0].is_string() ? std::stoul(params[0].get<std::string>(), nullptr, 10) : params[0].get<BlockNum>();
 
     debug::DebugConfig config;
@@ -552,7 +552,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         config = params[1].get<debug::DebugConfig>();
     }
 
-    SILK_DEBUG << "block_number: " << block_number << " config: {" << config << "}";
+    SILK_DEBUG << "block_num: " << block_num << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_json_field("id", request["id"]);
@@ -564,11 +564,11 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         const auto chain_storage = tx->create_storage();
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
-        co_await executor.trace_block(stream, *chain_storage, block_number);
+        co_await executor.trace_block(stream, *chain_storage, block_num);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
-        oss << "block_number " << block_number << " not found";
+        oss << "block_num " << block_num << " not found";
         const Error error{kServerError, oss.str()};
         stream.write_json_field("error", error);
     } catch (const std::exception& e) {
@@ -637,25 +637,25 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_number, BlockNum end_block_number) {
-    const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx);
+Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_num, BlockNum end_block_num) {
+    const auto latest_block_num = co_await core::get_block_num(core::kLatestBlockId, tx);
 
-    SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
+    SILK_DEBUG << "latest: " << latest_block_num << " start: " << start_block_num << " end: " << end_block_num;
 
-    if (start_block_number > latest_block_number) {
+    if (start_block_num > latest_block_num) {
         std::stringstream msg;
-        msg << "start block (" << start_block_number << ") is later than the latest block (" << latest_block_number << ")";
+        msg << "start block (" << start_block_num << ") is later than the latest block (" << latest_block_num << ")";
         throw std::invalid_argument(msg.str());
     }
 
-    if (end_block_number > latest_block_number) {
+    if (end_block_num > latest_block_num) {
         std::stringstream msg;
-        msg << "end block (" << end_block_number << ") is later than the latest block (" << latest_block_number << ")";
+        msg << "end block (" << end_block_num << ") is later than the latest block (" << latest_block_num << ")";
         throw std::invalid_argument(msg.str());
     }
 
-    const auto start_txn_number = co_await tx.first_txn_num_in_block(start_block_number);
-    const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_number == start_block_number ? end_block_number + 1 : end_block_number) - 1;
+    const auto start_txn_number = co_await tx.first_txn_num_in_block(start_block_num);
+    const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_num == start_block_num ? end_block_num + 1 : end_block_num) - 1;
 
     db::kv::api::HistoryRangeQuery query{
         .table = db::table::kAccountDomain,
@@ -690,9 +690,9 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
         silkworm::Block block;
-        if (!(co_await chain_storage->read_canonical_block(block_number, block))) {
+        if (!(co_await chain_storage->read_canonical_block(block_num, block))) {
             throw std::invalid_argument("block not found");
         }
         Bytes encoded_block;
@@ -727,11 +727,11 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
-        const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_number);
-        const auto header = co_await chain_storage->read_header(block_number, block_hash->bytes);
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_num);
+        const auto header = co_await chain_storage->read_header(block_num, block_hash->bytes);
         if (!header) {
-            throw std::invalid_argument("header " + std::to_string(block_number) + " not found");
+            throw std::invalid_argument("header " + std::to_string(block_num) + " not found");
         }
         Bytes encoded_header;
         rlp::encode(encoded_header, *header);

@@ -28,7 +28,7 @@ using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v1{
         .version = ExecutionPayload::kV1,
-        .number = 0x1,
+        .block_num = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
         .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address,
@@ -81,7 +81,7 @@ TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
     CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);
     CHECK(payload.receipts_root == 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32);
     CHECK(payload.prev_randao == 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32);
-    CHECK(payload.number == 0x1);
+    CHECK(payload.block_num == 0x1);
     CHECK(payload.gas_limit == 0x1c9c380);
     CHECK(payload.timestamp == 0x5);
     CHECK(payload.base_fee == 0x7);
@@ -93,7 +93,7 @@ TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
 TEST_CASE("serialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v2{
         .version = ExecutionPayload::kV2,
-        .number = 0x1,
+        .block_num = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
         .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address,
@@ -174,7 +174,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
         CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);
         CHECK(payload.receipts_root == 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32);
         CHECK(payload.prev_randao == 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32);
-        CHECK(payload.number == 0x1);
+        CHECK(payload.block_num == 0x1);
         CHECK(payload.gas_limit == 0x1c9c380);
         CHECK(payload.timestamp == 0x5);
         CHECK(payload.base_fee == 0x7);
@@ -206,7 +206,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
         CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);
         CHECK(payload.receipts_root == 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32);
         CHECK(payload.prev_randao == 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32);
-        CHECK(payload.number == 0x1);
+        CHECK(payload.block_num == 0x1);
         CHECK(payload.gas_limit == 0x1c9c380);
         CHECK(payload.timestamp == 0x5);
         CHECK(payload.base_fee == 0x7);
@@ -242,7 +242,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
 TEST_CASE("serialize ExecutionPayloadAndValue", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v1{
         .version = ExecutionPayload::kV1,
-        .number = 0x1,
+        .block_num = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
         .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address,
@@ -291,7 +291,7 @@ TEST_CASE("serialize ExecutionPayloadBody", "[silkworm][rpc][json]") {
 TEST_CASE("serialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v3{
         .version = ExecutionPayload::kV3,
-        .number = 0x1,
+        .block_num = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
         .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address,
@@ -420,7 +420,7 @@ TEST_CASE("deserialize ExecutionPayloadV3", "[silkworm][rpc][json]") {
         CHECK(payload.state_root == 0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45_bytes32);
         CHECK(payload.receipts_root == 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32);
         CHECK(payload.prev_randao == 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32);
-        CHECK(payload.number == 0x1);
+        CHECK(payload.block_num == 0x1);
         CHECK(payload.gas_limit == 0x1c9c380);
         CHECK(payload.timestamp == 0x5);
         CHECK(payload.base_fee == 0x7);

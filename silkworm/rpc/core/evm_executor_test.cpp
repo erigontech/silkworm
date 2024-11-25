@@ -56,8 +56,8 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     RemoteChainStorage storage{transaction, ethdb::kv::make_backend_providers(&backend)};
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
-    BlockNum block_number{6'000'000};
-    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_number)};
+    BlockNum block_num{6'000'000};
+    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_num)};
 };
 
 #ifndef SILKWORM_SANITIZE
@@ -70,7 +70,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         silkworm::Transaction txn{};
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
         const auto result = executor.call(block, txn, {});
@@ -81,7 +81,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     SECTION("failed if base_fee_per_gas > max_fee_per_gas ") {
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x7;
-        block.header.number = block_number;
+        block.header.number = block_num;
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
@@ -95,7 +95,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
     SECTION("failed if  max_priority_fee_per_gas > max_fee_per_gas ") {
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x1;
-        block.header.number = block_number;
+        block.header.number = block_num;
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
@@ -121,7 +121,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x1;
-        block.header.number = block_number;
+        block.header.number = block_num;
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
         txn.gas_limit = 60000;
@@ -147,7 +147,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
         silkworm::Block block{};
         block.header.base_fee_per_gas = 0x1;
-        block.header.number = block_number;
+        block.header.number = block_num;
         silkworm::Transaction txn{};
         txn.max_fee_per_gas = 0x2;
         txn.gas_limit = 60000;
@@ -181,7 +181,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         }));
 
         silkworm::Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
         silkworm::Transaction txn{};
         txn.gas_limit = 600000;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);

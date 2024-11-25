@@ -22,7 +22,7 @@
 
 namespace silkworm::execution::grpc::client {
 
-::execution::GetBodiesByRangeRequest bodies_request_from_block_range(BlockNumRange);
+::execution::GetBodiesByRangeRequest bodies_request_from_block_num_range(BlockNumRange);
 ::execution::GetBodiesByHashesRequest bodies_request_from_block_hashes(const api::BlockHashes&);
 api::BlockBodies block_bodies_from_response(const ::execution::GetBodiesBatchResponse&);
 

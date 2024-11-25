@@ -79,8 +79,8 @@ BlockId ExecutionEngine::last_safe_block() const {
     return last_safe_block_;
 }
 
-BlockNum ExecutionEngine::highest_frozen_block_number() const {
-    return main_chain_.highest_frozen_block_number();
+BlockNum ExecutionEngine::max_frozen_block_num() const {
+    return main_chain_.max_frozen_block_num();
 }
 
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {
@@ -120,7 +120,7 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block>& block) {
 
         auto forking_path = find_forking_point(block->header);
         if (!forking_path) return false;
-        if (forking_path->forking_point.number < last_finalized_block().number) return false;  // ignore
+        if (forking_path->forking_point.block_num < last_finalized_block().block_num) return false;  // ignore
         forking_path->blocks.push_back(block);
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
@@ -128,7 +128,7 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block>& block) {
         forks_.push_back(main_chain_.fork(forking_path->forking_point));
 
         auto& new_fork = forks_.back();
-        BlockId new_head = {.number = block->header.number, .hash = header_hash};
+        BlockId new_head = {.block_num = block->header.number, .hash = header_hash};
         new_fork->start_with(new_head, std::move(forking_path->blocks));
     }
 
@@ -139,12 +139,12 @@ std::optional<ExecutionEngine::ForkingPath> ExecutionEngine::find_forking_point(
     ForkingPath path;  // a path from the header to the first block of the main chain using parent-child relationship
 
     // search in cache till to the main chain
-    path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
-    while (path.forking_point.number > main_chain_.last_chosen_head().number) {
+    path.forking_point = {.block_num = header.number - 1, .hash = header.parent_hash};
+    while (path.forking_point.block_num > main_chain_.last_chosen_head().block_num) {
         auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
         if (!parent) return {};                                           // not found
         path.blocks.push_front(*parent);                                  // in reverse order
-        path.forking_point = {.number = (*parent)->header.number - 1, .hash = (*parent)->header.parent_hash};
+        path.forking_point = {.block_num = (*parent)->header.number - 1, .hash = (*parent)->header.parent_hash};
     }
 
     // forking point is on main chain canonical head
@@ -280,11 +280,11 @@ std::optional<BlockHeader> ExecutionEngine::get_header(Hash header_hash) const {
     return main_chain_.get_header(header_hash);
 }
 
-std::optional<BlockHeader> ExecutionEngine::get_header(BlockNum height, Hash hash) const {
+std::optional<BlockHeader> ExecutionEngine::get_header(BlockNum block_num, Hash hash) const {
     // read from cache, then from main_chain_
     auto block = block_cache_.get_as_copy(hash);
     if (block) return (*block)->header;
-    return main_chain_.get_header(height, hash);
+    return main_chain_.get_header(block_num, hash);
 }
 
 std::vector<BlockHeader> ExecutionEngine::get_last_headers(uint64_t limit) const {
@@ -294,12 +294,12 @@ std::vector<BlockHeader> ExecutionEngine::get_last_headers(uint64_t limit) const
     return main_chain_.get_last_headers(limit);
 }
 
-std::optional<TotalDifficulty> ExecutionEngine::get_header_td(Hash h, std::optional<BlockNum> bn) const {
+std::optional<TotalDifficulty> ExecutionEngine::get_header_td(Hash h, std::optional<BlockNum> block_num) const {
     ensure_invariant(!fork_tracking_active_, "actual get_header_td() impl assume it is called only at beginning");
     // if fork_tracking_active_ is true, we should read blocks from forks and recompute total difficulty but this
     // is a duty of the sync component
-    if (bn) {
-        return main_chain_.get_header_td(*bn, h);
+    if (block_num) {
+        return main_chain_.get_header_td(*block_num, h);
     }
     return main_chain_.get_header_td(h);
 }
@@ -311,26 +311,26 @@ std::optional<BlockBody> ExecutionEngine::get_body(Hash header_hash) const {
     return main_chain_.get_body(header_hash);
 }
 
-std::optional<BlockHeader> ExecutionEngine::get_canonical_header(BlockNum bn) const {
-    auto hash = main_chain_.get_finalized_canonical_hash(bn);
+std::optional<BlockHeader> ExecutionEngine::get_canonical_header(BlockNum block_num) const {
+    auto hash = main_chain_.get_finalized_canonical_hash(block_num);
     if (!hash) return {};
     return main_chain_.get_header(*hash);
 }
 
-std::optional<Hash> ExecutionEngine::get_canonical_hash(BlockNum bn) const {
-    return main_chain_.get_finalized_canonical_hash(bn);
+std::optional<Hash> ExecutionEngine::get_canonical_hash(BlockNum block_num) const {
+    return main_chain_.get_finalized_canonical_hash(block_num);
 }
 
-std::optional<BlockBody> ExecutionEngine::get_canonical_body(BlockNum bn) const {
-    auto hash = main_chain_.get_finalized_canonical_hash(bn);
+std::optional<BlockBody> ExecutionEngine::get_canonical_body(BlockNum block_num) const {
+    auto hash = main_chain_.get_finalized_canonical_hash(block_num);
     if (!hash) return {};
     return main_chain_.get_body(*hash);
 }
 
-std::optional<BlockNum> ExecutionEngine::get_block_number(Hash header_hash) const {
+std::optional<BlockNum> ExecutionEngine::get_block_num(Hash header_hash) const {
     auto cached_block = block_cache_.get_as_copy(header_hash);
     if (cached_block) return (*cached_block)->header.number;
-    return main_chain_.get_block_number(header_hash);
+    return main_chain_.get_block_num(header_hash);
 }
 
 bool ExecutionEngine::is_canonical(Hash header_hash) const {

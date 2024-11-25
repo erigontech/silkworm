@@ -92,8 +92,8 @@ class MainChain {
     std::optional<BlockHeader> get_header(Hash) const;
     std::optional<TotalDifficulty> get_header_td(Hash) const;
     std::optional<BlockBody> get_body(Hash) const;
-    std::optional<BlockNum> get_block_number(Hash) const;
-    BlockNum highest_frozen_block_number() const;
+    std::optional<BlockNum> get_block_num(Hash) const;
+    BlockNum max_frozen_block_num() const;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
@@ -106,10 +106,10 @@ class MainChain {
     db::DataModel data_model() const { return data_model_factory_(tx_); }
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
-    void forward(BlockNum head_height, const Hash& head_hash);
+    void forward(BlockNum head_block_num, const Hash& head_hash);
     void unwind(BlockNum unwind_point);
 
-    bool is_canonical(BlockNum block_height, const Hash& block_hash) const;
+    bool is_canonical(BlockNum block_num, const Hash& block_hash) const;
     bool is_canonical_head_ancestor(const Hash& block_hash) const;
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, execution::api::InvalidChain& invalid_chain);

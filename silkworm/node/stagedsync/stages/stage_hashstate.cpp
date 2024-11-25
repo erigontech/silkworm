@@ -188,7 +188,7 @@ Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
          * This relies on the assumption previous execution stage has completed correctly,
          * and we do nothing more than hashing keys already present in PlainState either
          * to HashedAccount or to HashedStorage. We don't need to check an upper block
-         * limit as PlainState holds info up to the highest executed block.
+         * limit as PlainState holds info up to the max executed block.
          */
 
         evmc::address last_address{};

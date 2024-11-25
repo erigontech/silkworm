@@ -220,9 +220,9 @@ TEST_CASE("Self-destruct") {
 }
 
 TEST_CASE("Out of Gas during account re-creation") {
-    uint64_t block_number{2'081'788};
+    uint64_t block_num{2'081'788};
     Block block{};
-    block.header.number = block_number;
+    block.header.number = block_num;
     block.header.gas_limit = 4'712'388;
     block.header.beneficiary = 0xa42af2c70d316684e57aefcc6e393fecb1c7e84e_address;
     evmc::address caller{0xc789e5aba05051b1468ac980e30068e19fad8587_address};
@@ -335,16 +335,16 @@ TEST_CASE("Out of Gas during account re-creation") {
     // out of gas
     CHECK(!receipt.success);
 
-    processor.evm().state().write_to_db(block_number);
+    processor.evm().state().write_to_db(block_num);
 
     // only the caller and the miner should change
     CHECK(state.read_account(address) == account);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
-    uint64_t block_number{2'687'389};
+    uint64_t block_num{2'687'389};
     Block block{};
-    block.header.number = block_number;
+    block.header.number = block_num;
     block.header.gas_limit = 4'712'388;
     block.header.beneficiary = 0x2a65aca4d5fc5b5c859090a6c34d164135398226_address;
     evmc::address caller{0x5ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f_address};
@@ -377,7 +377,7 @@ TEST_CASE("Empty suicide beneficiary") {
     processor.execute_transaction(txn, receipt);
     CHECK(receipt.success);
 
-    processor.evm().state().write_to_db(block_number);
+    processor.evm().state().write_to_db(block_num);
 
     // suicide_beneficiary should've been touched and deleted
     CHECK(!state.read_account(suicide_beneficiary));

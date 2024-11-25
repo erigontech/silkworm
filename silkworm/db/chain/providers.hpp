@@ -27,15 +27,15 @@
 namespace silkworm::db::chain {
 
 using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, Block&)>;
-using BlockNumberFromTxnHashProvider = std::function<Task<std::optional<BlockNum>>(HashAsSpan)>;
-using BlockNumberFromBlockHashProvider = std::function<Task<std::optional<BlockNum>>(HashAsSpan)>;
+using BlockNumFromTxnHashProvider = std::function<Task<std::optional<BlockNum>>(HashAsSpan)>;
+using BlockNumFromBlockHashProvider = std::function<Task<std::optional<BlockNum>>(HashAsSpan)>;
 using CanonicalBlockHashFromNumberProvider = std::function<Task<std::optional<evmc::bytes32>>(BlockNum)>;
 using CanonicalBodyForStorageProvider = std::function<Task<std::optional<Bytes>>(BlockNum)>;
 
 struct Providers {
     BlockProvider block;
-    BlockNumberFromTxnHashProvider block_number_from_txn_hash;
-    BlockNumberFromBlockHashProvider block_number_from_hash;
+    BlockNumFromTxnHashProvider block_num_from_txn_hash;
+    BlockNumFromBlockHashProvider block_num_from_hash;
     CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number;
     CanonicalBodyForStorageProvider canonical_body_for_storage;
 };

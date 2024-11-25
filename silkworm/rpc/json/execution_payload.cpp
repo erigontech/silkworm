@@ -36,7 +36,7 @@ void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload) {
     json["receiptsRoot"] = execution_payload.receipts_root;
     json["logsBloom"] = "0x" + silkworm::to_hex(execution_payload.logs_bloom);
     json["prevRandao"] = execution_payload.prev_randao;
-    json["blockNumber"] = to_quantity(execution_payload.number);
+    json["blockNumber"] = to_quantity(execution_payload.block_num);
     json["gasLimit"] = to_quantity(execution_payload.gas_limit);
     json["gasUsed"] = to_quantity(execution_payload.gas_used);
     json["timestamp"] = to_quantity(execution_payload.timestamp);
@@ -89,7 +89,7 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
     }
 
     execution_payload = ExecutionPayload{
-        .number = from_quantity(json.at("blockNumber").get<std::string>()),
+        .block_num = from_quantity(json.at("blockNumber").get<std::string>()),
         .timestamp = from_quantity(json.at("timestamp").get<std::string>()),
         .gas_limit = from_quantity(json.at("gasLimit").get<std::string>()),
         .gas_used = from_quantity(json.at("gasUsed").get<std::string>()),

@@ -34,7 +34,7 @@ api::ExecutionPayload execution_payload_from_proto(const ::types::ExecutionPaylo
     execution_payload.receipts_root = rpc::bytes32_from_h256(payload.receipt_root());
     rpc::span_from_h2048(payload.logs_bloom(), execution_payload.logs_bloom);
     execution_payload.prev_randao = rpc::bytes32_from_h256(payload.prev_randao());
-    execution_payload.block_number = payload.block_number();
+    execution_payload.block_num = payload.block_number();
     execution_payload.gas_limit = payload.gas_limit();
     execution_payload.gas_used = payload.gas_used();
     execution_payload.timestamp = payload.timestamp();

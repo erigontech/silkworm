@@ -57,7 +57,7 @@ bool Protocol::is_compatible_enr_entry(std::string_view name, ByteView data) {
 bool Protocol::is_compatible_fork_id(const ForkId& fork_id, const StatusData& my_status) {
     return fork_id.is_compatible_with(
         my_status.message.genesis_hash,
-        my_status.fork_block_numbers,
+        my_status.fork_block_nums,
         my_status.fork_block_times,
         my_status.head_block_num);
 }

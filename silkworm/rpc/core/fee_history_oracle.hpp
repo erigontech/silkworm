@@ -51,13 +51,13 @@ void to_json(nlohmann::json& json, const FeeHistory& fh);
 
 struct BlockRange {
     uint64_t num_blocks{0};
-    BlockNum last_block_number{0};
+    BlockNum last_block_num{0};
     std::shared_ptr<BlockWithHash> last_block;
     rpc::Receipts receipts;
 };
 
 struct BlockFees {
-    BlockNum block_number{0};
+    BlockNum block_num{0};
     std::optional<BlockHeader> block_header;
     std::shared_ptr<BlockWithHash> block;  // only set if reward percentiles are requested
     rpc::Receipts receipts;

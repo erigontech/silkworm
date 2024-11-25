@@ -37,8 +37,8 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
     }
 
     const evmc::bytes32 block_hash = block_with_hash.hash;
-    uint64_t block_number = block_with_hash.block.header.number;
-    auto raw_receipts = co_await read_receipts(tx, block_number);
+    uint64_t block_num = block_with_hash.block.header.number;
+    auto raw_receipts = co_await read_receipts(tx, block_num);
     if (!raw_receipts || raw_receipts->empty()) {
         raw_receipts = co_await generate_receipts(tx, block_with_hash.block, chain_storage, workers);
         if (!raw_receipts || raw_receipts->empty()) {
@@ -63,7 +63,7 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
         receipts[i].tx_index = static_cast<uint32_t>(i);
 
         receipts[i].block_hash = block_hash;
-        receipts[i].block_number = block_number;
+        receipts[i].block_num = block_num;
 
         if (!transactions[i].blob_versioned_hashes.empty()) {
             receipts[i].blob_gas_used = kGasPerBlob * transactions[i].blob_versioned_hashes.size();
@@ -90,7 +90,7 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
 
         // The derived fields of receipt are taken from block and transaction
         for (size_t j{0}; j < receipts[i].logs.size(); ++j) {
-            receipts[i].logs[j].block_number = block_number;
+            receipts[i].logs[j].block_num = block_num;
             receipts[i].logs[j].block_hash = block_hash;
             receipts[i].logs[j].tx_hash = receipts[i].tx_hash;
             receipts[i].logs[j].tx_index = static_cast<uint32_t>(i);
@@ -102,8 +102,8 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
     co_return *raw_receipts;
 }
 
-Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_number) {
-    const auto block_key = db::block_key(block_number);
+Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_num) {
+    const auto block_key = db::block_key(block_num);
     const auto data = co_await tx.get_one(db::table::kBlockReceiptsName, block_key);
     SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);
     if (data.empty()) {
@@ -113,14 +113,14 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockN
     Receipts receipts{};
     const bool decoding_ok{cbor_decode(data, receipts)};
     if (!decoding_ok) {
-        throw std::runtime_error("cannot decode raw receipts in block: " + std::to_string(block_number));
+        throw std::runtime_error("cannot decode raw receipts in block: " + std::to_string(block_num));
     }
     SILK_TRACE << "#receipts: " << receipts.size();
     if (receipts.empty()) {
         co_return receipts;
     }
 
-    auto log_key = db::log_key(block_number, 0);
+    auto log_key = db::log_key(block_num, 0);
     SILK_DEBUG << "log_key: " << silkworm::to_hex(log_key);
     auto walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
         if (k.size() != sizeof(uint64_t) + sizeof(uint32_t)) {
@@ -129,7 +129,7 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockN
         auto tx_id = endian::load_big_u32(&k[sizeof(uint64_t)]);
         const bool decode_ok{cbor_decode(v, receipts[tx_id].logs)};
         if (!decode_ok) {
-            SILK_WARN << "cannot decode logs for receipt: " << tx_id << " in block: " << block_number;
+            SILK_WARN << "cannot decode logs for receipt: " << tx_id << " in block: " << block_num;
             return false;
         }
         receipts[tx_id].bloom = bloom_from_logs(receipts[tx_id].logs);
@@ -144,17 +144,17 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockN
 Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, const silkworm::Block& block,
                                                 const db::chain::ChainStorage& chain_storage,
                                                 WorkerPool& workers) {
-    auto block_number = block.header.number;
+    auto block_num = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_TRACE << "generate_receipts: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
+    SILK_TRACE << "generate_receipts: block_num: " << std::dec << block_num << " #txns: " << transactions.size();
 
     const auto chain_config = co_await chain_storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto receipts = co_await async_task(workers.executor(), [&]() -> Receipts {
-        auto state = tx.create_state(current_executor, chain_storage, block_number - 1);
+        auto state = tx.create_state(current_executor, chain_storage, block_num - 1);
 
-        auto curr_state = tx.create_state(current_executor, chain_storage, block_number - 1);
+        auto curr_state = tx.create_state(current_executor, chain_storage, block_num - 1);
         EVMExecutor executor{block, chain_config, workers, state};
 
         Receipts rpc_receipts;

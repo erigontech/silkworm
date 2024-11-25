@@ -121,8 +121,8 @@ Task<void> GetTDCall::operator()(api::DirectService& service) {
     proto::GetTDResponse reply;
     ::grpc::Status status;
     try {
-        const auto block_number_or_hash{block_number_or_hash_from_request(request_)};
-        const std::optional<TotalDifficulty> result = co_await service.get_td(block_number_or_hash);
+        const auto block_num_or_hash{block_num_or_hash_from_request(request_)};
+        const std::optional<TotalDifficulty> result = co_await service.get_td(block_num_or_hash);
         reply = response_from_total_difficulty(result);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
@@ -135,8 +135,8 @@ Task<void> GetHeaderCall::operator()(api::DirectService& service) {
     proto::GetHeaderResponse reply;
     ::grpc::Status status;
     try {
-        const auto block_number_or_hash{block_number_or_hash_from_request(request_)};
-        const std::optional<BlockHeader> result = co_await service.get_header(block_number_or_hash);
+        const auto block_num_or_hash{block_num_or_hash_from_request(request_)};
+        const std::optional<BlockHeader> result = co_await service.get_header(block_num_or_hash);
         reply = response_from_header(result);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
@@ -149,23 +149,23 @@ Task<void> GetBodyCall::operator()(api::DirectService& service) {
     proto::GetBodyResponse reply;
     ::grpc::Status status;
     try {
-        const auto block_number_or_hash{block_number_or_hash_from_request(request_)};
-        const std::optional<BlockBody> result = co_await service.get_body(block_number_or_hash);
-        const std::optional<BlockHeader> header = co_await service.get_header(block_number_or_hash);
+        const auto block_num_or_hash{block_num_or_hash_from_request(request_)};
+        const std::optional<BlockBody> result = co_await service.get_body(block_num_or_hash);
+        const std::optional<BlockHeader> header = co_await service.get_header(block_num_or_hash);
         Hash block_hash{};
-        BlockNum block_number{0};
-        if (std::holds_alternative<Hash>(block_number_or_hash)) {
-            block_hash = std::get<Hash>(block_number_or_hash);
+        BlockNum block_num{0};
+        if (std::holds_alternative<Hash>(block_num_or_hash)) {
+            block_hash = std::get<Hash>(block_num_or_hash);
             if (header) {
-                block_number = header->number;
+                block_num = header->number;
             }
         } else {
-            block_number = std::get<BlockNum>(block_number_or_hash);
+            block_num = std::get<BlockNum>(block_num_or_hash);
             if (header) {
                 block_hash = header->hash();
             }
         }
-        reply = response_from_body(result, block_hash, block_number);
+        reply = response_from_body(result, block_hash, block_num);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
         status = ::grpc::Status{::grpc::StatusCode::INTERNAL, e.what()};
@@ -177,8 +177,8 @@ Task<void> HasBlockCall::operator()(api::DirectService& service) {
     proto::HasBlockResponse reply;
     ::grpc::Status status;
     try {
-        const auto block_number_or_hash{block_number_or_hash_from_request(request_)};
-        const bool has_block = co_await service.has_block(block_number_or_hash);
+        const auto block_num_or_hash{block_num_or_hash_from_request(request_)};
+        const bool has_block = co_await service.has_block(block_num_or_hash);
         reply.set_has_block(has_block);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
@@ -191,8 +191,8 @@ Task<void> GetBodiesByRangeCall::operator()(api::DirectService& service) {
     proto::GetBodiesBatchResponse reply;
     ::grpc::Status status;
     try {
-        const auto block_number_range{block_num_range_from_request(request_)};
-        const auto block_bodies = co_await service.get_bodies_by_range(block_number_range);
+        const auto block_num_range{block_num_range_from_request(request_)};
+        const auto block_bodies = co_await service.get_bodies_by_range(block_num_range);
         reply = response_from_bodies(block_bodies);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
@@ -234,8 +234,8 @@ Task<void> GetHeaderHashNumberCall::operator()(api::DirectService& service) {
     ::grpc::Status status;
     try {
         const auto block_hash{rpc::bytes32_from_h256(request_)};
-        const auto block_number = co_await service.get_header_hash_number(block_hash);
-        reply = response_from_block_number(block_number);
+        const auto block_num = co_await service.get_header_hash_number(block_hash);
+        reply = response_from_block_num(block_num);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {
         status = ::grpc::Status{::grpc::StatusCode::INTERNAL, e.what()};

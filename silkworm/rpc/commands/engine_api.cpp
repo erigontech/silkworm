@@ -684,7 +684,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
         const TransitionConfiguration transition_configuration{
             .terminal_total_difficulty = config.terminal_total_difficulty.value(),
             .terminal_block_hash = kZeroHash,  // terminal_block_hash removed from chain_config, return zero
-            .terminal_block_number = 0         // terminal_block_number removed from chain_config, return zero
+            .terminal_block_num = 0         // terminal_block_num removed from chain_config, return zero
         };
         reply = make_json_content(request, transition_configuration);
 #ifndef BUILD_COVERAGE

@@ -34,10 +34,10 @@ class ChainStorage {
     virtual Task<ChainConfig> read_chain_config() const = 0;
 
     //! Get the highest block number
-    virtual Task<BlockNum> highest_block_number() const = 0;
+    virtual Task<BlockNum> highest_block_num() const = 0;
 
     //! Read block number from hash
-    virtual Task<std::optional<BlockNum>> read_block_number(const Hash& hash) const = 0;
+    virtual Task<std::optional<BlockNum>> read_block_num(const Hash& hash) const = 0;
 
     //! Read block returning true on success and false on missing block
     virtual Task<bool> read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const = 0;
@@ -86,9 +86,9 @@ class ChainStorage {
     virtual Task<bool> read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const = 0;
 
     //! Read total difficulty for block specified by hash and number
-    virtual Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_number) const = 0;
+    virtual Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_num) const = 0;
 
-    virtual Task<std::optional<BlockNum>> read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash) const = 0;
+    virtual Task<std::optional<BlockNum>> read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const = 0;
     virtual Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const = 0;
 };
 

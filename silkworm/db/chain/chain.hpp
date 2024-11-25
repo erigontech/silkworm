@@ -33,7 +33,7 @@ using Transactions = std::vector<silkworm::Transaction>;
 
 Task<uint64_t> read_header_number(kv::api::Transaction& tx, const evmc::bytes32& block_hash);
 
-Task<std::optional<intx::uint256>> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_number);
+Task<std::optional<intx::uint256>> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_num);
 
 Task<evmc::bytes32> read_head_header_hash(kv::api::Transaction& tx);
 

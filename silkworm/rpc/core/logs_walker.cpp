@@ -35,7 +35,7 @@ namespace silkworm::rpc {
 
 using namespace db::chain;
 
-Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_numbers(const Filter& filter) {
+Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& filter) {
     uint64_t start{}, end{};
     if (filter.block_hash.has_value()) {
         auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
@@ -43,24 +43,24 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_numbers(const Filter& 
             start = end = std::numeric_limits<uint64_t>::max();
         } else {
             auto block_hash = silkworm::to_bytes32(block_hash_bytes.value());
-            auto block_number = co_await read_header_number(tx_, block_hash);
-            start = end = block_number;
+            auto block_num = co_await read_header_number(tx_, block_hash);
+            start = end = block_num;
         }
     } else {
-        uint64_t last_block_number = std::numeric_limits<uint64_t>::max();
+        uint64_t last_block_num = std::numeric_limits<uint64_t>::max();
         if (filter.from_block.has_value()) {
-            start = co_await core::get_block_number(filter.from_block.value(), tx_);
+            start = co_await core::get_block_num(filter.from_block.value(), tx_);
         } else {
-            last_block_number = co_await core::get_latest_block_number(tx_);
-            start = last_block_number;
+            last_block_num = co_await core::get_latest_block_num(tx_);
+            start = last_block_num;
         }
         if (filter.to_block.has_value()) {
-            end = co_await core::get_block_number(filter.to_block.value(), tx_);
+            end = co_await core::get_block_num(filter.to_block.value(), tx_);
         } else {
-            if (last_block_number == std::numeric_limits<uint64_t>::max()) {
-                last_block_number = co_await core::get_latest_block_number(tx_);
+            if (last_block_num == std::numeric_limits<uint64_t>::max()) {
+                last_block_num = co_await core::get_latest_block_num(tx_);
             }
-            end = last_block_number;
+            end = last_block_num;
         }
     }
     co_return std::make_pair(start, end);
@@ -71,41 +71,41 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     SILK_DEBUG << "start block: " << start << " end block: " << end;
 
     const auto chain_storage{tx_.create_storage()};
-    roaring::Roaring block_numbers;
-    block_numbers.addRange(start, end + 1);  // [min, max)
+    roaring::Roaring block_nums;
+    block_nums.addRange(start, end + 1);  // [min, max)
 
     if (!topics.empty()) {
         auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_, db::table::kLogTopicIndexName, topics, start, end);
         SILK_TRACE << "topics_bitmap: " << topics_bitmap.toString();
         if (topics_bitmap.isEmpty()) {
-            block_numbers = topics_bitmap;
+            block_nums = topics_bitmap;
         } else {
-            block_numbers &= topics_bitmap;
+            block_nums &= topics_bitmap;
         }
     }
 
     if (!addresses.empty()) {
         auto addresses_bitmap = co_await ethdb::bitmap::from_addresses(tx_, db::table::kLogAddressIndexName, addresses, start, end);
         if (addresses_bitmap.isEmpty()) {
-            block_numbers = addresses_bitmap;
+            block_nums = addresses_bitmap;
         } else {
-            block_numbers &= addresses_bitmap;
+            block_nums &= addresses_bitmap;
         }
     }
-    SILK_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality();
-    SILK_TRACE << "block_numbers: " << block_numbers.toString();
+    SILK_DEBUG << "block_nums.cardinality(): " << block_nums.cardinality();
+    SILK_TRACE << "block_nums: " << block_nums.toString();
 
-    if (block_numbers.cardinality() == 0) {
+    if (block_nums.cardinality() == 0) {
         co_return;
     }
 
-    std::vector<BlockNum> matching_block_numbers;
-    matching_block_numbers.reserve(block_numbers.cardinality());
-    for (const auto& block_to_match : block_numbers) {
-        matching_block_numbers.push_back(block_to_match);
+    std::vector<BlockNum> matching_block_nums;
+    matching_block_nums.reserve(block_nums.cardinality());
+    for (const auto& block_to_match : block_nums) {
+        matching_block_nums.push_back(block_to_match);
     }
     if (desc_order) {
-        std::reverse(matching_block_numbers.begin(), matching_block_numbers.end());
+        std::reverse(matching_block_nums.begin(), matching_block_nums.end());
     }
 
     std::uint64_t log_count{0};
@@ -118,7 +118,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     filtered_chunk_logs.reserve(64);
     filtered_block_logs.reserve(256);
 
-    for (const auto& block_to_match : matching_block_numbers) {
+    for (const auto& block_to_match : matching_block_nums) {
         uint32_t log_index{0};
 
         filtered_block_logs.clear();
@@ -160,7 +160,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
             SILK_TRACE << "assigning block_hash: " << silkworm::to_hex(block_with_hash->hash);
             for (auto& log : filtered_block_logs) {
                 const auto tx_hash{block_with_hash->block.transactions[log.tx_index].hash()};
-                log.block_number = block_to_match;
+                log.block_num = block_to_match;
                 log.block_hash = block_with_hash->hash;
                 log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});
                 if (options.add_timestamp) {

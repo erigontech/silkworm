@@ -161,10 +161,10 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         if (payload.block_hash != block_hash) {
             co_return rpc::PayloadStatus::kInvalidBlockHash;
         }
-        SILK_TRACE << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
+        SILK_TRACE << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number;
 
         if (active_chain_validations_ > 0) {
-            SILK_INFO << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number
+            SILK_INFO << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number
                       << " <- reply SYNCING";
             co_return rpc::PayloadStatus::kSyncing;
         }
@@ -203,15 +203,15 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             co_return rpc::PayloadStatus::kSyncing;
         }
 
-        const auto block_number = co_await exec_engine_->get_header_hash_number(block_hash);
-        if (!block_number) {
+        const auto block_num = co_await exec_engine_->get_header_hash_number(block_hash);
+        if (!block_num) {
             co_return rpc::PayloadStatus::kAccepted;
         }
-        SILK_TRACE << "PoSSync: new_payload block_number=" << *block_number << " inserted";
+        SILK_TRACE << "PoSSync: new_payload block_num=" << *block_num << " inserted";
 
         // NOTE: from here the method execution can be cancelled
         ++active_chain_validations_;
-        const auto verification = co_await (exec_engine_->validate_chain({*block_number, block_hash}) || concurrency::timeout(timeout));
+        const auto verification = co_await (exec_engine_->validate_chain({*block_num, block_hash}) || concurrency::timeout(timeout));
         --active_chain_validations_;
 
         if (std::holds_alternative<execution::api::ValidChain>(verification)) {

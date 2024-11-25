@@ -37,22 +37,22 @@ namespace proto = ::execution;
 
 static proto::GetHeaderHashNumberResponse sample_response() {
     proto::GetHeaderHashNumberResponse response;
-    response.set_block_number(kSampleBlockNumber);
+    response.set_block_num(kSampleBlockNumber);
     return response;
 }
 
-TEST_CASE("response_from_block_number", "[node][execution][grpc]") {
+TEST_CASE("response_from_block_num", "[node][execution][grpc]") {
     const Fixtures<std::optional<BlockNum>, proto::GetHeaderHashNumberResponse> fixtures{
         {std::nullopt, {}},
         {kSampleBlockNumber, sample_response()},
     };
     for (const auto& [block_num, expected_response] : fixtures) {
-        SECTION("response: " + std::to_string(expected_response.block_number())) {
-            const auto response{response_from_block_number(block_num)};
+        SECTION("response: " + std::to_string(expected_response.block_num())) {
+            const auto response{response_from_block_num(block_num)};
             // CHECK(response == expected_response);  // requires operator== in gRPC
-            CHECK(response.has_block_number() == expected_response.has_block_number());
-            if (response.has_block_number()) {
-                CHECK(response.block_number() == expected_response.block_number());
+            CHECK(response.has_block_num() == expected_response.has_block_num());
+            if (response.has_block_num()) {
+                CHECK(response.block_num() == expected_response.block_num());
             }
         }
     }

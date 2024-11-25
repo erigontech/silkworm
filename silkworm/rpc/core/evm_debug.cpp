@@ -340,8 +340,8 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.close_object();
 }
 
-Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_number) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_number);
+Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_num) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_num);
     if (!block_with_hash) {
         co_return;
     }
@@ -408,7 +408,7 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
 }
 
 Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, tx_, context.block_number);
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, tx_, context.block_num);
     if (!block_with_hash) {
         co_return;
     }
@@ -426,15 +426,15 @@ Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStora
 }
 
 Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block) {
-    auto block_number = block.header.number;
+    auto block_num = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: " << config_;
+    SILK_DEBUG << "execute: block_num: " << block_num << " #txns: " << transactions.size() << " config: " << config_;
 
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = tx_.create_state(current_executor, storage, block_number - 1);
+        auto state = tx_.create_state(current_executor, storage, block_num - 1);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
@@ -479,12 +479,12 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 Task<void> DebugExecutor::execute(
     json::Stream& stream,
     const ChainStorage& storage,
-    BlockNum block_number,
+    BlockNum block_num,
     const silkworm::Block& block,
     const Transaction& transaction,
     int32_t index) {
     SILK_TRACE << "DebugExecutor::execute: "
-               << " block_number: " << block_number
+               << " block_num: " << block_num
                << " transaction: {" << transaction << "}"
                << " index: " << std::dec << index
                << " config: " << config_;
@@ -492,7 +492,7 @@ Task<void> DebugExecutor::execute(
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
-        auto state = tx_.create_state(current_executor, storage, block_number);
+        auto state = tx_.create_state(current_executor, storage, block_num);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (auto idx{0}; idx < index; ++idx) {
@@ -556,8 +556,8 @@ Task<void> DebugExecutor::execute(
             const auto& block_override = bundle.block_override;
 
             rpc::Block blockContext{{block_with_hash}};
-            if (block_override.block_number) {
-                blockContext.block_with_hash->block.header.number = block_override.block_number.value();
+            if (block_override.block_num) {
+                blockContext.block_with_hash->block.header.number = block_override.block_num.value();
             }
             if (block_override.coin_base) {
                 blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();

@@ -79,8 +79,8 @@ BlockId ExecutionEngine::last_safe_block() const {
     return last_safe_block_;
 }
 
-BlockNum ExecutionEngine::highest_frozen_block_number() const {
-    return main_chain_.highest_frozen_block_number();
+BlockNum ExecutionEngine::highest_frozen_block_num() const {
+    return main_chain_.highest_frozen_block_num();
 }
 
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {
@@ -327,10 +327,10 @@ std::optional<BlockBody> ExecutionEngine::get_canonical_body(BlockNum bn) const 
     return main_chain_.get_body(*hash);
 }
 
-std::optional<BlockNum> ExecutionEngine::get_block_number(Hash header_hash) const {
+std::optional<BlockNum> ExecutionEngine::get_block_num(Hash header_hash) const {
     auto cached_block = block_cache_.get_as_copy(header_hash);
     if (cached_block) return (*cached_block)->header.number;
-    return main_chain_.get_block_number(header_hash);
+    return main_chain_.get_block_num(header_hash);
 }
 
 bool ExecutionEngine::is_canonical(Hash header_hash) const {

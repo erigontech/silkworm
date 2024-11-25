@@ -164,8 +164,8 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
 
     reached_block_num_ = 0;
     current_phase_ = 1;  // Collect
-    auto expected_block_number{from + 1};
-    auto header_key{db::block_key(expected_block_number)};
+    auto expected_block_num{from + 1};
+    auto header_key{db::block_key(expected_block_num)};
     auto canon_hashes_cursor = txn.rw_cursor(db::table::kCanonicalHashes);
     auto data{canon_hashes_cursor->find(db::to_slice(header_key), /*throw_notfound=*/false)};
     while (data.done) {
@@ -175,7 +175,7 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
         }
 
         // Sanity
-        check_block_sequence(reached_block_num_, expected_block_number);
+        check_block_sequence(reached_block_num_, expected_block_num);
         if (data.value.length() != kHashLength) {
             throw StageError(Stage::Result::kDbError, "Invalid value length " + std::to_string(data.value.length()) +
                                                           " expected " + std::to_string(kHashLength));
@@ -191,7 +191,7 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
             log_time = now + 5s;
         }
 
-        ++expected_block_number;
+        ++expected_block_num;
         data = canon_hashes_cursor->to_next(/*throw_notfound=*/false);
     }
 

@@ -109,8 +109,8 @@ Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::get_cursor(const st
     co_return cursor;
 }
 
-std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) {
-    return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_number);
+std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) {
+    return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_num);
 }
 
 std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {

@@ -138,40 +138,40 @@ void trace(const Log& log) {
     }
 }
 
-void check_address_index(BlockNum block_number, const evmc::address& log_address, ROCursor* log_address_cursor) {
+void check_address_index(BlockNum block_num, const evmc::address& log_address, ROCursor* log_address_cursor) {
     // Transaction log address must be present in LogAddressIndex table
-    const auto log_address_key{db::log_address_key(log_address, block_number)};
+    const auto log_address_key{db::log_address_key(log_address, block_num)};
     const auto log_address_data{log_address_cursor->lower_bound(to_slice(log_address_key), false)};
     ensure(log_address_data.done, [&]() { return "LogAddressIndex does not contain key " + to_hex(log_address_key); });
 
     const auto [address_view, address_upper_bound_block] = split_log_address_key(log_address_data.key);
     const auto& address_view_ref = address_view;
     ensure(to_hex(address_view) == to_hex(log_address.bytes), [&]() { return "address mismatch in LogAddressIndex table: " + to_hex(address_view_ref); });
-    ensure(address_upper_bound_block >= block_number, [&]() { return "upper bound mismatch in LogAddressIndex table: " + to_hex(address_view_ref); });
+    ensure(address_upper_bound_block >= block_num, [&]() { return "upper bound mismatch in LogAddressIndex table: " + to_hex(address_view_ref); });
 
     // Retrieved chunk of the address roaring bitmap must contain the transaction log block
     const auto& log_address_value{log_address_data.value};
     const auto address_bitmap_chunk{bitmap::parse32(log_address_value)};
-    ensure(address_bitmap_chunk.contains(static_cast<uint32_t>(block_number)),
-           [&]() { return "address bitmap chunk " + address_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number); });
+    ensure(address_bitmap_chunk.contains(static_cast<uint32_t>(block_num)),
+           [&]() { return "address bitmap chunk " + address_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_num); });
 }
 
-void check_topic_index(BlockNum block_number, const evmc::bytes32& log_topic, ROCursor* log_topic_cursor) {
+void check_topic_index(BlockNum block_num, const evmc::bytes32& log_topic, ROCursor* log_topic_cursor) {
     // Each transaction log topic must be present in LogTopicIndex table
-    const auto log_topic_key{db::log_topic_key(log_topic, block_number)};
+    const auto log_topic_key{db::log_topic_key(log_topic, block_num)};
     const auto log_topic_data{log_topic_cursor->lower_bound(to_slice(log_topic_key), false)};
     ensure(log_topic_data.done, [&]() { return "LogTopicIndex does not contain key " + to_hex(log_topic_key); });
 
     const auto [topic_view, topic_upper_bound_block] = split_log_topic_key(log_topic_data.key);
     const auto& topic_view_ref = topic_view;
     ensure(to_hex(topic_view) == to_hex(log_topic.bytes), [&]() { return "topic mismatch in LogTopicIndex table: " + to_hex(topic_view_ref); });
-    ensure(topic_upper_bound_block >= block_number, [&]() { return "upper bound mismatch in LogTopicIndex table: " + to_hex(topic_view_ref); });
+    ensure(topic_upper_bound_block >= block_num, [&]() { return "upper bound mismatch in LogTopicIndex table: " + to_hex(topic_view_ref); });
 
     // Retrieved chunk of the topic roaring bitmap must contain the transaction log block
     const auto& log_topic_value{log_topic_data.value};
     const auto topic_bitmap_chunk{bitmap::parse32(log_topic_value)};
-    ensure(topic_bitmap_chunk.contains(static_cast<uint32_t>(block_number)),
-           [&]() { return "topic bitmap chunk " + topic_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_number); });
+    ensure(topic_bitmap_chunk.contains(static_cast<uint32_t>(block_num)),
+           [&]() { return "topic bitmap chunk " + topic_bitmap_chunk.toString() + " does not contain block " + std::to_string(block_num); });
 }
 
 int main(int argc, char* argv[]) {
@@ -188,8 +188,8 @@ int main(int argc, char* argv[]) {
         SILK_INFO << "Build info: " << node_name;
 
         // Set up the measurement counters and data structures
-        BlockNum reached_block_number{0};
-        uint64_t processed_block_numbers{0};
+        BlockNum reached_block_num{0};
+        uint64_t processed_block_nums{0};
         uint64_t processed_transaction_count{0};
         uint64_t processed_logs_count{0};
         uint64_t processed_addresses_count{0};
@@ -213,14 +213,14 @@ int main(int argc, char* argv[]) {
         auto logs_data{logs_cursor->lower_bound(to_slice(start_key_prefix), false)};
         ensure(logs_data.done, "Nonexistent block range: block_from not found");
         while (logs_data.done) {
-            const auto [block_number, tx_id] = split_log_key(logs_data.key);
-            if (settings.block_to && block_number > *settings.block_to) {
+            const auto [block_num, tx_id] = split_log_key(logs_data.key);
+            if (settings.block_to && block_num > *settings.block_to) {
                 SILK_INFO << "Target block " << *settings.block_to << " reached";
                 break;
             }
-            if (reached_block_number != block_number) {
-                reached_block_number = block_number;
-                ++processed_block_numbers;
+            if (reached_block_num != block_num) {
+                reached_block_num = block_num;
+                ++processed_block_nums;
             }
 
             std::vector<Log> transaction_logs;
@@ -236,18 +236,18 @@ int main(int argc, char* argv[]) {
 
                 if (settings.index != TargetIndex::kLogTopic) {
                     if (log.address == settings.address) {
-                        SILK_INFO << "block " << block_number << " tx " << tx_id << " generated log for " << log.address;
+                        SILK_INFO << "block " << block_num << " tx " << tx_id << " generated log for " << log.address;
                     }
-                    check_address_index(block_number, log.address, log_address_cursor.get());
+                    check_address_index(block_num, log.address, log_address_cursor.get());
                     ++processed_addresses_count;
                 }
 
                 if (settings.index != TargetIndex::kLogAddress) {
                     for (const auto& topic : log.topics) {
                         if (topic == settings.topic) {
-                            SILK_INFO << "block " << block_number << " tx " << tx_id << " generated topic " << to_hex(topic.bytes);
+                            SILK_INFO << "block " << block_num << " tx " << tx_id << " generated topic " << to_hex(topic.bytes);
                         }
-                        check_topic_index(block_number, topic, log_topic_cursor.get());
+                        check_topic_index(block_num, topic, log_topic_cursor.get());
                     }
                     processed_topics_count += log.topics.size();
                 }
@@ -267,7 +267,7 @@ int main(int argc, char* argv[]) {
             logs_data = logs_cursor->to_next(false);
         }
         SILK_INFO
-            << "LogBuilder: processed blocks " << processed_block_numbers
+            << "LogBuilder: processed blocks " << processed_block_nums
             << " transactions " << processed_transaction_count
             << " logs " << processed_logs_count
             << " addresses " << processed_addresses_count

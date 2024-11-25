@@ -18,10 +18,10 @@
 
 namespace silkworm::execution::grpc::server {
 
-::execution::GetHeaderHashNumberResponse response_from_block_number(std::optional<BlockNum> block_number) {
+::execution::GetHeaderHashNumberResponse response_from_block_num(std::optional<BlockNum> block_num) {
     ::execution::GetHeaderHashNumberResponse response;
-    if (block_number) {
-        response.set_block_number(*block_number);
+    if (block_num) {
+        response.set_block_num(*block_num);
     }
     return response;
 }

@@ -39,7 +39,7 @@ class AccountWalker {
     AccountWalker(const AccountWalker&) = delete;
     AccountWalker& operator=(const AccountWalker&) = delete;
 
-    Task<void> walk_of_accounts(BlockNum block_number, const evmc::address& start_address, Collector& collector);
+    Task<void> walk_of_accounts(BlockNum block_num, const evmc::address& start_address, Collector& collector);
 
   private:
     Task<KeyValue> next(db::kv::api::Cursor& cursor, uint64_t len);

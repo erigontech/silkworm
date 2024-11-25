@@ -26,8 +26,8 @@ namespace silkworm::execution::grpc::client {
     return request;
 }
 
-std::optional<BlockNum> block_number_from_response(const ::execution::GetHeaderHashNumberResponse& reply) {
-    return reply.has_block_number() ? std::make_optional(reply.block_number()) : std::nullopt;
+std::optional<BlockNum> block_num_from_response(const ::execution::GetHeaderHashNumberResponse& reply) {
+    return reply.has_block_num() ? std::make_optional(reply.block_num()) : std::nullopt;
 }
 
 api::ForkChoice fork_choice_from_response(const ::execution::ForkChoice& response) {

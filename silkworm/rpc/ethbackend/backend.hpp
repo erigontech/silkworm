@@ -41,10 +41,10 @@ class BackEnd {
     virtual Task<uint64_t> net_peer_count() = 0;
     virtual Task<NodeInfos> engine_node_info() = 0;
     virtual Task<PeerInfos> peers() = 0;
-    virtual Task<bool> get_block(BlockNum block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) = 0;
-    virtual Task<std::optional<BlockNum>> get_block_number_from_txn_hash(const HashAsSpan& hash) = 0;
-    virtual Task<std::optional<BlockNum>> get_block_number_from_hash(const HashAsSpan& hash) = 0;
-    virtual Task<std::optional<evmc::bytes32>> get_block_hash_from_block_number(BlockNum number) = 0;
+    virtual Task<bool> get_block(BlockNum block_num, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) = 0;
+    virtual Task<std::optional<BlockNum>> get_block_num_from_txn_hash(const HashAsSpan& hash) = 0;
+    virtual Task<std::optional<BlockNum>> get_block_num_from_hash(const HashAsSpan& hash) = 0;
+    virtual Task<std::optional<evmc::bytes32>> get_block_hash_from_block_num(BlockNum number) = 0;
     virtual Task<std::optional<Bytes>> canonical_body_for_storage(BlockNum number) = 0;
 };
 

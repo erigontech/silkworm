@@ -82,7 +82,7 @@ TEST_CASE("HeadersStage - data model") {
         // check db content
         // REQUIRE(read_head_header_hash(tx) == header1_hash);
         REQUIRE(read_total_difficulty(tx, header1.number, header1.hash()) == td);
-        // REQUIRE(read_block_number(tx, header1.hash()) == header1.number); block numbers will be added by stage block-hashes
+        // REQUIRE(read_block_num(tx, header1.hash()) == header1.number); block numbers will be added by stage block-hashes
     }
 
     /* status:

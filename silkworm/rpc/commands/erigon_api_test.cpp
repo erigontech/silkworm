@@ -44,8 +44,8 @@ class ErigonRpcApiForTest : public ErigonRpcApi {
     Task<void> erigon_forks(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_forks(request, reply);
     }
-    Task<void> erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
-        co_return co_await ErigonRpcApi::handle_erigon_block_number(request, reply);
+    Task<void> erigon_block_num(const nlohmann::json& request, nlohmann::json& reply) {
+        co_return co_await ErigonRpcApi::handle_erigon_block_num(request, reply);
     }
     Task<void> erigon_node_info(const nlohmann::json& request, nlohmann::json& reply) {
         co_return co_await ErigonRpcApi::handle_erigon_node_info(request, reply);
@@ -201,12 +201,12 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_forks", "[rpc][e
     }
 }
 
-TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "[rpc][erigon_api]") {
+TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_num", "[rpc][erigon_api]") {
     nlohmann::json reply;
 
 #ifndef _WIN32
     SECTION("request invalid params number") {
-        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_block_number>(
+        CHECK_NOTHROW(run<&ErigonRpcApiForTest::erigon_block_num>(
             R"({
                 "jsonrpc":"2.0",
                 "id":1,
@@ -223,7 +223,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
 #endif  // _WIN32
 
     SECTION("request earliest") {
-        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_block_number>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_block_num>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,
@@ -235,7 +235,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
     }
 
     SECTION("request empty param") {
-        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_block_number>(
+        CHECK_THROWS_AS(run<&ErigonRpcApiForTest::erigon_block_num>(
                             R"({
                                 "jsonrpc":"2.0",
                                 "id":1,

@@ -52,9 +52,9 @@ Stage::Result TxLookup::forward(RWTxn& txn) {
 
         // Snapshots already have TxLookup index, so we must start after max frozen block here
         DataModel data_model = data_model_factory_(txn);
-        const auto highest_frozen_block_number{data_model.max_frozen_block_number()};
-        if (highest_frozen_block_number > previous_progress) {
-            previous_progress = std::min(highest_frozen_block_number, target_progress);
+        const auto highest_frozen_block_num{data_model.max_frozen_block_num()};
+        if (highest_frozen_block_num > previous_progress) {
+            previous_progress = std::min(highest_frozen_block_num, target_progress);
             // If pruning is enabled, make it start from max frozen block as well
             if (prune_mode_tx_index_.enabled()) {
                 set_prune_progress(txn, previous_progress);
@@ -127,8 +127,8 @@ Stage::Result TxLookup::unwind(RWTxn& txn) {
 
         // Snapshots already have TxLookup index, so we must stop before max frozen block here
         DataModel data_model = data_model_factory_(txn);
-        const auto highest_frozen_block_number{data_model.max_frozen_block_number()};
-        to = std::max(to, highest_frozen_block_number);
+        const auto highest_frozen_block_num{data_model.max_frozen_block_num()};
+        to = std::max(to, highest_frozen_block_num);
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};

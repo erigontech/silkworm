@@ -115,35 +115,35 @@ class Buffer : public State {
     uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
     std::optional<BlockHeader> read_header(
-        uint64_t block_number,
+        uint64_t block_num,
         const evmc::bytes32& block_hash) const noexcept override;
 
     [[nodiscard]] bool read_body(
-        uint64_t block_number,
+        uint64_t block_num,
         const evmc::bytes32& block_hash,
         BlockBody& out) const noexcept override;
 
     std::optional<intx::uint256> total_difficulty(
-        uint64_t block_number,
+        uint64_t block_num,
         const evmc::bytes32& block_hash) const noexcept override;
 
     evmc::bytes32 state_root_hash() const override;
 
     uint64_t current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+    std::optional<evmc::bytes32> canonical_hash(uint64_t block_num) const override;
 
     //!@}
 
     void insert_block(const Block& block, const evmc::bytes32& hash) override;
 
-    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
+    void canonize_block(uint64_t block_num, const evmc::bytes32& block_hash) override;
 
-    void decanonize_block(uint64_t block_number) override;
+    void decanonize_block(uint64_t block_num) override;
 
-    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
+    void insert_receipts(uint64_t block_num, const std::vector<Receipt>& receipts) override;
 
-    void insert_call_traces(BlockNum block_number, const CallTraces& traces) override;
+    void insert_call_traces(BlockNum block_num, const CallTraces& traces) override;
 
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
@@ -153,7 +153,7 @@ class Buffer : public State {
     /** Mark the beginning of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
-    void begin_block(uint64_t block_number, size_t updated_accounts_count) override;
+    void begin_block(uint64_t block_num, size_t updated_accounts_count) override;
 
     void update_account(const evmc::address& address, std::optional<Account> initial,
                         std::optional<Account> current) override;
@@ -164,7 +164,7 @@ class Buffer : public State {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
-    void unwind_state_changes(uint64_t block_number) override;
+    void unwind_state_changes(uint64_t block_num) override;
 
     //!@}
 
@@ -238,7 +238,7 @@ class Buffer : public State {
     mutable size_t batch_state_size_{0};
 
     // Current block stuff
-    uint64_t block_number_{0};
+    uint64_t block_num_{0};
     absl::flat_hash_set<evmc::address> changed_storage_;
 };
 

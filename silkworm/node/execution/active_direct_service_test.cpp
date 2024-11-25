@@ -173,10 +173,10 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::update_fork_
     }
 }
 
-TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_block_number", "[node][execution][api]") {
+TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_block_num", "[node][execution][api]") {
     const Hash block_hash{0x000000000000000000000000000000000000000000000000000000000000000A_bytes32};
     SECTION("non-existent") {
-        EXPECT_CALL(*mock_execution_engine, get_block_number(block_hash))
+        EXPECT_CALL(*mock_execution_engine, get_block_num(block_hash))
             .WillOnce(InvokeWithoutArgs([=]() -> std::optional<BlockNum> {
                 return {};
             }));
@@ -185,14 +185,14 @@ TEST_CASE_METHOD(ActiveDirectServiceTest, "ActiveDirectServiceTest::get_block_nu
         CHECK(future.get() == std::nullopt);
     }
     SECTION("existent") {
-        const BlockNum block_number{2};
-        EXPECT_CALL(*mock_execution_engine, get_block_number(block_hash))
+        const BlockNum block_num{2};
+        EXPECT_CALL(*mock_execution_engine, get_block_num(block_hash))
             .WillOnce(InvokeWithoutArgs([=]() -> std::optional<BlockNum> {
-                return block_number;
+                return block_num;
             }));
         auto future = spawn_future(direct_service->get_header_hash_number(block_hash));
         ioc().run();
-        CHECK(future.get() == block_number);
+        CHECK(future.get() == block_num);
     }
 }
 

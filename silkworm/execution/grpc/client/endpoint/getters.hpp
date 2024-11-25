@@ -25,7 +25,7 @@
 
 namespace silkworm::execution::grpc::client {
 
-::execution::GetSegmentRequest request_from_block_number_or_hash(const api::BlockNumberOrHash&);
+::execution::GetSegmentRequest request_from_block_num_or_hash(const api::BlockNumberOrHash&);
 
 std::optional<TotalDifficulty> total_difficulty_from_response(const ::execution::GetTDResponse&);
 

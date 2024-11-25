@@ -59,12 +59,12 @@ Task<PayloadStatus> RemoteExecutionEngine::new_payload(const NewPayloadRequest& 
     }
 
     // Retrieve back the block number
-    const auto block_number = co_await execution_service_->get_header_hash_number(block_hash);
-    if (!block_number) {
+    const auto block_num = co_await execution_service_->get_header_hash_number(block_hash);
+    if (!block_num) {
         co_return PayloadStatus::kAccepted;
     }
 
-    const auto verification = co_await (execution_service_->validate_chain({*block_number, block_hash}) || concurrency::timeout(timeout));
+    const auto verification = co_await (execution_service_->validate_chain({*block_num, block_hash}) || concurrency::timeout(timeout));
 
     if (std::holds_alternative<ValidChain>(verification)) {  // VALID
         co_return PayloadStatus{.status = PayloadStatus::kValidStr, .latest_valid_hash = block_hash};

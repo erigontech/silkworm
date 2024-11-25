@@ -109,7 +109,7 @@ Bytes read_header_raw(ROTxn& txn, ByteView key) {
 }
 
 std::optional<BlockHeader> read_header(ROTxn& txn, const evmc::bytes32& hash) {
-    auto block_num = read_block_number(txn, hash);
+    auto block_num = read_block_num(txn, hash);
     if (!block_num) {
         return std::nullopt;
     }
@@ -186,7 +186,7 @@ std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min
     if (!result) {
         return std::nullopt;
     }
-    return block_number_from_key(result.key);
+    return block_num_from_key(result.key);
 }
 
 std::optional<BlockHeader> read_canonical_header(ROTxn& txn, BlockNum block_num) {  // also known as read-header-by-number
@@ -201,7 +201,7 @@ static Bytes header_numbers_key(evmc::bytes32 hash) {
     return {hash.bytes, 32};
 }
 
-std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash) {
+std::optional<BlockNum> read_block_num(ROTxn& txn, const evmc::bytes32& hash) {
     auto header_number_cursor = txn.ro_cursor(table::kHeaderNumbers);
     auto key = header_numbers_key(hash);
     auto data = header_number_cursor->find(to_slice(key), /*throw_notfound*/ false);
@@ -512,7 +512,7 @@ bool read_rlp_transactions(ROTxn& txn, BlockNum block_num, const evmc::bytes32& 
 }
 
 bool read_body(ROTxn& txn, const evmc::bytes32& hash, BlockBody& body) {
-    auto block_num = read_block_number(txn, hash);
+    auto block_num = read_block_num(txn, hash);
     if (!block_num) {
         return false;
     }
@@ -1034,7 +1034,7 @@ std::optional<ChainId> DataModel::read_chain_id() const {
     return chain_id;
 }
 
-BlockNum DataModel::max_block_number() const {
+BlockNum DataModel::max_block_num() const {
     // Assume last block is likely on db: first lookup there
     const auto header_cursor{txn_.ro_cursor(table::kHeaders)};
     const auto data{header_cursor->to_last(/*.throw_not_found*/ false)};
@@ -1051,7 +1051,7 @@ BlockNum DataModel::max_block_number() const {
     return repository_.max_block_available();
 }
 
-BlockNum DataModel::max_frozen_block_number() const {
+BlockNum DataModel::max_frozen_block_num() const {
     // Ask the snapshot repository (if any) for highest block
     return repository_.max_block_available();
 }
@@ -1098,9 +1098,9 @@ std::pair<std::optional<BlockHeader>, std::optional<Hash>> DataModel::read_head_
     return {std::move(header), hash};
 }
 
-std::optional<BlockNum> DataModel::read_block_number(const Hash& hash) const {
+std::optional<BlockNum> DataModel::read_block_num(const Hash& hash) const {
     // Assume recent blocks are more probable: first lookup the block in the db
-    auto block_num = db::read_block_number(txn_, hash);
+    auto block_num = db::read_block_num(txn_, hash);
     if (block_num) return block_num;
 
     // Then search for it in the snapshots (if any)

@@ -139,7 +139,7 @@ struct ForkChoiceUpdatedReply {
 struct TransitionConfiguration {
     intx::uint256 terminal_total_difficulty;
     evmc::bytes32 terminal_block_hash;
-    BlockNum terminal_block_number{0};
+    BlockNum terminal_block_num{0};
 };
 
 //! Response for engine_getPayloadV2 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#response-2

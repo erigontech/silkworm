@@ -46,22 +46,22 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
 
     const auto call = params[0].get<Call>();
     const auto config = params[1].get<trace::TraceConfig>();
-    const auto block_number_or_hash = params[2].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[2].get<BlockNumberOrHash>();
 
-    SILK_TRACE << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
+    SILK_TRACE << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
     try {
         const auto chain_storage = tx->create_storage();
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, *tx);
+        const bool is_latest_block = co_await core::is_latest_block_num(block_with_hash->block.header.number, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -94,21 +94,21 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
         co_return;
     }
     const auto trace_calls = params[0].get<std::vector<trace::TraceCall>>();
-    const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[1].get<BlockNumberOrHash>();
 
-    SILK_TRACE << "#trace_calls: " << trace_calls.size() << " block_number_or_hash: " << block_number_or_hash;
+    SILK_TRACE << "#trace_calls: " << trace_calls.size() << " block_num_or_hash: " << block_num_or_hash;
 
     auto tx = co_await database_->begin();
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, *tx);
+        const bool is_latest_block = co_await core::is_latest_block_num(block_with_hash->block.header.number, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -191,9 +191,9 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     try {
         tx->set_state_cache_enabled(/*cache_enabled=*/true);
 
-        const auto block_number = co_await core::get_latest_block_number(*tx);
+        const auto block_num = co_await core::get_latest_block_num(*tx);
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -229,16 +229,16 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumberOrHash>();
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILK_TRACE << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
+    SILK_TRACE << " block_num_or_hash: " << block_num_or_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (block_with_hash) {
             trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
             const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
@@ -312,15 +312,15 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumberOrHash>();
 
-    SILK_TRACE << " block_number_or_hash: " << block_number_or_hash;
+    SILK_TRACE << " block_num_or_hash: " << block_num_or_hash;
 
     auto tx = co_await database_->begin();
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines

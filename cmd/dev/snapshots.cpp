@@ -711,22 +711,22 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
 }
 
 void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
-    const auto block_number{*settings.lookup_number};
-    SILK_INFO << "Lookup header number: " << block_number;
+    const auto block_num{*settings.lookup_number};
+    SILK_INFO << "Lookup header number: " << block_num;
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     auto repository = make_repository(settings.settings);
-    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kHeaderSegmentAndIdxNames, block_number);
+    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kHeaderSegmentAndIdxNames, block_num);
     if (segment_and_index) {
-        const auto header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_number);
+        const auto header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_num);
         ensure(header.has_value(),
-               [&]() { return "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + segment_and_index->segment.path().filename(); });
-        SILK_INFO << "Lookup header number: " << block_number << " found in: " << segment_and_index->segment.path().filename();
+               [&]() { return "lookup_header_by_number: " + std::to_string(block_num) + " NOT found in " + segment_and_index->segment.path().filename(); });
+        SILK_INFO << "Lookup header number: " << block_num << " found in: " << segment_and_index->segment.path().filename();
         if (settings.verbose) {
             print_header(*header, segment_and_index->segment.path().filename());
         }
     } else {
-        SILK_WARN << "Lookup header number: " << block_number << " NOT found";
+        SILK_WARN << "Lookup header number: " << block_num << " NOT found";
     }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
@@ -749,7 +749,7 @@ static void print_body(const BlockBodyForStorage& body, const std::string& filen
               << "rlp=" << to_hex(body.encode()) << "\n";
 }
 
-void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum block_number, const std::string& file_name) {
+void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum block_num, const std::string& file_name) {
     const auto snapshot_path = SnapshotPath::parse(settings.repository_path() / file_name);
     ensure(snapshot_path.has_value(), "lookup_body: --snapshot_file is invalid snapshot file");
 
@@ -758,34 +758,34 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
 
     rec_split::AccessorIndex idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
-    const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_number);
+    const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_num);
     if (body) {
-        SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_segment.path().filename();
+        SILK_INFO << "Lookup body number: " << block_num << " found in: " << body_segment.path().filename();
         if (settings.verbose) {
             print_body(*body, body_segment.path().filename());
         }
     } else {
-        SILK_WARN << "Lookup body number: " << block_number << " NOT found in: " << body_segment.path().filename();
+        SILK_WARN << "Lookup body number: " << block_num << " NOT found in: " << body_segment.path().filename();
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Lookup body elapsed: " << duration_as<std::chrono::microseconds>(elapsed) << " usec";
 }
 
-void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum block_number) {
+void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum block_num) {
     auto repository = make_repository(settings.settings);
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kBodySegmentAndIdxNames, block_number);
+    const auto [segment_and_index, _] = repository.find_segment(db::blocks::kBodySegmentAndIdxNames, block_num);
     if (segment_and_index) {
-        const auto body = BodyFindByBlockNumQuery{*segment_and_index}.exec(block_number);
+        const auto body = BodyFindByBlockNumQuery{*segment_and_index}.exec(block_num);
         ensure(body.has_value(),
-               [&]() { return "lookup_body: " + std::to_string(block_number) + " NOT found in " + segment_and_index->segment.path().filename(); });
-        SILK_INFO << "Lookup body number: " << block_number << " found in: " << segment_and_index->segment.path().filename();
+               [&]() { return "lookup_body: " + std::to_string(block_num) + " NOT found in " + segment_and_index->segment.path().filename(); });
+        SILK_INFO << "Lookup body number: " << block_num << " found in: " << segment_and_index->segment.path().filename();
         if (settings.verbose) {
             print_body(*body, segment_and_index->segment.path().filename());
         }
     } else {
-        SILK_WARN << "Lookup body number: " << block_number << " NOT found";
+        SILK_WARN << "Lookup body number: " << block_num << " NOT found";
     }
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
@@ -794,13 +794,13 @@ void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum blo
 
 void lookup_body(const SnapshotSubcommandSettings& settings) {
     ensure(settings.lookup_number.has_value(), "lookup_body: --number must be specified");
-    const auto block_number{*settings.lookup_number};
-    SILK_INFO << "Lookup body number: " << block_number;
+    const auto block_num{*settings.lookup_number};
+    SILK_INFO << "Lookup body number: " << block_num;
 
     if (settings.segment_file_name) {
-        lookup_body_in_one(settings, block_number, *settings.segment_file_name);
+        lookup_body_in_one(settings, block_num, *settings.segment_file_name);
     } else {
-        lookup_body_in_all(settings, block_number);
+        lookup_body_in_all(settings, block_num);
     }
 }
 

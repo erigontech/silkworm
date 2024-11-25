@@ -89,7 +89,7 @@ void delete_header(RWTxn& txn, BlockNum block_num, const evmc::bytes32& hash);
 std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_block_num);
 
 //! \brief Read block number from hash
-std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash);
+std::optional<BlockNum> read_block_num(ROTxn& txn, const evmc::bytes32& hash);
 
 //! \brief Writes header hash in table::kHeaderNumbers
 void write_header_number(RWTxn& txn, const uint8_t (&hash)[kHashLength], BlockNum block_num);
@@ -298,10 +298,10 @@ class DataModel {
     std::optional<ChainId> read_chain_id() const;
 
     //! Get the max block number
-    BlockNum max_block_number() const;
+    BlockNum max_block_num() const;
 
     //! Get the max block number frozen into snapshots
-    BlockNum max_frozen_block_number() const;
+    BlockNum max_frozen_block_num() const;
 
     //! Read block header with the specified key (block_num, hash)
     std::optional<BlockHeader> read_header(BlockNum block_num, HashAsArray hash) const;
@@ -319,7 +319,7 @@ class DataModel {
     std::pair<std::optional<BlockHeader>, std::optional<Hash>> read_head_header_and_hash() const;
 
     //! Read block number from hash
-    std::optional<BlockNum> read_block_number(const Hash& hash) const;
+    std::optional<BlockNum> read_block_num(const Hash& hash) const;
 
     //! Read all sibling block headers at specified block_num
     std::vector<BlockHeader> read_sibling_headers(BlockNum block_num) const;

@@ -23,12 +23,12 @@ namespace silkworm {
 CustomHeaderOnlyChainState::CustomHeaderOnlyChainState(OldestFirstLinkMap& persisted_link_queue)
     : persisted_link_queue_{persisted_link_queue} {}
 
-std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum block_number,
+std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum block_num,
                                                                    const evmc::bytes32& hash) const noexcept {
-    auto [initial_link, final_link] = persisted_link_queue_.equal_range(block_number);
+    auto [initial_link, final_link] = persisted_link_queue_.equal_range(block_num);
 
     for (auto link = initial_link; link != final_link; ++link) {
-        if (link->second->block_height == block_number && link->second->hash == hash) {
+        if (link->second->block_height == block_num && link->second->hash == hash) {
             return *link->second->header;
         }
     }
@@ -54,9 +54,9 @@ void SimpleHeaderOnlyChainState::insert_header(const BlockHeader& header, const 
     headers_[{header.number, hash}] = header;
 }
 
-std::optional<BlockHeader> SimpleHeaderOnlyChainState::read_header(BlockNum block_number,
+std::optional<BlockHeader> SimpleHeaderOnlyChainState::read_header(BlockNum block_num,
                                                                    const evmc::bytes32& hash) const noexcept {
-    auto item = headers_.find({block_number, hash});
+    auto item = headers_.find({block_num, hash});
 
     if (item == headers_.end()) {
         return std::nullopt;

@@ -87,7 +87,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     BlockId last_fork_choice() const override;
     BlockId last_finalized_block() const override;
     BlockId last_safe_block() const override;
-    BlockNum highest_frozen_block_number() const override;
+    BlockNum highest_frozen_block_num() const override;
 
     // header/body retrieval
     std::optional<BlockHeader> get_header(Hash) const override;
@@ -97,7 +97,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     std::optional<BlockBody> get_body(Hash) const override;
     std::optional<BlockBody> get_canonical_body(BlockNum) const override;
     bool is_canonical(Hash) const override;
-    std::optional<BlockNum> get_block_number(Hash) const override;
+    std::optional<BlockNum> get_block_num(Hash) const override;
     std::vector<BlockHeader> get_last_headers(uint64_t limit) const override;
     std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum>) const override;
 

@@ -70,11 +70,11 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 
     try {
         // Check if target block is the latest one: use local state cache (if any) for target transaction
-        const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, *tx);
+        const bool is_latest_block = co_await core::is_latest_block_num(BlockNumberOrHash{block_id}, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
-        StateReader state_reader{*tx, block_number + 1};
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        StateReader state_reader{*tx, block_num + 1};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -109,9 +109,9 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
             const auto block_size = extended_block.get_block_size();
@@ -205,10 +205,10 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
 
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
             auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
@@ -361,12 +361,12 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         }
 
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
-        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
-        if (block_number_opt) {
-            const auto block_number = block_number_opt.value();
-            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_number, provider);
-            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_number);
-            SILK_DEBUG << "block_number: " << block_number << ", min_txn_id: " << min_txn_id << ", first_txn_id: " << first_txn_id;
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        if (block_num_opt) {
+            const auto block_num = block_num_opt.value();
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, provider);
+            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_num);
+            SILK_DEBUG << "block_num: " << block_num << ", min_txn_id: " << min_txn_id << ", first_txn_id: " << first_txn_id;
 
             TxnId tx_index{0};
             if (creation_txn_id == min_txn_id) {
@@ -374,13 +374,13 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             } else {
                 tx_index = creation_txn_id - min_txn_id - 1;
             }
-            SILK_DEBUG << "block_number: " << block_number << ", tx_index: " << tx_index;
+            SILK_DEBUG << "block_num: " << block_num << ", tx_index: " << tx_index;
 
             const auto chain_storage{tx->create_storage()};
 
-            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_number, tx_index);
+            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, tx_index);
             if (!transaction) {
-                SILK_DEBUG << "No transaction found in block " << block_number << " for index " << tx_index;
+                SILK_DEBUG << "No transaction found in block " << block_num << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
             } else if (transaction.value().nonce != nonce) {
                 SILK_DEBUG << "Transaction nonce " << transaction.value().nonce << " doesn't match required nonce " << nonce;
@@ -715,10 +715,10 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     }
 
     const auto address = params[0].get<evmc::address>();
-    auto block_number = params[1].get<BlockNum>();
+    auto block_num = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
-    SILK_DEBUG << "address: " << address << ", block_number: " << block_number << ", page_size: " << page_size;
+    SILK_DEBUG << "address: " << address << ", block_num: " << block_num << ", page_size: " << page_size;
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
@@ -727,21 +727,21 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         co_return;
     }
 
-    if (block_number > 0) {
-        --block_number;
+    if (block_num > 0) {
+        --block_num;
     }
     auto tx = co_await database_->begin();
     try {
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
 
         db::kv::api::Timestamp from_timestamp{-1};
-        if (block_number > 0) {
-            const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_number, provider);
+        if (block_num > 0) {
+            const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_num, provider);
             from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
-            SILK_DEBUG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
+            SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        const auto results = co_await collect_transactions_with_receipts(*tx, provider, block_number, address, from_timestamp, false, page_size);
+        const auto results = co_await collect_transactions_with_receipts(*tx, provider, block_num, address, from_timestamp, false, page_size);
 
         reply = make_json_content(request, results);
     } catch (const std::invalid_argument& iv) {
@@ -768,10 +768,10 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     }
 
     const auto address = params[0].get<evmc::address>();
-    auto block_number = params[1].get<BlockNum>();
+    auto block_num = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
-    SILK_DEBUG << "address: " << address << " block_number: " << block_number << " page_size: " << page_size;
+    SILK_DEBUG << "address: " << address << " block_num: " << block_num << " page_size: " << page_size;
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
@@ -786,13 +786,13 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
 
         db::kv::api::Timestamp from_timestamp{-1};
-        if (block_number > 0) {
-            const auto max_tx_num = co_await db::txn::min_tx_num(*tx, block_number + 1, provider);
+        if (block_num > 0) {
+            const auto max_tx_num = co_await db::txn::min_tx_num(*tx, block_num + 1, provider);
             from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
-            SILK_DEBUG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
+            SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        auto results = co_await collect_transactions_with_receipts(*tx, provider, block_number, address, from_timestamp, true, page_size);
+        auto results = co_await collect_transactions_with_receipts(*tx, provider, block_num, address, from_timestamp, true, page_size);
 
         std::reverse(results.transactions.begin(), results.transactions.end());
         std::reverse(results.receipts.begin(), results.receipts.end());
@@ -816,7 +816,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     kv::api::Transaction& tx,
     db::chain::CanonicalBodyForStorageProvider& provider,
-    BlockNum block_number,
+    BlockNum block_num,
     const evmc::address& address,
     db::kv::api::Timestamp from_timestamp,
     bool ascending, uint64_t page_size) {
@@ -843,9 +843,9 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     TransactionsWithReceipts results;
     if (ascending) {
         results.first_page = true;
-        results.last_page = block_number == 0;
+        results.last_page = block_num == 0;
     } else {
-        results.first_page = block_number == 0;
+        results.first_page = block_num == 0;
         results.last_page = true;
     }
 
@@ -858,18 +858,18 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
 
     while (const auto value = co_await it.next()) {
         const auto txn_id = static_cast<TxnId>(*value);
-        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
-        if (!block_number_opt) {
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
+        if (!block_num_opt) {
             SILK_DEBUG << "No block found for txn_id " << txn_id;
             break;
         }
-        const auto bn = block_number_opt.value();
+        const auto bn = block_num_opt.value();
         const auto max_txn_id = co_await db::txn::max_tx_num(tx, bn, provider);
         const auto min_txn_id = co_await db::txn::min_tx_num(tx, bn, provider);
         const auto txn_index = txn_id - min_txn_id - 1;
         SILK_DEBUG
             << "txn_id: " << txn_id
-            << " block_number: " << bn
+            << " block_num: " << bn
             << ", txn_index: " << txn_index
             << ", max_txn_id: " << max_txn_id
             << ", min_txn_id: " << min_txn_id
@@ -951,7 +951,7 @@ Task<bool> OtsRpcApi::trace_blocks(
         TransactionsWithReceipts transactions_with_receipts;
 
         auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
-        auto next_block = from_to_response.block_number;
+        auto next_block = from_to_response.block_num;
         has_more = from_to_response.has_more;
         if (!from_to_response.has_more && next_block == 0) {
             break;
@@ -964,9 +964,9 @@ Task<bool> OtsRpcApi::trace_blocks(
     co_return has_more;
 }
 
-Task<void> OtsRpcApi::trace_block(kv::api::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {
+Task<void> OtsRpcApi::trace_block(kv::api::Transaction& tx, BlockNum block_num, const evmc::address& search_addr, TransactionsWithReceipts& results) {
     const auto chain_storage = tx.create_storage();
-    const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+    const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
     if (!block_with_hash) {
         co_return;
     }
@@ -1312,14 +1312,14 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-        next_from_ = from_prov_res.block_number;
+        next_from_ = from_prov_res.block_num;
         has_more_from_ = from_prov_res.has_more || next_from_ != 0;
 
         auto to_prov_res = co_await call_to_provider_->get();
         if (to_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-        next_to_ = to_prov_res.block_number;
+        next_to_ = to_prov_res.block_num;
         has_more_to_ = to_prov_res.has_more || next_to_ != 0;
     }
 
@@ -1353,7 +1353,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-        next_from_ = from_prov_res.block_number;
+        next_from_ = from_prov_res.block_num;
         has_more_from_ = from_prov_res.has_more || next_from_ != 0;
     }
 
@@ -1364,7 +1364,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
             co_return BlockProviderResponse{0, false, true};
         }
 
-        next_to_ = to_prov_res.block_number;
+        next_to_ = to_prov_res.block_num;
         has_more_to_ = to_prov_res.has_more || next_to_ != 0;
     }
 

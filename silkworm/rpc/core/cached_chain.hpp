@@ -30,7 +30,7 @@ namespace silkworm::rpc::core {
 
 // TODO(canepat) BlockReaderWithCache or migrate to ChainStorage?
 
-Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const db::chain::ChainStorage& storage, BlockNum block_number);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const db::chain::ChainStorage& storage, BlockNum block_num);
 Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& block_hash);
 Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumberOrHash& bnoh);
 Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash);

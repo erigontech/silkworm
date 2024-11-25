@@ -40,7 +40,7 @@ struct WorkResult {
     evmc::bytes32 header_hash;
     evmc::bytes32 seed_hash;
     evmc::bytes32 target;
-    silkworm::Bytes block_number;
+    silkworm::Bytes block_num;
 };
 
 struct MiningResult {

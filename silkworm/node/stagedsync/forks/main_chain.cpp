@@ -323,9 +323,9 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
         return false;  // finalized block not found
     }
 
-    const auto head_block_number{get_block_number(head_block_hash)};
-    ensure_invariant(head_block_number.has_value(), "unknown block number for head block hash");
-    if (is_canonical_head_ancestor(head_block_hash) && head_block_number <= last_fork_choice_.number) {
+    const auto head_block_num{get_block_num(head_block_hash)};
+    ensure_invariant(head_block_num.has_value(), "unknown block number for head block hash");
+    if (is_canonical_head_ancestor(head_block_hash) && head_block_num <= last_fork_choice_.number) {
         // FCU selects an old canonical block already targeted by a previous FCU
         return true;
     }
@@ -349,15 +349,15 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
     ensure_invariant(interim_canonical_chain_.current_head() == valid_chain.current_head,
                      "canonical head not aligned with saved head status");
 
-    last_fork_choice_.number = *head_block_number;
+    last_fork_choice_.number = *head_block_num;
     last_fork_choice_.hash = head_block_hash;
 
     db::write_last_head_block(tx_, last_fork_choice_.hash);
     if (finalized_block_hash) {
         db::write_last_finalized_block(tx_, *finalized_block_hash);
 
-        const auto finalized_block_number = get_block_number(*finalized_block_hash);
-        last_finalized_head_.number = *finalized_block_number;
+        const auto finalized_block_num = get_block_num(*finalized_block_hash);
+        last_finalized_head_.number = *finalized_block_num;
         last_finalized_head_.hash = *finalized_block_hash;
     }
 
@@ -476,7 +476,7 @@ std::optional<BlockBody> MainChain::get_body(Hash header_hash) const {
 
 BlockNum MainChain::get_block_progress() const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return data_model().max_block_number();
+    return data_model().max_block_num();
 }
 
 std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
@@ -490,13 +490,13 @@ std::vector<BlockHeader> MainChain::get_last_headers(uint64_t limit) const {
     return headers;
 }
 
-std::optional<BlockNum> MainChain::get_block_number(Hash header_hash) const {
+std::optional<BlockNum> MainChain::get_block_num(Hash header_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return data_model().read_block_number(header_hash);
+    return data_model().read_block_num(header_hash);
 }
 
-BlockNum MainChain::highest_frozen_block_number() const {
-    return data_model().max_frozen_block_number();
+BlockNum MainChain::highest_frozen_block_num() const {
+    return data_model().max_frozen_block_num();
 }
 
 bool MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const {

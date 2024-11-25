@@ -120,7 +120,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
     for (size_t i{0}; i < requests.size(); ++i) {
         const auto& request{requests[i]};
         const auto& payload{request.execution_payload};
-        BlockId block_number_or_hash{payload.number, payload.block_hash};
+        BlockId block_num_or_hash{payload.number, payload.block_hash};
         execution::api::BlockNumberOrHash parent_number_or_hash{payload.parent_hash};
         SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
             EXPECT_CALL(*execution_service, get_header(parent_number_or_hash))
@@ -135,7 +135,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
                 .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> { co_return execution::api::InsertionResult{}; }));
             EXPECT_CALL(*execution_service, get_header_hash_number(Hash{payload.block_hash}))
                 .WillOnce(InvokeWithoutArgs([=]() -> Task<std::optional<BlockNum>> { co_return payload.number; }));
-            EXPECT_CALL(*execution_service, validate_chain(block_number_or_hash))
+            EXPECT_CALL(*execution_service, validate_chain(block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([&]() -> Task<execution::api::ValidationResult> {
                     co_await sleep(1h);  // simulate exaggeratedly long-running task
                     co_return execution::api::ValidChain{};

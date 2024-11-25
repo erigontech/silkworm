@@ -23,7 +23,7 @@ namespace silkworm::rpc {
 
 struct StageData {
     std::string stage_name;
-    std::string block_number;
+    std::string block_num;
 };
 
 struct SyncingData {

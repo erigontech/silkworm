@@ -32,9 +32,9 @@ class RemoteChainStorage : public ChainStorage {
 
     Task<ChainConfig> read_chain_config() const override;
 
-    Task<BlockNum> highest_block_number() const override;
+    Task<BlockNum> highest_block_num() const override;
 
-    Task<std::optional<BlockNum>> read_block_number(const Hash& hash) const override;
+    Task<std::optional<BlockNum>> read_block_num(const Hash& hash) const override;
 
     Task<bool> read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const override;
     Task<bool> read_block(const Hash& hash, BlockNum number, Block& block) const override;
@@ -64,9 +64,9 @@ class RemoteChainStorage : public ChainStorage {
     Task<bool> read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const override;
     Task<bool> read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const override;
 
-    Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_number) const override;
+    Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_num) const override;
 
-    Task<std::optional<BlockNum>> read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash) const override;
+    Task<std::optional<BlockNum>> read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const override;
     Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const override;
 
   protected:

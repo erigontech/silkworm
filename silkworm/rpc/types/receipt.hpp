@@ -40,7 +40,7 @@ struct Receipt {
     evmc::address contract_address;
     uint64_t gas_used{0};
     evmc::bytes32 block_hash;
-    BlockNum block_number{0};
+    BlockNum block_num{0};
     uint32_t tx_index{0};
     std::optional<evmc::address> from;
     std::optional<evmc::address> to;

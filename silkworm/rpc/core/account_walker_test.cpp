@@ -273,7 +273,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     auto tx = result.get();
     AccountWalker walker{*tx};
 
-    const BlockNum block_number{0x52a0b3};
+    const BlockNum block_num{0x52a0b3};
     const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
     uint64_t max_result = 1;
@@ -297,7 +297,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     SECTION("collect 1 account") {
         max_result = 1;
 
-        auto result1 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_num, start_address, collector), boost::asio::use_future);
         result1.get();
 
         CHECK(collected_data.size() == max_result);
@@ -309,7 +309,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     SECTION("collect 2 account") {
         max_result = 2;
 
-        auto result2 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
+        auto result2 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_num, start_address, collector), boost::asio::use_future);
         result2.get();
 
         CHECK(collected_data.size() == max_result);
@@ -325,7 +325,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     SECTION("collect 3 account") {
         max_result = 3;
 
-        auto result3 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
+        auto result3 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_num, start_address, collector), boost::asio::use_future);
         result3.get();
 
         CHECK(collected_data.size() == max_result);

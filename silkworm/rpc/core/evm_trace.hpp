@@ -203,7 +203,7 @@ struct Trace {
     std::optional<std::string> error;
     std::string type;
     std::optional<evmc::bytes32> block_hash;
-    std::optional<BlockNum> block_number;
+    std::optional<BlockNum> block_num;
     std::optional<evmc::bytes32> transaction_hash;
     std::optional<std::uint32_t> transaction_position;
     int stack_height{0};
@@ -511,7 +511,7 @@ class TraceCallExecutor {
 
   private:
     Task<TraceCallResult> execute(
-        BlockNum block_number,
+        BlockNum block_num,
         const silkworm::Block& block,
         const rpc::Transaction& transaction,
         std::int32_t index,

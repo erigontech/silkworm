@@ -92,12 +92,12 @@ struct ChainConfig {
 
     // The Shanghai hard fork has withdrawals, but Agra does not
     bool withdrawals_activated(BlockTime block_time) const noexcept;
-    bool is_london(BlockNum block_number) const noexcept;
+    bool is_london(BlockNum block_num) const noexcept;
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
     //! returns whether specific HF have occurred
-    evmc_revision revision(BlockNum block_number, uint64_t block_time) const noexcept;
+    evmc_revision revision(BlockNum block_num, uint64_t block_time) const noexcept;
 
     std::vector<BlockNum> distinct_fork_numbers() const;
     std::vector<BlockTime> distinct_fork_times() const;

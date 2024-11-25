@@ -57,7 +57,7 @@ TEST_CASE("header_from_proto", "[node][execution][grpc]") {
         {sample_proto_header(), sample_block_header()},
     };
     for (const auto& [proto_header, expected_block_header] : fixtures) {
-        SECTION("header: " + std::to_string(proto_header.block_number())) {
+        SECTION("header: " + std::to_string(proto_header.block_num())) {
             BlockHeader header;
             CHECK_NOTHROW(header_from_proto(proto_header, header));
             CHECK(header == expected_block_header);
@@ -72,7 +72,7 @@ TEST_CASE("convertibility", "[node][execution][grpc]") {
         {sample_proto_header(), sample_block_header()},
     };
     for (const auto& [expected_proto_header, expected_block_header] : fixtures) {
-        SECTION("header: " + std::to_string(expected_proto_header.block_number())) {
+        SECTION("header: " + std::to_string(expected_proto_header.block_num())) {
             const BlockHeader header = header_from_proto(expected_proto_header);
             CHECK(header == expected_block_header);
             proto::Header proto_header;

@@ -79,32 +79,32 @@ Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
 Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, HashAsArray hash);
 
 // Erigon EncodeBlockNumber
-Bytes block_key(BlockNum block_number);
+Bytes block_key(BlockNum block_num);
 
 // Erigon HeaderKey & BlockBodyKey
-Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> hash);
+Bytes block_key(BlockNum block_num, std::span<const uint8_t, kHashLength> hash);
 
 // Split a block key in BlockNum and Hash
 std::tuple<BlockNum, evmc::bytes32> split_block_key(ByteView key);
 
-Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation);
+Bytes storage_change_key(BlockNum block_num, const evmc::address& address, uint64_t incarnation);
 
 // Erigon IndexChunkKey for account
-Bytes account_history_key(const evmc::address& address, BlockNum block_number);
+Bytes account_history_key(const evmc::address& address, BlockNum block_num);
 
 // Erigon IndexChunkKey for storage
-Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_number);
+Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_num);
 
 // Erigon LogKey
-Bytes log_key(BlockNum block_number, uint32_t transaction_id);
+Bytes log_key(BlockNum block_num, uint32_t transaction_id);
 
 //! Encode LogAddressIndex table key for target address
-Bytes log_address_key(const evmc::address& address, BlockNum block_number);
+Bytes log_address_key(const evmc::address& address, BlockNum block_num);
 
 //! Encode LogTopicIndex table key for target topic
-Bytes log_topic_key(const evmc::bytes32& topic, BlockNum block_number);
+Bytes log_topic_key(const evmc::bytes32& topic, BlockNum block_num);
 
-BlockNum block_number_from_key(const mdbx::slice& key);
+BlockNum block_num_from_key(const mdbx::slice& key);
 
 //! Decode TransactionLog table key into block number and transaction index
 std::tuple<BlockNum, uint32_t> split_log_key(const mdbx::slice& key);

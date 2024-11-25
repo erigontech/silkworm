@@ -75,19 +75,19 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     };
 
     AccountWalker walker{transaction_};
-    const auto block_number = block_with_hash->block.header.number + 1;
-    co_await walker.walk_of_accounts(block_number, start_address, collector);
+    const auto block_num = block_with_hash->block.header.number + 1;
+    co_await walker.walk_of_accounts(block_num, start_address, collector);
 
-    co_await load_accounts(block_number, collected_data, dump_accounts, exclude_code);
+    co_await load_accounts(block_num, collected_data, dump_accounts, exclude_code);
     if (!exclude_storage) {
-        co_await load_storage(block_number, dump_accounts);
+        co_await load_storage(block_num, dump_accounts);
     }
 
     co_return dump_accounts;
 }
 
-Task<void> AccountDumper::load_accounts(BlockNum block_number, const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
-    StateReader state_reader{transaction_, block_number};
+Task<void> AccountDumper::load_accounts(BlockNum block_num, const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
+    StateReader state_reader{transaction_, block_num};
     for (const auto& kv : collected_data) {
         const auto address = bytes_to_address(kv.key);
 
@@ -117,8 +117,8 @@ Task<void> AccountDumper::load_accounts(BlockNum block_number, const std::vector
     co_return;
 }
 
-Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump_accounts) {
-    SILK_TRACE << "block_number " << block_number << " START";
+Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_accounts) {
+    SILK_TRACE << "block_num " << block_num << " START";
     StorageWalker storage_walker{transaction_};
     evmc::bytes32 start_location{};
     for (auto& it : dump_accounts.accounts) {
@@ -138,7 +138,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
             return true;
         };
 
-        co_await storage_walker.walk_of_storages(block_number, address, start_location, account.incarnation, collector);
+        co_await storage_walker.walk_of_storages(block_num, address, start_location, account.incarnation, collector);
 
         trie::HashBuilder hb;
         for (const auto& [key, value] : collected_entries) {
@@ -151,7 +151,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
 
         account.root = hb.root_hash();
     }
-    SILK_TRACE << "block_number " << block_number << " END";
+    SILK_TRACE << "block_num " << block_num << " END";
     co_return;
 }
 

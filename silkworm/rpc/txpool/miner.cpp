@@ -46,9 +46,9 @@ Task<WorkResult> Miner::get_work() {
     SILK_DEBUG << "Miner::get_work seed_hash=" << silkworm::to_hex(seed_hash);
     const auto target = silkworm::bytes32_from_hex(reply.target());
     SILK_DEBUG << "Miner::get_work target=" << silkworm::to_hex(target);
-    const auto block_number = silkworm::from_hex(reply.block_number()).value_or(silkworm::Bytes{});
-    SILK_DEBUG << "Miner::get_work block_number=" << block_number;
-    WorkResult result{header_hash, seed_hash, target, block_number};
+    const auto block_num = silkworm::from_hex(reply.block_num()).value_or(silkworm::Bytes{});
+    SILK_DEBUG << "Miner::get_work block_num=" << block_num;
+    WorkResult result{header_hash, seed_hash, target, block_num};
     SILK_DEBUG << "Miner::get_work t=" << clock_time::since(start_time);
     co_return result;
 }

@@ -53,12 +53,12 @@ Task<ChainConfig> RemoteChainStorage::read_chain_config() const {
     co_return *chain_config;
 }
 
-Task<BlockNum> RemoteChainStorage::highest_block_number() const {
-    throw std::logic_error{"RemoteChainStorage::highest_block_number not implemented"};
+Task<BlockNum> RemoteChainStorage::highest_block_num() const {
+    throw std::logic_error{"RemoteChainStorage::highest_block_num not implemented"};
 }
 
-Task<std::optional<BlockNum>> RemoteChainStorage::read_block_number(const Hash& hash) const {
-    co_return co_await providers_.block_number_from_hash(hash.bytes);
+Task<std::optional<BlockNum>> RemoteChainStorage::read_block_num(const Hash& hash) const {
+    co_return co_await providers_.block_num_from_hash(hash.bytes);
 }
 
 Task<bool> RemoteChainStorage::read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const {
@@ -70,11 +70,11 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, BlockNum number, Blo
 }
 
 Task<bool> RemoteChainStorage::read_block(const Hash& hash, Block& block) const {
-    const auto block_number = co_await providers_.block_number_from_hash(hash.bytes);
-    if (!block_number) {
+    const auto block_num = co_await providers_.block_num_from_hash(hash.bytes);
+    if (!block_num) {
         co_return false;
     }
-    co_return co_await providers_.block(*block_number, hash.bytes, /*.read_senders=*/false, block);
+    co_return co_await providers_.block(*block_num, hash.bytes, /*.read_senders=*/false, block);
 }
 
 Task<bool> RemoteChainStorage::read_block(BlockNum number, bool read_senders, Block& block) const {
@@ -100,7 +100,7 @@ Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum number
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(const Hash& hash) const {
-    const auto number = co_await providers_.block_number_from_hash(hash.bytes);
+    const auto number = co_await providers_.block_num_from_hash(hash.bytes);
     if (!number) {
         co_return std::nullopt;
     }
@@ -129,7 +129,7 @@ Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockNum number, Bloc
 }
 
 Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockBody& body) const {
-    const auto number = co_await providers_.block_number_from_hash(hash.bytes);
+    const auto number = co_await providers_.block_num_from_hash(hash.bytes);
     if (!number) {
         co_return false;
     }
@@ -207,8 +207,8 @@ Task<std::optional<intx::uint256>> RemoteChainStorage::read_total_difficulty(con
     co_return co_await db::chain::read_total_difficulty(tx_, hash, number);
 }
 
-Task<std::optional<BlockNum>> RemoteChainStorage::read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
-    co_return co_await providers_.block_number_from_txn_hash(transaction_hash.bytes);
+Task<std::optional<BlockNum>> RemoteChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
+    co_return co_await providers_.block_num_from_txn_hash(transaction_hash.bytes);
 }
 
 Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const {

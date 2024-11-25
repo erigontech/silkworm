@@ -92,7 +92,7 @@ std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fcu_re
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration) {
     out << "terminal_total_difficulty: " << transition_configuration.terminal_total_difficulty
         << " terminal_block_hash: " << to_hex(transition_configuration.terminal_block_hash)
-        << " terminal_block_number: " << transition_configuration.terminal_block_number;
+        << " terminal_block_num: " << transition_configuration.terminal_block_num;
     return out;
 }
 

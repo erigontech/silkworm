@@ -551,10 +551,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         threaded_kv_client.start_and_consume_statechanges(*kv_client);
 
         // Keep publishing state changes using the Catch2 thread until at least one has been received
-        BlockNum block_number{0};
+        BlockNum block_num{0};
         bool publishing{true};
         while (publishing) {
-            state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+            state_change_source->start_new_batch(++block_num, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
             state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
 
             publishing = !threaded_kv_client.wait_one_milli_for_subscription();
@@ -581,10 +581,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         threaded_kv_client2.start_and_consume_statechanges(*kv_client);
 
         // Keep publishing state changes using the Catch2 thread until at least one has been received
-        BlockNum block_number{0};
+        BlockNum block_num{0};
         bool publishing{true};
         while (publishing) {
-            state_change_source->start_new_batch(++block_number, kEmptyHash, {}, /*unwind=*/false);
+            state_change_source->start_new_batch(++block_num, kEmptyHash, {}, /*unwind=*/false);
             state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
 
             publishing = !(threaded_kv_client1.wait_one_milli_for_subscription() &&

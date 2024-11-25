@@ -88,12 +88,12 @@ int StorageWalker::compare_empty_greater(const ByteView& key1, const ByteView& k
 }
 
 Task<void> StorageWalker::walk_of_storages(
-    BlockNum block_number,
+    BlockNum block_num,
     const evmc::address& address,
     const evmc::bytes32& start_location,
     uint64_t incarnation,
     AccountCollector& collector) {
-    SILK_TRACE << "block_number=" << block_number << " address=" << address << " START";
+    SILK_TRACE << "block_num=" << block_num << " address=" << address << " START";
 
     auto ps_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainStateName);
     auto ps_key{db::storage_prefix(address, incarnation)};
@@ -120,8 +120,8 @@ Task<void> StorageWalker::walk_of_storages(
     BlockNum block = silkworm::endian::load_big_u64(sh_skv.key3.data());
     auto cs_cursor = co_await transaction_.cursor_dup_sort(db::table::kStorageChangeSetName);
 
-    if (block < block_number) {
-        sh_skv = co_await next(sh_split_cursor, block_number);
+    if (block < block_num) {
+        sh_skv = co_await next(sh_split_cursor, block_num);
     }
 
     auto go_on = true;
@@ -144,7 +144,7 @@ Task<void> StorageWalker::walk_of_storages(
 
             if (!sh_skv.value.empty()) {
                 const auto bitmap = silkworm::db::bitmap::parse(sh_skv.value);
-                found = silkworm::db::bitmap::seek(bitmap, block_number);
+                found = silkworm::db::bitmap::seek(bitmap, block_num);
             }
             if (found) {
                 auto dup_key{silkworm::db::storage_change_key(found.value(), address, incarnation)};
@@ -166,12 +166,12 @@ Task<void> StorageWalker::walk_of_storages(
             }
             if (cmp >= 0) {
                 const auto sh_block = silkworm::endian::load_big_u64(sh_skv.key3.data());
-                sh_skv = co_await next(sh_split_cursor, block_number, sh_block, h_loc);
+                sh_skv = co_await next(sh_split_cursor, block_num, sh_block, h_loc);
                 h_loc = sh_skv.key2;
             }
         }
     }
-    SILK_TRACE << "block_number=" << block_number << " address=" << address << " END";
+    SILK_TRACE << "block_num=" << block_num << " address=" << address << " END";
     co_return;
 }
 

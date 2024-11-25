@@ -48,7 +48,7 @@ Task<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
 
     const auto db_transaction = co_await db.begin();
     try {
-        block_height = co_await core::get_latest_block_number(*db_transaction);
+        block_height = co_await core::get_latest_block_num(*db_transaction);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
     } catch (...) {
@@ -63,9 +63,9 @@ std::optional<uint64_t> get_latest_block(boost::asio::io_context& ioc, ethdb::Da
     auto result = boost::asio::co_spawn(
         ioc,
         [&]() -> Task<std::optional<uint64_t>> {
-            const auto block_number = co_await latest_block(db);
+            const auto block_num = co_await latest_block(db);
             ioc.stop();
-            co_return block_number;
+            co_return block_num;
         },
         boost::asio::use_future);
     return result.get();
@@ -102,9 +102,9 @@ int main(int argc, char* argv[]) {
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 
-        const auto latest_block_number = get_latest_block(*ioc, *database);
-        if (latest_block_number) {
-            std::cout << "latest_block_number: " << latest_block_number.value() << "\n";
+        const auto latest_block_num = get_latest_block(*ioc, *database);
+        if (latest_block_num) {
+            std::cout << "latest_block_num: " << latest_block_num.value() << "\n";
         }
 
         if (context_pool_thread.joinable()) {

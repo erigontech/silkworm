@@ -51,7 +51,7 @@ size_t flat_hash_map_memory_size_after_inserts(const TFlatHashMap& map, size_t i
     return flat_hash_map_memory_size<TFlatHashMap>(capacity_after_inserts);
 }
 
-void Buffer::begin_block(uint64_t block_number, size_t updated_accounts_count) {
+void Buffer::begin_block(uint64_t block_num, size_t updated_accounts_count) {
     if (current_batch_state_size() > memory_limit_) {
         throw MemoryLimitError();
     }
@@ -59,7 +59,7 @@ void Buffer::begin_block(uint64_t block_number, size_t updated_accounts_count) {
         throw MemoryLimitError();
     }
 
-    block_number_ = block_number;
+    block_num_ = block_num;
     changed_storage_.clear();
 }
 
@@ -81,14 +81,14 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
-    if (block_number_ >= prune_history_threshold_) {
+    if (block_num_ >= prune_history_threshold_) {
         Bytes encoded_initial{};
         if (initial) {
             bool omit_code_hash{!account_deleted};
             encoded_initial = initial->encode_for_storage(omit_code_hash);
         }
 
-        block_account_changes_[block_number_].insert_or_assign(address, encoded_initial);
+        block_account_changes_[block_num_].insert_or_assign(address, encoded_initial);
     }
 
     if (equal) {
@@ -134,10 +134,10 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     if (current == initial) {
         return;
     }
-    if (block_number_ >= prune_history_threshold_) {
+    if (block_num_ >= prune_history_threshold_) {
         changed_storage_.insert(address);
         ByteView initial_val{zeroless_view(initial.bytes)};
-        block_storage_changes_[block_number_][address][incarnation].insert_or_assign(location, initial_val);
+        block_storage_changes_[block_num_][address][incarnation].insert_or_assign(location, initial_val);
     }
 
     // Iterator in insert_or_assign return value "is pointing at the element that was inserted or updated"
@@ -257,8 +257,8 @@ void Buffer::write_history_to_db(bool write_change_sets) {
     if (!call_traces_.empty()) {
         Bytes call_traces_key(sizeof(BlockNum), '\0');
         auto call_traces_cursor{txn_.rw_cursor_dup_sort(table::kCallTraceSet)};
-        for (const auto& [block_number, account_and_flags_set] : call_traces_) {
-            endian::store_big_u64(call_traces_key.data(), block_number);
+        for (const auto& [block_num, account_and_flags_set] : call_traces_) {
+            endian::store_big_u64(call_traces_key.data(), block_num);
             written_size += sizeof(BlockNum);
             for (const auto& account_and_flags : account_and_flags_set) {
                 auto account_and_flags_slice{to_slice(account_and_flags)};
@@ -411,24 +411,24 @@ void Buffer::write_to_db(bool write_change_sets) {
 }
 
 // Erigon WriteReceipts in core/rawdb/accessors_chain.go
-void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) {
+void Buffer::insert_receipts(uint64_t block_num, const std::vector<Receipt>& receipts) {
     for (uint32_t i{0}; i < receipts.size(); ++i) {
         if (receipts[i].logs.empty()) {
             continue;
         }
 
-        Bytes key{log_key(block_number, i)};
+        Bytes key{log_key(block_num, i)};
         Bytes value{cbor_encode(receipts[i].logs)};
 
         logs_.insert_or_assign(key, value);
     }
 
-    Bytes key{block_key(block_number)};
+    Bytes key{block_key(block_num)};
     Bytes value{cbor_encode(receipts)};
     receipts_[key] = value;
 }
 
-void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces) {
+void Buffer::insert_call_traces(BlockNum block_num, const CallTraces& traces) {
     // Collect and sort all unique accounts touched by the call trace (no duplicates)
     absl::btree_set<evmc::address> touched_accounts;
     for (const auto& sender : traces.senders) {
@@ -451,7 +451,7 @@ void Buffer::insert_call_traces(BlockNum block_number, const CallTraces& traces)
             }
             values.insert(std::move(value));
         }
-        call_traces_.emplace(block_number, values);
+        call_traces_.emplace(block_num, values);
     }
 }
 
@@ -476,44 +476,44 @@ void Buffer::decanonize_block(uint64_t) {
 }
 
 void Buffer::insert_block(const Block& block, const evmc::bytes32& hash) {
-    uint64_t block_number{block.header.number};
-    Bytes key{block_key(block_number, hash.bytes)};
+    uint64_t block_num{block.header.number};
+    Bytes key{block_key(block_num, hash.bytes)};
     headers_[key] = block.header;
     bodies_[key] = block.copy_body();
 
-    if (block_number == 0) {
+    if (block_num == 0) {
         difficulty_[key] = 0;
     } else {
-        std::optional<intx::uint256> parent_difficulty{total_difficulty(block_number - 1, block.header.parent_hash)};
+        std::optional<intx::uint256> parent_difficulty{total_difficulty(block_num - 1, block.header.parent_hash)};
         difficulty_[key] = parent_difficulty.value_or(0);
     }
     difficulty_[key] += block.header.difficulty;
 }
 
-std::optional<intx::uint256> Buffer::total_difficulty(uint64_t block_number,
+std::optional<intx::uint256> Buffer::total_difficulty(uint64_t block_num,
                                                       const evmc::bytes32& block_hash) const noexcept {
-    Bytes key{block_key(block_number, block_hash.bytes)};
+    Bytes key{block_key(block_num, block_hash.bytes)};
     if (auto it{difficulty_.find(key)}; it != difficulty_.end()) {
         return it->second;
     }
     return db::read_total_difficulty(txn_, key);
 }
 
-std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    Bytes key{block_key(block_number, block_hash.bytes)};
+std::optional<BlockHeader> Buffer::read_header(uint64_t block_num, const evmc::bytes32& block_hash) const noexcept {
+    Bytes key{block_key(block_num, block_hash.bytes)};
     if (auto it{headers_.find(key)}; it != headers_.end()) {
         return it->second;
     }
-    return data_model_->read_header(block_number, Hash{block_hash.bytes});
+    return data_model_->read_header(block_num, Hash{block_hash.bytes});
 }
 
-bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
-    Bytes key{block_key(block_number, block_hash.bytes)};
+bool Buffer::read_body(uint64_t block_num, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
+    Bytes key{block_key(block_num, block_hash.bytes)};
     if (auto it{bodies_.find(key)}; it != bodies_.end()) {
         out = it->second;
         return true;
     }
-    return data_model_->read_body(block_number, block_hash.bytes, /*read_senders=*/false, out);
+    return data_model_->read_body(block_num, block_hash.bytes, /*read_senders=*/false, out);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

@@ -121,8 +121,8 @@ Stage::Result Senders::unwind(RWTxn& txn) {
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                 throw_if_stopping();
                 std::unique_lock log_lck(sl_mutex_);
-                const auto reached_block_number{endian::load_big_u64(from_slice(data.key).data())};
-                current_key_ = std::to_string(reached_block_number);
+                const auto reached_block_num{endian::load_big_u64(from_slice(data.key).data())};
+                current_key_ = std::to_string(reached_block_num);
                 log_time = now + 5s;
             }
             unwind_cursor->erase();
@@ -209,15 +209,15 @@ Stage::Result Senders::prune(RWTxn& txn) {
         size_t erased{0};
         auto prune_data{prune_cursor->lower_bound(to_slice(upper_key), /*throw_notfound=*/false)};
         while (prune_data) {
-            const auto reached_block_number{endian::load_big_u64(from_slice(prune_data.key).data())};
+            const auto reached_block_num{endian::load_big_u64(from_slice(prune_data.key).data())};
             // Log and abort check
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                 throw_if_stopping();
                 std::unique_lock log_lck(sl_mutex_);
-                current_key_ = std::to_string(reached_block_number);
+                current_key_ = std::to_string(reached_block_num);
                 log_time = now + 5s;
             }
-            if (reached_block_number <= prune_threshold) {
+            if (reached_block_num <= prune_threshold) {
                 prune_cursor->erase();
                 ++erased;
             }

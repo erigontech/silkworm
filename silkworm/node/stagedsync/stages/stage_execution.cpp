@@ -614,7 +614,7 @@ void Execution::unwind_state_from_changeset(ROCursor& source_changeset, RWCursor
     while (src_data) {
         auto key(from_slice(src_data.key));
         auto value(from_slice(src_data.value));
-        if (const auto block_number{endian::load_big_u64(&key[0])}; block_number <= unwind_to) {
+        if (const auto block_num{endian::load_big_u64(&key[0])}; block_num <= unwind_to) {
             break;
         }
         auto [new_key, new_value]{changeset_to_plainstate_format(key, value)};

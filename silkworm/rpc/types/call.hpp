@@ -90,7 +90,7 @@ struct Call {
 std::ostream& operator<<(std::ostream& out, const Call& call);
 
 struct BlockOverrides {
-    std::optional<BlockNum> block_number;
+    std::optional<BlockNum> block_num;
     std::optional<evmc::address> coin_base;
     std::optional<std::uint64_t> timestamp;
     std::optional<intx::uint256> difficulty;
@@ -100,7 +100,7 @@ struct BlockOverrides {
 };
 
 struct SimulationContext {
-    BlockNumberOrHash block_number{0};
+    BlockNumberOrHash block_num{0};
     std::int32_t transaction_index{-1};
 };
 

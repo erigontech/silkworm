@@ -71,13 +71,13 @@ std::ostream& operator<<(std::ostream& out, const Bundle& bundle) {
 }
 
 std::ostream& operator<<(std::ostream& out, const BlockOverrides& bo) {
-    out << "block_number: " << bo.block_number.value_or(0) << " ";
+    out << "block_num: " << bo.block_num.value_or(0) << " ";
 
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const SimulationContext& sc) {
-    out << "block_number: " << sc.block_number << " "
+    out << "block_num: " << sc.block_num << " "
         << "transaction_index: " << sc.transaction_index;
     return out;
 }

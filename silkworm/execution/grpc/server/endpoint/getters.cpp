@@ -24,10 +24,10 @@ namespace silkworm::execution::grpc::server {
 
 namespace proto = ::execution;
 
-api::BlockNumberOrHash block_number_or_hash_from_request(const proto::GetSegmentRequest& request) {
+api::BlockNumberOrHash block_num_or_hash_from_request(const proto::GetSegmentRequest& request) {
     api::BlockNumberOrHash number_or_hash;
-    if (request.has_block_number()) {
-        number_or_hash = request.block_number();
+    if (request.has_block_num()) {
+        number_or_hash = request.block_num();
     } else if (request.has_block_hash()) {
         number_or_hash = rpc::bytes32_from_h256(request.block_hash());
     }
@@ -51,11 +51,11 @@ proto::GetHeaderResponse response_from_header(const std::optional<BlockHeader>& 
     return response;
 }
 
-proto::GetBodyResponse response_from_body(const std::optional<BlockBody>& body, const Hash& block_hash, BlockNum block_number) {
+proto::GetBodyResponse response_from_body(const std::optional<BlockBody>& body, const Hash& block_hash, BlockNum block_num) {
     proto::GetBodyResponse response;
     if (body) {
         proto::BlockBody* proto_body = response.mutable_body();
-        proto_from_body(*body, block_hash, block_number, proto_body);
+        proto_from_body(*body, block_hash, block_num, proto_body);
     }
     return response;
 }

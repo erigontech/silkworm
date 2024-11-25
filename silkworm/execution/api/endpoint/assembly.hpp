@@ -53,7 +53,7 @@ struct ExecutionPayload {
     Hash receipts_root;
     Bloom logs_bloom{};
     evmc::bytes32 prev_randao;
-    BlockNum block_number{0};
+    BlockNum block_num{0};
     uint64_t gas_limit{0};
     uint64_t gas_used{0};
     uint64_t timestamp{0};

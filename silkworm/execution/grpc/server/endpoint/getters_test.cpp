@@ -35,7 +35,7 @@ using namespace silkworm::execution::test_util;
 using namespace silkworm::test_util;
 namespace proto = ::execution;
 
-static api::BlockNumberOrHash sample_block_number_or_hash(bool has_number) {
+static api::BlockNumberOrHash sample_block_num_or_hash(bool has_number) {
     if (has_number) {
         return kSampleBlockNumber;
     }
@@ -46,7 +46,7 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<B
                                                                  std::optional<Hash> hash) {
     proto::GetSegmentRequest request;
     if (number) {
-        request.set_block_number(*number);
+        request.set_block_num(*number);
     }
     if (hash) {
         request.set_allocated_block_hash(rpc::h256_from_bytes32(*hash).release());
@@ -54,16 +54,16 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<B
     return request;
 }
 
-TEST_CASE("block_number_or_hash_from_request", "[node][execution][grpc]") {
+TEST_CASE("block_num_or_hash_from_request", "[node][execution][grpc]") {
     const Fixtures<proto::GetSegmentRequest, api::BlockNumberOrHash> fixtures{
         {sample_proto_get_segment_request({}, {}), {}},  // BlockNumberOrHash contains 1st variant as default
         {sample_proto_get_segment_request(0, {}), {}},   // BlockNumberOrHash contains 1st variant as default
-        {sample_proto_get_segment_request(kSampleBlockNumber, {}), sample_block_number_or_hash(true)},
-        {sample_proto_get_segment_request({}, kSampleBlockHash), sample_block_number_or_hash(false)},
+        {sample_proto_get_segment_request(kSampleBlockNumber, {}), sample_block_num_or_hash(true)},
+        {sample_proto_get_segment_request({}, kSampleBlockHash), sample_block_num_or_hash(false)},
     };
     for (const auto& [segment_request, expected_number_or_hash] : fixtures) {
-        SECTION("block_number_or_hash index: " + std::to_string(expected_number_or_hash.index())) {
-            const auto number_or_hash{block_number_or_hash_from_request(segment_request)};
+        SECTION("block_num_or_hash index: " + std::to_string(expected_number_or_hash.index())) {
+            const auto number_or_hash{block_num_or_hash_from_request(segment_request)};
             CHECK(number_or_hash == expected_number_or_hash);
         }
     }
@@ -121,7 +121,7 @@ TEST_CASE("response_from_header", "[node][execution][grpc]") {
             if (response.has_header()) {
                 const auto& header{response.header()};
                 const auto& expected_header{expected_response.header()};
-                CHECK(header.block_number() == expected_header.block_number());
+                CHECK(header.block_num() == expected_header.block_num());
                 CHECK(header.has_block_hash() == expected_header.has_block_hash());
                 CHECK(header.block_hash() == expected_header.block_hash());
                 CHECK(header.extra_data() == expected_header.extra_data());
@@ -151,7 +151,7 @@ TEST_CASE("response_from_body", "[node][execution][grpc]") {
                 const auto& body{response.body()};
                 const auto& expected_body{expected_response.body()};
                 CHECK(body.block_hash() == expected_body.block_hash());
-                CHECK(body.block_number() == expected_body.block_number());
+                CHECK(body.block_num() == expected_body.block_num());
                 CHECK(body.transactions_size() == expected_body.transactions_size());
                 CHECK(body.uncles_size() == expected_body.uncles_size());
                 CHECK(body.withdrawals_size() == expected_body.withdrawals_size());

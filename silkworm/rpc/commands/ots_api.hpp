@@ -88,7 +88,7 @@ class ChunkLocator {
 };
 
 struct BlockProviderResponse {
-    BlockNum block_number{0};
+    BlockNum block_num{0};
     bool has_more{false};
     bool error{false};
 };
@@ -233,7 +233,7 @@ class OtsRpcApi {
     Task<TransactionsWithReceipts> collect_transactions_with_receipts(
         db::kv::api::Transaction& tx,
         db::chain::CanonicalBodyForStorageProvider& provider,
-        BlockNum block_number,
+        BlockNum block_num,
         const evmc::address& address,
         db::kv::api::Timestamp from_timestamp,
         bool ascending,
@@ -247,7 +247,7 @@ class OtsRpcApi {
         uint64_t result_count,
         std::vector<TransactionsWithReceipts>& results);
 
-    Task<void> trace_block(db::kv::api::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results);
+    Task<void> trace_block(db::kv::api::Transaction& tx, BlockNum block_num, const evmc::address& search_addr, TransactionsWithReceipts& results);
     static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
     static intx::uint256 get_block_fees(const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts);
 };

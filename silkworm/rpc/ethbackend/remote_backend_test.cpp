@@ -159,62 +159,62 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::client_version", "[silkworm][rpc][eth
     }
 }
 
-TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_txn_hash", "[silkworm][rpc][ethbackend][backend]") {
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_num_from_txn_hash", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::TxnLookupReply> reader;
     const Hash hash;
     EXPECT_CALL(*stub_, AsyncTxnLookupRaw).WillOnce(testing::Return(&reader));
 
-    SECTION("call get_block_number_from_txn_hash and get number") {
+    SECTION("call get_block_num_from_txn_hash and get number") {
         ::remote::TxnLookupReply response;
-        response.set_block_number(5);
+        response.set_block_num(5);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_txn_hash>(hash.bytes);
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_num_from_txn_hash>(hash.bytes);
         CHECK(bn == 5);
     }
 
-    SECTION("call get_block_number_from_txn_hash and get zero count") {
+    SECTION("call get_block_num_from_txn_hash and get zero count") {
         ::remote::TxnLookupReply response;
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        response.set_block_number(0);
-        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_txn_hash>(hash.bytes);
+        response.set_block_num(0);
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_num_from_txn_hash>(hash.bytes);
         CHECK(bn == std::nullopt);
     }
 
-    SECTION("call get_block_number_from_txn_hash and get error") {
+    SECTION("call get_block_num_from_txn_hash and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_number_from_txn_hash>(hash.bytes)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_num_from_txn_hash>(hash.bytes)), boost::system::system_error);
     }
 }
 
-TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_number_from_hash", "[silkworm][rpc][ethbackend][backend]") {
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_num_from_hash", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::HeaderNumberReply> reader;
     const Hash hash;
     EXPECT_CALL(*stub_, AsyncHeaderNumberRaw).WillOnce(testing::Return(&reader));
 
-    SECTION("call get_block_number_from_hash and get number") {
+    SECTION("call get_block_num_from_hash and get number") {
         ::remote::HeaderNumberReply response;
         response.set_number(3);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_num_from_hash>(hash.bytes);
         CHECK(*bn == 3);
     }
 
-    SECTION("call get_block_number_from_hash return no number") {
+    SECTION("call get_block_num_from_hash return no number") {
         ::remote::HeaderNumberReply response;
         response.clear_number();
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_num_from_hash>(hash.bytes);
         CHECK(bn == std::nullopt);
     }
-    SECTION("call get_block_number_from_hash and get zero count") {
+    SECTION("call get_block_num_from_hash and get zero count") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes);
+        const auto bn = run<&ethbackend::RemoteBackEnd::get_block_num_from_hash>(hash.bytes);
         CHECK(bn == std::nullopt);
     }
 
-    SECTION("call get_block_number_from_hash and get error") {
+    SECTION("call get_block_num_from_hash and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_number_from_hash>(hash.bytes)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_num_from_hash>(hash.bytes)), boost::system::system_error);
     }
 }
 
@@ -231,34 +231,34 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::canonical_body_for_storage", "[silkwo
         CHECK(body == string_to_bytes("123"));
     }
 
-    SECTION("call get_block_number_from_hash and get error") {
+    SECTION("call get_block_num_from_hash and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
         CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::canonical_body_for_storage>(bn)), boost::system::system_error);
     }
 }
 
-TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_hash_from_block_number", "[silkworm][rpc][ethbackend][backend]") {
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_hash_from_block_num", "[silkworm][rpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::CanonicalHashReply> reader;
     const uint64_t bn{0};
     EXPECT_CALL(*stub_, AsyncCanonicalHashRaw).WillOnce(testing::Return(&reader));
 
-    SECTION("call get_block_hash_from_block_number and get number") {
+    SECTION("call get_block_hash_from_block_num and get number") {
         ::remote::CanonicalHashReply response;
         response.set_allocated_hash(make_h256(0x3b8fb240d288781d, 0x4aac94d3fd16809e, 0xe413bc99294a0857, 0x98a589dae51ddd4a));
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        const auto hash = run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_number>(bn);
+        const auto hash = run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_num>(bn);
         CHECK(hash == 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32);
     }
 
-    SECTION("call get_block_hash_from_block_number and get zero count") {
+    SECTION("call get_block_hash_from_block_num and get zero count") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        const auto hash = run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_number>(bn);
+        const auto hash = run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_num>(bn);
         CHECK(hash == std::nullopt);
     }
 
-    SECTION("call get_block_hash_from_block_number and get error") {
+    SECTION("call get_block_hash_from_block_num and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_number>(bn)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_num>(bn)), boost::system::system_error);
     }
 }
 
@@ -337,7 +337,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbacke
         p->set_allocated_receipt_root(make_h256(0x56e81f171bcc55a6, 0xff8345e692c0f86e, 0x5b48e01b996cadc0, 0x01622fb5e363b421));
         p->set_allocated_parent_hash(make_h256(0x3b8fb240d288781d, 0x4aac94d3fd16809e, 0xe413bc99294a0857, 0x98a589dae51ddd4a));
         p->set_allocated_prev_randao(make_h256(0x0, 0x0, 0x0, 0x1));
-        p->set_block_number(0x1);
+        p->set_block_num(0x1);
         p->set_gas_limit(0x1c9c380);
         p->set_timestamp(0x5);
         const Bytes tx_bytes{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};

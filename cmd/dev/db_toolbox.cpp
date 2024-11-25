@@ -1404,7 +1404,7 @@ void print_canonical_blocks(EnvConfig& config, BlockNum from, std::optional<Bloc
     ensure(last_data.key.size() == sizeof(BlockNum), "Table CanonicalHashes has unexpected key size");
 
     // Use last block as max block if to is missing and perform range checks
-    BlockNum last{block_number_from_key(last_data.key)};
+    BlockNum last{block_num_from_key(last_data.key)};
     if (to) {
         ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
         ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
@@ -1416,15 +1416,15 @@ void print_canonical_blocks(EnvConfig& config, BlockNum from, std::optional<Bloc
     // Read the range of block headers and bodies from database
     auto block_headers_table{txn.ro_cursor(table::kHeaders)};
     auto block_bodies_table{txn.ro_cursor(table::kBlockBodies)};
-    for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
+    for (BlockNum block_num{from}; block_num <= *to; block_num += step) {
         // Lookup each canonical block hash from each block number
-        auto block_number_key{block_key(block_number)};
-        auto ch_data{canonical_hashes_table->find(to_slice(block_number_key), /*throw_notfound=*/false)};
-        ensure(ch_data.done, [&]() { return "Table CanonicalHashes does not contain key=" + to_hex(block_number_key); });
+        auto block_num_key{block_key(block_num)};
+        auto ch_data{canonical_hashes_table->find(to_slice(block_num_key), /*throw_notfound=*/false)};
+        ensure(ch_data.done, [&]() { return "Table CanonicalHashes does not contain key=" + to_hex(block_num_key); });
         const auto block_hash{to_bytes32(from_slice(ch_data.value))};
 
         // Read and decode each canonical block header
-        auto block_key{db::block_key(block_number, block_hash.bytes)};
+        auto block_key{db::block_key(block_num, block_hash.bytes)};
         auto bh_data{block_headers_table->find(to_slice(block_key), /*throw_notfound=*/false)};
         ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{from_slice(bh_data.value)};
@@ -1441,7 +1441,7 @@ void print_canonical_blocks(EnvConfig& config, BlockNum from, std::optional<Bloc
         const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
-        std::cout << "\nBlock number=" << block_number << "\n\n";
+        std::cout << "\nBlock number=" << block_num << "\n\n";
         print_header(header);
         std::cout << "\n";
         print_body(stored_body);
@@ -1460,7 +1460,7 @@ void print_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, 
     ensure(last_data.key.size() == sizeof(BlockNum) + kHashLength, "Table Headers has unexpected key size");
 
     // Use last block as max block if to is missing and perform range checks
-    BlockNum last{block_number_from_key(last_data.key)};
+    BlockNum last{block_num_from_key(last_data.key)};
     if (to) {
         ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
         ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
@@ -1471,9 +1471,9 @@ void print_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, 
 
     // Read the range of block headers and bodies from database
     auto block_bodies_table{txn.ro_cursor(table::kBlockBodies)};
-    for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
+    for (BlockNum block_num{from}; block_num <= *to; block_num += step) {
         // Read and decode each block header
-        auto block_key{db::block_key(block_number)};
+        auto block_key{db::block_key(block_num)};
         auto bh_data{block_headers_table->lower_bound(to_slice(block_key), /*throw_notfound=*/false)};
         ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{from_slice(bh_data.value)};
@@ -1490,7 +1490,7 @@ void print_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, 
         const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
-        std::cout << "\nBlock number=" << block_number << "\n\n";
+        std::cout << "\nBlock number=" << block_num << "\n\n";
         print_header(header);
         std::cout << "\n";
         print_body(stored_body);

@@ -23,7 +23,7 @@ namespace silkworm::execution::api {
 
 struct Body : public BlockBody {
     Hash block_hash;
-    BlockNum block_number{0};
+    BlockNum block_num{0};
 };
 
 }  // namespace silkworm::execution::api

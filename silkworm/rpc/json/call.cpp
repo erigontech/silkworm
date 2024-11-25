@@ -136,7 +136,7 @@ void from_json(const nlohmann::json& json, Bundle& call) {
 }
 
 void from_json(const nlohmann::json& json, SimulationContext& sc) {
-    sc.block_number = json["blockNumber"].get<BlockNumberOrHash>();
+    sc.block_num = json["blockNumber"].get<BlockNumberOrHash>();
 
     if (json.contains("transactionIndex")) {
         sc.transaction_index = json["transactionIndex"].get<std::int32_t>();
@@ -180,9 +180,9 @@ void from_json(const nlohmann::json& json, BlockOverrides& bo) {
     if (json.contains("blockNumber")) {
         const auto& jbn = json["blockNumber"];
         if (jbn.is_string()) {
-            bo.block_number = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+            bo.block_num = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
         } else {
-            bo.block_number = jbn.get<BlockNum>();
+            bo.block_num = jbn.get<BlockNum>();
         }
     }
     if (json.contains("coinbase")) {

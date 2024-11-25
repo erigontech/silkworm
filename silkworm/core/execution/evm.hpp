@@ -177,7 +177,7 @@ class EvmHost : public evmc::Host {
 
     evmc_tx_context get_tx_context() const noexcept override;
 
-    evmc::bytes32 get_block_hash(int64_t block_number) const noexcept override;
+    evmc::bytes32 get_block_hash(int64_t block_num) const noexcept override;
 
     void emit_log(const evmc::address& address, const uint8_t* data, size_t data_size, const evmc::bytes32 topics[],
                   size_t num_topics) noexcept override;

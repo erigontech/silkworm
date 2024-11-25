@@ -28,7 +28,7 @@ class ForkId {
   public:
     ForkId(
         ByteView genesis_hash,
-        const std::vector<BlockNum>& fork_block_numbers,
+        const std::vector<BlockNum>& fork_block_nums,
         const std::vector<BlockTime>& fork_block_times,
         BlockNum head_block_num);
 
@@ -57,7 +57,7 @@ class ForkId {
 
     bool is_compatible_with(
         ByteView genesis_hash,
-        const std::vector<BlockNum>& fork_block_numbers,
+        const std::vector<BlockNum>& fork_block_nums,
         const std::vector<BlockTime>& fork_block_times,
         BlockNum head_block_num) const;
 

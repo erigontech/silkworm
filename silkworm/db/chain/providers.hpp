@@ -34,8 +34,8 @@ using CanonicalBodyForStorageProvider = std::function<Task<std::optional<Bytes>>
 
 struct Providers {
     BlockProvider block;
-    BlockNumberFromTxnHashProvider block_number_from_txn_hash;
-    BlockNumberFromBlockHashProvider block_number_from_hash;
+    BlockNumberFromTxnHashProvider block_num_from_txn_hash;
+    BlockNumberFromBlockHashProvider block_num_from_hash;
     CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number;
     CanonicalBodyForStorageProvider canonical_body_for_storage;
 };

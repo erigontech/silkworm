@@ -50,7 +50,7 @@ struct ExecutionEngine {
     virtual BlockId last_fork_choice() const = 0;
     virtual BlockId last_finalized_block() const = 0;
     virtual BlockId last_safe_block() const = 0;
-    virtual BlockNum highest_frozen_block_number() const = 0;
+    virtual BlockNum highest_frozen_block_num() const = 0;
 
     // header/body retrieval
     virtual std::optional<BlockHeader> get_header(Hash) const = 0;
@@ -59,7 +59,7 @@ struct ExecutionEngine {
     virtual std::optional<BlockBody> get_body(Hash) const = 0;
     virtual std::optional<BlockBody> get_canonical_body(BlockNum) const = 0;
     virtual bool is_canonical(Hash) const = 0;
-    virtual std::optional<BlockNum> get_block_number(Hash) const = 0;
+    virtual std::optional<BlockNum> get_block_num(Hash) const = 0;
     virtual std::vector<BlockHeader> get_last_headers(uint64_t limit) const = 0;
     virtual std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum>) const = 0;
 };

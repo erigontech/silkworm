@@ -323,11 +323,11 @@ TEST_CASE("Sync Stages") {
         // Prepare
         // ---------------------------------------
 
-        uint64_t block_number{1};
+        uint64_t block_num{1};
         const evmc::address miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
         Block block{};
-        block.header.number = block_number;
+        block.header.number = block_num;
         block.header.beneficiary = miner;
         block.header.gas_limit = 100'000;
         block.header.gas_used = 63'820;
@@ -364,7 +364,7 @@ TEST_CASE("Sync Stages") {
         std::vector<Receipt> block_receipts;
         auto actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
         // We must insert receipts to mimic the behaviour of Execution stage
-        buffer.insert_receipts(block_number, block_receipts);
+        buffer.insert_receipts(block_num, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         auto contract_address{create_address(sender, /*nonce=*/0)};
@@ -374,8 +374,8 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
         auto new_val{0x000000000000000000000000000000000000000000000000000000000000003e_bytes32};
 
-        block_number = 2;
-        block.header.number = block_number;
+        block_num = 2;
+        block.header.number = block_num;
         block.header.gas_used = 26'201;
         receipts[0].cumulative_gas_used = block.header.gas_used;
         block.header.receipts_root = trie::root_hash(receipts, kEncoder);
@@ -388,7 +388,7 @@ TEST_CASE("Sync Stages") {
         block_receipts.clear();
         actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
         // We must insert receipts to mimic the behaviour of Execution stage
-        buffer.insert_receipts(block_number, block_receipts);
+        buffer.insert_receipts(block_num, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
 
@@ -398,8 +398,8 @@ TEST_CASE("Sync Stages") {
 
         new_val = 0x000000000000000000000000000000000000000000000000000000000000003b_bytes32;
 
-        block_number = 3;
-        block.header.number = block_number;
+        block_num = 3;
+        block.header.number = block_num;
         block.transactions[0].nonce = 2;
         block.transactions[0].value = 1000;
         block.transactions[0].to = contract_address;
@@ -408,7 +408,7 @@ TEST_CASE("Sync Stages") {
         block_receipts.clear();
         actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
         // We must insert receipts to mimic the behaviour of Execution stage
-        buffer.insert_receipts(block_number, block_receipts);
+        buffer.insert_receipts(block_num, block_receipts);
         // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993
         REQUIRE((enum_name(actual_validation_result) == enum_name(ValidationResult::kOk)));
         REQUIRE_NOTHROW(buffer.write_to_db());
@@ -469,8 +469,8 @@ TEST_CASE("Sync Stages") {
 
         SECTION("Execution failure and unwind") {
             // Execute INVALID 4th block
-            block_number = 4;
-            block.header.number = block_number;
+            block_num = 4;
+            block.header.number = block_num;
             block.transactions[0].nonce = 2;  // <- invalid, should be 3
             block.transactions[0].value = 1000;
             block.transactions[0].to = contract_address;
@@ -479,7 +479,7 @@ TEST_CASE("Sync Stages") {
             actual_validation_result = execute_block(block, buffer, node_settings.chain_config.value(), block_receipts);
 
             // Execution stage *must* flush state+progress updates and commit even in case of kInvalidBlock error
-            REQUIRE_NOTHROW(buffer.insert_receipts(block_number, block_receipts));
+            REQUIRE_NOTHROW(buffer.insert_receipts(block_num, block_receipts));
             REQUIRE_NOTHROW(buffer.write_to_db());
             REQUIRE_NOTHROW(stages::write_stage_progress(txn, stages::kExecutionKey, 4));  // this was missing after PR #1511
             txn.commit_and_renew();                                                        // this was missing after PR #1511
@@ -671,8 +671,8 @@ TEST_CASE("Sync Stages") {
             const auto call_traces_record2{call_traces_cursor->to_next(/*throw_notfound=*/false)};
             REQUIRE(call_traces_record2.done);
             auto check_call_trace_record = [&](const auto record, const auto& address, bool is_sender, bool is_receiver) {
-                const auto block_number = endian::load_big_u64(static_cast<const uint8_t*>(record.key.data()));
-                CHECK(block_number == 1);
+                const auto block_num = endian::load_big_u64(static_cast<const uint8_t*>(record.key.data()));
+                CHECK(block_num == 1);
                 const ByteView value{static_cast<const uint8_t*>(record.value.data()), record.value.length()};
                 REQUIRE(value.size() == kAddressLength + 1);
                 // We need double parentheses here: https://github.com/conan-io/conan-center-index/issues/13993

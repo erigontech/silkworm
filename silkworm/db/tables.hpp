@@ -366,7 +366,7 @@ inline constexpr MapConfig kLastForkchoice{kLastForkchoiceName};
 
 //! \brief Hold the maximum canonical transaction number for each block
 //! \verbatim
-//!  key: block_number_u64 (BE)
+//!  key: block_num_u64 (BE)
 //!  value: max_tx_num_in_block_u64 (BE)
 //! \endverbatim
 //! \details In Erigon3: table MaxTxNum storing TxNum (not TxnID). History/Indices are using TxNum (not TxnID).

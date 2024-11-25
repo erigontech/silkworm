@@ -205,8 +205,8 @@ void from_json(const nlohmann::json& json, uint256& ui256) {
 namespace silkworm {
 
 void to_json(nlohmann::json& json, const BlockHeader& header) {
-    const auto block_number = rpc::to_quantity(header.number);
-    json["number"] = block_number;
+    const auto block_num = rpc::to_quantity(header.number);
+    json["number"] = block_num;
     json["hash"] = rpc::to_quantity(header.hash());
     json["parentHash"] = header.parent_hash;
     json["nonce"] = "0x" + silkworm::to_hex({header.nonce.data(), header.nonce.size()});
@@ -273,7 +273,7 @@ void to_json(nlohmann::json& json, const ChainTraffic& chain_traffic) {
 
 void to_json(nlohmann::json& json, const StageData& stage_data) {
     json["stage_name"] = stage_data.stage_name;
-    json["block_number"] = stage_data.block_number;
+    json["block_num"] = stage_data.block_num;
 }
 
 void to_json(nlohmann::json& json, const SyncingData& syncing_data) {
@@ -317,8 +317,8 @@ void to_json(nlohmann::json& json, const AccessListResult& access_list_result) {
 }
 
 void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
-    const auto block_number = to_quantity(b.block.header.number);
-    json["block"]["number"] = block_number;
+    const auto block_num = to_quantity(b.block.header.number);
+    json["block"]["number"] = block_num;
     json["block"]["difficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.header.difficulty));
     json["block"]["extraData"] = "0x" + silkworm::to_hex(b.block.header.extra_data);
     json["block"]["gasLimit"] = to_quantity(b.block.header.gas_limit);
@@ -381,7 +381,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
 }
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
-    const auto block_number = to_quantity(b.header.number);
+    const auto block_num = to_quantity(b.header.number);
     json["fullblock"]["difficulty"] = to_quantity(silkworm::endian::to_big_compact(b.header.difficulty));
     json["fullblock"]["extraData"] = "0x" + silkworm::to_hex(b.header.extra_data);
     json["fullblock"]["gasLimit"] = to_quantity(b.header.gas_limit);
@@ -391,7 +391,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     json["fullblock"]["miner"] = b.header.beneficiary;
     json["fullblock"]["mixHash"] = b.header.prev_randao;
     json["fullblock"]["nonce"] = "0x" + silkworm::to_hex({b.header.nonce.data(), b.header.nonce.size()});
-    json["fullblock"]["number"] = block_number;
+    json["fullblock"]["number"] = block_num;
     json["fullblock"]["parentHash"] = b.header.parent_hash;
     json["fullblock"]["receiptsRoot"] = b.header.receipts_root;
     json["fullblock"]["sha3Uncles"] = b.header.ommers_hash;
@@ -428,7 +428,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
         auto& json_txn = json["fullblock"]["transactions"][i];
         json_txn["transactionIndex"] = to_quantity(b.receipts.at(i).tx_index);
         json_txn["blockHash"] = b.hash;
-        json_txn["blockNumber"] = block_number;
+        json_txn["blockNumber"] = block_num;
         json_txn["gasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
         json_txn["input"] = "0x" + silkworm::to_hex(b.transactions[i].data.substr(0, 4));
     }
@@ -484,7 +484,7 @@ void to_json(nlohmann::json& json, const PayloadStatus& payload_status) {
 
 void to_json(nlohmann::json& json, const Forks& forks) {
     json["genesis"] = forks.genesis_hash;
-    json["heightForks"] = forks.block_numbers;
+    json["heightForks"] = forks.block_nums;
     json["timeForks"] = forks.block_times;
 }
 

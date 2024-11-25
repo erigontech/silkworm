@@ -47,15 +47,15 @@ Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, 
     return res;
 }
 
-Bytes block_key(BlockNum block_number) {
+Bytes block_key(BlockNum block_num) {
     Bytes key(sizeof(BlockNum), '\0');
-    endian::store_big_u64(&key[0], block_number);
+    endian::store_big_u64(&key[0], block_num);
     return key;
 }
 
-Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> hash) {
+Bytes block_key(BlockNum block_num, std::span<const uint8_t, kHashLength> hash) {
     Bytes key(sizeof(BlockNum) + kHashLength, '\0');
-    endian::store_big_u64(&key[0], block_number);
+    endian::store_big_u64(&key[0], block_num);
     std::memcpy(&key[8], hash.data(), kHashLength);
     return key;
 }
@@ -73,53 +73,53 @@ std::tuple<BlockNum, evmc::bytes32> split_block_key(ByteView key) {
     return {block_num, hash};
 }
 
-Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation) {
+Bytes storage_change_key(BlockNum block_num, const evmc::address& address, uint64_t incarnation) {
     Bytes res(sizeof(BlockNum) + kPlainStoragePrefixLength, '\0');
-    endian::store_big_u64(&res[0], block_number);
+    endian::store_big_u64(&res[0], block_num);
     std::memcpy(&res[8], address.bytes, kAddressLength);
     endian::store_big_u64(&res[8 + kAddressLength], incarnation);
     return res;
 }
 
-Bytes account_history_key(const evmc::address& address, BlockNum block_number) {
+Bytes account_history_key(const evmc::address& address, BlockNum block_num) {
     Bytes res(kAddressLength + sizeof(BlockNum), '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
-    endian::store_big_u64(&res[kAddressLength], block_number);
+    endian::store_big_u64(&res[kAddressLength], block_num);
     return res;
 }
 
-Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_number) {
+Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_num) {
     Bytes res(kAddressLength + kHashLength + sizeof(BlockNum), '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
     std::memcpy(&res[kAddressLength], location.bytes, kHashLength);
-    endian::store_big_u64(&res[kAddressLength + kHashLength], block_number);
+    endian::store_big_u64(&res[kAddressLength + kHashLength], block_num);
     return res;
 }
 
-Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
+Bytes log_key(BlockNum block_num, uint32_t transaction_id) {
     Bytes key(sizeof(BlockNum) + sizeof(uint32_t), '\0');
-    endian::store_big_u64(&key[0], block_number);
+    endian::store_big_u64(&key[0], block_num);
     endian::store_big_u32(&key[8], transaction_id);
     return key;
 }
 
-Bytes log_address_key(const evmc::address& address, BlockNum block_number) {
-    SILKWORM_ASSERT(block_number <= std::numeric_limits<uint32_t>::max());
+Bytes log_address_key(const evmc::address& address, BlockNum block_num) {
+    SILKWORM_ASSERT(block_num <= std::numeric_limits<uint32_t>::max());
     Bytes key(kAddressLength + sizeof(uint32_t), '\0');
     std::memcpy(key.data(), address.bytes, kAddressLength);
-    endian::store_big_u32(key.data() + kAddressLength, static_cast<uint32_t>(block_number));
+    endian::store_big_u32(key.data() + kAddressLength, static_cast<uint32_t>(block_num));
     return key;
 }
 
-Bytes log_topic_key(const evmc::bytes32& topic, BlockNum block_number) {
-    SILKWORM_ASSERT(block_number <= std::numeric_limits<uint32_t>::max());
+Bytes log_topic_key(const evmc::bytes32& topic, BlockNum block_num) {
+    SILKWORM_ASSERT(block_num <= std::numeric_limits<uint32_t>::max());
     Bytes key(kHashLength + sizeof(uint32_t), '\0');
     std::memcpy(key.data(), topic.bytes, kHashLength);
-    endian::store_big_u32(key.data() + kHashLength, static_cast<uint32_t>(block_number));
+    endian::store_big_u32(key.data() + kHashLength, static_cast<uint32_t>(block_num));
     return key;
 }
 
-BlockNum block_number_from_key(const mdbx::slice& key) {
+BlockNum block_num_from_key(const mdbx::slice& key) {
     SILKWORM_ASSERT(key.size() >= sizeof(BlockNum));
     ByteView key_view{from_slice(key)};
     return endian::load_big_u64(key_view.data());

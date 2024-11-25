@@ -88,12 +88,12 @@ Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash num
         co_return exec_engine_.get_header_td(std::get<Hash>(number_or_hash), std::nullopt);
     } else {
         SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        const auto canonical_hash{exec_engine_.get_canonical_hash(block_number)};
+        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        const auto canonical_hash{exec_engine_.get_canonical_hash(block_num)};
         if (!canonical_hash) {
             co_return std::nullopt;
         }
-        co_return exec_engine_.get_header_td(*canonical_hash, block_number);
+        co_return exec_engine_.get_header_td(*canonical_hash, block_num);
     }
 }
 
@@ -103,8 +103,8 @@ Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumberOrHash num
         co_return exec_engine_.get_header(std::get<Hash>(number_or_hash));
     } else {
         SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        co_return exec_engine_.get_canonical_header(block_number);
+        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        co_return exec_engine_.get_canonical_header(block_num);
     }
 }
 
@@ -114,8 +114,8 @@ Task<std::optional<BlockBody>> DirectService::get_body(BlockNumberOrHash number_
         co_return exec_engine_.get_body(std::get<Hash>(number_or_hash));
     } else {
         SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        co_return exec_engine_.get_canonical_body(block_number);
+        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        co_return exec_engine_.get_canonical_body(block_num);
     }
 }
 
@@ -125,8 +125,8 @@ Task<bool> DirectService::has_block(BlockNumberOrHash number_or_hash) {
         co_return exec_engine_.get_header(std::get<Hash>(number_or_hash));
     } else {
         SILKWORM_ASSERT(std::holds_alternative<BlockNum>(number_or_hash));
-        const auto block_number{std::get<BlockNum>(number_or_hash)};
-        const auto canonical_hash{exec_engine_.get_canonical_hash(block_number)};
+        const auto block_num{std::get<BlockNum>(number_or_hash)};
+        const auto canonical_hash{exec_engine_.get_canonical_hash(block_num)};
         if (!canonical_hash) {
             co_return false;
         }
@@ -139,12 +139,12 @@ Task<bool> DirectService::has_block(BlockNumberOrHash number_or_hash) {
 // rpc GetBodiesByRange(GetBodiesByRangeRequest) returns(GetBodiesBatchResponse);
 Task<BlockBodies> DirectService::get_bodies_by_range(BlockNumRange number_range) {
     BlockBodies bodies;
-    const auto [start_block_number, end_block_number] = number_range;
-    if (start_block_number > end_block_number) {
+    const auto [start_block_num, end_block_num] = number_range;
+    if (start_block_num > end_block_num) {
         co_return bodies;
     }
-    bodies.reserve(end_block_number - start_block_number + 1);
-    for (BlockNum number{start_block_number}; number <= end_block_number; ++number) {
+    bodies.reserve(end_block_num - start_block_num + 1);
+    for (BlockNum number{start_block_num}; number <= end_block_num; ++number) {
         auto block_body{exec_engine_.get_canonical_body(number)};
         auto block_hash{exec_engine_.get_canonical_hash(number)};
         if (block_body && block_hash) {
@@ -163,9 +163,9 @@ Task<BlockBodies> DirectService::get_bodies_by_hashes(const BlockHashes& hashes)
     bodies.reserve(hashes.size());
     for (const auto& block_hash : hashes) {
         auto block_body{exec_engine_.get_body(block_hash)};
-        auto block_number{exec_engine_.get_block_number(block_hash)};
-        if (block_body && block_number) {
-            bodies.push_back(Body{std::move(*block_body), block_hash, *block_number});
+        auto block_num{exec_engine_.get_block_num(block_hash)};
+        if (block_body && block_num) {
+            bodies.push_back(Body{std::move(*block_body), block_hash, *block_num});
         } else {
             // Add an empty body anyway because we must respond w/ one payload for each hash
             bodies.emplace_back();
@@ -183,7 +183,7 @@ Task<bool> DirectService::is_canonical_hash(Hash block_hash) {
 
 // rpc GetHeaderHashNumber(types.H256) returns(GetHeaderHashNumberResponse);
 Task<std::optional<BlockNum>> DirectService::get_header_hash_number(Hash block_hash) {
-    co_return exec_engine_.get_block_number(block_hash);
+    co_return exec_engine_.get_block_num(block_hash);
 }
 
 // rpc GetForkChoice(google.protobuf.Empty) returns(ForkChoice);
@@ -209,7 +209,7 @@ Task<bool> DirectService::ready() {
 
 // rpc FrozenBlocks(google.protobuf.Empty) returns(FrozenBlocksResponse);
 Task<uint64_t> DirectService::frozen_blocks() {
-    co_return exec_engine_.highest_frozen_block_number();
+    co_return exec_engine_.highest_frozen_block_num();
 }
 
 /** Additional non-RPC methods **/

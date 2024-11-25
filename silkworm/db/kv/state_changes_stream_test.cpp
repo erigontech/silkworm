@@ -85,9 +85,9 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
     chain::BlockProvider block_provider{
         [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
     // We're not testing blocks here, so we don't care about proper block-number-from-txn-hash provider
-    chain::BlockNumberFromTxnHashProvider block_number_from_txn_hash_provider{
+    chain::BlockNumberFromTxnHashProvider block_num_from_txn_hash_provider{
         [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return 0; }};
-    chain::BlockNumberFromBlockHashProvider block_number_from_block_hash_provider{
+    chain::BlockNumberFromBlockHashProvider block_num_from_block_hash_provider{
         [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return std::nullopt; }};
     chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{
         [](BlockNum) -> Task<std::optional<evmc::bytes32>> { co_return 0; }};
@@ -100,8 +100,8 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
             grpc_context_,
             state_cache.get(),
             {block_provider,
-             block_number_from_txn_hash_provider,
-             block_number_from_block_hash_provider,
+             block_num_from_txn_hash_provider,
+             block_num_from_block_hash_provider,
              canonical_block_hash_from_number_provider}};
     }
 };

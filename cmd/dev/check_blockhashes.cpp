@@ -57,9 +57,9 @@ int main(int argc, char* argv[]) {
             ByteView hash_data_view{db::from_slice(canonical_hashes_data.value)};  // Canonical Hash
             auto block_hashes_data{blockhashes_table.find(canonical_hashes_data.value, /*throw_notfound*/ false)};
             if (!block_hashes_data) {
-                uint64_t hash_block_number{
+                uint64_t hash_block_num{
                     endian::load_big_u64(static_cast<uint8_t*>(canonical_hashes_data.key.data()))};
-                SILK_ERROR << "Hash " << to_hex(hash_data_view) << " (block " << hash_block_number
+                SILK_ERROR << "Hash " << to_hex(hash_data_view) << " (block " << hash_block_num
                            << ") not found in " << db::table::kHeaderNumbers.name << " table ";
 
             } else if (block_hashes_data.value != canonical_hashes_data.key) {

@@ -31,12 +31,12 @@ Task<ChainConfig> LocalChainStorage::read_chain_config() const {
     co_return *chain_config;
 }
 
-Task<BlockNum> LocalChainStorage::highest_block_number() const {
-    co_return data_model_.max_block_number();
+Task<BlockNum> LocalChainStorage::highest_block_num() const {
+    co_return data_model_.max_block_num();
 }
 
-Task<std::optional<BlockNum>> LocalChainStorage::read_block_number(const Hash& hash) const {
-    co_return data_model_.read_block_number(hash);
+Task<std::optional<BlockNum>> LocalChainStorage::read_block_num(const Hash& hash) const {
+    co_return data_model_.read_block_num(hash);
 }
 
 Task<bool> LocalChainStorage::read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const {
@@ -48,7 +48,7 @@ Task<bool> LocalChainStorage::read_block(const Hash& hash, BlockNum number, Bloc
 }
 
 Task<bool> LocalChainStorage::read_block(const Hash& hash, Block& block) const {
-    const auto number{co_await read_block_number(hash)};
+    const auto number{co_await read_block_num(hash)};
     if (!number) {
         co_return false;
     }
@@ -116,16 +116,16 @@ Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum number, const evmc:
 }
 
 Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
-    auto block_number = data_model_.read_tx_lookup(txn_hash);
-    if (!block_number) {
+    auto block_num = data_model_.read_tx_lookup(txn_hash);
+    if (!block_num) {
         co_return false;
     }
-    auto block_hash = data_model_.read_canonical_header_hash(*block_number);
+    auto block_hash = data_model_.read_canonical_header_hash(*block_num);
     if (!block_hash) {
         co_return false;
     }
     std::vector<Bytes> rlp_txs;
-    if (!co_await read_rlp_transactions(*block_number, *block_hash, rlp_txs)) {
+    if (!co_await read_rlp_transactions(*block_num, *block_hash, rlp_txs)) {
         co_return false;
     }
     for (const auto& rlp : rlp_txs) {
@@ -141,7 +141,7 @@ Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(cons
     co_return data_model_.read_total_difficulty(number, hash);
 }
 
-Task<std::optional<BlockNum>> LocalChainStorage::read_block_number_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
+Task<std::optional<BlockNum>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
     co_return data_model_.read_tx_lookup(transaction_hash);
 }
 

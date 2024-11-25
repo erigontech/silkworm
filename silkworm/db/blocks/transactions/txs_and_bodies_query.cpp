@@ -29,7 +29,7 @@ TxsAndBodiesQuery::Iterator::Iterator(
     seg::Decompressor::Iterator tx_it,
     std::shared_ptr<seg::Decompressor> bodies_decoder,
     seg::Decompressor::Iterator body_it,
-    BlockNum first_block_number,
+    BlockNum first_block_num,
     uint64_t first_tx_id,
     uint64_t expected_tx_count,
     std::string log_title)
@@ -40,7 +40,7 @@ TxsAndBodiesQuery::Iterator::Iterator(
       first_tx_id_(first_tx_id),
       expected_tx_count_(expected_tx_count),
       log_title_(std::move(log_title)) {
-    value_.block_number = first_block_number;
+    value_.block_num = first_block_num;
     value_.body_rlp = *body_it_;
     if (!value_.body_rlp.empty()) {
         decode_body_rlp(value_.body_rlp, value_.body);
@@ -54,7 +54,7 @@ void TxsAndBodiesQuery::Iterator::skip_bodies_until_tx_id(uint64_t tx_id) {
         if (body_it_ == bodies_decoder_->end()) {
             throw std::runtime_error{log_title_ + " not enough bodies"};
         }
-        ++value_.block_number;
+        ++value_.block_num;
         value_.body_rlp = *body_it_;
         decode_body_rlp(value_.body_rlp, value_.body);
     }
@@ -86,7 +86,7 @@ TxsAndBodiesQuery::Iterator& TxsAndBodiesQuery::Iterator::operator++() {
         txs_decoder_.reset();
         bodies_decoder_.reset();
         value_ = {};
-        value_.block_number = std::numeric_limits<uint64_t>::max();
+        value_.block_num = std::numeric_limits<uint64_t>::max();
     }
 
     return *this;
@@ -104,7 +104,7 @@ void TxsAndBodiesQuery::Iterator::decode_body_rlp(ByteView body_rlp, BlockBodyFo
     if (!decode_result) {
         std::stringstream error;
         error << log_title_
-              << " cannot decode block " << value_.block_number
+              << " cannot decode block " << value_.block_num
               << " body: " << to_hex(body_rlp)
               << " i: " << i_
               << " error: " << magic_enum::enum_name(decode_result.error());

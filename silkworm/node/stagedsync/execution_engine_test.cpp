@@ -90,16 +90,16 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     auto const current_head_id = exec_engine.last_finalized_block();
     auto const current_head = exec_engine.get_header(current_head_id.number, current_head_id.hash).value();
 
-    SECTION("get_block_number") {
-        auto block_number = exec_engine.get_block_number(header1_hash);
-        REQUIRE(block_number.has_value());
-        CHECK(*block_number == 1);
+    SECTION("get_block_num") {
+        auto block_num = exec_engine.get_block_num(header1_hash);
+        REQUIRE(block_num.has_value());
+        CHECK(*block_num == 1);
     }
 
     SECTION("get_header by hash") {
-        auto db_block_number = silkworm::read_block_number(tx, header1_hash);
+        auto db_block_num = silkworm::read_block_num(tx, header1_hash);
         silkworm::Block db_block;
-        auto db_read = silkworm::read_block(tx, header1_hash, *db_block_number, db_block);
+        auto db_read = silkworm::read_block(tx, header1_hash, *db_block_num, db_block);
         REQUIRE(db_read);
 
         auto header1 = exec_engine.get_header(header1_hash);
@@ -111,9 +111,9 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     SECTION("get_header by hash not found") {
         const silkworm::Hash header_not_found_hash{0x00000000000000000000000000000000000000000000000000000000deadbeef_bytes32};
 
-        auto db_block_number = silkworm::read_block_number(tx, header_not_found_hash);
+        auto db_block_num = silkworm::read_block_num(tx, header_not_found_hash);
         silkworm::Block db_block;
-        auto db_read = silkworm::read_block(tx, header_not_found_hash, *db_block_number, db_block);
+        auto db_read = silkworm::read_block(tx, header_not_found_hash, *db_block_num, db_block);
         REQUIRE(!db_read);
 
         auto header = exec_engine.get_header(header_not_found_hash);
@@ -287,21 +287,21 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         REQUIRE(body1.has_value());
     }
 
-    SECTION("get_block_number for non-canonical blocks") {
+    SECTION("get_block_num for non-canonical blocks") {
         auto new_block = generate_sample_child_blocks(current_head);
         exec_engine.insert_block(new_block);
 
         auto new_block_hash = new_block->header.hash();
 
         // canonical
-        auto block_number1 = exec_engine.get_block_number(header1_hash);
-        REQUIRE(block_number1.has_value());
-        CHECK(*block_number1 == 1);
+        auto block_num1 = exec_engine.get_block_num(header1_hash);
+        REQUIRE(block_num1.has_value());
+        CHECK(*block_num1 == 1);
 
         // non-canonical
-        auto block_number10 = exec_engine.get_block_number(new_block_hash);
-        REQUIRE(block_number10.has_value());
-        CHECK(*block_number10 == 10);
+        auto block_num10 = exec_engine.get_block_num(new_block_hash);
+        REQUIRE(block_num10.has_value());
+        CHECK(*block_num10 == 10);
     }
 
     SECTION("get_canonical_* functions returns value only for canonical blocks") {
@@ -692,21 +692,21 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block1_hash = block1->header.hash();
         auto block2_hash = block2->header.hash();
 
-        CHECK(!read_block_number(tx, block1_hash).has_value());
-        CHECK(!read_block_number(tx, block2_hash).has_value());
+        CHECK(!read_block_num(tx, block1_hash).has_value());
+        CHECK(!read_block_num(tx, block2_hash).has_value());
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
 
-        CHECK(read_block_number(tx, block1_hash).has_value());
-        CHECK(read_block_number(tx, block2_hash).has_value());
+        CHECK(read_block_num(tx, block1_hash).has_value());
+        CHECK(read_block_num(tx, block2_hash).has_value());
 
         tx.commit_and_renew();  // exec_engine.insert_blocks() automatically commits every 1000 blocks
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
-        CHECK(read_block_number(tx2, block1_hash).has_value());
-        CHECK(read_block_number(tx2, block2_hash).has_value());
+        CHECK(read_block_num(tx2, block1_hash).has_value());
+        CHECK(read_block_num(tx2, block2_hash).has_value());
     }
 
     SECTION("verify_chain updates chain database") {
@@ -716,22 +716,22 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block1_hash = block1->header.hash();
         auto block2_hash = block2->header.hash();
 
-        CHECK(!read_block_number(tx, block1_hash).has_value());
-        CHECK(!read_block_number(tx, block2_hash).has_value());
+        CHECK(!read_block_num(tx, block1_hash).has_value());
+        CHECK(!read_block_num(tx, block2_hash).has_value());
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
         runner.run(exec_engine.verify_chain(block2_hash));
 
-        CHECK(read_block_number(tx, block1_hash).has_value());
-        CHECK(read_block_number(tx, block2_hash).has_value());
+        CHECK(read_block_num(tx, block1_hash).has_value());
+        CHECK(read_block_num(tx, block2_hash).has_value());
 
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
 
-        CHECK(read_block_number(tx2, block1_hash).has_value());
-        CHECK(read_block_number(tx2, block2_hash).has_value());
+        CHECK(read_block_num(tx2, block1_hash).has_value());
+        CHECK(read_block_num(tx2, block2_hash).has_value());
         tx2.abort();
     }
 
@@ -742,22 +742,22 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         auto block1_hash = block1->header.hash();
         auto block2_hash = block2->header.hash();
 
-        CHECK(!read_block_number(tx, block1_hash).has_value());
-        CHECK(!read_block_number(tx, block2_hash).has_value());
+        CHECK(!read_block_num(tx, block1_hash).has_value());
+        CHECK(!read_block_num(tx, block2_hash).has_value());
 
         auto blocks = std::vector<std::shared_ptr<Block>>{block1, block2};
         exec_engine.insert_blocks(blocks);
         runner.run(exec_engine.verify_chain(block2_hash));
         exec_engine.notify_fork_choice_update(block2_hash, current_head_id.hash, {});
 
-        CHECK(read_block_number(tx, block1_hash).has_value());
-        CHECK(read_block_number(tx, block2_hash).has_value());
+        CHECK(read_block_num(tx, block1_hash).has_value());
+        CHECK(read_block_num(tx, block2_hash).has_value());
 
         exec_engine.close();
 
         auto tx2 = db_access.start_ro_tx();
-        CHECK(read_block_number(tx2, block1_hash).has_value());
-        CHECK(read_block_number(tx2, block2_hash).has_value());
+        CHECK(read_block_num(tx2, block1_hash).has_value());
+        CHECK(read_block_num(tx2, block2_hash).has_value());
         tx2.abort();
     }
 

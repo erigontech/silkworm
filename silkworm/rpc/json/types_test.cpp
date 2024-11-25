@@ -530,15 +530,15 @@ TEST_CASE("serialize filled SyncingData", "[rpc][to_json]") {
     syncing_data.current_block = "0x1";
     syncing_data.highest_block = "0x2";
     stage_data.stage_name = "stage1";
-    stage_data.block_number = "0x3";
+    stage_data.block_num = "0x3";
     syncing_data.stages.push_back(stage_data);
     stage_data.stage_name = "stage2";
-    stage_data.block_number = "0x4";
+    stage_data.block_num = "0x4";
     syncing_data.stages.push_back(stage_data);
 
     nlohmann::json j = syncing_data;
     CHECK(j == R"({
-      "currentBlock":"0x1","highestBlock":"0x2","stages":[{"block_number":"0x3","stage_name":"stage1"},{"block_number":"0x4","stage_name":"stage2"}]
+      "currentBlock":"0x1","highestBlock":"0x2","stages":[{"block_num":"0x3","stage_name":"stage1"},{"block_num":"0x4","stage_name":"stage2"}]
     })"_json);
 }
 
@@ -568,7 +568,7 @@ TEST_CASE("serialize std::set<evmc::address>", "[rpc][to_json]") {
     }
 }
 
-TEST_CASE("deserialize block_number_or_hash", "[silkworm::json][from_json]") {
+TEST_CASE("deserialize block_num_or_hash", "[silkworm::json][from_json]") {
     SECTION("as hash") {
         auto json = R"("0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c")"_json;
         auto bnoh = json.get<BlockNumberOrHash>();

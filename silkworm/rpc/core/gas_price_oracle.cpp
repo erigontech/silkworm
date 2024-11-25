@@ -31,15 +31,15 @@ struct PriceComparator {
     }
 };
 
-Task<intx::uint256> GasPriceOracle::suggested_price(BlockNum block_number) {
-    SILK_TRACE << "GasPriceOracle::suggested_price starting block: " << block_number;
+Task<intx::uint256> GasPriceOracle::suggested_price(BlockNum block_num) {
+    SILK_TRACE << "GasPriceOracle::suggested_price starting block: " << block_num;
     std::vector<intx::uint256> tx_prices;
     tx_prices.reserve(kMaxSamples);
-    while (tx_prices.size() < kMaxSamples && block_number > 0) {
-        co_await load_block_prices(block_number, kSamples, tx_prices);
-        --block_number;
+    while (tx_prices.size() < kMaxSamples && block_num > 0) {
+        co_await load_block_prices(block_num, kSamples, tx_prices);
+        --block_num;
     }
-    SILK_TRACE << "GasPriceOracle::suggested_price ending block: " << block_number;
+    SILK_TRACE << "GasPriceOracle::suggested_price ending block: " << block_num;
 
     std::sort(tx_prices.begin(), tx_prices.end(), PriceComparator());
 
@@ -63,10 +63,10 @@ Task<intx::uint256> GasPriceOracle::suggested_price(BlockNum block_number) {
     co_return price;
 }
 
-Task<void> GasPriceOracle::load_block_prices(BlockNum block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices) {
-    SILK_TRACE << "GasPriceOracle::load_block_prices processing block: " << block_number;
+Task<void> GasPriceOracle::load_block_prices(BlockNum block_num, uint64_t limit, std::vector<intx::uint256>& tx_prices) {
+    SILK_TRACE << "GasPriceOracle::load_block_prices processing block: " << block_num;
 
-    const auto block_with_hash = co_await block_provider_(block_number);
+    const auto block_with_hash = co_await block_provider_(block_num);
     if (!block_with_hash) {
         throw std::invalid_argument("GasPriceOracle::load_block_prices invalid block number");
     }

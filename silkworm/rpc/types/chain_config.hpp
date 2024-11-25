@@ -29,13 +29,13 @@ namespace silkworm::rpc {
 
 struct Forks {
     evmc::bytes32 genesis_hash;
-    std::vector<BlockNum> block_numbers;
+    std::vector<BlockNum> block_nums;
     std::vector<uint64_t> block_times;
 
     explicit Forks(const ChainConfig& cc) : genesis_hash(cc.genesis_hash.value_or(evmc::bytes32{})) {
-        for (auto& fork_block_number : cc.distinct_fork_numbers()) {
-            if (fork_block_number) {  // Skip any forks in block 0, that's the genesis ruleset
-                block_numbers.push_back(fork_block_number);
+        for (auto& fork_block_num : cc.distinct_fork_numbers()) {
+            if (fork_block_num) {  // Skip any forks in block 0, that's the genesis ruleset
+                block_nums.push_back(fork_block_num);
             }
         }
         for (auto& fork_block_time : cc.distinct_fork_times()) {

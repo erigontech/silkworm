@@ -43,7 +43,7 @@ struct GlazeJsonTransaction {
     char s[kInt256HexSize];
     char transaction_index[kInt64HexSize];
     char block_hash[kHashHexSize];
-    char block_number[kInt64HexSize];
+    char block_num[kInt64HexSize];
     char gas_price[kInt64HexSize];
 
     std::string input;
@@ -84,7 +84,7 @@ struct GlazeJsonTransaction {
             "s", &T::s,
             "transactionIndex", &T::transaction_index,
             "blockHash", &T::block_hash,
-            "blockNumber", &T::block_number,
+            "blockNumber", &T::block_num,
             "gasPrice", &T::gas_price,
             "authorizations", &T::authorizations);
     };

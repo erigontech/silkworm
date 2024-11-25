@@ -299,8 +299,12 @@ void to_json(nlohmann::json& json, const TraceManyCallResult& result) {
 }
 
 void to_json(nlohmann::json& json, const TraceDeployResult& result) {
-    json["hash"] = result.transaction_hash.value();
-    json["creator"] = result.contract_creator.value();
+    if (result.transaction_hash) {
+        json["hash"] = result.transaction_hash.value();
+    }
+    if (result.contract_creator) {
+        json["creator"] = result.contract_creator.value();
+    }
 }
 
 void to_json(nlohmann::json& json, const TraceEntry& trace_entry) {

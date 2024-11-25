@@ -61,13 +61,13 @@ TEST_CASE("history_get_result_from_response", "[node][remote][kv][grpc]") {
     }
 }
 
-TEST_CASE("domain_get_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::DomainPointQuery, proto::GetLatestReq> fixtures{
-        {sample_domain_point_query(), sample_proto_domain_point_request()},
+TEST_CASE("get_as_of_request_from_query", "[node][remote][kv][grpc]") {
+    const Fixtures<api::GetAsOfQuery, proto::GetLatestReq> fixtures{
+        {sample_get_as_of_query(), sample_proto_get_as_of_request()},
     };
     for (const auto& [query, expected_point_request] : fixtures) {
         SECTION("query: " + std::to_string(query.tx_id)) {
-            const auto& point_request{domain_get_request_from_query(query)};
+            const auto& point_request{get_as_of_request_from_query(query)};
             // CHECK(point_request == expected_point_request);  // requires operator== in gRPC
             CHECK(point_request.tx_id() == expected_point_request.tx_id());
             CHECK(point_request.table() == expected_point_request.table());
@@ -79,14 +79,14 @@ TEST_CASE("domain_get_request_from_query", "[node][remote][kv][grpc]") {
     }
 }
 
-TEST_CASE("domain_get_result_from_response", "[node][remote][kv][grpc]") {
-    const Fixtures<proto::GetLatestReply, api::DomainPointResult> fixtures{
+TEST_CASE("get_as_of_result_from_response", "[node][remote][kv][grpc]") {
+    const Fixtures<proto::GetLatestReply, api::GetAsOfResult> fixtures{
         {{}, {}},
-        {sample_proto_domain_get_response(), sample_domain_point_result()},
+        {sample_proto_get_as_of_response(), sample_get_as_of_result()},
     };
     for (const auto& [response, expected_point_result] : fixtures) {
         SECTION("ok: " + std::to_string(response.ok())) {
-            const auto& point_result{domain_get_result_from_response(response)};
+            const auto& point_result{get_as_of_result_from_response(response)};
             // CHECK(point_result == expected_point_result);  // requires operator== in gRPC
             CHECK(point_result.success == expected_point_result.success);
             CHECK(point_result.value == expected_point_result.value);

@@ -849,13 +849,27 @@ int kv_seek() {
 }
 
 Task<void> kv_get_latest_query(const std::shared_ptr<Service>& kv_service,
-                               DomainPointQuery&& query,
+                               GetLatestQuery&& query,
                                const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV GetLatest -> " << query.table << " key=" << to_hex(query.key)
-                  << " ts=" << (query.timestamp ? *query.timestamp : -1) << " [latest: " << !query.timestamp.has_value() << "]\n";
+        std::cout << "KV GetLatest -> " << query.table << " key=" << to_hex(query.key) << " latest=true\n";
         const auto result = co_await tx->get_latest(std::move(query));
+        std::cout << "KV GetLatest <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
+        co_await tx->close();
+    } catch (const std::exception& e) {
+        std::cout << "KV GetLatest <- error: " << e.what() << "\n";
+    }
+}
+
+Task<void> kv_get_as_of_query(const std::shared_ptr<Service>& kv_service,
+                              GetAsOfQuery&& query,
+                              const bool /*verbose*/) {
+    try {
+        auto tx = co_await kv_service->begin_transaction();
+        std::cout << "KV GetLatest -> " << query.table << " key=" << to_hex(query.key)
+                  << " ts=" << query.timestamp << " latest=false\n";
+        const auto result = co_await tx->get_as_of(std::move(query));
         std::cout << "KV GetLatest <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
         co_await tx->close();
     } catch (const std::exception& e) {
@@ -1035,10 +1049,17 @@ int kv_get_latest() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    DomainPointQuery query{
+    if (timestamp > -1) {
+        GetAsOfQuery query{
+            .table = table_name,
+            .key = *key_bytes,
+            .timestamp = timestamp,
+        };
+        return execute_temporal_kv_query(target, kv_get_as_of_query, std::move(query), verbose);
+    }
+    GetLatestQuery query{
         .table = table_name,
         .key = *key_bytes,
-        .timestamp = timestamp > -1 ? std::make_optional(timestamp) : std::nullopt,
     };
     return execute_temporal_kv_query(target, kv_get_latest_query, std::move(query), verbose);
 }

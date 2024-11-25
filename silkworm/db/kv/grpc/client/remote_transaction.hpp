@@ -62,8 +62,11 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc GetLatest(GetLatestReq) returns (GetLatestReply);
-    Task<api::DomainPointResult> get_latest(api::DomainPointQuery query) override;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
+    Task<api::GetLatestResult> get_latest(api::GetLatestQuery query) override;
+
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
+    Task<api::GetAsOfResult> get_as_of(api::GetAsOfQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery query) override;

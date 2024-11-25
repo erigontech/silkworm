@@ -61,8 +61,11 @@ class LocalTransaction : public BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc GetLatest(GetLatestReq) returns (GetLatestReply);
-    Task<DomainPointResult> get_latest(DomainPointQuery query) override;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
+    Task<GetLatestResult> get_latest(GetLatestQuery query) override;
+
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
+    Task<GetAsOfResult> get_as_of(GetAsOfQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     Task<HistoryPointResult> history_seek(HistoryPointQuery query) override;

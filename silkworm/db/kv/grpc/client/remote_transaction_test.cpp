@@ -429,17 +429,17 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 #endif  // SILKWORM_SANITIZE
 
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][kv][grpc][client][remote_transaction]") {
-    using db::kv::test_util::sample_proto_domain_get_response;
+    using db::kv::test_util::sample_proto_get_latest_response;
 
-    auto get_latest = [&]() -> Task<api::DomainPointResult> {
+    auto get_latest = [&]() -> Task<api::GetLatestResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::DomainPointQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::GetLatestQuery as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
-        api::DomainPointQuery query;
-        const api::DomainPointResult result = co_await remote_tx_.get_latest(std::move(query));
+        api::GetLatestQuery query;
+        const api::GetLatestResult result = co_await remote_tx_.get_latest(std::move(query));
 #else
-        const api::DomainPointResult result = co_await remote_tx_.get_latest(api::DomainPointQuery{});
+        const api::GetLatestResult result = co_await remote_tx_.get_latest(api::GetLatestQuery{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
@@ -447,10 +447,10 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][k
     rpc::test::StrictMockAsyncResponseReader<proto::GetLatestReply> reader;
     EXPECT_CALL(*stub_, AsyncGetLatestRaw).WillOnce(testing::Return(&reader));
 
-    api::DomainPointResult result;
+    api::GetLatestResult result;
 
     SECTION("call get_latest and get result") {
-        proto::GetLatestReply reply{sample_proto_domain_get_response()};
+        proto::GetLatestReply reply{sample_proto_get_latest_response()};
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
 
         CHECK_NOTHROW((result = spawn_and_wait(get_latest)));
@@ -468,6 +468,49 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][k
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
 
         CHECK_THROWS_AS(spawn_and_wait(get_latest), boost::system::system_error);
+    }
+}
+
+TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_as_of", "[db][kv][grpc][client][remote_transaction]") {
+    using db::kv::test_util::sample_proto_get_as_of_response;
+
+    auto get_as_of = [&]() -> Task<api::GetAsOfResult> {
+#if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
+        // Before GCC 13, we must avoid passing api::GetLatestQuery as temporary because co_await-ing expressions
+        // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
+        api::GetAsOfQuery query;
+        const api::GetAsOfResult result = co_await remote_tx_.get_as_of(std::move(query));
+#else
+        const api::GetAsOfResult result = co_await remote_tx_.get_as_of(api::GetAsOfQuery{});
+#endif  // #if __GNUC__ < 13 && !defined(__clang__)
+        co_return result;
+    };
+
+    rpc::test::StrictMockAsyncResponseReader<proto::GetLatestReply> reader;
+    EXPECT_CALL(*stub_, AsyncGetLatestRaw).WillOnce(testing::Return(&reader));
+
+    api::GetAsOfResult result;
+
+    SECTION("call get_as_of and get result") {
+        proto::GetLatestReply reply{sample_proto_get_as_of_response()};
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
+
+        CHECK_NOTHROW((result = spawn_and_wait(get_as_of)));
+        CHECK(result.success);
+        CHECK(result.value == from_hex("ff00ff00"));
+    }
+    SECTION("call get_as_of and get empty result") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_ok(grpc_context_));
+
+        CHECK_NOTHROW((result = spawn_and_wait(get_as_of)));
+        CHECK_FALSE(result.success);
+        CHECK(result.value.empty());
+    }
+    SECTION("call get_as_of and get error") {
+        EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_cancelled(grpc_context_));
+
+        CHECK_THROWS_AS(spawn_and_wait(get_as_of), boost::system::system_error);
     }
 }
 

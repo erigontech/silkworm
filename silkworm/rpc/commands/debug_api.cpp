@@ -35,7 +35,6 @@
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_debug.hpp>
-#include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
@@ -319,13 +318,13 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         SILK_TRACE << "Block number: " << block_number << " #tnx: " << transactions.size();
 
         const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
-        db::kv::api::DomainPointQuery query_account{
+        db::kv::api::GetAsOfQuery query_account{
             .table = db::table::kAccountDomain,
             .key = db::account_domain_key(address),
-            .timestamp = min_tx_num + tx_index + 1,
+            .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + tx_index + 1),
         };
 
-        const auto result = co_await tx->get_latest(std::move(query_account));
+        const auto result = co_await tx->get_as_of(std::move(query_account));
         nlohmann::json json_result{};
 
         if (!result.success || result.value.empty()) {
@@ -344,13 +343,13 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             json_result["balance"] = "0x" + intx::to_string(account->balance, 16);
             json_result["codeHash"] = account->code_hash;
 
-            db::kv::api::DomainPointQuery query_code{
+            db::kv::api::GetAsOfQuery query_code{
                 .table = db::table::kCodeDomain,
                 .key = db::account_domain_key(address),
-                .timestamp = min_tx_num + tx_index,
+                .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + tx_index),
             };
 
-            const auto code = co_await tx->get_latest(std::move(query_code));
+            const auto code = co_await tx->get_as_of(std::move(query_code));
             json_result["code"] = "0x" + silkworm::to_hex(code.value);
         } else {
             json_result["balance"] = "0x0";
@@ -545,12 +544,8 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-    BlockNum block_number{0};
-    if (params[0].is_string()) {
-        block_number = std::stoul(params[0].get<std::string>(), nullptr, 10);
-    } else {
-        block_number = params[0].get<BlockNum>();
-    }
+    const BlockNum block_number =
+        params[0].is_string() ? std::stoul(params[0].get<std::string>(), nullptr, 10) : params[0].get<BlockNum>();
 
     debug::DebugConfig config;
     if (params.size() > 1) {

@@ -32,7 +32,6 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_block_cache.hpp>
@@ -76,17 +75,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
     }));
 
     SECTION("precompiled contract failure") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -102,20 +101,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
         EXPECT_CALL(transaction, first_txn_num_in_block(10'336'007)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult rsp1{
                 .success = false,
                 .value = Bytes{}};
             co_return rsp1;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult rsp1{
                 .success = false,
                 .value = Bytes{}};
             co_return rsp1;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult rsp1{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult rsp1{
                 .success = false,
                 .value = Bytes{}};
             co_return rsp1;
@@ -217,17 +216,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     }
 
     SECTION("Call: full output") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -244,20 +243,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -406,17 +405,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     }
 
     SECTION("Call: no vmTrace") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -433,20 +432,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -532,17 +531,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     }
 
     SECTION("Call: no trace") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -559,20 +558,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -704,17 +703,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     }
 
     SECTION("Call: no stateDiff") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -731,20 +730,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -854,17 +853,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     }
 
     SECTION("Call: no vmTrace, trace and stateDiff") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -881,20 +880,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -939,17 +938,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
     }));
 
     SECTION("Call: TO present") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -965,20 +964,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
         EXPECT_CALL(transaction, first_txn_num_in_block(4'417'197)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue2};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
@@ -1087,17 +1086,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
         return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
-    db::kv::api::DomainPointQuery query1{
+    db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query2{
+    db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query3{
+    db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 244087591818873,
@@ -1113,20 +1112,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = true,
             .value = kAccountHistoryValue1};
         co_return response;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = true,
             .value = kAccountHistoryValue2};
         co_return response;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = true,
             .value = kAccountHistoryValue3};
         co_return response;
@@ -1278,17 +1277,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     }
 
     SECTION("Call: full output") {
-        db::kv::api::DomainPointQuery query1{
+        db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query2{
+        db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
             .timestamp = 244087591818873,
         };
-        db::kv::api::DomainPointQuery query3{
+        db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
             .timestamp = 244087591818873,
@@ -1304,20 +1303,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -1486,17 +1485,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
         return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
-    db::kv::api::DomainPointQuery query1{
+    db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query2{
+    db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query3{
+    db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 244087591818873,
@@ -1512,20 +1511,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = true,
             .value = kAccountHistoryValue1};
         co_return response;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = false,
             .value = Bytes{}};
         co_return response;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = true,
             .value = kAccountHistoryValue3};
         co_return response;
@@ -1938,17 +1937,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
 
     auto& tx = transaction;
 
-    db::kv::api::DomainPointQuery query1{
+    db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query2{
+    db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query3{
+    db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 244087591818873,
@@ -1968,20 +1967,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = false,
             .value = Bytes{}};
         co_return response;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = true,
             .value = kAccountHistoryValue2};
         co_return response;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult response{
+    EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult response{
             .success = true,
             .value = kAccountHistoryValue3};
         co_return response;
@@ -2053,17 +2052,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
-    db::kv::api::DomainPointQuery query1{
+    db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query2{
+    db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query3{
+    db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 244087591818873,
@@ -2107,20 +2106,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -2445,20 +2444,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -2497,20 +2496,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -2572,20 +2571,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue1};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = false,
                 .value = Bytes{}};
             co_return response;
         }));
-        EXPECT_CALL(transaction, get_latest(silkworm::db::kv::api::DomainPointQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-            db::kv::api::DomainPointResult response{
+        EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+            db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = kAccountHistoryValue3};
             co_return response;
@@ -2978,17 +2977,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
         return std::make_shared<RemoteState>(ioc, tx, storage, block_number);
     }));
 
-    db::kv::api::DomainPointQuery query1{
+    db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query2{
+    db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
         .timestamp = 244087591818873,
     };
-    db::kv::api::DomainPointQuery query3{
+    db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
         .timestamp = 244087591818873,
@@ -3004,20 +3003,20 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult rsp1{
+    EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult rsp1{
             .success = false,
             .value = Bytes{}};
         co_return rsp1;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult rsp1{
+    EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult rsp1{
             .success = true,
             .value = kAccountHistoryValue2};
         co_return rsp1;
     }));
-    EXPECT_CALL(transaction, get_latest(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
-        db::kv::api::DomainPointResult rsp1{
+    EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        db::kv::api::GetAsOfResult rsp1{
             .success = true,
             .value = kAccountHistoryValue3};
         co_return rsp1;

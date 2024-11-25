@@ -115,7 +115,6 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump_accounts) {
     SILK_TRACE << "block_number " << block_number << " START";
     StorageWalker storage_walker{transaction_};
-    evmc::bytes32 start_location{};
     const auto txn_number = co_await transaction_.first_txn_num_in_block(block_number);
 
     for (auto& it : dump_accounts.accounts) {

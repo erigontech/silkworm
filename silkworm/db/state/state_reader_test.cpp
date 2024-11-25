@@ -21,7 +21,6 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -56,7 +55,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     }));
 
     SECTION("no account for history empty and current state empty") {
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = false,
                 .value = Bytes{}};
@@ -70,7 +69,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     }
 
     SECTION("account found in current state") {
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kEncodedAccount};
@@ -90,7 +89,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     }
 
     SECTION("account found in history") {
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kEncodedAccount};
@@ -116,7 +115,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     }));
 
     SECTION("empty storage for history empty and current state empty") {
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = false,
                 .value = Bytes{}};
@@ -130,7 +129,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     }
 
     SECTION("storage found in current state") {
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kStorageLocation};
@@ -143,7 +142,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     }
 
     SECTION("storage found in history") {
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kStorageLocation};
@@ -170,7 +169,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
             co_return 0;
         }));
 
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
@@ -191,7 +190,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
             co_return 0;
         }));
 
-        EXPECT_CALL(transaction_, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kBinaryCode};

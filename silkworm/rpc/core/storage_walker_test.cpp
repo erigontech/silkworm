@@ -214,6 +214,10 @@ class DummyTransaction : public BaseTransaction {
         co_return db::kv::api::DomainPointResult{};
     }
 
+    Task<db::kv::api::GetAsOfResult > get_as_of(db::kv::api::GetAsOfQuery /*query*/) override {
+        co_return db::kv::api::GetAsOfResult{};
+    }
+
     Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery /*query*/) override {
         co_return db::kv::api::HistoryPointResult{};
     }

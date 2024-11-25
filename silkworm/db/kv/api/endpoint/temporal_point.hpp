@@ -41,7 +41,6 @@ struct DomainPointQuery {
     TxId tx_id{0};
     std::string table;
     Bytes key;
-    std::optional<Timestamp> timestamp;  // not present means 'latest state' (no history lookup)
     Bytes sub_key;
 
     // TODO(canepat) we need clang >= 17 to use spaceship operator instead of hand-made operator== below
@@ -52,10 +51,30 @@ inline bool operator==(const DomainPointQuery& lhs, const DomainPointQuery& rhs)
     return (lhs.tx_id == rhs.tx_id) &&
            (lhs.table == rhs.table) &&
            (lhs.key == rhs.key) &&
-           (lhs.timestamp == rhs.timestamp) &&
            (lhs.sub_key == rhs.sub_key);
 }
 
 using DomainPointResult = PointResult;
+
+struct GetAsOfQuery {
+    TxId tx_id{0};
+    std::string table;
+    Bytes key;
+    Bytes sub_key;
+    Timestamp timestamp;
+
+    // TODO(canepat) we need clang >= 17 to use spaceship operator instead of hand-made operator== below
+    // auto operator<=>(const GetAsOfQuery&) const = default;
+};
+
+inline bool operator==(const GetAsOfQuery& lhs, const GetAsOfQuery& rhs) {
+    return (lhs.tx_id == rhs.tx_id) &&
+           (lhs.table == rhs.table) &&
+           (lhs.key == rhs.key) &&
+           (lhs.sub_key == rhs.sub_key) &&
+           (lhs.timestamp == rhs.timestamp);
+}
+
+using GetAsOfResult = PointResult;
 
 }  // namespace silkworm::db::kv::api

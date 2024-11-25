@@ -87,17 +87,16 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
         auto account{Account::from_encoded_storage(encoded_view)};
         success_or_throw(account);
         DumpAccount dump_account;
-           dump_account.balance = account->balance;
-           dump_account.nonce = account->nonce;
-           dump_account.incarnation = account->incarnation;
+        dump_account.balance = account->balance;
+        dump_account.nonce = account->nonce;
+        dump_account.incarnation = account->incarnation;
 
         if (account->incarnation > 0 && account->code_hash != kEmptyHash && !exclude_code) {
             dump_account.code_hash = account->code_hash;
 
             db::kv::api::DomainPointQuery query_code{
                 .table = db::table::kCodeDomain,
-                .key = db::account_domain_key(address)
-            };
+                .key = db::account_domain_key(address)};
 
             const auto code = co_await transaction_.get_latest(std::move(query_code));
             if (code.success) {
@@ -147,9 +146,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
             auto& storage = *account.storage;
             auto loc = value->first.substr(20);
             storage[to_bytes32(loc)] = value->second;
-
         }
-
     }
     SILK_TRACE << "block_number " << block_number << " END";
     co_return;

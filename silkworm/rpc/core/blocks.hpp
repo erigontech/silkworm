@@ -43,7 +43,7 @@ Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, db::k
 
 Task<BlockNum> get_block_num(const std::string& block_id, db::kv::api::Transaction& tx);
 
-Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumberOrHash& bnoh, db::kv::api::Transaction& tx);
+Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumberOrHash& block_num_or_hash, db::kv::api::Transaction& tx);
 
 Task<BlockNum> get_current_block_num(db::kv::api::Transaction& tx);
 
@@ -57,6 +57,6 @@ Task<BlockNum> get_forkchoice_finalized_block_num(db::kv::api::Transaction& tx);
 
 Task<BlockNum> get_forkchoice_safe_block_num(db::kv::api::Transaction& tx);
 
-Task<bool> is_latest_block_num(const BlockNumberOrHash& bnoh, db::kv::api::Transaction& tx);
+Task<bool> is_latest_block_num(const BlockNumberOrHash& block_num_or_hash, db::kv::api::Transaction& tx);
 
 }  // namespace silkworm::rpc::core

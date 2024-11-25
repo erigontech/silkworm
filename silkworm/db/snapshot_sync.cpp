@@ -331,7 +331,7 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
     SILK_INFO << "SnapshotSync: database update started";
 
     // Iterate on block header snapshots and write header-related tables
-    etl_mdbx::Collector hash2bn_collector{};
+    etl_mdbx::Collector hash_to_block_num_collector;
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
 
@@ -355,7 +355,7 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
             Bytes block_hash_bytes{block_hash.bytes, kHashLength};
             Bytes encoded_block_num(sizeof(BlockNum), '\0');
             endian::store_big_u64(encoded_block_num.data(), block_num);
-            hash2bn_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_num)});
+            hash_to_block_num_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_num)});
 
             if (++block_count % 1'000'000 == 0) {
                 SILK_INFO << "SnapshotSync: processing block header=" << block_num << " count=" << block_count;
@@ -365,7 +365,7 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
     }
 
     PooledCursor header_numbers_cursor{txn, table::kHeaderNumbers};
-    hash2bn_collector.load(header_numbers_cursor);
+    hash_to_block_num_collector.load(header_numbers_cursor);
     SILK_INFO << "SnapshotSync: database table HeaderNumbers updated";
 
     // Update head block header in kHeadHeader table

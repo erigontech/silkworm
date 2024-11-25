@@ -365,19 +365,19 @@ TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
     WorkerPool pool{1};
 
     SECTION("tag: latest") {
-        BlockNumberOrHash bnoh{"latest"};
-        auto result = boost::asio::co_spawn(pool, is_latest_block_num(bnoh, transaction), boost::asio::use_future);
+        BlockNumberOrHash block_num_or_hash{"latest"};
+        auto result = boost::asio::co_spawn(pool, is_latest_block_num(block_num_or_hash, transaction), boost::asio::use_future);
         CHECK(result.get());
     }
 
     SECTION("tag: pending") {
-        BlockNumberOrHash bnoh{"pending"};
-        auto result = boost::asio::co_spawn(pool, is_latest_block_num(bnoh, transaction), boost::asio::use_future);
+        BlockNumberOrHash block_num_or_hash{"pending"};
+        auto result = boost::asio::co_spawn(pool, is_latest_block_num(block_num_or_hash, transaction), boost::asio::use_future);
         CHECK(result.get());
     }
 
     SECTION("number: latest") {
-        BlockNumberOrHash bnoh{1'000'000};
+        BlockNumberOrHash block_num_or_hash{1'000'000};
         // Mock reader shall be used to read the latest block from Execution stage in table SyncStageProgress
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
@@ -387,12 +387,12 @@ TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("00000000000F4240")};
             }));
-        auto result = boost::asio::co_spawn(pool, is_latest_block_num(bnoh, transaction), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, is_latest_block_num(block_num_or_hash, transaction), boost::asio::use_future);
         CHECK(result.get());
     }
 
     SECTION("number: not latest") {
-        BlockNumberOrHash bnoh{1'000'000};
+        BlockNumberOrHash block_num_or_hash{1'000'000};
         // Mock reader shall be used to read the latest block from Execution stage in table SyncStageProgress
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
@@ -402,7 +402,7 @@ TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
                 co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("00000000000F4241")};
             }));
-        auto result = boost::asio::co_spawn(pool, is_latest_block_num(bnoh, transaction), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, is_latest_block_num(block_num_or_hash, transaction), boost::asio::use_future);
         CHECK(!result.get());
     }
 }

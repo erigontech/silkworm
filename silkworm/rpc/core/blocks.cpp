@@ -102,13 +102,13 @@ Task<BlockNum> get_block_num(const std::string& block_id, kv::api::Transaction& 
     co_return block_num;
 }
 
-Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumberOrHash& bnoh, kv::api::Transaction& tx) {
-    if (bnoh.is_tag()) {
-        co_return co_await get_block_num(bnoh.tag(), tx, true);
-    } else if (bnoh.is_number()) {
-        co_return co_await get_block_num(to_hex(bnoh.number(), true), tx, true);
-    } else if (bnoh.is_hash()) {
-        const auto block_num = co_await read_header_number(tx, bnoh.hash());
+Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumberOrHash& block_num_or_hash, kv::api::Transaction& tx) {
+    if (block_num_or_hash.is_tag()) {
+        co_return co_await get_block_num(block_num_or_hash.tag(), tx, true);
+    } else if (block_num_or_hash.is_number()) {
+        co_return co_await get_block_num(to_hex(block_num_or_hash.number(), true), tx, true);
+    } else if (block_num_or_hash.is_hash()) {
+        const auto block_num = co_await read_header_number(tx, block_num_or_hash.hash());
         const auto latest_block_num = co_await get_latest_block_num(tx);
         co_return std::make_pair(block_num, block_num == latest_block_num);
     } else {
@@ -146,16 +146,16 @@ Task<BlockNum> get_forkchoice_safe_block_num(kv::api::Transaction& tx) {
     co_return co_await get_forkchoice_block_num(tx, kSafeBlockHash);
 }
 
-Task<bool> is_latest_block_num(const BlockNumberOrHash& bnoh, kv::api::Transaction& tx) {
-    if (bnoh.is_tag()) {
-        co_return bnoh.tag() == core::kLatestBlockId || bnoh.tag() == core::kPendingBlockId;
+Task<bool> is_latest_block_num(const BlockNumberOrHash& block_num_or_hash, kv::api::Transaction& tx) {
+    if (block_num_or_hash.is_tag()) {
+        co_return block_num_or_hash.tag() == core::kLatestBlockId || block_num_or_hash.tag() == core::kPendingBlockId;
     } else {
         const auto latest_block_num = co_await get_latest_block_num(tx);
-        if (bnoh.is_number()) {
-            co_return bnoh.number() == latest_block_num;
+        if (block_num_or_hash.is_number()) {
+            co_return block_num_or_hash.number() == latest_block_num;
         } else {
-            SILKWORM_ASSERT(bnoh.is_hash());
-            const auto block_num = co_await read_header_number(tx, bnoh.hash());
+            SILKWORM_ASSERT(block_num_or_hash.is_hash());
+            const auto block_num = co_await read_header_number(tx, block_num_or_hash.hash());
             co_return block_num == latest_block_num;
         }
     }

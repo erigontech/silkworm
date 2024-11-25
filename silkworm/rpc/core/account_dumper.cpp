@@ -40,7 +40,7 @@ using db::state::StateReader;
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
-    const BlockNumberOrHash& bnoh,
+    const BlockNumberOrHash& block_num_or_hash,
     const evmc::address& start_address,
     int16_t max_result,
     bool exclude_code,
@@ -48,7 +48,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     DumpAccounts dump_accounts;
     const auto chain_storage = transaction_.create_storage();
 
-    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, transaction_, bnoh);
+    const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, *chain_storage, transaction_, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }

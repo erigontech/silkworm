@@ -66,13 +66,13 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const
     co_return block_with_hash;
 }
 
-Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumberOrHash& bnoh) {
-    if (bnoh.is_number()) {  // NOLINT(bugprone-branch-clone)
-        co_return co_await read_block_by_number(cache, storage, bnoh.number());
-    } else if (bnoh.is_hash()) {
-        co_return co_await read_block_by_hash(cache, storage, bnoh.hash());
-    } else if (bnoh.is_tag()) {
-        auto [block_num, ignore] = co_await get_block_num(bnoh.tag(), tx, /*latest_required=*/false);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumberOrHash& block_num_or_hash) {
+    if (block_num_or_hash.is_number()) {  // NOLINT(bugprone-branch-clone)
+        co_return co_await read_block_by_number(cache, storage, block_num_or_hash.number());
+    } else if (block_num_or_hash.is_hash()) {
+        co_return co_await read_block_by_hash(cache, storage, block_num_or_hash.hash());
+    } else if (block_num_or_hash.is_tag()) {
+        auto [block_num, ignore] = co_await get_block_num(block_num_or_hash.tag(), tx, /*latest_required=*/false);
         co_return co_await read_block_by_number(cache, storage, block_num);
     }
     throw std::runtime_error{"invalid block_num_or_hash value"};

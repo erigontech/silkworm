@@ -949,8 +949,8 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
     auto tx = co_await database_->begin();
 
     try {
-        const auto bnoh = BlockNumberOrHash{block_id};
-        const auto [block_num, is_latest_block] = co_await core::get_block_num(bnoh, *tx);
+        const auto block_num_or_hash = BlockNumberOrHash{block_id};
+        const auto [block_num, is_latest_block] = co_await core::get_block_num(block_num_or_hash, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
         StateReader state_reader{*tx, block_num + 1};
@@ -2163,8 +2163,8 @@ Task<void> EthereumRpcApi::handle_eth_get_block_receipts(const nlohmann::json& r
     try {
         const auto chain_storage{tx->create_storage()};
 
-        const auto bnoh = BlockNumberOrHash{block_id};
-        const auto block_num = co_await core::get_block_num(bnoh, *tx);
+        const auto block_num_or_hash = BlockNumberOrHash{block_id};
+        const auto block_num = co_await core::get_block_num(block_num_or_hash, *tx);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num.first);
         if (block_with_hash) {
             auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};

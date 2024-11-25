@@ -71,37 +71,37 @@ uint64_t Block::get_block_size() const {
     return rlp_head.payload_length;
 }
 
-std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& bnoh) {
-    if (bnoh.is_number()) {
-        out << "0x" << std::hex << bnoh.number() << std::dec;
-    } else if (bnoh.is_hash()) {
-        out << to_hex(bnoh.hash(), true);
+std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& block_num_or_hash) {
+    if (block_num_or_hash.is_number()) {
+        out << "0x" << std::hex << block_num_or_hash.number() << std::dec;
+    } else if (block_num_or_hash.is_hash()) {
+        out << to_hex(block_num_or_hash.hash(), true);
     } else {
-        SILKWORM_ASSERT(bnoh.is_tag());
-        out << bnoh.tag();
+        SILKWORM_ASSERT(block_num_or_hash.is_tag());
+        out << block_num_or_hash.tag();
     }
     return out;
 }
 
-void BlockNumberOrHash::build(const std::string& bnoh) {
+void BlockNumberOrHash::build(const std::string& block_num_or_hash) {
     value_ = uint64_t{0};
-    if (bnoh == core::kEarliestBlockId) {
+    if (block_num_or_hash == core::kEarliestBlockId) {
         value_ = kEarliestBlockNumber;
-    } else if (bnoh == core::kLatestBlockId ||
-               bnoh == core::kPendingBlockId ||
-               bnoh == core::kFinalizedBlockId ||
-               bnoh == core::kSafeBlockId) {
-        value_ = bnoh;
-    } else if (absl::StartsWithIgnoreCase(bnoh, "0x")) {
-        if (bnoh.length() == 66) {
-            const auto b32_bytes = silkworm::from_hex(bnoh);
+    } else if (block_num_or_hash == core::kLatestBlockId ||
+               block_num_or_hash == core::kPendingBlockId ||
+               block_num_or_hash == core::kFinalizedBlockId ||
+               block_num_or_hash == core::kSafeBlockId) {
+        value_ = block_num_or_hash;
+    } else if (absl::StartsWithIgnoreCase(block_num_or_hash, "0x")) {
+        if (block_num_or_hash.length() == 66) {
+            const auto b32_bytes = silkworm::from_hex(block_num_or_hash);
             const auto b32 = silkworm::to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));
             value_ = b32;
         } else {
-            value_ = std::stoul(bnoh, nullptr, 16);
+            value_ = std::stoul(block_num_or_hash, nullptr, 16);
         }
     } else {
-        value_ = std::stoul(bnoh, nullptr, 10);
+        value_ = std::stoul(block_num_or_hash, nullptr, 10);
     }
 }
 

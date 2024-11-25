@@ -195,19 +195,19 @@ void from_json(const nlohmann::json& json, BlockOverrides& bo) {
         bo.difficulty = json["difficulty"].get<intx::uint256>();
     }
     if (json.contains("gasLimit")) {
-        const auto& block_num_json = json["gasLimit"];
-        if (block_num_json.is_string()) {
-            bo.gas_limit = std::stoull(block_num_json.get<std::string>(), nullptr, /*base=*/16);
+        const auto& gas_limit_json = json["gasLimit"];
+        if (gas_limit_json.is_string()) {
+            bo.gas_limit = std::stoull(gas_limit_json.get<std::string>(), nullptr, /*base=*/16);
         } else {
-            bo.gas_limit = block_num_json.get<uint64_t>();
+            bo.gas_limit = gas_limit_json.get<uint64_t>();
         }
     }
     if (json.contains("baseFee")) {
-        const auto& block_num_json = json["baseFee"];
-        if (block_num_json.is_string()) {
-            bo.base_fee = std::stoull(block_num_json.get<std::string>(), nullptr, /*base=*/16);
+        const auto& base_fee_json = json["baseFee"];
+        if (base_fee_json.is_string()) {
+            bo.base_fee = std::stoull(base_fee_json.get<std::string>(), nullptr, /*base=*/16);
         } else {
-            bo.base_fee = block_num_json.get<uint64_t>();
+            bo.base_fee = base_fee_json.get<uint64_t>();
         }
     }
 }

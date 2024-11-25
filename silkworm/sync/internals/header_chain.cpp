@@ -1033,7 +1033,7 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
                 "precondition not meet,"
                 " new anchor too far in the past: " +
                 to_string(anchor_header.number) +
-                ", latest header in db: " + to_string(max_in_db_));
+                ", max header in db: " + to_string(max_in_db_));
         if (anchors_.size() >= kAnchorLimit)
             throw SegmentCutAndPasteError("too many anchors: " + to_string(anchors_.size()) +
                                           ", limit: " + to_string(kAnchorLimit));

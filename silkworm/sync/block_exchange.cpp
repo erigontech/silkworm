@@ -235,24 +235,24 @@ void BlockExchange::log_status() {
         << "BlockExchange header queues: " << std::setfill('_') << std::right
         << "links= " << std::setw(7) << header_chain_.pending_links()
         << ", anchors= " << std::setw(3) << header_chain_.anchors()
-        << ", db-block_num= " << std::setw(10) << header_chain_.max_block_in_db()
-        << ", mem-block_num= " << std::setw(10) << min_anchor_block_num
+        << ", db_block_num= " << std::setw(10) << header_chain_.max_block_in_db()
+        << ", mem_block_num= " << std::setw(10) << min_anchor_block_num
         << "~" << std::setw(10) << max_anchor_block_num
         << " (#" << std::setw(7) << std::showpos
         << max_anchor_block_num - min_anchor_block_num << ")"
-        << ", net-block_num= " << std::setw(10) << header_chain_.top_seen_block_num();
+        << ", net_block_num= " << std::setw(10) << header_chain_.top_seen_block_num();
 
     SILK_DEBUG
         << "BlockExchange   body queues: " << std::setfill('_') << std::right
         << "outst= " << std::setw(7)
         << body_sequence_.outstanding_requests(now) * BodySequence::kMaxBlocksPerMessage
         << ", ready= " << std::setw(5) << body_sequence_.ready_bodies()
-        << ", db-block_num= " << std::setw(10) << body_sequence_.max_block_in_output()
-        << ", mem-block_num= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
+        << ", db_block_num= " << std::setw(10) << body_sequence_.max_block_in_output()
+        << ", mem_block_num= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
         << "~" << std::setw(10) << body_sequence_.max_block_in_memory()
         << " (#" << std::setw(7) << std::showpos
         << body_sequence_.max_block_in_memory() - body_sequence_.lowest_block_in_memory() << ")"
-        << ", net-block_num= " << std::setw(10) << body_sequence_.target_block_num();
+        << ", net_block_num= " << std::setw(10) << body_sequence_.target_block_num();
 
     SILK_DEBUG << "BlockExchange  header stats: " << header_chain_.statistics();
 

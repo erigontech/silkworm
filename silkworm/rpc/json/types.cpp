@@ -273,7 +273,7 @@ void to_json(nlohmann::json& json, const ChainTraffic& chain_traffic) {
 
 void to_json(nlohmann::json& json, const StageData& stage_data) {
     json["stage_name"] = stage_data.stage_name;
-    json["block_num"] = stage_data.block_num;
+    json["block_number"] = stage_data.block_num;
 }
 
 void to_json(nlohmann::json& json, const SyncingData& syncing_data) {

@@ -538,7 +538,7 @@ TEST_CASE("serialize filled SyncingData", "[rpc][to_json]") {
 
     nlohmann::json j = syncing_data;
     CHECK(j == R"({
-      "currentBlock":"0x1","highestBlock":"0x2","stages":[{"block_num":"0x3","stage_name":"stage1"},{"block_num":"0x4","stage_name":"stage2"}]
+      "currentBlock":"0x1","highestBlock":"0x2","stages":[{"block_number":"0x3","stage_name":"stage1"},{"block_number":"0x4","stage_name":"stage2"}]
     })"_json);
 }
 

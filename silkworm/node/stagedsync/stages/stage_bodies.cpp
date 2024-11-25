@@ -240,7 +240,7 @@ std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MU
 
         block_num_progress.set(current_block_num_);
 
-        return {"current number", std::to_string(block_num_progress.get()),
+        return {"current block", std::to_string(block_num_progress.get()),
                 "progress", std::to_string(block_num_progress.delta()),
                 "bodies/secs", std::to_string(block_num_progress.throughput())};
     }

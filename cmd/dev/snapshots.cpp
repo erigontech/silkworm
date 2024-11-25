@@ -182,7 +182,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
                       commands[SnapshotTool::lookup_body],
                       commands[SnapshotTool::lookup_txn],
                       commands[SnapshotTool::open_index]}) {
-        cmd->add_option("--number", snapshot_settings.lookup_block_num, "Block number to lookup in snapshot files")
+        cmd->add_option("--block", snapshot_settings.lookup_block_num, "Block number to lookup in snapshot files")
             ->capture_default_str()
             ->check(BlockNumberValidator{});
     }
@@ -734,7 +734,7 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
 }
 
 void lookup_header(const SnapshotSubcommandSettings& settings) {
-    ensure(settings.lookup_hash || settings.lookup_block_num, "lookup_header: either --hash or --number must be used");
+    ensure(settings.lookup_hash || settings.lookup_block_num, "lookup_header: either --hash or --block must be used");
     if (settings.lookup_hash) {
         lookup_header_by_hash(settings);
     } else {
@@ -793,7 +793,7 @@ void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum blo
 }
 
 void lookup_body(const SnapshotSubcommandSettings& settings) {
-    ensure(settings.lookup_block_num.has_value(), "lookup_body: --number must be specified");
+    ensure(settings.lookup_block_num.has_value(), "lookup_body: --block must be specified");
     const auto block_num{*settings.lookup_block_num};
     SILK_INFO << "Lookup body number: " << block_num;
 
@@ -990,7 +990,7 @@ void lookup_txn_by_id(const SnapshotSubcommandSettings& settings, uint64_t txn_i
 }
 
 void lookup_transaction(const SnapshotSubcommandSettings& settings) {
-    ensure(settings.lookup_hash || settings.lookup_block_num, "lookup_transaction: either --hash or --number must be used");
+    ensure(settings.lookup_hash || settings.lookup_block_num, "lookup_transaction: either --hash or --block must be used");
     if (settings.lookup_hash) {
         lookup_txn_by_hash(settings, *settings.lookup_hash);
     } else {

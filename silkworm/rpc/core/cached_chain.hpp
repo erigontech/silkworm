@@ -32,7 +32,7 @@ namespace silkworm::rpc::core {
 
 Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const db::chain::ChainStorage& storage, BlockNum block_num);
 Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& block_hash);
-Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumberOrHash& block_num_or_hash);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumOrHash& block_num_or_hash);
 Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash);
 Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash);
 

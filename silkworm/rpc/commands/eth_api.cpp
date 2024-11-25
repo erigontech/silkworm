@@ -885,7 +885,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     try {
         tx->set_state_cache_enabled(/*cache_enabled=*/true);  // always at latest block
 
-        const BlockNumberOrHash block_num_or_hash{core::kLatestBlockId};
+        const BlockNumOrHash block_num_or_hash{core::kLatestBlockId};
 
         const auto chain_storage{tx->create_storage()};
         const auto chain_config = co_await chain_storage->read_chain_config();
@@ -949,7 +949,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num_or_hash = BlockNumberOrHash{block_id};
+        const auto block_num_or_hash = BlockNumOrHash{block_id};
         const auto [block_num, is_latest_block] = co_await core::get_block_num(block_num_or_hash, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
@@ -1260,7 +1260,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         co_return;
     }
     const auto call = params[0].get<Call>();
-    const auto block_num_or_hash = params[1].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[1].get<BlockNumOrHash>();
     bool optimize_gas = true;
     if (params.size() == 3) {
         optimize_gas = params[2];
@@ -1364,7 +1364,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
     }
 
     const auto tx_hash_list = params[0].get<std::vector<evmc::bytes32>>();
-    const auto block_num_or_hash = params[1].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[1].get<BlockNumOrHash>();
     const auto timeout = params[2].get<uint64_t>();
 
     if (tx_hash_list.empty()) {
@@ -2163,7 +2163,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_receipts(const nlohmann::json& r
     try {
         const auto chain_storage{tx->create_storage()};
 
-        const auto block_num_or_hash = BlockNumberOrHash{block_id};
+        const auto block_num_or_hash = BlockNumOrHash{block_id};
         const auto block_num = co_await core::get_block_num(block_num_or_hash, *tx);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num.first);
         if (block_with_hash) {

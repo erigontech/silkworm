@@ -40,7 +40,7 @@ void OutboundNewBlockHashes::execute(db::DataStoreRef, HeaderChain& hc, BodySequ
     }
 
     for (auto& announce : announces_to_do) {
-        packet_.emplace_back(announce.hash, announce.block_num);
+        packet_.emplace_back(NewBlockHash{announce.hash, announce.block_num});
     }
 
     SILK_TRACE << "Sending message OutboundNewBlockHashes (announcements) with send_message_to_all, content:"

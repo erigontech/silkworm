@@ -63,7 +63,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
 
         co_return;
     }
-    const auto block_num_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumOrHash>();
 
     SILK_DEBUG << "block_num_or_hash: " << block_num_or_hash;
 

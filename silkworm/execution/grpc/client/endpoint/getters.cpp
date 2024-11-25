@@ -22,7 +22,7 @@
 
 namespace silkworm::execution::grpc::client {
 
-::execution::GetSegmentRequest request_from_block_num_or_hash(const api::BlockNumberOrHash& block_num_or_hash) {
+::execution::GetSegmentRequest request_from_block_num_or_hash(const api::BlockNumOrHash& block_num_or_hash) {
     ::execution::GetSegmentRequest request;
     if (std::holds_alternative<Hash>(block_num_or_hash)) {
         const auto& block_hash{std::get<Hash>(block_num_or_hash)};

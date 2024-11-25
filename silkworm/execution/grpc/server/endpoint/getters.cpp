@@ -24,8 +24,8 @@ namespace silkworm::execution::grpc::server {
 
 namespace proto = ::execution;
 
-api::BlockNumberOrHash block_num_or_hash_from_request(const proto::GetSegmentRequest& request) {
-    api::BlockNumberOrHash block_num_or_hash;
+api::BlockNumOrHash block_num_or_hash_from_request(const proto::GetSegmentRequest& request) {
+    api::BlockNumOrHash block_num_or_hash;
     if (request.has_block_number()) {
         block_num_or_hash = request.block_number();
     } else if (request.has_block_hash()) {

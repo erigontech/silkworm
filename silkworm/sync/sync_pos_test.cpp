@@ -121,7 +121,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
         const auto& request{requests[i]};
         const auto& payload{request.execution_payload};
         BlockId block_num_or_hash{payload.block_num, payload.block_hash};
-        execution::api::BlockNumberOrHash parent_block_num_or_hash{payload.parent_hash};
+        execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
         SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
             EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {

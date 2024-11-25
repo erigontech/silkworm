@@ -46,7 +46,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
 
     const auto call = params[0].get<Call>();
     const auto config = params[1].get<trace::TraceConfig>();
-    const auto block_num_or_hash = params[2].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[2].get<BlockNumOrHash>();
 
     SILK_TRACE << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " config: " << config;
 
@@ -94,7 +94,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
         co_return;
     }
     const auto trace_calls = params[0].get<std::vector<trace::TraceCall>>();
-    const auto block_num_or_hash = params[1].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[1].get<BlockNumOrHash>();
 
     SILK_TRACE << "#trace_calls: " << trace_calls.size() << " block_num_or_hash: " << block_num_or_hash;
 
@@ -229,7 +229,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    const auto block_num_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumOrHash>();
     const auto config = params[1].get<trace::TraceConfig>();
 
     SILK_TRACE << " block_num_or_hash: " << block_num_or_hash << " config: " << config;
@@ -312,7 +312,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    const auto block_num_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumOrHash>();
 
     SILK_TRACE << " block_num_or_hash: " << block_num_or_hash;
 

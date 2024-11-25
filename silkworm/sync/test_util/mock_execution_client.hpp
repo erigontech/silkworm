@@ -45,10 +45,10 @@ class MockExecutionService : public execution::api::Service {
     MOCK_METHOD((Task<api::AssembledBlockResult>), get_assembled_block, (api::PayloadId), (override));
 
     MOCK_METHOD((Task<std::optional<BlockHeader>>), current_header, (), (override));
-    MOCK_METHOD((Task<std::optional<TotalDifficulty>>), get_td, (api::BlockNumberOrHash), (override));
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), get_header, (api::BlockNumberOrHash), (override));
-    MOCK_METHOD((Task<std::optional<BlockBody>>), get_body, (api::BlockNumberOrHash), (override));
-    MOCK_METHOD((Task<bool>), has_block, (api::BlockNumberOrHash), (override));
+    MOCK_METHOD((Task<std::optional<TotalDifficulty>>), get_td, (api::BlockNumOrHash), (override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), get_header, (api::BlockNumOrHash), (override));
+    MOCK_METHOD((Task<std::optional<BlockBody>>), get_body, (api::BlockNumOrHash), (override));
+    MOCK_METHOD((Task<bool>), has_block, (api::BlockNumOrHash), (override));
 
     MOCK_METHOD((Task<api::BlockBodies>), get_bodies_by_range, (BlockNumRange), (override));
     MOCK_METHOD((Task<api::BlockBodies>), get_bodies_by_hashes, (const api::BlockHashes&), (override));

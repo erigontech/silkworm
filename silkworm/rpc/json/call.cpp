@@ -136,7 +136,7 @@ void from_json(const nlohmann::json& json, Bundle& call) {
 }
 
 void from_json(const nlohmann::json& json, SimulationContext& sc) {
-    sc.block_num = json["blockNumber"].get<BlockNumberOrHash>();
+    sc.block_num = json["blockNumber"].get<BlockNumOrHash>();
 
     if (json.contains("transactionIndex")) {
         sc.transaction_index = json["transactionIndex"].get<std::int32_t>();

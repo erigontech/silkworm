@@ -367,7 +367,7 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
     co_return;
 }
 
-Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call) {
+Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call) {
     const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, block_num_or_hash);
     if (!block_with_hash) {
         co_return;

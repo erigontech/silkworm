@@ -40,7 +40,7 @@ using db::state::StateReader;
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
-    const BlockNumberOrHash& block_num_or_hash,
+    const BlockNumOrHash& block_num_or_hash,
     const evmc::address& start_address,
     int16_t max_result,
     bool exclude_code,

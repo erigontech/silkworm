@@ -571,7 +571,7 @@ TEST_CASE("serialize std::set<evmc::address>", "[rpc][to_json]") {
 TEST_CASE("deserialize block_num_or_hash", "[silkworm::json][from_json]") {
     SECTION("as hash") {
         auto json = R"("0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c")"_json;
-        auto block_num_or_hash = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
         CHECK(block_num_or_hash.is_hash() == true);
         CHECK(block_num_or_hash.is_number() == false);
@@ -581,7 +581,7 @@ TEST_CASE("deserialize block_num_or_hash", "[silkworm::json][from_json]") {
 
     SECTION("as decimal number string") {
         auto json = R"("1966")"_json;
-        auto block_num_or_hash = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == true);
@@ -591,7 +591,7 @@ TEST_CASE("deserialize block_num_or_hash", "[silkworm::json][from_json]") {
 
     SECTION("as hex number string") {
         auto json = R"("0x374f3")"_json;
-        auto block_num_or_hash = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == true);
@@ -601,7 +601,7 @@ TEST_CASE("deserialize block_num_or_hash", "[silkworm::json][from_json]") {
 
     SECTION("as tag string") {
         auto json = R"("latest")"_json;
-        auto block_num_or_hash = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == false);
@@ -611,7 +611,7 @@ TEST_CASE("deserialize block_num_or_hash", "[silkworm::json][from_json]") {
 
     SECTION("as number") {
         auto json = R"(123456)"_json;
-        auto block_num_or_hash = json.get<BlockNumberOrHash>();
+        auto block_num_or_hash = json.get<BlockNumOrHash>();
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == true);

@@ -70,7 +70,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 
     try {
         // Check if target block is the latest one: use local state cache (if any) for target transaction
-        const bool is_latest_block = co_await core::is_latest_block_num(BlockNumberOrHash{block_id}, *tx);
+        const bool is_latest_block = co_await core::is_latest_block_num(BlockNumOrHash{block_id}, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
         const auto block_num = co_await core::get_block_num(block_id, *tx);

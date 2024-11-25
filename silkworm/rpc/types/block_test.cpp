@@ -33,7 +33,7 @@ evmc::bytes32 kZeroHash{0};
 
 TEST_CASE("block_num_or_hash") {
     SECTION("ctor from hash string") {
-        BlockNumberOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        BlockNumOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
 
         CHECK(block_num_or_hash.is_hash() == true);
         CHECK(block_num_or_hash.is_number() == false);
@@ -44,7 +44,7 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from decimal number string") {
-        BlockNumberOrHash block_num_or_hash{"1966"};
+        BlockNumOrHash block_num_or_hash{"1966"};
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == true);
@@ -55,7 +55,7 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from hex number string") {
-        BlockNumberOrHash block_num_or_hash{"0x374f3"};
+        BlockNumOrHash block_num_or_hash{"0x374f3"};
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == true);
@@ -66,7 +66,7 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from 'latest' tag") {
-        BlockNumberOrHash block_num_or_hash{"latest"};
+        BlockNumOrHash block_num_or_hash{"latest"};
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == false);
@@ -77,7 +77,7 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag() == "latest");
     }
     SECTION("ctor from 'earliest' tag") {
-        BlockNumberOrHash block_num_or_hash{"earliest"};
+        BlockNumOrHash block_num_or_hash{"earliest"};
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == true);
@@ -88,7 +88,7 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from 'pending' tag") {
-        BlockNumberOrHash block_num_or_hash{"pending"};
+        BlockNumOrHash block_num_or_hash{"pending"};
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == false);
@@ -99,7 +99,7 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag() == "pending");
     }
     SECTION("ctor from number") {
-        BlockNumberOrHash block_num_or_hash{123456};
+        BlockNumOrHash block_num_or_hash{123456};
 
         CHECK(block_num_or_hash.is_hash() == false);
         CHECK(block_num_or_hash.is_number() == true);
@@ -110,8 +110,8 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("copy ctor") {
-        BlockNumberOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
-        BlockNumberOrHash copy{block_num_or_hash};  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        BlockNumOrHash copy{block_num_or_hash};  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(block_num_or_hash.is_hash() == copy.is_hash());
         CHECK(block_num_or_hash.is_number() == copy.is_number());
@@ -122,8 +122,8 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("copy hash") {
-        BlockNumberOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
-        BlockNumberOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        BlockNumOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(block_num_or_hash.is_hash() == copy.is_hash());
         CHECK(block_num_or_hash.is_number() == copy.is_number());
@@ -132,8 +132,8 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.hash() == copy.hash());
     }
     SECTION("copy number") {
-        BlockNumberOrHash block_num_or_hash{123456};
-        BlockNumberOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{123456};
+        BlockNumOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(block_num_or_hash.is_hash() == copy.is_hash());
         CHECK(block_num_or_hash.is_number() == copy.is_number());
@@ -142,8 +142,8 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.number() == copy.number());
     }
     SECTION("copy tag") {
-        BlockNumberOrHash block_num_or_hash{"latest"};
-        BlockNumberOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{"latest"};
+        BlockNumOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
 
         CHECK(block_num_or_hash.is_hash() == copy.is_hash());
         CHECK(block_num_or_hash.is_number() == copy.is_number());
@@ -151,30 +151,30 @@ TEST_CASE("block_num_or_hash") {
         CHECK(block_num_or_hash.tag() == copy.tag());
     }
     SECTION("number overflow") {
-        CHECK_THROWS_AS(BlockNumberOrHash{"0x1ffffffffffffffff"}, std::out_of_range);
+        CHECK_THROWS_AS(BlockNumOrHash{"0x1ffffffffffffffff"}, std::out_of_range);
     }
     SECTION("invalid string") {
-        CHECK_THROWS_AS(BlockNumberOrHash{"invalid"}, std::invalid_argument);
+        CHECK_THROWS_AS(BlockNumOrHash{"invalid"}, std::invalid_argument);
     }
     SECTION("operator<<") {
         std::stringstream out;
 
-        BlockNumberOrHash block_num_or_hash1{"0x374f3"};
+        BlockNumOrHash block_num_or_hash1{"0x374f3"};
         out << block_num_or_hash1;
         CHECK(out.str() == "0x374f3");
         out.str("");
 
-        BlockNumberOrHash block_num_or_hash2{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        BlockNumOrHash block_num_or_hash2{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
         out << block_num_or_hash2;
         CHECK(out.str() == "0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c");
         out.str("");
 
-        BlockNumberOrHash block_num_or_hash3{"latest"};
+        BlockNumOrHash block_num_or_hash3{"latest"};
         out << block_num_or_hash3;
         CHECK(out.str() == "latest");
         out.str("");
 
-        BlockNumberOrHash block_num_or_hash4{"pending"};
+        BlockNumOrHash block_num_or_hash4{"pending"};
         out << block_num_or_hash4;
         CHECK(out.str() == "pending");
         out.str("");

@@ -62,8 +62,8 @@ struct TraceCall {
 void from_json(const nlohmann::json& json, TraceCall& tc);
 
 struct TraceFilter {
-    BlockNumberOrHash from_block{0};
-    BlockNumberOrHash to_block{"latest"};
+    BlockNumOrHash from_block{0};
+    BlockNumOrHash to_block{"latest"};
     std::vector<evmc::address> from_addresses;
     std::vector<evmc::address> to_addresses;
     std::optional<std::string> mode;

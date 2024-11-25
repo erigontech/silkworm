@@ -35,7 +35,7 @@ using namespace silkworm::execution::test_util;
 using namespace silkworm::test_util;
 namespace proto = ::execution;
 
-static api::BlockNumberOrHash sample_block_num_or_hash(bool has_number) {
+static api::BlockNumOrHash sample_block_num_or_hash(bool has_number) {
     if (has_number) {
         return kSampleBlockNum;
     }
@@ -56,8 +56,8 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(
 }
 
 TEST_CASE("request_from_block_num_or_hash", "[node][execution][grpc]") {
-    const Fixtures<api::BlockNumberOrHash, proto::GetSegmentRequest> fixtures{
-        {{}, sample_proto_get_segment_request(0, {})},  // BlockNumberOrHash contains 1st variant as default
+    const Fixtures<api::BlockNumOrHash, proto::GetSegmentRequest> fixtures{
+        {{}, sample_proto_get_segment_request(0, {})},  // BlockNumOrHash contains 1st variant as default
         {sample_block_num_or_hash(true), sample_proto_get_segment_request(kSampleBlockNum, {})},
         {sample_block_num_or_hash(false), sample_proto_get_segment_request({}, kSampleBlockHash)},
     };

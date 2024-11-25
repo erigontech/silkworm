@@ -41,18 +41,18 @@ struct Block {
 
 std::ostream& operator<<(std::ostream& out, const Block& b);
 
-class BlockNumberOrHash {
+class BlockNumOrHash {
   public:
-    explicit BlockNumberOrHash(const std::string& block_num_or_hash) { build(block_num_or_hash); }
-    explicit BlockNumberOrHash(BlockNum block_num) noexcept : value_{block_num} {}
+    explicit BlockNumOrHash(const std::string& block_num_or_hash) { build(block_num_or_hash); }
+    explicit BlockNumOrHash(BlockNum block_num) noexcept : value_{block_num} {}
 
-    virtual ~BlockNumberOrHash() noexcept = default;
+    virtual ~BlockNumOrHash() noexcept = default;
 
-    BlockNumberOrHash(const BlockNumberOrHash&) noexcept = default;
-    BlockNumberOrHash& operator=(const BlockNumberOrHash&) = default;
+    BlockNumOrHash(const BlockNumOrHash&) noexcept = default;
+    BlockNumOrHash& operator=(const BlockNumOrHash&) = default;
 
-    BlockNumberOrHash(BlockNumberOrHash&&) = default;
-    BlockNumberOrHash& operator=(BlockNumberOrHash&&) noexcept = default;
+    BlockNumOrHash(BlockNumOrHash&&) = default;
+    BlockNumOrHash& operator=(BlockNumOrHash&&) noexcept = default;
 
     bool is_number() const {
         return std::holds_alternative<uint64_t>(value_);
@@ -84,7 +84,7 @@ class BlockNumberOrHash {
     std::variant<uint64_t, evmc::bytes32, std::string> value_;
 };
 
-std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& b);
+std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& b);
 
 struct BlockDetails {
     uint64_t block_size;

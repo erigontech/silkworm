@@ -71,7 +71,7 @@ uint64_t Block::get_block_size() const {
     return rlp_head.payload_length;
 }
 
-std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& block_num_or_hash) {
+std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_hash) {
     if (block_num_or_hash.is_number()) {
         out << "0x" << std::hex << block_num_or_hash.number() << std::dec;
     } else if (block_num_or_hash.is_hash()) {
@@ -83,7 +83,7 @@ std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& block_num_o
     return out;
 }
 
-void BlockNumberOrHash::build(const std::string& block_num_or_hash) {
+void BlockNumOrHash::build(const std::string& block_num_or_hash) {
     value_ = uint64_t{0};
     if (block_num_or_hash == core::kEarliestBlockId) {
         value_ = kEarliestBlockNum;

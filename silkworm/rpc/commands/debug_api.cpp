@@ -57,7 +57,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    const auto block_num_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumOrHash>();
     const auto start_key_array = params[1].get<std::vector<std::uint8_t>>();
     auto max_result = params[2].get<int16_t>();
     const auto exclude_code = params[3].get<bool>();
@@ -431,7 +431,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
         co_return;
     }
     const auto call = params[0].get<Call>();
-    const auto block_num_or_hash = params[1].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[1].get<BlockNumOrHash>();
     debug::DebugConfig config;
     if (params.size() > 2) {
         config = params[2].get<debug::DebugConfig>();

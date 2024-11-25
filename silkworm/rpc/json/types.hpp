@@ -133,15 +133,15 @@ JsonRpcId make_jsonrpc_id(const nlohmann::json& request_json);
 namespace nlohmann {
 
 template <>
-struct adl_serializer<silkworm::rpc::BlockNumberOrHash> {
-    static silkworm::rpc::BlockNumberOrHash from_json(const json& json) {
+struct adl_serializer<silkworm::rpc::BlockNumOrHash> {
+    static silkworm::rpc::BlockNumOrHash from_json(const json& json) {
         if (json.is_string()) {
-            return silkworm::rpc::BlockNumberOrHash{json.get<std::string>()};
+            return silkworm::rpc::BlockNumOrHash{json.get<std::string>()};
         }
         if (json.is_number()) {
-            return silkworm::rpc::BlockNumberOrHash{json.get<silkworm::BlockNum>()};
+            return silkworm::rpc::BlockNumOrHash{json.get<silkworm::BlockNum>()};
         }
-        return silkworm::rpc::BlockNumberOrHash{0};
+        return silkworm::rpc::BlockNumOrHash{0};
     }
 };
 

@@ -83,7 +83,7 @@ Task<std::optional<BlockHeader>> DirectService::current_header() {
 }
 
 // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash block_num_or_hash) {
+Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumOrHash block_num_or_hash) {
     if (std::holds_alternative<Hash>(block_num_or_hash)) {
         co_return exec_engine_.get_header_td(std::get<Hash>(block_num_or_hash), std::nullopt);
     } else {
@@ -98,7 +98,7 @@ Task<std::optional<TotalDifficulty>> DirectService::get_td(BlockNumberOrHash blo
 }
 
 // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumberOrHash block_num_or_hash) {
+Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumOrHash block_num_or_hash) {
     if (std::holds_alternative<Hash>(block_num_or_hash)) {
         co_return exec_engine_.get_header(std::get<Hash>(block_num_or_hash));
     } else {
@@ -109,7 +109,7 @@ Task<std::optional<BlockHeader>> DirectService::get_header(BlockNumberOrHash blo
 }
 
 // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-Task<std::optional<BlockBody>> DirectService::get_body(BlockNumberOrHash block_num_or_hash) {
+Task<std::optional<BlockBody>> DirectService::get_body(BlockNumOrHash block_num_or_hash) {
     if (std::holds_alternative<Hash>(block_num_or_hash)) {
         co_return exec_engine_.get_body(std::get<Hash>(block_num_or_hash));
     } else {
@@ -120,7 +120,7 @@ Task<std::optional<BlockBody>> DirectService::get_body(BlockNumberOrHash block_n
 }
 
 // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-Task<bool> DirectService::has_block(BlockNumberOrHash block_num_or_hash) {
+Task<bool> DirectService::has_block(BlockNumOrHash block_num_or_hash) {
     if (std::holds_alternative<Hash>(block_num_or_hash)) {
         co_return exec_engine_.get_header(std::get<Hash>(block_num_or_hash));
     } else {

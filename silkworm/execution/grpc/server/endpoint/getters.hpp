@@ -25,7 +25,7 @@
 
 namespace silkworm::execution::grpc::server {
 
-api::BlockNumberOrHash block_num_or_hash_from_request(const ::execution::GetSegmentRequest&);
+api::BlockNumOrHash block_num_or_hash_from_request(const ::execution::GetSegmentRequest&);
 ::execution::GetTDResponse response_from_total_difficulty(const std::optional<TotalDifficulty>&);
 ::execution::GetHeaderResponse response_from_header(const std::optional<BlockHeader>&);
 ::execution::GetBodyResponse response_from_body(const std::optional<BlockBody>&, const Hash&, BlockNum);

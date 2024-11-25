@@ -100,7 +100,7 @@ struct BlockOverrides {
 };
 
 struct SimulationContext {
-    BlockNumberOrHash block_num{0};
+    BlockNumOrHash block_num{0};
     std::int32_t transaction_index{-1};
 };
 

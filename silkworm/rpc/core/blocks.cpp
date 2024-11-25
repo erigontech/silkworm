@@ -102,7 +102,7 @@ Task<BlockNum> get_block_num(const std::string& block_id, kv::api::Transaction& 
     co_return block_num;
 }
 
-Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumberOrHash& block_num_or_hash, kv::api::Transaction& tx) {
+Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash, kv::api::Transaction& tx) {
     if (block_num_or_hash.is_tag()) {
         co_return co_await get_block_num(block_num_or_hash.tag(), tx, true);
     } else if (block_num_or_hash.is_number()) {
@@ -146,7 +146,7 @@ Task<BlockNum> get_forkchoice_safe_block_num(kv::api::Transaction& tx) {
     co_return co_await get_forkchoice_block_num(tx, kSafeBlockHash);
 }
 
-Task<bool> is_latest_block_num(const BlockNumberOrHash& block_num_or_hash, kv::api::Transaction& tx) {
+Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash, kv::api::Transaction& tx) {
     if (block_num_or_hash.is_tag()) {
         co_return block_num_or_hash.tag() == core::kLatestBlockId || block_num_or_hash.tag() == core::kPendingBlockId;
     } else {

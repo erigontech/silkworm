@@ -101,28 +101,28 @@ class RemoteClientImpl final : public api::Service {
     }
 
     // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-    Task<std::optional<TotalDifficulty>> get_td(api::BlockNumberOrHash block_num_or_hash) override {
+    Task<std::optional<TotalDifficulty>> get_td(api::BlockNumOrHash block_num_or_hash) override {
         auto request = request_from_block_num_or_hash(block_num_or_hash);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetTD, *stub_, std::move(request), grpc_context_);
         co_return total_difficulty_from_response(reply);
     }
 
     // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-    Task<std::optional<BlockHeader>> get_header(api::BlockNumberOrHash block_num_or_hash) override {
+    Task<std::optional<BlockHeader>> get_header(api::BlockNumOrHash block_num_or_hash) override {
         auto request = request_from_block_num_or_hash(block_num_or_hash);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetHeader, *stub_, std::move(request), grpc_context_);
         co_return header_from_response(reply);
     }
 
     // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-    Task<std::optional<BlockBody>> get_body(api::BlockNumberOrHash block_num_or_hash) override {
+    Task<std::optional<BlockBody>> get_body(api::BlockNumOrHash block_num_or_hash) override {
         auto request = request_from_block_num_or_hash(block_num_or_hash);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetBody, *stub_, std::move(request), grpc_context_);
         co_return body_from_response(reply);
     }
 
     // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-    Task<bool> has_block(api::BlockNumberOrHash block_num_or_hash) override {
+    Task<bool> has_block(api::BlockNumOrHash block_num_or_hash) override {
         auto request = request_from_block_num_or_hash(block_num_or_hash);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHasBlock, *stub_, std::move(request), grpc_context_);
         co_return reply.has_block();

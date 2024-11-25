@@ -101,9 +101,9 @@ TEST_CASE("MainChain transaction handling") {
                 REQUIRE(td0.has_value());
                 CHECK(tx.is_open() == keep_db_txn_open);
 
-                auto bn0 = main_chain.get_block_num(*hash0);
-                REQUIRE(bn0.has_value());
-                CHECK(bn0 == 0);
+                auto block_num0 = main_chain.get_block_num(*hash0);
+                REQUIRE(block_num0.has_value());
+                CHECK(block_num0 == 0);
                 CHECK(tx.is_open() == keep_db_txn_open);
             }
 

@@ -249,7 +249,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 //! Save headers of witch it has to download bodies
 void BodySequence::download_bodies(const Headers& headers) {
     for (const auto& header : headers) {
-        BlockNum bn = header->number;
+        BlockNum block_num = header->number;
 
         BodyRequest new_request;
         new_request.block_height = header->number;
@@ -261,9 +261,9 @@ void BodySequence::download_bodies(const Headers& headers) {
 
         new_request.header = *header;
 
-        body_requests_.emplace(bn, std::move(new_request));
+        body_requests_.emplace(block_num, std::move(new_request));
 
-        target_height_ = std::max(target_height_, bn);
+        target_height_ = std::max(target_height_, block_num);
     }
 }
 
@@ -335,13 +335,13 @@ void BodySequence::AnnouncedBlocks::add(Block block) {
     blocks_.emplace(block.header.number, std::move(block));
 }
 
-std::optional<BlockBody> BodySequence::AnnouncedBlocks::remove(BlockNum bn) {
-    auto b = blocks_.find(bn);
-    if (b == blocks_.end())
+std::optional<BlockBody> BodySequence::AnnouncedBlocks::remove(BlockNum block_num) {
+    auto it = blocks_.find(block_num);
+    if (it == blocks_.end())
         return std::nullopt;
 
-    auto block = std::move(b->second);
-    blocks_.erase(b);
+    auto block = std::move(it->second);
+    blocks_.erase(it);
     return block;
 }
 

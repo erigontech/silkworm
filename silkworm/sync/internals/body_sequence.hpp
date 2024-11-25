@@ -116,7 +116,7 @@ class BodySequence {
 
     struct AnnouncedBlocks {
         void add(Block block);
-        std::optional<BlockBody> remove(BlockNum bn);
+        std::optional<BlockBody> remove(BlockNum block_num);
         size_t size();
 
       private:

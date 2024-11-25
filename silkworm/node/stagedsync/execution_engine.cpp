@@ -294,12 +294,12 @@ std::vector<BlockHeader> ExecutionEngine::get_last_headers(uint64_t limit) const
     return main_chain_.get_last_headers(limit);
 }
 
-std::optional<TotalDifficulty> ExecutionEngine::get_header_td(Hash h, std::optional<BlockNum> bn) const {
+std::optional<TotalDifficulty> ExecutionEngine::get_header_td(Hash h, std::optional<BlockNum> block_num) const {
     ensure_invariant(!fork_tracking_active_, "actual get_header_td() impl assume it is called only at beginning");
     // if fork_tracking_active_ is true, we should read blocks from forks and recompute total difficulty but this
     // is a duty of the sync component
-    if (bn) {
-        return main_chain_.get_header_td(*bn, h);
+    if (block_num) {
+        return main_chain_.get_header_td(*block_num, h);
     }
     return main_chain_.get_header_td(h);
 }
@@ -311,18 +311,18 @@ std::optional<BlockBody> ExecutionEngine::get_body(Hash header_hash) const {
     return main_chain_.get_body(header_hash);
 }
 
-std::optional<BlockHeader> ExecutionEngine::get_canonical_header(BlockNum bn) const {
-    auto hash = main_chain_.get_finalized_canonical_hash(bn);
+std::optional<BlockHeader> ExecutionEngine::get_canonical_header(BlockNum block_num) const {
+    auto hash = main_chain_.get_finalized_canonical_hash(block_num);
     if (!hash) return {};
     return main_chain_.get_header(*hash);
 }
 
-std::optional<Hash> ExecutionEngine::get_canonical_hash(BlockNum bn) const {
-    return main_chain_.get_finalized_canonical_hash(bn);
+std::optional<Hash> ExecutionEngine::get_canonical_hash(BlockNum block_num) const {
+    return main_chain_.get_finalized_canonical_hash(block_num);
 }
 
-std::optional<BlockBody> ExecutionEngine::get_canonical_body(BlockNum bn) const {
-    auto hash = main_chain_.get_finalized_canonical_hash(bn);
+std::optional<BlockBody> ExecutionEngine::get_canonical_body(BlockNum block_num) const {
+    auto hash = main_chain_.get_finalized_canonical_hash(block_num);
     if (!hash) return {};
     return main_chain_.get_body(*hash);
 }

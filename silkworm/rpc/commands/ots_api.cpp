@@ -863,13 +863,13 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             SILK_DEBUG << "No block found for txn_id " << txn_id;
             break;
         }
-        const auto bn = block_num_opt.value();
-        const auto max_txn_id = co_await db::txn::max_tx_num(tx, bn, provider);
-        const auto min_txn_id = co_await db::txn::min_tx_num(tx, bn, provider);
+        const auto block_num = block_num_opt.value();
+        const auto max_txn_id = co_await db::txn::max_tx_num(tx, block_num, provider);
+        const auto min_txn_id = co_await db::txn::min_tx_num(tx, block_num, provider);
         const auto txn_index = txn_id - min_txn_id - 1;
         SILK_DEBUG
             << "txn_id: " << txn_id
-            << " block_num: " << bn
+            << " block_num: " << block_num
             << ", txn_index: " << txn_index
             << ", max_txn_id: " << max_txn_id
             << ", min_txn_id: " << min_txn_id
@@ -881,19 +881,19 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         }
 
         block_num_changed = false;
-        if (block_info && block_info.value().number != bn) {
+        if (block_info && block_info.value().number != block_num) {
             block_info.reset();
         }
 
         if (!block_info) {
-            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, bn);
+            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, block_num);
             if (!block_with_hash) {
-                SILK_DEBUG << "Not found block no.  " << bn;
+                SILK_DEBUG << "Not found block no.  " << block_num;
                 co_return results;
             }
 
             auto rr = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
-            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << bn;
+            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << block_num;
 
             std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
                 receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
@@ -917,9 +917,9 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             break;
         }
 
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(bn, txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, txn_index);
         if (!transaction) {
-            SILK_DEBUG << "No transaction found in block " << bn << " for index " << txn_index;
+            SILK_DEBUG << "No transaction found in block " << block_num << " for index " << txn_index;
             co_return results;
         }
         results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));

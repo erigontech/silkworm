@@ -76,7 +76,7 @@ class ExecutionPipeline : public Stoppable {
     std::atomic<size_t> current_stages_count_{0};
     std::atomic<size_t> current_stage_number_{0};
 
-    BlockNum head_header_number_{0};
+    BlockNum head_header_block_num_{0};
     Hash head_header_hash_;
 
     // Returns the current log lines prefix on behalf of current stage

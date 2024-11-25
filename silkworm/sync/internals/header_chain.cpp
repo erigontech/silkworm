@@ -557,9 +557,9 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
         auto anchor_it = anchors_.find(hash);
         if (anchor_it != anchors_.end()) anchor = anchor_it->second;
     } else {
-        BlockNum bn = std::get<BlockNum>(packet.request.origin);
+        BlockNum block_num = std::get<BlockNum>(packet.request.origin);
         for (const auto& p : anchors_) {
-            if (p.second->block_height == bn) {  // this search it is burdensome but should rarely occur
+            if (p.second->block_height == block_num) {  // this search it is burdensome but should rarely occur
                 anchor = p.second;
                 break;
             }
@@ -707,7 +707,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
 
     if (end == 0) {
         SILK_TRACE_M("HeaderChain")
-            << "segment cut&paste error, duplicated segment, bn=" << segment[start]->number
+            << "segment cut&paste error, duplicated segment, block_num=" << segment[start]->number
             << ", hash=" << Hash{segment[start]->hash()}
             << " parent-hash=" << Hash{segment[start]->parent_hash}
             << (anchor.has_value() ? ", removing corresponding anchor" : ", corresponding anchor not found");
@@ -841,7 +841,7 @@ std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::DeepLink> Header
     if (a == anchors_.end()) {
         SILK_TRACE_M("HeaderChain")
             << "[ERROR] segment cut&paste error, segment without anchor or persisted attach point, "
-            << "starting bn=" << link->block_height << " ending bn=" << parent_link->block_height << " "
+            << "starting block_num=" << link->block_height << " ending block_num=" << parent_link->block_height << " "
             << "parent=" << to_hex(parent_link->header->parent_hash);
         return {std::nullopt, parent_link};  // wrong, invariant violation, no anchor but there should be
     }
@@ -1062,7 +1062,7 @@ void HeaderChain::remove(const std::shared_ptr<Anchor>& anchor) {
     bool erased2 = anchor_queue_.erase(anchor);
 
     if (erased1 == 0 || !erased2) {
-        SILK_WARN_M("HeaderChain") << "removal of anchor failed, bn=" << anchor->block_height;
+        SILK_WARN_M("HeaderChain") << "removal of anchor failed, block_num=" << anchor->block_height;
     }
 }
 

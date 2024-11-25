@@ -26,8 +26,8 @@
 
 namespace silkworm::protocol::bor {
 
-uint64_t Config::sprint_size(BlockNum number) const noexcept {
-    const uint64_t* size{config_value_lookup(sprint, number)};
+uint64_t Config::sprint_size(BlockNum block_num) const noexcept {
+    const uint64_t* size = config_value_lookup(sprint, block_num);
     SILKWORM_ASSERT(size);
     return *size;
 }
@@ -83,7 +83,7 @@ std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
     if (json.contains("blockAlloc")) {
         std::vector<std::pair<BlockNum, SmallMap<evmc::address, std::string_view>>> out_vec;
         for (const auto& outer : json["blockAlloc"].items()) {
-            const BlockNum num{std::stoull(outer.key(), nullptr, 0)};
+            const BlockNum block_num = std::stoull(outer.key(), nullptr, 0);
             std::vector<std::pair<evmc::address, std::string_view>> inner_vec;
             for (const auto& inner : outer.value().items()) {
                 const evmc::address contract{hex_to_address(inner.key(), /*return_zero_on_err=*/true)};
@@ -100,7 +100,7 @@ std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
                 }
                 inner_vec.emplace_back(contract, byte_view_to_string_view(*code_it));
             }
-            out_vec.emplace_back(num, SmallMap<evmc::address, std::string_view>{inner_vec.begin(), inner_vec.end()});
+            out_vec.emplace_back(block_num, SmallMap<evmc::address, std::string_view>{inner_vec.begin(), inner_vec.end()});
         }
         config.rewrite_code = {out_vec.begin(), out_vec.end()};
     }

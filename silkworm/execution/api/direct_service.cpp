@@ -37,8 +37,8 @@ Task<InsertionResult> DirectService::insert_blocks(const Blocks& blocks) {
 /** Chain Validation and ForkChoice **/
 
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-Task<ValidationResult> DirectService::validate_chain(BlockId number_and_hash) {
-    const auto verification = co_await exec_engine_.verify_chain(number_and_hash.hash);
+Task<ValidationResult> DirectService::validate_chain(BlockId block_id) {
+    const auto verification = co_await exec_engine_.verify_chain(block_id.hash);
     co_return verification;
 }
 
@@ -78,8 +78,8 @@ Task<AssembledBlockResult> DirectService::get_assembled_block(PayloadId) {
 
 // rpc CurrentHeader(google.protobuf.Empty) returns(GetHeaderResponse);
 Task<std::optional<BlockHeader>> DirectService::current_header() {
-    const auto last_number_and_hash{exec_engine_.last_finalized_block()};
-    co_return exec_engine_.get_header(last_number_and_hash.hash);
+    const auto block_id = exec_engine_.last_finalized_block();
+    co_return exec_engine_.get_header(block_id.hash);
 }
 
 // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
@@ -137,18 +137,18 @@ Task<bool> DirectService::has_block(BlockNumberOrHash block_num_or_hash) {
 /** Ranges **/
 
 // rpc GetBodiesByRange(GetBodiesByRangeRequest) returns(GetBodiesBatchResponse);
-Task<BlockBodies> DirectService::get_bodies_by_range(BlockNumRange number_range) {
+Task<BlockBodies> DirectService::get_bodies_by_range(BlockNumRange block_num_range) {
     BlockBodies bodies;
-    const auto [start_block_num, end_block_num] = number_range;
+    const auto [start_block_num, end_block_num] = block_num_range;
     if (start_block_num > end_block_num) {
         co_return bodies;
     }
     bodies.reserve(end_block_num - start_block_num + 1);
-    for (BlockNum number{start_block_num}; number <= end_block_num; ++number) {
-        auto block_body{exec_engine_.get_canonical_body(number)};
-        auto block_hash{exec_engine_.get_canonical_hash(number)};
+    for (BlockNum block_num = start_block_num; block_num <= end_block_num; ++block_num) {
+        auto block_body{exec_engine_.get_canonical_body(block_num)};
+        auto block_hash{exec_engine_.get_canonical_hash(block_num)};
         if (block_body && block_hash) {
-            bodies.push_back(Body{std::move(*block_body), *block_hash, number});
+            bodies.push_back(Body{std::move(*block_body), *block_hash, block_num});
         } else {
             // Add an empty body anyway because we must respond w/ one payload for each number
             bodies.emplace_back();
@@ -188,13 +188,13 @@ Task<std::optional<BlockNum>> DirectService::get_header_hash_number(Hash block_h
 
 // rpc GetForkChoice(google.protobuf.Empty) returns(ForkChoice);
 Task<ForkChoice> DirectService::get_fork_choice() {
-    const auto last_fork_choice_number_and_hash{exec_engine_.last_fork_choice()};
-    const auto last_finalized_number_and_hash{exec_engine_.last_finalized_block()};
-    const auto last_safe_number_and_hash{exec_engine_.last_safe_block()};
+    const auto last_fork_choice_block_id = exec_engine_.last_fork_choice();
+    const auto last_finalized_block_id = exec_engine_.last_finalized_block();
+    const auto last_safe_block_id = exec_engine_.last_safe_block();
     ForkChoice last_fork_choice{
-        .head_block_hash = last_fork_choice_number_and_hash.hash,
-        .finalized_block_hash = last_finalized_number_and_hash.hash,
-        .safe_block_hash = last_safe_number_and_hash.hash,
+        .head_block_hash = last_fork_choice_block_id.hash,
+        .finalized_block_hash = last_finalized_block_id.hash,
+        .safe_block_hash = last_safe_block_id.hash,
     };
     co_return last_fork_choice;
 }

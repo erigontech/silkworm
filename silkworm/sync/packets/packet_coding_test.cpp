@@ -56,7 +56,7 @@ TEST_CASE("NewBlockHashesPacket decoding") {
 
     REQUIRE(packet.size() == 1);
     REQUIRE(packet[0].hash == Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354"));
-    REQUIRE(packet[0].number == 12'420'112);
+    REQUIRE(packet[0].block_num == 12'420'112);
 }
 
 TEST_CASE("NewBlockHashesPacket encoding") {
@@ -66,7 +66,7 @@ TEST_CASE("NewBlockHashesPacket encoding") {
 
     NewBlockHash newBlock;
     newBlock.hash = *Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354");
-    newBlock.number = 12'420'112;
+    newBlock.block_num = 12'420'112;
     packet.push_back(newBlock);
 
     Bytes encoded;

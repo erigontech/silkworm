@@ -43,9 +43,9 @@ class MockChainStorage : public chain::ChainStorage {
     MOCK_METHOD((Task<bool>), read_block, (const Hash&, silkworm::Block&), (const, override));
     MOCK_METHOD((Task<bool>), read_block, (BlockNum, bool, silkworm::Block&), (const, override));
 
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum number, HashAsArray hash), (const, override));
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum number, const Hash& hash), (const, override));
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (const Hash& hash), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum, HashAsArray), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum, const Hash&), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (const Hash&), (const, override));
 
     MOCK_METHOD((Task<std::vector<BlockHeader>>), read_sibling_headers, (BlockNum), (const, override));
 

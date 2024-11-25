@@ -375,11 +375,11 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHa
     rpc::Transaction transaction{call.to_transaction()};
 
     const auto& block = block_with_hash->block;
-    const auto number = block.header.number;
+    const auto block_num = block.header.number;
 
     stream.write_field("result");
     stream.open_object();
-    co_await execute(stream, storage, number, block, transaction, -1);
+    co_await execute(stream, storage, block_num, block, transaction, -1);
     stream.close_object();
 
     co_return;
@@ -396,11 +396,11 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
     } else {
         const auto& block = tx_with_block->block_with_hash->block;
         const auto& transaction = tx_with_block->transaction;
-        const auto number = block.header.number - 1;
+        const auto block_num = block.header.number - 1;
 
         stream.write_field("result");
         stream.open_object();
-        co_await execute(stream, storage, number, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
+        co_await execute(stream, storage, block_num, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
         stream.close_object();
     }
 

@@ -47,7 +47,7 @@ struct ExecutionPayload {
         kV3 = 3
     } version{kV1};
 
-    BlockNum number{0};
+    BlockNum block_num{0};
     uint64_t timestamp{0};
     uint64_t gas_limit{0};
     uint64_t gas_used{0};

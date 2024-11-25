@@ -25,10 +25,10 @@
 
 namespace silkworm::protocol {
 
-static bool is_sprint_start(BlockNum number, uint64_t sprint_size) {
+static bool is_sprint_start(BlockNum block_num, uint64_t sprint_size) {
     // N.B. Works fine for the specific Polygon sprint size config, but is flawed in general
     // (e.g. it wouldn't work for {0->5, 10->3})
-    return number % sprint_size == 0;
+    return block_num % sprint_size == 0;
 }
 
 ValidationResult BorRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,

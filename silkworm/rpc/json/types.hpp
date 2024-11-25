@@ -115,7 +115,7 @@ std::string to_quantity(uint64_t number);
 std::string to_quantity(const intx::uint256& number);
 std::string to_quantity(silkworm::ByteView bytes);
 
-void to_quantity(std::span<char> hex_bytes, uint64_t number);
+void to_quantity(std::span<char> hex_bytes, uint64_t block_num);
 void to_quantity(std::span<char> hex_bytes, intx::uint256 number);
 void to_quantity(std::span<char> hex_bytes, silkworm::ByteView bytes);
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);

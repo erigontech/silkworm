@@ -49,7 +49,7 @@ void InboundNewBlockHashes::execute(db::DataStoreRef, HeaderChain& hc, BodySeque
         Hash hash = new_block_hash.hash;
 
         // calculate top seen block number
-        max = std::max(max, new_block_hash.number);
+        max = std::max(max, new_block_hash.block_num);
 
         // save announcement
         auto packet = hc.save_external_announce(hash);

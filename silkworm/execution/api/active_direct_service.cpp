@@ -49,10 +49,10 @@ Task<InsertionResult> ActiveDirectService::insert_blocks(const Blocks& blocks) {
 /** Chain Validation and ForkChoice **/
 
 // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-Task<ValidationResult> ActiveDirectService::validate_chain(BlockId number_and_hash) {
-    return concurrency::spawn_task(executor_, [](auto* self, auto num_and_hash) {
-        return self->DirectService::validate_chain(num_and_hash);
-    }(this, number_and_hash));
+Task<ValidationResult> ActiveDirectService::validate_chain(BlockId block_id) {
+    return concurrency::spawn_task(executor_, [](auto* self, auto block_id1) {
+        return self->DirectService::validate_chain(block_id1);
+    }(this, block_id));
 }
 
 // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);
@@ -118,10 +118,10 @@ Task<bool> ActiveDirectService::has_block(BlockNumberOrHash block_num_or_hash) {
 /** Ranges **/
 
 // rpc GetBodiesByRange(GetBodiesByRangeRequest) returns(GetBodiesBatchResponse);
-Task<BlockBodies> ActiveDirectService::get_bodies_by_range(BlockNumRange number_range) {
-    return concurrency::spawn_task(executor_, [](auto* self, auto num_range) {
-        return self->DirectService::get_bodies_by_range(num_range);
-    }(this, number_range));
+Task<BlockBodies> ActiveDirectService::get_bodies_by_range(BlockNumRange block_num_range) {
+    return concurrency::spawn_task(executor_, [](auto* self, auto block_num_range1) {
+        return self->DirectService::get_bodies_by_range(block_num_range1);
+    }(this, block_num_range));
 }
 
 // rpc GetBodiesByHashes(GetBodiesByHashesRequest) returns(GetBodiesBatchResponse);

@@ -250,13 +250,13 @@ std::vector<BlockTime> ChainConfig::distinct_fork_times() const {
 }
 
 std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
-    auto numbers{distinct_fork_numbers()};
+    auto block_nums{distinct_fork_numbers()};
     auto times{distinct_fork_times()};
 
     std::vector<uint64_t> points;
-    points.resize(numbers.size() + times.size());
-    std::ranges::move(numbers, points.begin());
-    std::ranges::move(times, points.begin() + (numbers.end() - numbers.begin()));
+    points.resize(block_nums.size() + times.size());
+    std::ranges::move(block_nums, points.begin());
+    std::ranges::move(times, points.begin() + (block_nums.end() - block_nums.begin()));
 
     return points;
 }

@@ -25,7 +25,7 @@ namespace silkworm::rpc {
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "version: " << payload.version
-        << " number: " << payload.number
+        << " number: " << payload.block_num
         << " block_hash: " << to_hex(payload.block_hash)
         << " parent_hash: " << to_hex(payload.parent_hash)
         << " timestamp: " << payload.timestamp

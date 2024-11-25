@@ -22,7 +22,7 @@ namespace silkworm {
 
 struct NewBlockHash {    // one particular block being announced
     Hash hash;           // hash of the block
-    BlockNum number{0};  // number of the block
+    BlockNum block_num{0};  // number of the block
 };
 
 using NewBlockHashesPacket = std::vector<NewBlockHash>;
@@ -39,7 +39,7 @@ namespace rlp {
 
 inline std::ostream& operator<<(std::ostream& os, const NewBlockHashesPacket& packet) {
     if (packet.size() == 1)
-        os << "block num " << packet[0].number /* << " hash " << to_hex(packet[0].hash) */;
+        os << "block num " << packet[0].block_num /* << " hash " << to_hex(packet[0].hash) */;
     else
         os << packet.size() << " new block hashes/nums";
     return os;

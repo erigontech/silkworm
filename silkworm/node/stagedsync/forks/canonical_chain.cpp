@@ -59,7 +59,7 @@ void CanonicalChain::set_current_head(BlockId head) {
 
 void CanonicalChain::open() {
     // Read head of canonical chain
-    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
+    std::tie(initial_head_.block_num, initial_head_.hash) = db::read_canonical_head(tx_);
     // Set current status
     current_head_ = initial_head_;
 }
@@ -116,15 +116,15 @@ BlockId CanonicalChain::find_forking_point(const BlockHeader& header, Hash heade
 }
 
 void CanonicalChain::advance(BlockNum block_num, Hash header_hash) {
-    ensure_invariant(current_head_.number == block_num - 1,
+    ensure_invariant(current_head_.block_num == block_num - 1,
                      [&]() { return std::string("canonical chain must advance gradually,") +
-                                    " current head " + std::to_string(current_head_.number) +
+                                    " current head " + std::to_string(current_head_.block_num) +
                                     " expected head " + std::to_string(block_num - 1); });
 
     db::write_canonical_hash(tx_, block_num, header_hash);
     if (cache_enabled()) canonical_hash_cache_->put(block_num, header_hash);
 
-    current_head_.number = block_num;
+    current_head_.block_num = block_num;
     current_head_.hash = header_hash;
 }
 
@@ -152,24 +152,24 @@ void CanonicalChain::update_up_to(BlockNum block_num, Hash hash) {  // hash can 
         persisted_canon_hash = db::read_canonical_header_hash(tx_, ancestor_block_num);
     }
 
-    current_head_.number = block_num;
+    current_head_.block_num = block_num;
     current_head_.hash = hash;
 }
 
 void CanonicalChain::delete_down_to(BlockNum unwind_point) {
-    for (BlockNum current_block_num = current_head_.number; current_block_num > unwind_point; --current_block_num) {
+    for (BlockNum current_block_num = current_head_.block_num; current_block_num > unwind_point; --current_block_num) {
         db::delete_canonical_hash(tx_, current_block_num);  // do not throw if not found
         if (cache_enabled()) canonical_hash_cache_->remove(current_block_num);
     }
 
-    current_head_.number = unwind_point;
+    current_head_.block_num = unwind_point;
     auto current_head_hash = db::read_canonical_header_hash(tx_, unwind_point);
     ensure_invariant(current_head_hash.has_value(),
                      [&]() { return "hash not found on canonical at block_num " + std::to_string(unwind_point); });
 
     current_head_.hash = *current_head_hash;
 
-    if (initial_head_.number > current_head_.number) {
+    if (initial_head_.block_num > current_head_.block_num) {
         initial_head_ = current_head_;  // we went under the prev initial head
     }
 }

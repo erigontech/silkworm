@@ -44,7 +44,7 @@ std::ostream& operator<<(std::ostream& out, const Block& b);
 class BlockNumberOrHash {
   public:
     explicit BlockNumberOrHash(const std::string& block_num_or_hash) { build(block_num_or_hash); }
-    explicit BlockNumberOrHash(BlockNum number) noexcept : value_{number} {}
+    explicit BlockNumberOrHash(BlockNum block_num) noexcept : value_{block_num} {}
 
     virtual ~BlockNumberOrHash() noexcept = default;
 

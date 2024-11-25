@@ -120,7 +120,7 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block>& block) {
 
         auto forking_path = find_forking_point(block->header);
         if (!forking_path) return false;
-        if (forking_path->forking_point.number < last_finalized_block().number) return false;  // ignore
+        if (forking_path->forking_point.block_num < last_finalized_block().block_num) return false;  // ignore
         forking_path->blocks.push_back(block);
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
@@ -128,7 +128,7 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block>& block) {
         forks_.push_back(main_chain_.fork(forking_path->forking_point));
 
         auto& new_fork = forks_.back();
-        BlockId new_head = {.number = block->header.number, .hash = header_hash};
+        BlockId new_head = {.block_num = block->header.number, .hash = header_hash};
         new_fork->start_with(new_head, std::move(forking_path->blocks));
     }
 
@@ -139,12 +139,12 @@ std::optional<ExecutionEngine::ForkingPath> ExecutionEngine::find_forking_point(
     ForkingPath path;  // a path from the header to the first block of the main chain using parent-child relationship
 
     // search in cache till to the main chain
-    path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
-    while (path.forking_point.number > main_chain_.last_chosen_head().number) {
+    path.forking_point = {.block_num = header.number - 1, .hash = header.parent_hash};
+    while (path.forking_point.block_num > main_chain_.last_chosen_head().block_num) {
         auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
         if (!parent) return {};                                           // not found
         path.blocks.push_front(*parent);                                  // in reverse order
-        path.forking_point = {.number = (*parent)->header.number - 1, .hash = (*parent)->header.parent_hash};
+        path.forking_point = {.block_num = (*parent)->header.number - 1, .hash = (*parent)->header.parent_hash};
     }
 
     // forking point is on main chain canonical head

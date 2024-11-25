@@ -40,14 +40,14 @@ inline db::chain::BlockNumberFromBlockHashProvider block_num_from_block_hash_pro
 }
 
 inline db::chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider(ethbackend::BackEnd* backend) {
-    return [backend](BlockNum number) -> Task<std::optional<evmc::bytes32>> {
-        co_return co_await backend->get_block_hash_from_block_num(number);
+    return [backend](BlockNum block_num) -> Task<std::optional<evmc::bytes32>> {
+        co_return co_await backend->get_block_hash_from_block_num(block_num);
     };
 }
 
 inline db::chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider(ethbackend::BackEnd* backend) {
-    return [backend](BlockNum number) -> Task<std::optional<Bytes>> {
-        co_return co_await backend->canonical_body_for_storage(number);
+    return [backend](BlockNum block_num) -> Task<std::optional<Bytes>> {
+        co_return co_await backend->canonical_body_for_storage(block_num);
     };
 }
 

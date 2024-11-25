@@ -42,11 +42,12 @@ static api::BlockNumberOrHash sample_block_num_or_hash(bool has_number) {
     return kSampleBlockHash;
 }
 
-static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<BlockNum> number,
-                                                                 std::optional<Hash> hash) {
+static proto::GetSegmentRequest sample_proto_get_segment_request(
+    std::optional<BlockNum> block_num,
+    std::optional<Hash> hash) {
     proto::GetSegmentRequest request;
-    if (number) {
-        request.set_block_number(*number);
+    if (block_num) {
+        request.set_block_number(*block_num);
     }
     if (hash) {
         request.set_allocated_block_hash(rpc::h256_from_bytes32(*hash).release());

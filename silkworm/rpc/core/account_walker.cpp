@@ -93,34 +93,34 @@ Task<KeyValue> AccountWalker::seek(db::kv::api::Cursor& cursor, silkworm::ByteVi
     co_return kv;
 }
 
-Task<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, BlockNum number, BlockNum block, silkworm::Bytes addr) {
+Task<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, BlockNum target_block_num, BlockNum current_block_num, silkworm::Bytes addr) {
     ethdb::SplittedKeyValue skv;
     auto tmp_addr = addr;
-    while (!addr.empty() && (tmp_addr == addr || block < number)) {
+    while (!addr.empty() && (tmp_addr == addr || current_block_num < target_block_num)) {
         skv = co_await cursor.next();
 
         if (skv.key1.empty()) {
             break;
         }
-        block = silkworm::endian::load_big_u64(skv.key2.data());
+        current_block_num = silkworm::endian::load_big_u64(skv.key2.data());
         addr = skv.key1;
     }
     co_return skv;
 }
 
-Task<ethdb::SplittedKeyValue> AccountWalker::seek(ethdb::SplitCursor& cursor, BlockNum number) {
+Task<ethdb::SplittedKeyValue> AccountWalker::seek(ethdb::SplitCursor& cursor, BlockNum target_block_num) {
     auto kv = co_await cursor.seek();
     if (kv.key1.empty()) {
         co_return kv;
     }
 
-    BlockNum block = silkworm::endian::load_big_u64(kv.key2.data());
-    while (block < number) {
+    BlockNum current_block_num = silkworm::endian::load_big_u64(kv.key2.data());
+    while (current_block_num < target_block_num) {
         kv = co_await cursor.next();
         if (kv.key2.empty()) {
             break;
         }
-        block = silkworm::endian::load_big_u64(kv.key2.data());
+        current_block_num = silkworm::endian::load_big_u64(kv.key2.data());
     }
 
     co_return kv;

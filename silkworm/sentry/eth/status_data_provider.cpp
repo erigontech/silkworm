@@ -43,7 +43,7 @@ StatusDataProvider::StatusData StatusDataProvider::make_status_data(
     ChainHead chain_head,
     uint8_t eth_version,
     const ChainConfig& chain_config) {
-    auto fork_numbers = chain_config.distinct_fork_numbers();
+    auto fork_block_nums = chain_config.distinct_fork_numbers();
     auto fork_times = chain_config.distinct_fork_times();
     auto best_block_hash = Bytes{ByteView{chain_head.hash}};
     auto genesis_hash = ByteView{chain_config.genesis_hash.value()};
@@ -54,11 +54,11 @@ StatusDataProvider::StatusData StatusDataProvider::make_status_data(
         chain_head.total_difficulty,
         best_block_hash,
         Bytes{genesis_hash},
-        silkworm::sentry::eth::ForkId(genesis_hash, fork_numbers, fork_times, chain_head.block_num),
+        silkworm::sentry::eth::ForkId(genesis_hash, fork_block_nums, fork_times, chain_head.block_num),
     };
 
     silkworm::sentry::eth::StatusData status_data = {
-        std::move(fork_numbers),
+        std::move(fork_block_nums),
         std::move(fork_times),
         chain_head.block_num,
         std::move(status_message),

@@ -34,15 +34,15 @@ struct ChainHead {
 };
 
 inline bool operator==(const ChainHead& a, const BlockId& b) {
-    return a.block_num == b.number && a.hash == b.hash;
+    return a.block_num == b.block_num && a.hash == b.hash;
 }
 
 inline bool operator==(const BlockId& a, const ChainHead& b) {
-    return a.number == b.block_num && a.hash == b.hash;
+    return a.block_num == b.block_num && a.hash == b.hash;
 }
 
 inline BlockId to_block_id(const ChainHead& head) {
-    return {.number = head.block_num, .hash = head.hash};
+    return {.block_num = head.block_num, .hash = head.hash};
 }
 
 }  // namespace silkworm

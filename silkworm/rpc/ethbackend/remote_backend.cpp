@@ -197,11 +197,11 @@ Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_hash(const HashA
     co_return block_num;
 }
 
-Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_num(BlockNum number) {
+Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_num(BlockNum block_num) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalHash> canonical_hsh_rpc{*stub_, grpc_context_};
     ::remote::CanonicalHashRequest request;
-    request.set_block_number(number);
+    request.set_block_number(block_num);
     const auto reply = co_await canonical_hsh_rpc.finish_on(executor_, request);
     evmc::bytes32 hash;
     if (reply.has_hash() == 0) {
@@ -213,13 +213,13 @@ Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_num(
     co_return hash;
 }
 
-Task<std::optional<Bytes>> RemoteBackEnd::canonical_body_for_storage(BlockNum number) {
+Task<std::optional<Bytes>> RemoteBackEnd::canonical_body_for_storage(BlockNum block_num) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalBodyForStorage> canonical_body_for_storage_rpc{*stub_, grpc_context_};
     ::remote::CanonicalBodyForStorageRequest request;
-    request.set_blocknumber(number);
+    request.set_blocknumber(block_num);
     const auto reply = co_await canonical_body_for_storage_rpc.finish_on(executor_, request);
-    SILK_TRACE << "RemoteBackEnd::canonical_body_for_storage block_num=" << number
+    SILK_TRACE << "RemoteBackEnd::canonical_body_for_storage block_num=" << block_num
                << " t=" << clock_time::since(start_time);
     if (reply.body().empty()) {
         co_return std::nullopt;

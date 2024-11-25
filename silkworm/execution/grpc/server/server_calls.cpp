@@ -52,8 +52,8 @@ Task<void> ValidateChainCall::operator()(api::DirectService& service) {
     proto::ValidationReceipt reply;
     ::grpc::Status status;
     try {
-        const auto block_num_and_hash{block_num_and_hash_from_request(request_)};
-        const api::ValidationResult result = co_await service.validate_chain(block_num_and_hash);
+        const auto block_id = block_id_from_request(request_);
+        const api::ValidationResult result = co_await service.validate_chain(block_id);
         reply = response_from_validation_result(result);
         status = ::grpc::Status::OK;
     } catch (const std::exception& e) {

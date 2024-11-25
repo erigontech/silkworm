@@ -84,10 +84,10 @@ void to_quantity(std::span<char> quantity_hex_bytes, silkworm::ByteView bytes) {
     to_hex_no_leading_zeros(quantity_hex_bytes, bytes);
 }
 
-void to_quantity(std::span<char> quantity_hex_bytes, BlockNum number) {
-    silkworm::Bytes number_bytes(8, '\0');
-    silkworm::endian::store_big_u64(number_bytes.data(), number);
-    to_hex_no_leading_zeros(quantity_hex_bytes, number_bytes);
+void to_quantity(std::span<char> quantity_hex_bytes, BlockNum block_num) {
+    silkworm::Bytes block_num_bytes(8, '\0');
+    silkworm::endian::store_big_u64(block_num_bytes.data(), block_num);
+    to_hex_no_leading_zeros(quantity_hex_bytes, block_num_bytes);
 }
 
 void to_quantity(std::span<char> quantity_hex_bytes, intx::uint256 number) {

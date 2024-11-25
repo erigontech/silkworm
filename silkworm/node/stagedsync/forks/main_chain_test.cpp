@@ -198,7 +198,7 @@ TEST_CASE("MainChain") {
     auto initial_canonical_head = main_chain.current_head();
     REQUIRE(initial_canonical_head == block0_id);
     REQUIRE(main_chain.last_chosen_head() == block0_id);
-    REQUIRE(initial_canonical_head.number == initial_progress);
+    REQUIRE(initial_canonical_head.block_num == initial_progress);
     REQUIRE(main_chain.interim_canonical_chain_.current_head() == initial_canonical_head);
 
     /* status:

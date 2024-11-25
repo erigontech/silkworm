@@ -62,8 +62,8 @@ class RemoteClientImpl final : public api::Service {
     /** Chain Validation and ForkChoice **/
 
     // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-    Task<api::ValidationResult> validate_chain(BlockId number_and_hash) override {
-        auto request = request_from_block_num_and_hash(number_and_hash);
+    Task<api::ValidationResult> validate_chain(BlockId block_id) override {
+        auto request = request_from_block_id(block_id);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncValidateChain, *stub_, std::move(request), grpc_context_);
         co_return validation_result_from_response(reply);
     }
@@ -195,10 +195,10 @@ class RemoteClientImpl final : public api::Service {
         if (!last_finalized_header) {
             co_return last_headers;
         }
-        BlockNum last_number{last_finalized_header->number};
+        BlockNum last_block_num = last_finalized_header->number;
         last_headers.push_back(std::move(*last_finalized_header));
-        for (BlockNum number{last_number - 1}; number < last_number - n; --number) {
-            auto header{co_await get_header(number)};
+        for (BlockNum block_num = last_block_num - 1; block_num < last_block_num - n; --block_num) {
+            auto header{co_await get_header(block_num)};
             if (header) {
                 last_headers.push_back(std::move(*header));
             }

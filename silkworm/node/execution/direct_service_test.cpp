@@ -73,11 +73,11 @@ TEST_CASE_METHOD(DirectServiceTest, "DirectService::verify_chain", "[node][execu
     const Hash latest_valid_hash{0x000000000000000000000000000000000000000000000000000000000000000A_bytes32};
     const Hash new_hash{0x000000000000000000000000000000000000000000000000000000000000000B_bytes32};
     const BlockId latest_valid_head{
-        .number = 1,
+        .block_num = 1,
         .hash = latest_valid_hash,
     };
     const BlockId new_head{
-        .number = 2,
+        .block_num = 2,
         .hash = new_hash,
     };
     const std::vector<std::pair<VerificationResult, execution::api::ValidationResult>> test_vectors{

@@ -54,15 +54,15 @@ BlockId PoWSync::resume() {  // find the point (head) where we left off
     const auto last_fcu = spawn_future_and_wait(ioc_, exec_engine_->get_fork_choice());  // previously was get_canonical_head()
     const auto block_progress = spawn_future_and_wait(ioc_, exec_engine_->block_progress());
 
-    const auto last_fcu_number = spawn_future_and_wait(ioc_, exec_engine_->get_header_hash_number(last_fcu.head_block_hash));
-    if (!last_fcu_number) return head;
-    ensure_invariant(*last_fcu_number <= block_progress, "canonical head beyond block progress");
+    const auto last_fcu_block_num = spawn_future_and_wait(ioc_, exec_engine_->get_header_hash_number(last_fcu.head_block_hash));
+    if (!last_fcu_block_num) return head;
+    ensure_invariant(*last_fcu_block_num <= block_progress, "canonical head beyond block progress");
 
-    if (block_progress == *last_fcu_number) {
+    if (block_progress == *last_fcu_block_num) {
         // If FCU and header progress match than we have the actual canonical, we only need to do a forward sync...
         const auto total_difficulty{chain_fork_view_.get_total_difficulty(last_fcu.head_block_hash)};
         if (!total_difficulty) return head;
-        ChainHead fcu_as_head{*last_fcu_number, last_fcu.head_block_hash, *total_difficulty};
+        ChainHead fcu_as_head{*last_fcu_block_num, last_fcu.head_block_hash, *total_difficulty};
         ensure_invariant(fcu_as_head == chain_fork_view_.head(), "last FCU misaligned with canonical head");
         chain_fork_view_.reset_head(fcu_as_head);
         head = to_block_id(fcu_as_head);
@@ -134,7 +134,7 @@ BlockId PoWSync::forward_and_insert_blocks() {
         << ", head=" << chain_fork_view_.head_block_num()
         << ", tot.duration=" << StopWatch::format(duration);
 
-    return {.number = chain_fork_view_.head_block_num(), .hash = chain_fork_view_.head_hash()};
+    return {.block_num = chain_fork_view_.head_block_num(), .hash = chain_fork_view_.head_hash()};
 }
 
 void PoWSync::unwind(UnwindPoint, std::optional<Hash>) {
@@ -151,14 +151,14 @@ void PoWSync::execution_loop() {
         BlockId new_block_num = is_starting_up
                                     ? resume()                      // resuming, the following verify_chain is needed to check all stages
                                     : forward_and_insert_blocks();  // downloads new blocks and inserts them into the db
-        if (new_block_num.number == 0) {
+        if (new_block_num.block_num == 0) {
             // When starting from empty db there is no chain to verify, so go on downloading new blocks
             is_starting_up = false;
             continue;
         }
 
         // Verify the new section of the chain
-        SILK_INFO_M("Sync") << "Verifying chain, head=(" << new_block_num.number << ", " << to_hex(new_block_num.hash) << ")";
+        SILK_INFO_M("Sync") << "Verifying chain, head=(" << new_block_num.block_num << ", " << to_hex(new_block_num.hash) << ")";
         const auto verification = spawn_future_and_wait(ioc_, exec_engine_->validate_chain(new_block_num));  // BLOCKING
 
         if (std::holds_alternative<execution::api::ValidChain>(verification)) {
@@ -170,7 +170,7 @@ void PoWSync::execution_loop() {
             ensure_invariant(valid_chain.current_head.hash == new_block_num.hash, "invalid validate_chain result");
 
             // Notify the fork choice
-            SILK_INFO_M("Sync") << "Notifying fork choice updated, new head=" << new_block_num.number;
+            SILK_INFO_M("Sync") << "Notifying fork choice updated, new head=" << new_block_num.block_num;
             spawn_future_and_wait(ioc_, exec_engine_->update_fork_choice({new_block_num.hash}));
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification

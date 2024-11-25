@@ -411,8 +411,8 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_hash(const std:
 Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count, std::chrono::milliseconds /*timeout*/) {
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(count);
-    for (BlockNum number{start}; number < start + count; ++number) {
-        const auto block_body{co_await exec_engine_->get_body(number)};
+    for (BlockNum block_num = start; block_num < start + count; ++block_num) {
+        const auto block_body{co_await exec_engine_->get_body(block_num)};
         if (block_body) {
             std::vector<Bytes> rlp_txs;
             rlp_txs.reserve(block_body->transactions.size());

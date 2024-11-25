@@ -39,80 +39,80 @@ Task<std::optional<BlockNum>> LocalChainStorage::read_block_num(const Hash& hash
     co_return data_model_.read_block_num(hash);
 }
 
-Task<bool> LocalChainStorage::read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const {
-    co_return data_model_.read_block(hash, number, read_senders, block);
+Task<bool> LocalChainStorage::read_block(HashAsSpan hash, BlockNum block_num, bool read_senders, Block& block) const {
+    co_return data_model_.read_block(hash, block_num, read_senders, block);
 }
 
-Task<bool> LocalChainStorage::read_block(const Hash& hash, BlockNum number, Block& block) const {
-    co_return data_model_.read_block(hash, number, block);
+Task<bool> LocalChainStorage::read_block(const Hash& hash, BlockNum block_num, Block& block) const {
+    co_return data_model_.read_block(hash, block_num, block);
 }
 
 Task<bool> LocalChainStorage::read_block(const Hash& hash, Block& block) const {
-    const auto number{co_await read_block_num(hash)};
-    if (!number) {
+    const auto block_num = co_await read_block_num(hash);
+    if (!block_num) {
         co_return false;
     }
-    co_return co_await read_block(hash, *number, block);
+    co_return co_await read_block(hash, *block_num, block);
 }
 
-Task<bool> LocalChainStorage::read_block(BlockNum number, bool read_senders, Block& block) const {
-    co_return data_model_.read_block(number, read_senders, block);
+Task<bool> LocalChainStorage::read_block(BlockNum block_num, bool read_senders, Block& block) const {
+    co_return data_model_.read_block(block_num, read_senders, block);
 }
 
-Task<std::optional<BlockHeader>> LocalChainStorage::read_header(BlockNum number, HashAsArray hash) const {
-    co_return data_model_.read_header(number, hash);
+Task<std::optional<BlockHeader>> LocalChainStorage::read_header(BlockNum block_num, HashAsArray hash) const {
+    co_return data_model_.read_header(block_num, hash);
 }
 
-Task<std::optional<BlockHeader>> LocalChainStorage::read_header(BlockNum number, const Hash& hash) const {
-    co_return data_model_.read_header(number, hash);
+Task<std::optional<BlockHeader>> LocalChainStorage::read_header(BlockNum block_num, const Hash& hash) const {
+    co_return data_model_.read_header(block_num, hash);
 }
 
 Task<std::optional<BlockHeader>> LocalChainStorage::read_header(const Hash& hash) const {
     co_return data_model_.read_header(hash);
 }
 
-Task<std::vector<BlockHeader>> LocalChainStorage::read_sibling_headers(BlockNum number) const {
-    co_return data_model_.read_sibling_headers(number);
+Task<std::vector<BlockHeader>> LocalChainStorage::read_sibling_headers(BlockNum block_num) const {
+    co_return data_model_.read_sibling_headers(block_num);
 }
 
-Task<bool> LocalChainStorage::read_body(BlockNum number, HashAsArray hash, bool read_senders, BlockBody& body) const {
-    co_return data_model_.read_body(number, hash, read_senders, body);
+Task<bool> LocalChainStorage::read_body(BlockNum block_num, HashAsArray hash, bool read_senders, BlockBody& body) const {
+    co_return data_model_.read_body(block_num, hash, read_senders, body);
 }
 
-Task<bool> LocalChainStorage::read_body(const Hash& hash, BlockNum number, BlockBody& body) const {
-    co_return data_model_.read_body(hash, number, body);
+Task<bool> LocalChainStorage::read_body(const Hash& hash, BlockNum block_num, BlockBody& body) const {
+    co_return data_model_.read_body(hash, block_num, body);
 }
 
 Task<bool> LocalChainStorage::read_body(const Hash& hash, BlockBody& body) const {
     co_return data_model_.read_body(hash, body);
 }
 
-Task<std::optional<Hash>> LocalChainStorage::read_canonical_header_hash(BlockNum number) const {
-    co_return data_model_.read_canonical_header_hash(number);
+Task<std::optional<Hash>> LocalChainStorage::read_canonical_header_hash(BlockNum block_num) const {
+    co_return data_model_.read_canonical_header_hash(block_num);
 }
 
-Task<std::optional<BlockHeader>> LocalChainStorage::read_canonical_header(BlockNum number) const {
-    co_return data_model_.read_canonical_header(number);
+Task<std::optional<BlockHeader>> LocalChainStorage::read_canonical_header(BlockNum block_num) const {
+    co_return data_model_.read_canonical_header(block_num);
 }
 
-Task<bool> LocalChainStorage::read_canonical_body(BlockNum number, BlockBody& body) const {
-    co_return data_model_.read_canonical_body(number, body);
+Task<bool> LocalChainStorage::read_canonical_body(BlockNum block_num, BlockBody& body) const {
+    co_return data_model_.read_canonical_body(block_num, body);
 }
 
-Task<bool> LocalChainStorage::read_canonical_block(BlockNum number, Block& block) const {
-    co_return data_model_.read_canonical_block(number, block);
+Task<bool> LocalChainStorage::read_canonical_block(BlockNum block_num, Block& block) const {
+    co_return data_model_.read_canonical_block(block_num, block);
 }
 
-Task<bool> LocalChainStorage::has_body(BlockNum number, HashAsArray hash) const {
-    co_return data_model_.has_body(number, hash);
+Task<bool> LocalChainStorage::has_body(BlockNum block_num, HashAsArray hash) const {
+    co_return data_model_.has_body(block_num, hash);
 }
 
-Task<bool> LocalChainStorage::has_body(BlockNum number, const Hash& hash) const {
-    co_return data_model_.has_body(number, hash);
+Task<bool> LocalChainStorage::has_body(BlockNum block_num, const Hash& hash) const {
+    co_return data_model_.has_body(block_num, hash);
 }
 
-Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const {
-    co_return data_model_.read_rlp_transactions(number, hash, rlp_txs);
+Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum block_num, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const {
+    co_return data_model_.read_rlp_transactions(block_num, hash, rlp_txs);
 }
 
 Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
@@ -137,8 +137,8 @@ Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash
     co_return false;
 }
 
-Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(const Hash& hash, BlockNum number) const {
-    co_return data_model_.read_total_difficulty(number, hash);
+Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(const Hash& hash, BlockNum block_num) const {
+    co_return data_model_.read_total_difficulty(block_num, hash);
 }
 
 Task<std::optional<BlockNum>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {

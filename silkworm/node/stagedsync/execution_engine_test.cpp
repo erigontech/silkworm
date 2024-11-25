@@ -88,7 +88,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
     const silkworm::Hash header1_hash{0x7cb4dd3daba1f739d0c1ec7d998b4a2f6fd83019116455afa54ca4f49dfa0ad4_bytes32};
 
     auto const current_head_id = exec_engine.last_finalized_block();
-    auto const current_head = exec_engine.get_header(current_head_id.number, current_head_id.hash).value();
+    auto const current_head = exec_engine.get_header(current_head_id.block_num, current_head_id.hash).value();
 
     SECTION("get_block_num") {
         auto block_num = exec_engine.get_block_num(header1_hash);
@@ -151,13 +151,13 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(block_progress == 9);
 
         auto last_fork_choice = exec_engine.last_fork_choice();
-        CHECK(last_fork_choice.number == 9);
+        CHECK(last_fork_choice.block_num == 9);
 
         auto last_finalized_block = exec_engine.last_finalized_block();
-        CHECK(last_finalized_block.number == 9);
+        CHECK(last_finalized_block.block_num == 9);
 
         auto last_safe_block = exec_engine.last_safe_block();
-        CHECK(last_safe_block.number == 0);
+        CHECK(last_safe_block.block_num == 0);
     }
 
     SECTION("insert_block does not update the head block and fork choice") {
@@ -351,11 +351,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 10);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
 
         auto is_new_block_canonical = exec_engine.is_canonical(new_block_hash);
         CHECK(is_new_block_canonical);
@@ -374,11 +374,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 10);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
 
         auto is_new_block_canonical = exec_engine.is_canonical(new_block_hash);
         CHECK(is_new_block_canonical);
@@ -394,13 +394,13 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 10);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
         auto new_safe_block = exec_engine.last_safe_block();
-        CHECK(new_safe_block.number == 9);
+        CHECK(new_safe_block.block_num == 9);
     }
 
     SECTION("notify_fork_choice_update with multiple blocks using the first block as the head") {
@@ -423,11 +423,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 12);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
 
         auto is_block1_canonical = exec_engine.is_canonical(block1_hash);
         CHECK(is_block1_canonical);
@@ -457,11 +457,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 12);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 12);
+        CHECK(new_fork_choice.block_num == 12);
 
         auto is_block1_canonical = exec_engine.is_canonical(block1_hash);
         CHECK(is_block1_canonical);
@@ -481,11 +481,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 10);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
 
         auto is_new_block_canonical = exec_engine.is_canonical(new_block_hash);
         CHECK(is_new_block_canonical);
@@ -494,11 +494,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);  //! updates despite the same block
 
         new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         new_progress = exec_engine.block_progress();
         CHECK(new_progress == 10);
         new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
     }
 
     SECTION("notify_fork_choice_update consecutive calls with different blocks") {
@@ -511,11 +511,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 10);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
 
         auto is_new_block1_canonical = exec_engine.is_canonical(new_block1_hash);
         CHECK(is_new_block1_canonical);
@@ -532,11 +532,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         new_progress = exec_engine.block_progress();
         CHECK(new_progress == 11);
         new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 11);
+        CHECK(new_fork_choice.block_num == 11);
 
         auto is_new_block2_canonical = exec_engine.is_canonical(new_block2_hash);
         CHECK(is_new_block2_canonical);
@@ -575,11 +575,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 11);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 11);
+        CHECK(new_fork_choice.block_num == 11);
 
         auto is_block1_canonical = exec_engine.is_canonical(block1a_hash);
         CHECK(is_block1_canonical);
@@ -622,11 +622,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 10);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 10);
+        CHECK(new_fork_choice.block_num == 10);
 
         auto is_block1_canonical = exec_engine.is_canonical(block_f1_hash);
         CHECK(is_block1_canonical);
@@ -667,11 +667,11 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         CHECK(fcu_updated);
 
         auto new_head_id = exec_engine.last_finalized_block();
-        CHECK(new_head_id.number == 9);
+        CHECK(new_head_id.block_num == 9);
         auto new_progress = exec_engine.block_progress();
         CHECK(new_progress == 11);
         auto new_fork_choice = exec_engine.last_fork_choice();
-        CHECK(new_fork_choice.number == 11);
+        CHECK(new_fork_choice.block_num == 11);
 
         auto is_block1_canonical = exec_engine.is_canonical(block1a_hash);
         CHECK(!is_block1_canonical);
@@ -843,7 +843,7 @@ TEST_CASE("ExecutionEngine") {
 
     // check db
     BlockBody block0_body;
-    const bool block0_present = read_body(tx, *header0_hash, block0_id.number, block0_body);
+    const bool block0_present = read_body(tx, *header0_hash, block0_id.block_num, block0_body);
     CHECK(block0_present);
 
     /* status:

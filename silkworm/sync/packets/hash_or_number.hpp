@@ -65,11 +65,11 @@ namespace rlp {
             }
             to = {hash};
         } else if (h->payload_length <= 8) {
-            BlockNum number{};
-            if (DecodingResult res = rlp::decode(from, number, mode); !res) {
+            BlockNum block_num = 0;
+            if (DecodingResult res = rlp::decode(from, block_num, mode); !res) {
                 return res;
             }
-            to = {number};
+            to = {block_num};
         } else {
             return tl::unexpected{DecodingError::kUnexpectedLength};
         }

@@ -294,10 +294,10 @@ TEST_CASE("Stage History Index") {
 
         // Use a large dataset in change sets (actual values do not matter)
         PooledCursor account_changeset(txn, table::kAccountChangeSet);
-        BlockNum block{1};
+        BlockNum block_num = 1;
 
-        for (; block <= 50000; ++block) {
-            const auto block_key{db::block_key(block)};
+        for (; block_num <= 50000; ++block_num) {
+            const auto block_key{db::block_key(block_num)};
             for (const auto& address : addresses) {
                 Bytes value(kAddressLength, '\0');
                 std::memcpy(&value[0], address.bytes, kAddressLength);
@@ -309,7 +309,7 @@ TEST_CASE("Stage History Index") {
         }
 
         // Fake generation of changesets
-        stages::write_stage_progress(txn, stages::kExecutionKey, block - 1);
+        stages::write_stage_progress(txn, stages::kExecutionKey, block_num - 1);
 
         // Forward history
         stagedsync::SyncContext sync_context{};
@@ -319,7 +319,7 @@ TEST_CASE("Stage History Index") {
         auto batch_1{account_history.size()};
         REQUIRE(batch_1 != 0);
 
-        auto check_addresses{[&account_history, &block](const std::vector<evmc::address>& addrs) {
+        auto check_addresses{[&account_history, &block_num](const std::vector<evmc::address>& addrs) {
             for (const auto& address : addrs) {
                 Bytes key(kAddressLength, '\0');
                 std::memcpy(&key[0], address.bytes, kAddressLength);
@@ -329,7 +329,7 @@ TEST_CASE("Stage History Index") {
                 try {
                     auto data = account_history.find(to_slice(key), /*throw_notfound=*/true);
                     auto bitmap{bitmap::parse(data.value)};
-                    REQUIRE(bitmap.maximum() == block - 1);
+                    REQUIRE(bitmap.maximum() == block_num - 1);
                 } catch (...) {
                     has_thrown = true;
                 }
@@ -354,7 +354,7 @@ TEST_CASE("Stage History Index") {
         // Add one address and store changes from current block_num onwards
         {
             addresses.push_back(0x0000000000000000000000000000000000000004_address);
-            const auto block_key{db::block_key(block++)};
+            const auto block_key{db::block_key(block_num++)};
             Bytes value(kAddressLength, '\0');
             std::memcpy(&value[0], addresses.back().bytes, kAddressLength);
             auto value_slice{to_slice(value)};
@@ -362,8 +362,8 @@ TEST_CASE("Stage History Index") {
                 account_changeset.put(to_slice(block_key), &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
         }
 
-        for (; block <= 100000; ++block) {
-            const auto block_key{db::block_key(block)};
+        for (; block_num <= 100000; ++block_num) {
+            const auto block_key{db::block_key(block_num)};
             for (const auto& address : addresses) {
                 Bytes value(kAddressLength, '\0');
                 std::memcpy(&value[0], address.bytes, kAddressLength);
@@ -373,7 +373,7 @@ TEST_CASE("Stage History Index") {
                     account_changeset.put(to_slice(block_key), &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
             }
         }
-        stages::write_stage_progress(txn, stages::kExecutionKey, block - 1);
+        stages::write_stage_progress(txn, stages::kExecutionKey, block_num - 1);
         txn.commit_and_renew();
 
         REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);

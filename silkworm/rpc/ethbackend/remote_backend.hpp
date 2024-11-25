@@ -50,8 +50,8 @@ class RemoteBackEnd final : public BackEnd {
     Task<bool> get_block(BlockNum block_num, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) override;
     Task<std::optional<BlockNum>> get_block_num_from_txn_hash(const HashAsSpan& hash) override;
     Task<std::optional<BlockNum>> get_block_num_from_hash(const HashAsSpan& hash) override;
-    Task<std::optional<evmc::bytes32>> get_block_hash_from_block_num(BlockNum number) override;
-    Task<std::optional<Bytes>> canonical_body_for_storage(BlockNum number) override;
+    Task<std::optional<evmc::bytes32>> get_block_hash_from_block_num(BlockNum block_num) override;
+    Task<std::optional<Bytes>> canonical_body_for_storage(BlockNum block_num) override;
 
   private:
     static std::vector<Bytes> decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs);

@@ -187,7 +187,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_getClientVersionV1", "[silkworm][rpc]
 
 TEST_CASE_METHOD(EngineRpcApiTest, "engine_getPayloadV1 OK: request is expected payload", "[silkworm][rpc][commands][engine_api]") {
     EXPECT_CALL(*mock_engine, get_payload(1, _)).WillOnce(InvokeWithoutArgs([]() -> Task<ExecutionPayloadAndValue> {
-        co_return ExecutionPayloadAndValue{ExecutionPayload{.number = 1}, 0};
+        co_return ExecutionPayloadAndValue{ExecutionPayload{.block_num = 1}, 0};
     }));
 
     nlohmann::json reply;

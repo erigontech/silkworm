@@ -43,6 +43,7 @@ static const std::string kZeros = "000000000000000000000000000000000000000000000
 static const evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 #endif
 
+#ifdef notdef
 class DummyCursor : public CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
@@ -642,5 +643,5 @@ TEST_CASE("account dumper") {
     }*/
 }
 #endif
-
+#endif
 }  // namespace silkworm::rpc

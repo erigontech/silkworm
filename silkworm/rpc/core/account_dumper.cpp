@@ -57,28 +57,56 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     std::vector<KeyValue> collected_data;
 
-    AccountWalker::Collector collector = [&](ByteView k, ByteView v) {
+    auto key = db::code_domain_key(start_address);
+    auto block_number = block_with_hash->block.header.number + 1;
+    const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_number);
+
+    db::kv::api::DomainRangeQuery query{
+        .table = db::table::kAccountDomain,
+        .from_key = key,
+        .timestamp = start_txn_number,
+        .ascending_order = true};
+
+    auto paginated_result = co_await transaction_.range_as_of((std::move(query)));
+    auto it = co_await paginated_result.begin();
+
+    std::set<evmc::address> addresses;
+    while (const auto value = co_await it.next()) {
+        if (value->first.empty()) {
+            continue;
+        }
+
         if (max_result > 0 && collected_data.size() >= static_cast<size_t>(max_result)) {
-            dump_accounts.next = bytes_to_address(k);
-            return false;
+            dump_accounts.next = bytes_to_address(value->first);
+            break;
         }
 
-        if (k.size() > kAddressLength) {
-            return true;
+        ByteView encoded_view(value->second);
+        evmc::address address{bytes_to_address(value->first)};
+
+        auto account{Account::from_encoded_storage(encoded_view)};
+        success_or_throw(account);
+        DumpAccount dump_account;
+           dump_account.balance = account->balance;
+           dump_account.nonce = account->nonce;
+           dump_account.incarnation = account->incarnation;
+
+        if (account->incarnation > 0 && account->code_hash != kEmptyHash && !exclude_code) {
+            dump_account.code_hash = account->code_hash;
+
+            db::kv::api::DomainPointQuery query_code{
+                .table = db::table::kCodeDomain,
+                .key = db::account_domain_key(address)
+            };
+
+            const auto code = co_await transaction_.get_latest(std::move(query_code));
+            if (code.success) {
+                dump_account.code = code.value;
+            }
         }
+        dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));
+    }
 
-        KeyValue kv;
-        kv.key = k;
-        kv.value = v;
-        collected_data.push_back(kv);
-        return true;
-    };
-
-    AccountWalker walker{transaction_};
-    const auto block_number = block_with_hash->block.header.number + 1;
-    co_await walker.walk_of_accounts(block_number, start_address, collector);
-
-    co_await load_accounts(block_number, collected_data, dump_accounts, exclude_code);
     if (!exclude_storage) {
         co_await load_storage(block_number, dump_accounts);
     }
@@ -86,70 +114,42 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     co_return dump_accounts;
 }
 
-Task<void> AccountDumper::load_accounts(BlockNum block_number, const std::vector<KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
-    StateReader state_reader{transaction_, block_number};
-    for (const auto& kv : collected_data) {
-        const auto address = bytes_to_address(kv.key);
-
-        auto account{Account::from_encoded_storage(kv.value)};
-        success_or_throw(account);
-
-        DumpAccount dump_account;
-        dump_account.balance = account->balance;
-        dump_account.nonce = account->nonce;
-        dump_account.code_hash = account->code_hash;
-        dump_account.incarnation = account->incarnation;
-
-        if (account->incarnation > 0 && account->code_hash == kEmptyHash) {
-            const auto storage_key{db::storage_prefix(address.bytes, account->incarnation)};
-            auto code_hash{co_await transaction_.get_one(db::table::kPlainCodeHashName, storage_key)};
-            if (code_hash.length() == kHashLength) {
-                std::memcpy(dump_account.code_hash.bytes, code_hash.data(), kHashLength);
-            }
-        }
-        if (!exclude_code) {
-            auto code = co_await state_reader.read_code(address, dump_account.code_hash);
-            dump_account.code.swap(code);
-        }
-        dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));
-    }
-
-    co_return;
-}
-
 Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump_accounts) {
     SILK_TRACE << "block_number " << block_number << " START";
     StorageWalker storage_walker{transaction_};
     evmc::bytes32 start_location{};
+    const auto txn_number = co_await transaction_.first_txn_num_in_block(block_number);
+
     for (auto& it : dump_accounts.accounts) {
         auto& address = it.first;
         auto& account = it.second;
 
-        std::map<Bytes, Bytes> collected_entries;  // TODO(canepat) switch to ByteView?
-        StorageWalker::AccountCollector collector = [&](const evmc::address& /*address*/, ByteView loc, ByteView data) {
+        auto to = db::code_domain_key(address);
+        increment(to);
+
+        db::kv::api::DomainRangeQuery query{
+            .table = db::table::kStorageDomain,
+            .from_key = db::code_domain_key(address),
+            .to_key = to,
+            .timestamp = txn_number,
+            .ascending_order = true};
+
+        auto paginated_result = co_await transaction_.range_as_of(std::move(query));
+        auto sit = co_await paginated_result.begin();
+
+        while (const auto value = co_await sit.next()) {
+            if (value->second.empty())
+                continue;
+
             if (!account.storage.has_value()) {
                 account.storage = Storage{};
             }
             auto& storage = *account.storage;
-            storage[to_bytes32(loc)] = data;
-            const auto hash = hash_of(loc);
-            collected_entries[Bytes{hash.bytes, kHashLength}] = data;
+            auto loc = value->first.substr(20);
+            storage[to_bytes32(loc)] = value->second;
 
-            return true;
-        };
-
-        co_await storage_walker.walk_of_storages(block_number, address, start_location, account.incarnation, collector);
-
-        trie::HashBuilder hb;
-        for (const auto& [key, value] : collected_entries) {
-            Bytes encoded{};
-            rlp::encode(encoded, value);
-            Bytes unpacked = trie::unpack_nibbles(key);
-
-            hb.add_leaf(unpacked, encoded);
         }
 
-        account.root = hb.root_hash();
     }
     SILK_TRACE << "block_number " << block_number << " END";
     co_return;

@@ -112,7 +112,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
@@ -173,7 +173,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};

@@ -429,7 +429,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 #endif  // SILKWORM_SANITIZE
 
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][kv][grpc][client][remote_transaction]") {
-    using db::kv::test_util::sample_proto_domain_get_response;
+    using db::kv::test_util::sample_proto_get_latest_response;
 
     auto get_latest = [&]() -> Task<api::DomainPointResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
@@ -450,7 +450,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][k
     api::DomainPointResult result;
 
     SECTION("call get_latest and get result") {
-        proto::GetLatestReply reply{sample_proto_domain_get_response()};
+        proto::GetLatestReply reply{sample_proto_get_latest_response()};
         EXPECT_CALL(reader, Finish).WillOnce(rpc::test::finish_with(grpc_context_, std::move(reply)));
 
         CHECK_NOTHROW((result = spawn_and_wait(get_latest)));

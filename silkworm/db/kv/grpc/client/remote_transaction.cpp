@@ -125,12 +125,25 @@ Task<TxnId> RemoteTransaction::first_txn_num_in_block(BlockNum block_num) {
 Task<api::DomainPointResult> RemoteTransaction::get_latest(api::DomainPointQuery query) {
     try {
         query.tx_id = tx_id_;
-        auto request = domain_get_request_from_query(query);
+        auto request = get_latest_request_from_query(query);
         const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetLatest, stub_, std::move(request), grpc_context_);
-        auto result = domain_get_result_from_response(reply);
+        auto result = get_latest_result_from_response(reply);
         co_return result;
     } catch (rpc::GrpcStatusError& gse) {
-        SILK_WARN << "KV::GetLatest RPC failed status=" << gse.status();
+        SILK_WARN << "KV::GetLatest (latest) RPC failed status=" << gse.status();
+        throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
+    }
+}
+
+Task<api::GetAsOfResult> RemoteTransaction::get_as_of(api::GetAsOfQuery query) {
+    try {
+        query.tx_id = tx_id_;
+        auto request = get_as_of_request_from_query(query);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetLatest, stub_, std::move(request), grpc_context_);
+        auto result = get_as_of_result_from_response(reply);
+        co_return result;
+    } catch (rpc::GrpcStatusError& gse) {
+        SILK_WARN << "KV::GetLatest (as_of) RPC failed status=" << gse.status();
         throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
     }
 }

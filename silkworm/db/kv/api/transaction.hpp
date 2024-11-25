@@ -72,8 +72,11 @@ class Transaction {
 
     /** Temporal Point Queries **/
 
-    // rpc GetLatest(GetLatestReq) returns (GetLatestReply);
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
     virtual Task<DomainPointResult> get_latest(DomainPointQuery query) = 0;
+
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
+    virtual Task<GetAsOfResult> get_as_of(GetAsOfQuery query) = 0;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     virtual Task<HistoryPointResult> history_seek(HistoryPointQuery query) = 0;

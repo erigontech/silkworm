@@ -66,7 +66,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 0;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = kCode};
@@ -84,7 +84,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 0;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
@@ -104,7 +104,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 0;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
@@ -124,7 +124,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 0;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = false,
                 .value = Bytes{}};
@@ -274,7 +274,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 0;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = false,
                 .value = Bytes{}};
@@ -290,7 +290,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 0;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};
@@ -307,7 +307,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 0;
         }));
-        EXPECT_CALL(transaction, get_latest(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::DomainPointResult> {
             db::kv::api::DomainPointResult response{
                 .success = true,
                 .value = Bytes{}};

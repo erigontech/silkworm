@@ -65,17 +65,36 @@ inline api::HistoryPointResult sample_history_point_result() {
     };
 }
 
-inline api::DomainPointQuery sample_domain_point_query() {
+inline api::GetAsOfQuery sample_get_latest_query() {
     return {
         .tx_id = 1,
         .table = "AAA",
         .key = {0x00, 0x11, 0xff},
-        .timestamp = 1234567,
         .sub_key = {0x00, 0x11, 0x22},
     };
 }
 
-inline proto::GetLatestReq sample_proto_domain_point_request() {
+inline api::GetAsOfQuery sample_get_as_of_query() {
+    return {
+        .tx_id = 1,
+        .table = "AAA",
+        .key = {0x00, 0x11, 0xff},
+        .sub_key = {0x00, 0x11, 0x22},
+        .timestamp = 1234567,
+    };
+}
+
+inline proto::GetLatestReq sample_proto_get_latest_request() {
+    proto::GetLatestReq request;
+    request.set_tx_id(1);
+    request.set_table("AAA");
+    request.set_k(ascii_from_hex("0011ff"));
+    request.set_latest(true);
+    request.set_k2(ascii_from_hex("001122"));
+    return request;
+}
+
+inline proto::GetLatestReq sample_proto_get_as_of_request() {
     proto::GetLatestReq request;
     request.set_tx_id(1);
     request.set_table("AAA");
@@ -85,7 +104,14 @@ inline proto::GetLatestReq sample_proto_domain_point_request() {
     return request;
 }
 
-inline proto::GetLatestReply sample_proto_domain_get_response() {
+inline proto::GetLatestReply sample_proto_get_latest_response() {
+    proto::GetLatestReply response;
+    response.set_ok(true);
+    response.set_v(ascii_from_hex("ff00ff00"));
+    return response;
+}
+
+inline proto::GetLatestReply sample_proto_get_as_of_response() {
     proto::GetLatestReply response;
     response.set_ok(true);
     response.set_v(ascii_from_hex("ff00ff00"));

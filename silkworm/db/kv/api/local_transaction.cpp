@@ -79,6 +79,11 @@ Task<DomainPointResult> LocalTransaction::get_latest(DomainPointQuery /*query*/)
     co_return DomainPointResult{};
 }
 
+Task<GetAsOfResult> LocalTransaction::get_as_of(GetAsOfQuery /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    co_return GetAsOfResult{};
+}
+
 Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     co_return HistoryPointResult{};

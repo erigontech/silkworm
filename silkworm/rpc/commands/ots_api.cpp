@@ -430,11 +430,11 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
         const auto key = db::code_domain_key(contract_address);
         db::kv::api::IndexRangeQuery query{
-                .table = db::table::kAccountsHistoryIdx,
-                .key = key,
-                .from_timestamp = 0,
-                .to_timestamp = -1,
-                .ascending_order = true};
+            .table = db::table::kAccountsHistoryIdx,
+            .key = key,
+            .from_timestamp = 0,
+            .to_timestamp = -1,
+            .ascending_order = true};
         auto paginated_result = co_await tx->index_range(std::move(query));
         auto it = co_await paginated_result.begin();
 
@@ -447,12 +447,12 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 next_txn_id = txn_id;
                 continue;
             }
-            SILK_DEBUG << "txn_id:"  << txn_id << ", count: " << count;
+            SILK_DEBUG << "txn_id:" << txn_id << ", count: " << count;
 
             db::kv::api::HistoryPointQuery hpq{
-                    .table = db::table::kAccountDomain,
-                    .key = key,
-                    .timestamp = *value};
+                .table = db::table::kAccountDomain,
+                .key = key,
+                .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -483,9 +483,9 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             auto txn_id = i + prev_txn_id;
 
             db::kv::api::HistoryPointQuery hpq{
-                    .table = db::table::kAccountDomain,
-                    .key = key,
-                    .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
+                .table = db::table::kAccountDomain,
+                .key = key,
+                .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
             if (!result.success) {
                 co_return false;
@@ -524,7 +524,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 SILK_DEBUG << "No transaction found in block " << block_number << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
-                co_return ;
+                co_return;
             }
 
             const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);

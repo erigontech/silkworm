@@ -84,8 +84,8 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
 
     Task<void> close() override { co_return; }
 
-    Task<db::kv::api::DomainPointResult> get_latest(db::kv::api::DomainPointQuery /*query*/) override {
-        co_return db::kv::api::DomainPointResult{};
+    Task<db::kv::api::GetLatestResult> get_latest(db::kv::api::GetLatestQuery /*query*/) override {
+        co_return db::kv::api::GetLatestResult{};
     }
 
     Task<db::kv::api::GetAsOfResult> get_as_of(db::kv::api::GetAsOfQuery /*query*/) override {

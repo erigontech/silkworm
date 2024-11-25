@@ -118,7 +118,14 @@ inline proto::GetLatestReply sample_proto_get_as_of_response() {
     return response;
 }
 
-inline api::DomainPointResult sample_domain_point_result() {
+inline api::GetLatestResult sample_get_latest_result() {
+    return {
+        .success = true,
+        .value = {0xff, 0x00, 0xff, 0x00},
+    };
+}
+
+inline api::GetAsOfResult sample_get_as_of_result() {
     return {
         .success = true,
         .value = {0xff, 0x00, 0xff, 0x00},

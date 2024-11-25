@@ -122,7 +122,7 @@ Task<TxnId> RemoteTransaction::first_txn_num_in_block(BlockNum block_num) {
     co_return min_txn_num + /*txn_index*/ 0;
 }
 
-Task<api::DomainPointResult> RemoteTransaction::get_latest(api::DomainPointQuery query) {
+Task<api::GetLatestResult> RemoteTransaction::get_latest(api::GetLatestQuery query) {
     try {
         query.tx_id = tx_id_;
         auto request = get_latest_request_from_query(query);

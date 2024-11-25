@@ -849,7 +849,7 @@ int kv_seek() {
 }
 
 Task<void> kv_get_latest_query(const std::shared_ptr<Service>& kv_service,
-                               DomainPointQuery&& query,
+                               GetLatestQuery&& query,
                                const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
@@ -1057,7 +1057,7 @@ int kv_get_latest() {
         };
         return execute_temporal_kv_query(target, kv_get_as_of_query, std::move(query), verbose);
     }
-    DomainPointQuery query{
+    GetLatestQuery query{
         .table = table_name,
         .key = *key_bytes,
     };

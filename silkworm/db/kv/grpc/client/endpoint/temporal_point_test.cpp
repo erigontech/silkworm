@@ -80,9 +80,9 @@ TEST_CASE("get_as_of_request_from_query", "[node][remote][kv][grpc]") {
 }
 
 TEST_CASE("get_as_of_result_from_response", "[node][remote][kv][grpc]") {
-    const Fixtures<proto::GetLatestReply, api::DomainPointResult> fixtures{
+    const Fixtures<proto::GetLatestReply, api::GetAsOfResult> fixtures{
         {{}, {}},
-        {sample_proto_get_as_of_response(), sample_domain_point_result()},
+        {sample_proto_get_as_of_response(), sample_get_as_of_result()},
     };
     for (const auto& [response, expected_point_result] : fixtures) {
         SECTION("ok: " + std::to_string(response.ok())) {

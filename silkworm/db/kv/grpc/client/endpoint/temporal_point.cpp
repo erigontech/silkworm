@@ -38,7 +38,7 @@ api::HistoryPointResult history_seek_result_from_response(const proto::HistorySe
     return result;
 }
 
-proto::GetLatestReq get_latest_request_from_query(const api::DomainPointQuery& query) {
+proto::GetLatestReq get_latest_request_from_query(const api::GetLatestQuery& query) {
     proto::GetLatestReq request;
     request.set_tx_id(query.tx_id);
     request.set_table(query.table);
@@ -48,8 +48,8 @@ proto::GetLatestReq get_latest_request_from_query(const api::DomainPointQuery& q
     return request;
 }
 
-api::DomainPointResult get_latest_result_from_response(const proto::GetLatestReply& response) {
-    api::DomainPointResult result;
+api::GetLatestResult get_latest_result_from_response(const proto::GetLatestReply& response) {
+    api::GetLatestResult result;
     result.success = response.ok();
     result.value = string_to_bytes(response.v());
     return result;

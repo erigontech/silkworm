@@ -74,9 +74,9 @@ Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum /*block_num*/) {
     throw std::logic_error{"not yet implemented"};
 }
 
-Task<DomainPointResult> LocalTransaction::get_latest(DomainPointQuery /*query*/) {
+Task<GetLatestResult> LocalTransaction::get_latest(GetLatestQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
-    co_return DomainPointResult{};
+    co_return GetLatestResult{};
 }
 
 Task<GetAsOfResult> LocalTransaction::get_as_of(GetAsOfQuery /*query*/) {

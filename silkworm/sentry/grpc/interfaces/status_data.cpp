@@ -32,10 +32,10 @@ using namespace silkworm::rpc;
 eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t eth_version) {
     Bytes genesis_hash = bytes_from_h256(data.fork_data().genesis());
 
-    const auto& height_forks = data.fork_data().height_forks();
+    const auto& block_num_forks = data.fork_data().height_forks();
     std::vector<BlockNum> fork_block_nums;
-    fork_block_nums.resize(static_cast<size_t>(height_forks.size()));
-    std::copy(height_forks.cbegin(), height_forks.cend(), fork_block_nums.begin());
+    fork_block_nums.resize(static_cast<size_t>(block_num_forks.size()));
+    std::copy(block_num_forks.cbegin(), block_num_forks.cend(), fork_block_nums.begin());
 
     const auto& time_forks = data.fork_data().time_forks();
     std::vector<BlockTime> fork_block_times;

@@ -107,11 +107,11 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
 };
 
 static remote::StateChangeBatch make_batch() {
-    static BlockNum block_height{14'000'010};
+    static BlockNum block_num{14'000'010};
 
     remote::StateChangeBatch state_changes{};
     remote::StateChange* latest_change = state_changes.add_change_batch();
-    latest_change->set_block_height(++block_height);
+    latest_change->set_block_num(++block_num);
 
     return state_changes;
 }

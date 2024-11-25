@@ -94,14 +94,14 @@ TEST_CASE("CoherentCacheConfig", "[rpc][ethdb][kv][state_cache]") {
     }
 }
 
-StateChangeSet new_batch(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+StateChangeSet new_batch(uint64_t view_id, BlockNum block_num, const Hash& block_hash,
                          const ListOfBytes& rlp_txs, bool unwind) {
     StateChangeSet state_change_set;
     state_change_set.state_version_id = view_id;
 
     state_change_set.state_changes.emplace_back(StateChange{
         .direction = unwind ? Direction::kUnwind : Direction::kForward,
-        .block_height = block_height,
+        .block_num = block_num,
         .block_hash = block_hash,
         .rlp_txs = rlp_txs,
     });
@@ -109,9 +109,9 @@ StateChangeSet new_batch(uint64_t view_id, BlockNum block_height, const Hash& bl
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_upsert(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+StateChangeSet new_batch_with_upsert(uint64_t view_id, BlockNum block_num, const Hash& block_hash,
                                      const ListOfBytes& rlp_txs, bool unwind) {
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, rlp_txs, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     latest_change.account_changes.emplace_back(AccountChange{
@@ -124,14 +124,14 @@ StateChangeSet new_batch_with_upsert(uint64_t view_id, BlockNum block_height, co
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_upsert_code(uint64_t view_id, BlockNum block_height,
+StateChangeSet new_batch_with_upsert_code(uint64_t view_id, BlockNum block_num,
                                           const Hash& block_hash, const ListOfBytes& rlp_txs,
                                           bool unwind, uint64_t num_changes, uint64_t offset = 0) {
     SILKWORM_ASSERT(num_changes <= kTestAddresses.size());
     SILKWORM_ASSERT(num_changes <= kTestCodes.size());
     SILKWORM_ASSERT(offset < num_changes);
 
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, rlp_txs, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     for (auto i{offset}; i < num_changes; ++i) {
@@ -147,9 +147,9 @@ StateChangeSet new_batch_with_upsert_code(uint64_t view_id, BlockNum block_heigh
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_delete(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+StateChangeSet new_batch_with_delete(uint64_t view_id, BlockNum block_num, const Hash& block_hash,
                                      const ListOfBytes& rlp_txs, bool unwind) {
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, rlp_txs, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     latest_change.account_changes.emplace_back(AccountChange{
@@ -160,13 +160,13 @@ StateChangeSet new_batch_with_delete(uint64_t view_id, BlockNum block_height, co
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_storage(uint64_t view_id, BlockNum block_height,
+StateChangeSet new_batch_with_storage(uint64_t view_id, BlockNum block_num,
                                       const Hash& block_hash, const ListOfBytes& tx_rlps,
                                       bool unwind, uint64_t num_storage_changes) {
     SILKWORM_ASSERT(num_storage_changes <= kTestHashedLocations.size());
     SILKWORM_ASSERT(num_storage_changes <= kTestStorageData.size());
 
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, tx_rlps, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     StorageChangeSequence storage_change_set;
@@ -187,11 +187,11 @@ StateChangeSet new_batch_with_storage(uint64_t view_id, BlockNum block_height,
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_code(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
+StateChangeSet new_batch_with_code(uint64_t view_id, BlockNum block_num, const evmc::bytes32& block_hash,
                                    const std::vector<Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
     SILKWORM_ASSERT(num_code_changes <= kTestCodes.size());
 
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, tx_rlps, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     for (auto i{0u}; i < num_code_changes; ++i) {

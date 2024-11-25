@@ -480,18 +480,16 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         REQUIRE(h == header.hash());
     }
 
-    SECTION("process_blocks_at_height") {
-        BlockNum height = header.number;
-
+    SECTION("read_blocks") {
         BlockBody body{sample_block_body()};
         CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));
 
         size_t count = 0;
         auto processed = read_blocks(
             txn,
-            height,
-            [&count, &height](const Block& block) {
-                REQUIRE(block.header.number == height);
+            block_num,
+            [&count, &block_num](const Block& block) {
+                REQUIRE(block.header.number == block_num);
                 ++count;
             });
         REQUIRE(processed == 1);
@@ -500,7 +498,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         BlockBody body2{sample_block_body()};
         header.extra_data = string_view_to_byte_view("I'm different");
         CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
-        CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));  // another body at same height
+        CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));  // another body at same block_num
         BlockBody body3{sample_block_body()};
         header.number = header.number + 1;
         CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
@@ -509,9 +507,9 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         count = 0;
         processed = read_blocks(
             txn,
-            height,
-            [&count, &height](const Block& block) {
-                REQUIRE(block.header.number == height);
+            block_num,
+            [&count, &block_num](const Block& block) {
+                REQUIRE(block.header.number == block_num);
                 ++count;
             });
         REQUIRE(processed == 2);

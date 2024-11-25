@@ -351,7 +351,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(count == 2);
         }
 
-        // Add one address and store changes from current height onwards
+        // Add one address and store changes from current block_num onwards
         {
             addresses.push_back(0x0000000000000000000000000000000000000004_address);
             const auto block_key{db::block_key(block++)};

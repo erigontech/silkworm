@@ -387,7 +387,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(RWTxn& txn, const MapConfig& s
             }
             bitmaps_it->second.add(reached_block_num);
             bitmaps_size += sizeof(uint32_t);  // All blocks <= UINT32_MAX
-                                               // Is there a chain exceeding that height ?
+                                               // Is there a chain exceeding that block_num ?
 
             source_data = source->to_current_next_multi(false);
         }

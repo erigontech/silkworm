@@ -118,7 +118,7 @@ void MainChain::open() {
 
     // Revalidate chain by executing forward cycle up to the canonical current head at startup:
     // - if last cycle completed successfully, this will simply do nothing (no hurt)
-    // - if last cycle was executed partially (i.e. not all stages are at the same height), this will do a cleanup cycle
+    // - if last cycle was executed partially (i.e. not all stages are at the same block_num), this will do a cleanup cycle
     const auto& canonical_head{interim_canonical_chain_.current_head()};
     SILK_INFO << "Revalidate canonical chain up to number=" << canonical_head.number << " hash=" << to_hex(canonical_head.hash);
 
@@ -381,14 +381,14 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     }
 
     std::set<Hash> bad_headers;
-    for (BlockNum current_height = interim_canonical_chain_.current_head().number;
-         current_height > invalid_chain.unwind_point.number; --current_height) {
-        auto current_hash = db::read_canonical_header_hash(tx, current_height);
+    for (BlockNum current_block_num = interim_canonical_chain_.current_head().number;
+         current_block_num > invalid_chain.unwind_point.number; --current_block_num) {
+        auto current_hash = db::read_canonical_header_hash(tx, current_block_num);
         bad_headers.insert(*current_hash);
     }
 
     /*  todo: check if we need also the following code (remember that this entire algo changed in Erigon)
-    BlockNum new_height = unwind_point;
+    BlockNum new_block_num = unwind_point;
     if (is_bad_block) {
         bad_headers.insert(*bad_block);
 
@@ -400,9 +400,9 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
         }
 
         db::write_head_header_hash(tx, max_hash);
-        new_height = max_block_num;
+        new_block_num = max_block_num;
     }
-    return {bad_headers, new_height};
+    return {bad_headers, new_block_num};
     */
     return bad_headers;
 }
@@ -438,25 +438,25 @@ std::optional<BlockHeader> MainChain::get_header(Hash header_hash) const {
     return data_model().read_header(header_hash);
 }
 
-std::optional<BlockHeader> MainChain::get_header(BlockNum header_height, Hash header_hash) const {
+std::optional<BlockHeader> MainChain::get_header(BlockNum header_block_num, Hash header_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
     // }
-    std::optional<BlockHeader> header = data_model().read_header(header_height, header_hash);
+    std::optional<BlockHeader> header = data_model().read_header(header_block_num, header_hash);
     return header;
 }
 
-std::optional<Hash> MainChain::get_finalized_canonical_hash(BlockNum height) const {
-    if (height > last_fork_choice_.number) return {};
+std::optional<Hash> MainChain::get_finalized_canonical_hash(BlockNum block_num) const {
+    if (block_num > last_fork_choice_.number) return {};
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return interim_canonical_chain_.get_hash(height);
+    return interim_canonical_chain_.get_hash(block_num);
 }
 
-std::optional<TotalDifficulty> MainChain::get_header_td(BlockNum header_height, Hash header_hash) const {
+std::optional<TotalDifficulty> MainChain::get_header_td(BlockNum header_block_num, Hash header_hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return db::read_total_difficulty(tx_, header_height, header_hash);
+    return db::read_total_difficulty(tx_, header_block_num, header_hash);
 }
 
 std::optional<TotalDifficulty> MainChain::get_header_td(Hash header_hash) const {
@@ -504,9 +504,9 @@ bool MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const {
     return extends(block, supposed_parent);
 }
 
-bool MainChain::extends_last_fork_choice(BlockNum height, Hash hash) const {
+bool MainChain::extends_last_fork_choice(BlockNum block_num, Hash hash) const {
     TransactionHandler tx_handler{tx_, db_access_, node_settings_.keep_db_txn_open};
-    return extends({height, hash}, last_fork_choice_);
+    return extends({block_num, hash}, last_fork_choice_);
 }
 
 bool MainChain::extends(BlockId block, BlockId supposed_parent) const {
@@ -528,14 +528,14 @@ bool MainChain::is_finalized_canonical(Hash block_hash) const {
     auto header = get_header(block_hash);
     if (!header) return false;
     if (header->number > last_fork_choice_.number) return false;
-    auto canonical_hash_at_same_height = interim_canonical_chain_.get_hash(header->number);
-    return canonical_hash_at_same_height == block_hash;
+    auto canonical_hash_at_same_block_num = interim_canonical_chain_.get_hash(header->number);
+    return canonical_hash_at_same_block_num == block_hash;
 }
 
 // protected, no txn handling required
-bool MainChain::is_canonical(BlockNum block_height, const Hash& block_hash) const {
+bool MainChain::is_canonical(BlockNum block_num, const Hash& block_hash) const {
     // Check if specified block already exists as canonical block
-    return interim_canonical_chain_.get_hash(block_height) == block_hash;
+    return interim_canonical_chain_.get_hash(block_num) == block_hash;
 }
 
 // protected, no txn handling required
@@ -544,12 +544,12 @@ bool MainChain::is_canonical_head_ancestor(const Hash& block_hash) const {
 }
 
 // protected, no txn handling required
-void MainChain::forward(BlockNum head_height, const Hash& head_hash) {
+void MainChain::forward(BlockNum head_block_num, const Hash& head_hash) {
     // update canonical up to header_hash
-    interim_canonical_chain_.update_up_to(head_height, head_hash);
+    interim_canonical_chain_.update_up_to(head_block_num, head_hash);
 
     // forward
-    Stage::Result forward_result = pipeline_.forward(tx_, head_height);
+    Stage::Result forward_result = pipeline_.forward(tx_, head_block_num);
 
     // evaluate result
     VerificationResult verify_result;

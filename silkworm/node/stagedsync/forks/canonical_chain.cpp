@@ -82,90 +82,90 @@ BlockId CanonicalChain::find_forking_point(const BlockHeader& header, Hash heade
     if (header.number == 0) return forking_point;
     if (get_hash(header.number) == header_hash) return {header.number, header_hash};
 
-    BlockNum height = header.number;
+    BlockNum block_num = header.number;
     Hash parent_hash = header.parent_hash;
 
-    // Most common case: forking point is the height of the parent header
-    auto prev_canon_hash = get_hash(height - 1);
+    // Most common case: forking point is the block_num of the parent header
+    auto prev_canon_hash = get_hash(block_num - 1);
     if (prev_canon_hash == header.parent_hash) {
-        forking_point = {height - 1, *prev_canon_hash};
+        forking_point = {block_num - 1, *prev_canon_hash};
     }
 
     // Going further back
     else {
-        auto parent = data_model().read_header(height - 1, parent_hash);
+        auto parent = data_model().read_header(block_num - 1, parent_hash);
         ensure_invariant(parent.has_value(),
                          [&]() { return "canonical chain could not find parent with hash " + to_hex(parent_hash) +
-                                        " and height " + std::to_string(height - 1); });
+                                        " and block_num " + std::to_string(block_num - 1); });
 
         auto ancestor_hash = parent->parent_hash;
-        auto ancestor_height = height - 2;
+        auto ancestor_block_num = block_num - 2;
 
         std::optional<Hash> canon_hash;
-        while ((canon_hash = get_hash(ancestor_height)).has_value() && (canon_hash != ancestor_hash)) {
-            auto ancestor = data_model().read_header(ancestor_height, ancestor_hash);
+        while ((canon_hash = get_hash(ancestor_block_num)).has_value() && (canon_hash != ancestor_hash)) {
+            auto ancestor = data_model().read_header(ancestor_block_num, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
-            --ancestor_height;
+            --ancestor_block_num;
         }
 
-        // loop above terminates when prev_canon_hash == ancestor_hash, therefore ancestor_height is our forking point
-        forking_point = {ancestor_height, ancestor_hash};
+        // loop above terminates when prev_canon_hash == ancestor_hash, therefore ancestor_block_num is our forking point
+        forking_point = {ancestor_block_num, ancestor_hash};
     }
 
     return forking_point;
 }
 
-void CanonicalChain::advance(BlockNum height, Hash header_hash) {
-    ensure_invariant(current_head_.number == height - 1,
+void CanonicalChain::advance(BlockNum block_num, Hash header_hash) {
+    ensure_invariant(current_head_.number == block_num - 1,
                      [&]() { return std::string("canonical chain must advance gradually,") +
                                     " current head " + std::to_string(current_head_.number) +
-                                    " expected head " + std::to_string(height - 1); });
+                                    " expected head " + std::to_string(block_num - 1); });
 
-    db::write_canonical_hash(tx_, height, header_hash);
-    if (cache_enabled()) canonical_hash_cache_->put(height, header_hash);
+    db::write_canonical_hash(tx_, block_num, header_hash);
+    if (cache_enabled()) canonical_hash_cache_->put(block_num, header_hash);
 
-    current_head_.number = height;
+    current_head_.number = block_num;
     current_head_.hash = header_hash;
 }
 
-void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be empty
-    if (height == 0) return;
+void CanonicalChain::update_up_to(BlockNum block_num, Hash hash) {  // hash can be empty
+    if (block_num == 0) return;
 
     auto ancestor_hash = hash;
-    auto ancestor_height = height;
+    auto ancestor_block_num = block_num;
 
-    std::optional<Hash> persisted_canon_hash = db::read_canonical_header_hash(tx_, ancestor_height);
+    std::optional<Hash> persisted_canon_hash = db::read_canonical_header_hash(tx_, ancestor_block_num);
     // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
     while (!persisted_canon_hash ||
            std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
-        db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
-        if (cache_enabled()) canonical_hash_cache_->put(ancestor_height, ancestor_hash);
+        db::write_canonical_hash(tx_, ancestor_block_num, ancestor_hash);
+        if (cache_enabled()) canonical_hash_cache_->put(ancestor_block_num, ancestor_hash);
 
-        auto ancestor = data_model().read_header(ancestor_height, ancestor_hash);
+        auto ancestor = data_model().read_header(ancestor_block_num, ancestor_hash);
         ensure_invariant(ancestor.has_value(),
-                         [&]() { return "fix canonical chain failed at ancestor= " + std::to_string(ancestor_height) +
+                         [&]() { return "fix canonical chain failed at ancestor= " + std::to_string(ancestor_block_num) +
                                         " hash=" + ancestor_hash.to_hex(); });
 
         ancestor_hash = ancestor->parent_hash;
-        --ancestor_height;
+        --ancestor_block_num;
 
-        persisted_canon_hash = db::read_canonical_header_hash(tx_, ancestor_height);
+        persisted_canon_hash = db::read_canonical_header_hash(tx_, ancestor_block_num);
     }
 
-    current_head_.number = height;
+    current_head_.number = block_num;
     current_head_.hash = hash;
 }
 
 void CanonicalChain::delete_down_to(BlockNum unwind_point) {
-    for (BlockNum current_height = current_head_.number; current_height > unwind_point; --current_height) {
-        db::delete_canonical_hash(tx_, current_height);  // do not throw if not found
-        if (cache_enabled()) canonical_hash_cache_->remove(current_height);
+    for (BlockNum current_block_num = current_head_.number; current_block_num > unwind_point; --current_block_num) {
+        db::delete_canonical_hash(tx_, current_block_num);  // do not throw if not found
+        if (cache_enabled()) canonical_hash_cache_->remove(current_block_num);
     }
 
     current_head_.number = unwind_point;
     auto current_head_hash = db::read_canonical_header_hash(tx_, unwind_point);
     ensure_invariant(current_head_hash.has_value(),
-                     [&]() { return "hash not found on canonical at height " + std::to_string(unwind_point); });
+                     [&]() { return "hash not found on canonical at block_num " + std::to_string(unwind_point); });
 
     current_head_.hash = *current_head_hash;
 
@@ -174,11 +174,11 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
     }
 }
 
-std::optional<Hash> CanonicalChain::get_hash(BlockNum height) const {
-    auto canon_hash = canonical_hash_cache_->get_as_copy(height);  // look in the cache first
+std::optional<Hash> CanonicalChain::get_hash(BlockNum block_num) const {
+    auto canon_hash = canonical_hash_cache_->get_as_copy(block_num);  // look in the cache first
     if (!canon_hash) {
-        canon_hash = db::read_canonical_header_hash(tx_, height);         // then look in the db
-        if (canon_hash) canonical_hash_cache_->put(height, *canon_hash);  // and cache it
+        canon_hash = db::read_canonical_header_hash(tx_, block_num);         // then look in the db
+        if (canon_hash) canonical_hash_cache_->put(block_num, *canon_hash);  // and cache it
     }
     return canon_hash;
 }
@@ -186,8 +186,8 @@ std::optional<Hash> CanonicalChain::get_hash(BlockNum height) const {
 bool CanonicalChain::has(Hash block_hash) const {
     auto header = data_model().read_header(block_hash);
     if (!header) return false;
-    auto canonical_hash_at_same_height = get_hash(header->number);
-    return canonical_hash_at_same_height == block_hash;
+    auto canonical_hash_at_same_block_num = get_hash(header->number);
+    return canonical_hash_at_same_block_num == block_hash;
 }
 
 }  // namespace silkworm::stagedsync

@@ -63,10 +63,10 @@ int main(int argc, char* argv[]) {
                            << ") not found in " << db::table::kHeaderNumbers.name << " table ";
 
             } else if (block_hashes_data.value != canonical_hashes_data.key) {
-                uint64_t hash_height = endian::load_big_u64(static_cast<uint8_t*>(canonical_hashes_data.key.data()));
-                uint64_t block_height = endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.data()));
-                SILK_ERROR << "Hash " << to_hex(hash_data_view) << " should match block " << hash_height
-                           << " but got " << block_height;
+                uint64_t hash_block_num = endian::load_big_u64(static_cast<uint8_t*>(canonical_hashes_data.key.data()));
+                uint64_t block_num = endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.data()));
+                SILK_ERROR << "Hash " << to_hex(hash_data_view) << " should match block " << hash_block_num
+                           << " but got " << block_num;
             }
 
             if (++scanned_headers % 100000 == 0) {

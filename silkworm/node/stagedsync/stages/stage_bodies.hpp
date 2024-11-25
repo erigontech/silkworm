@@ -41,7 +41,7 @@ class BodiesStage : public Stage {
     ~BodiesStage() override = default;
 
     Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
-    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
+    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_block_num
     Stage::Result prune(db::RWTxn&) override;
 
   private:
@@ -50,7 +50,7 @@ class BodiesStage : public Stage {
     const ChainConfig& chain_config_;
     db::DataModelFactory data_model_factory_;
     std::function<BlockNum()> last_pre_validated_block_;
-    std::atomic<BlockNum> current_height_{0};
+    std::atomic<BlockNum> current_block_num_{0};
 
   protected:
     // BodyDataModel has the responsibility to update bodies related tables
@@ -59,7 +59,7 @@ class BodiesStage : public Stage {
         explicit BodyDataModel(
             db::RWTxn& tx,
             db::DataModel data_model,
-            BlockNum bodies_stage_height,
+            BlockNum bodies_stage_block_num,
             const ChainConfig& chain_config);
         ~BodyDataModel() = default;
 
@@ -67,18 +67,18 @@ class BodiesStage : public Stage {
         void close();
 
         // remove body data from tables, used in unwind phase
-        static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);
+        static void remove_bodies(BlockNum new_block_num, std::optional<Hash> bad_block, db::RWTxn& tx);
 
         // holds the status of a batch insertion of bodies
         bool unwind_needed() const;
         BlockNum unwind_point() const;
-        BlockNum initial_height() const;
-        BlockNum highest_height() const;
+        BlockNum initial_block_num() const;
+        BlockNum highest_block_num() const;
         Hash bad_block() const;
 
-        bool get_canonical_block(BlockNum height, Block& block) const;
+        bool get_canonical_block(BlockNum block_num, Block& block) const;
 
-        void set_preverified_height(BlockNum height);
+        void set_preverified_block_num(BlockNum block_num);
 
       private:
         db::DataModel data_model_;
@@ -86,10 +86,10 @@ class BodiesStage : public Stage {
         protocol::RuleSetPtr rule_set_;
         db::Buffer chain_state_;
 
-        BlockNum initial_height_{0};
-        BlockNum highest_height_{0};
+        BlockNum initial_block_num_{0};
+        BlockNum highest_block_num_{0};
 
-        BlockNum preverified_height_{0};
+        BlockNum preverified_block_num_{0};
 
         BlockNum unwind_point_{0};
         bool unwind_needed_{false};

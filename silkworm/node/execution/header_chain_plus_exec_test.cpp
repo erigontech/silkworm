@@ -145,9 +145,9 @@ TEST_CASE("Headers receiving and saving") {
      */
     SECTION("accepting 1 batch of headers") {
         // testing initial status
-        auto initial_height = chain_fork_view.head_height();
+        auto initial_block_num = chain_fork_view.head_block_num();
         auto initial_hash = chain_fork_view.head_hash();
-        REQUIRE(initial_height == 0);
+        REQUIRE(initial_block_num == 0);
         REQUIRE(initial_hash == header0_hash);
 
         // receiving 3 headers from a peer
@@ -195,7 +195,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(headers_to_persist.size() == 3);
         REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
         REQUIRE(chain_fork_view.head_changed() == true);
-        REQUIRE(chain_fork_view.head_height() == 2);
+        REQUIRE(chain_fork_view.head_block_num() == 2);
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
@@ -275,7 +275,7 @@ TEST_CASE("Headers receiving and saving") {
 
         REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
         REQUIRE(chain_fork_view.head_changed() == true);
-        REQUIRE(chain_fork_view.head_height() == 2);
+        REQUIRE(chain_fork_view.head_block_num() == 2);
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
@@ -319,7 +319,7 @@ TEST_CASE("Headers receiving and saving") {
         // status and db content must be as before because the new header is not in the canonical chain
         REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
         REQUIRE(chain_fork_view.head_changed() == true);
-        REQUIRE(chain_fork_view.head_height() == 2);
+        REQUIRE(chain_fork_view.head_block_num() == 2);
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
@@ -393,7 +393,7 @@ TEST_CASE("Headers receiving and saving") {
 
         REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
         REQUIRE(chain_fork_view.head_changed() == true);
-        REQUIRE(chain_fork_view.head_height() == 2);
+        REQUIRE(chain_fork_view.head_block_num() == 2);
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
@@ -440,7 +440,7 @@ TEST_CASE("Headers receiving and saving") {
 
         REQUIRE(chain_fork_view.head_total_difficulty() == new_expected_td);
         REQUIRE(chain_fork_view.head_changed() == true);
-        REQUIRE(chain_fork_view.head_height() == 1);  // <-- NOTE! 1 not 2
+        REQUIRE(chain_fork_view.head_block_num() == 1);  // <-- NOTE! 1 not 2
         REQUIRE(chain_fork_view.head_hash() == header1b_hash);
 
         // check db content
@@ -512,7 +512,7 @@ TEST_CASE("Headers receiving and saving") {
 
         REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
         REQUIRE(chain_fork_view.head_changed() == true);
-        REQUIRE(chain_fork_view.head_height() == 1);
+        REQUIRE(chain_fork_view.head_block_num() == 1);
         REQUIRE(chain_fork_view.head_hash() == header1b_hash);
 
         // check db content
@@ -562,7 +562,7 @@ TEST_CASE("Headers receiving and saving") {
 
         REQUIRE(chain_fork_view.head_total_difficulty() == expected_td_bis);
         REQUIRE(chain_fork_view.head_changed() == true);
-        REQUIRE(chain_fork_view.head_height() == 2);
+        REQUIRE(chain_fork_view.head_block_num() == 2);
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db

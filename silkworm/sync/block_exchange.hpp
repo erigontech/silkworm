@@ -44,8 +44,8 @@ struct IBlockExchange : public ActiveComponent {
         kByNewPayloads
     };
 
-    // start downloading blocks from current_height
-    virtual void download_blocks(BlockNum current_height, TargetTracking) = 0;
+    // start downloading blocks from current_block_num
+    virtual void download_blocks(BlockNum current_block_num, TargetTracking) = 0;
 
     // set a new target block to download, to use with TargetTracking::kByNewPayloads
     virtual void new_target_block(std::shared_ptr<Block> block) = 0;
@@ -59,8 +59,8 @@ struct IBlockExchange : public ActiveComponent {
     // true if the sync is in sync with the network
     virtual bool in_sync() const = 0;
 
-    // the current height of the sync
-    virtual BlockNum current_height() const = 0;
+    // the current block_num of the sync
+    virtual BlockNum current_block_num() const = 0;
 
     /*[[thread_safe]]*/
     virtual void accept(std::shared_ptr<Message>) = 0;
@@ -81,13 +81,13 @@ class BlockExchange : public IBlockExchange {
     ~BlockExchange() override;
 
     void initial_state(std::vector<BlockHeader> last_headers) override;
-    void download_blocks(BlockNum current_height, TargetTracking) override;
+    void download_blocks(BlockNum current_block_num, TargetTracking) override;
     void new_target_block(std::shared_ptr<Block> block) override;
     void stop_downloading() override;
 
     ResultQueue& result_queue() override;
     bool in_sync() const override;
-    BlockNum current_height() const override;
+    BlockNum current_block_num() const override;
 
     void accept(std::shared_ptr<Message>) override;
     /*[[long_running]]*/
@@ -119,7 +119,7 @@ class BlockExchange : public IBlockExchange {
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
     std::atomic_bool in_sync_{false};
     std::atomic_bool downloading_active_{false};
-    std::atomic<BlockNum> current_height_{0};
+    std::atomic<BlockNum> current_block_num_{0};
 };
 
 }  // namespace silkworm

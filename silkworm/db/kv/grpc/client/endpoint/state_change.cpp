@@ -113,7 +113,7 @@ api::StateChangeSet state_change_set_from_batch(const proto::StateChangeBatch& b
     for (const auto& change : batch.change_batch()) {
         state_change_set.state_changes.emplace_back(api::StateChange{
             .direction = change.direction() == proto::Direction::FORWARD ? api::kForward : api::kUnwind,
-            .block_height = change.block_height(),
+            .block_num = change.block_num(),
             .block_hash = rpc::bytes32_from_h256(change.block_hash()),
             .account_changes = account_change_set_from_proto(change),
             .rlp_txs = rlp_txs_from_proto(change),

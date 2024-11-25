@@ -91,8 +91,8 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Not an Ethash PoW chain");
         }
 
-        auto max_headers_height{db::stages::read_stage_progress(txn, db::stages::kSendersKey)};
-        options.block_to = std::min(options.block_to, static_cast<uint32_t>(max_headers_height));
+        auto max_headers_block_num{db::stages::read_stage_progress(txn, db::stages::kSendersKey)};
+        options.block_to = std::min(options.block_to, static_cast<uint32_t>(max_headers_block_num));
 
         // Initialize epoch
         auto epoch_num{options.block_from / ethash::epoch_length};
@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
 
             if (!(block_num % 1000)) {
                 const auto interval{sw.lap()};
-                SILK_INFO << "At block height " << block_num << " in " << StopWatch::format(interval.second);
+                SILK_INFO << "At block number " << block_num << " in " << StopWatch::format(interval.second);
             }
         }
 

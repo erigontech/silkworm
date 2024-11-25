@@ -1008,8 +1008,8 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.get_canonical_hash(3) == block3_hash);
         CHECK(exec_engine.get_canonical_header(3).has_value());
 
-        auto [head_height, head_hash] = read_canonical_head(tx);
-        CHECK(head_height == 3);
+        auto [head_block_num, head_hash] = read_canonical_head(tx);
+        CHECK(head_block_num == 3);
         CHECK(head_hash == block3_hash);
 
         // creating and reintegrating a fork
@@ -1038,8 +1038,8 @@ TEST_CASE("ExecutionEngine") {
             CHECK(exec_engine.get_canonical_hash(4) == block4_hash);
             CHECK(exec_engine.get_canonical_header(4).has_value());
 
-            std::tie(head_height, head_hash) = read_canonical_head(tx);
-            CHECK(head_height == 4);
+            std::tie(head_block_num, head_hash) = read_canonical_head(tx);
+            CHECK(head_block_num == 4);
             CHECK(head_hash == block4_hash);
         }
 
@@ -1069,8 +1069,8 @@ TEST_CASE("ExecutionEngine") {
             CHECK_FALSE(exec_engine.get_canonical_header(3).has_value());
             CHECK_FALSE(exec_engine.get_canonical_header(4).has_value());
 
-            std::tie(head_height, head_hash) = read_canonical_head(tx);
-            CHECK(head_height == 2);
+            std::tie(head_block_num, head_hash) = read_canonical_head(tx);
+            CHECK(head_block_num == 2);
             CHECK(head_hash == block2b_hash);
         }
 

@@ -658,7 +658,7 @@ TEST_CASE("Sync Stages") {
         REQUIRE_NOTHROW(stages::write_stage_progress(txn, stages::kSendersKey, 1));
 
         stagedsync::SyncContext sync_context{};
-        sync_context.target_height = 1;
+        sync_context.target_block_num = 1;
         stagedsync::Execution stage_execution = make_execution_stage(&sync_context, node_settings, data_model_factory);
         CHECK(stage_execution.forward(txn) == StageResult::kSuccess);
 

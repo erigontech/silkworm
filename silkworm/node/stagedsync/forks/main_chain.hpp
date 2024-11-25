@@ -106,10 +106,10 @@ class MainChain {
     db::DataModel data_model() const { return data_model_factory_(tx_); }
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
-    void forward(BlockNum head_height, const Hash& head_hash);
+    void forward(BlockNum head_block_num, const Hash& head_hash);
     void unwind(BlockNum unwind_point);
 
-    bool is_canonical(BlockNum block_height, const Hash& block_hash) const;
+    bool is_canonical(BlockNum block_num, const Hash& block_hash) const;
     bool is_canonical_head_ancestor(const Hash& block_hash) const;
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, execution::api::InvalidChain& invalid_chain);

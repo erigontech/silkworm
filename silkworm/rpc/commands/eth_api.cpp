@@ -59,8 +59,8 @@ Task<void> EthereumRpcApi::handle_eth_block_num(const nlohmann::json& request, n
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_height = co_await core::get_latest_block_num(*tx);
-        reply = make_json_content(request, to_quantity(block_height));
+        const auto block_num = co_await core::get_latest_block_num(*tx);
+        reply = make_json_content(request, to_quantity(block_num));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -110,15 +110,15 @@ Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlo
     auto tx = co_await database_->begin();
 
     try {
-        const auto current_block_height = co_await core::get_current_block_num(*tx);
-        const auto highest_block_height = co_await core::get_highest_block_num(*tx);
-        if (current_block_height >= highest_block_height) {
+        const auto current_block_num = co_await core::get_current_block_num(*tx);
+        const auto highest_block_num = co_await core::get_highest_block_num(*tx);
+        if (current_block_num >= highest_block_num) {
             reply = make_json_content(request, false);
         } else {
             SyncingData syncing_data{};
 
-            syncing_data.current_block = to_quantity(current_block_height);
-            syncing_data.highest_block = to_quantity(highest_block_height);
+            syncing_data.current_block = to_quantity(current_block_num);
+            syncing_data.highest_block = to_quantity(highest_block_num);
             for (const char* stage_name : silkworm::db::stages::kAllStages) {
                 StageData current_stage;
                 current_stage.stage_name = stage_name;

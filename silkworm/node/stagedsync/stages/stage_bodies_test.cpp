@@ -66,23 +66,23 @@ TEST_CASE("BodiesStage - data model") {
         auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
-        BlockNum bodies_stage_height = 0;
+        BlockNum bodies_stage_block_num = 0;
         BodyDataModelForTest bm{
             tx,
             data_model,
-            bodies_stage_height,
+            bodies_stage_block_num,
             chain_config,
         };
 
-        REQUIRE(bm.initial_height() == 0);
-        REQUIRE(bm.highest_height() == 0);
+        REQUIRE(bm.initial_block_num() == 0);
+        REQUIRE(bm.highest_block_num() == 0);
         REQUIRE(bm.unwind_needed() == false);
         REQUIRE(bm.unwind_point() == 0);
 
         bm.update_tables(block1);
 
         // check internal status
-        REQUIRE(bm.highest_height() == 0);    // block is not valid so no progress
+        REQUIRE(bm.highest_block_num() == 0);    // block is not valid so no progress
         REQUIRE(bm.unwind_needed() == true);  // block is not valid -> unwind
         REQUIRE(bm.unwind_point() == 0);      // block-num - 1
         REQUIRE(bm.bad_block() == header1_hash);
@@ -120,24 +120,24 @@ TEST_CASE("BodiesStage - data model") {
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result);
 
-        BlockNum bodies_stage_height = 0;
+        BlockNum bodies_stage_block_num = 0;
         BodyDataModelForTest bm{
             tx,
             data_model,
-            bodies_stage_height,
+            bodies_stage_block_num,
             chain_config,
         };
 
         // check internal status
-        REQUIRE(bm.initial_height() == 0);
-        REQUIRE(bm.highest_height() == 0);
+        REQUIRE(bm.initial_block_num() == 0);
+        REQUIRE(bm.highest_block_num() == 0);
         REQUIRE(bm.unwind_needed() == false);
         REQUIRE(bm.unwind_point() == 0);
 
         bm.update_tables(block1);  // validation must pass
 
         // check internal status
-        REQUIRE(bm.highest_height() == 1);
+        REQUIRE(bm.highest_block_num() == 1);
         REQUIRE(bm.unwind_needed() == false);
         REQUIRE(bm.unwind_point() == 0);
 

@@ -274,7 +274,7 @@ Stage::Result Senders::parallel_recover(RWTxn& txn) {
         auto block_hashes_progress{stages::read_stage_progress(txn, stages::kBlockHashesKey)};
         auto block_bodies_progress{stages::read_stage_progress(txn, stages::kBlockBodiesKey)};
         auto target_block_num{std::min(block_hashes_progress, block_bodies_progress)};
-        // note: it would be better to use sync_context_->target_height instead of target_block
+        // note: it would be better to use sync_context_->target_block_num instead of target_block
 
         const BlockNum segment_width{target_block_num - previous_progress};
         if (segment_width > stages::kSmallBlockSegmentWidth) {
@@ -311,14 +311,14 @@ Stage::Result Senders::parallel_recover(RWTxn& txn) {
         for (auto current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
             const auto current_hash = read_canonical_header_hash(txn, current_block_num);
             if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
-                                                "Canonical hash at height " + std::to_string(current_block_num) + " not found");
+                                                "Canonical hash at block_num " + std::to_string(current_block_num) + " not found");
             const auto block_header = data_model.read_header(current_block_num, *current_hash);
             if (!block_header) throw StageError(Stage::Result::kBadChainSequence,
-                                                "Canonical header at height " + std::to_string(current_block_num) + " not found");
+                                                "Canonical header at block_num " + std::to_string(current_block_num) + " not found");
             BlockBody block_body;
             const auto found = data_model.read_body(*current_hash, current_block_num, block_body);
             if (!found) throw StageError(Stage::Result::kBadChainSequence,
-                                         "Canonical body at height " + std::to_string(current_block_num) + " not found");
+                                         "Canonical body at block_num " + std::to_string(current_block_num) + " not found");
 
             // Every 1024 blocks check if the SignalHandler has been triggered
             if ((current_block_num % 1024 == 0) && is_stopping()) {

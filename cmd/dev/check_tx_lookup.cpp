@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
                         continue;
                     }
 
-                    // Erigon stores block height as compact (no leading zeroes)
+                    // Erigon stores block_num as compact (no leading zeroes)
                     auto lookup_block_value{db::from_slice(lookup_data.value)};
                     uint64_t actual_block_num{0};
                     if (!endian::from_big_compact(lookup_block_value, actual_block_num)) {

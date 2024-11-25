@@ -280,11 +280,11 @@ std::optional<BlockHeader> ExecutionEngine::get_header(Hash header_hash) const {
     return main_chain_.get_header(header_hash);
 }
 
-std::optional<BlockHeader> ExecutionEngine::get_header(BlockNum height, Hash hash) const {
+std::optional<BlockHeader> ExecutionEngine::get_header(BlockNum block_num, Hash hash) const {
     // read from cache, then from main_chain_
     auto block = block_cache_.get_as_copy(hash);
     if (block) return (*block)->header;
-    return main_chain_.get_header(height, hash);
+    return main_chain_.get_header(block_num, hash);
 }
 
 std::vector<BlockHeader> ExecutionEngine::get_last_headers(uint64_t limit) const {

@@ -56,7 +56,7 @@ class ChainStorage {
     //! Read block header with the specified hash
     virtual Task<std::optional<BlockHeader>> read_header(const Hash& hash) const = 0;
 
-    //! Read all sibling block headers at specified height
+    //! Read all sibling block headers at specified block_num
     virtual Task<std::vector<BlockHeader>> read_sibling_headers(BlockNum number) const = 0;
 
     //! Read block body in output parameter returning true on success and false on missing block
@@ -64,23 +64,23 @@ class ChainStorage {
     virtual Task<bool> read_body(const Hash& hash, BlockNum number, BlockBody& body) const = 0;
     virtual Task<bool> read_body(const Hash& hash, BlockBody& body) const = 0;
 
-    //! Read the canonical block hash at specified height
+    //! Read the canonical block hash at specified block_num
     virtual Task<std::optional<Hash>> read_canonical_header_hash(BlockNum number) const = 0;
 
-    //! Read the canonical block header at specified height
+    //! Read the canonical block header at specified block_num
     virtual Task<std::optional<BlockHeader>> read_canonical_header(BlockNum number) const = 0;
 
-    //! Read the canonical block body at specified height
-    virtual Task<bool> read_canonical_body(BlockNum height, BlockBody& body) const = 0;
+    //! Read the canonical block body at specified block_num
+    virtual Task<bool> read_canonical_body(BlockNum block_num, BlockBody& body) const = 0;
 
-    //! Read the canonical block at specified height
-    virtual Task<bool> read_canonical_block(BlockNum height, Block& block) const = 0;
+    //! Read the canonical block at specified block_num
+    virtual Task<bool> read_canonical_block(BlockNum block_num, Block& block) const = 0;
 
     //! Check the presence of a block body using block number and hash
     virtual Task<bool> has_body(BlockNum number, HashAsArray hash) const = 0;
     virtual Task<bool> has_body(BlockNum number, const Hash& hash) const = 0;
 
-    //! Read the RLP encoded block transactions at specified height
+    //! Read the RLP encoded block transactions at specified block_num
     virtual Task<bool> read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const = 0;
 
     virtual Task<bool> read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const = 0;

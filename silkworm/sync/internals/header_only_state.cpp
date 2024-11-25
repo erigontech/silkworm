@@ -28,7 +28,7 @@ std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum bloc
     auto [initial_link, final_link] = persisted_link_queue_.equal_range(block_num);
 
     for (auto link = initial_link; link != final_link; ++link) {
-        if (link->second->block_height == block_num && link->second->hash == hash) {
+        if (link->second->block_num == block_num && link->second->hash == hash) {
             return *link->second->header;
         }
     }

@@ -334,7 +334,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         SILK_INFO
             << "PoSSync: fork_choice_update " << (fcu_result ? "OK" : "KO")
             << " latest_valid_hash=" << (fcu_result ? Hash(state.head_block_hash).to_hex() : fcu_result.latest_valid_head.to_hex())
-            << " current_head=" << fcu_result.latest_valid_head << " current_height=";
+            << " current_head=" << fcu_result.latest_valid_head << " current_block_num=";
         if (!fcu_result) {
             // at the moment application doesn't carry information to disambiguate between invalid head and
             // finalized_block_hash not found, so we need additional calls:

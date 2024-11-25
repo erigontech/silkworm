@@ -70,14 +70,14 @@ class HeaderChain {
     // sync current state - this must be done at header forward
     void initial_state(const std::vector<BlockHeader>& last_headers);
     void current_state(BlockNum highest_in_db);
-    // void downloading_target(BlockNum height) { downloading_target_ = height; }
+    // void downloading_target(BlockNum block_num) { downloading_target_ = block_num; }
 
     // status
     bool in_sync() const;
     BlockNum highest_block_in_db() const;
-    BlockNum top_seen_block_height() const;
-    void top_seen_block_height(BlockNum);
-    std::pair<BlockNum, BlockNum> anchor_height_range() const;
+    BlockNum top_seen_block_num() const;
+    void top_seen_block_num(BlockNum);
+    std::pair<BlockNum, BlockNum> anchor_block_num_range() const;
     size_t pending_links() const;
     size_t anchors() const;
     size_t outstanding_requests(time_point_t tp) const;
@@ -172,7 +172,7 @@ class HeaderChain {
     OldestFirstLinkMap persisted_link_queue_;  // Priority queue of persisted links used to limit their number
     OldestFirstLinkQueue insert_list_;         // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;
-    BlockNum top_seen_height_;
+    BlockNum top_seen_block_num_;
     std::optional<BlockNum> target_block_;
     std::set<Hash> bad_headers_;
     PreverifiedHashes& preverified_hashes_;  // Set of hashes that are known to belong to canonical chain

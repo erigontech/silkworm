@@ -44,11 +44,11 @@ ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "server location as strin
 // ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level");
 
 Task<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
-    std::optional<uint64_t> block_height;
+    std::optional<uint64_t> block_num;
 
     const auto db_transaction = co_await db.begin();
     try {
-        block_height = co_await core::get_latest_block_num(*db_transaction);
+        block_num = co_await core::get_latest_block_num(*db_transaction);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
     } catch (...) {
@@ -56,7 +56,7 @@ Task<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
     }
     co_await db_transaction->close();
 
-    co_return block_height;
+    co_return block_num;
 }
 
 std::optional<uint64_t> get_latest_block(boost::asio::io_context& ioc, ethdb::Database& db) {

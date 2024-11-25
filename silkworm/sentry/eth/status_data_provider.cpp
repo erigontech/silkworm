@@ -35,7 +35,7 @@ static void log_chain_head(const ChainHead& info) {
             intx::to_string(info.total_difficulty),
 
             "head block num",
-            std::to_string(info.height),
+            std::to_string(info.block_num),
         });
 }
 
@@ -54,13 +54,13 @@ StatusDataProvider::StatusData StatusDataProvider::make_status_data(
         chain_head.total_difficulty,
         best_block_hash,
         Bytes{genesis_hash},
-        silkworm::sentry::eth::ForkId(genesis_hash, fork_numbers, fork_times, chain_head.height),
+        silkworm::sentry::eth::ForkId(genesis_hash, fork_numbers, fork_times, chain_head.block_num),
     };
 
     silkworm::sentry::eth::StatusData status_data = {
         std::move(fork_numbers),
         std::move(fork_times),
-        chain_head.height,
+        chain_head.block_num,
         std::move(status_message),
     };
 

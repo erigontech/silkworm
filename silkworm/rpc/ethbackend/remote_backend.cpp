@@ -175,10 +175,10 @@ Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_txn_hash(const H
     ::remote::TxnLookupRequest request;
     request.set_allocated_txn_hash(h256_from_bytes(hash).release());
     const auto reply = co_await txn_lookup_rpc.finish_on(executor_, request);
-    if (reply.block_num() == 0) {
+    if (reply.block_number() == 0) {
         co_return std::nullopt;
     }
-    auto block_num = reply.block_num();
+    auto block_num = reply.block_number();
     SILK_TRACE << "RemoteBackEnd::get_block_num_from_txn_hash block_num=" << block_num << " t=" << clock_time::since(start_time);
     co_return block_num;
 }
@@ -201,7 +201,7 @@ Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_num(
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalHash> canonical_hsh_rpc{*stub_, grpc_context_};
     ::remote::CanonicalHashRequest request;
-    request.set_block_num(number);
+    request.set_block_number(number);
     const auto reply = co_await canonical_hsh_rpc.finish_on(executor_, request);
     evmc::bytes32 hash;
     if (reply.has_hash() == 0) {

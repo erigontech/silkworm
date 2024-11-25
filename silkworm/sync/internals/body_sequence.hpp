@@ -82,7 +82,7 @@ class BodySequence {
     BlockNum highest_block_in_output() const;
     BlockNum highest_block_in_memory() const;
     BlockNum lowest_block_in_memory() const;
-    BlockNum target_height() const;
+    BlockNum target_block_num() const;
     size_t outstanding_requests(time_point_t tp) const;
     size_t ready_bodies() const;
     size_t requests() const;
@@ -104,7 +104,7 @@ class BodySequence {
     struct BodyRequest {
         uint64_t request_id{0};
         Hash block_hash;
-        BlockNum block_height{0};
+        BlockNum block_num{0};
         BlockHeader header;
         BlockBody body;
         time_point_t request_time;
@@ -139,7 +139,7 @@ class BodySequence {
     AnnouncedBlocks announced_blocks_;
 
     BlockNum highest_body_in_output_{0};
-    BlockNum target_height_{0};
+    BlockNum target_block_num_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};
     DownloadStatistics statistics_;

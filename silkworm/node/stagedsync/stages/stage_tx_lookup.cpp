@@ -349,11 +349,11 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(RWTxn& txn,
     for (BlockNum current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
         auto current_hash = read_canonical_header_hash(txn, current_block_num);
         if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
-                                            "Canonical hash at height " + std::to_string(current_block_num) + " not found");
+                                            "Canonical hash at block_num " + std::to_string(current_block_num) + " not found");
         std::vector<Bytes> rlp_encoded_txs;
         auto found = data_model.read_rlp_transactions(current_block_num, *current_hash, rlp_encoded_txs);
         if (!found) throw StageError(Stage::Result::kBadChainSequence,
-                                     "Canonical block at height " + std::to_string(current_block_num) + " not found");
+                                     "Canonical block at block_num " + std::to_string(current_block_num) + " not found");
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {

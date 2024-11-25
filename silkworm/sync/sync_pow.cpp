@@ -36,7 +36,7 @@ Task<void> PoWSync::async_run() {
     return ActiveComponent::async_run("pow-sync-ex");
 }
 
-PoWSync::NewHeight PoWSync::resume() {  // find the point (head) where we left off
+PoWSync::BlockId PoWSync::resume() {  // find the point (head) where we left off
     BlockId head{};
 
     // BlockExchange need a bunch of previous headers to attach the new ones
@@ -74,7 +74,7 @@ PoWSync::NewHeight PoWSync::resume() {  // find the point (head) where we left o
     return head;
 }
 
-PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
+PoWSync::BlockId PoWSync::forward_and_insert_blocks() {
     using namespace std::chrono_literals;
     using ResultQueue = BlockExchange::ResultQueue;
 
@@ -90,7 +90,7 @@ PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
     SILK_INFO_M("Sync") << "Waiting for blocks... from=" << initial_block_progress;
 
     while (!is_stopping() &&
-           !(block_exchange_.in_sync() && block_progress == block_exchange_.current_height())) {
+           !(block_exchange_.in_sync() && block_progress == block_exchange_.current_block_num())) {
         Blocks blocks;
 
         // wait for a batch of blocks
@@ -122,7 +122,7 @@ PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
             << "Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
             << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
             << ", last=" << downloaded_headers.get()
-            << ", head=" << chain_fork_view_.head_height()
+            << ", head=" << chain_fork_view_.head_block_num()
             << ", lap.duration=" << StopWatch::format(timing.since_start());
     }
 
@@ -131,10 +131,10 @@ PoWSync::NewHeight PoWSync::forward_and_insert_blocks() {
     auto [tp, duration] = timing.stop();
     SILK_INFO_M("Sync")
         << "Downloading completed, last=" << block_progress
-        << ", head=" << chain_fork_view_.head_height()
+        << ", head=" << chain_fork_view_.head_block_num()
         << ", tot.duration=" << StopWatch::format(duration);
 
-    return {.number = chain_fork_view_.head_height(), .hash = chain_fork_view_.head_hash()};
+    return {.number = chain_fork_view_.head_block_num(), .hash = chain_fork_view_.head_hash()};
 }
 
 void PoWSync::unwind(UnwindPoint, std::optional<Hash>) {
@@ -148,18 +148,18 @@ void PoWSync::execution_loop() {
     // Main cycle
     while (!is_stopping()) {
         // Resume from previous run or download new blocks
-        NewHeight new_height = is_starting_up
+        BlockId new_block_num = is_starting_up
                                    ? resume()                      // resuming, the following verify_chain is needed to check all stages
                                    : forward_and_insert_blocks();  // downloads new blocks and inserts them into the db
-        if (new_height.number == 0) {
+        if (new_block_num.number == 0) {
             // When starting from empty db there is no chain to verify, so go on downloading new blocks
             is_starting_up = false;
             continue;
         }
 
         // Verify the new section of the chain
-        SILK_INFO_M("Sync") << "Verifying chain, head=(" << new_height.number << ", " << to_hex(new_height.hash) << ")";
-        const auto verification = spawn_future_and_wait(ioc_, exec_engine_->validate_chain(new_height));  // BLOCKING
+        SILK_INFO_M("Sync") << "Verifying chain, head=(" << new_block_num.number << ", " << to_hex(new_block_num.hash) << ")";
+        const auto verification = spawn_future_and_wait(ioc_, exec_engine_->validate_chain(new_block_num));  // BLOCKING
 
         if (std::holds_alternative<execution::api::ValidChain>(verification)) {
             auto valid_chain = std::get<execution::api::ValidChain>(verification);
@@ -167,24 +167,24 @@ void PoWSync::execution_loop() {
             SILK_INFO_M("Sync") << "Valid chain, new head=" << valid_chain.current_head.hash;
 
             // If it is valid, do nothing, only check invariant
-            ensure_invariant(valid_chain.current_head.hash == new_height.hash, "invalid validate_chain result");
+            ensure_invariant(valid_chain.current_head.hash == new_block_num.hash, "invalid validate_chain result");
 
             // Notify the fork choice
-            SILK_INFO_M("Sync") << "Notifying fork choice updated, new head=" << new_height.number;
-            spawn_future_and_wait(ioc_, exec_engine_->update_fork_choice({new_height.hash}));
+            SILK_INFO_M("Sync") << "Notifying fork choice updated, new head=" << new_block_num.number;
+            spawn_future_and_wait(ioc_, exec_engine_->update_fork_choice({new_block_num.hash}));
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
 
         } else if (std::holds_alternative<execution::api::InvalidChain>(verification)) {
             auto invalid_chain = std::get<execution::api::InvalidChain>(verification);
 
-            const auto latest_valid_height = spawn_future_and_wait(ioc_, exec_engine_->get_header_hash_number(invalid_chain.unwind_point.hash));
-            ensure_invariant(latest_valid_height.has_value(), "wrong latest_valid_head");
+            const auto latest_valid_block_num = spawn_future_and_wait(ioc_, exec_engine_->get_header_hash_number(invalid_chain.unwind_point.hash));
+            ensure_invariant(latest_valid_block_num.has_value(), "wrong latest_valid_head");
 
-            SILK_INFO_M("Sync") << "Invalid chain, unwinding down to=" << *latest_valid_height;
+            SILK_INFO_M("Sync") << "Invalid chain, unwinding down to=" << *latest_valid_block_num;
 
             // If it is not valid, unwind the chain
-            unwind({*latest_valid_height, invalid_chain.unwind_point.hash}, invalid_chain.bad_block);
+            unwind({*latest_valid_block_num, invalid_chain.unwind_point.hash}, invalid_chain.bad_block);
 
             if (!invalid_chain.bad_headers.empty()) {
                 update_bad_headers(std::move(invalid_chain.bad_headers));

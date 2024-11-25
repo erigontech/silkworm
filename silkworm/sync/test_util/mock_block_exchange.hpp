@@ -45,7 +45,7 @@ class MockBlockExchange : public IBlockExchange {
     MOCK_METHOD((ResultQueue&), result_queue, (), (override));
 
     MOCK_METHOD((bool), in_sync, (), (const, override));
-    MOCK_METHOD((BlockNum), current_height, (), (const, override));
+    MOCK_METHOD((BlockNum), current_block_num, (), (const, override));
 
     MOCK_METHOD((void), accept, (std::shared_ptr<Message>), (override));
     MOCK_METHOD((void), execution_loop, (), (override));

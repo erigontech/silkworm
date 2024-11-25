@@ -136,10 +136,10 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
                             // Can't de-activate an already activated fork block
                             (!known_value_activation && active_value_activation &&
                              active_value_activation <= header_download_progress) ||
-                            // Can't activate a fork block BEFORE current height
+                            // Can't activate a fork block BEFORE current block_num
                             (!active_value_activation && known_value_activation &&
                              known_value_activation <= header_download_progress) ||
-                            // Can change activation height BEFORE current height
+                            // Can change activation block_num BEFORE current block_num
                             (known_value_activation && active_value_activation &&
                              std::min(known_value_activation, active_value_activation) <=
                                  header_download_progress)};

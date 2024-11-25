@@ -95,7 +95,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     SECTION("should request block 1 & should accept it") {
         // check status
         REQUIRE(bs.highest_block_in_output() == 0);
-        REQUIRE(bs.target_height() == highest_header);
+        REQUIRE(bs.target_block_num() == highest_header);
         REQUIRE(bs.highest_block_in_memory() == highest_header);
         REQUIRE(bs.lowest_block_in_memory() == highest_header);
 
@@ -130,7 +130,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(rs != bs.body_requests_.end());
         BodySequenceForTest::BodyRequest& request_status = rs->second;
 
-        REQUIRE(request_status.block_height == 1);
+        REQUIRE(request_status.block_num == 1);
         REQUIRE(request_status.block_hash == header1_hash);
         REQUIRE(request_status.header == header1);
         REQUIRE(request_status.request_time == tp);
@@ -150,7 +150,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(penalty == kNoPenalty);
         REQUIRE(request_status.ready);
         REQUIRE(request_status.body == block1);
-        REQUIRE(request_status.block_height == 1);           // same as before
+        REQUIRE(request_status.block_num == 1);           // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
@@ -173,7 +173,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(rs != bs.body_requests_.end());
         BodySequenceForTest::BodyRequest& request_status1 = rs->second;
 
-        REQUIRE(request_status1.block_height == 1);
+        REQUIRE(request_status1.block_num == 1);
         REQUIRE(request_status1.request_time == tp);
         REQUIRE(request_status1.ready == false);
 
@@ -187,7 +187,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         BodySequenceForTest::BodyRequest& request_status2 = rs->second;
 
         // should renew the previous request
-        REQUIRE(request_status2.block_height == 1);
+        REQUIRE(request_status2.block_num == 1);
         REQUIRE(request_status2.request_time == tp);
         REQUIRE(request_status2.ready == false);
 
@@ -232,7 +232,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         // REQUIRE(penalty == kBadBlockPenalty); // for now we choose to not penalize the peer
         REQUIRE(!request_status.ready);
-        REQUIRE(request_status.block_height == 1);           // same as before
+        REQUIRE(request_status.block_num == 1);           // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
@@ -274,7 +274,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         REQUIRE(penalty == kNoPenalty);                      // correct?
         REQUIRE(request_status.ready);                       // same as before
-        REQUIRE(request_status.block_height == 1);           // same as before
+        REQUIRE(request_status.block_num == 1);           // same as before
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
@@ -315,7 +315,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         REQUIRE(penalty == kNoPenalty);
         REQUIRE(request_status.ready);  // accepted
-        REQUIRE(request_status.block_height == 1);
+        REQUIRE(request_status.block_num == 1);
         REQUIRE(request_status.block_hash == header1_hash);
         REQUIRE(request_status.header == header1);
 
@@ -354,7 +354,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(rs != bs.body_requests_.end());
         BodySequenceForTest::BodyRequest& request_status = rs->second;
 
-        REQUIRE(request_status.block_height == 1);
+        REQUIRE(request_status.block_num == 1);
         REQUIRE(request_status.request_time == tp);
         REQUIRE(request_status.ready == false);
 
@@ -385,7 +385,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto& statistic = bs.statistics();
 
-        REQUIRE(request_status.block_height == 1);
+        REQUIRE(request_status.block_num == 1);
         REQUIRE(request_status.request_time == tp);
         REQUIRE(request_status.ready == false);
         REQUIRE(statistic.requested_items == 1);
@@ -470,7 +470,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         BodySequenceForTest::BodyRequest& request_status2 = rs->second;
 
         // should not renew the previous request
-        REQUIRE(request_status2.block_height != request_status1.block_height);
+        REQUIRE(request_status2.block_num != request_status1.block_num);
 
         // statistics
         auto& statistic = bs.statistics();

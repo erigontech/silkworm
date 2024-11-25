@@ -103,14 +103,14 @@ bool Fork::extends_head(const BlockHeader& header) const {
 }
 
 std::optional<BlockNum> Fork::find_block(Hash header_hash) const {
-    auto curr_height = current_head().number;
-    while (curr_height > canonical_chain_.initial_head().number) {
-        auto canonical_hash = canonical_chain_.get_hash(curr_height);
+    auto curr_block_num = current_head().number;
+    while (curr_block_num > canonical_chain_.initial_head().number) {
+        auto canonical_hash = canonical_chain_.get_hash(curr_block_num);
         ensure_invariant(canonical_hash.has_value(), "canonical chain must be complete");
         if (canonical_hash == header_hash) {
-            return curr_height;
+            return curr_block_num;
         }
-        --curr_height;
+        --curr_block_num;
     }
     return std::nullopt;
 }
@@ -293,9 +293,9 @@ std::set<Hash> Fork::collect_bad_headers(InvalidChain& invalid_chain) {
     if (!invalid_chain.bad_block) return {};
 
     std::set<Hash> bad_headers;
-    for (BlockNum current_height = canonical_chain_.current_head().number;
-         current_height > invalid_chain.unwind_point.number; --current_height) {
-        auto current_hash = canonical_chain_.get_hash(current_height);
+    for (BlockNum current_block_num = canonical_chain_.current_head().number;
+         current_block_num > invalid_chain.unwind_point.number; --current_block_num) {
+        auto current_hash = canonical_chain_.get_hash(current_block_num);
         bad_headers.insert(*current_hash);
     }
 
@@ -320,13 +320,13 @@ std::vector<Fork>::iterator find_fork_to_extend(std::vector<Fork>& forks, const 
 /*
 std::vector<Fork>::iterator best_fork_to_branch(std::vector<Fork>& forks, const BlockHeader& header) {
     auto fork = forks.end();
-    BlockNum height = 0;
+    BlockNum block_num = 0;
     for (auto f = forks.begin(); f != forks.end(); ++f) {
         auto attachment_point = f->find_attachment_point(header);
         if (!attachment_point) continue;
         auto distance = f->distance_from_root(*attachment_point);
-        if (fork == forks.end() || distance < height) {
-            height = distance;
+        if (fork == forks.end() || distance < block_num) {
+            block_num = distance;
             fork = f;
         }
     }

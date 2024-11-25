@@ -49,7 +49,7 @@ class ExecutionPipeline : public Stoppable {
         const StageContainerFactory& stages_factory);
     ~ExecutionPipeline() override = default;
 
-    Stage::Result forward(db::RWTxn&, BlockNum target_height);
+    Stage::Result forward(db::RWTxn&, BlockNum target_block_num);
     Stage::Result unwind(db::RWTxn&, BlockNum unwind_point);
     Stage::Result prune(db::RWTxn&);
 

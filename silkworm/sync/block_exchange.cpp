@@ -48,7 +48,7 @@ BlockExchange::~BlockExchange() {
 
 BlockExchange::ResultQueue& BlockExchange::result_queue() { return results_; }
 bool BlockExchange::in_sync() const { return in_sync_; }
-BlockNum BlockExchange::current_height() const { return current_height_; }
+BlockNum BlockExchange::current_block_num() const { return current_block_num_; }
 const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
 SentryClient& BlockExchange::sentry() const { return sentry_; }
 BlockNum BlockExchange::last_pre_validated_block() const { return header_chain_.last_pre_validated_block(); }
@@ -126,14 +126,14 @@ void BlockExchange::execution_loop() {
             request_bodies(now, room_for_new_requests);  // if headers do not used all the room we use it for body requests
 
             // todo: check if it is better to apply a policy based on the current sync status
-            // for example: if (header_chain_.current_height() - body_sequence_.current_height() > kStride) { ... }
+            // for example: if (header_chain_.current_block_num() - body_sequence_.current_block_num() > kStride) { ... }
 
             // collect downloaded headers & bodies
             collect_headers();
             collect_bodies();
 
             in_sync_ = header_chain_.in_sync() && body_sequence_.has_completed();
-            current_height_ = body_sequence_.highest_block_in_output();
+            current_block_num_ = body_sequence_.highest_block_in_output();
 
             // log status
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {
@@ -230,29 +230,29 @@ void BlockExchange::log_status() {
         //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
         << IntervalNetworkStatistics{prev_statistic, statistics_, kIntervalForStats};
 
-    auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
+    auto [min_anchor_block_num, max_anchor_block_num] = header_chain_.anchor_block_num_range();
     SILK_DEBUG
         << "BlockExchange header queues: " << std::setfill('_') << std::right
         << "links= " << std::setw(7) << header_chain_.pending_links()
         << ", anchors= " << std::setw(3) << header_chain_.anchors()
-        << ", db-height= " << std::setw(10) << header_chain_.highest_block_in_db()
-        << ", mem-height= " << std::setw(10) << min_anchor_height
-        << "~" << std::setw(10) << max_anchor_height
+        << ", db-block_num= " << std::setw(10) << header_chain_.highest_block_in_db()
+        << ", mem-block_num= " << std::setw(10) << min_anchor_block_num
+        << "~" << std::setw(10) << max_anchor_block_num
         << " (#" << std::setw(7) << std::showpos
-        << max_anchor_height - min_anchor_height << ")"
-        << ", net-height= " << std::setw(10) << header_chain_.top_seen_block_height();
+        << max_anchor_block_num - min_anchor_block_num << ")"
+        << ", net-block_num= " << std::setw(10) << header_chain_.top_seen_block_num();
 
     SILK_DEBUG
         << "BlockExchange   body queues: " << std::setfill('_') << std::right
         << "outst= " << std::setw(7)
         << body_sequence_.outstanding_requests(now) * BodySequence::kMaxBlocksPerMessage
         << ", ready= " << std::setw(5) << body_sequence_.ready_bodies()
-        << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_output()
-        << ", mem-height= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
+        << ", db-block_num= " << std::setw(10) << body_sequence_.highest_block_in_output()
+        << ", mem-block_num= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
         << "~" << std::setw(10) << body_sequence_.highest_block_in_memory()
         << " (#" << std::setw(7) << std::showpos
         << body_sequence_.highest_block_in_memory() - body_sequence_.lowest_block_in_memory() << ")"
-        << ", net-height= " << std::setw(10) << body_sequence_.target_height();
+        << ", net-block_num= " << std::setw(10) << body_sequence_.target_block_num();
 
     SILK_DEBUG << "BlockExchange  header stats: " << header_chain_.statistics();
 
@@ -270,13 +270,13 @@ void BlockExchange::initial_state(std::vector<BlockHeader> last_headers) {
     accept(message);
 }
 
-void BlockExchange::download_blocks(BlockNum current_height, TargetTracking) {
+void BlockExchange::download_blocks(BlockNum current_block_num, TargetTracking) {
     // todo: handle the TargetTracking mode
 
     auto message = std::make_shared<InternalMessage<void>>(
-        [this, current_height](HeaderChain& hc, BodySequence& bc) {
-            hc.current_state(current_height);
-            bc.current_state(current_height);
+        [this, current_block_num](HeaderChain& hc, BodySequence& bc) {
+            hc.current_state(current_block_num);
+            bc.current_state(current_block_num);
             downloading_active_ = true;  // must be done after sync current_state
         });
 

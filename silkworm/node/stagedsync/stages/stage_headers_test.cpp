@@ -57,10 +57,10 @@ TEST_CASE("HeadersStage - data model") {
         auto header0 = read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
 
-        BlockNum headers_stage_height = 0;
-        HeaderDataModelForTest hm{tx, data_model, headers_stage_height};
+        BlockNum headers_stage_block_num = 0;
+        HeaderDataModelForTest hm{tx, data_model, headers_stage_block_num};
 
-        REQUIRE(hm.highest_height() == 0);
+        REQUIRE(hm.highest_block_num() == 0);
         REQUIRE(hm.highest_hash() == header0_hash);
         REQUIRE(hm.total_difficulty() == header0->difficulty);
 
@@ -75,7 +75,7 @@ TEST_CASE("HeadersStage - data model") {
         hm.update_tables(header1);  // note that this will NOT write header1 on db
 
         // check internal status
-        REQUIRE(hm.highest_height() == header1.number);
+        REQUIRE(hm.highest_block_num() == header1.number);
         REQUIRE(hm.highest_hash() == header1_hash);
         REQUIRE(hm.total_difficulty() == td);
 
@@ -120,8 +120,8 @@ TEST_CASE("HeadersStage - data model") {
         auto header1b_hash = header1b.hash();
 
         // updating the data model
-        BlockNum headers_stage_height = 0;
-        HeaderDataModelForTest hm{tx, data_model, headers_stage_height};
+        BlockNum headers_stage_block_num = 0;
+        HeaderDataModelForTest hm{tx, data_model, headers_stage_block_num};
 
         hm.update_tables(header1);
         hm.update_tables(header2);
@@ -130,7 +130,7 @@ TEST_CASE("HeadersStage - data model") {
         intx::uint256 expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
         REQUIRE(hm.total_difficulty() == expected_td);
-        REQUIRE(hm.highest_height() == 2);
+        REQUIRE(hm.highest_block_num() == 2);
         REQUIRE(hm.highest_hash() == header2_hash);
 
         // check db content
@@ -138,8 +138,8 @@ TEST_CASE("HeadersStage - data model") {
         REQUIRE(read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
         // Now we suppose CL triggers an unwind, resetting to h0
-        BlockNum headers_stage_height_fork = 0;
-        HeaderDataModelForTest hm_fork{tx, data_model, headers_stage_height_fork};
+        BlockNum headers_stage_block_num_fork = 0;
+        HeaderDataModelForTest hm_fork{tx, data_model, headers_stage_block_num_fork};
 
         hm_fork.update_tables(header1b);  // suppose it arrives after header2
 
@@ -147,7 +147,7 @@ TEST_CASE("HeadersStage - data model") {
         intx::uint256 expected_td_fork = header0->difficulty + header1b.difficulty;
 
         REQUIRE(hm_fork.total_difficulty() == expected_td_fork);
-        REQUIRE(hm_fork.highest_height() == 1);
+        REQUIRE(hm_fork.highest_block_num() == 1);
         REQUIRE(hm_fork.highest_hash() == header1b_hash);
 
         // check db content

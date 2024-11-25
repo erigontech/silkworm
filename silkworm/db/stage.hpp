@@ -41,7 +41,7 @@ struct SyncContext {
 
     bool is_first_cycle{true};  // true at start-up (fist sync or sync after a long pause)
 
-    BlockNum target_height{0};
+    BlockNum target_block_num{0};
 
     std::optional<BlockNum> unwind_point;  // if valued sync requires an unwind to this point
     std::optional<BlockNum> previous_unwind_point;
@@ -87,7 +87,6 @@ class Stage : public Stoppable {
 
     //! \brief Unwind is called when the stage should be unwound. The unwind logic must be here.
     //! \param [in] txn : A db transaction holder
-    //! \param [in] to : New height we need to unwind to
     //! \return Result
     //! \remarks Must be overridden
     virtual Stage::Result unwind(db::RWTxn& txn) = 0;

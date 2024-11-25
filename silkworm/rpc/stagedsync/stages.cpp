@@ -32,8 +32,8 @@ Task<BlockNum> get_sync_stage_progress(db::kv::api::Transaction& tx, const Bytes
     if (value.length() < 8) {
         throw std::runtime_error("data too short, expected 8 got " + std::to_string(value.length()));
     }
-    BlockNum block_height = endian::load_big_u64(value.substr(0, 8).data());
-    co_return block_height;
+    BlockNum block_num = endian::load_big_u64(value.substr(0, 8).data());
+    co_return block_num;
 }
 
 }  // namespace silkworm::rpc::stages

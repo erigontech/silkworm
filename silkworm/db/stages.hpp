@@ -95,30 +95,30 @@ inline constexpr size_t kSmallBlockSegmentWidth{0};
 //! \brief Some stages will use this threshold to determine if worth regen vs incremental
 inline constexpr size_t kLargeBlockSegmentWorthRegen{100'000};
 
-//! \brief Reads from db the progress (block height) of the provided stage name
+//! \brief Reads from db the progress (block number) of the provided stage name
 //! \param [in] txn : a reference to a ro/rw db transaction
 //! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
-//! \return The actual chain height (BlockNum) the stage has reached
+//! \return The actual chain block number the stage has reached
 BlockNum read_stage_progress(ROTxn& txn, const char* stage_name);
 
-//! \brief Reads from db the prune progress (block height) of the provided stage name
+//! \brief Reads from db the prune progress (block number) of the provided stage name
 //! \param [in] txn : a reference to a ro/rw db transaction
 //! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
-//! \return The actual chain height (BlockNum) the stage has pruned its data up to
-//! \remarks A pruned height X means the prune stage function has run up to this block
+//! \return The actual chain block number the stage has pruned its data up to
+//! \remarks A pruned block_num means the prune stage function has run up to this block_num
 BlockNum read_stage_prune_progress(ROTxn& txn, const char* stage_name);
 
-//! \brief Writes into db the progress (block height) for the provided stage name
+//! \brief Writes into db the progress (block number) for the provided stage name
 //! \param [in] txn : a reference to a rw db transaction
 //! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
-//! \param [in] block_num : the actual chain height (BlockNum) the stage must record
+//! \param [in] block_num : the actual chain block number the stage must record
 void write_stage_progress(RWTxn& txn, const char* stage_name, BlockNum block_num);
 
-//! \brief Writes into db the prune progress (block height) for the provided stage name
+//! \brief Writes into db the prune progress (block number) for the provided stage name
 //! \param [in] txn : a reference to a rw db transaction
 //! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
-//! \param [in] block_num : the actual chain height (BlockNum) the stage must record
-//! \remarks A pruned height X means the prune stage function has run up to this block
+//! \param [in] block_num : the actual chain block number the stage must record
+//! \remarks A pruned block_num means the prune stage function has run up to this block_num
 void write_stage_prune_progress(RWTxn& txn, const char* stage_name, BlockNum block_num);
 
 //! \brief Whether the provided stage name is known to Silkworm

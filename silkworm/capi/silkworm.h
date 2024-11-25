@@ -311,7 +311,7 @@ SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle ha
  * \param[in] txn A valid external read-write MDBX transaction or zero if an internal one must be used.
  * This function does not commit nor abort the transaction.
  * \param[in] chain_id EIP-155 chain ID. SILKWORM_UNKNOWN_CHAIN_ID is returned in case of an unknown or unsupported chain.
- * \param[in] start_block The block height to start the execution from.
+ * \param[in] start_block The block number to start the execution from.
  * \param[in] max_block Do not execute after this block.
  * max_block may be executed, or the execution may stop earlier if the batch is full.
  * \param[in] batch_size The size of DB changes to accumulate before returning from this method.
@@ -319,7 +319,7 @@ SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle ha
  * \param[in] write_change_sets Whether to write state changes into the DB.
  * \param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
  * \param[in] write_call_traces Whether to write call traces into the DB.
- * \param[out] last_executed_block The height of the last successfully executed block.
+ * \param[out] last_executed_block The block number of the last successfully executed block.
  * Not written to if no blocks were executed, otherwise *last_executed_block ≤ max_block.
  * \param[out] mdbx_error_code If an MDBX error occurs (this function returns kSilkwormMdbxError)
  * and mdbx_error_code isn't NULL, it's populated with the relevant MDBX error code.
@@ -335,9 +335,9 @@ SILKWORM_EXPORT int silkworm_execute_blocks_ephemeral(
 /**
  * \brief Execute a batch of blocks and write resulting changes into the database.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] mdbx_env An valid MDBX environment. Must not be zero.
+ * \param[in] mdbx_env A valid MDBX environment. Must not be zero.
  * \param[in] chain_id EIP-155 chain ID. SILKWORM_UNKNOWN_CHAIN_ID is returned in case of an unknown or unsupported chain.
- * \param[in] start_block The block height to start the execution from.
+ * \param[in] start_block The block number to start the execution from.
  * \param[in] max_block Do not execute after this block.
  * max_block may be executed, or the execution may stop earlier if the batch is full.
  * \param[in] batch_size The size of DB changes to accumulate before returning from this method.
@@ -345,7 +345,7 @@ SILKWORM_EXPORT int silkworm_execute_blocks_ephemeral(
  * \param[in] write_change_sets Whether to write state changes into the DB.
  * \param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
  * \param[in] write_call_traces Whether to write call traces into the DB.
- * \param[out] last_executed_block The height of the last successfully executed block.
+ * \param[out] last_executed_block The block number of the last successfully executed block.
  * Not written to if no blocks were executed, otherwise *last_executed_block ≤ max_block.
  * \param[out] mdbx_error_code If an MDBX error occurs (this function returns kSilkwormMdbxError)
  * and mdbx_error_code isn't NULL, it's populated with the relevant MDBX error code.

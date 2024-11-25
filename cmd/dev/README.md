@@ -201,7 +201,7 @@ cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ --exclusive clear --names LogAd
 Reset the LogIndex stage progress to zero
 
 ```
-cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ --exclusive stage-set --name LogIndex --height 0
+cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ --exclusive stage-set --name LogIndex --block 0
 ```
 
 ## gRPC Toolbox

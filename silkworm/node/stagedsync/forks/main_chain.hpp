@@ -93,7 +93,7 @@ class MainChain {
     std::optional<TotalDifficulty> get_header_td(Hash) const;
     std::optional<BlockBody> get_body(Hash) const;
     std::optional<BlockNum> get_block_num(Hash) const;
-    BlockNum highest_frozen_block_num() const;
+    BlockNum max_frozen_block_num() const;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations

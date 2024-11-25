@@ -109,7 +109,7 @@ TEST_CASE("HeaderList::split_into_segments two connected headers") {
     REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 1);                      // 1 segment
     REQUIRE(segments[0].size() == 2);                   // 2 headers
-    REQUIRE(segments[0][0]->number == header2.number);  // the highest at the beginning
+    REQUIRE(segments[0][0]->number == header2.number);  // the max at the beginning
     REQUIRE(segments[0][1]->number == header1.number);
 }
 

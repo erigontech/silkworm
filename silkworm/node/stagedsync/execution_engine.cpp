@@ -79,8 +79,8 @@ BlockId ExecutionEngine::last_safe_block() const {
     return last_safe_block_;
 }
 
-BlockNum ExecutionEngine::highest_frozen_block_num() const {
-    return main_chain_.highest_frozen_block_num();
+BlockNum ExecutionEngine::max_frozen_block_num() const {
+    return main_chain_.max_frozen_block_num();
 }
 
 void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) {

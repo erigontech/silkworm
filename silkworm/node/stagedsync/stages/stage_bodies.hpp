@@ -73,7 +73,7 @@ class BodiesStage : public Stage {
         bool unwind_needed() const;
         BlockNum unwind_point() const;
         BlockNum initial_block_num() const;
-        BlockNum highest_block_num() const;
+        BlockNum max_block_num() const;
         Hash bad_block() const;
 
         bool get_canonical_block(BlockNum block_num, Block& block) const;
@@ -87,7 +87,7 @@ class BodiesStage : public Stage {
         db::Buffer chain_state_;
 
         BlockNum initial_block_num_{0};
-        BlockNum highest_block_num_{0};
+        BlockNum max_block_num_{0};
 
         BlockNum preverified_block_num_{0};
 

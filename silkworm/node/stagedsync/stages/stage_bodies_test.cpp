@@ -75,14 +75,14 @@ TEST_CASE("BodiesStage - data model") {
         };
 
         REQUIRE(bm.initial_block_num() == 0);
-        REQUIRE(bm.highest_block_num() == 0);
+        REQUIRE(bm.max_block_num() == 0);
         REQUIRE(bm.unwind_needed() == false);
         REQUIRE(bm.unwind_point() == 0);
 
         bm.update_tables(block1);
 
         // check internal status
-        REQUIRE(bm.highest_block_num() == 0);    // block is not valid so no progress
+        REQUIRE(bm.max_block_num() == 0);    // block is not valid so no progress
         REQUIRE(bm.unwind_needed() == true);  // block is not valid -> unwind
         REQUIRE(bm.unwind_point() == 0);      // block-num - 1
         REQUIRE(bm.bad_block() == header1_hash);
@@ -130,14 +130,14 @@ TEST_CASE("BodiesStage - data model") {
 
         // check internal status
         REQUIRE(bm.initial_block_num() == 0);
-        REQUIRE(bm.highest_block_num() == 0);
+        REQUIRE(bm.max_block_num() == 0);
         REQUIRE(bm.unwind_needed() == false);
         REQUIRE(bm.unwind_point() == 0);
 
         bm.update_tables(block1);  // validation must pass
 
         // check internal status
-        REQUIRE(bm.highest_block_num() == 1);
+        REQUIRE(bm.max_block_num() == 1);
         REQUIRE(bm.unwind_needed() == false);
         REQUIRE(bm.unwind_point() == 0);
 

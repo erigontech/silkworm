@@ -82,7 +82,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     block1.header = header1;
     // Note: block1 has zero transactions and zero ommers on mainnet
 
-    BlockNum highest_header = 1;
+    BlockNum max_header = 1;
 
     BodySequenceForTest bs;
 
@@ -94,10 +94,10 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
     SECTION("should request block 1 & should accept it") {
         // check status
-        REQUIRE(bs.highest_block_in_output() == 0);
-        REQUIRE(bs.target_block_num() == highest_header);
-        REQUIRE(bs.highest_block_in_memory() == highest_header);
-        REQUIRE(bs.lowest_block_in_memory() == highest_header);
+        REQUIRE(bs.max_block_in_output() == 0);
+        REQUIRE(bs.target_block_num() == max_header);
+        REQUIRE(bs.max_block_in_memory() == max_header);
+        REQUIRE(bs.lowest_block_in_memory() == max_header);
 
         // requesting
         std::shared_ptr<OutboundMessage> message = bs.request_bodies(tp);
@@ -124,7 +124,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         REQUIRE(!bs.body_requests_.empty());
         REQUIRE(bs.body_requests_.lowest_block() == 1);
-        REQUIRE(bs.body_requests_.highest_block() == 1);
+        REQUIRE(bs.body_requests_.max_block() == 1);
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -136,7 +136,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(request_status.request_time == tp);
         REQUIRE(request_status.ready == false);
 
-        REQUIRE(bs.highest_block_in_memory() == 1);
+        REQUIRE(bs.max_block_in_memory() == 1);
         REQUIRE(bs.lowest_block_in_memory() == 1);
 
         // accepting
@@ -154,7 +154,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
-        REQUIRE(bs.highest_block_in_memory() == 1);  // same as before
+        REQUIRE(bs.max_block_in_memory() == 1);  // same as before
         REQUIRE(bs.lowest_block_in_memory() == 1);   // same as before
 
         // check statistics
@@ -191,7 +191,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(request_status2.request_time == tp);
         REQUIRE(request_status2.ready == false);
 
-        REQUIRE(bs.highest_block_in_memory() == 1);
+        REQUIRE(bs.max_block_in_memory() == 1);
         REQUIRE(bs.lowest_block_in_memory() == 1);
 
         // check statistics
@@ -236,7 +236,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
-        REQUIRE(bs.highest_block_in_memory() == 1);  // same as before
+        REQUIRE(bs.max_block_in_memory() == 1);  // same as before
         REQUIRE(bs.lowest_block_in_memory() == 1);   // same as before
 
         auto& statistic = bs.statistics();
@@ -278,7 +278,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(request_status.block_hash == header1_hash);  // same as before
         REQUIRE(request_status.header == header1);           // same as before
 
-        REQUIRE(bs.highest_block_in_memory() == 1);  // same as before
+        REQUIRE(bs.max_block_in_memory() == 1);  // same as before
         REQUIRE(bs.lowest_block_in_memory() == 1);   // same as before
 
         auto& statistic = bs.statistics();
@@ -319,7 +319,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(request_status.block_hash == header1_hash);
         REQUIRE(request_status.header == header1);
 
-        REQUIRE(bs.highest_block_in_memory() == 1);
+        REQUIRE(bs.max_block_in_memory() == 1);
         REQUIRE(bs.lowest_block_in_memory() == 1);
 
         auto& statistic = bs.statistics();
@@ -331,7 +331,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     }
 
     SECTION("should not renew recent requests") {
-        REQUIRE(highest_header == 1);  // test pre-requisite
+        REQUIRE(max_header == 1);  // test pre-requisite
 
         // requesting
         std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
@@ -347,7 +347,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto& packet2 = get_bodies_msg2->packet();
 
-        REQUIRE(packet2.request.empty());  // no new request, highest_header == 1 and we already requested body 1
+        REQUIRE(packet2.request.empty());  // no new request, max_header == 1 and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
 
         auto rs = bs.body_requests_.find(header1.number);
@@ -367,7 +367,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     }
 
     SECTION("should not make other requests after a nack") {
-        REQUIRE(highest_header == 1);  // test pre-requisite
+        REQUIRE(max_header == 1);  // test pre-requisite
 
         // requesting
         std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
@@ -409,7 +409,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     }
 
     SECTION("should not renew ready requests") {
-        REQUIRE(highest_header == 1);  // test pre-requisite
+        REQUIRE(max_header == 1);  // test pre-requisite
 
         // requesting
         std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
@@ -431,7 +431,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto& packet2 = get_bodies_msg2->packet();
 
-        REQUIRE(packet2.request.empty());  // no new request, highest_header == 1 and we already requested body 1
+        REQUIRE(packet2.request.empty());  // no new request, max_header == 1 and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
     }
 
@@ -494,7 +494,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         REQUIRE(get_bodies_msg != nullptr);
 
         REQUIRE(get_bodies_msg->penalties().empty());
-        REQUIRE(!get_bodies_msg->packet_present());  // no new request, we reached highest_header (=1)
+        REQUIRE(!get_bodies_msg->packet_present());  // no new request, we reached max_header (=1)
 
         REQUIRE(!bs.body_requests_.empty());
         auto rs = bs.body_requests_.find(header1.number);

@@ -37,7 +37,7 @@ void InboundGetBlockHeaders::execute(db::DataStoreRef db, HeaderChain&, BodySequ
 
     SILK_TRACE << "Processing message " << *this;
 
-    if (bs.highest_block_in_output() == 0)  // skip requests in the first sync even if we already saved some headers
+    if (bs.max_block_in_output() == 0)  // skip requests in the first sync even if we already saved some headers
         return;
 
     db::ROTxnManaged tx = db.chaindata.start_ro_tx();

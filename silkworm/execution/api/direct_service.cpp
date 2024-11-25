@@ -209,7 +209,7 @@ Task<bool> DirectService::ready() {
 
 // rpc FrozenBlocks(google.protobuf.Empty) returns(FrozenBlocksResponse);
 Task<uint64_t> DirectService::frozen_blocks() {
-    co_return exec_engine_.highest_frozen_block_num();
+    co_return exec_engine_.max_frozen_block_num();
 }
 
 /** Additional non-RPC methods **/

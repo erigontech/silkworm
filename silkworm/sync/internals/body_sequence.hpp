@@ -57,7 +57,7 @@ class BodySequence {
     ~BodySequence() = default;
 
     // sync current state - this must be done at header forward
-    void current_state(BlockNum highest_in_db);
+    void current_state(BlockNum max_in_db);
 
     // set a downloading target - this must be done at body forward
     void download_bodies(const Headers& headers);
@@ -79,8 +79,8 @@ class BodySequence {
 
     //! minor functionalities
     bool has_completed() const;
-    BlockNum highest_block_in_output() const;
-    BlockNum highest_block_in_memory() const;
+    BlockNum max_block_in_output() const;
+    BlockNum max_block_in_memory() const;
     BlockNum lowest_block_in_memory() const;
     BlockNum target_block_num() const;
     size_t outstanding_requests(time_point_t tp) const;
@@ -132,13 +132,13 @@ class BodySequence {
         Iter find_by_hash(Hash oh, Hash tr);
 
         BlockNum lowest_block() const;
-        BlockNum highest_block() const;
+        BlockNum max_block() const;
     };
 
     IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
 
-    BlockNum highest_body_in_output_{0};
+    BlockNum max_body_in_output_{0};
     BlockNum target_block_num_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};

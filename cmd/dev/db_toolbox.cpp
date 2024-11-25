@@ -2429,7 +2429,7 @@ int main(int argc, char* argv[]) {
 
     // Extract a list of historical headers in given file
     auto cmd_extract_headers = app_main.add_subcommand(
-        "extract-headers", "Hard-code historical headers, from block zero to the highest available");
+        "extract-headers", "Hard-code historical headers, from block zero to the max available");
     auto cmd_extract_headers_file_opt = cmd_extract_headers->add_option("--file", "Output file")->required();
     auto cmd_extract_headers_step_opt = cmd_extract_headers->add_option("--step", "Step every this number of blocks")
                                             ->default_val("100000")

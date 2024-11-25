@@ -495,7 +495,7 @@ std::optional<BlockNum> MainChain::get_block_num(Hash header_hash) const {
     return data_model().read_block_num(header_hash);
 }
 
-BlockNum MainChain::highest_frozen_block_num() const {
+BlockNum MainChain::max_frozen_block_num() const {
     return data_model().max_frozen_block_num();
 }
 

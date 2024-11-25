@@ -1047,12 +1047,12 @@ BlockNum DataModel::max_block_num() const {
         }
     }
 
-    // If none is found on db, then ask the snapshot repository (if any) for highest block
+    // If none is found on db, then ask the snapshot repository (if any) for max block
     return repository_.max_block_available();
 }
 
 BlockNum DataModel::max_frozen_block_num() const {
-    // Ask the snapshot repository (if any) for highest block
+    // Ask the snapshot repository (if any) for max block
     return repository_.max_block_available();
 }
 

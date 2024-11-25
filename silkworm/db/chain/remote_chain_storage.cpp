@@ -53,8 +53,8 @@ Task<ChainConfig> RemoteChainStorage::read_chain_config() const {
     co_return *chain_config;
 }
 
-Task<BlockNum> RemoteChainStorage::highest_block_num() const {
-    throw std::logic_error{"RemoteChainStorage::highest_block_num not implemented"};
+Task<BlockNum> RemoteChainStorage::max_block_num() const {
+    throw std::logic_error{"RemoteChainStorage::max_block_num not implemented"};
 }
 
 Task<std::optional<BlockNum>> RemoteChainStorage::read_block_num(const Hash& hash) const {

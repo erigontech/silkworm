@@ -1224,11 +1224,10 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
             roaring::Roaring64Map bitmap = bitmap::parse(chunk_provider_res.chunk);
 
             // It can happen that on the first chunk we'll get a chunk that contains
-            // the last block <= maxBlock in the middle of the chunk/bitmap, so we
+            // the last block <= max_block_ in the middle of the chunk/bitmap, so we
             // remove all blocks after it (since there is no AdvanceIfNeeded() in
             // IntIterable64)
             if (max_block_ != std::numeric_limits<uint64_t>::max()) {
-                // bm.RemoveRange(maxBlock+1, MaxBlockNum)
                 bitmap.removeRange(max_block_ + 1, std::numeric_limits<uint64_t>::max());
             }
 

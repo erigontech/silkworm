@@ -120,7 +120,7 @@ Task<BlockNum> get_current_block_num(kv::api::Transaction& tx) {
     co_return co_await stages::get_sync_stage_progress(tx, stages::kFinish);
 }
 
-Task<BlockNum> get_highest_block_num(kv::api::Transaction& tx) {
+Task<BlockNum> get_max_block_num(kv::api::Transaction& tx) {
     co_return co_await stages::get_sync_stage_progress(tx, stages::kHeaders);
 }
 

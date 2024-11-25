@@ -33,8 +33,8 @@ class ChainStorage {
     //! Read the current chain configuration parameters
     virtual Task<ChainConfig> read_chain_config() const = 0;
 
-    //! Get the highest block number
-    virtual Task<BlockNum> highest_block_num() const = 0;
+    //! Get the max block number
+    virtual Task<BlockNum> max_block_num() const = 0;
 
     //! Read block number from hash
     virtual Task<std::optional<BlockNum>> read_block_num(const Hash& hash) const = 0;

@@ -150,7 +150,7 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 // For persisted links, those with the lower block numbers get evicted first. This means that more recently persisted
 // links are preferred.
-// For non-persisted links, those with the highest block numbers get evicted first. This is to prevent "holes" in the
+// For non-persisted links, those with the max block numbers get evicted first. This is to prevent "holes" in the
 // block numbers that may cause inability to insert headers in the ascending order of their block numbers.
 
 // We need a queue for persisted links to
@@ -264,7 +264,7 @@ struct Segment
         });
     }
 
-    HeaderList::Header_Ref highest_header() const { return front(); }
+    HeaderList::Header_Ref max_header() const { return front(); }
     HeaderList::Header_Ref lowest_header() const { return back(); }
 
     using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice

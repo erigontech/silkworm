@@ -31,7 +31,7 @@ Task<ChainConfig> LocalChainStorage::read_chain_config() const {
     co_return *chain_config;
 }
 
-Task<BlockNum> LocalChainStorage::highest_block_num() const {
+Task<BlockNum> LocalChainStorage::max_block_num() const {
     co_return data_model_.max_block_num();
 }
 

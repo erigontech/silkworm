@@ -133,7 +133,7 @@ void BlockExchange::execution_loop() {
             collect_bodies();
 
             in_sync_ = header_chain_.in_sync() && body_sequence_.has_completed();
-            current_block_num_ = body_sequence_.highest_block_in_output();
+            current_block_num_ = body_sequence_.max_block_in_output();
 
             // log status
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {
@@ -235,7 +235,7 @@ void BlockExchange::log_status() {
         << "BlockExchange header queues: " << std::setfill('_') << std::right
         << "links= " << std::setw(7) << header_chain_.pending_links()
         << ", anchors= " << std::setw(3) << header_chain_.anchors()
-        << ", db-block_num= " << std::setw(10) << header_chain_.highest_block_in_db()
+        << ", db-block_num= " << std::setw(10) << header_chain_.max_block_in_db()
         << ", mem-block_num= " << std::setw(10) << min_anchor_block_num
         << "~" << std::setw(10) << max_anchor_block_num
         << " (#" << std::setw(7) << std::showpos
@@ -247,11 +247,11 @@ void BlockExchange::log_status() {
         << "outst= " << std::setw(7)
         << body_sequence_.outstanding_requests(now) * BodySequence::kMaxBlocksPerMessage
         << ", ready= " << std::setw(5) << body_sequence_.ready_bodies()
-        << ", db-block_num= " << std::setw(10) << body_sequence_.highest_block_in_output()
+        << ", db-block_num= " << std::setw(10) << body_sequence_.max_block_in_output()
         << ", mem-block_num= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
-        << "~" << std::setw(10) << body_sequence_.highest_block_in_memory()
+        << "~" << std::setw(10) << body_sequence_.max_block_in_memory()
         << " (#" << std::setw(7) << std::showpos
-        << body_sequence_.highest_block_in_memory() - body_sequence_.lowest_block_in_memory() << ")"
+        << body_sequence_.max_block_in_memory() - body_sequence_.lowest_block_in_memory() << ")"
         << ", net-block_num= " << std::setw(10) << body_sequence_.target_block_num();
 
     SILK_DEBUG << "BlockExchange  header stats: " << header_chain_.statistics();

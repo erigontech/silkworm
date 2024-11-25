@@ -278,7 +278,7 @@ TEST_CASE("get_current_block_num", "[rpc][core][blocks]") {
     CHECK(result.get() == 0x0000ddff12121212);
 }
 
-TEST_CASE("get_highest_block_num", "[rpc][core][blocks]") {
+TEST_CASE("get_max_block_num", "[rpc][core][blocks]") {
     const silkworm::ByteView kHeadersStage{stages::kHeaders};
     MockTransaction transaction;
     WorkerPool pool{1};
@@ -287,7 +287,7 @@ TEST_CASE("get_highest_block_num", "[rpc][core][blocks]") {
         .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000ddff12345678")};
         }));
-    auto result = boost::asio::co_spawn(pool, get_highest_block_num(transaction), boost::asio::use_future);
+    auto result = boost::asio::co_spawn(pool, get_max_block_num(transaction), boost::asio::use_future);
     CHECK(result.get() == 0x0000ddff12345678);
 }
 

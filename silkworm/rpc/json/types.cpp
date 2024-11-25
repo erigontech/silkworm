@@ -278,7 +278,7 @@ void to_json(nlohmann::json& json, const StageData& stage_data) {
 
 void to_json(nlohmann::json& json, const SyncingData& syncing_data) {
     json["currentBlock"] = syncing_data.current_block;
-    json["highestBlock"] = syncing_data.highest_block;
+    json["highestBlock"] = syncing_data.max_block;
     json["stages"] = syncing_data.stages;
 }
 

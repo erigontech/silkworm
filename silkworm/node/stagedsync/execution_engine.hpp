@@ -87,7 +87,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     BlockId last_fork_choice() const override;
     BlockId last_finalized_block() const override;
     BlockId last_safe_block() const override;
-    BlockNum highest_frozen_block_num() const override;
+    BlockNum max_frozen_block_num() const override;
 
     // header/body retrieval
     std::optional<BlockHeader> get_header(Hash) const override;

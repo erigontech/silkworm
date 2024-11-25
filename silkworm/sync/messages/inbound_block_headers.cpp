@@ -34,9 +34,9 @@ void InboundBlockHeaders::execute(db::DataStoreRef, HeaderChain& hc, BodySequenc
 
     SILK_TRACE << "Processing message " << *this;
 
-    BlockNum highestBlock = 0;
+    BlockNum max_block_num = 0;
     for (BlockHeader& header : packet_.request) {
-        highestBlock = std::max(highestBlock, header.number);
+        max_block_num = std::max(max_block_num, header.number);
     }
 
     // Save the headers
@@ -55,7 +55,7 @@ void InboundBlockHeaders::execute(db::DataStoreRef, HeaderChain& hc, BodySequenc
 
     try {
         SILK_TRACE << "Replying to " << identify(*this) << " with peer_min_block";
-        sentry.peer_min_block(peer_id_, highestBlock);
+        sentry.peer_min_block(peer_id_, max_block_num);
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "InboundBlockHeaders failed peer_min_block error: " << se.what();
     }

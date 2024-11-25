@@ -28,7 +28,7 @@ struct StageData {
 
 struct SyncingData {
     std::string current_block;
-    std::string highest_block;
+    std::string max_block;
     std::vector<StageData> stages;
 };
 

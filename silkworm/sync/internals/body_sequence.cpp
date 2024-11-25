@@ -24,21 +24,21 @@
 
 namespace silkworm {
 
-void BodySequence::current_state(BlockNum highest_in_db) {
-    highest_body_in_output_ = highest_in_db;
-    target_block_num_ = highest_in_db;
+void BodySequence::current_state(BlockNum max_in_db) {
+    max_body_in_output_ = max_in_db;
+    target_block_num_ = max_in_db;
     statistics_ = {};  // reset statistics
 }
 
-BlockNum BodySequence::highest_block_in_output() const { return highest_body_in_output_; }
+BlockNum BodySequence::max_block_in_output() const { return max_body_in_output_; }
 BlockNum BodySequence::target_block_num() const { return target_block_num_; }
-BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
+BlockNum BodySequence::max_block_in_memory() const { return body_requests_.max_block(); }
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
 size_t BodySequence::ready_bodies() const { return ready_bodies_; }
 size_t BodySequence::requests() const { return body_requests_.size(); }
 bool BodySequence::has_completed() const {
     return requests() == 0 &&                            // no more requests
-           highest_block_in_output() == target_block_num_;  // all bodies withdrawn
+           max_block_in_output() == target_block_num_;  // all bodies withdrawn
 }
 
 size_t BodySequence::outstanding_requests(time_point_t tp) const {
@@ -127,7 +127,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
 }
 
 Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
-    if (block.header.number <= highest_body_in_output_) return Penalty::kNoPenalty;  // already in db, ignore
+    if (block.header.number <= max_body_in_output_) return Penalty::kNoPenalty;  // already in db, ignore
 
     announced_blocks_.add(block);  // save for later usage
 
@@ -313,7 +313,7 @@ Blocks BodySequence::withdraw_ready_bodies() {
         if (!past_request.ready)
             break;  // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
-        highest_body_in_output_ = std::max(highest_body_in_output_, past_request.block_num);
+        max_body_in_output_ = std::max(max_body_in_output_, past_request.block_num);
 
         std::shared_ptr<BlockEx> b{new BlockEx{{std::move(past_request.body), std::move(past_request.header)}}};
         b->to_announce = past_request.to_announce;
@@ -372,7 +372,7 @@ BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::lowest_block() c
     return begin()->first;
 }
 
-BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::highest_block() const {
+BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::max_block() const {
     if (empty()) return 0;
     return rbegin()->first;
 }

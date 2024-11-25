@@ -51,9 +51,9 @@ HeadersStage::HeaderDataModel::HeaderDataModel(
     previous_td_ = *headers_head_td;
 }
 
-BlockNum HeadersStage::HeaderDataModel::highest_block_num() const { return previous_block_num_; }
+BlockNum HeadersStage::HeaderDataModel::max_block_num() const { return previous_block_num_; }
 
-Hash HeadersStage::HeaderDataModel::highest_hash() const { return previous_hash_; }
+Hash HeadersStage::HeaderDataModel::max_hash() const { return previous_hash_; }
 
 intx::uint256 HeadersStage::HeaderDataModel::total_difficulty() const { return previous_td_; }
 
@@ -158,7 +158,7 @@ Stage::Result HeadersStage::forward(RWTxn& tx) {
             block_num_progress.set(current_block_num_);
         }
 
-        write_head_header_hash(tx, header_persistence.highest_hash());
+        write_head_header_hash(tx, header_persistence.max_hash());
 
         stages::write_stage_progress(tx, stages::kHeadersKey, current_block_num_);
         result = Stage::Result::kSuccess;  // no reason to raise unwind

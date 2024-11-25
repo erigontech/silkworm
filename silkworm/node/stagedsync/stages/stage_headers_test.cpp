@@ -60,8 +60,8 @@ TEST_CASE("HeadersStage - data model") {
         BlockNum headers_stage_block_num = 0;
         HeaderDataModelForTest hm{tx, data_model, headers_stage_block_num};
 
-        REQUIRE(hm.highest_block_num() == 0);
-        REQUIRE(hm.highest_hash() == header0_hash);
+        REQUIRE(hm.max_block_num() == 0);
+        REQUIRE(hm.max_hash() == header0_hash);
         REQUIRE(hm.total_difficulty() == header0->difficulty);
 
         BlockHeader header1;
@@ -75,8 +75,8 @@ TEST_CASE("HeadersStage - data model") {
         hm.update_tables(header1);  // note that this will NOT write header1 on db
 
         // check internal status
-        REQUIRE(hm.highest_block_num() == header1.number);
-        REQUIRE(hm.highest_hash() == header1_hash);
+        REQUIRE(hm.max_block_num() == header1.number);
+        REQUIRE(hm.max_hash() == header1_hash);
         REQUIRE(hm.total_difficulty() == td);
 
         // check db content
@@ -130,8 +130,8 @@ TEST_CASE("HeadersStage - data model") {
         intx::uint256 expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
         REQUIRE(hm.total_difficulty() == expected_td);
-        REQUIRE(hm.highest_block_num() == 2);
-        REQUIRE(hm.highest_hash() == header2_hash);
+        REQUIRE(hm.max_block_num() == 2);
+        REQUIRE(hm.max_hash() == header2_hash);
 
         // check db content
         // REQUIRE(read_head_header_hash(tx) == header2_hash);
@@ -147,8 +147,8 @@ TEST_CASE("HeadersStage - data model") {
         intx::uint256 expected_td_fork = header0->difficulty + header1b.difficulty;
 
         REQUIRE(hm_fork.total_difficulty() == expected_td_fork);
-        REQUIRE(hm_fork.highest_block_num() == 1);
-        REQUIRE(hm_fork.highest_hash() == header1b_hash);
+        REQUIRE(hm_fork.max_block_num() == 1);
+        REQUIRE(hm_fork.max_hash() == header1b_hash);
 
         // check db content
         // REQUIRE(read_head_header_hash(tx) == header1b_hash);

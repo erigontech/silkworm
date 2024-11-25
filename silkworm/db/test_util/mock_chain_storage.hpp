@@ -34,7 +34,7 @@ class MockChainStorage : public chain::ChainStorage {
   public:
     MOCK_METHOD((Task<silkworm::ChainConfig>), read_chain_config, (), (const, override));
 
-    MOCK_METHOD((Task<BlockNum>), highest_block_num, (), (const, override));
+    MOCK_METHOD((Task<BlockNum>), max_block_num, (), (const, override));
 
     MOCK_METHOD((Task<std::optional<BlockNum>>), read_block_num, (const Hash&), (const, override));
 

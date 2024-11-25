@@ -59,7 +59,7 @@ HeaderChain::HeaderChain(
     protocol::RuleSetPtr rule_set,
     std::optional<intx::uint256> terminal_total_difficulty,
     bool use_preverified_hashes)
-    : highest_in_db_(0),
+    : max_in_db_(0),
       top_seen_block_num_(0),
       preverified_hashes_(default_preverified_hashes(chain_id, use_preverified_hashes)),
       seen_announces_(1000),
@@ -96,7 +96,7 @@ void HeaderChain::compute_last_preverified_hash() {
         last_preverified_hash_ = (*target_block_ / preverified_hashes_.step) * preverified_hashes_.step;
 }
 
-BlockNum HeaderChain::highest_block_in_db() const { return highest_in_db_; }
+BlockNum HeaderChain::max_block_in_db() const { return max_in_db_; }
 
 void HeaderChain::top_seen_block_num(BlockNum n) { top_seen_block_num_ = n; }
 
@@ -115,7 +115,7 @@ std::pair<BlockNum, BlockNum> HeaderChain::anchor_block_num_range() const {
 
 bool HeaderChain::in_sync() const {
     BlockNum tip_block = target_block_ ? target_block_.value() : std::max(preverified_hashes_.block_num, top_seen_block_num_);
-    return top_seen_block_num_ > 0 && highest_in_db_ >= tip_block;
+    return top_seen_block_num_ > 0 && max_in_db_ >= tip_block;
 }
 
 size_t HeaderChain::pending_links() const { return links_.size() - persisted_link_queue_.size(); }
@@ -142,17 +142,17 @@ void HeaderChain::add_bad_headers(const std::set<Hash>& bads) {
 void HeaderChain::initial_state(const std::vector<BlockHeader>& last_headers) {
     statistics_ = {};  // reset statistics
 
-    // we also need here all the headers with block_num == highest_in_db to init chain_state_
+    // we also need here all the headers with block_num == max_in_db to init chain_state_
     for (auto&& header : last_headers) {
         this->add_header_as_link(header, true);  // todo: optimize add_header_as_link to use Header&&
-        highest_in_db_ = std::max(highest_in_db_, header.number);
+        max_in_db_ = std::max(max_in_db_, header.number);
     }
 
     reduce_persisted_links_to(kPersistentLinkLimit);  // resize persisted_link_queue removing old links
 }
 
-void HeaderChain::current_state(BlockNum highest_in_db) {
-    highest_in_db_ = highest_in_db;
+void HeaderChain::current_state(BlockNum max_in_db) {
+    max_in_db_ = max_in_db;
 
     statistics_ = {};  // reset statistics
 }
@@ -162,9 +162,9 @@ Headers HeaderChain::withdraw_stable_headers() {
 
     if (insert_list_.empty()) return {};
 
-    auto initial_highest_in_db = highest_in_db_;
+    auto initial_max_in_db = max_in_db_;
     SILK_TRACE_M("HeaderChain")
-        << "finding headers to persist on top of " << highest_in_db_
+        << "finding headers to persist on top of " << max_in_db_
         << " (" << insert_list_.size() << " waiting in queue)";
 
     OldestFirstLinkQueue assessing_list = insert_list_;  // use move() operation if it is assured that after the move
@@ -211,7 +211,7 @@ Headers HeaderChain::withdraw_stable_headers() {
         stable_headers.push_back(link->header);  // will be persisted by HeaderPersistence
 
         // Update persisted block_num, and state
-        highest_in_db_ = std::max(highest_in_db_, link->block_num);
+        max_in_db_ = std::max(max_in_db_, link->block_num);
         link->persisted = true;
         persisted_link_queue_.push(link);
 
@@ -226,14 +226,14 @@ Headers HeaderChain::withdraw_stable_headers() {
         if (stable_headers.size() % 1000 == 0) {
             SILK_TRACE_M("HeaderChain")
                 << stable_headers.size() << " headers prepared for persistence on top of "
-                << initial_highest_in_db << " (cont.)";
+                << initial_max_in_db << " (cont.)";
         }
     }
 
     if (!stable_headers.empty()) {
         SILK_TRACE_M("HeaderChain")
             << stable_headers.size() << " headers prepared for persistence"
-            << " on top of " << initial_highest_in_db
+            << " on top of " << initial_max_in_db
             << " (from " << header_at(stable_headers.begin()).number
             << " to " << header_at(stable_headers.rbegin()).number << ")";
     }
@@ -330,7 +330,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::request_headers(time_point_t tp) {
 /*
  * Skeleton query.
  * Request "seed" headers that can became anchors.
- * It requests N headers starting at highestInDb + kStride up to topSeenHeight.
+ * It requests N headers starting at maxInDb + kStride up to topSeenHeight.
  * If there is an anchor at block_num < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
@@ -353,7 +353,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
             << "skeleton request, condition = " << skeleton_condition_
             << ", anchors = " << anchors_.size()
             << ", target = " << top
-            << ", highest_in_db = " << highest_in_db_ << ")";
+            << ", max_in_db = " << max_in_db_ << ")";
     });
 
     if (anchors_.size() > 64) {
@@ -361,24 +361,24 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
         return nullptr;
     }
 
-    if (top <= highest_in_db_) {
+    if (top <= max_in_db_) {
         skeleton_condition_ = "end";
         return nullptr;
     }
 
-    auto lowest_anchor = lowest_anchor_within_range(highest_in_db_, top + 1);
-    // using bottom variable in place of highest_in_db_ in the range is wrong because if there is an anchor under
+    auto lowest_anchor = lowest_anchor_within_range(max_in_db_, top + 1);
+    // using bottom variable in place of max_in_db_ in the range is wrong because if there is an anchor under
     // bottom we issue a wrong request, f.e. if the anchor=1536 was extended down we would request again origin=1536
 
     BlockNum next_target = top;
     if (lowest_anchor) {
-        if (*lowest_anchor - highest_in_db_ <= kStride) {  // the lowest_anchor is too close to highest_in_db
+        if (*lowest_anchor - max_in_db_ <= kStride) {  // the lowest_anchor is too close to max_in_db
             skeleton_condition_ = "working";
             return nullptr;
         }
         next_target = *lowest_anchor;
     } else {                                    // there are no anchors
-        if (top - highest_in_db_ <= kStride) {  // the top is too close to highest_in_db
+        if (top - max_in_db_ <= kStride) {  // the top is too close to max_in_db
             if (target_block_) {                // we are syncing to a specific block
                 skeleton_condition_ = "near the top";
                 auto request_message = std::make_shared<OutboundGetBlockHeaders>();
@@ -391,7 +391,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
         }
     }
 
-    BlockNum length = (next_target - highest_in_db_) / kStride;
+    BlockNum length = (next_target - max_in_db_) / kStride;
     length = std::min(length, kMaxLen);
 
     if (length == 0) {
@@ -402,7 +402,7 @@ std::shared_ptr<OutboundMessage> HeaderChain::anchor_skeleton_request(time_point
     auto request_message = std::make_shared<OutboundGetBlockHeaders>();
     auto& packet = request_message->packet();
     packet.request_id = generate_request_id();
-    packet.request.origin = {highest_in_db_ + kStride};
+    packet.request.origin = {max_in_db_ + kStride};
     packet.request.amount = length;
     packet.request.skip = length > 1 ? kStride - 1 : 0;
     packet.request.reverse = false;
@@ -430,14 +430,14 @@ std::optional<BlockNum> HeaderChain::lowest_anchor_within_range(BlockNum bottom,
     return present ? std::optional{lowest} : std::nullopt;
 }
 
-std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
-    std::shared_ptr<Anchor> highest_anchor = nullptr;
+std::shared_ptr<Anchor> HeaderChain::max_anchor() {
+    std::shared_ptr<Anchor> max_anchor = nullptr;
     for (const auto& a : anchors_) {
-        if (highest_anchor == nullptr || a.second->block_num >= highest_anchor->block_num) {
-            highest_anchor = a.second;
+        if (max_anchor == nullptr || a.second->block_num >= max_anchor->block_num) {
+            max_anchor = a.second;
         }
     }
-    return highest_anchor;
+    return max_anchor;
 }
 
 /*
@@ -658,7 +658,7 @@ std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
     std::vector<Header_Ref> headers = to_ref();
     std::ranges::sort(headers, [](auto& h1, auto& h2) {
         return h1->number > h2->number;
-    });  // sort headers from the highest block number to the lowest
+    });  // sort headers from the max block number to the lowest
 
     std::vector<Segment> segments;
     std::map<Hash, size_t> segmentMap;
@@ -721,13 +721,13 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
     statistics_.accepted_items += end - start;
     statistics_.reject_causes.duplicated += segment.size() - (end - start);
 
-    auto highest_header = segment.front();
-    auto block_num = highest_header->number;
+    auto max_header = segment.front();
+    auto block_num = max_header->number;
     if (block_num > top_seen_block_num_) {
         if (is_a_new_block) {
             top_seen_block_num(block_num);
         } else if (seen_announces_.size() != 0) {
-            auto hash = highest_header->hash();
+            auto hash = max_header->hash();
             if (seen_announces_.get(hash) != nullptr) top_seen_block_num(block_num);
         }
     }
@@ -778,7 +778,7 @@ void HeaderChain::reduce_links_to(size_t limit) {
 
     auto initial_size = pending_links();
 
-    auto victim_anchor = highest_anchor();
+    auto victim_anchor = max_anchor();
 
     invalidate(victim_anchor);
 
@@ -789,7 +789,7 @@ void HeaderChain::reduce_links_to(size_t limit) {
         << " end=" << victim_anchor->last_link_block_num << ")";
 }
 
-// find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
+// find_anchors tries to find the max link the in the new segment that can be attached to an existing anchor
 std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::Start> HeaderChain::find_anchor(const Segment& segment) const {
     for (size_t i = 0; i < segment.size(); ++i) {
         auto a = anchors_.find(segment[i]->hash());
@@ -801,7 +801,7 @@ std::tuple<std::optional<std::shared_ptr<Anchor>>, HeaderChain::Start> HeaderCha
     return {std::nullopt, 0};
 }
 
-// find_link find the highest existing link (from start) that the new segment can be attached to
+// find_link find the max existing link (from start) that the new segment can be attached to
 std::tuple<std::optional<std::shared_ptr<Link>>, HeaderChain::End> HeaderChain::find_link(const Segment& segment, size_t start) const {
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {std::nullopt, 0};
@@ -1028,12 +1028,12 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
     }
 
     if (check_limits) {
-        if (anchor_header.number < highest_in_db_)
+        if (anchor_header.number < max_in_db_)
             throw SegmentCutAndPasteError(
                 "precondition not meet,"
                 " new anchor too far in the past: " +
                 to_string(anchor_header.number) +
-                ", latest header in db: " + to_string(highest_in_db_));
+                ", latest header in db: " + to_string(max_in_db_));
         if (anchors_.size() >= kAnchorLimit)
             throw SegmentCutAndPasteError("too many anchors: " + to_string(anchors_.size()) +
                                           ", limit: " + to_string(kAnchorLimit));

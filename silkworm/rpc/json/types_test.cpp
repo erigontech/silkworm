@@ -528,7 +528,7 @@ TEST_CASE("serialize filled SyncingData", "[rpc][to_json]") {
     StageData stage_data;
 
     syncing_data.current_block = "0x1";
-    syncing_data.highest_block = "0x2";
+    syncing_data.max_block = "0x2";
     stage_data.stage_name = "stage1";
     stage_data.block_num = "0x3";
     syncing_data.stages.push_back(stage_data);

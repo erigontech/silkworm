@@ -110,10 +110,10 @@ TEST_CASE("Headers receiving and saving") {
     REQUIRE(last_headers[0].hash() == head.hash);
 
     // creating the working chain to simulate a bit of the sync
-    BlockNum highest_in_db = 0;
+    BlockNum max_in_db = 0;
     HeaderChainForTest header_chain(kMainnetConfig.chain_id, std::make_unique<DummyRuleSet>());
     header_chain.initial_state(last_headers);
-    header_chain.current_state(highest_in_db);
+    header_chain.current_state(max_in_db);
     auto request_id = header_chain.generate_request_id();
 
     // reading genesis

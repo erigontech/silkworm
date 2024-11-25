@@ -47,7 +47,7 @@ Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumberOrHash& block_num
 
 Task<BlockNum> get_current_block_num(db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_highest_block_num(db::kv::api::Transaction& tx);
+Task<BlockNum> get_max_block_num(db::kv::api::Transaction& tx);
 
 Task<BlockNum> get_latest_block_num(db::kv::api::Transaction& tx);
 

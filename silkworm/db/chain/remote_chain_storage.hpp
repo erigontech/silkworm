@@ -32,7 +32,7 @@ class RemoteChainStorage : public ChainStorage {
 
     Task<ChainConfig> read_chain_config() const override;
 
-    Task<BlockNum> highest_block_num() const override;
+    Task<BlockNum> max_block_num() const override;
 
     Task<std::optional<BlockNum>> read_block_num(const Hash& hash) const override;
 

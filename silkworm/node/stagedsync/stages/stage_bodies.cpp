@@ -38,11 +38,11 @@ BodiesStage::BodyDataModel::BodyDataModel(
       rule_set_{protocol::rule_set_factory(chain_config)},
       chain_state_{tx, std::make_unique<db::BufferFullDataModel>(data_model)},
       initial_block_num_{bodies_stage_block_num},
-      highest_block_num_{bodies_stage_block_num} {
+      max_block_num_{bodies_stage_block_num} {
 }
 
 BlockNum BodiesStage::BodyDataModel::initial_block_num() const { return initial_block_num_; }
-BlockNum BodiesStage::BodyDataModel::highest_block_num() const { return highest_block_num_; }
+BlockNum BodiesStage::BodyDataModel::max_block_num() const { return max_block_num_; }
 bool BodiesStage::BodyDataModel::unwind_needed() const { return unwind_needed_; }
 BlockNum BodiesStage::BodyDataModel::unwind_point() const { return unwind_point_; }
 Hash BodiesStage::BodyDataModel::bad_block() const { return bad_block_; }
@@ -80,7 +80,7 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
         return;
     }
 
-    highest_block_num_ = std::max(highest_block_num_, block_num);
+    max_block_num_ = std::max(max_block_num_, block_num);
 }
 
 void BodiesStage::BodyDataModel::close() {
@@ -158,7 +158,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
             body_persistence.update_tables(block);
 
-            block_num_progress.set(body_persistence.highest_block_num());
+            block_num_progress.set(body_persistence.max_block_num());
         }
 
         db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, current_block_num_);

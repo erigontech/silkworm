@@ -37,7 +37,7 @@ void InboundGetBlockBodies::execute(db::DataStoreRef db, HeaderChain&, BodySeque
 
     SILK_TRACE << "Processing message " << *this;
 
-    if (bs.highest_block_in_output() == 0)
+    if (bs.max_block_in_output() == 0)
         return;
 
     db::ROTxnManaged tx = db.chaindata.start_ro_tx();

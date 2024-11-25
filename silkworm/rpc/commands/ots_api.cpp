@@ -45,6 +45,9 @@ using db::state::StateReader;
 
 static constexpr int kCurrentApiLevel{8};
 
+//! The window size used when probing history periodically
+static constexpr uint64_t kTxnProbeWindowSize{4096};
+
 Task<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
     reply = make_json_content(request, kCurrentApiLevel);
     co_return;
@@ -285,12 +288,12 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto it = co_await paginated_result.begin();
 
         std::vector<std::string> keys;
-        std::uint64_t count = 0;
+        uint64_t count = 0;
         TxnId prev_txn_id = 0;
         TxnId next_txn_id = 0;
         while (const auto value = co_await it.next()) {
             const auto txn_id = static_cast<TxnId>(*value);
-            if (count++ % 4096 != 0) {
+            if (count++ % kTxnProbeWindowSize != 0) {
                 next_txn_id = txn_id;
                 continue;
             }
@@ -428,6 +431,11 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             co_return;
         }
 
+        // We're searching for the creation txn of the given contract: popular contracts may have dozens of state changes
+        // due to ETH deposits/withdrawals after contract creation, so it is optimal to search from the beginning even if
+        // the contract has multiple incarnations.
+        // Navigate forward on history index of accounts and probe history periodically (cheaper than traversing history)
+        // so as a result we'll have small range of blocks for binary search or full scan.
         const auto key = db::code_domain_key(contract_address);
         db::kv::api::IndexRangeQuery query{
             .table = db::table::kAccountsHistoryIdx,
@@ -438,12 +446,12 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         auto paginated_result = co_await tx->index_range(std::move(query));
         auto it = co_await paginated_result.begin();
 
-        std::uint64_t count = 0;
+        uint64_t count = 0;
         TxnId prev_txn_id = 0;
         TxnId next_txn_id = 0;
         while (const auto value = co_await it.next()) {
             const auto txn_id = static_cast<TxnId>(*value);
-            if (count++ % 4096 != 0) {
+            if (count++ % kTxnProbeWindowSize != 0) {
                 next_txn_id = txn_id;
                 continue;
             }

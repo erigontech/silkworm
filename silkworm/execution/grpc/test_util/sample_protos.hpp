@@ -77,7 +77,7 @@ inline void sample_proto_ommer(proto::Header* header) {
     header->set_allocated_transaction_hash(rpc::h256_from_bytes32(kEmptyRoot).release());
     header->set_allocated_receipt_root(rpc::h256_from_bytes32(kEmptyRoot).release());
     header->set_allocated_difficulty(rpc::h256_from_uint256(kSampleOmmerDifficulty).release());
-    header->set_block_number(kSampleOmmerBlockNumber);
+    header->set_block_number(kSampleOmmerBlockNum);
     header->set_gas_limit(kSampleOmmerGasLimit);
     header->set_gas_used(kSampleOmmerGasUsed);
     header->set_timestamp(kSampleOmmerTimestamp);

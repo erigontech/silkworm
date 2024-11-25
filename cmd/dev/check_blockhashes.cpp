@@ -27,7 +27,7 @@
 using namespace silkworm;
 
 int main(int argc, char* argv[]) {
-    CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
+    CLI::App app{"Check Blockhashes => BlockNum mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")

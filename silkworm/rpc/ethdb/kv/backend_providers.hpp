@@ -27,13 +27,13 @@ inline db::chain::BlockProvider block_provider(ethbackend::BackEnd* backend) {
     };
 }
 
-inline db::chain::BlockNumberFromTxnHashProvider block_num_from_txn_hash_provider(ethbackend::BackEnd* backend) {
+inline db::chain::BlockNumFromTxnHashProvider block_num_from_txn_hash_provider(ethbackend::BackEnd* backend) {
     return [backend](HashAsSpan hash) -> Task<std::optional<BlockNum>> {
         co_return co_await backend->get_block_num_from_txn_hash(hash);
     };
 }
 
-inline db::chain::BlockNumberFromBlockHashProvider block_num_from_block_hash_provider(ethbackend::BackEnd* backend) {
+inline db::chain::BlockNumFromBlockHashProvider block_num_from_block_hash_provider(ethbackend::BackEnd* backend) {
     return [backend](HashAsSpan hash) -> Task<std::optional<BlockNum>> {
         co_return co_await backend->get_block_num_from_hash(hash);
     };

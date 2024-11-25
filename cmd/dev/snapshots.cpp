@@ -139,8 +139,8 @@ struct HashValidator : public CLI::Validator {
     }
 };
 
-struct BlockNumberValidator : public CLI::Validator {
-    explicit BlockNumberValidator() {
+struct BlockNumValidator : public CLI::Validator {
+    explicit BlockNumValidator() {
         func_ = [&](const std::string& value) -> std::string {
             try {
                 std::stoul(value);
@@ -184,7 +184,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
                       commands[SnapshotTool::open_index]}) {
         cmd->add_option("--block", snapshot_settings.lookup_block_num, "Block number to lookup in snapshot files")
             ->capture_default_str()
-            ->check(BlockNumberValidator{});
+            ->check(BlockNumValidator{});
     }
     for (auto& cmd : {commands[SnapshotTool::lookup_header],
                       commands[SnapshotTool::lookup_body],

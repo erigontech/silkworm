@@ -31,7 +31,7 @@ using namespace silkworm;
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
-    CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
+    CLI::App app{"Check Tx Hashes => BlockNum mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
     size_t block_from{0};

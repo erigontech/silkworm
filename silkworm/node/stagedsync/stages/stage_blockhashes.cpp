@@ -28,8 +28,8 @@ using db::etl_mdbx::Collector;
 Stage::Result BlockHashes::forward(db::RWTxn& txn) {
     /*
      * Creates HeaderNumber index by transforming
-     *      from CanonicalHashes bucket : BlockNumber ->  HeaderHash
-     *        to HeaderNumber bucket    : HeaderHash  ->  BlockNumber
+     *      from CanonicalHashes bucket : BlockNum ->  HeaderHash
+     *        to HeaderNumber bucket    : HeaderHash  ->  BlockNum
      */
 
     Stage::Result ret{Stage::Result::kSuccess};

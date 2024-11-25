@@ -837,12 +837,12 @@ struct AccessLayerTest {
 static constexpr Hash kBlockHash;  // empty but it doesn't matter for the tests
 static constexpr ::mdbx::slice kValidBlockHashSlice{kBlockHash.bytes, kHashLength};
 static constexpr ::mdbx::slice kInvalidBlockHashSlice{kBlockHash.bytes, 30};
-static const Bytes kValidEncodedBlockNumber{*from_hex("0000000000000002")};
-static const Bytes kInvalidEncodedBlockNumber{*from_hex("0002")};
+static const Bytes kValidEncodedBlockNum{*from_hex("0000000000000002")};
+static const Bytes kInvalidEncodedBlockNum{*from_hex("0002")};
 
 TEST_CASE_METHOD(AccessLayerTest, "read_block_num", "[db][access_layer]") {
-    const ::mdbx::slice valid_block_num_slice{kValidEncodedBlockNumber};
-    const ::mdbx::slice invalid_block_num_slice{kInvalidEncodedBlockNumber};
+    const ::mdbx::slice valid_block_num_slice{kValidEncodedBlockNum};
+    const ::mdbx::slice invalid_block_num_slice{kInvalidEncodedBlockNum};
 
     SECTION("valid block number") {
         EXPECT_CALL(*mock_ro_cursor, find(kValidBlockHashSlice, false))
@@ -868,8 +868,8 @@ TEST_CASE_METHOD(AccessLayerTest, "read_block_num", "[db][access_layer]") {
 }
 
 TEST_CASE_METHOD(AccessLayerTest, "read_canonical_head", "[db][access_layer]") {
-    const ::mdbx::slice valid_block_num_slice{kValidEncodedBlockNumber};
-    const ::mdbx::slice invalid_block_num_slice{kInvalidEncodedBlockNumber};
+    const ::mdbx::slice valid_block_num_slice{kValidEncodedBlockNum};
+    const ::mdbx::slice invalid_block_num_slice{kInvalidEncodedBlockNum};
 
     SECTION("valid canonical head") {
         EXPECT_CALL(*mock_ro_cursor, to_last())

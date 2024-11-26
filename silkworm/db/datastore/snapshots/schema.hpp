@@ -138,7 +138,7 @@ class Schema {
 
         EntityDef& tag_override(std::string_view tag);
 
-        const std::map<datastore::EntityName, std::shared_ptr<SnapshotFileDef>>& entities() const { return file_defs_; }
+        const std::map<datastore::EntityName, std::shared_ptr<SnapshotFileDef>>& files() const { return file_defs_; }
         std::vector<std::string> file_extensions() const;
         std::optional<datastore::EntityName> entity_name_by_path(const SnapshotPath& path) const;
 

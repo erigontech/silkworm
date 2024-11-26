@@ -37,7 +37,7 @@ Schema::EntityDef& Schema::EntityDef::tag_override(std::string_view tag) {
 
 std::vector<std::string> Schema::EntityDef::file_extensions() const {
     std::set<std::string> results;
-    for (const auto& entry : entities())
+    for (const auto& entry : files())
         results.insert(entry.second->file_ext());
     return std::vector<std::string>{results.begin(), results.end()};
 }
@@ -51,7 +51,7 @@ std::vector<std::string> Schema::RepositoryDef::file_extensions() const {
 }
 
 std::optional<datastore::EntityName> Schema::EntityDef::entity_name_by_path(const SnapshotPath& path) const {
-    for (const auto& [name, def] : entities()) {
+    for (const auto& [name, def] : files()) {
         if (def->make_path(path.base_dir_path(), path.step_range()) == path) {
             return name;
         }

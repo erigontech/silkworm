@@ -29,7 +29,7 @@ static std::map<datastore::EntityName, SnapshotPath> make_snapshot_paths(
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, SnapshotPath> results;
-    for (auto& [name, def] : entity.entities()) {
+    for (auto& [name, def] : entity.files()) {
         if (def->format() == format) {
             auto path = def->make_path(dir_path, range);
             results.emplace(name, std::move(path));
@@ -43,7 +43,7 @@ static std::map<datastore::EntityName, SegmentFileReader> open_segments(
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, SegmentFileReader> results;
-    for (auto& [name, anyDef] : entity.entities()) {
+    for (auto& [name, anyDef] : entity.files()) {
         if (anyDef->format() != Schema::SnapshotFileDef::Format::kSegment) continue;
         auto& def = dynamic_cast<const Schema::SegmentDef&>(*anyDef);
         auto path = def.make_path(dir_path, range);
@@ -57,7 +57,7 @@ static std::map<datastore::EntityName, KVSegmentFileReader> open_kv_segments(
     const std::filesystem::path& dir_path,
     StepRange range) {
     std::map<datastore::EntityName, KVSegmentFileReader> results;
-    for (auto& [name, anyDef] : entity.entities()) {
+    for (auto& [name, anyDef] : entity.files()) {
         if (anyDef->format() != Schema::SnapshotFileDef::Format::kKVSegment) continue;
         auto& def = dynamic_cast<const Schema::KVSegmentDef&>(*anyDef);
         auto path = def.make_path(dir_path, range);
@@ -214,7 +214,7 @@ std::map<datastore::EntityName, SnapshotPath> SnapshotBundlePaths::accessor_inde
 std::vector<std::filesystem::path> SnapshotBundlePaths::files() const {
     std::vector<std::filesystem::path> results;
     for (auto& entity_entry : schema_.entities()) {
-        for (auto& file_entry : entity_entry.second->entities()) {
+        for (auto& file_entry : entity_entry.second->files()) {
             auto path = file_entry.second->make_path(dir_path_, step_range_);
             results.push_back(path.path());
         }

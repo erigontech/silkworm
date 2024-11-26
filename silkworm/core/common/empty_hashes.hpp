@@ -22,6 +22,8 @@ namespace silkworm {
 
 using namespace evmc::literals;
 
+inline constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+
 // Keccak-256 hash of an empty string, KEC("").
 inline constexpr evmc::bytes32 kEmptyHash{0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32};
 

@@ -41,14 +41,14 @@ class AccountDumper {
 
     Task<DumpAccounts> dump_accounts(
         BlockCache& cache,
-        const BlockNumOrHash& bnoh,
+        const BlockNumOrHash& block_num_or_hash,
         const evmc::address& start_address,
         int16_t max_result,
         bool exclude_code,
         bool exclude_storage);
 
   private:
-    Task<void> load_storage(BlockNum block_number, DumpAccounts& dump_accounts);
+    Task<void> load_storage(BlockNum block_num, DumpAccounts& dump_accounts);
 
     db::kv::api::Transaction& transaction_;
 };

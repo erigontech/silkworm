@@ -38,11 +38,10 @@ namespace silkworm::rpc::core {
 using db::state::StateReader;
 
 using namespace evmc::literals;
-static constexpr evmc::bytes32 kEmptyHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
-    const BlockNumOrHash& bnoh,
+    const BlockNumOrHash& block_num_or_hash,
     const evmc::address& start_address,
     int16_t max_result,
     bool exclude_code,
@@ -50,7 +49,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     DumpAccounts dump_accounts;
     const auto chain_storage = transaction_.create_storage();
 
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, bnoh);
+    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }
@@ -58,8 +57,8 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     dump_accounts.root = block_with_hash->block.header.state_root;
 
     auto key = db::code_domain_key(start_address);
-    auto block_number = block_with_hash->block.header.number + 1;
-    const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_number);
+    const auto block_num = block_with_hash->block.header.number + 1;
+    const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
     db::kv::api::DomainRangeQuery query{
         .table = db::table::kAccountDomain,
@@ -90,10 +89,9 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
         dump_account.nonce = account->nonce;
         dump_account.incarnation = account->incarnation;
         dump_account.code_hash = account->code_hash;
-        dump_account.root = kEmptyHash;
+        dump_account.root = kZeroHash;
 
-        if (account->code_hash != kEmptyHash) {
-            if (!exclude_code) {
+        if (account->code_hash != kZeroHash && !exclude_code) {
                 db::kv::api::GetLatestQuery query_code{
                     .table = db::table::kCodeDomain,
                     .key = db::account_domain_key(address)};
@@ -102,22 +100,21 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
                 if (!code.value.empty()) {
                     dump_account.code = code.value;
                 }
-            }
         }
         dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));
     }
 
     if (!exclude_storage) {
-        co_await load_storage(block_number, dump_accounts);
+        co_await load_storage(block_num, dump_accounts);
     }
 
     co_return dump_accounts;
 }
 
-Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump_accounts) {
-    SILK_TRACE << "block_number " << block_number << " START";
+Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_accounts) {
+    SILK_TRACE << "block_number " << block_num << " START";
     StorageWalker storage_walker{transaction_};
-    const auto txn_number = co_await transaction_.first_txn_num_in_block(block_number);
+    const auto txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
     for (auto& it : dump_accounts.accounts) {
         auto& address = it.first;
@@ -162,7 +159,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
 
         account.root = hb.root_hash();
     }
-    SILK_TRACE << "block_number " << block_number << " END";
+    SILK_TRACE << "block_number " << block_num << " END";
     co_return;
 }
 

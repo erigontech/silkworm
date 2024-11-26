@@ -90,14 +90,14 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
         dump_account.root = kZeroHash;
 
         if (account->code_hash != kZeroHash && !exclude_code) {
-                db::kv::api::GetLatestQuery query_code{
-                    .table = db::table::kCodeDomain,
-                    .key = db::account_domain_key(address)};
+            db::kv::api::GetLatestQuery query_code{
+                .table = db::table::kCodeDomain,
+                .key = db::account_domain_key(address)};
 
-                const auto code = co_await transaction_.get_latest(std::move(query_code));
-                if (!code.value.empty()) {
-                    dump_account.code = code.value;
-                }
+            const auto code = co_await transaction_.get_latest(std::move(query_code));
+            if (!code.value.empty()) {
+                dump_account.code = code.value;
+            }
         }
         dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));
     }

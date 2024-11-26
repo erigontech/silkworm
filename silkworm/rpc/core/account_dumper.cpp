@@ -19,9 +19,9 @@
 #include <utility>
 
 #include <silkworm/core/common/decoding_result.hpp>
-#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
@@ -36,6 +36,9 @@
 namespace silkworm::rpc::core {
 
 using db::state::StateReader;
+
+using namespace evmc::literals;
+static constexpr evmc::bytes32 kEmptyHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
@@ -54,8 +57,6 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     dump_accounts.root = block_with_hash->block.header.state_root;
 
-    std::vector<KeyValue> collected_data;
-
     auto key = db::code_domain_key(start_address);
     auto block_number = block_with_hash->block.header.number + 1;
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_number);
@@ -69,37 +70,38 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     auto paginated_result = co_await transaction_.range_as_of((std::move(query)));
     auto it = co_await paginated_result.begin();
 
-    std::set<evmc::address> addresses;
     while (const auto value = co_await it.next()) {
-        if (value->first.empty()) {
+        DumpAccount dump_account;
+        evmc::address address{bytes_to_address(value->first)};
+
+        if (value->second.empty()) {
             continue;
         }
 
-        if (max_result > 0 && collected_data.size() >= static_cast<size_t>(max_result)) {
+        if (max_result > 0 && dump_accounts.accounts.size() >= static_cast<size_t>(max_result)) {
             dump_accounts.next = bytes_to_address(value->first);
             break;
         }
 
-        ByteView encoded_view(value->second);
-        evmc::address address{bytes_to_address(value->first)};
-
-        auto account{Account::from_encoded_storage(encoded_view)};
+        auto account{Account::from_encoded_storage_v3(value->second)};
         success_or_throw(account);
-        DumpAccount dump_account;
+
         dump_account.balance = account->balance;
         dump_account.nonce = account->nonce;
         dump_account.incarnation = account->incarnation;
+        dump_account.code_hash = account->code_hash;
+        dump_account.root = kEmptyHash;
 
-        if (account->incarnation > 0 && account->code_hash != kEmptyHash && !exclude_code) {
-            dump_account.code_hash = account->code_hash;
+        if (account->code_hash != kEmptyHash) {
+            if (!exclude_code) {
+                db::kv::api::DomainPointQuery query_code{
+                    .table = db::table::kCodeDomain,
+                    .key = db::account_domain_key(address)};
 
-            db::kv::api::DomainPointQuery query_code{
-                .table = db::table::kCodeDomain,
-                .key = db::account_domain_key(address)};
-
-            const auto code = co_await transaction_.get_latest(std::move(query_code));
-            if (code.success) {
-                dump_account.code = code.value;
+                const auto code = co_await transaction_.get_latest(std::move(query_code));
+                if (!code.value.empty()) {
+                    dump_account.code = code.value;
+                }
             }
         }
         dump_accounts.accounts.insert(std::pair<evmc::address, DumpAccount>(address, dump_account));
@@ -133,6 +135,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
 
         auto paginated_result = co_await transaction_.range_as_of(std::move(query));
         auto sit = co_await paginated_result.begin();
+        std::map<Bytes, Bytes> collected_entries;  // TODO(canepat) switch to ByteView?
 
         while (const auto value = co_await sit.next()) {
             if (value->second.empty())
@@ -144,7 +147,20 @@ Task<void> AccountDumper::load_storage(BlockNum block_number, DumpAccounts& dump
             auto& storage = *account.storage;
             auto loc = value->first.substr(20);
             storage[to_bytes32(loc)] = value->second;
+            const auto hash = hash_of(loc);
+            collected_entries[Bytes{hash.bytes, kHashLength}] = value->second;
         }
+
+        trie::HashBuilder hb;
+        for (const auto& [key, value] : collected_entries) {
+            Bytes encoded{};
+            rlp::encode(encoded, value);
+            Bytes unpacked = trie::unpack_nibbles(key);
+
+            hb.add_leaf(unpacked, encoded);
+        }
+
+        account.root = hb.root_hash();
     }
     SILK_TRACE << "block_number " << block_number << " END";
     co_return;

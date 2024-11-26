@@ -52,7 +52,7 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
     table::check_or_create_chaindata_tables(tx);
     log::Info("Database schema", {"version", read_schema_version(tx)->to_string()});
 
-    // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
+    // Detect the max downloaded header. We need that to detect if we can apply changes in chain config and/or
     // prune mode
     const auto header_download_progress{stages::read_stage_progress(tx, stages::kHeadersKey)};
 
@@ -95,7 +95,7 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
             for (auto& [known_key, known_value] : known_chain_config_json.items()) {
                 if (!active_chain_config_json.contains(known_key)) {
                     // Is this new key a definition of a new fork block or a bomb delay block ?
-                    // If so we need to check its new value must be **beyond** the highest
+                    // If so we need to check its new value must be **beyond** the max
                     // header processed.
 
                     const std::regex block_pattern(R"(Block$)", std::regex_constants::icase);
@@ -136,10 +136,10 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
                             // Can't de-activate an already activated fork block
                             (!known_value_activation && active_value_activation &&
                              active_value_activation <= header_download_progress) ||
-                            // Can't activate a fork block BEFORE current height
+                            // Can't activate a fork block BEFORE current block_num
                             (!active_value_activation && known_value_activation &&
                              known_value_activation <= header_download_progress) ||
-                            // Can change activation height BEFORE current height
+                            // Can change activation block_num BEFORE current block_num
                             (known_value_activation && active_value_activation &&
                              std::min(known_value_activation, active_value_activation) <=
                                  header_download_progress)};

@@ -30,9 +30,9 @@ class MockKVStub : public KV::StubInterface {
   MOCK_METHOD3(Range, ::grpc::Status(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::remote::Pairs* response));
   MOCK_METHOD3(AsyncRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(DomainGet, ::grpc::Status(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::remote::DomainGetReply* response));
-  MOCK_METHOD3(AsyncDomainGetRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>*(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(PrepareAsyncDomainGetRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>*(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(GetLatest, ::grpc::Status(::grpc::ClientContext* context, const ::remote::GetLatestReq& request, ::remote::GetLatestReply* response));
+  MOCK_METHOD3(AsyncGetLatestRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::GetLatestReply>*(::grpc::ClientContext* context, const ::remote::GetLatestReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncGetLatestRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::GetLatestReply>*(::grpc::ClientContext* context, const ::remote::GetLatestReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(HistorySeek, ::grpc::Status(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::remote::HistorySeekReply* response));
   MOCK_METHOD3(AsyncHistorySeekRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>*(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncHistorySeekRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistorySeekReply>*(::grpc::ClientContext* context, const ::remote::HistorySeekReq& request, ::grpc::CompletionQueue* cq));
@@ -42,9 +42,9 @@ class MockKVStub : public KV::StubInterface {
   MOCK_METHOD3(HistoryRange, ::grpc::Status(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::remote::Pairs* response));
   MOCK_METHOD3(AsyncHistoryRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncHistoryRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(DomainRange, ::grpc::Status(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::remote::Pairs* response));
-  MOCK_METHOD3(AsyncDomainRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(PrepareAsyncDomainRangeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(RangeAsOf, ::grpc::Status(::grpc::ClientContext* context, const ::remote::RangeAsOfReq& request, ::remote::Pairs* response));
+  MOCK_METHOD3(AsyncRangeAsOfRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::RangeAsOfReq& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncRangeAsOfRaw, ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>*(::grpc::ClientContext* context, const ::remote::RangeAsOfReq& request, ::grpc::CompletionQueue* cq));
 };
 
 }  // namespace remote

@@ -101,9 +101,9 @@ TEST_CASE("MainChain transaction handling") {
                 REQUIRE(td0.has_value());
                 CHECK(tx.is_open() == keep_db_txn_open);
 
-                auto bn0 = main_chain.get_block_number(*hash0);
-                REQUIRE(bn0.has_value());
-                CHECK(bn0 == 0);
+                auto block_num0 = main_chain.get_block_num(*hash0);
+                REQUIRE(block_num0.has_value());
+                CHECK(block_num0 == 0);
                 CHECK(tx.is_open() == keep_db_txn_open);
             }
 
@@ -198,7 +198,7 @@ TEST_CASE("MainChain") {
     auto initial_canonical_head = main_chain.current_head();
     REQUIRE(initial_canonical_head == block0_id);
     REQUIRE(main_chain.last_chosen_head() == block0_id);
-    REQUIRE(initial_canonical_head.number == initial_progress);
+    REQUIRE(initial_canonical_head.block_num == initial_progress);
     REQUIRE(main_chain.interim_canonical_chain_.current_head() == initial_canonical_head);
 
     /* status:

@@ -42,7 +42,7 @@ class DirectService : public Service {
     /** Chain Validation and ForkChoice **/
 
     // rpc ValidateChain(ValidationRequest) returns(ValidationReceipt);
-    Task<ValidationResult> validate_chain(BlockId number_and_hash) override;
+    Task<ValidationResult> validate_chain(BlockId block_id) override;
 
     // rpc UpdateForkChoice(ForkChoice) returns(ForkChoiceReceipt);
     Task<ForkChoiceResult> update_fork_choice(const ForkChoice& fork_choice) override;
@@ -61,16 +61,16 @@ class DirectService : public Service {
     Task<std::optional<BlockHeader>> current_header() override;
 
     // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-    Task<std::optional<TotalDifficulty>> get_td(BlockNumberOrHash number_or_hash) override;
+    Task<std::optional<TotalDifficulty>> get_td(BlockNumOrHash block_num_or_hash) override;
 
     // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-    Task<std::optional<BlockHeader>> get_header(BlockNumberOrHash number_or_hash) override;
+    Task<std::optional<BlockHeader>> get_header(BlockNumOrHash block_num_or_hash) override;
 
     // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-    Task<std::optional<BlockBody>> get_body(BlockNumberOrHash number_or_hash) override;
+    Task<std::optional<BlockBody>> get_body(BlockNumOrHash block_num_or_hash) override;
 
     // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-    Task<bool> has_block(BlockNumberOrHash number_or_hash) override;
+    Task<bool> has_block(BlockNumOrHash block_num_or_hash) override;
 
     /** Ranges **/
 

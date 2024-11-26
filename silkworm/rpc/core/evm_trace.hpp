@@ -62,8 +62,8 @@ struct TraceCall {
 void from_json(const nlohmann::json& json, TraceCall& tc);
 
 struct TraceFilter {
-    BlockNumberOrHash from_block{0};
-    BlockNumberOrHash to_block{"latest"};
+    BlockNumOrHash from_block{0};
+    BlockNumOrHash to_block{"latest"};
     std::vector<evmc::address> from_addresses;
     std::vector<evmc::address> to_addresses;
     std::optional<std::string> mode;
@@ -203,7 +203,7 @@ struct Trace {
     std::optional<std::string> error;
     std::string type;
     std::optional<evmc::bytes32> block_hash;
-    std::optional<BlockNum> block_number;
+    std::optional<BlockNum> block_num;
     std::optional<evmc::bytes32> transaction_hash;
     std::optional<std::uint32_t> transaction_position;
     int stack_height{0};
@@ -511,7 +511,7 @@ class TraceCallExecutor {
 
   private:
     Task<TraceCallResult> execute(
-        BlockNum block_number,
+        BlockNum block_num,
         const silkworm::Block& block,
         const rpc::Transaction& transaction,
         std::int32_t index,

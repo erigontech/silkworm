@@ -115,7 +115,7 @@ std::string to_quantity(uint64_t number);
 std::string to_quantity(const intx::uint256& number);
 std::string to_quantity(silkworm::ByteView bytes);
 
-void to_quantity(std::span<char> hex_bytes, uint64_t number);
+void to_quantity(std::span<char> hex_bytes, uint64_t block_num);
 void to_quantity(std::span<char> hex_bytes, intx::uint256 number);
 void to_quantity(std::span<char> hex_bytes, silkworm::ByteView bytes);
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);
@@ -133,15 +133,15 @@ JsonRpcId make_jsonrpc_id(const nlohmann::json& request_json);
 namespace nlohmann {
 
 template <>
-struct adl_serializer<silkworm::rpc::BlockNumberOrHash> {
-    static silkworm::rpc::BlockNumberOrHash from_json(const json& json) {
+struct adl_serializer<silkworm::rpc::BlockNumOrHash> {
+    static silkworm::rpc::BlockNumOrHash from_json(const json& json) {
         if (json.is_string()) {
-            return silkworm::rpc::BlockNumberOrHash{json.get<std::string>()};
+            return silkworm::rpc::BlockNumOrHash{json.get<std::string>()};
         }
         if (json.is_number()) {
-            return silkworm::rpc::BlockNumberOrHash{json.get<silkworm::BlockNum>()};
+            return silkworm::rpc::BlockNumOrHash{json.get<silkworm::BlockNum>()};
         }
-        return silkworm::rpc::BlockNumberOrHash{0};
+        return silkworm::rpc::BlockNumOrHash{0};
     }
 };
 

@@ -55,7 +55,7 @@ class Transaction {
 
     virtual Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) = 0;
 
-    virtual std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) = 0;
+    virtual std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) = 0;
 
     virtual std::shared_ptr<chain::ChainStorage> create_storage() = 0;
 
@@ -72,8 +72,11 @@ class Transaction {
 
     /** Temporal Point Queries **/
 
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    virtual Task<DomainPointResult> domain_get(DomainPointQuery query) = 0;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
+    virtual Task<GetLatestResult> get_latest(GetLatestQuery query) = 0;
+
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
+    virtual Task<GetAsOfResult> get_as_of(GetAsOfQuery query) = 0;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     virtual Task<HistoryPointResult> history_seek(HistoryPointQuery query) = 0;
@@ -86,8 +89,8 @@ class Transaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     virtual Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) = 0;
 
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    virtual Task<PaginatedKeysValues> domain_range(DomainRangeQuery query) = 0;
+    // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
+    virtual Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

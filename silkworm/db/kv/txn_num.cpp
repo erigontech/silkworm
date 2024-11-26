@@ -32,13 +32,13 @@ using kv::api::KeyValue;
 using kv::api::Transaction;
 
 static Task<std::optional<TxNum>> last_tx_num_for_block(const std::shared_ptr<kv::api::Cursor>& max_tx_num_cursor,
-                                                        BlockNum block_number,
+                                                        BlockNum block_num,
                                                         chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider) {
-    const auto block_number_key = block_key(block_number);
-    const auto key_value = co_await max_tx_num_cursor->seek_exact(block_number_key);
+    const auto block_num_key = block_key(block_num);
+    const auto key_value = co_await max_tx_num_cursor->seek_exact(block_num_key);
     if (key_value.value.empty()) {
         SILKWORM_ASSERT(canonical_body_for_storage_provider);
-        auto block_body_data = co_await canonical_body_for_storage_provider(block_number);
+        auto block_body_data = co_await canonical_body_for_storage_provider(block_num);
         if (!block_body_data) {
             co_return std::nullopt;
         }
@@ -65,9 +65,9 @@ static std::pair<BlockNum, TxNum> kv_to_block_num_and_tx_num(const KeyValue& key
     return std::make_pair(endian::load_big_u64(key_value.key.data()), endian::load_big_u64(key_value.value.data()));
 }
 
-Task<TxNum> max_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider) {
+Task<TxNum> max_tx_num(Transaction& tx, BlockNum block_num, chain::CanonicalBodyForStorageProvider provider) {
     const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
-    const std::optional<TxNum> last_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, block_number, provider);
+    const std::optional<TxNum> last_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, block_num, provider);
     if (!last_tx_num) {
         const KeyValue key_value = co_await max_tx_num_cursor->last();
         if (key_value.value.empty()) {
@@ -81,12 +81,12 @@ Task<TxNum> max_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalB
     co_return *last_tx_num;
 }
 
-Task<TxNum> min_tx_num(Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider) {
-    if (block_number == 0) {
+Task<TxNum> min_tx_num(Transaction& tx, BlockNum block_num, chain::CanonicalBodyForStorageProvider provider) {
+    if (block_num == 0) {
         co_return 0;
     }
     const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
-    const std::optional<TxNum> last_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, (block_number - 1), provider);
+    const std::optional<TxNum> last_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, (block_num - 1), provider);
     if (!last_tx_num) {
         const KeyValue key_value = co_await max_tx_num_cursor->last();
         if (key_value.value.empty()) {

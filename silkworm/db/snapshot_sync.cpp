@@ -69,16 +69,15 @@ SnapshotSync::SnapshotSync(
     : settings_{std::move(settings)},
       snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
       data_store_{std::move(data_store)},
-      repository_{data_store_.repository},
       client_{settings_.bittorrent_settings},
       snapshot_freezer_{
           data_store_.chaindata,
-          data_store_.repository,
+          data_store_.blocks_repository,
           stage_scheduler,
           tmp_dir_path,
           settings_.keep_blocks,
       },
-      snapshot_merger_{data_store_.repository, std::move(tmp_dir_path)},
+      snapshot_merger_{data_store_.blocks_repository, std::move(tmp_dir_path)},
       is_stopping_latch_{1} {
 }
 
@@ -128,14 +127,14 @@ Task<void> SnapshotSync::setup() {
     // Snapshot sync - download chain from peers using snapshot files
     co_await download_snapshots_if_needed();
 
-    repository_.remove_stale_indexes();
+    blocks_repository().remove_stale_indexes();
     co_await build_missing_indexes();
 
-    repository_.reopen_folder();
+    blocks_repository().reopen_folder();
 
     // Update chain and stage progresses in database according to available snapshots
     RWTxnManaged rw_txn = data_store_.chaindata.start_rw_tx();
-    update_database(rw_txn, repository_.max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
+    update_database(rw_txn, blocks_repository().max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
 
     seed_frozen_local_snapshots();
@@ -238,7 +237,7 @@ Task<void> SnapshotSync::build_missing_indexes() {
     [[maybe_unused]] auto _ = gsl::finally([&workers]() { workers.pause(); });
 
     // Determine the missing indexes and build them in parallel
-    const auto missing_indexes = repository_.missing_indexes();
+    const auto missing_indexes = blocks_repository().missing_indexes();
     if (missing_indexes.empty()) {
         co_return;
     }
@@ -275,10 +274,10 @@ Task<void> SnapshotSync::build_missing_indexes() {
 }
 
 void SnapshotSync::seed_frozen_local_snapshots() {
-    for (auto& bundle_ptr : repository_.view_bundles()) {
+    for (auto& bundle_ptr : blocks_repository().view_bundles()) {
         auto& bundle = *bundle_ptr;
-        auto block_range = bundle.step_range().to_block_num_range();
-        bool is_frozen = block_range.size() >= kMaxMergerSnapshotSize;
+        auto block_num_range = bundle.step_range().to_block_num_range();
+        bool is_frozen = block_num_range.size() >= kMaxMergerSnapshotSize;
         const segment::SegmentFileReader& first_snapshot = *bundle.segments().begin();
         // assume that if one snapshot in the bundle is preverified, then all of them are
         bool is_preverified = snapshots_config_.contains_file_name(first_snapshot.path().filename());
@@ -290,7 +289,7 @@ void SnapshotSync::seed_frozen_local_snapshots() {
 
 void SnapshotSync::seed_frozen_bundle(StepRange range) {
     bool is_frozen = range.size() >= kMaxMergerSnapshotSize;
-    auto bundle = repository_.find_bundle(range.start);
+    auto bundle = blocks_repository().find_bundle(range.start);
     if (bundle && (bundle->step_range() == range) && is_frozen) {
         seed_bundle(*bundle);
     }
@@ -331,41 +330,41 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
     SILK_INFO << "SnapshotSync: database update started";
 
     // Iterate on block header snapshots and write header-related tables
-    etl_mdbx::Collector hash2bn_collector{};
+    etl_mdbx::Collector hash_to_block_num_collector;
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
 
-    for (const auto& bundle_ptr : repository_.view_bundles()) {
+    for (const auto& bundle_ptr : blocks_repository().view_bundles()) {
         db::blocks::BundleDataRef bundle{**bundle_ptr};
         for (const BlockHeader& header : HeaderSegmentReader{bundle.header_segment()}) {
             SILK_TRACE << "SnapshotSync: header number=" << header.number << " hash=" << Hash{header.hash()}.to_hex();
-            const auto block_number = header.number;
-            if (block_number > max_block_available) continue;
+            const auto block_num = header.number;
+            if (block_num > max_block_available) continue;
 
             const auto block_hash = header.hash();
 
             // Write block header into kDifficulty table
             total_difficulty += header.difficulty;
-            write_total_difficulty(txn, block_number, block_hash, total_difficulty);
+            write_total_difficulty(txn, block_num, block_hash, total_difficulty);
 
             // Write block header into kCanonicalHashes table
-            write_canonical_hash(txn, block_number, block_hash);
+            write_canonical_hash(txn, block_num, block_hash);
 
             // Collect entries for later loading kHeaderNumbers table
             Bytes block_hash_bytes{block_hash.bytes, kHashLength};
-            Bytes encoded_block_number(sizeof(BlockNum), '\0');
-            endian::store_big_u64(encoded_block_number.data(), block_number);
-            hash2bn_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_number)});
+            Bytes encoded_block_num(sizeof(BlockNum), '\0');
+            endian::store_big_u64(encoded_block_num.data(), block_num);
+            hash_to_block_num_collector.collect({std::move(block_hash_bytes), std::move(encoded_block_num)});
 
             if (++block_count % 1'000'000 == 0) {
-                SILK_INFO << "SnapshotSync: processing block header=" << block_number << " count=" << block_count;
+                SILK_INFO << "SnapshotSync: processing block header=" << block_num << " count=" << block_count;
                 if (is_stopping()) return;
             }
         }
     }
 
     PooledCursor header_numbers_cursor{txn, table::kHeaderNumbers};
-    hash2bn_collector.load(header_numbers_cursor);
+    hash_to_block_num_collector.load(header_numbers_cursor);
     SILK_INFO << "SnapshotSync: database table HeaderNumbers updated";
 
     // Update head block header in kHeadHeader table
@@ -390,7 +389,7 @@ void SnapshotSync::update_block_bodies(RWTxn& txn, BlockNum max_block_available)
     }
 
     // Reset sequence for kBlockTransactions table
-    const auto [txn_segment, _] = repository_.find_segment(db::blocks::kTxnSegmentAndIdxNames, max_block_available);
+    const auto [txn_segment, _] = blocks_repository().find_segment(db::blocks::kTxnSegmentAndIdxNames, max_block_available);
     ensure(txn_segment.has_value(), "SnapshotSync: snapshots max block not found in any snapshot");
     const auto last_tx_id = txn_segment->index.base_data_id() + txn_segment->segment.item_count();
     reset_map_sequence(txn, table::kBlockTransactions.name, last_tx_id + 1);

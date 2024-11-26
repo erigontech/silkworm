@@ -26,23 +26,24 @@
 
 namespace silkworm::db::state {
 
-StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_number) : tx_(tx), block_number_(block_number) {}
+StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_num) : tx_(tx), block_num_(block_num) {}
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
     if (!txn_number_) {
-        txn_number_ = co_await tx_.first_txn_num_in_block(block_number_);
+        txn_number_ = co_await tx_.first_txn_num_in_block(block_num_);
     }
 
-    db::kv::api::DomainPointQuery query{
+    db::kv::api::GetAsOfQuery query{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(address),
-        .timestamp = txn_number_,
+        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
     };
-    const auto result = co_await tx_.domain_get(std::move(query));
+    const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
         co_return std::nullopt;
     }
-    auto account{Account::from_encoded_storage_v3(result.value)};
+
+    const auto account{Account::from_encoded_storage_v3(result.value)};
     success_or_throw(account);
     co_return *account;
 }
@@ -51,15 +52,15 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
                                               uint64_t /* incarnation */,
                                               const evmc::bytes32& location_hash) const {
     if (!txn_number_) {
-        txn_number_ = co_await tx_.first_txn_num_in_block(block_number_);
+        txn_number_ = co_await tx_.first_txn_num_in_block(block_num_);
     }
 
-    db::kv::api::DomainPointQuery query{
+    db::kv::api::GetAsOfQuery query{
         .table = table::kStorageDomain,
         .key = db::storage_domain_key(address, location_hash),
-        .timestamp = txn_number_,
+        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
     };
-    const auto result = co_await tx_.domain_get(std::move(query));
+    const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
         co_return evmc::bytes32{};
     }
@@ -71,15 +72,15 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
         co_return std::nullopt;
     }
     if (!txn_number_) {
-        txn_number_ = co_await tx_.first_txn_num_in_block(block_number_);
+        txn_number_ = co_await tx_.first_txn_num_in_block(block_num_);
     }
 
-    db::kv::api::DomainPointQuery query{
+    db::kv::api::GetAsOfQuery query{
         .table = table::kCodeDomain,
         .key = db::code_domain_key(address),
-        .timestamp = txn_number_,
+        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
     };
-    const auto result = co_await tx_.domain_get(std::move(query));
+    const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
         co_return std::nullopt;
     }

@@ -29,7 +29,7 @@ using BlockVector = std::vector<std::shared_ptr<Block>>;
 struct ForkChoiceApplication {
     bool success{false};  // Fork choice is either successful or unsuccessful.
     Hash current_head;    // Return latest valid hash in case of halt of execution.
-    BlockNum current_height{0};
+    BlockNum current_block_num{0};
 };
 
 struct ValidChain {

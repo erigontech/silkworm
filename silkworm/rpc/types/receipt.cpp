@@ -28,7 +28,7 @@ namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r) {
     out << " block_hash: " << to_hex(r.block_hash);
-    out << " block_number: " << r.block_number;
+    out << " block_num: " << r.block_num;
     out << " contract_address: " << r.contract_address;
     out << " cumulative_gas_used: " << r.cumulative_gas_used;
     if (r.from) {

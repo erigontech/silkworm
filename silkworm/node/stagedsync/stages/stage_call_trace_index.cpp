@@ -315,8 +315,8 @@ void CallTraceIndex::collect_bitmaps_from_call_traces(RWTxn& txn, const MapConfi
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    const BlockNum max_block_number{to};
-    BlockNum reached_block_number{0};
+    const BlockNum max_block_num{to};
+    BlockNum reached_block_num{0};
 
     absl::btree_map<Bytes, roaring::Roaring64Map> call_from_bitmaps;
     absl::btree_map<Bytes, roaring::Roaring64Map> call_to_bitmaps;
@@ -329,14 +329,14 @@ void CallTraceIndex::collect_bitmaps_from_call_traces(RWTxn& txn, const MapConfi
     const auto source = txn.ro_cursor(source_config);
     auto source_data{source->lower_bound(to_slice(start_key), false)};
     while (source_data) {
-        reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
-        if (reached_block_number > max_block_number) break;
+        reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
+        if (reached_block_num > max_block_num) break;
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             std::unique_lock log_lck(sl_mutex_);
-            current_key_ = std::to_string(reached_block_number);
+            current_key_ = std::to_string(reached_block_num);
             log_time = now + 5s;
         }
 
@@ -352,7 +352,7 @@ void CallTraceIndex::collect_bitmaps_from_call_traces(RWTxn& txn, const MapConfi
                 it = call_from_bitmaps.emplace(address, roaring::Roaring64Map()).first;
                 call_from_bitmaps_size += kAddressLength + sizeof(uint64_t);
             }
-            it->second.add(reached_block_number);
+            it->second.add(reached_block_num);
             call_from_bitmaps_size += sizeof(uint64_t);
         }
         if (value[kAddressLength] & 2) {
@@ -361,7 +361,7 @@ void CallTraceIndex::collect_bitmaps_from_call_traces(RWTxn& txn, const MapConfi
                 it = call_to_bitmaps.emplace(address, roaring::Roaring64Map()).first;
                 call_to_bitmaps_size += kAddressLength + sizeof(uint64_t);
             }
-            it->second.add(reached_block_number);
+            it->second.add(reached_block_num);
             call_to_bitmaps_size += sizeof(uint64_t);
         }
 
@@ -394,22 +394,22 @@ void CallTraceIndex::collect_unique_keys_from_call_traces(RWTxn& txn, const MapC
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    BlockNum expected_block_number{std::min(from, to) + 1};
-    const BlockNum max_block_number{std::max(from, to)};
-    BlockNum reached_block_number{0};
+    BlockNum expected_block_num{std::min(from, to) + 1};
+    const BlockNum max_block_num{std::max(from, to)};
+    BlockNum reached_block_num{0};
 
-    const auto start_key{block_key(expected_block_number)};
+    const auto start_key{block_key(expected_block_num)};
     const auto source = txn.ro_cursor(source_config);
     auto source_data{source->lower_bound(to_slice(start_key), false)};
     while (source_data) {
-        reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
-        if (reached_block_number > max_block_number) break;
+        reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
+        if (reached_block_num > max_block_num) break;
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             std::unique_lock log_lck(sl_mutex_);
-            current_key_ = std::to_string(reached_block_number);
+            current_key_ = std::to_string(reached_block_num);
             log_time = now + 5s;
         }
 

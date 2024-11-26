@@ -210,8 +210,12 @@ class DummyTransaction : public BaseTransaction {
         co_return;
     }
 
-    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery /*query*/) override {
-        co_return db::kv::api::DomainPointResult{};
+    Task<db::kv::api::GetLatestResult> get_latest(db::kv::api::GetLatestQuery /*query*/) override {
+        co_return db::kv::api::GetLatestResult{};
+    }
+
+    Task<db::kv::api::GetAsOfResult> get_as_of(db::kv::api::GetAsOfQuery /*query*/) override {
+        co_return db::kv::api::GetAsOfResult{};
     }
 
     Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery /*query*/) override {
@@ -226,7 +230,7 @@ class DummyTransaction : public BaseTransaction {
         co_return test::empty_paginated_keys_and_values();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 
@@ -279,7 +283,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
     auto tx = result.get();
     StorageWalker walker{*tx};
 
-    const BlockNum block_number{0x52a0b3};
+    const BlockNum block_num{0x52a0b3};
     const evmc::bytes32 start_location{};
 
     nlohmann::json storage({});
@@ -294,7 +298,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
         const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
         const uint64_t incarnation{0};
 
-        auto result1 = boost::asio::co_spawn(pool, walker.walk_of_storages(block_number, start_address, start_location, incarnation, collector), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, walker.walk_of_storages(block_num, start_address, start_location, incarnation, collector), boost::asio::use_future);
         result1.get();
 
         CHECK(storage.empty());
@@ -305,7 +309,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
         const evmc::address start_address{0x79a4d492a05cfd836ea0967edb5943161dd041f7_address};
         const uint64_t incarnation{1};
 
-        auto result = boost::asio::co_spawn(pool, walker.walk_of_storages(block_number, start_address, start_location, incarnation, collector), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, walker.walk_of_storages(block_num, start_address, start_location, incarnation, collector), boost::asio::use_future);
         result.get();
 
         CHECK(storage.size() == 1);
@@ -327,7 +331,7 @@ TEST_CASE("StorageWalker::walk_of_storages") {
         const evmc::address start_address{0x79a4d706e4bc7fd8ff9d0593a1311386a7a981ea_address};
         const uint64_t incarnation{1};
 
-        auto result = boost::asio::co_spawn(pool, walker.walk_of_storages(block_number, start_address, start_location, incarnation, collector), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, walker.walk_of_storages(block_num, start_address, start_location, incarnation, collector), boost::asio::use_future);
         result.get();
 
         CHECK(storage.size() == 1);
@@ -415,7 +419,7 @@ TEST_CASE("StorageWalker::storage_range_at") {
     SECTION("storage range 2") {
         const evmc::address start_address{0x79a4d492a05cfd836ea0967edb5943161dd041f7_address};
 
-        auto result = boost::asio::co_spawn(pool, walker.storage_range_at(block_number, start_address, start_location, 2, collector), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, walker.storage_range_at(block_num, start_address, start_location, 2, collector), boost::asio::use_future);
         result.get();
 
         CHECK(storage.size() == 2);
@@ -434,7 +438,7 @@ TEST_CASE("StorageWalker::storage_range_at") {
     SECTION("collect storage 3") {
         const evmc::address start_address{0x79a4d706e4bc7fd8ff9d0593a1311386a7a981ea_address};
 
-        auto result = boost::asio::co_spawn(pool, walker.storage_range_at(block_number, start_address, start_location, 5, collector), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, walker.storage_range_at(block_num, start_address, start_location, 5, collector), boost::asio::use_future);
         result.get();
 
         CHECK(storage.size() == 5);

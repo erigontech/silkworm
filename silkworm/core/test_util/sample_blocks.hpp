@@ -40,7 +40,7 @@ inline constexpr evmc::bytes32 kSampleStateRoot{0xb02a3b0ee16c858afaa34bcd6770b3
 inline constexpr evmc::bytes32 kSampleTransactionsRoot{0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e_bytes32};
 inline constexpr evmc::bytes32 kSampleReceiptsRoot{0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32};
 inline constexpr intx::uint256 kSampleDifficulty{1234};
-inline constexpr BlockNum kSampleBlockNumber = 5u;
+inline constexpr BlockNum kSampleBlockNum = 5u;
 inline constexpr uint64_t kSampleGasLimit = 1000000u;
 inline constexpr uint64_t kSampleGasUsed = 1000000u;
 inline constexpr uint64_t kSampleTimestamp = 5405021u;
@@ -58,7 +58,7 @@ inline BlockHeader sample_block_header() {
         .transactions_root = kSampleTransactionsRoot,
         .receipts_root = kSampleReceiptsRoot,
         .difficulty = kSampleDifficulty,
-        .number = kSampleBlockNumber,
+        .number = kSampleBlockNum,
         .gas_limit = kSampleGasLimit,
         .gas_used = kSampleGasUsed,
         .timestamp = kSampleTimestamp,
@@ -104,7 +104,7 @@ inline constexpr evmc::bytes32 kSampleOmmerParentHash{0xb397a22bb95bf14753ec174f
 inline constexpr evmc::address kSampleOmmerBeneficiary{0x0c729be7c39543c3d549282a40395299d987cec2_address};
 inline constexpr evmc::bytes32 kSampleOmmerStateRoot{0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32};
 inline constexpr intx::uint256 kSampleOmmerDifficulty{12'555'442'155'599};
-inline constexpr BlockNum kSampleOmmerBlockNumber = 13'000'013;
+inline constexpr BlockNum kSampleOmmerBlockNum = 13'000'013;
 inline constexpr uint64_t kSampleOmmerGasLimit = 3'141'592;
 inline constexpr uint64_t kSampleOmmerGasUsed = 0;
 inline constexpr uint64_t kSampleOmmerTimestamp = 1455404305;
@@ -120,7 +120,7 @@ inline BlockHeader sample_ommer0() {
     ommer.transactions_root = kEmptyRoot;
     ommer.receipts_root = kEmptyRoot;
     ommer.difficulty = kSampleOmmerDifficulty;
-    ommer.number = kSampleOmmerBlockNumber;
+    ommer.number = kSampleOmmerBlockNum;
     ommer.gas_limit = kSampleOmmerGasLimit;
     ommer.gas_used = kSampleOmmerGasUsed;
     ommer.timestamp = kSampleOmmerTimestamp;

@@ -54,7 +54,7 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<std::shared_ptr<api::CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) override;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) override;
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 
@@ -62,8 +62,11 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    Task<api::DomainPointResult> domain_get(api::DomainPointQuery query) override;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
+    Task<api::GetLatestResult> get_latest(api::GetLatestQuery query) override;
+
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
+    Task<api::GetAsOfResult> get_as_of(api::GetAsOfQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery query) override;
@@ -74,8 +77,8 @@ class RemoteTransaction : public api::BaseTransaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<api::PaginatedKeysValues> history_range(api::HistoryRangeQuery query) override;
 
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> domain_range(api::DomainRangeQuery query) override;
+    // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
+    Task<api::PaginatedKeysValues> range_as_of(api::DomainRangeQuery query) override;
 
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);

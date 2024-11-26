@@ -34,11 +34,11 @@ namespace silkworm::db::txn {
 //! \see txnum.go in Erigon
 using TxNum = TxnId;
 
-//! Return the maximum TxNum in specified \code block_number
-Task<TxNum> max_tx_num(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider);
+//! Return the maximum TxNum in specified \code block_num
+Task<TxNum> max_tx_num(kv::api::Transaction& tx, BlockNum block_num, chain::CanonicalBodyForStorageProvider provider);
 
-//! Return the minimum TxNum in specified \code block_number
-Task<TxNum> min_tx_num(kv::api::Transaction& tx, BlockNum block_number, chain::CanonicalBodyForStorageProvider provider);
+//! Return the minimum TxNum in specified \code block_num
+Task<TxNum> min_tx_num(kv::api::Transaction& tx, BlockNum block_num, chain::CanonicalBodyForStorageProvider provider);
 
 using BlockNumAndTxnNumber = std::pair<BlockNum, TxNum>;
 

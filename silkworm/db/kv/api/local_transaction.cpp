@@ -60,23 +60,28 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
     co_return cursor;
 }
 
-std::shared_ptr<State> LocalTransaction::create_state(boost::asio::any_io_executor&, const chain::ChainStorage&, BlockNum block_number) {
+std::shared_ptr<State> LocalTransaction::create_state(boost::asio::any_io_executor&, const chain::ChainStorage&, BlockNum block_num) {
     // The calling thread *must* be *different* from the one which created this LocalTransaction instance
-    return std::make_shared<state::LocalState>(block_number, data_store_);
+    return std::make_shared<state::LocalState>(block_num, data_store_);
 }
 
 std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
     // The calling thread *must* be the *same* which created this LocalTransaction instance
-    return std::make_shared<chain::LocalChainStorage>(DataModel{txn_, data_store_.repository});
+    return std::make_shared<chain::LocalChainStorage>(DataModel{txn_, data_store_.blocks_repository});
 }
 
 Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum /*block_num*/) {
     throw std::logic_error{"not yet implemented"};
 }
 
-Task<DomainPointResult> LocalTransaction::domain_get(DomainPointQuery /*query*/) {
+Task<GetLatestResult> LocalTransaction::get_latest(GetLatestQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
-    co_return DomainPointResult{};
+    co_return GetLatestResult{};
+}
+
+Task<GetAsOfResult> LocalTransaction::get_as_of(GetAsOfQuery /*query*/) {
+    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
+    co_return GetAsOfResult{};
 }
 
 Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery /*query*/) {
@@ -100,7 +105,7 @@ Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery /*qu
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
-Task<PaginatedKeysValues> LocalTransaction::domain_range(DomainRangeQuery /*query*/) {
+Task<PaginatedKeysValues> LocalTransaction::range_as_of(DomainRangeQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         co_return api::PaginatedKeysValues::PageResult{};

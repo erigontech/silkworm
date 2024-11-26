@@ -325,7 +325,7 @@ RunResults transaction_test(const nlohmann::json& j) {
         }
 
         const ChainConfig& config{test::kNetworkConfig.at(entry.key())};
-        const evmc_revision rev{config.revision(/*block_number=*/0, /*block_time=*/0)};
+        const evmc_revision rev{config.revision(/*block_num=*/0, /*block_time=*/0)};
 
         if (ValidationResult err{
                 pre_validate_transaction(txn, rev, config.chain_id, /*base_fee_per_gas=*/std::nullopt,
@@ -378,7 +378,7 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
     auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), nullptr, 0)};
     auto parent_difficulty{intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
     auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), nullptr, 0)};
-    auto block_number{std::stoull(j["currentBlockNumber"].get<std::string>(), nullptr, 0)};
+    auto block_num{std::stoull(j["currentBlockNumber"].get<std::string>(), nullptr, 0)};
     auto current_difficulty{intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
 
     bool parent_has_uncles{false};
@@ -394,12 +394,12 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
         }
     }
 
-    intx::uint256 calculated_difficulty{EthashRuleSet::difficulty(block_number, current_timestamp, parent_difficulty,
+    intx::uint256 calculated_difficulty{EthashRuleSet::difficulty(block_num, current_timestamp, parent_difficulty,
                                                                   parent_timestamp, parent_has_uncles, config)};
     if (calculated_difficulty == current_difficulty) {
         return Status::kPassed;
     }
-    std::cout << "Difficulty mismatch for block " << block_number << "\n"
+    std::cout << "Difficulty mismatch for block " << block_num << "\n"
               << hex(calculated_difficulty) << " != " << hex(current_difficulty) << std::endl;
     return Status::kFailed;
 }

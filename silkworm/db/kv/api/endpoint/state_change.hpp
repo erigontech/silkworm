@@ -68,7 +68,7 @@ enum Direction : uint8_t {
 
 struct StateChange {
     Direction direction{kForward};
-    BlockNum block_height{0};
+    BlockNum block_num{0};
     Hash block_hash;
     AccountChangeSequence account_changes;
     ListOfBytes rlp_txs;  // Enabled using StateChangeOptions::with_transactions=true
@@ -104,7 +104,7 @@ inline bool operator==(const AccountChange& lhs, const AccountChange& rhs) {
 
 inline bool operator==(const StateChange& lhs, const StateChange& rhs) {
     if (lhs.direction != rhs.direction) return false;
-    if (lhs.block_height != rhs.block_height) return false;
+    if (lhs.block_num != rhs.block_num) return false;
     if (lhs.block_hash != rhs.block_hash) return false;
     if (lhs.account_changes != rhs.account_changes) return false;
     if (lhs.rlp_txs != rhs.rlp_txs) return false;

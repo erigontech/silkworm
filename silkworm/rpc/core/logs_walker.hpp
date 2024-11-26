@@ -38,7 +38,7 @@ class LogsWalker {
     LogsWalker(const LogsWalker&) = delete;
     LogsWalker& operator=(const LogsWalker&) = delete;
 
-    Task<std::pair<uint64_t, uint64_t>> get_block_numbers(const Filter& filter);
+    Task<std::pair<uint64_t, uint64_t>> get_block_nums(const Filter& filter);
     Task<void> get_logs(std::uint64_t start, std::uint64_t end,
                         const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& logs) {
         LogFilterOptions options;

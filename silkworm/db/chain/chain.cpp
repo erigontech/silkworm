@@ -40,8 +40,8 @@ Task<uint64_t> read_header_number(kv::api::Transaction& tx, const evmc::bytes32&
     co_return endian::load_big_u64(value.data());
 }
 
-Task<std::optional<intx::uint256>> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, uint64_t block_number) {
-    const auto block_key = db::block_key(block_number, block_hash.bytes);
+Task<std::optional<intx::uint256>> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, uint64_t block_num) {
+    const auto block_key = db::block_key(block_num, block_hash.bytes);
     SILK_TRACE << "read_total_difficulty block_key: " << to_hex(block_key);
     const auto result{co_await tx.get_one(table::kDifficultyName, block_key)};
     if (result.empty()) {

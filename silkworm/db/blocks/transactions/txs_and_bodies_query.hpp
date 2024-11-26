@@ -41,14 +41,14 @@ class TxsAndBodiesQuery {
             seg::Decompressor::Iterator tx_it,
             std::shared_ptr<seg::Decompressor> bodies_decoder,
             seg::Decompressor::Iterator body_it,
-            BlockNum first_block_number,
+            BlockNum first_block_num,
             uint64_t first_tx_id,
             uint64_t expected_tx_count,
             std::string log_title);
 
         // NOLINTNEXTLINE(readability-identifier-naming)
         struct value_type {
-            BlockNum block_number{};
+            BlockNum block_num{};
             ByteView body_rlp;
             BlockBodyForStorage body;
             ByteView tx_buffer;

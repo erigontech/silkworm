@@ -31,151 +31,151 @@ using evmc::literals::operator""_bytes32;
 
 evmc::bytes32 kZeroHash{0};
 
-TEST_CASE("block_number_or_hash") {
+TEST_CASE("block_num_or_hash") {
     SECTION("ctor from hash string") {
-        BlockNumberOrHash bnoh{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        BlockNumOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
 
-        CHECK(bnoh.is_hash() == true);
-        CHECK(bnoh.is_number() == false);
-        CHECK(bnoh.is_tag() == false);
+        CHECK(block_num_or_hash.is_hash() == true);
+        CHECK(block_num_or_hash.is_number() == false);
+        CHECK(block_num_or_hash.is_tag() == false);
 
-        CHECK(bnoh.hash() == 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32);
-        CHECK(bnoh.number() == 0);
-        CHECK(bnoh.tag().empty());
+        CHECK(block_num_or_hash.hash() == 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32);
+        CHECK(block_num_or_hash.number() == 0);
+        CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from decimal number string") {
-        BlockNumberOrHash bnoh{"1966"};
+        BlockNumOrHash block_num_or_hash{"1966"};
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == true);
-        CHECK(bnoh.is_tag() == false);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == true);
+        CHECK(block_num_or_hash.is_tag() == false);
 
-        CHECK(bnoh.hash() == kZeroHash);
-        CHECK(bnoh.number() == 1966);
-        CHECK(bnoh.tag().empty());
+        CHECK(block_num_or_hash.hash() == kZeroHash);
+        CHECK(block_num_or_hash.number() == 1966);
+        CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from hex number string") {
-        BlockNumberOrHash bnoh{"0x374f3"};
+        BlockNumOrHash block_num_or_hash{"0x374f3"};
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == true);
-        CHECK(bnoh.is_tag() == false);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == true);
+        CHECK(block_num_or_hash.is_tag() == false);
 
-        CHECK(bnoh.hash() == kZeroHash);
-        CHECK(bnoh.number() == 0x374f3);
-        CHECK(bnoh.tag().empty());
+        CHECK(block_num_or_hash.hash() == kZeroHash);
+        CHECK(block_num_or_hash.number() == 0x374f3);
+        CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from 'latest' tag") {
-        BlockNumberOrHash bnoh{"latest"};
+        BlockNumOrHash block_num_or_hash{"latest"};
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == false);
-        CHECK(bnoh.is_tag() == true);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == false);
+        CHECK(block_num_or_hash.is_tag() == true);
 
-        CHECK(bnoh.hash() == kZeroHash);
-        CHECK(bnoh.number() == 0);
-        CHECK(bnoh.tag() == "latest");
+        CHECK(block_num_or_hash.hash() == kZeroHash);
+        CHECK(block_num_or_hash.number() == 0);
+        CHECK(block_num_or_hash.tag() == "latest");
     }
     SECTION("ctor from 'earliest' tag") {
-        BlockNumberOrHash bnoh{"earliest"};
+        BlockNumOrHash block_num_or_hash{"earliest"};
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == true);
-        CHECK(bnoh.is_tag() == false);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == true);
+        CHECK(block_num_or_hash.is_tag() == false);
 
-        CHECK(bnoh.hash() == kZeroHash);
-        CHECK(bnoh.number() == 0);
-        CHECK(bnoh.tag().empty());
+        CHECK(block_num_or_hash.hash() == kZeroHash);
+        CHECK(block_num_or_hash.number() == 0);
+        CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("ctor from 'pending' tag") {
-        BlockNumberOrHash bnoh{"pending"};
+        BlockNumOrHash block_num_or_hash{"pending"};
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == false);
-        CHECK(bnoh.is_tag() == true);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == false);
+        CHECK(block_num_or_hash.is_tag() == true);
 
-        CHECK(bnoh.hash() == kZeroHash);
-        CHECK(bnoh.number() == 0);
-        CHECK(bnoh.tag() == "pending");
+        CHECK(block_num_or_hash.hash() == kZeroHash);
+        CHECK(block_num_or_hash.number() == 0);
+        CHECK(block_num_or_hash.tag() == "pending");
     }
     SECTION("ctor from number") {
-        BlockNumberOrHash bnoh{123456};
+        BlockNumOrHash block_num_or_hash{123456};
 
-        CHECK(bnoh.is_hash() == false);
-        CHECK(bnoh.is_number() == true);
-        CHECK(bnoh.is_tag() == false);
+        CHECK(block_num_or_hash.is_hash() == false);
+        CHECK(block_num_or_hash.is_number() == true);
+        CHECK(block_num_or_hash.is_tag() == false);
 
-        CHECK(bnoh.hash() == kZeroHash);
-        CHECK(bnoh.number() == 123456);
-        CHECK(bnoh.tag().empty());
+        CHECK(block_num_or_hash.hash() == kZeroHash);
+        CHECK(block_num_or_hash.number() == 123456);
+        CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("copy ctor") {
-        BlockNumberOrHash bnoh{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
-        BlockNumberOrHash copy{bnoh};  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        BlockNumOrHash copy{block_num_or_hash};  // NOLINT(performance-unnecessary-copy-initialization)
 
-        CHECK(bnoh.is_hash() == copy.is_hash());
-        CHECK(bnoh.is_number() == copy.is_number());
-        CHECK(bnoh.is_tag() == copy.is_tag());
+        CHECK(block_num_or_hash.is_hash() == copy.is_hash());
+        CHECK(block_num_or_hash.is_number() == copy.is_number());
+        CHECK(block_num_or_hash.is_tag() == copy.is_tag());
 
-        CHECK(bnoh.hash() == copy.hash());
-        CHECK(bnoh.number() == 0);
-        CHECK(bnoh.tag().empty());
+        CHECK(block_num_or_hash.hash() == copy.hash());
+        CHECK(block_num_or_hash.number() == 0);
+        CHECK(block_num_or_hash.tag().empty());
     }
     SECTION("copy hash") {
-        BlockNumberOrHash bnoh{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
-        BlockNumberOrHash copy = bnoh;  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        BlockNumOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
 
-        CHECK(bnoh.is_hash() == copy.is_hash());
-        CHECK(bnoh.is_number() == copy.is_number());
-        CHECK(bnoh.is_tag() == copy.is_tag());
+        CHECK(block_num_or_hash.is_hash() == copy.is_hash());
+        CHECK(block_num_or_hash.is_number() == copy.is_number());
+        CHECK(block_num_or_hash.is_tag() == copy.is_tag());
 
-        CHECK(bnoh.hash() == copy.hash());
+        CHECK(block_num_or_hash.hash() == copy.hash());
     }
     SECTION("copy number") {
-        BlockNumberOrHash bnoh{123456};
-        BlockNumberOrHash copy = bnoh;  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{123456};
+        BlockNumOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
 
-        CHECK(bnoh.is_hash() == copy.is_hash());
-        CHECK(bnoh.is_number() == copy.is_number());
-        CHECK(bnoh.is_tag() == copy.is_tag());
+        CHECK(block_num_or_hash.is_hash() == copy.is_hash());
+        CHECK(block_num_or_hash.is_number() == copy.is_number());
+        CHECK(block_num_or_hash.is_tag() == copy.is_tag());
 
-        CHECK(bnoh.number() == copy.number());
+        CHECK(block_num_or_hash.number() == copy.number());
     }
     SECTION("copy tag") {
-        BlockNumberOrHash bnoh{"latest"};
-        BlockNumberOrHash copy = bnoh;  // NOLINT(performance-unnecessary-copy-initialization)
+        BlockNumOrHash block_num_or_hash{"latest"};
+        BlockNumOrHash copy = block_num_or_hash;  // NOLINT(performance-unnecessary-copy-initialization)
 
-        CHECK(bnoh.is_hash() == copy.is_hash());
-        CHECK(bnoh.is_number() == copy.is_number());
-        CHECK(bnoh.is_tag() == copy.is_tag());
-        CHECK(bnoh.tag() == copy.tag());
+        CHECK(block_num_or_hash.is_hash() == copy.is_hash());
+        CHECK(block_num_or_hash.is_number() == copy.is_number());
+        CHECK(block_num_or_hash.is_tag() == copy.is_tag());
+        CHECK(block_num_or_hash.tag() == copy.tag());
     }
     SECTION("number overflow") {
-        CHECK_THROWS_AS(BlockNumberOrHash{"0x1ffffffffffffffff"}, std::out_of_range);
+        CHECK_THROWS_AS(BlockNumOrHash{"0x1ffffffffffffffff"}, std::out_of_range);
     }
     SECTION("invalid string") {
-        CHECK_THROWS_AS(BlockNumberOrHash{"invalid"}, std::invalid_argument);
+        CHECK_THROWS_AS(BlockNumOrHash{"invalid"}, std::invalid_argument);
     }
     SECTION("operator<<") {
         std::stringstream out;
 
-        BlockNumberOrHash bnoh1{"0x374f3"};
-        out << bnoh1;
+        BlockNumOrHash block_num_or_hash1{"0x374f3"};
+        out << block_num_or_hash1;
         CHECK(out.str() == "0x374f3");
         out.str("");
 
-        BlockNumberOrHash bnoh2{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
-        out << bnoh2;
+        BlockNumOrHash block_num_or_hash2{"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c"};
+        out << block_num_or_hash2;
         CHECK(out.str() == "0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c");
         out.str("");
 
-        BlockNumberOrHash bnoh3{"latest"};
-        out << bnoh3;
+        BlockNumOrHash block_num_or_hash3{"latest"};
+        out << block_num_or_hash3;
         CHECK(out.str() == "latest");
         out.str("");
 
-        BlockNumberOrHash bnoh4{"pending"};
-        out << bnoh4;
+        BlockNumOrHash block_num_or_hash4{"pending"};
+        out << block_num_or_hash4;
         CHECK(out.str() == "pending");
         out.str("");
     }

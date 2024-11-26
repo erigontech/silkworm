@@ -59,7 +59,7 @@ SILKWORM_EXPORT void config_set_muir_glacier_block(silkworm::ChainConfig* config
 SILKWORM_EXPORT void config_set_dao_block(silkworm::ChainConfig* config, uint64_t block);
 
 // in_out: in parent difficulty, out current difficulty
-SILKWORM_EXPORT void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
+SILKWORM_EXPORT void difficulty(intx::uint256* in_out, uint64_t block_num, uint64_t block_timestamp,
                                 uint64_t parent_timestamp, bool parent_has_uncles, const silkworm::ChainConfig* config);
 
 SILKWORM_EXPORT silkworm::Transaction* new_transaction(const silkworm::Bytes* rlp);

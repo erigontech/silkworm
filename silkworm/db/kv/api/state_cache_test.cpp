@@ -47,7 +47,7 @@ static constexpr uint64_t kTestViewId0{3'000'000};
 static constexpr uint64_t kTestViewId1{3'000'001};
 static constexpr uint64_t kTestViewId2{3'000'002};
 
-static constexpr BlockNum kTestBlockNumber{1'000'000};
+static constexpr BlockNum kTestBlockNum{1'000'000};
 static constexpr evmc::bytes32 kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
 
 static constexpr evmc::address kTestAddress1{0x0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6_address};
@@ -94,14 +94,14 @@ TEST_CASE("CoherentCacheConfig", "[rpc][ethdb][kv][state_cache]") {
     }
 }
 
-StateChangeSet new_batch(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+StateChangeSet new_batch(uint64_t view_id, BlockNum block_num, const Hash& block_hash,
                          const ListOfBytes& rlp_txs, bool unwind) {
     StateChangeSet state_change_set;
     state_change_set.state_version_id = view_id;
 
     state_change_set.state_changes.emplace_back(StateChange{
         .direction = unwind ? Direction::kUnwind : Direction::kForward,
-        .block_height = block_height,
+        .block_num = block_num,
         .block_hash = block_hash,
         .rlp_txs = rlp_txs,
     });
@@ -109,9 +109,9 @@ StateChangeSet new_batch(uint64_t view_id, BlockNum block_height, const Hash& bl
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_upsert(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+StateChangeSet new_batch_with_upsert(uint64_t view_id, BlockNum block_num, const Hash& block_hash,
                                      const ListOfBytes& rlp_txs, bool unwind) {
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, rlp_txs, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     latest_change.account_changes.emplace_back(AccountChange{
@@ -124,14 +124,14 @@ StateChangeSet new_batch_with_upsert(uint64_t view_id, BlockNum block_height, co
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_upsert_code(uint64_t view_id, BlockNum block_height,
+StateChangeSet new_batch_with_upsert_code(uint64_t view_id, BlockNum block_num,
                                           const Hash& block_hash, const ListOfBytes& rlp_txs,
                                           bool unwind, uint64_t num_changes, uint64_t offset = 0) {
     SILKWORM_ASSERT(num_changes <= kTestAddresses.size());
     SILKWORM_ASSERT(num_changes <= kTestCodes.size());
     SILKWORM_ASSERT(offset < num_changes);
 
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, rlp_txs, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     for (auto i{offset}; i < num_changes; ++i) {
@@ -147,9 +147,9 @@ StateChangeSet new_batch_with_upsert_code(uint64_t view_id, BlockNum block_heigh
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_delete(uint64_t view_id, BlockNum block_height, const Hash& block_hash,
+StateChangeSet new_batch_with_delete(uint64_t view_id, BlockNum block_num, const Hash& block_hash,
                                      const ListOfBytes& rlp_txs, bool unwind) {
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, rlp_txs, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, rlp_txs, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     latest_change.account_changes.emplace_back(AccountChange{
@@ -160,13 +160,13 @@ StateChangeSet new_batch_with_delete(uint64_t view_id, BlockNum block_height, co
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_storage(uint64_t view_id, BlockNum block_height,
+StateChangeSet new_batch_with_storage(uint64_t view_id, BlockNum block_num,
                                       const Hash& block_hash, const ListOfBytes& tx_rlps,
                                       bool unwind, uint64_t num_storage_changes) {
     SILKWORM_ASSERT(num_storage_changes <= kTestHashedLocations.size());
     SILKWORM_ASSERT(num_storage_changes <= kTestStorageData.size());
 
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, tx_rlps, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     StorageChangeSequence storage_change_set;
@@ -187,11 +187,11 @@ StateChangeSet new_batch_with_storage(uint64_t view_id, BlockNum block_height,
     return state_change_set;
 }
 
-StateChangeSet new_batch_with_code(uint64_t view_id, BlockNum block_height, const evmc::bytes32& block_hash,
+StateChangeSet new_batch_with_code(uint64_t view_id, BlockNum block_num, const evmc::bytes32& block_hash,
                                    const std::vector<Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
     SILKWORM_ASSERT(num_code_changes <= kTestCodes.size());
 
-    StateChangeSet state_change_set = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
+    StateChangeSet state_change_set = new_batch(view_id, block_num, block_hash, tx_rlps, unwind);
     StateChange& latest_change = state_change_set.state_changes[0];
 
     for (auto i{0u}; i < num_code_changes; ++i) {
@@ -285,9 +285,9 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
 
     SECTION("single upsert change batch => search hit") {
         cache.on_new_block(
-            new_batch_with_upsert(kTestViewId0, kTestBlockNumber + 0, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+            new_batch_with_upsert(kTestViewId0, kTestBlockNum + 0, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
         cache.on_new_block(
-            new_batch_with_upsert(kTestViewId1, kTestBlockNumber + 1, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+            new_batch_with_upsert(kTestViewId1, kTestBlockNum + 1, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
         CHECK(cache.latest_data_size() == 1);
 
         test_util::MockTransaction txn;
@@ -302,7 +302,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
     }
 
     SECTION("single upsert+code change batch => double search hit") {
-        auto batch = new_batch_with_upsert_code(kTestViewId0, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch = new_batch_with_upsert_code(kTestViewId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                                 /*unwind=*/false, /*num_changes=*/1);
         cache.on_new_block(batch);
         CHECK(cache.latest_data_size() == 1);
@@ -327,7 +327,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
     }
 
     SECTION("single delete change batch => search hit") {
-        auto batch = new_batch_with_delete(kTestViewId0, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch = new_batch_with_delete(kTestViewId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                            /*unwind=*/false);
         cache.on_new_block(batch);
         CHECK(cache.latest_data_size() == 1);
@@ -352,7 +352,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
     }
 
     SECTION("single storage change batch => search hit") {
-        auto batch = new_batch_with_storage(kTestViewId0, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch = new_batch_with_storage(kTestViewId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                             /*unwind=*/false, /*num_storage_changes=*/1);
         cache.on_new_block(batch);
         CHECK(cache.latest_data_size() == 1);
@@ -377,7 +377,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
     }
 
     SECTION("single storage change batch => search miss") {
-        auto batch = new_batch_with_storage(kTestViewId0, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch = new_batch_with_storage(kTestViewId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                             /*unwind=*/false, /*num_storage_changes=*/1);
         cache.on_new_block(batch);
         CHECK(cache.latest_data_size() == 1);
@@ -407,7 +407,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
     }
 
     SECTION("double storage change batch => double search hit") {
-        auto batch = new_batch_with_storage(kTestViewId0, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch = new_batch_with_storage(kTestViewId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                             /*unwind=*/false, /*num_storage_changes=*/2);
         cache.on_new_block(batch);
         CHECK(cache.latest_data_size() == 2);
@@ -438,7 +438,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[rpc]
     }
 
     SECTION("single code change batch => search hit") {
-        auto batch = new_batch_with_code(kTestViewId0, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch = new_batch_with_code(kTestViewId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                          /*unwind=*/false, /*num_code_changes=*/1);
         cache.on_new_block(batch);
         CHECK(cache.latest_code_size() == 1);
@@ -468,9 +468,9 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view two views", "[rpc
     CoherentStateCache cache;
 
     SECTION("two single-upsert change batches => two search hits in different views") {
-        auto batch1 = new_batch_with_upsert(kTestViewId1, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch1 = new_batch_with_upsert(kTestViewId1, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                             /*unwind=*/false);
-        auto batch2 = new_batch_with_upsert(kTestViewId2, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch2 = new_batch_with_upsert(kTestViewId2, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                             /*unwind=*/false);
         cache.on_new_block(batch1);
         cache.on_new_block(batch2);
@@ -496,9 +496,9 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view two views", "[rpc
     }
 
     SECTION("two code change batches => two search hits in different views") {
-        auto batch1 = new_batch_with_code(kTestViewId1, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch1 = new_batch_with_code(kTestViewId1, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                           /*unwind=*/false, /*num_code_changes=*/1);
-        auto batch2 = new_batch_with_code(kTestViewId2, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+        auto batch2 = new_batch_with_code(kTestViewId2, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                           /*unwind=*/false, /*num_code_changes=*/2);
         cache.on_new_block(batch1);
         cache.on_new_block(batch2);
@@ -533,7 +533,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max vi
     // Create as many state views as the maximum allowed number
     for (uint64_t i{0}; i < max_views; ++i) {
         cache.on_new_block(
-            new_batch_with_upsert(kTestViewId0 + i, kTestBlockNumber + i, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+            new_batch_with_upsert(kTestViewId0 + i, kTestBlockNum + i, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
         test_util::MockTransaction txn;
         EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0 + i));
         CHECK(cache.get_view(txn) != nullptr);
@@ -541,7 +541,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max vi
 
     // Next incoming batch with progressive view ID overflows the state views
     cache.on_new_block(
-        new_batch_with_upsert(kTestViewId0 + max_views, kTestBlockNumber, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+        new_batch_with_upsert(kTestViewId0 + max_views, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
     test_util::MockTransaction txn;
     EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0 + max_views));
     CHECK(cache.get_view(txn) != nullptr);
@@ -558,7 +558,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max ke
     CoherentStateCache cache{config};
 
     // Create as many data and code keys as the maximum allowed number
-    cache.on_new_block(new_batch_with_upsert_code(kTestViewId0, kTestBlockNumber, kTestBlockHash, kTestZeroTxs,
+    cache.on_new_block(new_batch_with_upsert_code(kTestViewId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
                                                   /*unwind=*/false, /*num_changes=*/kMaxKeys));
     CHECK(cache.state_key_count() == kMaxKeys);
     CHECK(cache.code_key_count() == kMaxKeys);
@@ -566,7 +566,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max ke
     CHECK(cache.code_eviction_count() == 0);
 
     // Next incoming batch with *new keys* overflows the data and code keys
-    cache.on_new_block(new_batch_with_upsert_code(kTestViewId1, kTestBlockNumber + 1, kTestBlockHash, kTestZeroTxs,
+    cache.on_new_block(new_batch_with_upsert_code(kTestViewId1, kTestBlockNum + 1, kTestBlockHash, kTestZeroTxs,
                                                   /*unwind=*/false, /*num_changes=*/4, /*offset=*/2));
     CHECK(cache.state_key_count() == kMaxKeys);
     CHECK(cache.code_key_count() == kMaxKeys);
@@ -586,7 +586,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block clear the cac
     for (uint64_t i{0}; i < wrapping_view_ids.size(); ++i) {
         uint64_t view_id = wrapping_view_ids[i];
         cache.on_new_block(
-            new_batch_with_upsert(view_id, kTestBlockNumber + i, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+            new_batch_with_upsert(view_id, kTestBlockNum + i, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
         test_util::MockTransaction txn;
         EXPECT_CALL(txn, view_id()).WillRepeatedly(Return(view_id));
         CHECK(cache.get_view(txn) != nullptr);
@@ -595,7 +595,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block clear the cac
     // Next incoming batch with progressive view ID overflows the state views
     uint64_t next_view_id = wrapping_view_ids.back() + 1;
     cache.on_new_block(
-        new_batch_with_upsert(next_view_id, kTestBlockNumber, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+        new_batch_with_upsert(next_view_id, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
     test_util::MockTransaction txn;
     EXPECT_CALL(txn, view_id()).WillRepeatedly(Return(next_view_id));
     CHECK(cache.get_view(txn) != nullptr);

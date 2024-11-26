@@ -22,7 +22,7 @@
 namespace silkworm {
 
 struct BlockId {
-    BlockNum number{};
+    BlockNum block_num{};
     Hash hash;
 
     friend bool operator==(const BlockId&, const BlockId&) = default;

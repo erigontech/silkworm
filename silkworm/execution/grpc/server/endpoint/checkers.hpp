@@ -27,7 +27,7 @@
 
 namespace silkworm::execution::grpc::server {
 
-::execution::GetHeaderHashNumberResponse response_from_block_number(std::optional<BlockNum>);
+::execution::GetHeaderHashNumberResponse response_from_block_num(std::optional<BlockNum>);
 
 ::execution::ForkChoice response_from_fork_choice(const api::ForkChoice&);
 

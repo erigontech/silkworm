@@ -24,9 +24,9 @@ namespace silkworm::execution::grpc::server {
 
 namespace proto = ::execution;
 
-BlockId block_num_and_hash_from_request(const proto::ValidationRequest& request) {
+BlockId block_id_from_request(const proto::ValidationRequest& request) {
     return {
-        .number = request.number(),
+        .block_num = request.number(),
         .hash = rpc::bytes32_from_h256(request.hash()),
     };
 }

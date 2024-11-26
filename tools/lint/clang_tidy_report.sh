@@ -15,9 +15,10 @@ function filter_warnings {
 	grep "warning:" || true
 }
 
-filter_warnings < "$build_log"
-warn_count=$(filter_warnings < "$build_log" | wc -l)
+warnings=$(cat "$build_log" | filter_warnings | sort | uniq)
+warn_count=$(echo "$warnings" | wc -l)
 
+echo "$warnings"
 echo
 echo "clang-tidy produced $warn_count warnings"
 echo "see the build step output for more details"

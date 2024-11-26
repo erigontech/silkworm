@@ -75,7 +75,7 @@ ExecutionPipeline::ExecutionPipeline(
 }
 
 BlockNum ExecutionPipeline::head_header_number() const {
-    return head_header_number_;
+    return head_header_block_num_;
 }
 
 Hash ExecutionPipeline::head_header_hash() const {
@@ -104,18 +104,18 @@ StageScheduler& ExecutionPipeline::stage_scheduler() const {
     return *dynamic_cast<StageScheduler*>(stages_.at(kTriggersStageKey).get());
 }
 
-Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
+Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_block_num) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
     auto log_timer = make_log_timer();
 
-    sync_context_->target_height = target_height;
+    sync_context_->target_block_num = target_block_num;
     SILK_INFO_M("ExecutionPipeline") << "Forward start";
 
     try {
         Stage::Result result = Stage::Result::kSuccess;
 
-        // We'll check if we're forced to start/stop at any particular stage/height for debugging purposes
+        // We'll check if we're forced to start/stop at any particular stage/block_num for debugging purposes
         auto start_stage_name{Environment::get_start_at_stage()};
         const auto stop_stage_name{Environment::get_stop_before_stage()};
         const auto stop_at_block = Environment::get_stop_at_block();
@@ -165,9 +165,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             } /* clang-format on */
 
             auto stage_head_number = read_stage_progress(cycle_txn, current_stage_name.data());
-            if (!stop_at_block && stage_head_number != target_height) {
-                throw std::logic_error("Sync pipeline: stage returned success with an height different from target=" +
-                                       to_string(target_height) + " reached= " + to_string(stage_head_number));
+            if (!stop_at_block && stage_head_number != target_block_num) {
+                throw std::logic_error("Sync pipeline: stage returned success with an block_num different from target=" +
+                                       to_string(target_block_num) + " reached= " + to_string(stage_head_number));
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
@@ -180,15 +180,15 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
         const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
         head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
-        head_header_number_ = head_header->number;
-        if (head_header_number_ != target_height) {
-            throw std::logic_error("Sync pipeline: head header not at target height " + to_string(target_height) +
-                                   ", head_header_height= " + to_string(head_header_number_));
+        head_header_block_num_ = head_header->number;
+        if (head_header_block_num_ != target_block_num) {
+            throw std::logic_error("Sync pipeline: head header not at target block_num " + to_string(target_block_num) +
+                                   ", head_header_block_num= " + to_string(head_header_block_num_));
         }
 
         SILK_INFO_M("ExecutionPipeline") << "Forward done";
 
-        if (stop_at_block && stop_at_block <= head_header_number_) {
+        if (stop_at_block && stop_at_block <= head_header_block_num_) {
             SILK_WARN_M("ExecutionPipeline") << "Interrupted by STOP_AT_BLOCK at block " + to_string(*stop_at_block);
             return Stage::Result::kStoppedByEnv;
         }
@@ -245,10 +245,10 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
         head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
-        head_header_number_ = head_header->number;
-        if (head_header_number_ != unwind_point) {
+        head_header_block_num_ = head_header->number;
+        if (head_header_block_num_ != unwind_point) {
             throw std::logic_error("Sync pipeline: head header not at unwind point " + to_string(unwind_point) +
-                                   ", head_header_height=" + to_string(head_header_number_));
+                                   ", head_header_block_num=" + to_string(head_header_block_num_));
         }
 
         // Clear context
@@ -305,7 +305,7 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
         const auto [head_header, head_header_hash] = data_model.read_head_header_and_hash();
         head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
-        head_header_number_ = head_header->number;
+        head_header_block_num_ = head_header->number;
 
         SILK_INFO_M("ExecutionPipeline") << "Prune done";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;

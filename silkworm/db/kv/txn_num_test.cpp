@@ -47,7 +47,7 @@ TEST_CASE_METHOD(TxNumText, "max_tx_num", "[db][txn][tx_num]") {
         co_return cursor;
     }));
     struct BlockNumAndKeyValue {
-        BlockNum block_number;
+        BlockNum block_num;
         kv::api::KeyValue key_value;
     };
     const Fixtures<BlockNumAndKeyValue, TxNum> fixtures{
@@ -55,12 +55,12 @@ TEST_CASE_METHOD(TxNumText, "max_tx_num", "[db][txn][tx_num]") {
         {{1, {*from_hex("0000000000000001"), *from_hex("000000000000000F")}}, 15},
     };
     for (const auto& [block_num_and_kv, expected_max_tx_num] : fixtures) {
-        const auto [block_number, key_value] = block_num_and_kv;
-        SECTION("block_number: " + std::to_string(block_number)) {
+        const auto [block_num, key_value] = block_num_and_kv;
+        SECTION("block_num: " + std::to_string(block_num)) {
             EXPECT_CALL(*cursor, seek_exact(_)).WillOnce(Invoke([=](Unused) -> Task<kv::api::KeyValue> {
                 co_return key_value;
             }));
-            CHECK(spawn_and_wait(max_tx_num(transaction, block_number, provider)) == expected_max_tx_num);
+            CHECK(spawn_and_wait(max_tx_num(transaction, block_num, provider)) == expected_max_tx_num);
         }
     }
 }
@@ -68,7 +68,7 @@ TEST_CASE_METHOD(TxNumText, "max_tx_num", "[db][txn][tx_num]") {
 TEST_CASE_METHOD(TxNumText, "min_tx_num", "[db][txn][tx_num]") {
     auto cursor = std::make_shared<MockCursor>();
     struct BlockNumAndKeyValue {
-        BlockNum block_number;
+        BlockNum block_num;
         kv::api::KeyValue key_value;
     };
     const Fixtures<BlockNumAndKeyValue, TxNum> fixtures{
@@ -76,9 +76,9 @@ TEST_CASE_METHOD(TxNumText, "min_tx_num", "[db][txn][tx_num]") {
         {{1, {*from_hex("0000000000000000"), *from_hex("000000000000000E")}}, 15},
     };
     for (const auto& [block_num_and_kv, expected_max_tx_num] : fixtures) {
-        const auto [block_number, key_value] = block_num_and_kv;
-        SECTION("block_number: " + std::to_string(block_number)) {
-            if (block_number != 0) {
+        const auto [block_num, key_value] = block_num_and_kv;
+        SECTION("block_num: " + std::to_string(block_num)) {
+            if (block_num != 0) {
                 EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
                     co_return cursor;
                 }));
@@ -86,7 +86,7 @@ TEST_CASE_METHOD(TxNumText, "min_tx_num", "[db][txn][tx_num]") {
                     co_return key_value;
                 }));
             }
-            CHECK(spawn_and_wait(min_tx_num(transaction, block_number, provider)) == expected_max_tx_num);
+            CHECK(spawn_and_wait(min_tx_num(transaction, block_num, provider)) == expected_max_tx_num);
         }
     }
 }

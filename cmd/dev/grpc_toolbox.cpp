@@ -848,18 +848,32 @@ int kv_seek() {
     return kv_seek(target, table_name, key_bytes.value());
 }
 
-Task<void> kv_domain_get_query(const std::shared_ptr<Service>& kv_service,
-                               DomainPointQuery&& query,
+Task<void> kv_get_latest_query(const std::shared_ptr<Service>& kv_service,
+                               GetLatestQuery&& query,
                                const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV DomainGet -> " << query.table << " key=" << to_hex(query.key)
-                  << " ts=" << (query.timestamp ? *query.timestamp : -1) << " [latest: " << !query.timestamp.has_value() << "]\n";
-        const auto result = co_await tx->domain_get(std::move(query));
-        std::cout << "KV DomainGet <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
+        std::cout << "KV GetLatest -> " << query.table << " key=" << to_hex(query.key) << " latest=true\n";
+        const auto result = co_await tx->get_latest(std::move(query));
+        std::cout << "KV GetLatest <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
         co_await tx->close();
     } catch (const std::exception& e) {
-        std::cout << "KV DomainGet <- error: " << e.what() << "\n";
+        std::cout << "KV GetLatest <- error: " << e.what() << "\n";
+    }
+}
+
+Task<void> kv_get_as_of_query(const std::shared_ptr<Service>& kv_service,
+                              GetAsOfQuery&& query,
+                              const bool /*verbose*/) {
+    try {
+        auto tx = co_await kv_service->begin_transaction();
+        std::cout << "KV GetLatest -> " << query.table << " key=" << to_hex(query.key)
+                  << " ts=" << query.timestamp << " latest=false\n";
+        const auto result = co_await tx->get_as_of(std::move(query));
+        std::cout << "KV GetLatest <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
+        co_await tx->close();
+    } catch (const std::exception& e) {
+        std::cout << "KV GetLatest <- error: " << e.what() << "\n";
     }
 }
 
@@ -931,15 +945,15 @@ Task<void> kv_history_range_query(const std::shared_ptr<Service>& kv_service,
     }
 }
 
-Task<void> kv_domain_range_query(const std::shared_ptr<Service>& kv_service,
-                                 DomainRangeQuery&& query,
-                                 const bool verbose) {
+Task<void> kv_range_as_of_query(const std::shared_ptr<Service>& kv_service,
+                                DomainRangeQuery&& query,
+                                const bool verbose) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV DomainRange -> " << query.table << " limit=" << query.limit << "\n";
-        auto paginated_result = co_await tx->domain_range(std::move(query));
+        std::cout << "KV RangeAsOf -> " << query.table << " limit=" << query.limit << "\n";
+        auto paginated_result = co_await tx->range_as_of(std::move(query));
         auto it = co_await paginated_result.begin();
-        std::cout << "KV DomainRange <- #keys and #values: ";
+        std::cout << "KV RangeAsOf <- #keys and #values: ";
         int count{0};
         std::vector<KeyValue> keys_and_values;
         while (const auto key_value = co_await it.next()) {
@@ -954,7 +968,7 @@ Task<void> kv_domain_range_query(const std::shared_ptr<Service>& kv_service,
         }
         co_await tx->close();
     } catch (const std::exception& e) {
-        std::cout << "KV DomainRange <- error: " << e.what() << "\n";
+        std::cout << "KV RangeAsOf <- error: " << e.what() << "\n";
     }
 }
 
@@ -1003,7 +1017,7 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
     return 0;
 }
 
-int kv_domain_get() {
+int kv_get_latest() {
     const auto target{absl::GetFlag(FLAGS_target)};
     if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
@@ -1035,12 +1049,19 @@ int kv_domain_get() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    DomainPointQuery query{
+    if (timestamp > -1) {
+        GetAsOfQuery query{
+            .table = table_name,
+            .key = *key_bytes,
+            .timestamp = timestamp,
+        };
+        return execute_temporal_kv_query(target, kv_get_as_of_query, std::move(query), verbose);
+    }
+    GetLatestQuery query{
         .table = table_name,
         .key = *key_bytes,
-        .timestamp = timestamp > -1 ? std::make_optional(timestamp) : std::nullopt,
     };
-    return execute_temporal_kv_query(target, kv_domain_get_query, std::move(query), verbose);
+    return execute_temporal_kv_query(target, kv_get_latest_query, std::move(query), verbose);
 }
 
 int kv_history_seek() {
@@ -1160,7 +1181,7 @@ int kv_history_range() {
     return execute_temporal_kv_query(target, kv_history_range_query, std::move(query), verbose);
 }
 
-int kv_domain_range() {
+int kv_get_as_of() {
     const auto target{absl::GetFlag(FLAGS_target)};
     if (target.empty() || !absl::StrContains(target, ":")) {
         std::cerr << "Parameter target is invalid: [" << target << "]\n";
@@ -1215,7 +1236,7 @@ int kv_domain_range() {
         .ascending_order = true,
         .limit = limit,
     };
-    return execute_temporal_kv_query(target, kv_domain_range_query, std::move(query), verbose);
+    return execute_temporal_kv_query(target, kv_range_as_of_query, std::move(query), verbose);
 }
 
 int main(int argc, char* argv[]) {
@@ -1228,11 +1249,11 @@ int main(int argc, char* argv[]) {
         "\tkv_seek_async\t\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_async_callback\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_both\t\t\tquery using SEEK_BOTH the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
-        "\tkv_domain_get\t\tquery the Erigon/Silkworm Key-Value (KV) remote interface to data storage using DOMAIN_GET\n"
+        "\tkv_get_latest\t\tquery the Erigon/Silkworm Key-Value (KV) remote interface to data storage using DOMAIN_GET\n"
         "\tkv_history_seek\t\tquery using HISTORY_SEEK the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
         "\tkv_index_range\t\tquery using INDEX_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
         "\tkv_history_range\t\tquery using HISTORY_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n"
-        "\tkv_domain_range\t\tquery using DOMAIN_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n");
+        "\tkv_get_as_of\t\tquery using DOMAIN_RANGE the Erigon/Silkworm Key-Value (KV) remote interface to data storage\n");
     const auto positional_args = absl::ParseCommandLine(argc, argv);
     if (positional_args.size() < 2) {
         std::cerr << "No gRPC tool specified as first positional argument\n\n";
@@ -1264,8 +1285,8 @@ int main(int argc, char* argv[]) {
     if (tool == "kv_seek") {
         return kv_seek();
     }
-    if (tool == "kv_domain_get") {
-        return kv_domain_get();
+    if (tool == "kv_get_latest") {
+        return kv_get_latest();
     }
     if (tool == "kv_history_seek") {
         return kv_history_seek();
@@ -1276,8 +1297,8 @@ int main(int argc, char* argv[]) {
     if (tool == "kv_history_range") {
         return kv_history_range();
     }
-    if (tool == "kv_domain_range") {
-        return kv_domain_range();
+    if (tool == "kv_get_as_of") {
+        return kv_get_as_of();
     }
 
     std::cerr << "Unknown tool " << tool << " specified as first argument\n\n";

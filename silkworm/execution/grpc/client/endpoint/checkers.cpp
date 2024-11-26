@@ -26,7 +26,7 @@ namespace silkworm::execution::grpc::client {
     return request;
 }
 
-std::optional<BlockNum> block_number_from_response(const ::execution::GetHeaderHashNumberResponse& reply) {
+std::optional<BlockNum> block_num_from_response(const ::execution::GetHeaderHashNumberResponse& reply) {
     return reply.has_block_number() ? std::make_optional(reply.block_number()) : std::nullopt;
 }
 

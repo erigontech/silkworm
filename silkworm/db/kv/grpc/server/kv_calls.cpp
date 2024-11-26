@@ -694,10 +694,10 @@ Task<void> StateChangesCall::operator()(StateChangeCollection* source) {
         if (ec == boost::asio::error::operation_aborted) {
             // Notifying timer cancelled => incoming batch available
             if (incoming_batch) {
-                const auto block_height = incoming_batch->change_batch(0).block_height();
-                SILK_DEBUG << "Sending state change batch for block: " << block_height;
+                const auto block_num = incoming_batch->change_batch(0).block_height();
+                SILK_DEBUG << "Sending state change batch for block: " << block_num;
                 const bool write_ok = co_await agrpc::write(responder_, *incoming_batch);
-                SILK_DEBUG << "State change batch for block: " << block_height << " sent [write_ok=" << write_ok << "]";
+                SILK_DEBUG << "State change batch for block: " << block_num << " sent [write_ok=" << write_ok << "]";
                 if (!write_ok) done = true;
             } else {
                 SILK_DEBUG << "Empty incoming batch notified";
@@ -732,12 +732,12 @@ Task<void> HistorySeekCall::operator()() {
     SILK_TRACE << "HistorySeekCall END ok: " << response.ok() << " value: " << response.v();
 }
 
-Task<void> DomainGetCall::operator()() {
-    SILK_TRACE << "DomainGetCall START";
-    remote::DomainGetReply response;
+Task<void> GetLatestCall::operator()() {
+    SILK_TRACE << "GetLatestCall START";
+    remote::GetLatestReply response;
     // TODO(canepat) implement properly
     co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
-    SILK_TRACE << "DomainGetCall END ok: " << response.ok() << " value: " << response.v();
+    SILK_TRACE << "GetLatestCall END ok: " << response.ok() << " value: " << response.v();
 }
 
 Task<void> IndexRangeCall::operator()() {
@@ -757,12 +757,12 @@ Task<void> HistoryRangeCall::operator()() {
                << " next_page_token: " << response.next_page_token();
 }
 
-Task<void> DomainRangeCall::operator()() {
-    SILK_TRACE << "DomainRangeCall START";
+Task<void> RangeAsOfCall::operator()() {
+    SILK_TRACE << "RangeAsOfCall START";
     remote::Pairs response;
     // TODO(canepat) implement properly
     co_await agrpc::finish(responder_, response, ::grpc::Status::OK);
-    SILK_TRACE << "DomainRangeCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
+    SILK_TRACE << "RangeAsOfCall END #keys: " << response.keys_size() << " #values: " << response.values_size()
                << " next_page_token: " << response.next_page_token();
 }
 

@@ -20,8 +20,8 @@
 
 namespace silkworm::rpc::core {
 
-Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const db::chain::ChainStorage& storage, BlockNum block_number) {
-    const auto block_hash = co_await storage.read_canonical_header_hash(block_number);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const db::chain::ChainStorage& storage, BlockNum block_num) {
+    const auto block_hash = co_await storage.read_canonical_header_hash(block_num);
     if (!block_hash) {
         co_return nullptr;
     }
@@ -30,7 +30,7 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, con
         co_return cached_block.value();
     }
     const auto block_with_hash = std::make_shared<BlockWithHash>();
-    const auto block_found = co_await storage.read_block(block_hash->bytes, block_number, /*read_senders */ true, block_with_hash->block);
+    const auto block_found = co_await storage.read_block(block_hash->bytes, block_num, /*read_senders */ true, block_with_hash->block);
     if (!block_found) {
         co_return nullptr;
     }
@@ -49,11 +49,11 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const
         co_return cached_block.value();
     }
     const auto block_with_hash = std::make_shared<BlockWithHash>();
-    const auto block_number = co_await storage.read_block_number(block_hash);
-    if (!block_number) {
+    const auto block_num = co_await storage.read_block_num(block_hash);
+    if (!block_num) {
         co_return nullptr;
     }
-    const auto block_found = co_await storage.read_block(block_hash.bytes, *block_number, /*read_senders */ true, block_with_hash->block);
+    const auto block_found = co_await storage.read_block(block_hash.bytes, *block_num, /*read_senders */ true, block_with_hash->block);
     if (!block_found) {
         co_return nullptr;
     }
@@ -66,24 +66,24 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const
     co_return block_with_hash;
 }
 
-Task<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumberOrHash& bnoh) {
-    if (bnoh.is_number()) {  // NOLINT(bugprone-branch-clone)
-        co_return co_await read_block_by_number(cache, storage, bnoh.number());
-    } else if (bnoh.is_hash()) {
-        co_return co_await read_block_by_hash(cache, storage, bnoh.hash());
-    } else if (bnoh.is_tag()) {
-        auto [block_number, ignore] = co_await get_block_number(bnoh.tag(), tx, /*latest_required=*/false);
-        co_return co_await read_block_by_number(cache, storage, block_number);
+Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumOrHash& block_num_or_hash) {
+    if (block_num_or_hash.is_number()) {  // NOLINT(bugprone-branch-clone)
+        co_return co_await read_block_by_number(cache, storage, block_num_or_hash.number());
+    } else if (block_num_or_hash.is_hash()) {
+        co_return co_await read_block_by_hash(cache, storage, block_num_or_hash.hash());
+    } else if (block_num_or_hash.is_tag()) {
+        auto [block_num, ignore] = co_await get_block_num(block_num_or_hash.tag(), tx, /*latest_required=*/false);
+        co_return co_await read_block_by_number(cache, storage, block_num);
     }
-    throw std::runtime_error{"invalid block_number_or_hash value"};
+    throw std::runtime_error{"invalid block_num_or_hash value"};
 }
 
 Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash) {
-    const auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
-    if (!block_number) {
+    const auto block_num = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
+    if (!block_num) {
         co_return nullptr;
     }
-    const auto block_by_hash = co_await read_block_by_number(cache, storage, *block_number);
+    const auto block_by_hash = co_await read_block_by_number(cache, storage, *block_num);
     if (!block_by_hash) {
         co_return nullptr;
     }
@@ -91,11 +91,11 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& 
 }
 
 Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash) {
-    const auto block_number = co_await storage.read_block_number_by_transaction_hash(transaction_hash);
-    if (!block_number) {
+    const auto block_num = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
+    if (!block_num) {
         co_return std::nullopt;
     }
-    const auto block_with_hash = co_await read_block_by_number(cache, storage, *block_number);
+    const auto block_with_hash = co_await read_block_by_number(cache, storage, *block_num);
     if (!block_with_hash) {
         co_return std::nullopt;
     }

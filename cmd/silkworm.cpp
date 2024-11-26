@@ -98,7 +98,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
     auto& prune_opts = *cli.add_option_group("Prune", "Prune options to delete ancient data from DB");
     prune_opts
         .add_option("--prune", prune_mode,
-                    "Delete data older than 90K blocks (see \"--prune.*.older\" for different height)\n"
+                    "Delete data older than 90K blocks (see \"--prune.*.older\" to set a different block number)\n"
                     "h - prune history (ChangeSets, HistoryIndices - used by historical state access)\n"
                     "r - prune receipts (Receipts, Logs, LogTopicIndex, LogAddressIndex - used by eth_getLogs and "
                     "similar RPC methods)\n"

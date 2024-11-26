@@ -24,21 +24,21 @@
 
 namespace silkworm {
 
-void BodySequence::current_state(BlockNum highest_in_db) {
-    highest_body_in_output_ = highest_in_db;
-    target_height_ = highest_in_db;
+void BodySequence::current_state(BlockNum max_in_db) {
+    max_body_in_output_ = max_in_db;
+    target_block_num_ = max_in_db;
     statistics_ = {};  // reset statistics
 }
 
-BlockNum BodySequence::highest_block_in_output() const { return highest_body_in_output_; }
-BlockNum BodySequence::target_height() const { return target_height_; }
-BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
+BlockNum BodySequence::max_block_in_output() const { return max_body_in_output_; }
+BlockNum BodySequence::target_block_num() const { return target_block_num_; }
+BlockNum BodySequence::max_block_in_memory() const { return body_requests_.max_block(); }
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
 size_t BodySequence::ready_bodies() const { return ready_bodies_; }
 size_t BodySequence::requests() const { return body_requests_.size(); }
 bool BodySequence::has_completed() const {
-    return requests() == 0 &&                            // no more requests
-           highest_block_in_output() == target_height_;  // all bodies withdrawn
+    return requests() == 0 &&                           // no more requests
+           max_block_in_output() == target_block_num_;  // all bodies withdrawn
 }
 
 size_t BodySequence::outstanding_requests(time_point_t tp) const {
@@ -97,7 +97,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
 
         BodyRequest& request = exact_request->second;
         if (!body.withdrawals) {
-            SILK_WARN << "BodySequence: body " << request.block_height << " w/o withdrawals received from peer " << to_hex(human_readable_id(peer));
+            SILK_WARN << "BodySequence: body " << request.block_num << " w/o withdrawals received from peer " << to_hex(human_readable_id(peer));
         }
         if (!request.ready) {
             request.body = std::move(body);
@@ -105,9 +105,9 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             ready_bodies_ += 1;
             statistics_.accepted_items += 1;
 
-            start_block = std::min(start_block, request.block_height);
+            start_block = std::min(start_block, request.block_num);
             count += 1;
-            // SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
+            // SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_num;
         } else {
             statistics_.reject_causes.duplicated += 1;
         }
@@ -127,7 +127,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
 }
 
 Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
-    if (block.header.number <= highest_body_in_output_) return Penalty::kNoPenalty;  // already in db, ignore
+    if (block.header.number <= max_body_in_output_) return Penalty::kNoPenalty;  // already in db, ignore
 
     announced_blocks_.add(block);  // save for later usage
 
@@ -191,14 +191,14 @@ std::vector<PeerPenalization> BodySequence::renew_stale_requests(
             past_request.request_time = tp;
             past_request.request_id = packet.request_id;
 
-            min_block = std::max(min_block, past_request.block_height);
+            min_block = std::max(min_block, past_request.block_num);
 
             // Erigon increment a penalization counter for the peer, but it doesn't use it
             // penalizations.emplace_back({Penalty::kBadBlockPenalty, });
 
-            start_block = std::min(start_block, past_request.block_height);
+            start_block = std::min(start_block, past_request.block_num);
             ++count;
-            // SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
+            // SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_num
             //            << ", hash= " << past_request.block_hash;
         }
 
@@ -228,11 +228,11 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
             new_request.request_time = tp;
             new_request.request_id = packet.request_id;
 
-            min_block = std::max(min_block, new_request.block_height);  // the min block the peer must have (so it is our max)
+            min_block = std::max(min_block, new_request.block_num);  // the min block the peer must have (so it is our max)
 
-            start_block = std::min(start_block, new_request.block_height);
+            start_block = std::min(start_block, new_request.block_num);
             ++count;
-            // SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
+            // SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_num
             //            << ", hash= " << new_request.block_hash;
         }
 
@@ -249,10 +249,10 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 //! Save headers of witch it has to download bodies
 void BodySequence::download_bodies(const Headers& headers) {
     for (const auto& header : headers) {
-        BlockNum bn = header->number;
+        BlockNum block_num = header->number;
 
         BodyRequest new_request;
-        new_request.block_height = header->number;
+        new_request.block_num = header->number;
         new_request.request_id = 0;  // no request yet
         new_request.block_hash = header->hash();
         // new_request.request_time
@@ -261,9 +261,9 @@ void BodySequence::download_bodies(const Headers& headers) {
 
         new_request.header = *header;
 
-        body_requests_.emplace(bn, std::move(new_request));
+        body_requests_.emplace(block_num, std::move(new_request));
 
-        target_height_ = std::max(target_height_, bn);
+        target_block_num_ = std::max(target_block_num_, block_num);
     }
 }
 
@@ -271,7 +271,7 @@ void BodySequence::download_bodies(const Headers& headers) {
 bool BodySequence::fulfill_from_announcements(BodyRequest& request) {
     if (request.ready) return false;
 
-    std::optional<BlockBody> announced_body = announced_blocks_.remove(request.block_height);
+    std::optional<BlockBody> announced_body = announced_blocks_.remove(request.block_num);
     if (announced_body && is_valid_body(request.header, *announced_body)) {
         request.body = std::move(*announced_body);
         request.ready = true;
@@ -313,7 +313,7 @@ Blocks BodySequence::withdraw_ready_bodies() {
         if (!past_request.ready)
             break;  // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
-        highest_body_in_output_ = std::max(highest_body_in_output_, past_request.block_height);
+        max_body_in_output_ = std::max(max_body_in_output_, past_request.block_num);
 
         std::shared_ptr<BlockEx> b{new BlockEx{{std::move(past_request.body), std::move(past_request.header)}}};
         b->to_announce = past_request.to_announce;
@@ -335,13 +335,13 @@ void BodySequence::AnnouncedBlocks::add(Block block) {
     blocks_.emplace(block.header.number, std::move(block));
 }
 
-std::optional<BlockBody> BodySequence::AnnouncedBlocks::remove(BlockNum bn) {
-    auto b = blocks_.find(bn);
-    if (b == blocks_.end())
+std::optional<BlockBody> BodySequence::AnnouncedBlocks::remove(BlockNum block_num) {
+    auto it = blocks_.find(block_num);
+    if (it == blocks_.end())
         return std::nullopt;
 
-    auto block = std::move(b->second);
-    blocks_.erase(b);
+    auto block = std::move(it->second);
+    blocks_.erase(it);
     return block;
 }
 
@@ -372,7 +372,7 @@ BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::lowest_block() c
     return begin()->first;
 }
 
-BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::highest_block() const {
+BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::max_block() const {
     if (empty()) return 0;
     return rbegin()->first;
 }

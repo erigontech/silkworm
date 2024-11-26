@@ -68,14 +68,14 @@ class HeadersStage : public Stage {
     HeadersStage(HeadersStage&&) = delete;       // nor movable
 
     Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
-    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
+    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_block_num
     Stage::Result prune(db::RWTxn&) override;
 
   protected:
     std::vector<std::string> get_log_progress() override;  // thread safe
 
     db::DataModelFactory data_model_factory_;
-    std::atomic<BlockNum> current_height_{0};
+    std::atomic<BlockNum> current_block_num_{0};
     std::optional<BlockNum> forced_target_block_;
 
     // HeaderDataModel has the responsibility to update headers related tables
@@ -84,7 +84,7 @@ class HeadersStage : public Stage {
         HeaderDataModel(
             db::RWTxn& tx,
             db::DataModel data_model,
-            BlockNum headers_height);
+            BlockNum headers_block_num);
 
         void update_tables(const BlockHeader&);  // update header related tables
 
@@ -92,18 +92,18 @@ class HeadersStage : public Stage {
         static void remove_headers(BlockNum unwind_point, db::RWTxn& tx);
 
         // holds the status of a batch insertion of headers
-        BlockNum highest_height() const;
-        Hash highest_hash() const;
+        BlockNum max_block_num() const;
+        Hash max_hash() const;
         intx::uint256 total_difficulty() const;
 
-        std::optional<BlockHeader> get_canonical_header(BlockNum height) const;
+        std::optional<BlockHeader> get_canonical_header(BlockNum block_num) const;
 
       private:
         db::RWTxn& tx_;
         db::DataModel data_model_;
         Hash previous_hash_;
         intx::uint256 previous_td_{0};
-        BlockNum previous_height_{0};
+        BlockNum previous_block_num_{0};
     };
 };
 

@@ -29,7 +29,7 @@
 namespace silkworm::rlp {
 
 DecodingResult decode(ByteView& from, NewBlockHash& to, Leftover mode) noexcept {
-    return decode(from, mode, to.hash, to.number);
+    return decode(from, mode, to.hash, to.block_num);
 }
 
 DecodingResult decode(ByteView& from, NewBlockPacket& to, Leftover mode) noexcept {

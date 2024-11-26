@@ -50,11 +50,11 @@ struct VariableBlockData {
     int delta_max_fee_per_gas;
 };
 
-static silkworm::BlockWithHash allocate_block(BlockNum block_number,
+static silkworm::BlockWithHash allocate_block(BlockNum block_num,
                                               const evmc::address& beneficiary, const FixedBlockData& block_data) {
     silkworm::BlockWithHash block_with_hash;
 
-    block_with_hash.block.header.number = block_number;
+    block_with_hash.block.header.number = block_num;
     block_with_hash.block.header.beneficiary = beneficiary;
     block_with_hash.block.header.base_fee_per_gas = block_data.base_fee;
 
@@ -102,9 +102,9 @@ TEST_CASE("suggested price") {
 
     std::vector<silkworm::BlockWithHash> blocks;
 
-    BlockProvider block_provider = [&](BlockNum block_number) -> Task<std::shared_ptr<silkworm::BlockWithHash>> {
+    BlockProvider block_provider = [&](BlockNum block_num) -> Task<std::shared_ptr<silkworm::BlockWithHash>> {
         auto block_with_hash = std::make_shared<silkworm::BlockWithHash>();
-        *block_with_hash = blocks[block_number];
+        *block_with_hash = blocks[block_num];
         co_return block_with_hash;
     };
     GasPriceOracle gas_price_oracle{block_provider};

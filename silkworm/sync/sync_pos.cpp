@@ -161,10 +161,10 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         if (payload.block_hash != block_hash) {
             co_return rpc::PayloadStatus::kInvalidBlockHash;
         }
-        SILK_TRACE << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number;
+        SILK_TRACE << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number;
 
         if (active_chain_validations_ > 0) {
-            SILK_INFO << "PoSSync: new_payload block_hash=" << block_hash << " block_number: " << block->header.number
+            SILK_INFO << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number
                       << " <- reply SYNCING";
             co_return rpc::PayloadStatus::kSyncing;
         }
@@ -203,15 +203,15 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             co_return rpc::PayloadStatus::kSyncing;
         }
 
-        const auto block_number = co_await exec_engine_->get_header_hash_number(block_hash);
-        if (!block_number) {
+        const auto block_num = co_await exec_engine_->get_header_hash_number(block_hash);
+        if (!block_num) {
             co_return rpc::PayloadStatus::kAccepted;
         }
-        SILK_TRACE << "PoSSync: new_payload block_number=" << *block_number << " inserted";
+        SILK_TRACE << "PoSSync: new_payload block_num=" << *block_num << " inserted";
 
         // NOTE: from here the method execution can be cancelled
         ++active_chain_validations_;
-        const auto verification = co_await (exec_engine_->validate_chain({*block_number, block_hash}) || concurrency::timeout(timeout));
+        const auto verification = co_await (exec_engine_->validate_chain({*block_num, block_hash}) || concurrency::timeout(timeout));
         --active_chain_validations_;
 
         if (std::holds_alternative<execution::api::ValidChain>(verification)) {
@@ -334,7 +334,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         SILK_INFO
             << "PoSSync: fork_choice_update " << (fcu_result ? "OK" : "KO")
             << " latest_valid_hash=" << (fcu_result ? Hash(state.head_block_hash).to_hex() : fcu_result.latest_valid_head.to_hex())
-            << " current_head=" << fcu_result.latest_valid_head << " current_height=";
+            << " current_head=" << fcu_result.latest_valid_head << " current_block_num=";
         if (!fcu_result) {
             // at the moment application doesn't carry information to disambiguate between invalid head and
             // finalized_block_hash not found, so we need additional calls:
@@ -411,8 +411,8 @@ Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_hash(const std:
 Task<rpc::ExecutionPayloadBodies> PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count, std::chrono::milliseconds /*timeout*/) {
     rpc::ExecutionPayloadBodies payload_bodies;
     payload_bodies.resize(count);
-    for (BlockNum number{start}; number < start + count; ++number) {
-        const auto block_body{co_await exec_engine_->get_body(number)};
+    for (BlockNum block_num = start; block_num < start + count; ++block_num) {
+        const auto block_body{co_await exec_engine_->get_body(block_num)};
         if (block_body) {
             std::vector<Bytes> rlp_txs;
             rlp_txs.reserve(block_body->transactions.size());

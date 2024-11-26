@@ -43,15 +43,15 @@ TEST_CASE("links") {
 
     SECTION("construction") {
         REQUIRE(*(link1.header) == headers[1]);
-        REQUIRE(link1.block_height == headers[1].number);
+        REQUIRE(link1.block_num == headers[1].number);
         REQUIRE(link1.hash == headers[1].hash());
         REQUIRE(link1.persisted == persisted);
         REQUIRE(link1.preverified == false);
         REQUIRE(link1.next.empty());
 
-        headers[1].number = 100;           // only for the following test
-        REQUIRE(link1.block_height == 1);  // link1 has a copy of headers[1]
-        headers[1].number = 1;             // ok
+        headers[1].number = 100;        // only for the following test
+        REQUIRE(link1.block_num == 1);  // link1 has a copy of headers[1]
+        headers[1].number = 1;          // ok
     }
 
     SECTION("children") {
@@ -105,8 +105,8 @@ TEST_CASE("anchors") {
 
     SECTION("construction") {
         REQUIRE(anchor.parent_hash == headers[1].parent_hash);
-        REQUIRE(anchor.block_height == headers[1].number);
-        REQUIRE(anchor.last_link_height == headers[1].number);
+        REQUIRE(anchor.block_num == headers[1].number);
+        REQUIRE(anchor.last_link_block_num == headers[1].number);
         REQUIRE(anchor.peer_id == peer_id);
         REQUIRE(anchor.links.empty());
         REQUIRE(anchor.chain_length() == 1);
@@ -155,7 +155,7 @@ TEST_CASE("segments") {
 
     Segment segment = segments[0];
     REQUIRE(segment.lowest_header()->number == headers[0].number);
-    REQUIRE(segment.highest_header()->number == headers[headers.size() - 1].number);
+    REQUIRE(segment.max_header()->number == headers[headers.size() - 1].number);
     REQUIRE(segment[0]->number == headers[headers.size() - 1].number);  // segment is reversed
     REQUIRE(segment[segment.size() - 1]->number == headers[0].number);  // "
 
@@ -166,13 +166,13 @@ TEST_CASE("segments") {
 
     Segment::Slice segment_slice = segment.slice(start, end);
     REQUIRE(segment_slice.size() == end - start);
-    REQUIRE(segment_slice[0]->number == start_num);                       // headers in segment are ordered from highest to lowest
+    REQUIRE(segment_slice[0]->number == start_num);                       // headers in segment are ordered from max to lowest
     REQUIRE(segment_slice[segment_slice.size() - 1]->number == end_num);  // "
 
     segment.remove_headers_higher_than(3);
     REQUIRE(segment.size() == 4);
     REQUIRE(segment.lowest_header()->number == headers[0].number);
-    REQUIRE(segment.highest_header()->number == 3);
+    REQUIRE(segment.max_header()->number == 3);
     REQUIRE(segment[0]->number == 3);
     REQUIRE(segment[segment.size() - 1]->number == headers[0].number);
 }

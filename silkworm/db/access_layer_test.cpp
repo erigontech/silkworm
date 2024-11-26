@@ -480,18 +480,16 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         REQUIRE(h == header.hash());
     }
 
-    SECTION("process_blocks_at_height") {
-        BlockNum height = header.number;
-
+    SECTION("read_blocks") {
         BlockBody body{sample_block_body()};
         CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));
 
         size_t count = 0;
-        auto processed = process_blocks_at_height(
+        auto processed = read_blocks(
             txn,
-            height,
-            [&count, &height](const Block& block) {
-                REQUIRE(block.header.number == height);
+            block_num,
+            [&count, &block_num](const Block& block) {
+                REQUIRE(block.header.number == block_num);
                 ++count;
             });
         REQUIRE(processed == 1);
@@ -500,18 +498,18 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         BlockBody body2{sample_block_body()};
         header.extra_data = string_view_to_byte_view("I'm different");
         CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
-        CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));  // another body at same height
+        CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));  // another body at same block_num
         BlockBody body3{sample_block_body()};
         header.number = header.number + 1;
         CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
         CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));  // another body after the prev two
 
         count = 0;
-        processed = process_blocks_at_height(
+        processed = read_blocks(
             txn,
-            height,
-            [&count, &height](const Block& block) {
-                REQUIRE(block.header.number == height);
+            block_num,
+            [&count, &block_num](const Block& block) {
+                REQUIRE(block.header.number == block_num);
                 ++count;
             });
         REQUIRE(processed == 2);
@@ -839,44 +837,44 @@ struct AccessLayerTest {
 static constexpr Hash kBlockHash;  // empty but it doesn't matter for the tests
 static constexpr ::mdbx::slice kValidBlockHashSlice{kBlockHash.bytes, kHashLength};
 static constexpr ::mdbx::slice kInvalidBlockHashSlice{kBlockHash.bytes, 30};
-static const Bytes kValidEncodedBlockNumber{*from_hex("0000000000000002")};
-static const Bytes kInvalidEncodedBlockNumber{*from_hex("0002")};
+static const Bytes kValidEncodedBlockNum{*from_hex("0000000000000002")};
+static const Bytes kInvalidEncodedBlockNum{*from_hex("0002")};
 
-TEST_CASE_METHOD(AccessLayerTest, "read_block_number", "[db][access_layer]") {
-    const ::mdbx::slice valid_block_number_slice{kValidEncodedBlockNumber};
-    const ::mdbx::slice invalid_block_number_slice{kInvalidEncodedBlockNumber};
+TEST_CASE_METHOD(AccessLayerTest, "read_block_num", "[db][access_layer]") {
+    const ::mdbx::slice valid_block_num_slice{kValidEncodedBlockNum};
+    const ::mdbx::slice invalid_block_num_slice{kInvalidEncodedBlockNum};
 
     SECTION("valid block number") {
         EXPECT_CALL(*mock_ro_cursor, find(kValidBlockHashSlice, false))
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
-                return CursorResult{kValidBlockHashSlice, valid_block_number_slice, /*.done=*/true};
+                return CursorResult{kValidBlockHashSlice, valid_block_num_slice, /*.done=*/true};
             }));
-        CHECK(read_block_number(mock_ro_txn, kBlockHash) == 2);
+        CHECK(read_block_num(mock_ro_txn, kBlockHash) == 2);
     }
     SECTION("data not found") {
         EXPECT_CALL(*mock_ro_cursor, find(kValidBlockHashSlice, false))
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
                 return CursorResult{::mdbx::slice{}, ::mdbx::slice{}, /*.done=*/false};
             }));
-        CHECK_FALSE(read_block_number(mock_ro_txn, kBlockHash));
+        CHECK_FALSE(read_block_num(mock_ro_txn, kBlockHash));
     }
     SECTION("invalid block number value size") {
         EXPECT_CALL(*mock_ro_cursor, find(kValidBlockHashSlice, false))
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
-                return CursorResult{kValidBlockHashSlice, invalid_block_number_slice, /*.done=*/true};
+                return CursorResult{kValidBlockHashSlice, invalid_block_num_slice, /*.done=*/true};
             }));
-        CHECK_THROWS_AS(read_block_number(mock_ro_txn, kBlockHash), std::length_error);
+        CHECK_THROWS_AS(read_block_num(mock_ro_txn, kBlockHash), std::length_error);
     }
 }
 
 TEST_CASE_METHOD(AccessLayerTest, "read_canonical_head", "[db][access_layer]") {
-    const ::mdbx::slice valid_block_number_slice{kValidEncodedBlockNumber};
-    const ::mdbx::slice invalid_block_number_slice{kInvalidEncodedBlockNumber};
+    const ::mdbx::slice valid_block_num_slice{kValidEncodedBlockNum};
+    const ::mdbx::slice invalid_block_num_slice{kInvalidEncodedBlockNum};
 
     SECTION("valid canonical head") {
         EXPECT_CALL(*mock_ro_cursor, to_last())
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
-                return CursorResult{valid_block_number_slice, kValidBlockHashSlice, /*.done=*/true};
+                return CursorResult{valid_block_num_slice, kValidBlockHashSlice, /*.done=*/true};
             }));
         CHECK(read_canonical_head(mock_ro_txn) == std::tuple<BlockNum, Hash>{2, kBlockHash});
     }
@@ -890,51 +888,51 @@ TEST_CASE_METHOD(AccessLayerTest, "read_canonical_head", "[db][access_layer]") {
     SECTION("invalid key size") {
         EXPECT_CALL(*mock_ro_cursor, to_last())
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
-                return CursorResult{invalid_block_number_slice, kValidBlockHashSlice, /*.done=*/true};
+                return CursorResult{invalid_block_num_slice, kValidBlockHashSlice, /*.done=*/true};
             }));
         CHECK_THROWS_AS(read_canonical_head(mock_ro_txn), std::length_error);
     }
     SECTION("invalid value size") {
         EXPECT_CALL(*mock_ro_cursor, to_last())
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
-                return CursorResult{valid_block_number_slice, kInvalidBlockHashSlice, /*.done=*/true};
+                return CursorResult{valid_block_num_slice, kInvalidBlockHashSlice, /*.done=*/true};
             }));
         CHECK_THROWS_AS(read_canonical_head(mock_ro_txn), std::length_error);
     }
 }
 
 TEST_CASE_METHOD(AccessLayerTest, "read_canonical_header_hash", "[db][access_layer]") {
-    BlockNum block_number{2};
-    const auto block_number_key{block_key(block_number)};
-    const ::mdbx::slice block_key_slice{to_slice(block_number_key)};
+    BlockNum block_num{2};
+    const auto block_num_key{block_key(block_num)};
+    const ::mdbx::slice block_key_slice{to_slice(block_num_key)};
 
     SECTION("valid canonical header hash") {
         EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
                 return CursorResult{block_key_slice, kValidBlockHashSlice, /*.done=*/true};
             }));
-        CHECK(read_canonical_header_hash(mock_ro_txn, block_number) == kBlockHash);
+        CHECK(read_canonical_header_hash(mock_ro_txn, block_num) == kBlockHash);
     }
     SECTION("data not found") {
         EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
             .WillOnce(InvokeWithoutArgs([]() mutable -> CursorResult {
                 return CursorResult{::mdbx::slice{}, ::mdbx::slice{}, /*.done=*/false};
             }));
-        CHECK_FALSE(read_canonical_header_hash(mock_ro_txn, block_number));
+        CHECK_FALSE(read_canonical_header_hash(mock_ro_txn, block_num));
     }
     SECTION("invalid value size") {
         EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
                 return CursorResult{block_key_slice, kInvalidBlockHashSlice, /*.done=*/true};
             }));
-        CHECK_THROWS_AS(read_canonical_header_hash(mock_ro_txn, block_number), std::length_error);
+        CHECK_THROWS_AS(read_canonical_header_hash(mock_ro_txn, block_num), std::length_error);
     }
 }
 
 TEST_CASE_METHOD(AccessLayerTest, "read_block_by_number", "[db][access_layer]") {
-    BlockNum block_number{2};
-    const auto block_number_key{block_key(block_number)};
-    const ::mdbx::slice block_key_slice{to_slice(block_number_key)};
+    BlockNum block_num{2};
+    const auto block_num_key{block_key(block_num)};
+    const ::mdbx::slice block_key_slice{to_slice(block_num_key)};
     Block block;
 
     SECTION("data not found") {
@@ -942,14 +940,14 @@ TEST_CASE_METHOD(AccessLayerTest, "read_block_by_number", "[db][access_layer]") 
             .WillOnce(InvokeWithoutArgs([]() mutable -> CursorResult {
                 return CursorResult{::mdbx::slice{}, ::mdbx::slice{}, false};
             }));
-        CHECK_FALSE(read_block_by_number(mock_ro_txn, block_number, /*read_senders=*/false, block));
+        CHECK_FALSE(read_block_by_number(mock_ro_txn, block_num, /*read_senders=*/false, block));
     }
     SECTION("invalid value size") {
         EXPECT_CALL(*mock_ro_cursor, find(block_key_slice, false))
             .WillOnce(InvokeWithoutArgs([=]() mutable -> CursorResult {
                 return CursorResult{block_key_slice, kInvalidBlockHashSlice, true};
             }));
-        CHECK_THROWS_AS(read_block_by_number(mock_ro_txn, block_number, /*read_senders=*/false, block), std::length_error);
+        CHECK_THROWS_AS(read_block_by_number(mock_ro_txn, block_num, /*read_senders=*/false, block), std::length_error);
     }
 }
 

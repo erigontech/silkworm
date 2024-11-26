@@ -24,10 +24,10 @@
 
 namespace silkworm::rpc {
 
-Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<BlockNum> block_number_for_gas_limit) {
+Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<BlockNum> block_num_for_gas_limit) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
-    const auto block_number = block.header.number;
+    const auto block_num = block.header.number;
 
     uint64_t hi = 0;
     uint64_t lo = kTxGas - 1;
@@ -36,7 +36,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         SILK_DEBUG << "Set gas limit using call args: " << call.gas.value_or(0);
         hi = call.gas.value();
     } else {
-        const auto header = co_await block_header_provider_(block_number_for_gas_limit.value_or(block_number));
+        const auto header = co_await block_header_provider_(block_num_for_gas_limit.value_or(block_num));
         if (!header) {
             co_return 0;
         }
@@ -48,7 +48,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     if (gas_price && gas_price != 0) {
         evmc::address from = call.from.value_or(evmc::address{0});
 
-        std::optional<silkworm::Account> account{co_await account_reader_(from, block_number + 1)};
+        std::optional<silkworm::Account> account{co_await account_reader_(from, block_num + 1)};
 
         intx::uint256 balance = account->balance;
         SILK_DEBUG << "balance for address " << from << ": 0x" << intx::hex(balance);
@@ -79,7 +79,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
     auto this_executor = co_await boost::asio::this_coro::executor;
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
-        auto state = transaction_.create_state(this_executor, storage_, block_number);
+        auto state = transaction_.create_state(this_executor, storage_, block_num);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};

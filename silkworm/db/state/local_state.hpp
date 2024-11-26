@@ -34,10 +34,10 @@ namespace silkworm::db::state {
 
 class LocalState : public State {
   public:
-    explicit LocalState(BlockNum block_number, DataStoreRef data_store)
-        : block_number_{block_number},
+    explicit LocalState(BlockNum block_num, DataStoreRef data_store)
+        : block_num_{block_num},
           txn_{data_store.chaindata.start_ro_tx()},
-          data_model_{txn_, data_store.repository} {}
+          data_model_{txn_, data_store.blocks_repository} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -47,29 +47,29 @@ class LocalState : public State {
 
     uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockHeader> read_header(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept override;
 
-    bool read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept override;
+    bool read_body(BlockNum block_num, const evmc::bytes32& block_hash, BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<intx::uint256> total_difficulty(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept override;
 
     evmc::bytes32 state_root_hash() const override;
 
     BlockNum current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const override;
+    std::optional<evmc::bytes32> canonical_hash(BlockNum block_num) const override;
 
     void insert_block(const Block& /*block*/, const evmc::bytes32& /*hash*/) override {}
 
-    void canonize_block(BlockNum /*block_number*/, const evmc::bytes32& /*block_hash*/) override {}
+    void canonize_block(BlockNum /*block_num*/, const evmc::bytes32& /*block_hash*/) override {}
 
-    void decanonize_block(BlockNum /*block_number*/) override {}
+    void decanonize_block(BlockNum /*block_num*/) override {}
 
-    void insert_receipts(BlockNum /*block_number*/, const std::vector<Receipt>& /*receipts*/) override {}
+    void insert_receipts(BlockNum /*block_num*/, const std::vector<Receipt>& /*receipts*/) override {}
 
-    void insert_call_traces(BlockNum /*block_number*/, const CallTraces& /*traces*/) override {}
+    void insert_call_traces(BlockNum /*block_num*/, const CallTraces& /*traces*/) override {}
 
-    void begin_block(BlockNum /*block_number*/, size_t /*updated_accounts_count*/) override {}
+    void begin_block(BlockNum /*block_num*/, size_t /*updated_accounts_count*/) override {}
 
     void update_account(
         const evmc::address& /*address*/,
@@ -89,10 +89,10 @@ class LocalState : public State {
         const evmc::bytes32& /*initial*/,
         const evmc::bytes32& /*current*/) override {}
 
-    void unwind_state_changes(BlockNum /*block_number*/) override {}
+    void unwind_state_changes(BlockNum /*block_num*/) override {}
 
   private:
-    BlockNum block_number_;
+    BlockNum block_num_;
     mutable db::ROTxnManaged txn_;
     db::DataModel data_model_;
 };

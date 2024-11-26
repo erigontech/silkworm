@@ -97,7 +97,7 @@ class IntraBlockState {
 
     void set_storage(const evmc::address& address, const evmc::bytes32& key, const evmc::bytes32& value) noexcept;
 
-    void write_to_db(uint64_t block_number);
+    void write_to_db(uint64_t block_num);
 
     Snapshot take_snapshot() const noexcept;
     void revert_to_snapshot(const Snapshot& snapshot) noexcept;

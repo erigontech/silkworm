@@ -65,16 +65,16 @@ struct Service {
     virtual Task<std::optional<BlockHeader>> current_header() = 0;
 
     // rpc GetTD(GetSegmentRequest) returns(GetTDResponse);
-    virtual Task<std::optional<TotalDifficulty>> get_td(BlockNumberOrHash) = 0;
+    virtual Task<std::optional<TotalDifficulty>> get_td(BlockNumOrHash) = 0;
 
     // rpc GetHeader(GetSegmentRequest) returns(GetHeaderResponse);
-    virtual Task<std::optional<BlockHeader>> get_header(BlockNumberOrHash) = 0;
+    virtual Task<std::optional<BlockHeader>> get_header(BlockNumOrHash) = 0;
 
     // rpc GetBody(GetSegmentRequest) returns(GetBodyResponse);
-    virtual Task<std::optional<BlockBody>> get_body(BlockNumberOrHash) = 0;
+    virtual Task<std::optional<BlockBody>> get_body(BlockNumOrHash) = 0;
 
     // rpc HasBlock(GetSegmentRequest) returns(HasBlockResponse);
-    virtual Task<bool> has_block(BlockNumberOrHash) = 0;
+    virtual Task<bool> has_block(BlockNumOrHash) = 0;
 
     /** Ranges **/
 

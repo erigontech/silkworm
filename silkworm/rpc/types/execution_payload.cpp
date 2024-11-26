@@ -25,7 +25,7 @@ namespace silkworm::rpc {
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "version: " << payload.version
-        << " number: " << payload.number
+        << " block_num: " << payload.block_num
         << " block_hash: " << to_hex(payload.block_hash)
         << " parent_hash: " << to_hex(payload.parent_hash)
         << " timestamp: " << payload.timestamp
@@ -92,7 +92,7 @@ std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fcu_re
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration) {
     out << "terminal_total_difficulty: " << transition_configuration.terminal_total_difficulty
         << " terminal_block_hash: " << to_hex(transition_configuration.terminal_block_hash)
-        << " terminal_block_number: " << transition_configuration.terminal_block_number;
+        << " terminal_block_num: " << transition_configuration.terminal_block_num;
     return out;
 }
 

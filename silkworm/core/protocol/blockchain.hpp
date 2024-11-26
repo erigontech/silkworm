@@ -60,7 +60,7 @@ class Blockchain {
     void unwind_last_changes(uint64_t ancestor, uint64_t tip);
 
     std::vector<BlockWithHash> intermediate_chain(
-        uint64_t block_number,
+        uint64_t block_num,
         evmc::bytes32 hash,
         uint64_t canonical_ancestor) const;
 

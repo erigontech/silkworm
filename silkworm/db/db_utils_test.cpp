@@ -102,15 +102,15 @@ TEST_CASE("db access layer addendum") {
 
         ++header.number;
         CHECK_NOTHROW(write_total_difficulty(tx, header.number, header.hash(), 100'000'001'000'000));
-        auto expected_max_bn = header.number;
+        auto expected_max_block_num = header.number;
         auto expected_max_hash = header.hash();
 
         ++header.number;
         CHECK_NOTHROW(write_total_difficulty(tx, header.number, header.hash(), 34'000'000'000));
 
-        auto [max_bn, max_hash] = header_with_biggest_td(tx);
+        auto [max_block_num, max_hash] = header_with_biggest_td(tx);
 
-        REQUIRE(max_bn == expected_max_bn);
+        REQUIRE(max_block_num == expected_max_block_num);
         REQUIRE(max_hash == expected_max_hash);
     }
 
@@ -125,12 +125,12 @@ TEST_CASE("db access layer addendum") {
 
         ++header.number;
         CHECK_NOTHROW(write_total_difficulty(tx, header.number, header.hash(), 34'000'000'000));
-        auto expected_max_bn = header.number;
+        auto expected_max_block_num = header.number;
         auto expected_max_hash = header.hash();
 
-        auto [max_bn, max_hash] = header_with_biggest_td(tx, &bad_headers);
+        auto [max_block_num, max_hash] = header_with_biggest_td(tx, &bad_headers);
 
-        REQUIRE(max_bn == expected_max_bn);
+        REQUIRE(max_block_num == expected_max_block_num);
         REQUIRE(max_hash == expected_max_hash);
     }
 

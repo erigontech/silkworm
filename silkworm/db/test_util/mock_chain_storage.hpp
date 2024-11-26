@@ -34,18 +34,18 @@ class MockChainStorage : public chain::ChainStorage {
   public:
     MOCK_METHOD((Task<silkworm::ChainConfig>), read_chain_config, (), (const, override));
 
-    MOCK_METHOD((Task<BlockNum>), highest_block_number, (), (const, override));
+    MOCK_METHOD((Task<BlockNum>), max_block_num, (), (const, override));
 
-    MOCK_METHOD((Task<std::optional<BlockNum>>), read_block_number, (const Hash&), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockNum>>), read_block_num, (const Hash&), (const, override));
 
     MOCK_METHOD((Task<bool>), read_block, (HashAsSpan, BlockNum, bool, silkworm::Block&), (const, override));
     MOCK_METHOD((Task<bool>), read_block, (const Hash&, BlockNum, silkworm::Block&), (const, override));
     MOCK_METHOD((Task<bool>), read_block, (const Hash&, silkworm::Block&), (const, override));
     MOCK_METHOD((Task<bool>), read_block, (BlockNum, bool, silkworm::Block&), (const, override));
 
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum number, HashAsArray hash), (const, override));
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum number, const Hash& hash), (const, override));
-    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (const Hash& hash), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum, HashAsArray), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (BlockNum, const Hash&), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockHeader>>), read_header, (const Hash&), (const, override));
 
     MOCK_METHOD((Task<std::vector<BlockHeader>>), read_sibling_headers, (BlockNum), (const, override));
 
@@ -71,7 +71,7 @@ class MockChainStorage : public chain::ChainStorage {
 
     MOCK_METHOD((Task<std::optional<intx::uint256>>), read_total_difficulty, (const Hash&, BlockNum), (const, override));
 
-    MOCK_METHOD((Task<std::optional<BlockNum>>), read_block_number_by_transaction_hash, (const evmc::bytes32&), (const, override));
+    MOCK_METHOD((Task<std::optional<BlockNum>>), read_block_num_by_transaction_hash, (const evmc::bytes32&), (const, override));
     MOCK_METHOD((Task<std::optional<Transaction>>), read_transaction_by_idx_in_block, (BlockNum, uint64_t), (const, override));
 };
 

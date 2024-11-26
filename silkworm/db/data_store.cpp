@@ -18,18 +18,23 @@
 
 namespace silkworm::db {
 
-datastore::Schema DataStore::make_schema(
-    bool enabled_state_repository) {
+datastore::Schema DataStore::make_schema() {
     snapshots::Schema snapshots;
     snapshots.repository(blocks::kBlocksRepositoryName) = blocks::make_blocks_repository_schema();
-
-    if (enabled_state_repository) {
-        snapshots.repository(state::kStateRepositoryName) = state::make_state_repository_schema();
-    }
+    snapshots.repository(state::kStateRepositoryName) = state::make_state_repository_schema();
 
     return {
         std::move(snapshots),
     };
+}
+
+std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> DataStore::make_repositories_map(
+    snapshots::SnapshotRepository blocks_repository,
+    snapshots::SnapshotRepository state_repository) {
+    std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories;
+    repositories.emplace(blocks::kBlocksRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)));
+    repositories.emplace(state::kStateRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository)));
+    return repositories;
 }
 
 }  // namespace silkworm::db

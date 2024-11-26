@@ -70,8 +70,8 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return cursor_dup_sort_;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const db::chain::ChainStorage& storage, BlockNum block_number) override {
-        return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_number);
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const db::chain::ChainStorage& storage, BlockNum block_num) override {
+        return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_num);
     }
 
     std::shared_ptr<db::chain::ChainStorage> create_storage() override {
@@ -84,8 +84,12 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
 
     Task<void> close() override { co_return; }
 
-    Task<db::kv::api::DomainPointResult> domain_get(db::kv::api::DomainPointQuery /*query*/) override {
-        co_return db::kv::api::DomainPointResult{};
+    Task<db::kv::api::GetLatestResult> get_latest(db::kv::api::GetLatestQuery /*query*/) override {
+        co_return db::kv::api::GetLatestResult{};
+    }
+
+    Task<db::kv::api::GetAsOfResult> get_as_of(db::kv::api::GetAsOfQuery /*query*/) override {
+        co_return db::kv::api::GetAsOfResult{};
     }
 
     Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery /*query*/) override {
@@ -100,7 +104,7 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return empty_paginated_keys_and_values();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> domain_range(db::kv::api::DomainRangeQuery /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeQuery /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 

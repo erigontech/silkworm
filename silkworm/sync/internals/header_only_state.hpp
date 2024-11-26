@@ -32,16 +32,16 @@ class CustomHeaderOnlyChainState : public BlockState {
     explicit CustomHeaderOnlyChainState(OldestFirstLinkMap& persisted_link_queue);
 
     std::optional<BlockHeader> read_header(
-        uint64_t block_number,
+        uint64_t block_num,
         const evmc::bytes32& block_hash) const noexcept override;
 
     [[nodiscard]] bool read_body(
-        BlockNum block_number,
+        BlockNum block_num,
         const evmc::bytes32& block_hash,
         BlockBody& out) const noexcept override;
 
     std::optional<intx::uint256> total_difficulty(
-        uint64_t block_number,
+        uint64_t block_num,
         const evmc::bytes32& block_hash) const noexcept override;
 };
 
@@ -55,16 +55,16 @@ class SimpleHeaderOnlyChainState : public BlockState {
     void insert_header(const BlockHeader& header, const evmc::bytes32& hash);
 
     std::optional<BlockHeader> read_header(
-        uint64_t block_number,
+        uint64_t block_num,
         const evmc::bytes32& block_hash) const noexcept override;
 
     [[nodiscard]] bool read_body(
-        BlockNum block_number,
+        BlockNum block_num,
         const evmc::bytes32& block_hash,
         BlockBody& out) const noexcept override;
 
     std::optional<intx::uint256> total_difficulty(
-        uint64_t block_number,
+        uint64_t block_num,
         const evmc::bytes32& block_hash) const noexcept override;
 };
 

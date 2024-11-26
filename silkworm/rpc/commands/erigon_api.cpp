@@ -63,9 +63,9 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
 
         co_return;
     }
-    const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
+    const auto block_num_or_hash = params[0].get<BlockNumOrHash>();
 
-    SILK_DEBUG << "block_number_or_hash: " << block_number_or_hash;
+    SILK_DEBUG << "block_num_or_hash: " << block_num_or_hash;
 
     auto tx = co_await database_->begin();
 
@@ -76,7 +76,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
 
         rpc::BlockReader block_reader{*chain_storage, *tx};
         rpc::BalanceChanges balance_changes;
-        co_await block_reader.read_balance_changes(*block_cache_, block_number_or_hash, balance_changes);
+        co_await block_reader.read_balance_changes(*block_cache_, block_num_or_hash, balance_changes);
 
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
@@ -122,43 +122,43 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         const auto chain_storage = tx->create_storage();
 
         // Lookup the first and last block headers
-        const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNumber);
+        const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNum);
         ensure(first_header.has_value(), "cannot find earliest header");
         const auto head_header_hash = co_await db::chain::read_head_header_hash(*tx);
-        const auto head_header_block_number = co_await chain_storage->read_block_number(head_header_hash);
-        ensure(head_header_block_number.has_value(), "cannot find head header hash");
-        const auto current_header = co_await chain_storage->read_header(*head_header_block_number, head_header_hash);
+        const auto head_header_block_num = co_await chain_storage->read_block_num(head_header_hash);
+        ensure(head_header_block_num.has_value(), "cannot find head header hash");
+        const auto current_header = co_await chain_storage->read_header(*head_header_block_num, head_header_hash);
         ensure(current_header.has_value(), "cannot find head header");
-        const BlockNum current_block_number = current_header->number;
+        const BlockNum current_block_num = current_header->number;
 
         // Find the lowest block header w/ timestamp greater or equal to provided timestamp
-        BlockNum block_number{0};
+        BlockNum block_num{0};
         if (current_header->timestamp <= timestamp) {
-            block_number = current_block_number;
+            block_num = current_block_num;
         } else if (first_header->timestamp >= timestamp) {
-            block_number = kEarliestBlockNumber;
+            block_num = kEarliestBlockNum;
         } else {
             // Good-old binary search to find the lowest block header matching timestamp
-            auto matching_block_number = co_await async_binary_search(current_block_number, [&](uint64_t bn) -> Task<bool> {
-                const auto header = co_await chain_storage->read_canonical_header(bn);
+            auto matching_block_num = co_await async_binary_search(current_block_num, [&](uint64_t block_num1) -> Task<bool> {
+                const auto header = co_await chain_storage->read_canonical_header(block_num1);
                 co_return header && header->timestamp >= timestamp;
             });
             // TODO(canepat) we should try to avoid this block header lookup (just done in search)
-            auto matching_header = co_await chain_storage->read_canonical_header(matching_block_number);
+            auto matching_header = co_await chain_storage->read_canonical_header(matching_block_num);
             while (matching_header && matching_header->timestamp > timestamp) {
-                const auto header = co_await chain_storage->read_canonical_header(matching_block_number - 1);
+                const auto header = co_await chain_storage->read_canonical_header(matching_block_num - 1);
                 if (!header || header->timestamp < timestamp) {
                     break;
                 }
-                matching_block_number = matching_block_number - 1;
+                matching_block_num = matching_block_num - 1;
                 matching_header = header;
             }
-            block_number = matching_block_number;
+            block_num = matching_block_num;
         }
 
         // Lookup and return the matching block
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
-        ensure(block_with_hash != nullptr, [&]() { return "block " + std::to_string(block_number) + " not found"; });
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
+        ensure(block_with_hash != nullptr, [&]() { return "block " + std::to_string(block_num) + " not found"; });
         const Block extended_block{block_with_hash, full_tx};
 
         make_glaze_json_content(request, extended_block, reply);
@@ -291,11 +291,11 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
     try {
         const auto chain_storage = tx->create_storage();
 
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
-        const auto header{co_await chain_storage->read_canonical_header(block_number)};
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto header{co_await chain_storage->read_canonical_header(block_num)};
 
         if (!header) {
-            const auto error_msg = "block header not found: " + std::to_string(block_number);
+            const auto error_msg = "block header not found: " + std::to_string(block_num);
             reply = make_json_error(request, kServerError, error_msg);
         } else {
             reply = make_json_content(request, *header);
@@ -357,7 +357,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
 
     try {
         LogsWalker logs_walker(*block_cache_, *tx);
-        const auto [start, end] = co_await logs_walker.get_block_numbers(filter);
+        const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
             SILK_ERROR << error_msg;
@@ -458,7 +458,7 @@ Task<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nloh
 }
 
 // https://eth.wiki/json-rpc/API#erigon_blockNumber
-Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
+Task<void> ErigonRpcApi::handle_erigon_block_num(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     std::string block_id;
     if (params.empty()) {
@@ -476,8 +476,8 @@ Task<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& reques
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_number{co_await core::get_block_number_by_tag(block_id, *tx)};
-        reply = make_json_content(request, to_quantity(block_number));
+        const auto block_num{co_await core::get_block_num_by_tag(block_id, *tx)};
+        reply = make_json_content(request, to_quantity(block_num));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

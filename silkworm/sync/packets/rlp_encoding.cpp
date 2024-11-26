@@ -46,19 +46,19 @@ void encode(Bytes& to, const GetBlockBodiesPacket66& from) { rlp::encode_eth66_p
 
 // NewBlockHash
 size_t length(const NewBlockHash& from) noexcept {
-    rlp::Header rlp_head{true, rlp::length(from.hash) + rlp::length(from.number)};
+    rlp::Header rlp_head{true, rlp::length(from.hash) + rlp::length(from.block_num)};
 
     size_t rlp_head_len = rlp::length_of_length(rlp_head.payload_length);
     return rlp_head_len + rlp_head.payload_length;
 }
 
 void encode(Bytes& to, const NewBlockHash& from) noexcept {
-    rlp::Header rlp_head{true, rlp::length(from.hash) + rlp::length(from.number)};
+    rlp::Header rlp_head{true, rlp::length(from.hash) + rlp::length(from.block_num)};
 
     rlp::encode_header(to, rlp_head);
 
     rlp::encode(to, from.hash);
-    rlp::encode(to, from.number);
+    rlp::encode(to, from.block_num);
 }
 
 // NewBlockPacket

@@ -34,7 +34,7 @@ namespace silkworm::db::state {
 
 class StateReader {
   public:
-    StateReader(kv::api::Transaction& tx, BlockNum block_number);
+    StateReader(kv::api::Transaction& tx, BlockNum block_num);
 
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
@@ -49,7 +49,7 @@ class StateReader {
 
   private:
     kv::api::Transaction& tx_;
-    BlockNum block_number_;
+    BlockNum block_num_;
     mutable std::optional<TxnId> txn_number_;
 };
 

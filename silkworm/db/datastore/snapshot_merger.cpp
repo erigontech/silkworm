@@ -63,20 +63,20 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
     for (auto& bundle_ptr : snapshots_.view_bundles()) {
         auto& bundle = *bundle_ptr;
 
-        auto bundle_block_range = bundle.step_range().to_block_num_range();
-        size_t bundle_block_count = bundle_block_range.size();
+        auto bundle_block_num_range = bundle.step_range().to_block_num_range();
+        size_t bundle_block_count = bundle_block_num_range.size();
 
         if (bundle_block_count >= kMaxSnapshotSize) {
             continue;
         }
         if (bundle_block_count != block_count) {
-            first_block_num = bundle_block_range.start;
+            first_block_num = bundle_block_num_range.start;
             block_count = bundle_block_count;
             batch_size = 0;
         }
         ++batch_size;
         if (batch_size == kBatchSize) {
-            return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle_block_range.end});
+            return std::make_unique<SnapshotMergerCommand>(BlockNumRange{first_block_num, bundle_block_num_range.end});
         }
     }
 

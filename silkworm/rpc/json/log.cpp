@@ -47,7 +47,7 @@ void to_json(nlohmann::json& json, const Log& log) {
     json["address"] = log.address;
     json["topics"] = log.topics;
     json["data"] = "0x" + silkworm::to_hex(log.data);
-    json["blockNumber"] = to_quantity(log.block_number);
+    json["blockNumber"] = to_quantity(log.block_num);
     json["blockHash"] = log.block_hash;
     json["transactionHash"] = log.tx_hash;
     json["transactionIndex"] = to_quantity(log.tx_index);
@@ -97,7 +97,7 @@ struct GlazeJsonLogItem {
     char address[kAddressHexSize];
     char tx_hash[kHashHexSize];
     char block_hash[kHashHexSize];
-    char block_number[kInt64HexSize];
+    char block_num[kInt64HexSize];
     char tx_index[kInt64HexSize];
     char index[kInt64HexSize];
     char data[kDataSize];
@@ -112,7 +112,7 @@ struct GlazeJsonLogItem {
             "address", &T::address,
             "transactionHash", &T::tx_hash,
             "blockHash", &T::block_hash,
-            "blockNumber", &T::block_number,
+            "blockNumber", &T::block_num,
             "transactionIndex", &T::tx_index,
             "logIndex", &T::index,
             "data", &T::data,
@@ -147,7 +147,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Logs& log
         to_hex(std::span(item.address), l.address.bytes);
         to_hex(std::span(item.tx_hash), l.tx_hash.bytes);
         to_hex(std::span(item.block_hash), l.block_hash.bytes);
-        to_quantity(std::span(item.block_number), l.block_number);
+        to_quantity(std::span(item.block_num), l.block_num);
         to_quantity(std::span(item.tx_index), l.tx_index);
         to_quantity(std::span(item.index), l.index);
         item.removed = l.removed;

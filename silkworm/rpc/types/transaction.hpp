@@ -34,7 +34,7 @@ namespace silkworm::rpc {
 
 struct Transaction : public silkworm::Transaction {
     evmc::bytes32 block_hash;
-    BlockNum block_number{0};
+    BlockNum block_num{0};
     std::optional<intx::uint256> block_base_fee_per_gas{std::nullopt};
     uint64_t transaction_index{0};
     bool queued_in_pool{false};

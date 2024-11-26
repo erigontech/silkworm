@@ -22,8 +22,8 @@ namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const Block& b) {
     auto& header = b.block_with_hash->block.header;
-    const auto block_number = to_quantity(header.number);
-    json["number"] = block_number;
+    const auto block_num = to_quantity(header.number);
+    json["number"] = block_num;
     json["hash"] = b.block_with_hash->hash;
     json["parentHash"] = header.parent_hash;
     json["nonce"] = "0x" + silkworm::to_hex({header.nonce.data(), header.nonce.size()});
@@ -52,7 +52,7 @@ void to_json(nlohmann::json& json, const Block& b) {
             auto& json_txn = json["transactions"][i];
             json_txn["transactionIndex"] = to_quantity(i);
             json_txn["blockHash"] = b.block_with_hash->hash;
-            json_txn["blockNumber"] = block_number;
+            json_txn["blockNumber"] = block_num;
             json_txn["gasPrice"] = to_quantity(b.block_with_hash->block.transactions[i].effective_gas_price(header.base_fee_per_gas.value_or(0)));
         }
     } else {
@@ -77,7 +77,7 @@ void to_json(nlohmann::json& json, const Block& b) {
 }
 
 struct GlazeJsonBlock {
-    char block_number[kInt64HexSize];
+    char block_num[kInt64HexSize];
     char hash[kHashHexSize];
     char parent_hash[kHashHexSize];
     char nonce[kInt64HexSize];
@@ -111,7 +111,7 @@ struct GlazeJsonBlock {
         using T = GlazeJsonBlock;
         // NOLINTNEXTLINE(readability-identifier-naming)
         static constexpr auto value = glz::object(
-            "number", &T::block_number,
+            "number", &T::block_num,
             "hash", &T::hash,
             "parentHash", &T::parent_hash,
             "nonce", &T::nonce,
@@ -186,7 +186,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
 
     block_json_data.id = make_jsonrpc_id(request_json);
 
-    to_quantity(std::span(result.block_number), header.number);
+    to_quantity(std::span(result.block_num), header.number);
     to_hex(std::span(result.hash), b.block_with_hash->hash.bytes);
     to_hex(std::span(result.parent_hash), header.parent_hash.bytes);
     to_hex(std::span(result.nonce), header.nonce);
@@ -234,7 +234,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
             const silkworm::Transaction& transaction = block.transactions[i];
             GlazeJsonTransaction item{};
             to_quantity(std::span(item.transaction_index), i);
-            to_quantity(std::span(item.block_number), header.number);
+            to_quantity(std::span(item.block_num), header.number);
             to_hex(std::span(item.block_hash), b.block_with_hash->hash.bytes);
             to_quantity(std::span(item.gas_price), transaction.effective_gas_price(header.base_fee_per_gas.value_or(0)));
             make_glaze_json_transaction(transaction, item);

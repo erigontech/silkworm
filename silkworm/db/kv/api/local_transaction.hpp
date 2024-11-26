@@ -53,7 +53,7 @@ class LocalTransaction : public BaseTransaction {
 
     Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_number) override;
+    std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) override;
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 
@@ -61,8 +61,11 @@ class LocalTransaction : public BaseTransaction {
 
     Task<void> close() override;
 
-    // rpc DomainGet(DomainGetReq) returns (DomainGetReply);
-    Task<DomainPointResult> domain_get(DomainPointQuery query) override;
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
+    Task<GetLatestResult> get_latest(GetLatestQuery query) override;
+
+    // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
+    Task<GetAsOfResult> get_as_of(GetAsOfQuery query) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
     Task<HistoryPointResult> history_seek(HistoryPointQuery query) override;
@@ -73,8 +76,8 @@ class LocalTransaction : public BaseTransaction {
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
     Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) override;
 
-    // rpc DomainRange(DomainRangeReq) returns (Pairs);
-    Task<PaginatedKeysValues> domain_range(DomainRangeQuery query) override;
+    // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
+    Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) override;
 
   private:
     Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);

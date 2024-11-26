@@ -103,14 +103,14 @@ bool Fork::extends_head(const BlockHeader& header) const {
 }
 
 std::optional<BlockNum> Fork::find_block(Hash header_hash) const {
-    auto curr_height = current_head().number;
-    while (curr_height > canonical_chain_.initial_head().number) {
-        auto canonical_hash = canonical_chain_.get_hash(curr_height);
+    auto curr_block_num = current_head().block_num;
+    while (curr_block_num > canonical_chain_.initial_head().block_num) {
+        auto canonical_hash = canonical_chain_.get_hash(curr_block_num);
         ensure_invariant(canonical_hash.has_value(), "canonical chain must be complete");
         if (canonical_hash == header_hash) {
-            return curr_height;
+            return curr_block_num;
         }
-        --curr_height;
+        --curr_block_num;
     }
     return std::nullopt;
 }
@@ -126,7 +126,7 @@ std::optional<BlockId> Fork::find_attachment_point(const BlockHeader& header) co
 }
 
 BlockNum Fork::distance_from_root(const BlockId& block) const {
-    return block.number - canonical_chain_.initial_head().number;
+    return block.block_num - canonical_chain_.initial_head().block_num;
 }
 
 Hash Fork::insert_header(const BlockHeader& header) {
@@ -160,20 +160,20 @@ void Fork::extend_with(const Block& block) {
 }
 
 void Fork::reduce_down_to(BlockId unwind_point) {
-    ensure(unwind_point.number < canonical_chain_.current_head().number,
+    ensure(unwind_point.block_num < canonical_chain_.current_head().block_num,
            "reducing down to a block above the fork head");
 
     // we do not handle differently the case where unwind_point.number > last_verified_head_.number
     // assuming pipeline unwind can handle it correctly
 
-    auto unwind_result = pipeline_.unwind(memory_tx_, unwind_point.number);
+    auto unwind_result = pipeline_.unwind(memory_tx_, unwind_point.block_num);
     success_or_throw(unwind_result);  // unwind must complete with success
 
-    ensure_invariant(pipeline_.head_header_number() == unwind_point.number &&
+    ensure_invariant(pipeline_.head_header_number() == unwind_point.block_num &&
                          pipeline_.head_header_hash() == unwind_point.hash,
                      "unwind succeeded with pipeline head not aligned with unwind point");
 
-    canonical_chain_.delete_down_to(unwind_point.number);  // remove last part of canonical
+    canonical_chain_.delete_down_to(unwind_point.block_num);  // remove last part of canonical
 
     ensure_invariant(canonical_chain_.current_head().hash == unwind_point.hash,
                      "canonical chain not updated to unwind point");
@@ -190,13 +190,13 @@ VerificationResult Fork::verify_chain() {
     memory_tx_.disable_commit();
 
     // forward
-    Stage::Result forward_result = pipeline_.forward(memory_tx_, current_head_.number);
+    Stage::Result forward_result = pipeline_.forward(memory_tx_, current_head_.block_num);
 
     // evaluate result
     VerificationResult verify_result;
     switch (forward_result) {
         case Stage::Result::kSuccess: {
-            ensure_invariant(pipeline_.head_header_number() == canonical_chain_.current_head().number &&
+            ensure_invariant(pipeline_.head_header_number() == canonical_chain_.current_head().block_num &&
                                  pipeline_.head_header_hash() == canonical_chain_.current_head().hash,
                              "forward succeeded with pipeline head not aligned with canonical head");
             verify_result = ValidChain{pipeline_.head_header_number()};
@@ -208,7 +208,7 @@ VerificationResult Fork::verify_chain() {
             ensure_invariant(pipeline_.unwind_point().has_value(),
                              "unwind point from pipeline requested when forward fails");
             InvalidChain invalid_chain;
-            invalid_chain.unwind_point.number = *pipeline_.unwind_point();
+            invalid_chain.unwind_point.block_num = *pipeline_.unwind_point();
             invalid_chain.unwind_point.hash = *canonical_chain_.get_hash(*pipeline_.unwind_point());
             if (pipeline_.bad_block()) {
                 invalid_chain.bad_block = pipeline_.bad_block();
@@ -293,9 +293,9 @@ std::set<Hash> Fork::collect_bad_headers(InvalidChain& invalid_chain) {
     if (!invalid_chain.bad_block) return {};
 
     std::set<Hash> bad_headers;
-    for (BlockNum current_height = canonical_chain_.current_head().number;
-         current_height > invalid_chain.unwind_point.number; --current_height) {
-        auto current_hash = canonical_chain_.get_hash(current_height);
+    for (BlockNum current_block_num = canonical_chain_.current_head().block_num;
+         current_block_num > invalid_chain.unwind_point.block_num; --current_block_num) {
+        auto current_hash = canonical_chain_.get_hash(current_block_num);
         bad_headers.insert(*current_hash);
     }
 
@@ -320,13 +320,13 @@ std::vector<Fork>::iterator find_fork_to_extend(std::vector<Fork>& forks, const 
 /*
 std::vector<Fork>::iterator best_fork_to_branch(std::vector<Fork>& forks, const BlockHeader& header) {
     auto fork = forks.end();
-    BlockNum height = 0;
+    BlockNum block_num = 0;
     for (auto f = forks.begin(); f != forks.end(); ++f) {
         auto attachment_point = f->find_attachment_point(header);
         if (!attachment_point) continue;
         auto distance = f->distance_from_root(*attachment_point);
-        if (fork == forks.end() || distance < height) {
-            height = distance;
+        if (fork == forks.end() || distance < block_num) {
+            block_num = distance;
             fork = f;
         }
     }

@@ -68,9 +68,10 @@ uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const
     return it->second;
 }
 
-std::optional<BlockHeader> InMemoryState::read_header(BlockNum block_number,
-                                                      const evmc::bytes32& block_hash) const noexcept {
-    const auto it1{headers_.find(block_number)};
+std::optional<BlockHeader> InMemoryState::read_header(
+    BlockNum block_num,
+    const evmc::bytes32& block_hash) const noexcept {
+    const auto it1 = headers_.find(block_num);
     if (it1 != headers_.end()) {
         const auto it2{it1->second.find(block_hash)};
         if (it2 != it1->second.end()) {
@@ -80,8 +81,8 @@ std::optional<BlockHeader> InMemoryState::read_header(BlockNum block_number,
     return std::nullopt;
 }
 
-bool InMemoryState::read_body(BlockNum block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
-    const auto it1{bodies_.find(block_number)};
+bool InMemoryState::read_body(BlockNum block_num, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
+    const auto it1 = bodies_.find(block_num);
     if (it1 != bodies_.end()) {
         const auto it2{it1->second.find(block_hash)};
         if (it2 != it1->second.end()) {
@@ -92,9 +93,10 @@ bool InMemoryState::read_body(BlockNum block_number, const evmc::bytes32& block_
     return false;
 }
 
-std::optional<intx::uint256> InMemoryState::total_difficulty(BlockNum block_number,
-                                                             const evmc::bytes32& block_hash) const noexcept {
-    const auto it1{difficulty_.find(block_number)};
+std::optional<intx::uint256> InMemoryState::total_difficulty(
+    BlockNum block_num,
+    const evmc::bytes32& block_hash) const noexcept {
+    const auto it1 = difficulty_.find(block_num);
     if (it1 != difficulty_.end()) {
         const auto it2{it1->second.find(block_hash)};
         if (it2 != it1->second.end()) {
@@ -111,8 +113,8 @@ BlockNum InMemoryState::current_canonical_block() const {
     return canonical_hashes_.rbegin()->first;
 }
 
-std::optional<evmc::bytes32> InMemoryState::canonical_hash(BlockNum block_number) const {
-    const auto& ret{canonical_hashes_.find(block_number)};
+std::optional<evmc::bytes32> InMemoryState::canonical_hash(BlockNum block_num) const {
+    const auto& ret = canonical_hashes_.find(block_num);
     if (ret != canonical_hashes_.end()) {
         return ret->second;
     }
@@ -120,32 +122,32 @@ std::optional<evmc::bytes32> InMemoryState::canonical_hash(BlockNum block_number
 }
 
 void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) {
-    BlockNum block_number{block.header.number};
+    BlockNum block_num = block.header.number;
 
-    headers_[block_number][hash] = block.header;
-    bodies_[block_number][hash] = block.copy_body();
-    if (block_number == 0) {
-        difficulty_[block_number][hash] = 0;
+    headers_[block_num][hash] = block.header;
+    bodies_[block_num][hash] = block.copy_body();
+    if (block_num == 0) {
+        difficulty_[block_num][hash] = 0;
     } else {
-        difficulty_[block_number][hash] = difficulty_[block_number - 1][block.header.parent_hash];
+        difficulty_[block_num][hash] = difficulty_[block_num - 1][block.header.parent_hash];
     }
-    difficulty_[block_number][hash] += block.header.difficulty;
+    difficulty_[block_num][hash] += block.header.difficulty;
 }
 
-void InMemoryState::canonize_block(BlockNum block_number, const evmc::bytes32& block_hash) {
-    canonical_hashes_[block_number] = block_hash;
+void InMemoryState::canonize_block(BlockNum block_num, const evmc::bytes32& block_hash) {
+    canonical_hashes_[block_num] = block_hash;
 }
 
-void InMemoryState::decanonize_block(BlockNum block_number) { (void)canonical_hashes_.erase(block_number); }
+void InMemoryState::decanonize_block(BlockNum block_num) { (void)canonical_hashes_.erase(block_num); }
 
 void InMemoryState::insert_receipts(BlockNum, const std::vector<Receipt>&) {}
 
-void InMemoryState::insert_call_traces(BlockNum /*block_number*/, const CallTraces& /*traces*/) {}
+void InMemoryState::insert_call_traces(BlockNum /*block_num*/, const CallTraces& /*traces*/) {}
 
-void InMemoryState::begin_block(BlockNum block_number, size_t /*updated_accounts_count*/) {
-    block_number_ = block_number;
-    account_changes_.erase(block_number);
-    storage_changes_.erase(block_number);
+void InMemoryState::begin_block(BlockNum block_num, size_t /*updated_accounts_count*/) {
+    block_num_ = block_num;
+    account_changes_.erase(block_num);
+    storage_changes_.erase(block_num);
 }
 
 void InMemoryState::update_account(const evmc::address& address, std::optional<Account> initial,
@@ -154,7 +156,7 @@ void InMemoryState::update_account(const evmc::address& address, std::optional<A
     if (!initial && !current) {
         return;
     }
-    account_changes_[block_number_][address] = initial;
+    account_changes_[block_num_][address] = initial;
 
     if (current.has_value()) {
         accounts_[address] = current.value();
@@ -174,7 +176,7 @@ void InMemoryState::update_account_code(const evmc::address&, uint64_t, const ev
 
 void InMemoryState::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                                    const evmc::bytes32& initial, const evmc::bytes32& current) {
-    storage_changes_[block_number_][address][incarnation][location] = initial;
+    storage_changes_[block_num_][address][incarnation][location] = initial;
 
     if (is_zero(current)) {
         storage_[address][incarnation].erase(location);
@@ -183,8 +185,8 @@ void InMemoryState::update_storage(const evmc::address& address, uint64_t incarn
     }
 }
 
-void InMemoryState::unwind_state_changes(BlockNum block_number) {
-    for (const auto& [address, account] : account_changes_[block_number]) {
+void InMemoryState::unwind_state_changes(BlockNum block_num) {
+    for (const auto& [address, account] : account_changes_[block_num]) {
         if (account) {
             accounts_[address] = *account;
         } else {
@@ -192,7 +194,7 @@ void InMemoryState::unwind_state_changes(BlockNum block_number) {
         }
     }
 
-    for (const auto& [address, storage1] : storage_changes_[block_number]) {
+    for (const auto& [address, storage1] : storage_changes_[block_num]) {
         for (const auto& [incarnation, storage2] : storage1) {
             for (const auto& [location, value] : storage2) {
                 if (is_zero(value)) {

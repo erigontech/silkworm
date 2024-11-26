@@ -81,6 +81,6 @@ class DebugRpcApi {
     friend class silkworm::rpc::json_rpc::RequestHandler;
 };
 
-Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_number, BlockNum end_block_number);
+Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_num, BlockNum end_block_num);
 
 }  // namespace silkworm::rpc::commands

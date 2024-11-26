@@ -52,19 +52,19 @@ class State : public BlockState {
 
     virtual BlockNum current_canonical_block() const = 0;
 
-    virtual std::optional<evmc::bytes32> canonical_hash(BlockNum block_number) const = 0;
+    virtual std::optional<evmc::bytes32> canonical_hash(BlockNum block_num) const = 0;
 
     //!@}
 
     virtual void insert_block(const Block& block, const evmc::bytes32& hash) = 0;
 
-    virtual void canonize_block(BlockNum block_number, const evmc::bytes32& block_hash) = 0;
+    virtual void canonize_block(BlockNum block_num, const evmc::bytes32& block_hash) = 0;
 
-    virtual void decanonize_block(BlockNum block_number) = 0;
+    virtual void decanonize_block(BlockNum block_num) = 0;
 
-    virtual void insert_receipts(BlockNum block_number, const std::vector<Receipt>& receipts) = 0;
+    virtual void insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) = 0;
 
-    virtual void insert_call_traces(BlockNum block_number, const CallTraces& traces) = 0;
+    virtual void insert_call_traces(BlockNum block_num, const CallTraces& traces) = 0;
 
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
@@ -74,7 +74,7 @@ class State : public BlockState {
     /** Mark the beginning of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
-    virtual void begin_block(BlockNum block_number, size_t updated_accounts_count) = 0;
+    virtual void begin_block(BlockNum block_num, size_t updated_accounts_count) = 0;
 
     virtual void update_account(const evmc::address& address, std::optional<Account> initial,
                                 std::optional<Account> current) = 0;
@@ -85,7 +85,7 @@ class State : public BlockState {
     virtual void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                                 const evmc::bytes32& initial, const evmc::bytes32& current) = 0;
 
-    virtual void unwind_state_changes(BlockNum block_number) = 0;
+    virtual void unwind_state_changes(BlockNum block_num) = 0;
 
     //!@}
 };

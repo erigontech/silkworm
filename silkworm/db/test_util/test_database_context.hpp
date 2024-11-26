@@ -23,6 +23,7 @@
 #include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm::db::test_util {
@@ -67,6 +68,8 @@ class TestDataStore : public TestDatabaseContext {
               move_env(),
               blocks::make_blocks_repository(
                   DataDirectory{tmp_dir.path(), true}.snapshots().path()),
+              state::make_state_repository(
+                  DataDirectory{tmp_dir.path(), false}.snapshots().path()),
           } {}
     ~TestDataStore() override = default;
 

@@ -102,9 +102,9 @@ class KvClient {
         return stub_->HistorySeek(&context, request, response);
     }
 
-    grpc::Status domain_get(const remote::DomainGetReq& request, remote::DomainGetReply* response) {
+    grpc::Status get_latest(const remote::GetLatestReq& request, remote::GetLatestReply* response) {
         grpc::ClientContext context;
-        return stub_->DomainGet(&context, request, response);
+        return stub_->GetLatest(&context, request, response);
     }
 
     grpc::Status index_range(const remote::IndexRangeReq& request, remote::IndexRangeReply* response) {
@@ -117,9 +117,9 @@ class KvClient {
         return stub_->HistoryRange(&context, request, response);
     }
 
-    grpc::Status domain_range(const remote::DomainRangeReq& request, remote::Pairs* response) {
+    grpc::Status range_as_of(const remote::RangeAsOfReq& request, remote::Pairs* response) {
         grpc::ClientContext context;
-        return stub_->DomainRange(&context, request, response);
+        return stub_->RangeAsOf(&context, request, response);
     }
 
   private:
@@ -551,10 +551,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         threaded_kv_client.start_and_consume_statechanges(*kv_client);
 
         // Keep publishing state changes using the Catch2 thread until at least one has been received
-        BlockNum block_number{0};
+        BlockNum block_num{0};
         bool publishing{true};
         while (publishing) {
-            state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+            state_change_source->start_new_batch(++block_num, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
             state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
 
             publishing = !threaded_kv_client.wait_one_milli_for_subscription();
@@ -581,10 +581,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         threaded_kv_client2.start_and_consume_statechanges(*kv_client);
 
         // Keep publishing state changes using the Catch2 thread until at least one has been received
-        BlockNum block_number{0};
+        BlockNum block_num{0};
         bool publishing{true};
         while (publishing) {
-            state_change_source->start_new_batch(++block_number, kEmptyHash, {}, /*unwind=*/false);
+            state_change_source->start_new_batch(++block_num, kEmptyHash, {}, /*unwind=*/false);
             state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
 
             publishing = !(threaded_kv_client1.wait_one_milli_for_subscription() &&
@@ -661,10 +661,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(status.ok());
     }
 
-    SECTION("DomainGet: return value in target domain") {
-        remote::DomainGetReq request;
-        remote::DomainGetReply response;
-        const auto status = kv_client->domain_get(request, &response);
+    SECTION("GetLatest: return value in target domain") {
+        remote::GetLatestReq request;
+        remote::GetLatestReply response;
+        const auto status = kv_client->get_latest(request, &response);
         CHECK(status.ok());
     }
 
@@ -682,10 +682,10 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(status.ok());
     }
 
-    SECTION("DomainRange: return value in target domain range") {
-        remote::DomainRangeReq request;
+    SECTION("RangeAsOf: return value in target domain range") {
+        remote::RangeAsOfReq request;
         remote::Pairs response;
-        const auto status = kv_client->domain_range(request, &response);
+        const auto status = kv_client->range_as_of(request, &response);
         CHECK(status.ok());
     }
 }

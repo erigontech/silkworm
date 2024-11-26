@@ -62,9 +62,9 @@ void config_set_muir_glacier_block(ChainConfig* config, uint64_t block) { config
 
 void config_set_dao_block(ChainConfig* config, uint64_t block) { config->dao_block = block; }
 
-void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp, uint64_t parent_timestamp,
+void difficulty(intx::uint256* in_out, uint64_t block_num, uint64_t block_timestamp, uint64_t parent_timestamp,
                 bool parent_has_uncles, const ChainConfig* config) {
-    *in_out = protocol::EthashRuleSet::difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
+    *in_out = protocol::EthashRuleSet::difficulty(block_num, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
                                                   parent_has_uncles, *config);
 }
 

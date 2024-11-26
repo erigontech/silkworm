@@ -86,46 +86,46 @@ static std::string hex_endian_swap(const std::string& native_hex) {
 }
 
 TEST_CASE("Block as key and compact form") {
-    const std::string block_number_hex{"000000005485ffde"};  // i.e. 1418067934
-    const std::string block_number_hex_rev{hex_endian_swap(block_number_hex)};
+    const std::string block_num_hex{"000000005485ffde"};  // i.e. 1418067934
+    const std::string block_num_hex_rev{hex_endian_swap(block_num_hex)};
 
-    auto block_number{std::stoull(block_number_hex, nullptr, 16)};
-    REQUIRE(block_number == 1418067934u);
+    auto block_num{std::stoull(block_num_hex, nullptr, 16)};
+    REQUIRE(block_num == 1418067934u);
 
     SECTION("Block number as key") {
         // Check the sequence of bytes in memory
-        ByteView block_number_view(reinterpret_cast<uint8_t*>(&block_number), sizeof(uint64_t));
+        ByteView block_num_view(reinterpret_cast<uint8_t*>(&block_num), sizeof(uint64_t));
 
         if constexpr (std::endian::native == std::endian::little) {
             // Check we've switched to native endianness
-            CHECK(to_hex(block_number_view) == block_number_hex_rev);
+            CHECK(to_hex(block_num_view) == block_num_hex_rev);
         } else {
             // Check our hex form matches input form
-            CHECK(to_hex(block_number_view) == block_number_hex);
+            CHECK(to_hex(block_num_view) == block_num_hex);
         }
 
-        alignas(uint64_t) uint8_t block_number_as_key[8];
-        store_big_u64(&block_number_as_key[0], block_number);
+        alignas(uint64_t) uint8_t block_num_as_key[8];
+        store_big_u64(&block_num_as_key[0], block_num);
 
         // Check data value is byte swapped if endianness requires
-        auto block_number_from_key{*reinterpret_cast<uint64_t*>(block_number_as_key)};
+        auto block_num_from_key{*reinterpret_cast<uint64_t*>(block_num_as_key)};
 
         if constexpr (std::endian::native == std::endian::little) {
-            CHECK(block_number_from_key != block_number);
+            CHECK(block_num_from_key != block_num);
         } else {
-            CHECK(block_number_from_key == block_number);
+            CHECK(block_num_from_key == block_num);
         }
-        CHECK(intx::to_big_endian(block_number_from_key) == block_number);
+        CHECK(intx::to_big_endian(block_num_from_key) == block_num);
     }
 
     SECTION("Block number as compact") {
         // Convert block number to compact and check initial zeroes are stripped
-        auto block_number_compact_bytes{to_big_compact(block_number)};
-        CHECK(to_hex(block_number_compact_bytes) == "5485ffde");
+        auto block_num_compact_bytes{to_big_compact(block_num)};
+        CHECK(to_hex(block_num_compact_bytes) == "5485ffde");
         // Convert back and check
         uint64_t out64{0};
-        REQUIRE(from_big_compact(block_number_compact_bytes, out64));
-        CHECK(out64 == block_number);
+        REQUIRE(from_big_compact(block_num_compact_bytes, out64));
+        CHECK(out64 == block_num);
         // Try compact empty bytes
         Bytes empty_bytes{};
         CHECK(zeroless_view(empty_bytes).empty());

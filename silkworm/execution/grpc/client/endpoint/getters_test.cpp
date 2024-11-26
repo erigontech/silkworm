@@ -35,18 +35,19 @@ using namespace silkworm::execution::test_util;
 using namespace silkworm::test_util;
 namespace proto = ::execution;
 
-static api::BlockNumberOrHash sample_block_number_or_hash(bool has_number) {
+static api::BlockNumOrHash sample_block_num_or_hash(bool has_number) {
     if (has_number) {
-        return kSampleBlockNumber;
+        return kSampleBlockNum;
     }
     return kSampleBlockHash;
 }
 
-static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<BlockNum> number,
-                                                                 std::optional<Hash> hash) {
+static proto::GetSegmentRequest sample_proto_get_segment_request(
+    std::optional<BlockNum> block_num,
+    std::optional<Hash> hash) {
     proto::GetSegmentRequest request;
-    if (number) {
-        request.set_block_number(*number);
+    if (block_num) {
+        request.set_block_number(*block_num);
     }
     if (hash) {
         request.set_allocated_block_hash(rpc::h256_from_bytes32(*hash).release());
@@ -54,15 +55,15 @@ static proto::GetSegmentRequest sample_proto_get_segment_request(std::optional<B
     return request;
 }
 
-TEST_CASE("request_from_block_number_or_hash", "[node][execution][grpc]") {
-    const Fixtures<api::BlockNumberOrHash, proto::GetSegmentRequest> fixtures{
-        {{}, sample_proto_get_segment_request(0, {})},  // BlockNumberOrHash contains 1st variant as default
-        {sample_block_number_or_hash(true), sample_proto_get_segment_request(kSampleBlockNumber, {})},
-        {sample_block_number_or_hash(false), sample_proto_get_segment_request({}, kSampleBlockHash)},
+TEST_CASE("request_from_block_num_or_hash", "[node][execution][grpc]") {
+    const Fixtures<api::BlockNumOrHash, proto::GetSegmentRequest> fixtures{
+        {{}, sample_proto_get_segment_request(0, {})},  // BlockNumOrHash contains 1st variant as default
+        {sample_block_num_or_hash(true), sample_proto_get_segment_request(kSampleBlockNum, {})},
+        {sample_block_num_or_hash(false), sample_proto_get_segment_request({}, kSampleBlockHash)},
     };
-    for (const auto& [number_or_hash, expected_segment_request] : fixtures) {
-        SECTION("block_number_or_hash index: " + std::to_string(number_or_hash.index())) {
-            const auto segment_request{request_from_block_number_or_hash(number_or_hash)};
+    for (const auto& [block_num_or_hash, expected_segment_request] : fixtures) {
+        SECTION("block_num_or_hash index: " + std::to_string(block_num_or_hash.index())) {
+            const auto segment_request{request_from_block_num_or_hash(block_num_or_hash)};
             // CHECK(segment_request == expected_segment_request);  // requires operator== in gRPC generated code
             CHECK(segment_request.has_block_number() == expected_segment_request.has_block_number());
             if (segment_request.has_block_number()) {

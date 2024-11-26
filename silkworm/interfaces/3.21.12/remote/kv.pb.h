@@ -55,15 +55,12 @@ extern AccountChangeDefaultTypeInternal _AccountChange_default_instance_;
 class Cursor;
 struct CursorDefaultTypeInternal;
 extern CursorDefaultTypeInternal _Cursor_default_instance_;
-class DomainGetReply;
-struct DomainGetReplyDefaultTypeInternal;
-extern DomainGetReplyDefaultTypeInternal _DomainGetReply_default_instance_;
-class DomainGetReq;
-struct DomainGetReqDefaultTypeInternal;
-extern DomainGetReqDefaultTypeInternal _DomainGetReq_default_instance_;
-class DomainRangeReq;
-struct DomainRangeReqDefaultTypeInternal;
-extern DomainRangeReqDefaultTypeInternal _DomainRangeReq_default_instance_;
+class GetLatestReply;
+struct GetLatestReplyDefaultTypeInternal;
+extern GetLatestReplyDefaultTypeInternal _GetLatestReply_default_instance_;
+class GetLatestReq;
+struct GetLatestReqDefaultTypeInternal;
+extern GetLatestReqDefaultTypeInternal _GetLatestReq_default_instance_;
 class HistoryRangeReq;
 struct HistoryRangeReqDefaultTypeInternal;
 extern HistoryRangeReqDefaultTypeInternal _HistoryRangeReq_default_instance_;
@@ -91,6 +88,9 @@ extern PairsDefaultTypeInternal _Pairs_default_instance_;
 class PairsPagination;
 struct PairsPaginationDefaultTypeInternal;
 extern PairsPaginationDefaultTypeInternal _PairsPagination_default_instance_;
+class RangeAsOfReq;
+struct RangeAsOfReqDefaultTypeInternal;
+extern RangeAsOfReqDefaultTypeInternal _RangeAsOfReq_default_instance_;
 class RangeReq;
 struct RangeReqDefaultTypeInternal;
 extern RangeReqDefaultTypeInternal _RangeReq_default_instance_;
@@ -116,9 +116,8 @@ extern StorageChangeDefaultTypeInternal _StorageChange_default_instance_;
 PROTOBUF_NAMESPACE_OPEN
 template<> ::remote::AccountChange* Arena::CreateMaybeMessage<::remote::AccountChange>(Arena*);
 template<> ::remote::Cursor* Arena::CreateMaybeMessage<::remote::Cursor>(Arena*);
-template<> ::remote::DomainGetReply* Arena::CreateMaybeMessage<::remote::DomainGetReply>(Arena*);
-template<> ::remote::DomainGetReq* Arena::CreateMaybeMessage<::remote::DomainGetReq>(Arena*);
-template<> ::remote::DomainRangeReq* Arena::CreateMaybeMessage<::remote::DomainRangeReq>(Arena*);
+template<> ::remote::GetLatestReply* Arena::CreateMaybeMessage<::remote::GetLatestReply>(Arena*);
+template<> ::remote::GetLatestReq* Arena::CreateMaybeMessage<::remote::GetLatestReq>(Arena*);
 template<> ::remote::HistoryRangeReq* Arena::CreateMaybeMessage<::remote::HistoryRangeReq>(Arena*);
 template<> ::remote::HistorySeekReply* Arena::CreateMaybeMessage<::remote::HistorySeekReply>(Arena*);
 template<> ::remote::HistorySeekReq* Arena::CreateMaybeMessage<::remote::HistorySeekReq>(Arena*);
@@ -128,6 +127,7 @@ template<> ::remote::IndexRangeReq* Arena::CreateMaybeMessage<::remote::IndexRan
 template<> ::remote::Pair* Arena::CreateMaybeMessage<::remote::Pair>(Arena*);
 template<> ::remote::Pairs* Arena::CreateMaybeMessage<::remote::Pairs>(Arena*);
 template<> ::remote::PairsPagination* Arena::CreateMaybeMessage<::remote::PairsPagination>(Arena*);
+template<> ::remote::RangeAsOfReq* Arena::CreateMaybeMessage<::remote::RangeAsOfReq>(Arena*);
 template<> ::remote::RangeReq* Arena::CreateMaybeMessage<::remote::RangeReq>(Arena*);
 template<> ::remote::SnapshotsReply* Arena::CreateMaybeMessage<::remote::SnapshotsReply>(Arena*);
 template<> ::remote::SnapshotsRequest* Arena::CreateMaybeMessage<::remote::SnapshotsRequest>(Arena*);
@@ -2195,24 +2195,24 @@ class RangeReq final :
 };
 // -------------------------------------------------------------------
 
-class DomainGetReq final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.DomainGetReq) */ {
+class GetLatestReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.GetLatestReq) */ {
  public:
-  inline DomainGetReq() : DomainGetReq(nullptr) {}
-  ~DomainGetReq() override;
-  explicit PROTOBUF_CONSTEXPR DomainGetReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline GetLatestReq() : GetLatestReq(nullptr) {}
+  ~GetLatestReq() override;
+  explicit PROTOBUF_CONSTEXPR GetLatestReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  DomainGetReq(const DomainGetReq& from);
-  DomainGetReq(DomainGetReq&& from) noexcept
-    : DomainGetReq() {
+  GetLatestReq(const GetLatestReq& from);
+  GetLatestReq(GetLatestReq&& from) noexcept
+    : GetLatestReq() {
     *this = ::std::move(from);
   }
 
-  inline DomainGetReq& operator=(const DomainGetReq& from) {
+  inline GetLatestReq& operator=(const GetLatestReq& from) {
     CopyFrom(from);
     return *this;
   }
-  inline DomainGetReq& operator=(DomainGetReq&& from) noexcept {
+  inline GetLatestReq& operator=(GetLatestReq&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2235,20 +2235,20 @@ class DomainGetReq final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const DomainGetReq& default_instance() {
+  static const GetLatestReq& default_instance() {
     return *internal_default_instance();
   }
-  static inline const DomainGetReq* internal_default_instance() {
-    return reinterpret_cast<const DomainGetReq*>(
-               &_DomainGetReq_default_instance_);
+  static inline const GetLatestReq* internal_default_instance() {
+    return reinterpret_cast<const GetLatestReq*>(
+               &_GetLatestReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     10;
 
-  friend void swap(DomainGetReq& a, DomainGetReq& b) {
+  friend void swap(GetLatestReq& a, GetLatestReq& b) {
     a.Swap(&b);
   }
-  inline void Swap(DomainGetReq* other) {
+  inline void Swap(GetLatestReq* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2261,7 +2261,7 @@ class DomainGetReq final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(DomainGetReq* other) {
+  void UnsafeArenaSwap(GetLatestReq* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2269,14 +2269,14 @@ class DomainGetReq final :
 
   // implements Message ----------------------------------------------
 
-  DomainGetReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<DomainGetReq>(arena);
+  GetLatestReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetLatestReq>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const DomainGetReq& from);
+  void CopyFrom(const GetLatestReq& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const DomainGetReq& from) {
-    DomainGetReq::MergeImpl(*this, from);
+  void MergeFrom( const GetLatestReq& from) {
+    GetLatestReq::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -2294,15 +2294,15 @@ class DomainGetReq final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(DomainGetReq* other);
+  void InternalSwap(GetLatestReq* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.DomainGetReq";
+    return "remote.GetLatestReq";
   }
   protected:
-  explicit DomainGetReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit GetLatestReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -2392,7 +2392,7 @@ class DomainGetReq final :
   void _internal_set_latest(bool value);
   public:
 
-  // @@protoc_insertion_point(class_scope:remote.DomainGetReq)
+  // @@protoc_insertion_point(class_scope:remote.GetLatestReq)
  private:
   class _Internal;
 
@@ -2413,24 +2413,24 @@ class DomainGetReq final :
 };
 // -------------------------------------------------------------------
 
-class DomainGetReply final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.DomainGetReply) */ {
+class GetLatestReply final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.GetLatestReply) */ {
  public:
-  inline DomainGetReply() : DomainGetReply(nullptr) {}
-  ~DomainGetReply() override;
-  explicit PROTOBUF_CONSTEXPR DomainGetReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline GetLatestReply() : GetLatestReply(nullptr) {}
+  ~GetLatestReply() override;
+  explicit PROTOBUF_CONSTEXPR GetLatestReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  DomainGetReply(const DomainGetReply& from);
-  DomainGetReply(DomainGetReply&& from) noexcept
-    : DomainGetReply() {
+  GetLatestReply(const GetLatestReply& from);
+  GetLatestReply(GetLatestReply&& from) noexcept
+    : GetLatestReply() {
     *this = ::std::move(from);
   }
 
-  inline DomainGetReply& operator=(const DomainGetReply& from) {
+  inline GetLatestReply& operator=(const GetLatestReply& from) {
     CopyFrom(from);
     return *this;
   }
-  inline DomainGetReply& operator=(DomainGetReply&& from) noexcept {
+  inline GetLatestReply& operator=(GetLatestReply&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2453,20 +2453,20 @@ class DomainGetReply final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const DomainGetReply& default_instance() {
+  static const GetLatestReply& default_instance() {
     return *internal_default_instance();
   }
-  static inline const DomainGetReply* internal_default_instance() {
-    return reinterpret_cast<const DomainGetReply*>(
-               &_DomainGetReply_default_instance_);
+  static inline const GetLatestReply* internal_default_instance() {
+    return reinterpret_cast<const GetLatestReply*>(
+               &_GetLatestReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     11;
 
-  friend void swap(DomainGetReply& a, DomainGetReply& b) {
+  friend void swap(GetLatestReply& a, GetLatestReply& b) {
     a.Swap(&b);
   }
-  inline void Swap(DomainGetReply* other) {
+  inline void Swap(GetLatestReply* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2479,7 +2479,7 @@ class DomainGetReply final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(DomainGetReply* other) {
+  void UnsafeArenaSwap(GetLatestReply* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2487,14 +2487,14 @@ class DomainGetReply final :
 
   // implements Message ----------------------------------------------
 
-  DomainGetReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<DomainGetReply>(arena);
+  GetLatestReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetLatestReply>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const DomainGetReply& from);
+  void CopyFrom(const GetLatestReply& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const DomainGetReply& from) {
-    DomainGetReply::MergeImpl(*this, from);
+  void MergeFrom( const GetLatestReply& from) {
+    GetLatestReply::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -2512,15 +2512,15 @@ class DomainGetReply final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(DomainGetReply* other);
+  void InternalSwap(GetLatestReply* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.DomainGetReply";
+    return "remote.GetLatestReply";
   }
   protected:
-  explicit DomainGetReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit GetLatestReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -2560,7 +2560,7 @@ class DomainGetReply final :
   void _internal_set_ok(bool value);
   public:
 
-  // @@protoc_insertion_point(class_scope:remote.DomainGetReply)
+  // @@protoc_insertion_point(class_scope:remote.GetLatestReply)
  private:
   class _Internal;
 
@@ -3596,24 +3596,24 @@ class HistoryRangeReq final :
 };
 // -------------------------------------------------------------------
 
-class DomainRangeReq final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.DomainRangeReq) */ {
+class RangeAsOfReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.RangeAsOfReq) */ {
  public:
-  inline DomainRangeReq() : DomainRangeReq(nullptr) {}
-  ~DomainRangeReq() override;
-  explicit PROTOBUF_CONSTEXPR DomainRangeReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline RangeAsOfReq() : RangeAsOfReq(nullptr) {}
+  ~RangeAsOfReq() override;
+  explicit PROTOBUF_CONSTEXPR RangeAsOfReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  DomainRangeReq(const DomainRangeReq& from);
-  DomainRangeReq(DomainRangeReq&& from) noexcept
-    : DomainRangeReq() {
+  RangeAsOfReq(const RangeAsOfReq& from);
+  RangeAsOfReq(RangeAsOfReq&& from) noexcept
+    : RangeAsOfReq() {
     *this = ::std::move(from);
   }
 
-  inline DomainRangeReq& operator=(const DomainRangeReq& from) {
+  inline RangeAsOfReq& operator=(const RangeAsOfReq& from) {
     CopyFrom(from);
     return *this;
   }
-  inline DomainRangeReq& operator=(DomainRangeReq&& from) noexcept {
+  inline RangeAsOfReq& operator=(RangeAsOfReq&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -3636,20 +3636,20 @@ class DomainRangeReq final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const DomainRangeReq& default_instance() {
+  static const RangeAsOfReq& default_instance() {
     return *internal_default_instance();
   }
-  static inline const DomainRangeReq* internal_default_instance() {
-    return reinterpret_cast<const DomainRangeReq*>(
-               &_DomainRangeReq_default_instance_);
+  static inline const RangeAsOfReq* internal_default_instance() {
+    return reinterpret_cast<const RangeAsOfReq*>(
+               &_RangeAsOfReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     17;
 
-  friend void swap(DomainRangeReq& a, DomainRangeReq& b) {
+  friend void swap(RangeAsOfReq& a, RangeAsOfReq& b) {
     a.Swap(&b);
   }
-  inline void Swap(DomainRangeReq* other) {
+  inline void Swap(RangeAsOfReq* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -3662,7 +3662,7 @@ class DomainRangeReq final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(DomainRangeReq* other) {
+  void UnsafeArenaSwap(RangeAsOfReq* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -3670,14 +3670,14 @@ class DomainRangeReq final :
 
   // implements Message ----------------------------------------------
 
-  DomainRangeReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<DomainRangeReq>(arena);
+  RangeAsOfReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<RangeAsOfReq>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const DomainRangeReq& from);
+  void CopyFrom(const RangeAsOfReq& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const DomainRangeReq& from) {
-    DomainRangeReq::MergeImpl(*this, from);
+  void MergeFrom( const RangeAsOfReq& from) {
+    RangeAsOfReq::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -3695,15 +3695,15 @@ class DomainRangeReq final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(DomainRangeReq* other);
+  void InternalSwap(RangeAsOfReq* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.DomainRangeReq";
+    return "remote.RangeAsOfReq";
   }
   protected:
-  explicit DomainRangeReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit RangeAsOfReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -3838,7 +3838,7 @@ class DomainRangeReq final :
   void _internal_set_limit(int64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:remote.DomainRangeReq)
+  // @@protoc_insertion_point(class_scope:remote.RangeAsOfReq)
  private:
   class _Internal;
 
@@ -6038,64 +6038,64 @@ inline void RangeReq::set_allocated_page_token(std::string* page_token) {
 
 // -------------------------------------------------------------------
 
-// DomainGetReq
+// GetLatestReq
 
 // uint64 tx_id = 1;
-inline void DomainGetReq::clear_tx_id() {
+inline void GetLatestReq::clear_tx_id() {
   _impl_.tx_id_ = uint64_t{0u};
 }
-inline uint64_t DomainGetReq::_internal_tx_id() const {
+inline uint64_t GetLatestReq::_internal_tx_id() const {
   return _impl_.tx_id_;
 }
-inline uint64_t DomainGetReq::tx_id() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReq.tx_id)
+inline uint64_t GetLatestReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReq.tx_id)
   return _internal_tx_id();
 }
-inline void DomainGetReq::_internal_set_tx_id(uint64_t value) {
+inline void GetLatestReq::_internal_set_tx_id(uint64_t value) {
   
   _impl_.tx_id_ = value;
 }
-inline void DomainGetReq::set_tx_id(uint64_t value) {
+inline void GetLatestReq::set_tx_id(uint64_t value) {
   _internal_set_tx_id(value);
-  // @@protoc_insertion_point(field_set:remote.DomainGetReq.tx_id)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReq.tx_id)
 }
 
 // string table = 2;
-inline void DomainGetReq::clear_table() {
+inline void GetLatestReq::clear_table() {
   _impl_.table_.ClearToEmpty();
 }
-inline const std::string& DomainGetReq::table() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReq.table)
+inline const std::string& GetLatestReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReq.table)
   return _internal_table();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainGetReq::set_table(ArgT0&& arg0, ArgT... args) {
+void GetLatestReq::set_table(ArgT0&& arg0, ArgT... args) {
  
  _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainGetReq.table)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReq.table)
 }
-inline std::string* DomainGetReq::mutable_table() {
+inline std::string* GetLatestReq::mutable_table() {
   std::string* _s = _internal_mutable_table();
-  // @@protoc_insertion_point(field_mutable:remote.DomainGetReq.table)
+  // @@protoc_insertion_point(field_mutable:remote.GetLatestReq.table)
   return _s;
 }
-inline const std::string& DomainGetReq::_internal_table() const {
+inline const std::string& GetLatestReq::_internal_table() const {
   return _impl_.table_.Get();
 }
-inline void DomainGetReq::_internal_set_table(const std::string& value) {
+inline void GetLatestReq::_internal_set_table(const std::string& value) {
   
   _impl_.table_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainGetReq::_internal_mutable_table() {
+inline std::string* GetLatestReq::_internal_mutable_table() {
   
   return _impl_.table_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainGetReq::release_table() {
-  // @@protoc_insertion_point(field_release:remote.DomainGetReq.table)
+inline std::string* GetLatestReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.GetLatestReq.table)
   return _impl_.table_.Release();
 }
-inline void DomainGetReq::set_allocated_table(std::string* table) {
+inline void GetLatestReq::set_allocated_table(std::string* table) {
   if (table != nullptr) {
     
   } else {
@@ -6107,45 +6107,45 @@ inline void DomainGetReq::set_allocated_table(std::string* table) {
     _impl_.table_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReq.table)
+  // @@protoc_insertion_point(field_set_allocated:remote.GetLatestReq.table)
 }
 
 // bytes k = 3;
-inline void DomainGetReq::clear_k() {
+inline void GetLatestReq::clear_k() {
   _impl_.k_.ClearToEmpty();
 }
-inline const std::string& DomainGetReq::k() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReq.k)
+inline const std::string& GetLatestReq::k() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReq.k)
   return _internal_k();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainGetReq::set_k(ArgT0&& arg0, ArgT... args) {
+void GetLatestReq::set_k(ArgT0&& arg0, ArgT... args) {
  
  _impl_.k_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainGetReq.k)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReq.k)
 }
-inline std::string* DomainGetReq::mutable_k() {
+inline std::string* GetLatestReq::mutable_k() {
   std::string* _s = _internal_mutable_k();
-  // @@protoc_insertion_point(field_mutable:remote.DomainGetReq.k)
+  // @@protoc_insertion_point(field_mutable:remote.GetLatestReq.k)
   return _s;
 }
-inline const std::string& DomainGetReq::_internal_k() const {
+inline const std::string& GetLatestReq::_internal_k() const {
   return _impl_.k_.Get();
 }
-inline void DomainGetReq::_internal_set_k(const std::string& value) {
+inline void GetLatestReq::_internal_set_k(const std::string& value) {
   
   _impl_.k_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainGetReq::_internal_mutable_k() {
+inline std::string* GetLatestReq::_internal_mutable_k() {
   
   return _impl_.k_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainGetReq::release_k() {
-  // @@protoc_insertion_point(field_release:remote.DomainGetReq.k)
+inline std::string* GetLatestReq::release_k() {
+  // @@protoc_insertion_point(field_release:remote.GetLatestReq.k)
   return _impl_.k_.Release();
 }
-inline void DomainGetReq::set_allocated_k(std::string* k) {
+inline void GetLatestReq::set_allocated_k(std::string* k) {
   if (k != nullptr) {
     
   } else {
@@ -6157,65 +6157,65 @@ inline void DomainGetReq::set_allocated_k(std::string* k) {
     _impl_.k_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReq.k)
+  // @@protoc_insertion_point(field_set_allocated:remote.GetLatestReq.k)
 }
 
 // uint64 ts = 4;
-inline void DomainGetReq::clear_ts() {
+inline void GetLatestReq::clear_ts() {
   _impl_.ts_ = uint64_t{0u};
 }
-inline uint64_t DomainGetReq::_internal_ts() const {
+inline uint64_t GetLatestReq::_internal_ts() const {
   return _impl_.ts_;
 }
-inline uint64_t DomainGetReq::ts() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReq.ts)
+inline uint64_t GetLatestReq::ts() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReq.ts)
   return _internal_ts();
 }
-inline void DomainGetReq::_internal_set_ts(uint64_t value) {
+inline void GetLatestReq::_internal_set_ts(uint64_t value) {
   
   _impl_.ts_ = value;
 }
-inline void DomainGetReq::set_ts(uint64_t value) {
+inline void GetLatestReq::set_ts(uint64_t value) {
   _internal_set_ts(value);
-  // @@protoc_insertion_point(field_set:remote.DomainGetReq.ts)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReq.ts)
 }
 
 // bytes k2 = 5;
-inline void DomainGetReq::clear_k2() {
+inline void GetLatestReq::clear_k2() {
   _impl_.k2_.ClearToEmpty();
 }
-inline const std::string& DomainGetReq::k2() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReq.k2)
+inline const std::string& GetLatestReq::k2() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReq.k2)
   return _internal_k2();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainGetReq::set_k2(ArgT0&& arg0, ArgT... args) {
+void GetLatestReq::set_k2(ArgT0&& arg0, ArgT... args) {
  
  _impl_.k2_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainGetReq.k2)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReq.k2)
 }
-inline std::string* DomainGetReq::mutable_k2() {
+inline std::string* GetLatestReq::mutable_k2() {
   std::string* _s = _internal_mutable_k2();
-  // @@protoc_insertion_point(field_mutable:remote.DomainGetReq.k2)
+  // @@protoc_insertion_point(field_mutable:remote.GetLatestReq.k2)
   return _s;
 }
-inline const std::string& DomainGetReq::_internal_k2() const {
+inline const std::string& GetLatestReq::_internal_k2() const {
   return _impl_.k2_.Get();
 }
-inline void DomainGetReq::_internal_set_k2(const std::string& value) {
+inline void GetLatestReq::_internal_set_k2(const std::string& value) {
   
   _impl_.k2_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainGetReq::_internal_mutable_k2() {
+inline std::string* GetLatestReq::_internal_mutable_k2() {
   
   return _impl_.k2_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainGetReq::release_k2() {
-  // @@protoc_insertion_point(field_release:remote.DomainGetReq.k2)
+inline std::string* GetLatestReq::release_k2() {
+  // @@protoc_insertion_point(field_release:remote.GetLatestReq.k2)
   return _impl_.k2_.Release();
 }
-inline void DomainGetReq::set_allocated_k2(std::string* k2) {
+inline void GetLatestReq::set_allocated_k2(std::string* k2) {
   if (k2 != nullptr) {
     
   } else {
@@ -6227,69 +6227,69 @@ inline void DomainGetReq::set_allocated_k2(std::string* k2) {
     _impl_.k2_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReq.k2)
+  // @@protoc_insertion_point(field_set_allocated:remote.GetLatestReq.k2)
 }
 
 // bool latest = 6;
-inline void DomainGetReq::clear_latest() {
+inline void GetLatestReq::clear_latest() {
   _impl_.latest_ = false;
 }
-inline bool DomainGetReq::_internal_latest() const {
+inline bool GetLatestReq::_internal_latest() const {
   return _impl_.latest_;
 }
-inline bool DomainGetReq::latest() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReq.latest)
+inline bool GetLatestReq::latest() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReq.latest)
   return _internal_latest();
 }
-inline void DomainGetReq::_internal_set_latest(bool value) {
+inline void GetLatestReq::_internal_set_latest(bool value) {
   
   _impl_.latest_ = value;
 }
-inline void DomainGetReq::set_latest(bool value) {
+inline void GetLatestReq::set_latest(bool value) {
   _internal_set_latest(value);
-  // @@protoc_insertion_point(field_set:remote.DomainGetReq.latest)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReq.latest)
 }
 
 // -------------------------------------------------------------------
 
-// DomainGetReply
+// GetLatestReply
 
 // bytes v = 1;
-inline void DomainGetReply::clear_v() {
+inline void GetLatestReply::clear_v() {
   _impl_.v_.ClearToEmpty();
 }
-inline const std::string& DomainGetReply::v() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReply.v)
+inline const std::string& GetLatestReply::v() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReply.v)
   return _internal_v();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainGetReply::set_v(ArgT0&& arg0, ArgT... args) {
+void GetLatestReply::set_v(ArgT0&& arg0, ArgT... args) {
  
  _impl_.v_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainGetReply.v)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReply.v)
 }
-inline std::string* DomainGetReply::mutable_v() {
+inline std::string* GetLatestReply::mutable_v() {
   std::string* _s = _internal_mutable_v();
-  // @@protoc_insertion_point(field_mutable:remote.DomainGetReply.v)
+  // @@protoc_insertion_point(field_mutable:remote.GetLatestReply.v)
   return _s;
 }
-inline const std::string& DomainGetReply::_internal_v() const {
+inline const std::string& GetLatestReply::_internal_v() const {
   return _impl_.v_.Get();
 }
-inline void DomainGetReply::_internal_set_v(const std::string& value) {
+inline void GetLatestReply::_internal_set_v(const std::string& value) {
   
   _impl_.v_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainGetReply::_internal_mutable_v() {
+inline std::string* GetLatestReply::_internal_mutable_v() {
   
   return _impl_.v_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainGetReply::release_v() {
-  // @@protoc_insertion_point(field_release:remote.DomainGetReply.v)
+inline std::string* GetLatestReply::release_v() {
+  // @@protoc_insertion_point(field_release:remote.GetLatestReply.v)
   return _impl_.v_.Release();
 }
-inline void DomainGetReply::set_allocated_v(std::string* v) {
+inline void GetLatestReply::set_allocated_v(std::string* v) {
   if (v != nullptr) {
     
   } else {
@@ -6301,27 +6301,27 @@ inline void DomainGetReply::set_allocated_v(std::string* v) {
     _impl_.v_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReply.v)
+  // @@protoc_insertion_point(field_set_allocated:remote.GetLatestReply.v)
 }
 
 // bool ok = 2;
-inline void DomainGetReply::clear_ok() {
+inline void GetLatestReply::clear_ok() {
   _impl_.ok_ = false;
 }
-inline bool DomainGetReply::_internal_ok() const {
+inline bool GetLatestReply::_internal_ok() const {
   return _impl_.ok_;
 }
-inline bool DomainGetReply::ok() const {
-  // @@protoc_insertion_point(field_get:remote.DomainGetReply.ok)
+inline bool GetLatestReply::ok() const {
+  // @@protoc_insertion_point(field_get:remote.GetLatestReply.ok)
   return _internal_ok();
 }
-inline void DomainGetReply::_internal_set_ok(bool value) {
+inline void GetLatestReply::_internal_set_ok(bool value) {
   
   _impl_.ok_ = value;
 }
-inline void DomainGetReply::set_ok(bool value) {
+inline void GetLatestReply::set_ok(bool value) {
   _internal_set_ok(value);
-  // @@protoc_insertion_point(field_set:remote.DomainGetReply.ok)
+  // @@protoc_insertion_point(field_set:remote.GetLatestReply.ok)
 }
 
 // -------------------------------------------------------------------
@@ -7143,64 +7143,64 @@ inline void HistoryRangeReq::set_allocated_page_token(std::string* page_token) {
 
 // -------------------------------------------------------------------
 
-// DomainRangeReq
+// RangeAsOfReq
 
 // uint64 tx_id = 1;
-inline void DomainRangeReq::clear_tx_id() {
+inline void RangeAsOfReq::clear_tx_id() {
   _impl_.tx_id_ = uint64_t{0u};
 }
-inline uint64_t DomainRangeReq::_internal_tx_id() const {
+inline uint64_t RangeAsOfReq::_internal_tx_id() const {
   return _impl_.tx_id_;
 }
-inline uint64_t DomainRangeReq::tx_id() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.tx_id)
+inline uint64_t RangeAsOfReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.tx_id)
   return _internal_tx_id();
 }
-inline void DomainRangeReq::_internal_set_tx_id(uint64_t value) {
+inline void RangeAsOfReq::_internal_set_tx_id(uint64_t value) {
   
   _impl_.tx_id_ = value;
 }
-inline void DomainRangeReq::set_tx_id(uint64_t value) {
+inline void RangeAsOfReq::set_tx_id(uint64_t value) {
   _internal_set_tx_id(value);
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.tx_id)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.tx_id)
 }
 
 // string table = 2;
-inline void DomainRangeReq::clear_table() {
+inline void RangeAsOfReq::clear_table() {
   _impl_.table_.ClearToEmpty();
 }
-inline const std::string& DomainRangeReq::table() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.table)
+inline const std::string& RangeAsOfReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.table)
   return _internal_table();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainRangeReq::set_table(ArgT0&& arg0, ArgT... args) {
+void RangeAsOfReq::set_table(ArgT0&& arg0, ArgT... args) {
  
  _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.table)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.table)
 }
-inline std::string* DomainRangeReq::mutable_table() {
+inline std::string* RangeAsOfReq::mutable_table() {
   std::string* _s = _internal_mutable_table();
-  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.table)
+  // @@protoc_insertion_point(field_mutable:remote.RangeAsOfReq.table)
   return _s;
 }
-inline const std::string& DomainRangeReq::_internal_table() const {
+inline const std::string& RangeAsOfReq::_internal_table() const {
   return _impl_.table_.Get();
 }
-inline void DomainRangeReq::_internal_set_table(const std::string& value) {
+inline void RangeAsOfReq::_internal_set_table(const std::string& value) {
   
   _impl_.table_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::_internal_mutable_table() {
+inline std::string* RangeAsOfReq::_internal_mutable_table() {
   
   return _impl_.table_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::release_table() {
-  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.table)
+inline std::string* RangeAsOfReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.RangeAsOfReq.table)
   return _impl_.table_.Release();
 }
-inline void DomainRangeReq::set_allocated_table(std::string* table) {
+inline void RangeAsOfReq::set_allocated_table(std::string* table) {
   if (table != nullptr) {
     
   } else {
@@ -7212,45 +7212,45 @@ inline void DomainRangeReq::set_allocated_table(std::string* table) {
     _impl_.table_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.table)
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeAsOfReq.table)
 }
 
 // bytes from_key = 3;
-inline void DomainRangeReq::clear_from_key() {
+inline void RangeAsOfReq::clear_from_key() {
   _impl_.from_key_.ClearToEmpty();
 }
-inline const std::string& DomainRangeReq::from_key() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.from_key)
+inline const std::string& RangeAsOfReq::from_key() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.from_key)
   return _internal_from_key();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainRangeReq::set_from_key(ArgT0&& arg0, ArgT... args) {
+void RangeAsOfReq::set_from_key(ArgT0&& arg0, ArgT... args) {
  
  _impl_.from_key_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.from_key)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.from_key)
 }
-inline std::string* DomainRangeReq::mutable_from_key() {
+inline std::string* RangeAsOfReq::mutable_from_key() {
   std::string* _s = _internal_mutable_from_key();
-  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.from_key)
+  // @@protoc_insertion_point(field_mutable:remote.RangeAsOfReq.from_key)
   return _s;
 }
-inline const std::string& DomainRangeReq::_internal_from_key() const {
+inline const std::string& RangeAsOfReq::_internal_from_key() const {
   return _impl_.from_key_.Get();
 }
-inline void DomainRangeReq::_internal_set_from_key(const std::string& value) {
+inline void RangeAsOfReq::_internal_set_from_key(const std::string& value) {
   
   _impl_.from_key_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::_internal_mutable_from_key() {
+inline std::string* RangeAsOfReq::_internal_mutable_from_key() {
   
   return _impl_.from_key_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::release_from_key() {
-  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.from_key)
+inline std::string* RangeAsOfReq::release_from_key() {
+  // @@protoc_insertion_point(field_release:remote.RangeAsOfReq.from_key)
   return _impl_.from_key_.Release();
 }
-inline void DomainRangeReq::set_allocated_from_key(std::string* from_key) {
+inline void RangeAsOfReq::set_allocated_from_key(std::string* from_key) {
   if (from_key != nullptr) {
     
   } else {
@@ -7262,45 +7262,45 @@ inline void DomainRangeReq::set_allocated_from_key(std::string* from_key) {
     _impl_.from_key_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.from_key)
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeAsOfReq.from_key)
 }
 
 // bytes to_key = 4;
-inline void DomainRangeReq::clear_to_key() {
+inline void RangeAsOfReq::clear_to_key() {
   _impl_.to_key_.ClearToEmpty();
 }
-inline const std::string& DomainRangeReq::to_key() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.to_key)
+inline const std::string& RangeAsOfReq::to_key() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.to_key)
   return _internal_to_key();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainRangeReq::set_to_key(ArgT0&& arg0, ArgT... args) {
+void RangeAsOfReq::set_to_key(ArgT0&& arg0, ArgT... args) {
  
  _impl_.to_key_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.to_key)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.to_key)
 }
-inline std::string* DomainRangeReq::mutable_to_key() {
+inline std::string* RangeAsOfReq::mutable_to_key() {
   std::string* _s = _internal_mutable_to_key();
-  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.to_key)
+  // @@protoc_insertion_point(field_mutable:remote.RangeAsOfReq.to_key)
   return _s;
 }
-inline const std::string& DomainRangeReq::_internal_to_key() const {
+inline const std::string& RangeAsOfReq::_internal_to_key() const {
   return _impl_.to_key_.Get();
 }
-inline void DomainRangeReq::_internal_set_to_key(const std::string& value) {
+inline void RangeAsOfReq::_internal_set_to_key(const std::string& value) {
   
   _impl_.to_key_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::_internal_mutable_to_key() {
+inline std::string* RangeAsOfReq::_internal_mutable_to_key() {
   
   return _impl_.to_key_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::release_to_key() {
-  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.to_key)
+inline std::string* RangeAsOfReq::release_to_key() {
+  // @@protoc_insertion_point(field_release:remote.RangeAsOfReq.to_key)
   return _impl_.to_key_.Release();
 }
-inline void DomainRangeReq::set_allocated_to_key(std::string* to_key) {
+inline void RangeAsOfReq::set_allocated_to_key(std::string* to_key) {
   if (to_key != nullptr) {
     
   } else {
@@ -7312,145 +7312,145 @@ inline void DomainRangeReq::set_allocated_to_key(std::string* to_key) {
     _impl_.to_key_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.to_key)
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeAsOfReq.to_key)
 }
 
 // uint64 ts = 5;
-inline void DomainRangeReq::clear_ts() {
+inline void RangeAsOfReq::clear_ts() {
   _impl_.ts_ = uint64_t{0u};
 }
-inline uint64_t DomainRangeReq::_internal_ts() const {
+inline uint64_t RangeAsOfReq::_internal_ts() const {
   return _impl_.ts_;
 }
-inline uint64_t DomainRangeReq::ts() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.ts)
+inline uint64_t RangeAsOfReq::ts() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.ts)
   return _internal_ts();
 }
-inline void DomainRangeReq::_internal_set_ts(uint64_t value) {
+inline void RangeAsOfReq::_internal_set_ts(uint64_t value) {
   
   _impl_.ts_ = value;
 }
-inline void DomainRangeReq::set_ts(uint64_t value) {
+inline void RangeAsOfReq::set_ts(uint64_t value) {
   _internal_set_ts(value);
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.ts)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.ts)
 }
 
 // bool latest = 6;
-inline void DomainRangeReq::clear_latest() {
+inline void RangeAsOfReq::clear_latest() {
   _impl_.latest_ = false;
 }
-inline bool DomainRangeReq::_internal_latest() const {
+inline bool RangeAsOfReq::_internal_latest() const {
   return _impl_.latest_;
 }
-inline bool DomainRangeReq::latest() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.latest)
+inline bool RangeAsOfReq::latest() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.latest)
   return _internal_latest();
 }
-inline void DomainRangeReq::_internal_set_latest(bool value) {
+inline void RangeAsOfReq::_internal_set_latest(bool value) {
   
   _impl_.latest_ = value;
 }
-inline void DomainRangeReq::set_latest(bool value) {
+inline void RangeAsOfReq::set_latest(bool value) {
   _internal_set_latest(value);
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.latest)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.latest)
 }
 
 // bool order_ascend = 7;
-inline void DomainRangeReq::clear_order_ascend() {
+inline void RangeAsOfReq::clear_order_ascend() {
   _impl_.order_ascend_ = false;
 }
-inline bool DomainRangeReq::_internal_order_ascend() const {
+inline bool RangeAsOfReq::_internal_order_ascend() const {
   return _impl_.order_ascend_;
 }
-inline bool DomainRangeReq::order_ascend() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.order_ascend)
+inline bool RangeAsOfReq::order_ascend() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.order_ascend)
   return _internal_order_ascend();
 }
-inline void DomainRangeReq::_internal_set_order_ascend(bool value) {
+inline void RangeAsOfReq::_internal_set_order_ascend(bool value) {
   
   _impl_.order_ascend_ = value;
 }
-inline void DomainRangeReq::set_order_ascend(bool value) {
+inline void RangeAsOfReq::set_order_ascend(bool value) {
   _internal_set_order_ascend(value);
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.order_ascend)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.order_ascend)
 }
 
 // sint64 limit = 8;
-inline void DomainRangeReq::clear_limit() {
+inline void RangeAsOfReq::clear_limit() {
   _impl_.limit_ = int64_t{0};
 }
-inline int64_t DomainRangeReq::_internal_limit() const {
+inline int64_t RangeAsOfReq::_internal_limit() const {
   return _impl_.limit_;
 }
-inline int64_t DomainRangeReq::limit() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.limit)
+inline int64_t RangeAsOfReq::limit() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.limit)
   return _internal_limit();
 }
-inline void DomainRangeReq::_internal_set_limit(int64_t value) {
+inline void RangeAsOfReq::_internal_set_limit(int64_t value) {
   
   _impl_.limit_ = value;
 }
-inline void DomainRangeReq::set_limit(int64_t value) {
+inline void RangeAsOfReq::set_limit(int64_t value) {
   _internal_set_limit(value);
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.limit)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.limit)
 }
 
 // int32 page_size = 9;
-inline void DomainRangeReq::clear_page_size() {
+inline void RangeAsOfReq::clear_page_size() {
   _impl_.page_size_ = 0;
 }
-inline int32_t DomainRangeReq::_internal_page_size() const {
+inline int32_t RangeAsOfReq::_internal_page_size() const {
   return _impl_.page_size_;
 }
-inline int32_t DomainRangeReq::page_size() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.page_size)
+inline int32_t RangeAsOfReq::page_size() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.page_size)
   return _internal_page_size();
 }
-inline void DomainRangeReq::_internal_set_page_size(int32_t value) {
+inline void RangeAsOfReq::_internal_set_page_size(int32_t value) {
   
   _impl_.page_size_ = value;
 }
-inline void DomainRangeReq::set_page_size(int32_t value) {
+inline void RangeAsOfReq::set_page_size(int32_t value) {
   _internal_set_page_size(value);
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.page_size)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.page_size)
 }
 
 // string page_token = 10;
-inline void DomainRangeReq::clear_page_token() {
+inline void RangeAsOfReq::clear_page_token() {
   _impl_.page_token_.ClearToEmpty();
 }
-inline const std::string& DomainRangeReq::page_token() const {
-  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.page_token)
+inline const std::string& RangeAsOfReq::page_token() const {
+  // @@protoc_insertion_point(field_get:remote.RangeAsOfReq.page_token)
   return _internal_page_token();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void DomainRangeReq::set_page_token(ArgT0&& arg0, ArgT... args) {
+void RangeAsOfReq::set_page_token(ArgT0&& arg0, ArgT... args) {
  
  _impl_.page_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.page_token)
+  // @@protoc_insertion_point(field_set:remote.RangeAsOfReq.page_token)
 }
-inline std::string* DomainRangeReq::mutable_page_token() {
+inline std::string* RangeAsOfReq::mutable_page_token() {
   std::string* _s = _internal_mutable_page_token();
-  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.page_token)
+  // @@protoc_insertion_point(field_mutable:remote.RangeAsOfReq.page_token)
   return _s;
 }
-inline const std::string& DomainRangeReq::_internal_page_token() const {
+inline const std::string& RangeAsOfReq::_internal_page_token() const {
   return _impl_.page_token_.Get();
 }
-inline void DomainRangeReq::_internal_set_page_token(const std::string& value) {
+inline void RangeAsOfReq::_internal_set_page_token(const std::string& value) {
   
   _impl_.page_token_.Set(value, GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::_internal_mutable_page_token() {
+inline std::string* RangeAsOfReq::_internal_mutable_page_token() {
   
   return _impl_.page_token_.Mutable(GetArenaForAllocation());
 }
-inline std::string* DomainRangeReq::release_page_token() {
-  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.page_token)
+inline std::string* RangeAsOfReq::release_page_token() {
+  // @@protoc_insertion_point(field_release:remote.RangeAsOfReq.page_token)
   return _impl_.page_token_.Release();
 }
-inline void DomainRangeReq::set_allocated_page_token(std::string* page_token) {
+inline void RangeAsOfReq::set_allocated_page_token(std::string* page_token) {
   if (page_token != nullptr) {
     
   } else {
@@ -7462,7 +7462,7 @@ inline void DomainRangeReq::set_allocated_page_token(std::string* page_token) {
     _impl_.page_token_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.page_token)
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeAsOfReq.page_token)
 }
 
 // -------------------------------------------------------------------

@@ -43,6 +43,7 @@
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -224,9 +225,9 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
     auto data_dir_path = parse_path(settings->data_dir_path);
-    auto repository = db::blocks::make_blocks_repository(
-        DataDirectory{data_dir_path}.snapshots().path(),
-        /* open = */ false);
+    auto snapshots_dir_path = DataDirectory{data_dir_path}.snapshots().path();
+    auto blocks_repository = db::blocks::make_blocks_repository(snapshots_dir_path, /* open = */ false);
+    auto state_repository = db::state::make_state_repository(snapshots_dir_path, /* open = */ false);
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
@@ -236,7 +237,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         },
         .data_dir_path = std::move(data_dir_path),
         .node_settings = {},
-        .repository = std::make_unique<snapshots::SnapshotRepository>(std::move(repository)),
+        .blocks_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)),
+        .state_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository)),
         .rpcdaemon = {},
         .execution_engine = {},
         .sentry_thread = {},
@@ -338,7 +340,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
 }
 
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
-    if (!handle || !handle->repository) {
+    if (!handle || !handle->blocks_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     if (!snapshot) {
@@ -400,7 +402,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         headers_segment_path->step_range(),
         std::move(bundle_data),
     };
-    handle->repository->add_snapshot_bundle(std::move(bundle));
+    handle->blocks_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }
 
@@ -498,16 +500,16 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
     try {
         auto txn = db::RWTxnUnmanaged{mdbx_txn};
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
         state_buffer.set_memory_limit(batch_size);
 
         const size_t max_batch_size{batch_size};
         auto signal_check_time{std::chrono::steady_clock::now()};
 
-        BlockNum block_number{start_block};
-        BlockNum batch_start_block_number{start_block};
-        BlockNum last_block_number = 0;
-        db::DataModel da_layer{txn, *handle->repository};
+        BlockNum block_num{start_block};
+        BlockNum batch_start_block_num{start_block};
+        BlockNum last_block_num = 0;
+        db::DataModel da_layer{txn, *handle->blocks_repository};
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
@@ -516,12 +518,12 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         ValidationResult last_exec_result = ValidationResult::kOk;
         boost::circular_buffer<Block> prefetched_blocks{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
-        while (block_number <= max_block) {
-            while (block_number <= max_block) {
+        while (block_num <= max_block) {
+            while (block_num <= max_block) {
                 if (prefetched_blocks.empty()) {
-                    const auto num_blocks{std::min(size_t{max_block - block_number + 1}, kMaxPrefetchedBlocks)};
+                    const auto num_blocks{std::min(size_t{max_block - block_num + 1}, kMaxPrefetchedBlocks)};
                     SILK_TRACE << "Prefetching " << num_blocks << " blocks start";
-                    for (BlockNum n{block_number}; n < block_number + num_blocks; ++n) {
+                    for (BlockNum n{block_num}; n < block_num + num_blocks; ++n) {
                         prefetched_blocks.push_back();
                         const bool success{da_layer.read_block(n, /*read_senders=*/true, prefetched_blocks.back())};
                         if (!success) {
@@ -537,13 +539,13 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
                     update_execution_progress(execution_progress, block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
                     // infinite loop detection, buffer memory limit reached but no progress
-                    if (batch_start_block_number == block_number) {
-                        SILK_ERROR << "Buffer memory limit too small to execute a single block (block_number=" << block_number << ")";
+                    if (batch_start_block_num == block_num) {
+                        SILK_ERROR << "Buffer memory limit too small to execute a single block (block_num=" << block_num << ")";
                         return SILKWORM_INTERNAL_ERROR;
                     }
 
                     // batch done
-                    batch_start_block_number = block_number;
+                    batch_start_block_num = block_num;
                     break;
                 }
                 if (last_exec_result != ValidationResult::kOk) {
@@ -555,19 +557,19 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
 
-                last_block_number = block_number;
-                ++block_number;
+                last_block_num = block_num;
+                ++block_num;
                 prefetched_blocks.pop_front();
             }
 
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_flush(state_buffer, max_batch_size, last_block_number)};
+                      log_args_for_exec_flush(state_buffer, max_batch_size, last_block_num)};
             state_buffer.write_state_to_db();
             // Always save the Execution stage progress when state batch is flushed
-            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_number);
+            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_num);
 
             if (last_executed_block) {
-                *last_executed_block = last_block_number;
+                *last_executed_block = last_block_num;
             }
 
             if (last_exec_result != ValidationResult::kOk) {
@@ -618,13 +620,17 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         auto txn = rw_access.start_rw_tx();
         const auto env_path = unmanaged_env.get_path();
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
         state_buffer.set_memory_limit(batch_size);
 
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
 
-        db::DataStoreRef data_store{rw_access, *handle->repository};
+        db::DataStoreRef data_store{
+            rw_access,
+            *handle->blocks_repository,
+            *handle->state_repository,
+        };
         db::DataModelFactory data_model_factory{std::move(data_store)};
 
         BlockProvider block_provider{
@@ -640,35 +646,35 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         auto signal_check_time{std::chrono::steady_clock::now()};
 
         std::optional<Block> block;
-        BlockNum block_number{start_block};
-        BlockNum batch_start_block_number{start_block};
-        BlockNum last_block_number = 0;
+        BlockNum block_num{start_block};
+        BlockNum batch_start_block_num{start_block};
+        BlockNum last_block_num = 0;
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
         const auto now = std::chrono::steady_clock::now();
         ExecutionProgress execution_progress{.start_time = now, .next_log_time = now + 20s};
         ValidationResult last_exec_result = ValidationResult::kOk;
 
-        while (block_number <= max_block) {
-            while (block_number <= max_block) {
+        while (block_num <= max_block) {
+            while (block_num <= max_block) {
                 block_buffer.peek_back(&block);
                 if (!block) {
                     return SILKWORM_BLOCK_NOT_FOUND;
                 }
-                SILKWORM_ASSERT(block->header.number == block_number);
+                SILKWORM_ASSERT(block->header.number == block_num);
 
                 try {
                     last_exec_result = block_executor.execute_single(*block, state_buffer, analysis_cache);
                     update_execution_progress(execution_progress, *block, state_buffer, max_batch_size);
                 } catch (const db::Buffer::MemoryLimitError&) {
                     // infinite loop detection, buffer memory limit reached but no progress
-                    if (batch_start_block_number == block_number) {
-                        SILK_ERROR << "Buffer memory limit too small to execute a single block (block_number=" << block_number << ")";
+                    if (batch_start_block_num == block_num) {
+                        SILK_ERROR << "Buffer memory limit too small to execute a single block (block_num=" << block_num << ")";
                         return SILKWORM_INTERNAL_ERROR;
                     }
 
                     // batch done
-                    batch_start_block_number = block_number;
+                    batch_start_block_num = block_num;
                     break;
                 }
 
@@ -681,17 +687,17 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                     return SILKWORM_TERMINATION_SIGNAL;
                 }
 
-                last_block_number = block_number;
-                ++block_number;
+                last_block_num = block_num;
+                ++block_num;
                 block_buffer.pop_back(&block);
             }
 
             StopWatch sw{/*auto_start=*/true};
             log::Info{"[4/12 Execution] Flushing state",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_flush(state_buffer, max_batch_size, last_block_number)};
+                      log_args_for_exec_flush(state_buffer, max_batch_size, last_block_num)};
             state_buffer.write_state_to_db();
             // Always save the Execution stage progress when state batch is flushed
-            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_number);
+            db::stages::write_stage_progress(txn, db::stages::kExecutionKey, last_block_num);
             // Commit and renew only in case of internally managed transaction
             txn.commit_and_renew();
             const auto elapsed_time_and_duration = sw.stop();
@@ -699,7 +705,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
                       log_args_for_exec_commit(elapsed_time_and_duration.second, env_path));
 
             if (last_executed_block) {
-                *last_executed_block = last_block_number;
+                *last_executed_block = last_block_num;
             }
 
             if (last_exec_result != ValidationResult::kOk) {
@@ -727,7 +733,7 @@ SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
-    if (!handle->repository) {
+    if (!handle->blocks_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     delete handle;

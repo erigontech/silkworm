@@ -26,7 +26,7 @@
 namespace silkworm {
 
 struct ChainHead {
-    BlockNum height{0};
+    BlockNum block_num{0};
     Hash hash;
     intx::uint256 total_difficulty;
 
@@ -34,15 +34,15 @@ struct ChainHead {
 };
 
 inline bool operator==(const ChainHead& a, const BlockId& b) {
-    return a.height == b.number && a.hash == b.hash;
+    return a.block_num == b.block_num && a.hash == b.hash;
 }
 
 inline bool operator==(const BlockId& a, const ChainHead& b) {
-    return a.number == b.height && a.hash == b.hash;
+    return a.block_num == b.block_num && a.hash == b.hash;
 }
 
 inline BlockId to_block_id(const ChainHead& head) {
-    return {.number = head.height, .hash = head.hash};
+    return {.block_num = head.block_num, .hash = head.hash};
 }
 
 }  // namespace silkworm

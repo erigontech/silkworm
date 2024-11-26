@@ -23,7 +23,6 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
@@ -45,6 +44,9 @@ using namespace silkworm::db;
 using db::state::StateReader;
 
 static constexpr int kCurrentApiLevel{8};
+
+//! The window size used when probing history periodically
+static constexpr uint64_t kTxnProbeWindowSize{4096};
 
 Task<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
     reply = make_json_content(request, kCurrentApiLevel);
@@ -68,11 +70,11 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 
     try {
         // Check if target block is the latest one: use local state cache (if any) for target transaction
-        const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, *tx);
+        const bool is_latest_block = co_await core::is_latest_block_num(BlockNumOrHash{block_id}, *tx);
         tx->set_state_cache_enabled(is_latest_block);
 
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
-        StateReader state_reader{*tx, block_number + 1};
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        StateReader state_reader{*tx, block_num + 1};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -107,9 +109,9 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
             const auto block_size = extended_block.get_block_size();
@@ -203,10 +205,10 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_number = co_await core::get_block_number(block_id, *tx);
+        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
 
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
             auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
@@ -286,12 +288,12 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto it = co_await paginated_result.begin();
 
         std::vector<std::string> keys;
-        std::uint64_t count = 0;
+        uint64_t count = 0;
         TxnId prev_txn_id = 0;
         TxnId next_txn_id = 0;
         while (const auto value = co_await it.next()) {
             const auto txn_id = static_cast<TxnId>(*value);
-            if (count++ % 4096 != 0) {
+            if (count++ % kTxnProbeWindowSize != 0) {
                 next_txn_id = txn_id;
                 continue;
             }
@@ -359,12 +361,12 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         }
 
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
-        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
-        if (block_number_opt) {
-            const auto block_number = block_number_opt.value();
-            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_number, provider);
-            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_number);
-            SILK_DEBUG << "block_number: " << block_number << ", min_txn_id: " << min_txn_id << ", first_txn_id: " << first_txn_id;
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        if (block_num_opt) {
+            const auto block_num = block_num_opt.value();
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, provider);
+            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_num);
+            SILK_DEBUG << "block_num: " << block_num << ", min_txn_id: " << min_txn_id << ", first_txn_id: " << first_txn_id;
 
             TxnId tx_index{0};
             if (creation_txn_id == min_txn_id) {
@@ -372,13 +374,13 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             } else {
                 tx_index = creation_txn_id - min_txn_id - 1;
             }
-            SILK_DEBUG << "block_number: " << block_number << ", tx_index: " << tx_index;
+            SILK_DEBUG << "block_num: " << block_num << ", tx_index: " << tx_index;
 
             const auto chain_storage{tx->create_storage()};
 
-            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_number, tx_index);
+            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, tx_index);
             if (!transaction) {
-                SILK_DEBUG << "No transaction found in block " << block_number << " for index " << tx_index;
+                SILK_DEBUG << "No transaction found in block " << block_num << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
             } else if (transaction.value().nonce != nonce) {
                 SILK_DEBUG << "Transaction nonce " << transaction.value().nonce << " doesn't match required nonce " << nonce;
@@ -420,112 +422,130 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        const ByteView contract_address_byte_view{contract_address.bytes};
-        auto plain_state_cursor = co_await tx->cursor(table::kPlainStateName);
-        auto account_payload = co_await plain_state_cursor->seek(contract_address_byte_view);
-        auto plain_state_account = Account::from_encoded_storage(account_payload.value);
-
-        if (!plain_state_account.has_value()) {
+        auto block_num = co_await core::get_latest_block_num(*tx);
+        StateReader state_reader{*tx, block_num};
+        std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
+        if (!account_opt || account_opt.value().code_hash == kEmptyHash) {
             reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();
             co_return;
         }
 
-        if (plain_state_account.value().code_hash == kEmptyHash) {
+        // We're searching for the creation txn of the given contract: popular contracts may have dozens of state changes
+        // due to ETH deposits/withdrawals after contract creation, so it is optimal to search from the beginning even if
+        // the contract has multiple incarnations.
+        // Navigate forward on history index of accounts and probe history periodically (cheaper than traversing history)
+        // so as a result we'll have small range of blocks for binary search or full scan.
+        const auto key = db::code_domain_key(contract_address);
+        db::kv::api::IndexRangeQuery query{
+            .table = db::table::kAccountsHistoryIdx,
+            .key = key,
+            .from_timestamp = 0,
+            .to_timestamp = -1,
+            .ascending_order = true};
+        auto paginated_result = co_await tx->index_range(std::move(query));
+        auto it = co_await paginated_result.begin();
+
+        uint64_t count = 0;
+        TxnId prev_txn_id = 0;
+        TxnId next_txn_id = 0;
+        while (const auto value = co_await it.next()) {
+            const auto txn_id = static_cast<TxnId>(*value);
+            if (count++ % kTxnProbeWindowSize != 0) {
+                next_txn_id = txn_id;
+                continue;
+            }
+            SILK_DEBUG << "txn_id:" << txn_id << ", count: " << count;
+
+            db::kv::api::HistoryPointQuery hpq{
+                .table = db::table::kAccountDomain,
+                .key = key,
+                .timestamp = *value};
+            auto result = co_await tx->history_seek(std::move(hpq));
+            if (!result.success) {
+                reply = make_json_content(request, nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+
+            if (result.value.empty()) {
+                SILK_DEBUG << "history bytes empty";
+                prev_txn_id = txn_id;
+                continue;
+            }
+            const auto account{Account::from_encoded_storage_v3(result.value)};
+            SILK_DEBUG << "Decoded account: " << *account;
+
+            if (account->incarnation == account_opt.value().incarnation) {
+                next_txn_id = txn_id;
+                break;
+            }
+            prev_txn_id = txn_id;
+        }
+        if (next_txn_id == 0) {
+            next_txn_id = prev_txn_id + 1;
+        }
+
+        db::txn::TxNum creation_txn_id = 0;
+        auto index = co_await async_binary_search(static_cast<size_t>(next_txn_id - prev_txn_id), [&](size_t i) -> Task<bool> {
+            auto txn_id = i + prev_txn_id;
+
+            db::kv::api::HistoryPointQuery hpq{
+                .table = db::table::kAccountDomain,
+                .key = key,
+                .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
+            auto result = co_await tx->history_seek(std::move(hpq));
+            if (!result.success) {
+                co_return false;
+            }
+            if (result.value.empty()) {
+                creation_txn_id = std::max(static_cast<uint64_t>(txn_id), creation_txn_id);
+                co_return false;
+            }
+            co_return true;
+        });
+
+        if (creation_txn_id == 0) {
+            SILK_DEBUG << "binary search in [" << prev_txn_id << ", " << next_txn_id << "] found nothing";
             reply = make_json_content(request, nlohmann::detail::value_t::null);
-            co_await tx->close();
-            co_return;
         }
+        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        if (block_num_opt) {
+            block_num = block_num_opt.value();
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, provider);
+            const auto first_txn_id = co_await tx->first_txn_num_in_block(block_num);
+            SILK_DEBUG << "block_num: " << block_num
+                       << ", min_txn_id: " << min_txn_id
+                       << ", first_txn_id: " << first_txn_id;
 
-        auto account_history_cursor = co_await tx->cursor(table::kAccountHistoryName);
-        auto account_change_set_cursor = co_await tx->cursor_dup_sort(table::kAccountChangeSetName);
-
-        auto key_value = co_await account_history_cursor->seek(account_history_key(contract_address, 0));
-
-        std::vector<BlockNum> account_block_numbers;
-
-        BlockNum max_block_prev_chunk = 0;
-        roaring::Roaring64Map bitmap;
-
-        if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
-            reply = make_json_content(request, nlohmann::detail::value_t::null);
-            co_await tx->close();
-            co_return;
-        }
-        while (true) {
-            bitmap = bitmap::parse(key_value.value);
-            auto const max_block = bitmap.maximum();
-            auto block_key{db::block_key(max_block)};
-            auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
-            if (!address_and_payload.starts_with(contract_address_byte_view)) {
-                reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
+            TxnId tx_index{0};
+            if (creation_txn_id == min_txn_id) {
+                tx_index = index + prev_txn_id - min_txn_id - 1;
+            } else {
+                tx_index = creation_txn_id - min_txn_id - 1;
             }
-            auto payload = address_and_payload.substr(contract_address_byte_view.length());
-            auto account = Account::from_encoded_storage(payload);
 
-            if (!account) {
+            const auto chain_storage{tx->create_storage()};
+            const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, tx_index);
+            if (!transaction) {
+                SILK_DEBUG << "No transaction found in block " << block_num << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
                 co_await tx->close();
                 co_return;
             }
 
-            if (account->incarnation >= plain_state_account->incarnation) {
-                break;
-            }
-            max_block_prev_chunk = max_block;
-            key_value = co_await account_history_cursor->next();
+            const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
 
-            if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
-                break;
-            }
-        }
-
-        uint64_t cardinality = bitmap.cardinality();
-        account_block_numbers.resize(cardinality);
-        bitmap.toUint64Array(account_block_numbers.data());
-
-        uint64_t idx = 0;
-        for (uint64_t i = 0; i < cardinality; ++i) {
-            auto block_number = account_block_numbers[i];
-            auto block_key{db::block_key(block_number)};
-            auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
-
-            if (!address_and_payload.starts_with(contract_address_byte_view)) {
+            if (block_with_hash) {
+                trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+                const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
+                reply = make_json_content(request, result);
+            } else {
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
             }
-
-            auto payload = address_and_payload.substr(contract_address_byte_view.length());
-            auto account = Account::from_encoded_storage(payload);
-
-            if (!account) {
-                reply = make_json_content(request, nlohmann::detail::value_t::null);
-                co_await tx->close();
-                co_return;
-            }
-
-            if (account.has_value() && account->incarnation >= plain_state_account->incarnation) {
-                idx = i;
-                break;
-            }
-        }
-
-        auto block_found = max_block_prev_chunk;
-        if (idx > 0) {
-            block_found = account_block_numbers[idx - 1];
-        }
-
-        const auto chain_storage{tx->create_storage()};
-
-        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_found);
-        if (block_with_hash) {
-            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-            const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
-            reply = make_json_content(request, result);
         } else {
+            SILK_DEBUG << "No block found for txn_id " << creation_txn_id;
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
     } catch (const std::invalid_argument& iv) {
@@ -681,7 +701,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
 }
 
 struct BlockInfo {
-    uint64_t number{0};
+    BlockNum block_num{0};
     BlockDetails details;
 };
 
@@ -695,10 +715,10 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     }
 
     const auto address = params[0].get<evmc::address>();
-    auto block_number = params[1].get<BlockNum>();
+    auto block_num = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
-    SILK_DEBUG << "address: " << address << ", block_number: " << block_number << ", page_size: " << page_size;
+    SILK_DEBUG << "address: " << address << ", block_num: " << block_num << ", page_size: " << page_size;
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
@@ -707,21 +727,21 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
         co_return;
     }
 
-    if (block_number > 0) {
-        --block_number;
+    if (block_num > 0) {
+        --block_num;
     }
     auto tx = co_await database_->begin();
     try {
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
 
         db::kv::api::Timestamp from_timestamp{-1};
-        if (block_number > 0) {
-            const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_number, provider);
+        if (block_num > 0) {
+            const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_num, provider);
             from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
-            SILK_DEBUG << "block_number: " << block_number << " max_tx_num: " << max_tx_num;
+            SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        const auto results = co_await collect_transactions_with_receipts(*tx, provider, block_number, address, from_timestamp, false, page_size);
+        const auto results = co_await collect_transactions_with_receipts(*tx, provider, block_num, address, from_timestamp, false, page_size);
 
         reply = make_json_content(request, results);
     } catch (const std::invalid_argument& iv) {
@@ -748,10 +768,10 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     }
 
     const auto address = params[0].get<evmc::address>();
-    auto block_number = params[1].get<BlockNum>();
+    auto block_num = params[1].get<BlockNum>();
     const auto page_size = params[2].get<uint64_t>();
 
-    SILK_DEBUG << "address: " << address << " block_number: " << block_number << " page_size: " << page_size;
+    SILK_DEBUG << "address: " << address << " block_num: " << block_num << " page_size: " << page_size;
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
@@ -763,54 +783,22 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     auto tx = co_await database_->begin();
 
     try {
-        auto call_from_cursor = co_await tx->cursor(table::kCallFromIndexName);
-        auto call_to_cursor = co_await tx->cursor(table::kCallToIndexName);
+        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
 
-        bool is_last_page = false;
-
-        if (block_number == 0) {
-            is_last_page = true;
-        } else {
-            // Internal search code considers blockNum [including], so adjust the value
-            ++block_number;
+        db::kv::api::Timestamp from_timestamp{-1};
+        if (block_num > 0) {
+            const auto max_tx_num = co_await db::txn::min_tx_num(*tx, block_num + 1, provider);
+            from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
+            SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        ForwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
-        ForwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
-        FromToBlockProvider from_to_provider{true, &from_provider, &to_provider};
+        auto results = co_await collect_transactions_with_receipts(*tx, provider, block_num, address, from_timestamp, true, page_size);
 
-        uint64_t result_count = 0;
-        bool has_more = true;
-
-        TransactionsWithReceipts results{
-            .last_page = is_last_page};
-
-        while (result_count < page_size && has_more) {
-            std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
-
-            has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
-
-            for (const auto& item : transactions_with_receipts_vec) {
-                results.receipts.insert(results.receipts.end(), item.receipts.begin(), item.receipts.end());
-                results.transactions.insert(results.transactions.end(), item.transactions.begin(), item.transactions.end());
-                results.blocks.insert(results.blocks.end(), item.blocks.begin(), item.blocks.end());
-
-                result_count += item.transactions.size();
-
-                if (result_count >= page_size) {
-                    break;
-                }
-            }
-        }
-
-        // Reverse results
         std::reverse(results.transactions.begin(), results.transactions.end());
         std::reverse(results.receipts.begin(), results.receipts.end());
         std::reverse(results.blocks.begin(), results.blocks.end());
 
-        results.first_page = !has_more;
         reply = make_json_content(request, results);
-
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -828,7 +816,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     kv::api::Transaction& tx,
     db::chain::CanonicalBodyForStorageProvider& provider,
-    BlockNum block_number,
+    BlockNum block_num_param,
     const evmc::address& address,
     db::kv::api::Timestamp from_timestamp,
     bool ascending, uint64_t page_size) {
@@ -852,9 +840,14 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     auto it_from = co_await paginated_result_from.begin();
     auto it_to = co_await paginated_result_to.begin();
 
-    TransactionsWithReceipts results{
-        .first_page = block_number == 0,
-        .last_page = true};
+    TransactionsWithReceipts results;
+    if (ascending) {
+        results.first_page = true;
+        results.last_page = block_num_param == 0;
+    } else {
+        results.first_page = block_num_param == 0;
+        results.last_page = true;
+    }
 
     std::map<std::string, Receipt> receipts;
     std::optional<BlockInfo> block_info;
@@ -865,18 +858,18 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
 
     while (const auto value = co_await it.next()) {
         const auto txn_id = static_cast<TxnId>(*value);
-        const auto block_number_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
-        if (!block_number_opt) {
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
+        if (!block_num_opt) {
             SILK_DEBUG << "No block found for txn_id " << txn_id;
             break;
         }
-        const auto bn = block_number_opt.value();
-        const auto max_txn_id = co_await db::txn::max_tx_num(tx, bn, provider);
-        const auto min_txn_id = co_await db::txn::min_tx_num(tx, bn, provider);
+        const auto block_num = block_num_opt.value();
+        const auto max_txn_id = co_await db::txn::max_tx_num(tx, block_num, provider);
+        const auto min_txn_id = co_await db::txn::min_tx_num(tx, block_num, provider);
         const auto txn_index = txn_id - min_txn_id - 1;
         SILK_DEBUG
             << "txn_id: " << txn_id
-            << " block_number: " << bn
+            << " block_num: " << block_num
             << ", txn_index: " << txn_index
             << ", max_txn_id: " << max_txn_id
             << ", min_txn_id: " << min_txn_id
@@ -888,19 +881,19 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         }
 
         block_num_changed = false;
-        if (block_info && block_info.value().number != bn) {
+        if (block_info && (block_info->block_num != block_num)) {
             block_info.reset();
         }
 
         if (!block_info) {
-            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, bn);
+            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, block_num);
             if (!block_with_hash) {
-                SILK_DEBUG << "Not found block no.  " << bn;
+                SILK_DEBUG << "Not found block no.  " << block_num;
                 co_return results;
             }
 
             auto rr = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
-            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << bn;
+            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << block_num;
 
             std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
                 receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
@@ -916,13 +909,17 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         }
 
         if (results.transactions.size() >= page_size && block_num_changed) {
-            results.last_page = false;
+            if (ascending) {
+                results.first_page = false;
+            } else {
+                results.last_page = false;
+            }
             break;
         }
 
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(bn, txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, txn_index);
         if (!transaction) {
-            SILK_DEBUG << "No transaction found in block " << bn << " for index " << txn_index;
+            SILK_DEBUG << "No transaction found in block " << block_num << " for index " << txn_index;
             co_return results;
         }
         results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));
@@ -954,7 +951,7 @@ Task<bool> OtsRpcApi::trace_blocks(
         TransactionsWithReceipts transactions_with_receipts;
 
         auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
-        auto next_block = from_to_response.block_number;
+        auto next_block = from_to_response.block_num;
         has_more = from_to_response.has_more;
         if (!from_to_response.has_more && next_block == 0) {
             break;
@@ -967,9 +964,9 @@ Task<bool> OtsRpcApi::trace_blocks(
     co_return has_more;
 }
 
-Task<void> OtsRpcApi::trace_block(kv::api::Transaction& tx, BlockNum block_number, const evmc::address& search_addr, TransactionsWithReceipts& results) {
+Task<void> OtsRpcApi::trace_block(kv::api::Transaction& tx, BlockNum block_num, const evmc::address& search_addr, TransactionsWithReceipts& results) {
     const auto chain_storage = tx.create_storage();
-    const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_number);
+    const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
     if (!block_with_hash) {
         co_return;
     }
@@ -1227,11 +1224,10 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
             roaring::Roaring64Map bitmap = bitmap::parse(chunk_provider_res.chunk);
 
             // It can happen that on the first chunk we'll get a chunk that contains
-            // the last block <= maxBlock in the middle of the chunk/bitmap, so we
+            // the last block <= max_block_ in the middle of the chunk/bitmap, so we
             // remove all blocks after it (since there is no AdvanceIfNeeded() in
             // IntIterable64)
             if (max_block_ != std::numeric_limits<uint64_t>::max()) {
-                // bm.RemoveRange(maxBlock+1, MaxBlockNum)
                 bitmap.removeRange(max_block_ + 1, std::numeric_limits<uint64_t>::max());
             }
 
@@ -1315,14 +1311,14 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-        next_from_ = from_prov_res.block_number;
+        next_from_ = from_prov_res.block_num;
         has_more_from_ = from_prov_res.has_more || next_from_ != 0;
 
         auto to_prov_res = co_await call_to_provider_->get();
         if (to_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-        next_to_ = to_prov_res.block_number;
+        next_to_ = to_prov_res.block_num;
         has_more_to_ = to_prov_res.has_more || next_to_ != 0;
     }
 
@@ -1356,7 +1352,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
         if (from_prov_res.error) {
             co_return BlockProviderResponse{0, false, true};
         }
-        next_from_ = from_prov_res.block_number;
+        next_from_ = from_prov_res.block_num;
         has_more_from_ = from_prov_res.has_more || next_from_ != 0;
     }
 
@@ -1367,7 +1363,7 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
             co_return BlockProviderResponse{0, false, true};
         }
 
-        next_to_ = to_prov_res.block_number;
+        next_to_ = to_prov_res.block_num;
         has_more_to_ = to_prov_res.has_more || next_to_ != 0;
     }
 

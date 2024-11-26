@@ -76,7 +76,7 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
     MOCK_METHOD((BlockId), last_finalized_block, (), (const, override));
     MOCK_METHOD((BlockId), last_safe_block, (), (const, override));
 
-    MOCK_METHOD((std::optional<BlockNum>), get_block_number, (Hash), (const, override));
+    MOCK_METHOD((std::optional<BlockNum>), get_block_num, (Hash), (const, override));
 
     MOCK_METHOD((std::vector<BlockHeader>), get_last_headers, (uint64_t), (const, override));
     MOCK_METHOD((BlockNum), block_progress, (), (const, override));

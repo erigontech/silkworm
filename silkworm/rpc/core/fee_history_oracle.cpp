@@ -44,16 +44,7 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     if (fh.blob_gas_used_ratio.empty()) {
         json["blobGasUsedRatio"] = nullptr;
     } else {
-        auto json1 = nlohmann::json::array();
-        for (size_t k{0}; k < fh.blob_gas_used_ratio.size(); ++k) {
-            auto& value{fh.blob_gas_used_ratio[k]};
-            if (value == 0) {
-                json1.push_back(0);
-            } else {
-                json1.push_back(value);
-            }
-        }
-        json["blobGasUsedRatio"] = json1;
+        json["blobGasUsedRatio"] = fh.blob_gas_used_ratio;
     }
     json["oldestBlock"] = to_quantity(fh.oldest_block);
 
@@ -130,22 +121,22 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
     fee_history.gas_used_ratio.resize(block_range.num_blocks);
     fee_history.blob_gas_used_ratio.resize(block_range.num_blocks);
 
-    const auto oldest_block_number = block_range.last_block_number + 1 - block_range.num_blocks;
+    const auto oldest_block_num = block_range.last_block_num + 1 - block_range.num_blocks;
     auto first_missing = block_range.num_blocks;
-    for (auto idx = block_range.num_blocks, next = oldest_block_number; idx > 0; --idx) {
-        const auto block_number = ++next - 1;
-        if (block_number > block_range.last_block_number) {
+    for (auto idx = block_range.num_blocks, next = oldest_block_num; idx > 0; --idx) {
+        const auto block_num = ++next - 1;
+        if (block_num > block_range.last_block_num) {
             continue;
         }
 
-        BlockFees block_fees{block_number};
+        BlockFees block_fees{block_num};
 
         if (!reward_percentiles.empty()) {
-            if (block_number >= block_range.last_block->block.header.number) {
+            if (block_num >= block_range.last_block->block.header.number) {
                 block_fees.block = block_range.last_block;
                 block_fees.receipts = co_await receipts_provider_(*block_fees.block);
             } else {
-                const auto block_with_hash = co_await block_provider_(block_number);
+                const auto block_with_hash = co_await block_provider_(block_num);
                 if (!block_with_hash) {
                     continue;
                 }
@@ -156,7 +147,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
             }
             block_fees.block_header = block_fees.block->block.header;
         } else {
-            const auto block_header = co_await block_header_provider_(block_number);
+            const auto block_header = co_await block_header_provider_(block_num);
             if (!block_header) {
                 continue;
             }
@@ -164,8 +155,8 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
         }
         co_await process_block(block_fees, reward_percentiles);
 
-        ensure(block_fees.block_number >= oldest_block_number, "fee_history: block_number lower than oldest");
-        const auto index = block_fees.block_number - oldest_block_number;
+        ensure(block_fees.block_num >= oldest_block_num, "fee_history: block_num lower than oldest");
+        const auto index = block_fees.block_num - oldest_block_num;
         if (block_fees.block_header) {
             fee_history.rewards[index] = block_fees.rewards;
             fee_history.base_fees_per_gas[index] = block_fees.base_fee;
@@ -191,7 +182,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
     fee_history.blob_base_fees_per_gas.resize(first_missing + 1);
     fee_history.gas_used_ratio.resize(first_missing);
     fee_history.blob_gas_used_ratio.resize(first_missing);
-    fee_history.oldest_block = oldest_block_number;
+    fee_history.oldest_block = oldest_block_num;
 
     co_return fee_history;
 }
@@ -203,9 +194,9 @@ Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, ui
     }
 
     if (max_history != 0) {
-        const auto latest_block_number = co_await latest_block_provider_();
+        const auto latest_block_num = co_await latest_block_provider_();
         // Limit retrieval to the given number of latest blocks
-        const auto too_old_count = latest_block_number - max_history - newest_block + block_count;
+        const auto too_old_count = latest_block_num - max_history - newest_block + block_count;
         if (too_old_count > 0) {
             // too_old_count is the number of requested blocks that are too old to be served
             if (block_count > too_old_count) {
@@ -230,10 +221,10 @@ bool sort_by_reward(std::pair<intx::uint256, uint64_t>& p1, const std::pair<intx
 
 Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vector<int8_t>& reward_percentiles) {
     auto& header = *(block_fees.block_header);
-    auto next_block_number = header.number + 1;
+    auto next_block_num = header.number + 1;
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
 
-    if (config_.is_london(next_block_number)) {
+    if (config_.is_london(next_block_num)) {
         block_fees.next_base_fee = protocol::expected_base_fee_per_gas(header);
     } else {
         block_fees.next_base_fee = 0;  // EIP-4844 blob gas cost (calc_data_fee)block_fees.next_blob_base_fee

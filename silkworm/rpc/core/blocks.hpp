@@ -35,28 +35,28 @@ inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 // TODO(canepat) migrate to ChainStorage?
 
-Task<bool> is_latest_block_number(BlockNum block_number, db::kv::api::Transaction& tx);
+Task<bool> is_latest_block_num(BlockNum block_num, db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_block_number_by_tag(const std::string& block_id, db::kv::api::Transaction& tx);
+Task<BlockNum> get_block_num_by_tag(const std::string& block_id, db::kv::api::Transaction& tx);
 
-Task<std::pair<BlockNum, bool>> get_block_number(const std::string& block_id, db::kv::api::Transaction& tx, bool latest_required);
+Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, db::kv::api::Transaction& tx, bool latest_required);
 
-Task<BlockNum> get_block_number(const std::string& block_id, db::kv::api::Transaction& tx);
+Task<BlockNum> get_block_num(const std::string& block_id, db::kv::api::Transaction& tx);
 
-Task<std::pair<BlockNum, bool>> get_block_number(const BlockNumberOrHash& bnoh, db::kv::api::Transaction& tx);
+Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash, db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_current_block_number(db::kv::api::Transaction& tx);
+Task<BlockNum> get_current_block_num(db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_highest_block_number(db::kv::api::Transaction& tx);
+Task<BlockNum> get_max_block_num(db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_latest_block_number(db::kv::api::Transaction& tx);
+Task<BlockNum> get_latest_block_num(db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_latest_executed_block_number(db::kv::api::Transaction& tx);
+Task<BlockNum> get_latest_executed_block_num(db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_forkchoice_finalized_block_number(db::kv::api::Transaction& tx);
+Task<BlockNum> get_forkchoice_finalized_block_num(db::kv::api::Transaction& tx);
 
-Task<BlockNum> get_forkchoice_safe_block_number(db::kv::api::Transaction& tx);
+Task<BlockNum> get_forkchoice_safe_block_num(db::kv::api::Transaction& tx);
 
-Task<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, db::kv::api::Transaction& tx);
+Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash, db::kv::api::Transaction& tx);
 
 }  // namespace silkworm::rpc::core

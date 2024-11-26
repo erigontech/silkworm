@@ -51,7 +51,7 @@ static rpc::NewPayloadRequest make_fixed_payload_request(rpc::ExecutionPayload::
     return {
         .execution_payload = rpc::ExecutionPayload{
             .version = version,
-            .number = 1,
+            .block_num = 1,
             .timestamp = 0x05,
             .gas_limit = 0x1c9c380,
             .gas_used = 0x0,
@@ -120,22 +120,22 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
     for (size_t i{0}; i < requests.size(); ++i) {
         const auto& request{requests[i]};
         const auto& payload{request.execution_payload};
-        BlockId block_number_or_hash{payload.number, payload.block_hash};
-        execution::api::BlockNumberOrHash parent_number_or_hash{payload.parent_hash};
+        BlockId block_num_or_hash{payload.block_num, payload.block_hash};
+        execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
         SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
-            EXPECT_CALL(*execution_service, get_header(parent_number_or_hash))
+            EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
                     co_return BlockHeader{};
                 }));
-            EXPECT_CALL(*execution_service, get_td(parent_number_or_hash))
+            EXPECT_CALL(*execution_service, get_td(parent_block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
                     co_return kSepoliaConfig.terminal_total_difficulty;
                 }));
             EXPECT_CALL(*execution_service, insert_blocks(_))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> { co_return execution::api::InsertionResult{}; }));
             EXPECT_CALL(*execution_service, get_header_hash_number(Hash{payload.block_hash}))
-                .WillOnce(InvokeWithoutArgs([=]() -> Task<std::optional<BlockNum>> { co_return payload.number; }));
-            EXPECT_CALL(*execution_service, validate_chain(block_number_or_hash))
+                .WillOnce(InvokeWithoutArgs([=]() -> Task<std::optional<BlockNum>> { co_return payload.block_num; }));
+            EXPECT_CALL(*execution_service, validate_chain(block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([&]() -> Task<execution::api::ValidationResult> {
                     co_await sleep(1h);  // simulate exaggeratedly long-running task
                     co_return execution::api::ValidChain{};

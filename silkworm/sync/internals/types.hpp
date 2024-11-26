@@ -66,7 +66,7 @@ std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization)
 
 struct Announce {
     Hash hash;
-    BlockNum number = 0;
+    BlockNum block_num{0};
 };
 
 }  // namespace silkworm

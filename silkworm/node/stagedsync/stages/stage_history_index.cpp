@@ -345,8 +345,8 @@ void HistoryIndex::collect_bitmaps_from_changeset(RWTxn& txn, const MapConfig& s
     size_t bitmaps_size{0};   // To account flushing threshold
     uint16_t flush_count{0};  // To account number of flushings
 
-    const BlockNum max_block_number{to};
-    BlockNum reached_block_number{0};
+    const BlockNum max_block_num{to};
+    BlockNum reached_block_num{0};
 
     auto start_key{block_key(from + 1)};
     auto source = txn.ro_cursor_dup_sort(source_config);
@@ -354,8 +354,8 @@ void HistoryIndex::collect_bitmaps_from_changeset(RWTxn& txn, const MapConfig& s
                              : source->find(to_slice(start_key), false)};
     while (source_data) {
         auto source_data_key_view{from_slice(source_data.key)};
-        reached_block_number = endian::load_big_u64(source_data_key_view.data());
-        if (reached_block_number > max_block_number) {
+        reached_block_num = endian::load_big_u64(source_data_key_view.data());
+        if (reached_block_num > max_block_num) {
             break;
         }
         source_data_key_view.remove_prefix(sizeof(BlockNum));
@@ -364,7 +364,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(RWTxn& txn, const MapConfig& s
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             std::unique_lock log_lck(sl_mutex_);
-            current_key_ = std::to_string(reached_block_number);
+            current_key_ = std::to_string(reached_block_num);
             log_time = now + 5s;
         }
 
@@ -385,9 +385,9 @@ void HistoryIndex::collect_bitmaps_from_changeset(RWTxn& txn, const MapConfig& s
                 bitmaps_size += bitmaps_key.size();
                 bitmaps_size += sizeof(uint64_t);  // see Roaring64Map()::getSizeInBytes()
             }
-            bitmaps_it->second.add(reached_block_number);
+            bitmaps_it->second.add(reached_block_num);
             bitmaps_size += sizeof(uint32_t);  // All blocks <= UINT32_MAX
-                                               // Is there a chain exceeding that height ?
+                                               // Is there a chain exceeding that block_num ?
 
             source_data = source->to_current_next_multi(false);
         }
@@ -414,25 +414,25 @@ std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
     std::map<Bytes, bool> ret;
     Bytes unique_key{};
 
-    const BlockNum max_block_number{std::max(from, to)};
+    const BlockNum max_block_num{std::max(from, to)};
 
     auto start_key{block_key(std::min(from, to) + 1)};
     auto source = txn.ro_cursor_dup_sort(source_config);
     auto source_data{storage ? source->lower_bound(to_slice(start_key), false)
                              : source->find(to_slice(start_key), false)};
 
-    BlockNum reached_block_number{0};
+    BlockNum reached_block_num{0};
     while (source_data) {
         auto source_data_key_view{from_slice(source_data.key)};
-        reached_block_number = endian::load_big_u64(source_data_key_view.data());
-        if (reached_block_number > max_block_number) break;
+        reached_block_num = endian::load_big_u64(source_data_key_view.data());
+        if (reached_block_num > max_block_num) break;
         source_data_key_view.remove_prefix(sizeof(BlockNum));
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             std::unique_lock log_lck(sl_mutex_);
-            current_key_ = std::to_string(reached_block_number);
+            current_key_ = std::to_string(reached_block_num);
             log_time = now + 5s;
         }
 

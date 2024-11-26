@@ -482,7 +482,7 @@ void do_stages(EnvConfig& config) {
 
         auto result{crs.to_first(/*throw_notfound =*/false)};
         while (result) {
-            size_t height{endian::load_big_u64(static_cast<uint8_t*>(result.value.data()))};
+            size_t block_num{endian::load_big_u64(static_cast<uint8_t*>(result.value.data()))};
 
             // Handle "prune_" stages
             size_t offset{0};
@@ -492,7 +492,7 @@ void do_stages(EnvConfig& config) {
             }
 
             bool Known{stages::is_known_stage(result.key.char_ptr() + offset)};
-            std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
+            std::cout << (boost::format(fmt_row) % result.key.as_string() % block_num %
                           (Known ? std::string(8, ' ') : "Unknown"))
                       << "\n";
             result = crs.to_next(/*throw_notfound =*/false);
@@ -539,7 +539,7 @@ void do_migrations(EnvConfig& config) {
     env.close(config.shared);
 }
 
-void do_stage_set(EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
+void do_stage_set(EnvConfig& config, const std::string& stage_name, uint32_t new_block_num, bool dry) {
     config.readonly = false;
 
     if (!config.exclusive) {
@@ -555,13 +555,13 @@ void do_stage_set(EnvConfig& config, const std::string& stage_name, uint32_t new
         throw std::runtime_error("Either non Silkworm db or table " +
                                  std::string(table::kSyncStageProgress.name) + " not found");
     }
-    auto old_height{stages::read_stage_progress(txn, stage_name.c_str())};
-    stages::write_stage_progress(txn, stage_name.c_str(), new_height);
+    auto old_block_num{stages::read_stage_progress(txn, stage_name.c_str())};
+    stages::write_stage_progress(txn, stage_name.c_str(), new_block_num);
     if (!dry) {
         txn.commit_and_renew();
     }
 
-    std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n\n";
+    std::cout << "\n Stage " << stage_name << " touched from " << old_block_num << " to " << new_block_num << "\n\n";
 }
 
 static silkworm::stagedsync::BodiesStageFactory make_bodies_stage_factory(
@@ -1404,7 +1404,7 @@ void print_canonical_blocks(EnvConfig& config, BlockNum from, std::optional<Bloc
     ensure(last_data.key.size() == sizeof(BlockNum), "Table CanonicalHashes has unexpected key size");
 
     // Use last block as max block if to is missing and perform range checks
-    BlockNum last{block_number_from_key(last_data.key)};
+    BlockNum last{block_num_from_key(last_data.key)};
     if (to) {
         ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
         ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
@@ -1416,15 +1416,15 @@ void print_canonical_blocks(EnvConfig& config, BlockNum from, std::optional<Bloc
     // Read the range of block headers and bodies from database
     auto block_headers_table{txn.ro_cursor(table::kHeaders)};
     auto block_bodies_table{txn.ro_cursor(table::kBlockBodies)};
-    for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
+    for (BlockNum block_num{from}; block_num <= *to; block_num += step) {
         // Lookup each canonical block hash from each block number
-        auto block_number_key{block_key(block_number)};
-        auto ch_data{canonical_hashes_table->find(to_slice(block_number_key), /*throw_notfound=*/false)};
-        ensure(ch_data.done, [&]() { return "Table CanonicalHashes does not contain key=" + to_hex(block_number_key); });
+        auto block_num_key{block_key(block_num)};
+        auto ch_data{canonical_hashes_table->find(to_slice(block_num_key), /*throw_notfound=*/false)};
+        ensure(ch_data.done, [&]() { return "Table CanonicalHashes does not contain key=" + to_hex(block_num_key); });
         const auto block_hash{to_bytes32(from_slice(ch_data.value))};
 
         // Read and decode each canonical block header
-        auto block_key{db::block_key(block_number, block_hash.bytes)};
+        auto block_key{db::block_key(block_num, block_hash.bytes)};
         auto bh_data{block_headers_table->find(to_slice(block_key), /*throw_notfound=*/false)};
         ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{from_slice(bh_data.value)};
@@ -1441,7 +1441,7 @@ void print_canonical_blocks(EnvConfig& config, BlockNum from, std::optional<Bloc
         const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
-        std::cout << "\nBlock number=" << block_number << "\n\n";
+        std::cout << "\nBlock number=" << block_num << "\n\n";
         print_header(header);
         std::cout << "\n";
         print_body(stored_body);
@@ -1460,7 +1460,7 @@ void print_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, 
     ensure(last_data.key.size() == sizeof(BlockNum) + kHashLength, "Table Headers has unexpected key size");
 
     // Use last block as max block if to is missing and perform range checks
-    BlockNum last{block_number_from_key(last_data.key)};
+    BlockNum last{block_num_from_key(last_data.key)};
     if (to) {
         ensure(from <= *to, [&]() { return "Block from=" + std::to_string(from) + " must not be greater than to=" + std::to_string(*to); });
         ensure(*to <= last, [&]() { return "Block to=" + std::to_string(*to) + " must not be greater than last=" + std::to_string(last); });
@@ -1471,9 +1471,9 @@ void print_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, 
 
     // Read the range of block headers and bodies from database
     auto block_bodies_table{txn.ro_cursor(table::kBlockBodies)};
-    for (BlockNum block_number{from}; block_number <= *to; block_number += step) {
+    for (BlockNum block_num{from}; block_num <= *to; block_num += step) {
         // Read and decode each block header
-        auto block_key{db::block_key(block_number)};
+        auto block_key{db::block_key(block_num)};
         auto bh_data{block_headers_table->lower_bound(to_slice(block_key), /*throw_notfound=*/false)};
         ensure(bh_data.done, [&]() { return "Table Headers does not contain key=" + to_hex(block_key); });
         ByteView block_header_data{from_slice(bh_data.value)};
@@ -1490,7 +1490,7 @@ void print_blocks(EnvConfig& config, BlockNum from, std::optional<BlockNum> to, 
         const auto stored_body{unwrap_or_throw(decode_stored_block_body(block_body_data))};
 
         // Print block information to console
-        std::cout << "\nBlock number=" << block_number << "\n\n";
+        std::cout << "\nBlock number=" << block_num << "\n\n";
         print_header(header);
         std::cout << "\n";
         print_body(stored_body);
@@ -1581,7 +1581,7 @@ void do_extract_headers(EnvConfig& config, const std::string& file_name, uint32_
                << "static const uint64_t kPreverifiedHashesMainnetInternal[] = {\n";
 
     BlockNum block_max{stages::read_stage_progress(txn, stages::kHeadersKey)};
-    BlockNum max_height{0};
+    BlockNum max_block_num{0};
     auto hashes_table{open_cursor(txn, table::kCanonicalHashes)};
 
     for (BlockNum block_num = 0; block_num <= block_max; block_num += step) {
@@ -1598,14 +1598,14 @@ void do_extract_headers(EnvConfig& config, const std::string& file_name, uint32_
             out_stream << hex << ",";
         }
         out_stream << "\n";
-        max_height = block_num;
+        max_block_num = block_num;
     }
 
     out_stream
         << "};\n"
         << "const uint64_t* preverified_hashes_mainnet_data(){return &kPreverifiedHashesMainnetInternal[0];}\n"
         << "size_t sizeof_preverified_hashes_mainnet_data(){return sizeof(kPreverifiedHashesMainnetInternal);}\n"
-        << "uint64_t preverified_hashes_mainnet_height(){return " << max_height << "ull;}\n\n";
+        << "uint64_t preverified_hashes_mainnet_block_num(){return " << max_block_num << "ull;}\n\n";
     out_stream.close();
 }
 
@@ -2095,7 +2095,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     // Void finish stage
     stages::write_stage_progress(txn, stages::kFinishKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << stages::kFinishKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kFinishKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void TxLookup stage
@@ -2105,7 +2105,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     stages::write_stage_progress(txn, stages::kTxLookupKey, 0);
     stages::write_stage_prune_progress(txn, stages::kTxLookupKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << stages::kTxLookupKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kTxLookupKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void LogIndex stage
@@ -2118,7 +2118,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     stages::write_stage_progress(txn, stages::kLogIndexKey, 0);
     stages::write_stage_prune_progress(txn, stages::kLogIndexKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << stages::kLogIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kLogIndexKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HistoryIndex (StorageHistoryIndex + AccountHistoryIndex) stage
@@ -2133,8 +2133,8 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     stages::write_stage_prune_progress(txn, stages::kStorageHistoryIndexKey, 0);
     stages::write_stage_prune_progress(txn, stages::kAccountHistoryIndexKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << stages::kStorageHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
-    SILK_INFO << stages::kAccountHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kStorageHistoryIndexKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kAccountHistoryIndexKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HashState stage
@@ -2150,7 +2150,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     stages::write_stage_progress(txn, stages::kHashStateKey, 0);
     stages::write_stage_prune_progress(txn, stages::kHashStateKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << stages::kHashStateKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kHashStateKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Intermediate Hashes stage
@@ -2162,7 +2162,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     txn->clear_map(source.map());
     stages::write_stage_progress(txn, stages::kIntermediateHashesKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << stages::kIntermediateHashesKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kIntermediateHashesKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Execution stage
@@ -2209,7 +2209,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
     stages::write_stage_progress(txn, stages::kExecutionKey, 0);
     stages::write_stage_prune_progress(txn, stages::kExecutionKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << stages::kExecutionKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO << stages::kExecutionKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
 
     if (!keep_senders) {
         // Void Senders stage
@@ -2219,7 +2219,7 @@ void do_reset_to_download(EnvConfig& config, bool keep_senders) {
         stages::write_stage_progress(txn, stages::kSendersKey, 0);
         stages::write_stage_prune_progress(txn, stages::kSendersKey, 0);
         txn.commit_and_renew();
-        SILK_INFO << stages::kSendersKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+        SILK_INFO << stages::kSendersKey << log::Args{"new block_num", "0", "in", StopWatch::format(sw.lap().second)};
         if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
     }
 
@@ -2269,7 +2269,7 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
 
     Freezer freezer{
         data_store.chaindata(),
-        data_store.ref().repository,
+        data_store.ref().blocks_repository,
         stage_scheduler,
         data_dir.temp().path(),
         keep_blocks,
@@ -2328,8 +2328,8 @@ int main(int argc, char* argv[]) {
                                                                     "Please be aware that this may corrupt or make your database unreadable. "
                                                                     "Do at your own risk.");
 
-    // List stages keys and their heights
-    auto cmd_stages = app_main.add_subcommand("stages", "List stages and their actual heights");
+    // List stages keys and their block numbers
+    auto cmd_stages = app_main.add_subcommand("stages", "List stages and their actual block numbers");
 
     // List migration keys
     auto cmd_migrations = app_main.add_subcommand("migrations", "List migrations");
@@ -2371,15 +2371,15 @@ int main(int argc, char* argv[]) {
         ->capture_default_str();
 
     // Stages tool
-    auto cmd_stageset = app_main.add_subcommand("stage-set", "Sets a stage to a new height");
+    auto cmd_stageset = app_main.add_subcommand("stage-set", "Sets a stage to a new block number");
     auto cmd_stageset_name_opt = cmd_stageset->add_option("--name", "Name of the stage to set")->required();
-    auto cmd_stageset_height_opt =
-        cmd_stageset->add_option("--height", "Block height to set the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_stageset_block_num_opt =
+        cmd_stageset->add_option("--block", "Block number to set the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
 
     // Unwind tool
-    auto cmd_staged_unwind = app_main.add_subcommand("unwind", "Unwind staged sync to a previous height");
-    auto cmd_staged_unwind_height =
-        cmd_staged_unwind->add_option("--height", "Block height to unwind the staged sync to")
+    auto cmd_staged_unwind = app_main.add_subcommand("unwind", "Unwind staged sync to a previous block number");
+    auto cmd_staged_unwind_block_num =
+        cmd_staged_unwind->add_option("--block", "Block number to unwind the staged sync to")
             ->required()
             ->check(CLI::Range(0u, UINT32_MAX));
     auto cmd_staged_unwind_remove_blocks =
@@ -2403,10 +2403,10 @@ int main(int argc, char* argv[]) {
     // Print the list of canonical blocks in specified range
     auto cmd_canonical_blocks =
         app_main.add_subcommand("canonical_blocks", "Print canonical blocks from database in specified range");
-    auto cmd_canonical_blocks_from = cmd_canonical_blocks->add_option("--from", "Block height to start with")
+    auto cmd_canonical_blocks_from = cmd_canonical_blocks->add_option("--from", "Block number to start with")
                                          ->required()
                                          ->check(CLI::Range(0u, UINT32_MAX));
-    auto cmd_canonical_blocks_to = cmd_canonical_blocks->add_option("--to", "Block height to end with")
+    auto cmd_canonical_blocks_to = cmd_canonical_blocks->add_option("--to", "Block number to end with")
                                        ->check(CLI::Range(0u, UINT32_MAX));
     auto cmd_canonical_blocks_step = cmd_canonical_blocks->add_option("--step", "Step every this number of blocks")
                                          ->default_val("1")
@@ -2414,10 +2414,10 @@ int main(int argc, char* argv[]) {
 
     // Print the list of saved blocks in specified range
     auto cmd_blocks = app_main.add_subcommand("blocks", "Print blocks from database in specified range");
-    auto cmd_blocks_from = cmd_blocks->add_option("--from", "Block height to start with")
+    auto cmd_blocks_from = cmd_blocks->add_option("--from", "Block number to start with")
                                ->required()
                                ->check(CLI::Range(0u, UINT32_MAX));
-    auto cmd_blocks_to = cmd_blocks->add_option("--to", "Block height to end with")
+    auto cmd_blocks_to = cmd_blocks->add_option("--to", "Block number to end with")
                              ->check(CLI::Range(0u, UINT32_MAX));
     auto cmd_blocks_step = cmd_blocks->add_option("--step", "Step every this number of blocks")
                                ->default_val("1")
@@ -2429,7 +2429,7 @@ int main(int argc, char* argv[]) {
 
     // Extract a list of historical headers in given file
     auto cmd_extract_headers = app_main.add_subcommand(
-        "extract-headers", "Hard-code historical headers, from block zero to the highest available");
+        "extract-headers", "Hard-code historical headers, from block zero to the max available");
     auto cmd_extract_headers_file_opt = cmd_extract_headers->add_option("--file", "Output file")->required();
     auto cmd_extract_headers_step_opt = cmd_extract_headers->add_option("--step", "Step every this number of blocks")
                                             ->default_val("100000")
@@ -2533,10 +2533,10 @@ int main(int argc, char* argv[]) {
             compare(src_config, cmd_compare_datadir->as<std::filesystem::path>(), cmd_compare_check_layout->as<bool>(),
                     cmd_compare_verbose->as<bool>(), cmd_compare_deep->as<bool>(), cmd_compare_table);
         } else if (*cmd_stageset) {
-            do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
+            do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_block_num_opt->as<uint32_t>(),
                          static_cast<bool>(*app_dry_opt));
         } else if (*cmd_staged_unwind) {
-            unwind(src_config, cmd_staged_unwind_height->as<uint32_t>(), static_cast<bool>(*cmd_staged_unwind_remove_blocks));
+            unwind(src_config, cmd_staged_unwind_block_num->as<uint32_t>(), static_cast<bool>(*cmd_staged_unwind_remove_blocks));
         } else if (*cmd_initgenesis) {
             do_init_genesis(data_dir, cmd_initgenesis_json_opt->as<std::string>(),
                             *cmd_initgenesis_chain_opt ? cmd_initgenesis_chain_opt->as<uint32_t>() : 0u,

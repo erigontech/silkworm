@@ -327,8 +327,8 @@ void IntraBlockState::set_transient_storage(const evmc::address& addr, const evm
     journal_.emplace_back(std::make_unique<state::TransientStorageChangeDelta>(addr, key, prev));
 }
 
-void IntraBlockState::write_to_db(uint64_t block_number) {
-    db_.begin_block(block_number, objects_.size());
+void IntraBlockState::write_to_db(uint64_t block_num) {
+    db_.begin_block(block_num, objects_.size());
 
     for (const auto& [address, storage] : storage_) {
         auto it1{objects_.find(address)};

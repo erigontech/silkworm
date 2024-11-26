@@ -145,23 +145,23 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     OldestFirstAnchorQueue queue;
 
     auto anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->block_height = 1;
+    anchor->block_num = 1;
     anchor->timestamp = now;
     queue.push(anchor);
 
     anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->block_height = 3;
+    anchor->block_num = 3;
     anchor->timestamp = now;
     queue.push(anchor);
 
     anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->block_height = 2;
+    anchor->block_num = 2;
     anchor->timestamp = now + 2s;
     queue.push(anchor);
     auto anchor2 = anchor;
 
     anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor->block_height = 4;
+    anchor->block_num = 4;
     anchor->timestamp = now + 4s;
     queue.push(anchor);
 
@@ -170,9 +170,9 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     SECTION("element ordering") {
         REQUIRE(queue.size() == 4);
 
-        REQUIRE((queue.top()->timestamp == now && queue.top()->block_height == 1));
+        REQUIRE((queue.top()->timestamp == now && queue.top()->block_num == 1));
         queue.pop();
-        REQUIRE((queue.top()->timestamp == now && queue.top()->block_height == 3));
+        REQUIRE((queue.top()->timestamp == now && queue.top()->block_num == 3));
         queue.pop();
         REQUIRE(queue.top()->timestamp == now + 2s);
         queue.pop();
@@ -185,9 +185,9 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     SECTION("in order iterating") {
         auto begin = queue.begin();
         auto& elem1 = *begin;
-        CHECK((elem1->timestamp == now && elem1->block_height == 1));
+        CHECK((elem1->timestamp == now && elem1->block_num == 1));
         auto& elem2 = *(++begin);
-        CHECK((elem2->timestamp == now && elem2->block_height == 3));
+        CHECK((elem2->timestamp == now && elem2->block_num == 3));
         auto& elem3 = *(++begin);
         CHECK((elem3->timestamp == now + 2s));
         auto& elem4 = *(++begin);
@@ -204,12 +204,12 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
         auto top_anchor = queue.top();
         queue.update(top_anchor, [&](auto& a) { a->timestamp = now + 5s; });
 
-        CHECK((queue.top()->timestamp == now && queue.top()->block_height == 3));
+        CHECK((queue.top()->timestamp == now && queue.top()->block_num == 3));
         REQUIRE(queue.size() == 4);
         queue.pop();
         queue.pop();
         queue.pop();
-        CHECK((queue.top()->timestamp == now + 5s && queue.top()->block_height == 1));
+        CHECK((queue.top()->timestamp == now + 5s && queue.top()->block_num == 1));
     }
 
     SECTION("erase an element") {
@@ -218,11 +218,11 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
         auto top_anchor = queue.top();
         queue.erase(top_anchor);
         CHECK(queue.size() == 3);
-        CHECK((queue.top()->timestamp == now && queue.top()->block_height == 3));
+        CHECK((queue.top()->timestamp == now && queue.top()->block_num == 3));
 
         queue.erase(anchor2);
         CHECK(queue.size() == 2);
-        CHECK((queue.top()->timestamp == now && queue.top()->block_height == 3));
+        CHECK((queue.top()->timestamp == now && queue.top()->block_num == 3));
         queue.pop();
         CHECK(queue.top()->timestamp == now + 4s);
     }
@@ -236,11 +236,11 @@ TEST_CASE("Oldest_First_Anchor_Queue - siblings handling") {
     BlockHeader dummy_header;
 
     auto anchor1 = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor1->block_height = 1;
+    anchor1->block_num = 1;
     anchor1->timestamp = now;
 
     auto anchor2 = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
-    anchor2->block_height = 1;  // same block number, it is a sibling
+    anchor2->block_num = 1;  // same block number, it is a sibling
     anchor2->timestamp = now;
 
     OldestFirstAnchorQueue queue;
@@ -263,16 +263,16 @@ TEST_CASE("Oldest_First_Link_Queue") {
     OldestFirstLinkQueue queue;
 
     auto link1 = std::make_shared<Link>(dummy_header, persisted);
-    link1->block_height = 1;
+    link1->block_num = 1;
 
     auto link2 = std::make_shared<Link>(dummy_header, persisted);
-    link2->block_height = 2;
+    link2->block_num = 2;
 
     auto link3 = std::make_shared<Link>(dummy_header, persisted);
-    link3->block_height = 3;
+    link3->block_num = 3;
 
     auto link4 = std::make_shared<Link>(dummy_header, persisted);
-    link4->block_height = 4;
+    link4->block_num = 4;
 
     queue.push(link1);
     queue.push(link4);
@@ -282,13 +282,13 @@ TEST_CASE("Oldest_First_Link_Queue") {
     SECTION("element ordering") {
         REQUIRE(queue.size() == 4);
 
-        REQUIRE(queue.top()->block_height == 1);
+        REQUIRE(queue.top()->block_num == 1);
         queue.pop();
-        REQUIRE(queue.top()->block_height == 2);
+        REQUIRE(queue.top()->block_num == 2);
         queue.pop();
-        REQUIRE(queue.top()->block_height == 3);
+        REQUIRE(queue.top()->block_num == 3);
         queue.pop();
-        REQUIRE(queue.top()->block_height == 4);
+        REQUIRE(queue.top()->block_num == 4);
         queue.pop();
 
         REQUIRE(queue.empty());
@@ -300,13 +300,13 @@ TEST_CASE("Oldest_First_Link_Queue") {
         auto top_link = queue.top();
         queue.erase(top_link);
         REQUIRE(queue.size() == 3);
-        REQUIRE(queue.top()->block_height == 2);
+        REQUIRE(queue.top()->block_num == 2);
 
         queue.erase(link3);
         REQUIRE(queue.size() == 2);
-        REQUIRE(queue.top()->block_height == 2);
+        REQUIRE(queue.top()->block_num == 2);
         queue.pop();
-        REQUIRE(queue.top()->block_height == 4);
+        REQUIRE(queue.top()->block_num == 4);
     }
 
     SECTION("siblings, same identity") {
@@ -323,7 +323,7 @@ TEST_CASE("Oldest_First_Link_Queue") {
         REQUIRE(queue.size() == 4);
 
         auto link1b = std::make_shared<Link>(dummy_header, persisted);
-        link1b->block_height = 1;
+        link1b->block_num = 1;
         link1b->persisted = !persisted;
 
         bool link1b_present = queue.contains(link1b);
@@ -347,31 +347,31 @@ TEST_CASE("Oldest_First_Link_Map") {
     OldestFirstLinkMap queue;
 
     auto link1 = std::make_shared<Link>(dummy_header, persisted);
-    link1->block_height = 1;
+    link1->block_num = 1;
     queue.push(link1);
 
     auto link4 = std::make_shared<Link>(dummy_header, persisted);
-    link4->block_height = 4;
+    link4->block_num = 4;
     queue.push(link4);
 
     auto link3 = std::make_shared<Link>(dummy_header, persisted);
-    link3->block_height = 3;
+    link3->block_num = 3;
     queue.push(link3);
 
     auto link2 = std::make_shared<Link>(dummy_header, persisted);
-    link2->block_height = 2;
+    link2->block_num = 2;
     queue.push(link2);
 
     SECTION("element ordering") {
         REQUIRE(queue.size() == 4);
 
-        REQUIRE(queue.top()->block_height == 1);  // top
+        REQUIRE(queue.top()->block_num == 1);  // top
         queue.pop();
-        REQUIRE(queue.top()->block_height == 2);
+        REQUIRE(queue.top()->block_num == 2);
         queue.pop();
-        REQUIRE(queue.top()->block_height == 3);
+        REQUIRE(queue.top()->block_num == 3);
         queue.pop();
-        REQUIRE(queue.top()->block_height == 4);
+        REQUIRE(queue.top()->block_num == 4);
         queue.pop();
 
         REQUIRE(queue.empty());
@@ -383,13 +383,13 @@ TEST_CASE("Oldest_First_Link_Map") {
         auto top_link = queue.top();
         queue.erase(top_link);
         REQUIRE(queue.size() == 3);
-        REQUIRE(queue.top()->block_height == 2);
+        REQUIRE(queue.top()->block_num == 2);
 
         queue.erase(link3);
         REQUIRE(queue.size() == 2);
-        REQUIRE(queue.top()->block_height == 2);
+        REQUIRE(queue.top()->block_num == 2);
         queue.pop();
-        REQUIRE(queue.top()->block_height == 4);
+        REQUIRE(queue.top()->block_num == 4);
     }
 
     SECTION("siblings, same identity") {
@@ -407,13 +407,13 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(a != c);
         REQUIRE(*a != *c);
         REQUIRE(a->first == 1);
-        REQUIRE(a->second->block_height == 1);
+        REQUIRE(a->second->block_num == 1);
         auto b = a;
         ++b;
         REQUIRE(a != b);    // different iterator
         REQUIRE(*a == *b);  // same identity
         REQUIRE(b->first == 1);
-        REQUIRE(b->second->block_height == 1);
+        REQUIRE(b->second->block_num == 1);
         REQUIRE(++b == c);
     }
 
@@ -421,7 +421,7 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(queue.size() == 4);
 
         auto link1b = std::make_shared<Link>(dummy_header, persisted);
-        link1b->block_height = 1;
+        link1b->block_num = 1;
         link1b->persisted = !persisted;
         queue.push(link1b);  // again, different identity
 
@@ -437,13 +437,13 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(a != c);
         REQUIRE(*a != *c);
         REQUIRE(a->first == 1);
-        REQUIRE(a->second->block_height == 1);
+        REQUIRE(a->second->block_num == 1);
         auto b = a;
         ++b;
         REQUIRE(a != b);    // different iterator
         REQUIRE(*a != *b);  // different identity
         REQUIRE(b->first == 1);
-        REQUIRE(b->second->block_height == 1);
+        REQUIRE(b->second->block_num == 1);
         REQUIRE(++b == c);
     }
 }

@@ -41,7 +41,7 @@ void InboundGetBlockHeaders::execute(db::DataStoreRef db, HeaderChain&, BodySequ
         return;
 
     db::ROTxnManaged tx = db.chaindata.start_ro_tx();
-    db::DataModel data_model{tx, db.repository};
+    db::DataModel data_model{tx, db.blocks_repository};
     HeaderRetrieval header_retrieval(data_model);
 
     BlockHeadersPacket66 reply;

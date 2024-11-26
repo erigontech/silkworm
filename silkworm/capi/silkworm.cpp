@@ -43,6 +43,7 @@
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -224,9 +225,9 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
     auto data_dir_path = parse_path(settings->data_dir_path);
-    auto repository = db::blocks::make_blocks_repository(
-        DataDirectory{data_dir_path}.snapshots().path(),
-        /* open = */ false);
+    auto snapshots_dir_path = DataDirectory{data_dir_path}.snapshots().path();
+    auto blocks_repository = db::blocks::make_blocks_repository(snapshots_dir_path, /* open = */ false);
+    auto state_repository = db::state::make_state_repository(snapshots_dir_path, /* open = */ false);
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
@@ -236,7 +237,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         },
         .data_dir_path = std::move(data_dir_path),
         .node_settings = {},
-        .repository = std::make_unique<snapshots::SnapshotRepository>(std::move(repository)),
+        .blocks_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)),
+        .state_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository)),
         .rpcdaemon = {},
         .execution_engine = {},
         .sentry_thread = {},
@@ -338,7 +340,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
 }
 
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
-    if (!handle || !handle->repository) {
+    if (!handle || !handle->blocks_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     if (!snapshot) {
@@ -400,7 +402,7 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         headers_segment_path->step_range(),
         std::move(bundle_data),
     };
-    handle->repository->add_snapshot_bundle(std::move(bundle));
+    handle->blocks_repository->add_snapshot_bundle(std::move(bundle));
     return SILKWORM_OK;
 }
 
@@ -498,7 +500,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
     try {
         auto txn = db::RWTxnUnmanaged{mdbx_txn};
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
         state_buffer.set_memory_limit(batch_size);
 
         const size_t max_batch_size{batch_size};
@@ -507,7 +509,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         BlockNum block_num{start_block};
         BlockNum batch_start_block_num{start_block};
         BlockNum last_block_num = 0;
-        db::DataModel da_layer{txn, *handle->repository};
+        db::DataModel da_layer{txn, *handle->blocks_repository};
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
@@ -618,13 +620,17 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         auto txn = rw_access.start_rw_tx();
         const auto env_path = unmanaged_env.get_path();
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
         state_buffer.set_memory_limit(batch_size);
 
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
 
-        db::DataStoreRef data_store{rw_access, *handle->repository};
+        db::DataStoreRef data_store{
+            rw_access,
+            *handle->blocks_repository,
+            *handle->state_repository,
+        };
         db::DataModelFactory data_model_factory{std::move(data_store)};
 
         BlockProvider block_provider{
@@ -727,7 +733,7 @@ SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
-    if (!handle->repository) {
+    if (!handle->blocks_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     delete handle;

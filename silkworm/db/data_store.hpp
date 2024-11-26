@@ -26,7 +26,8 @@ namespace silkworm::db {
 
 struct DataStoreRef {
     RWAccess chaindata;
-    snapshots::SnapshotRepository& repository;
+    snapshots::SnapshotRepository& blocks_repository;
+    snapshots::SnapshotRepository& state_repository;
 };
 
 class DataStore {
@@ -56,7 +57,11 @@ class DataStore {
     }
 
     DataStoreRef ref() const {
-        return {store_.chaindata_rw(), store_.repository(blocks::kBlocksRepositoryName)};
+        return {
+            store_.chaindata_rw(),
+            store_.repository(blocks::kBlocksRepositoryName),
+            store_.repository(state::kStateRepositoryName),
+        };
     }
 
     db::ROAccess chaindata() const { return store_.chaindata(); }

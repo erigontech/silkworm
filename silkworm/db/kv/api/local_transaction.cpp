@@ -67,7 +67,7 @@ std::shared_ptr<State> LocalTransaction::create_state(boost::asio::any_io_execut
 
 std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
     // The calling thread *must* be the *same* which created this LocalTransaction instance
-    return std::make_shared<chain::LocalChainStorage>(DataModel{txn_, data_store_.repository});
+    return std::make_shared<chain::LocalChainStorage>(DataModel{txn_, data_store_.blocks_repository});
 }
 
 Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum /*block_num*/) {

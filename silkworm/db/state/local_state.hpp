@@ -37,7 +37,7 @@ class LocalState : public State {
     explicit LocalState(BlockNum block_num, DataStoreRef data_store)
         : block_num_{block_num},
           txn_{data_store.chaindata.start_ro_tx()},
-          data_model_{txn_, data_store.repository} {}
+          data_model_{txn_, data_store.blocks_repository} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 

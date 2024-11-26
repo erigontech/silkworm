@@ -37,8 +37,6 @@ namespace silkworm::rpc::core {
 
 using db::state::StateReader;
 
-using namespace evmc::literals;
-
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
     const BlockNumOrHash& block_num_or_hash,

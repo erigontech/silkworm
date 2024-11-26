@@ -24,6 +24,7 @@
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
+#include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm::db::test_util {
@@ -88,6 +89,8 @@ class TempChainDataStore : public TempChainData {
         : data_store_{
               move_env(),
               blocks::make_blocks_repository(
+                  data_dir_.snapshots().path()),
+              state::make_state_repository(
                   data_dir_.snapshots().path()),
           } {}
     ~TempChainDataStore() override {

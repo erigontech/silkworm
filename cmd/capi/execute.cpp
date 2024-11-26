@@ -293,10 +293,8 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
         data_dir.snapshots().path(),
     };
 
-    auto& repository = data_store.ref().repository;
-
     // Collect all snapshots
-    auto all_chain_snapshots{collect_all_snapshots(repository)};
+    auto all_chain_snapshots{collect_all_snapshots(data_store.ref().blocks_repository)};
     [[maybe_unused]] auto _ = gsl::finally([&]() {
         for (auto& chain_snapshot : all_chain_snapshots) {
             delete[] chain_snapshot.headers.segment.file_path;

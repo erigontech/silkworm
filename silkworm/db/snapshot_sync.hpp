@@ -76,13 +76,12 @@ class SnapshotSync {
     void update_block_bodies(db::RWTxn& txn, BlockNum max_block_available);
     static void update_block_hashes(db::RWTxn& txn, BlockNum max_block_available);
     static void update_block_senders(db::RWTxn& txn, BlockNum max_block_available);
-    snapshots::SnapshotRepository& repository() { return data_store_.repository; };
+    snapshots::SnapshotRepository& blocks_repository() { return data_store_.blocks_repository; };
 
     snapshots::SnapshotSettings settings_;
     const snapshots::Config snapshots_config_;
 
     db::DataStoreRef data_store_;
-    snapshots::SnapshotRepository& repository_;
 
     snapshots::bittorrent::BitTorrentClient client_;
 

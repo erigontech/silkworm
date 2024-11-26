@@ -1379,7 +1379,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
 }
 
 std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
-    TransactionBlockNumByTxnHashRepoQuery query{repository_.view_bundles_reverse()};
+    TransactionBlockNumByTxnHashMultiQuery query{repository_.view_bundles_reverse()};
     return query.exec(tx_hash);
 }
 

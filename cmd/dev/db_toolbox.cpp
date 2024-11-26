@@ -2269,7 +2269,7 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
 
     Freezer freezer{
         data_store.chaindata(),
-        data_store.ref().repository,
+        data_store.ref().blocks_repository,
         stage_scheduler,
         data_dir.temp().path(),
         keep_blocks,

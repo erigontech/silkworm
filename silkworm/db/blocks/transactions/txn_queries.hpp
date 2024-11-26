@@ -53,9 +53,9 @@ class TransactionBlockNumByTxnHashQuery {
 };
 
 template <std::ranges::view TBundlesView, class TBundle = typename std::ranges::iterator_t<TBundlesView>::value_type>
-class TransactionBlockNumByTxnHashRepoQuery {
+class TransactionBlockNumByTxnHashMultiQuery {
   public:
-    explicit TransactionBlockNumByTxnHashRepoQuery(TBundlesView bundles)
+    explicit TransactionBlockNumByTxnHashMultiQuery(TBundlesView bundles)
         : bundles_(std::move(bundles)) {}
 
     std::optional<BlockNum> exec(const Hash& hash) {

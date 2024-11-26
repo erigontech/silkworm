@@ -89,6 +89,8 @@ class TempChainDataStore : public TempChainData {
               move_env(),
               blocks::make_blocks_repository(
                   data_dir_.snapshots().path()),
+              state::make_state_repository(
+                  data_dir_.snapshots().path()),
           } {}
     ~TempChainDataStore() override {
         // need to destroy a started RWTxn in the base class before destroying env_managed inside the data_store_

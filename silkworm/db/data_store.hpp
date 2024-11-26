@@ -35,9 +35,9 @@ class DataStore {
     DataStore(
         mdbx::env_managed chaindata_env,
         snapshots::SnapshotRepository blocks_repository,
-        std::optional<snapshots::SnapshotRepository> state_repository = std::nullopt)
+        snapshots::SnapshotRepository state_repository)
         : store_{
-              make_schema(state_repository.has_value()),
+              make_schema(),
               std::move(chaindata_env),
               make_repositories_map(std::move(blocks_repository), std::move(state_repository)),
           } {}
@@ -63,17 +63,11 @@ class DataStore {
     db::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
 
   private:
-    static datastore::Schema make_schema(bool enabled_state_repository);
+    static datastore::Schema make_schema();
 
     static std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> make_repositories_map(
         snapshots::SnapshotRepository blocks_repository,
-        std::optional<snapshots::SnapshotRepository> state_repository) {
-        std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories;
-        repositories.emplace(blocks::kBlocksRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)));
-        if (state_repository)
-            repositories.emplace(state::kStateRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(*state_repository)));
-        return repositories;
-    }
+        snapshots::SnapshotRepository state_repository);
 
     datastore::DataStore store_;
 };

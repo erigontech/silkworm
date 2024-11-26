@@ -67,6 +67,8 @@ class TestDataStore : public TestDatabaseContext {
               move_env(),
               blocks::make_blocks_repository(
                   DataDirectory{tmp_dir.path(), true}.snapshots().path()),
+              state::make_state_repository(
+                  DataDirectory{tmp_dir.path(), false}.snapshots().path()),
           } {}
     ~TestDataStore() override = default;
 

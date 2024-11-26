@@ -229,7 +229,7 @@ TEST_CASE("SnapshotRepository::find_block_num", "[silkworm][node][snapshot]") {
 
     auto repository = make_repository(tmp_dir.path());
 
-    TransactionBlockNumByTxnHashRepoQuery query{repository.view_bundles_reverse()};
+    TransactionBlockNumByTxnHashMultiQuery query{repository.view_bundles_reverse()};
 
     // known block 1'500'012 txn hash
     auto block_num = query.exec(silkworm::Hash{from_hex("0x2224c39c930355233f11414e9f216f381c1f6b0c32fc77b192128571c2dc9eb9").value()});

@@ -114,10 +114,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_ac
     StorageWalker storage_walker{transaction_};
     const auto txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
-    for (auto& it : dump_accounts.accounts) {
-        auto& address = it.first;
-        auto& account = it.second;
-
+    for (auto& [address, account] : dump_accounts.accounts) {
         auto to = db::code_domain_key(address);
         increment(to);
 
@@ -129,10 +126,10 @@ Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_ac
             .ascending_order = true};
 
         auto paginated_result = co_await transaction_.range_as_of(std::move(query));
-        auto sit = co_await paginated_result.begin();
         std::map<Bytes, Bytes> collected_entries;  // TODO(canepat) switch to ByteView?
+        auto it = co_await paginated_result.begin();
 
-        while (const auto value = co_await sit.next()) {
+        while (const auto value = co_await it.next()) {
             if (value->second.empty())
                 continue;
 
@@ -140,7 +137,8 @@ Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_ac
                 account.storage = Storage{};
             }
             auto& storage = *account.storage;
-            auto loc = value->first.substr(20);
+            SILKWORM_ASSERT(value->first.size() >= kAddressLength);
+            const auto loc = value->first.substr(kAddressLength);
             storage[to_bytes32(loc)] = value->second;
             const auto hash = hash_of(loc);
             collected_entries[Bytes{hash.bytes, kHashLength}] = value->second;

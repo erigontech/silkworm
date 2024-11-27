@@ -43,6 +43,8 @@ debug_traceTransaction/test_90.tar,\
 debug_traceTransaction/test_91.tar,\
 debug_traceTransaction/test_92.tar,\
 debug_traceTransaction/test_96.json,\
+debug_traceCallMany/test_07,\
+debug_traceCallMany/test_09,\
 trace_replayBlockTransactions/test_29,\
 engine_,\
 erigon_getLatestLogs,\

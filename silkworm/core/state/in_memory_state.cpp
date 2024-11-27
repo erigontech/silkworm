@@ -68,9 +68,8 @@ uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const
     return it->second;
 }
 
-std::optional<BlockHeader> InMemoryState::read_header(
-    BlockNum block_num,
-    const evmc::bytes32& block_hash) const noexcept {
+std::optional<BlockHeader> InMemoryState::read_header(BlockNum block_num,
+                                                      const evmc::bytes32& block_hash) const noexcept {
     const auto it1 = headers_.find(block_num);
     if (it1 != headers_.end()) {
         const auto it2{it1->second.find(block_hash)};
@@ -93,9 +92,8 @@ bool InMemoryState::read_body(BlockNum block_num, const evmc::bytes32& block_has
     return false;
 }
 
-std::optional<intx::uint256> InMemoryState::total_difficulty(
-    BlockNum block_num,
-    const evmc::bytes32& block_hash) const noexcept {
+std::optional<intx::uint256> InMemoryState::total_difficulty(BlockNum block_num,
+                                                             const evmc::bytes32& block_hash) const noexcept {
     const auto it1 = difficulty_.find(block_num);
     if (it1 != difficulty_.end()) {
         const auto it2{it1->second.find(block_hash)};
@@ -158,13 +156,18 @@ void InMemoryState::update_account(const evmc::address& address, std::optional<A
     }
     account_changes_[block_num_][address] = initial;
 
-    if (current.has_value()) {
+    // Store current account or delete it
+    if (current) {
         accounts_[address] = current.value();
     } else {
         accounts_.erase(address);
-        if (initial.has_value()) {
-            prev_incarnations_[address] = initial.value().incarnation;
-        }
+    }
+
+    // Remember the previous incarnation when an initially existing contract gets deleted, i.e. current is empty or EOA
+    const bool initial_smart{initial && initial->incarnation};
+    const bool current_deleted_or_eoa{!current || current->incarnation == 0};
+    if (initial_smart && current_deleted_or_eoa) {
+        prev_incarnations_[address] = initial.value().incarnation;
     }
 }
 

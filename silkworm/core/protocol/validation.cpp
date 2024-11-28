@@ -207,11 +207,14 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
         return ValidationResult::kInsufficientFunds;
     }
 
-    const bool contract_creation{!txn.to};
-
     // EIP-2681: Limit account nonce to 2^64-1
     if (txn.nonce >= UINT64_MAX) {
         return ValidationResult::kNonceTooHigh;
+    }
+
+    const bool contract_creation{!txn.to};
+    if (evm.revision() >= EVMC_SHANGHAI && contract_creation && txn.data.size() > kMaxInitCodeSize) {
+        return ValidationResult::kMaxInitCodeSizeExceeded;
     }
 
     if (evm.revision() >= EVMC_LONDON) {

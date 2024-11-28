@@ -91,7 +91,8 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
 
         std::vector<std::string> keys;
         while (const auto value = co_await it.next()) {
-            const auto key = value->first.substr(20);
+            SILKWORM_ASSERT(value->first.size() >= kAddressLength);
+            const auto key = value->first.substr(kAddressLength);
             keys.push_back(silkworm::to_hex(key, /*with_prefix=*/true));
         }
         reply = make_json_content(request, keys);

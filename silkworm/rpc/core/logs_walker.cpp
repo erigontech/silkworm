@@ -23,12 +23,15 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/chain/chain.hpp>
+#include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/ethdb/walk.hpp>
 
 namespace silkworm::rpc {
@@ -71,30 +74,103 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                                 const FilterAddresses& addresses, const FilterTopics& topics, const LogFilterOptions& options, bool desc_order, std::vector<Log>& logs) {
     SILK_DEBUG << "start block: " << start << " end block: " << end;
 
+    auto provider = ethdb::kv::canonical_body_for_storage_provider(&backend_);
+
+    db::txn::TxNum min_tx_num{0};
+    if (start > 0) {
+        min_tx_num = co_await db::txn::min_tx_num(tx_, start, provider);
+    }
+    auto max_tx_num = co_await db::txn::max_tx_num(tx_, end, provider) + 1;
+
+    SILK_LOG << "start: " << start << ", end: " << end << ", min_tx_num: " << min_tx_num << ", max_tx_num: " << max_tx_num;
+
+    const auto from_timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num);
+    const auto to_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
+
     const auto chain_storage{tx_.create_storage()};
     roaring::Roaring block_nums;
     block_nums.addRange(start, end + 1);  // [min, max)
 
     if (!topics.empty()) {
-        auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_, db::table::kLogTopicIndexName, topics, start, end);
-        SILK_TRACE << "topics_bitmap: " << topics_bitmap.toString();
-        if (topics_bitmap.isEmpty()) {
-            block_nums = topics_bitmap;
-        } else {
-            block_nums &= topics_bitmap;
+        const auto &topic = topics.front();
+        SILK_LOG << "topic: " << topic;
+//        db::kv::api::IndexRangeQuery query{
+//                .table = db::table::kLogTopicIdx,
+//                .key = db::hash_key(topic),
+//                .from_timestamp = from_timestamp,
+//                .to_timestamp = to_timestamp,
+//                .ascending_order = true};
+//        auto paginated_result = co_await tx_.index_range(std::move(query));
+//        auto itr = co_await paginated_result.begin();
+//        for (auto it = addresses.begin(); it < addresses.end(); ++it) {
+//            SILK_LOG << "topic: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
+//                     << to_timestamp;
+//
+            //            query = {.table = db::table::kLogAddrIdx,
+            //                    .key = db::code_domain_key(*it),
+            //                    .from_timestamp = from_timestamp,
+            //                    .to_timestamp = to_timestamp,
+            //                    .ascending_order = true};
+            //            paginated_result = co_await tx_.index_range(std::move(query));
+            //
+            //            itr = db::kv::api::set_union(itr, co_await paginated_result.begin());
+//        }
+    }
+//    if (!topics.empty()) {
+//        auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_, db::table::kLogTopicIndexName, topics, start, end);
+//        SILK_TRACE << "topics_bitmap: " << topics_bitmap.toString();
+//        if (topics_bitmap.isEmpty()) {
+//            block_nums = topics_bitmap;
+//        } else {
+//            block_nums &= topics_bitmap;
+//        }
+//    }
+
+    std::optional<db::kv::api::PaginatedTimestamps::Iterator> opt_itr;
+    if (!addresses.empty()) {
+        const auto& addr = addresses.front();
+        SILK_LOG << "address: " << addr << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
+                 << to_timestamp;
+        db::kv::api::IndexRangeQuery query{
+                .table = db::table::kLogAddrIdx,
+                .key = db::account_domain_key(addr),
+                .from_timestamp = from_timestamp,
+                .to_timestamp = to_timestamp,
+                .ascending_order = true};
+        auto paginated_result = co_await tx_.index_range(std::move(query));
+        opt_itr.emplace(co_await paginated_result.begin());
+        for (auto it = addresses.begin(); it < addresses.end(); ++it) {
+            SILK_LOG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
+                     << to_timestamp;
+
+//            query = {.table = db::table::kLogAddrIdx,
+//                    .key = db::account_domain_key(*it),
+//                    .from_timestamp = from_timestamp,
+//                    .to_timestamp = to_timestamp,
+//                    .ascending_order = true};
+//            paginated_result = co_await tx_.index_range(std::move(query));
+//
+//            itr = db::kv::api::set_union(itr, co_await paginated_result.begin());
         }
     }
 
-    if (!addresses.empty()) {
-        auto addresses_bitmap = co_await ethdb::bitmap::from_addresses(tx_, db::table::kLogAddressIndexName, addresses, start, end);
-        if (addresses_bitmap.isEmpty()) {
-            block_nums = addresses_bitmap;
-        } else {
-            block_nums &= addresses_bitmap;
+    if (opt_itr) {
+        auto &it = opt_itr.value();
+        while (const auto value = co_await it.next()) {
+            const auto txn_id = static_cast<TxnId>(*value);
+            SILK_LOG << "txn_id: " << txn_id;
         }
     }
-    SILK_DEBUG << "block_nums.cardinality(): " << block_nums.cardinality();
-    SILK_TRACE << "block_nums: " << block_nums.toString();
+//    if (!addresses.empty()) {
+//        auto addresses_bitmap = co_await ethdb::bitmap::from_addresses(tx_, db::table::kLogAddressIndexName, addresses, start, end);
+//        if (addresses_bitmap.isEmpty()) {
+//            block_nums = addresses_bitmap;
+//        } else {
+//            block_nums &= addresses_bitmap;
+//        }
+//    }
+//    SILK_DEBUG << "block_nums.cardinality(): " << block_nums.cardinality();
+//    SILK_TRACE << "block_nums: " << block_nums.toString();
 
     if (block_nums.cardinality() == 0) {
         co_return;

@@ -1503,7 +1503,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
     auto tx = co_await database_->begin();
 
     try {
-        LogsWalker logs_walker{*block_cache_, *tx};
+        LogsWalker logs_walker{*block_cache_, *tx, *backend_};
 
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         filter.start = start;
@@ -1587,7 +1587,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        LogsWalker logs_walker{*block_cache_, *tx};
+        LogsWalker logs_walker{*block_cache_, *tx, *backend_};
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
 
         if (filter.start != start && filter.end != end) {
@@ -1636,7 +1636,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        LogsWalker logs_walker{*block_cache_, *tx};
+        LogsWalker logs_walker{*block_cache_, *tx, *backend_};
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
 
         std::vector<Log> logs;
@@ -1704,7 +1704,7 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
     auto tx = co_await database_->begin();
 
     try {
-        LogsWalker logs_walker{*block_cache_, *tx};
+        LogsWalker logs_walker{*block_cache_, *tx, *backend_};
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();

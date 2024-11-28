@@ -70,8 +70,8 @@ jobs:
           fi
           
           # Save the subsection reached status
-          echo "::set-output name=test_executed::true"
-          
+          echo "name=test_executed::true" >> $GITHUB_OUTPUT
+  
           # Check test runner exit status
           if [ "$test_exit_status" -eq 0 ]; then
             echo "Tests completed successfully."

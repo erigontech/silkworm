@@ -194,9 +194,9 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
         return ValidationResult::kUnsupportedTransactionType;
     }
 
-    if (!is_valid_signature(txn.r, txn.s, evm.revision() >= EVMC_HOMESTEAD)) {
-        return ValidationResult::kInvalidSignature;
-    }
+    // if (!is_valid_signature(txn.r, txn.s, evm.revision() >= EVMC_HOMESTEAD)) {
+    //     return ValidationResult::kInvalidSignature;
+    // }
 
     const intx::uint128 g0{intrinsic_gas(txn, evm.revision())};
     if (txn.gas_limit < g0) {

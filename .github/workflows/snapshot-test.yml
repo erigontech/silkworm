@@ -5,15 +5,13 @@ on:
 
 jobs:
   execution-test-suite:
-    runs-on: [ self-hosted, Erigon3 ] # must run on E2 not to steal E3 runner, which is used for PR approval
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
     timeout-minutes: 7200  # 5 days
     env:
       ERIGON_QA_PATH: /opt/erigon-qa
       ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
       ERIGON_SNAPSHOT_TEST_DIR: /opt/erigon-snapshot
       CHAIN: mainnet
-      TRACKING_TIME_SECONDS: 431400  # 5 days minus 10 minutes
-      TOTAL_TIME_SECONDS: 431400
 
     steps:
       - name: Checkout Silkworm Repository
@@ -33,9 +31,9 @@ jobs:
         run: |
           cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Silkworm
+      - name: Build Target Snapshots
         working-directory: ${{runner.workspace}}/silkworm/build
-        run: cmake --build . --config Release --target silkworm -j 8
+        run: cmake --build . --config Release --target snapshots -j 8
 
       - name: Pause the Erigon instance dedicated to db maintenance
         run: |
@@ -50,12 +48,13 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           set +e # Disable exit on error
+          test_exit_status=0
           
           # Run the test script
-          some_test_cmd
-          
-          # Capture monitoring script exit status
-          test_exit_status=$?
+          ./snapshots --snapshot_dir $ERIGON_SNAPSHOT_TEST_DIR count_headers
+          test_exit_status=$(( test_exit_status != 0 || $? != 0 ))
+          ./snapshots --snapshot_dir $ERIGON_SNAPSHOT_TEST_DIR count_bodies
+          test_exit_status=$(( test_exit_status != 0 || $? != 0 ))
           
           # Save the subsection reached status
           echo "::set-output name=test_executed::true"

@@ -50,7 +50,7 @@ BTreeIndex::BTreeIndex(
     const auto memory_mapped_range = memory_file_->region();
 
     // Read encoded Elias-Fano 32-bit list of integers representing data offsets
-    data_offsets_ = EliasFanoList32::from_encoded_data(memory_mapped_range);
+    data_offsets_ = std::make_shared<EliasFanoList32>(EliasFanoList32::from_encoded_data(memory_mapped_range));
     ensure(data_offsets_->sequence_length() > 0, "BTreeIndex: invalid zero-length data offsets");
 
     const auto encoded_nodes = memory_mapped_range.subspan(data_offsets_->encoded_data_size());

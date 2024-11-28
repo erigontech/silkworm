@@ -16,20 +16,23 @@
 
 #pragma once
 
-#include "elias_fano/elias_fano_decoder.hpp"
-#include "rec_split/accessor_index.hpp"
-#include "segment/kv_segment_reader.hpp"
+#include <optional>
 
-namespace silkworm::snapshots {
+#include "../common/codec.hpp"
+#include "elias_fano.hpp"
 
-struct InvertedIndex {
-    const segment::KVSegmentFileReader& kv_segment;
-    const rec_split::AccessorIndex& accessor_index;
+namespace silkworm::snapshots::elias_fano {
 
-    template <DecoderConcept TKeyDecoder>
-    segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder> kv_segment_reader() {
-        return {kv_segment};
+struct EliasFanoDecoder : public snapshots::Decoder {
+    std::optional<EliasFanoList32> value;
+
+    ~EliasFanoDecoder() override = default;
+
+    void decode_word(ByteView word) override {
+        value = EliasFanoList32::from_encoded_data(std::span<const uint8_t>{word.data(), word.size()});
     }
 };
 
-}  // namespace silkworm::snapshots
+static_assert(snapshots::DecoderConcept<EliasFanoDecoder>);
+
+}  // namespace silkworm::snapshots::elias_fano

@@ -68,9 +68,6 @@ jobs:
             failed_tests="$failed_tests count_bodies"
             test_exit_status=1
           fi
-          
-          # Save the subsection reached status
-          echo "name=test_executed::true" >> $GITHUB_OUTPUT
   
           # Check test runner exit status
           if [ "$test_exit_status" -eq 0 ]; then

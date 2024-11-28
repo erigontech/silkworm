@@ -58,15 +58,6 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         return ValidationResult::kUnsupportedTransactionType;
     }
 
-    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas.value()) {
-        return ValidationResult::kMaxFeeLessThanBase;
-    }
-
-    // https://github.com/ethereum/EIPs/pull/3594
-    if (txn.max_priority_fee_per_gas > txn.max_fee_per_gas) {
-        return ValidationResult::kMaxPriorityFeeGreaterThanMax;
-    }
-
     if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
         return ValidationResult::kInvalidSignature;
     }
@@ -89,6 +80,15 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
     const bool contract_creation{!txn.to};
     if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > kMaxInitCodeSize) {
         return ValidationResult::kMaxInitCodeSizeExceeded;
+    }
+
+    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas.value()) {
+        return ValidationResult::kMaxFeeLessThanBase;
+    }
+
+    // https://github.com/ethereum/EIPs/pull/3594
+    if (txn.max_priority_fee_per_gas > txn.max_fee_per_gas) {
+        return ValidationResult::kMaxPriorityFeeGreaterThanMax;
     }
 
     // EIP-4844: Shard Blob Transactions
@@ -175,6 +175,11 @@ ValidationResult pre_validate_transactions(const Block& block, const ChainConfig
 }
 
 ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) noexcept {
+    const std::optional sender{txn.sender()};
+    if (!sender) {
+        return ValidationResult::kInvalidSignature;
+    }
+
     if (txn.chain_id.has_value()) {
         if (evm.revision() < EVMC_SPURIOUS_DRAGON) {
             // EIP-155 transaction before EIP-155 was activated
@@ -185,9 +190,28 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
         }
     }
 
-    const std::optional sender{txn.sender()};
-    if (!sender) {
+    if (!transaction_type_is_supported(txn.type, evm.revision())) {
+        return ValidationResult::kUnsupportedTransactionType;
+    }
+
+    if (!is_valid_signature(txn.r, txn.s, evm.revision() >= EVMC_HOMESTEAD)) {
         return ValidationResult::kInvalidSignature;
+    }
+
+    const intx::uint128 g0{intrinsic_gas(txn, evm.revision())};
+    if (txn.gas_limit < g0) {
+        return ValidationResult::kIntrinsicGas;
+    }
+
+    if (intx::count_significant_bytes(txn.maximum_gas_cost()) > 32) {
+        return ValidationResult::kInsufficientFunds;
+    }
+
+    const bool contract_creation{!txn.to};
+
+    // EIP-2681: Limit account nonce to 2^64-1
+    if (txn.nonce >= UINT64_MAX) {
+        return ValidationResult::kNonceTooHigh;
     }
 
     if (evm.revision() >= EVMC_LONDON) {
@@ -213,19 +237,16 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
     }
 
     if (evm.revision() >= EVMC_PRAGUE) {
-        if (txn.type == TransactionType::kSetCode && !txn.to) {
-            return ValidationResult::kProhibitedContractCreation;
+        // EIP-7702
+        if (txn.type == TransactionType::kSetCode) {
+            // Contract creation is disallowed for SetCode transactions
+            if (contract_creation) {
+                return ValidationResult::kProhibitedContractCreation;
+            }
+            if (std::empty(txn.authorizations)) {
+                return ValidationResult::kEmptyAuthorizations;
+            }
         }
-        if (txn.type == TransactionType::kSetCode && std::empty(txn.authorizations)) {
-            return ValidationResult::kEmptyAuthorizations;
-        }
-    }
-
-    const intx::uint128 g0{protocol::intrinsic_gas(txn, evm.revision())};
-    assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
-
-    if (txn.gas_limit < g0) {
-        return ValidationResult::kIntrinsicGas;
     }
 
     return ValidationResult::kOk;

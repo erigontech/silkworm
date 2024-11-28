@@ -175,6 +175,16 @@ ValidationResult pre_validate_transactions(const Block& block, const ChainConfig
 }
 
 ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) noexcept {
+    if (txn.chain_id.has_value()) {
+        if (evm.revision() < EVMC_SPURIOUS_DRAGON) {
+            // EIP-155 transaction before EIP-155 was activated
+            return ValidationResult::kUnsupportedTransactionType;
+        }
+        if (txn.chain_id.value() != evm.config().chain_id) {
+            return ValidationResult::kWrongChainId;
+        }
+    }
+
     const std::optional sender{txn.sender()};
     if (!sender) {
         return ValidationResult::kInvalidSignature;

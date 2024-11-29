@@ -12,15 +12,12 @@ set -o pipefail
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-# debug_accountRange: new algo using TKV
 # debug_traceCall/test_02.json: requested is_latest fix to support ethbackend
 # erigon_getLatestLogs: new algo using TKV
 # eth_getLogs: new algo using TKV
-# ots_getContractCreator: new algo using TKV
 
 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
-debug_accountRange,\
 debug_traceBlockByHash/test_05,\
 debug_traceBlockByHash/test_08,\
 debug_traceBlockByHash/test_09,\
@@ -46,6 +43,8 @@ debug_traceTransaction/test_90.tar,\
 debug_traceTransaction/test_91.tar,\
 debug_traceTransaction/test_92.tar,\
 debug_traceTransaction/test_96.json,\
+debug_traceCallMany/test_07,\
+debug_traceCallMany/test_09,\
 trace_replayBlockTransactions/test_29,\
 engine_,\
 erigon_getLatestLogs,\

@@ -17,19 +17,19 @@
 #pragma once
 
 #include <cmath>
-#include <cstring>
 #include <iomanip>
-#include <iostream>
 #include <optional>
 #include <regex>
 #include <string_view>
-#include <vector>
+#include <variant>
 
 #include <ethash/keccak.hpp>
+#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+
 
 // intx does not include operator<< overloading for uint<N>
 namespace intx {
@@ -43,6 +43,51 @@ inline std::ostream& operator<<(std::ostream& out, const uint<N>& value) {
 }  // namespace intx
 
 namespace silkworm {
+
+class BlockNumOrHash {
+public:
+    explicit BlockNumOrHash(const std::string& block_num_or_hash) { build(block_num_or_hash); }
+    explicit BlockNumOrHash(BlockNum block_num) noexcept : value_{block_num} {}
+
+    virtual ~BlockNumOrHash() noexcept = default;
+
+    BlockNumOrHash(const BlockNumOrHash&) noexcept = default;
+    BlockNumOrHash& operator=(const BlockNumOrHash&) = default;
+
+    BlockNumOrHash(BlockNumOrHash&&) = default;
+    BlockNumOrHash& operator=(BlockNumOrHash&&) noexcept = default;
+
+    bool is_number() const {
+        return std::holds_alternative<uint64_t>(value_);
+    }
+
+    uint64_t number() const {
+        return is_number() ? *std::get_if<uint64_t>(&value_) : 0;
+    }
+
+    bool is_hash() const {
+        return std::holds_alternative<evmc::bytes32>(value_);
+    }
+
+    evmc::bytes32 hash() const {
+        return is_hash() ? *std::get_if<evmc::bytes32>(&value_) : evmc::bytes32{0};
+    }
+
+    bool is_tag() const {
+        return std::holds_alternative<std::string>(value_);
+    }
+
+    std::string tag() const {
+        return is_tag() ? *std::get_if<std::string>(&value_) : "";
+    }
+
+private:
+    void build(std::string const& block_num_or_hash);
+
+    std::variant<uint64_t, evmc::bytes32, std::string> value_;
+};
+std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& b);
+
 
 //! \brief Strips leftmost zeroed bytes from byte sequence
 //! \param [in] data : The view to process

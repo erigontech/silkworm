@@ -234,6 +234,25 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
     }
 
     if (evm.revision() >= EVMC_CANCUN) {
+        // EIP-4844: Shard Blob Transactions
+        if (txn.type == TransactionType::kBlob) {
+            if (txn.blob_versioned_hashes.empty()) {
+                return ValidationResult::kNoBlobs;
+            }
+            for (const Hash& h : txn.blob_versioned_hashes) {
+                if (h.bytes[0] != kBlobCommitmentVersionKzg) {
+                    return ValidationResult::kWrongBlobCommitmentVersion;
+                }
+            }
+            const auto blob_gas_price = evm.block().header.blob_gas_price();
+            SILKWORM_ASSERT(blob_gas_price);
+            if (txn.max_fee_per_blob_gas < blob_gas_price) {
+                return ValidationResult::kMaxFeePerBlobGasTooLow;
+            }
+            if (!txn.to) {
+                return ValidationResult::kProhibitedContractCreation;
+            }
+        }
         if (!evm.block().header.excess_blob_gas) {
             return ValidationResult::kWrongBlobGasUsed;
         }

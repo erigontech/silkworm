@@ -306,8 +306,8 @@ using BodyCounters = std::pair<int, uint64_t>;
 BodyCounters count_bodies_in_one(const SnapshotSubcommandSettings& settings, const SegmentFileReader& body_segment) {
     int num_bodies = 0;
     uint64_t num_txns = 0;
-    const int kFirstItems = 3;
-    const int kStepItems = 50'000;
+    constexpr int kFirstItems = 3;
+    constexpr int kStepItems = 50'000;
     if (settings.verbose) {
         SILK_INFO << "Printing first " << kFirstItems << " bodies, then every " << kStepItems;
     }
@@ -358,8 +358,8 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
 
 int count_headers_in_one(const SnapshotSubcommandSettings& settings, const SegmentFileReader& header_segment) {
     int num_headers = 0;
-    const int kFirstItems = 3;
-    const int kStepItems = 50'000;
+    constexpr int kFirstItems = 3;
+    constexpr int kStepItems = 50'000;
     if (settings.verbose) {
         SILK_INFO << "Printing first " << kFirstItems << " headers, then every " << kStepItems;
     }

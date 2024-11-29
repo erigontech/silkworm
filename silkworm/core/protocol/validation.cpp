@@ -44,6 +44,10 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas,
                                           const std::optional<intx::uint256>& blob_gas_price) {
+    if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
+        return ValidationResult::kInvalidSignature;
+    }
+
     if (txn.chain_id.has_value()) {
         if (rev < EVMC_SPURIOUS_DRAGON) {
             // EIP-155 transaction before EIP-155 was activated
@@ -56,10 +60,6 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
 
     if (!transaction_type_is_supported(txn.type, rev)) {
         return ValidationResult::kUnsupportedTransactionType;
-    }
-
-    if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
-        return ValidationResult::kInvalidSignature;
     }
 
     const intx::uint128 g0{intrinsic_gas(txn, rev)};
@@ -82,31 +82,35 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         return ValidationResult::kMaxInitCodeSizeExceeded;
     }
 
-    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas.value()) {
-        return ValidationResult::kMaxFeeLessThanBase;
-    }
-
-    // https://github.com/ethereum/EIPs/pull/3594
-    if (txn.max_priority_fee_per_gas > txn.max_fee_per_gas) {
-        return ValidationResult::kMaxPriorityFeeGreaterThanMax;
-    }
-
-    // EIP-4844: Shard Blob Transactions
-    if (txn.type == TransactionType::kBlob) {
-        if (txn.blob_versioned_hashes.empty()) {
-            return ValidationResult::kNoBlobs;
+    if (rev >= EVMC_LONDON) {
+        if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas.value()) {
+            return ValidationResult::kMaxFeeLessThanBase;
         }
-        for (const Hash& h : txn.blob_versioned_hashes) {
-            if (h.bytes[0] != kBlobCommitmentVersionKzg) {
-                return ValidationResult::kWrongBlobCommitmentVersion;
+
+        // https://github.com/ethereum/EIPs/pull/3594
+        if (txn.max_priority_fee_per_gas > txn.max_fee_per_gas) {
+            return ValidationResult::kMaxPriorityFeeGreaterThanMax;
+        }
+    }
+
+    if (rev >= EVMC_CANCUN) {
+        // EIP-4844: Shard Blob Transactions
+        if (txn.type == TransactionType::kBlob) {
+            if (txn.blob_versioned_hashes.empty()) {
+                return ValidationResult::kNoBlobs;
             }
-        }
-        SILKWORM_ASSERT(blob_gas_price);
-        if (txn.max_fee_per_blob_gas < blob_gas_price) {
-            return ValidationResult::kMaxFeePerBlobGasTooLow;
-        }
-        if (!txn.to) {
-            return ValidationResult::kProhibitedContractCreation;
+            for (const Hash& h : txn.blob_versioned_hashes) {
+                if (h.bytes[0] != kBlobCommitmentVersionKzg) {
+                    return ValidationResult::kWrongBlobCommitmentVersion;
+                }
+            }
+            SILKWORM_ASSERT(blob_gas_price);
+            if (txn.max_fee_per_blob_gas < blob_gas_price) {
+                return ValidationResult::kMaxFeePerBlobGasTooLow;
+            }
+            if (!txn.to) {
+                return ValidationResult::kProhibitedContractCreation;
+            }
         }
     }
 
@@ -226,10 +230,6 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
             if (txn.max_fee_per_gas < evm.block().header.base_fee_per_gas) {
                 return ValidationResult::kMaxFeeLessThanBase;
             }
-        }
-    } else {
-        if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
-            return ValidationResult::kUnsupportedTransactionType;
         }
     }
 

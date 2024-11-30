@@ -37,6 +37,7 @@
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/snapshot_bundle_factory_impl.hpp>
+#include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -44,6 +45,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
@@ -193,24 +195,70 @@ static stagedsync::StageContainerFactory make_stages_factory(
     });
 }
 
-void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const bool dry,
+void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const bool dry, const bool force,
                   const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
     ensure(height > 0, "Function requires non-zero height block");
 
     config.readonly = false;
 
+    const auto datadir_path = std::filesystem::path{config.path}.parent_path();
+    SILK_INFO << "Debug unwind: datadir=" << datadir_path.string();
+
+    Environment::set_stop_at_block(height);
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
     auto env = silkworm::db::open_env(config);
-    db::RWTxnManaged txn{env};
+
+    db::ROTxnManaged ro_txn{env};
+    const auto chain_config = db::read_chain_config(ro_txn);
+    ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
+    ro_txn.abort();
+
+    auto data_directory = std::make_unique<DataDirectory>();
+    snapshots::SnapshotRepository repository{
+        data_directory->snapshots().path(),
+        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<db::SnapshotBundleFactoryImpl>(),
+    };
+    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+
+    // We need full snapshot sync to take place to have database tables properly updated
+    snapshots::SnapshotSettings snapshot_settings{
+        .no_downloader = true,  // do not download snapshots
+        .stop_freezer = true,   // do not generate new snapshots
+        .no_seeding = true,     // do not seed existing snapshots
+    };
+    struct EmptyStageScheduler : public stagedsync::StageScheduler {
+        Task<void> schedule(std::function<void(db::RWTxn&)> callback) override { co_return; }
+    };
+    EmptyStageScheduler empty_scheduler;
+    db::SnapshotSync snapshot_sync{
+        std::move(snapshot_settings),
+        chain_config->chain_id,
+        db::DataStoreRef{env, repository},  // NOLINT(*-slicing)
+        std::filesystem::path{},
+        empty_scheduler};
+
+    boost::asio::io_context io_context;
+    std::thread ioc_thread{[&]() {
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
+        io_context.run();
+    }};
+    auto _ = gsl::finally([&]() {
+        io_context.stop();
+        ioc_thread.join();
+    });
+    auto snap_sync_future = concurrency::spawn_future(io_context.get_executor(), snapshot_sync.run());
+    snap_sync_future.get();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
+    db::RWTxnManaged txn{env};
     if (dry) {
         txn.disable_commit();
     } else {
-        if (!user_confirmation("Are you sure? This will apply the changes to the database!")) {
+        if (!force && !user_confirmation("Are you sure? This will apply the changes to the database!")) {
             return;
         }
         txn.enable_commit();  // this doesn't harm and works even if default changes
@@ -222,22 +270,6 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
     const auto bodies_progress = db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey);
     ensure(bodies_progress >= height, [&]() { return "Insufficient Bodies progress: " + std::to_string(bodies_progress); });
 
-    const auto chain_config = db::read_chain_config(txn);
-    ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
-
-    const auto datadir_path = std::filesystem::path{config.path}.parent_path();
-    SILK_INFO << "Debug unwind: datadir=" << datadir_path.string();
-
-    auto data_directory = std::make_unique<DataDirectory>();
-    snapshots::SnapshotRepository repository{
-        data_directory->snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>(),
-    };
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
-
-    boost::asio::io_context io_context;
-
     NodeSettings settings{
         .data_directory = std::move(data_directory),
         .chaindata_env_config = config,
@@ -247,14 +279,6 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
     stagedsync::TimerFactory log_timer_factory = [&](std::function<bool()> callback) {
         return std::make_shared<Timer>(io_context.get_executor(), settings.sync_loop_log_interval_seconds * 1000, std::move(callback));
     };
-    std::thread ioc_thread{[&]() {
-        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
-        io_context.run();
-    }};
-    auto _ = gsl::finally([&]() {
-        io_context.stop();
-        ioc_thread.join();
-    });
 
     stagedsync::ExecutionPipeline stage_pipeline{
         data_model_factory,
@@ -266,7 +290,7 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
     SILK_INFO << "Debug unwind: forward to=" << forward_target << " START";
     const auto forward_result = stage_pipeline.forward(txn, forward_target);
     SILK_INFO << "Debug unwind: forward to=" << forward_target << " END";
-    ensure(forward_result == stagedsync::Stage::Result::kSuccess,
+    ensure(forward_result == stagedsync::Stage::Result::kStoppedByEnv,
            [&]() { return "Debug unwind: forward failed " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(forward_result)}; });
 
     const auto unwind_point = height - step;
@@ -276,6 +300,15 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
            [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
     SILK_INFO << "Debug unwind: unwind down to block=" << unwind_point << " END";
     SILK_INFO << "Debug unwind: forward+unwind success up to block=" << height;
+
+    // Unwind has just set progress for pre-Execution stages back to unwind_point even if it is within the snapshots
+    // We need to reset progress for such stages to the max block in snapshots to avoid database update on next start
+    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kSendersKey, repository.max_block_available());
+
+    txn.commit_and_stop();
 }
 
 void unwind(db::EnvConfig& config, BlockNum unwind_point, const bool remove_blocks, const bool dry) {
@@ -458,6 +491,7 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
 
     config.readonly = false;
 
+    Environment::set_stop_at_block(end);
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
@@ -552,12 +586,12 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
     }
 }
 
-void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
+void do_reset_to_download(db::EnvConfig& config, const bool keep_senders, const bool force) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    if (!user_confirmation("Are you sure? This will erase the database content written after BlockHashes stage!")) {
+    if (!force && !user_confirmation("Are you sure? This will erase the database content written after BlockHashes stage!")) {
         return;
     }
 
@@ -788,6 +822,7 @@ int main(int argc, char* argv[]) {
         cmd_debug_unwind->add_option("--start_at_stage", "The name of the pipeline stage to start from");
     auto cmd_debug_unwind_stop_before_stage_opt =
         cmd_debug_unwind->add_option("--stop_before_stage", "The name of the pipeline stage to stop to");
+    auto cmd_debug_unwind_force_opt = cmd_debug_unwind->add_flag("--force", "Force user confirmation");
 
     // Bisect pipeline
     // Truncates all the work done beyond download stages
@@ -812,6 +847,7 @@ int main(int argc, char* argv[]) {
         app.add_subcommand("reset-to-download", "Reset all work and data written after bodies download");
     auto cmd_reset_to_download_keep_senders_opt =
         cmd_reset_to_download->add_flag("--keep-senders", "Keep the recovered transaction senders");
+    auto cmd_reset_to_download_force_opt = cmd_reset_to_download->add_flag("--force", "Force user confirmation");
 
     try {
         // Parse arguments and validate
@@ -848,8 +884,6 @@ int main(int argc, char* argv[]) {
             return -1;
         }
 
-
-
         // Execute subcommand actions
         if (*cmd_stages) {
             list_stages(chaindata_env_config);
@@ -869,6 +903,7 @@ int main(int argc, char* argv[]) {
                          cmd_debug_unwind_height->as<uint32_t>(),
                          cmd_debug_unwind_step->as<uint32_t>(),
                          app_dry_opt->as<bool>(),
+                         cmd_debug_unwind_force_opt->as<bool>(),
                          cmd_debug_unwind_start_at_stage_opt->as<std::string>(),
                          cmd_debug_unwind_stop_before_stage_opt->as<std::string>());
         } else if (*cmd_staged_unwind) {
@@ -885,7 +920,8 @@ int main(int argc, char* argv[]) {
                             cmd_bisect_stop_before_stage_opt->as<std::string>());
         } else if (*cmd_reset_to_download) {
             do_reset_to_download(chaindata_env_config,
-                                 cmd_reset_to_download_keep_senders_opt->as<bool>());
+                                 cmd_reset_to_download_keep_senders_opt->as<bool>(),
+                                 cmd_reset_to_download_force_opt->as<bool>());
         }
 
         return 0;

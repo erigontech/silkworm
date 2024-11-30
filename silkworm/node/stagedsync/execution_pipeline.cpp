@@ -129,6 +129,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_b
         auto start_stage_name{Environment::get_start_at_stage()};
         const auto stop_stage_name{Environment::get_stop_before_stage()};
         const auto stop_at_block = Environment::get_stop_at_block();
+        if (stop_at_block) {
+            sync_context_->target_height = *stop_at_block;
+        }
 
         current_stages_count_ = stages_forward_order_.size();
         current_stage_number_ = 0;
@@ -191,7 +194,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_b
         head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_block_num_ = head_header->number;
-        if (head_header_block_num_ != target_block_num) {
+        if (!stop_at_block && head_header_block_num_ != target_block_num) {
             throw std::logic_error("Sync pipeline: head header not at target block_num " + to_string(target_block_num) +
                                    ", head_header_block_num= " + to_string(head_header_block_num_));
         }

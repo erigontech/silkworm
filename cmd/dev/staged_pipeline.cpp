@@ -227,7 +227,7 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
         .no_seeding = true,     // do not seed existing snapshots
     };
     struct EmptyStageScheduler : public stagedsync::StageScheduler {
-        Task<void> schedule(std::function<void(db::RWTxn&)> callback) override { co_return; }
+        Task<void> schedule(std::function<void(db::RWTxn&)> /*callback*/) override { co_return; }
     };
     EmptyStageScheduler empty_scheduler;
     db::SnapshotSync snapshot_sync{
@@ -576,7 +576,7 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
     }
 }
 
-void do_reset_to_download(db::EnvConfig& config, const bool keep_senders, const bool force) {
+void reset_to_download(db::EnvConfig& config, const bool keep_senders, const bool force) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -746,7 +746,7 @@ void do_reset_to_download(db::EnvConfig& config, const bool keep_senders, const 
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
-    CLI::App app("Silkworm execute_pipeline dev tool");
+    CLI::App app("Silkworm staged_pipeline dev tool");
     app.get_formatter()->column_width(50);
     app.require_subcommand(1);  // At least 1 subcommand is required
     log::Settings log_settings{};
@@ -909,9 +909,9 @@ int main(int argc, char* argv[]) {
                             cmd_bisect_start_at_stage_opt->as<std::string>(),
                             cmd_bisect_stop_before_stage_opt->as<std::string>());
         } else if (*cmd_reset_to_download) {
-            do_reset_to_download(chaindata_env_config,
-                                 cmd_reset_to_download_keep_senders_opt->as<bool>(),
-                                 cmd_reset_to_download_force_opt->as<bool>());
+            reset_to_download(chaindata_env_config,
+                              cmd_reset_to_download_keep_senders_opt->as<bool>(),
+                              cmd_reset_to_download_force_opt->as<bool>());
         }
 
         return 0;

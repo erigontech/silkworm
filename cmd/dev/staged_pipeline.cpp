@@ -31,6 +31,10 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/trie/hash_builder.hpp>
+#include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/trie/prefix_set.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
@@ -47,12 +51,82 @@
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
+#include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 
 #include "../common/common.hpp"
 
 namespace fs = std::filesystem;
 using namespace silkworm;
+
+class Progress {
+  public:
+    explicit Progress(uint32_t width) : bar_width_{width}, percent_step_{100u / width} {};
+    ~Progress() = default;
+
+    //! Returns current progress percent
+    uint32_t percent() const {
+        if (!max_counter_) {
+            return 100;
+        }
+        if (!current_counter_) {
+            return 0;
+        }
+        return static_cast<uint32_t>(current_counter_ * 100 / max_counter_);
+    }
+
+    void step() { ++current_counter_; }
+    void set_current(size_t count) { current_counter_ = std::max(count, current_counter_); }
+    size_t get_current() const noexcept { return current_counter_; }
+    size_t get_increment_count() const noexcept { return bar_width_ ? (max_counter_ / bar_width_) : 0u; }
+
+    void reset() {
+        current_counter_ = 0;
+        printed_bar_len_ = 0;
+    }
+    void set_task_count(size_t iterations) {
+        reset();
+        max_counter_ = iterations;
+    }
+
+    //! Prints progress ticks
+    std::string print_interval(char c = '.') {
+        uint32_t percentage{std::min(percent(), 100u)};
+        uint32_t numChars{percentage / percent_step_};
+        if (!numChars) return "";
+        uint32_t intChars{numChars - printed_bar_len_};
+        if (!intChars) return "";
+        std::string ret(intChars, c);
+        printed_bar_len_ += intChars;
+        return ret;
+    }
+
+    [[maybe_unused]] std::string print_progress(char c = '.') const {
+        uint32_t percentage{percent()};
+        uint32_t numChars{percentage / percent_step_};
+        if (!numChars) {
+            return "";
+        }
+        std::string ret(numChars, c);
+        return ret;
+    }
+
+  private:
+    uint32_t bar_width_;
+    uint32_t percent_step_;
+    size_t max_counter_{0};
+    size_t current_counter_{0};
+    uint32_t printed_bar_len_{0};
+};
+
+void cursor_for_each(::mdbx::cursor& cursor, db::WalkFuncRef walker) {
+    const bool throw_notfound{false};
+    auto data = cursor.eof() ? cursor.to_first(throw_notfound) : cursor.current(throw_notfound);
+    while (data) {
+        walker(db::from_slice(data.key), db::from_slice(data.value));
+        data = cursor.move(mdbx::cursor::move_operation::next, throw_notfound);
+    }
+}
 
 bool user_confirmation(const std::string& message = {"Confirm ?"}) {
     static std::regex pattern{"^([yY])?([nN])?$"};
@@ -743,6 +817,473 @@ void reset_to_download(db::EnvConfig& config, const bool keep_senders, const boo
     SILK_INFO << "All done" << log::Args{"in", StopWatch::format(duration)};
 }
 
+void trie_account_analysis(db::EnvConfig& config) {
+    static std::string fmt_hdr{" %-24s %=50s "};
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Function requires exclusive access to database");
+    }
+
+    auto env{db::open_env(config)};
+    auto txn{env.start_read()};
+
+    std::cout << "\n"
+              << (boost::format(fmt_hdr) % "Table name" % "%") << "\n"
+              << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(50, '-')) << "\n"
+              << (boost::format(" %-24s ") % db::table::kTrieOfAccounts.name) << std::flush;
+
+    std::map<size_t, size_t> histogram;
+    auto code_cursor{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+
+    Progress progress{50};
+    size_t total_entries{txn.get_map_stat(code_cursor.map()).ms_entries};
+    progress.set_task_count(total_entries);
+    size_t batch_size{progress.get_increment_count()};
+
+    code_cursor.to_first();
+    cursor_for_each(code_cursor,
+                    [&histogram, &batch_size, &progress](ByteView key, ByteView) {
+                        ++histogram[key.length()];
+                        if (!--batch_size) {
+                            progress.set_current(progress.get_current() + progress.get_increment_count());
+                            std::cout << progress.print_interval('.') << std::flush;
+                            batch_size = progress.get_increment_count();
+                        }
+                    });
+
+    progress.set_current(total_entries);
+    std::cout << progress.print_interval('.') << "\n";
+
+    if (!histogram.empty()) {
+        std::cout << (boost::format(" %-4s %8s") % "Size" % "Count") << "\n"
+                  << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << "\n";
+        for (const auto& [size, usage_count] : histogram) {
+            std::cout << (boost::format(" %4u %8u") % size % usage_count) << "\n";
+        }
+    }
+    std::cout << "\n\n";
+}
+
+void trie_scan(db::EnvConfig& config, bool del) {
+    auto env{open_env(config)};
+    auto txn{env.start_write()};
+    std::vector<db::MapConfig> tables{db::table::kTrieOfAccounts, db::table::kTrieOfStorage};
+    size_t counter{1};
+
+    for (const auto& map_config : tables) {
+        if (SignalHandler::signalled()) {
+            break;
+        }
+        db::PooledCursor cursor(txn, map_config);
+        std::cout << " Scanning " << map_config.name << "\n";
+        auto data{cursor.to_first(false)};
+        while (data) {
+            if (data.value.empty()) {
+                std::cout << "Empty value at key " << to_hex(db::from_slice(data.key), true) << "\n";
+                if (del) {
+                    cursor.erase();
+                }
+            }
+            data = cursor.to_next(false);
+            if (!--counter) {
+                counter = 128;
+                if (SignalHandler::signalled()) {
+                    break;
+                }
+            }
+        }
+    }
+    if (!SignalHandler::signalled()) {
+        txn.commit();
+    }
+    std::cout << "\n\n";
+}
+
+void trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
+    if (!config.exclusive) {
+        throw std::runtime_error("Function requires exclusive access to database");
+    }
+
+    using namespace std::chrono_literals;
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+
+    auto env{open_env(config)};
+    auto txn{env.start_write()};
+
+    std::string source{db::table::kTrieOfAccounts.name};
+
+    bool is_healthy{true};
+    db::PooledCursor trie_cursor1(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor trie_cursor2(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor state_cursor(txn, db::table::kHashedAccounts);
+    size_t prefix_len{0};
+
+    Bytes buffer;
+    buffer.reserve(256);
+
+    // First loop Accounts; Second loop Storage
+    for (int loop_id{0}; loop_id < 2; ++loop_id) {
+        if (loop_id != 0) {
+            source = std::string(db::table::kTrieOfStorage.name);
+            trie_cursor1.bind(txn, db::table::kTrieOfStorage);
+            trie_cursor2.bind(txn, db::table::kTrieOfStorage);
+            state_cursor.bind(txn, db::table::kHashedStorage);
+            prefix_len = db::kHashedStoragePrefixLength;
+        }
+
+        SILK_INFO << "Checking ..." << log::Args{"source", source, "state", (with_state_coverage ? "true" : "false")};
+
+        auto data1{trie_cursor1.to_first(false)};
+
+        while (data1) {
+            auto data1_k{db::from_slice(data1.key)};
+            auto data1_v{db::from_slice(data1.value)};
+            auto node_k{data1_k.substr(prefix_len)};
+
+            // Only unmarshal relevant data without copy on read
+            if (data1_v.length() < 6) {
+                throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid value length " +
+                                         std::to_string(data1_v.length()) + ". Expected >= 6");
+            }
+            if ((data1_v.length() - 6) % kHashLength != 0) {
+                throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid hashes count " +
+                                         std::to_string(data1_v.length() - 6) + ". Expected multiple of " +
+                                         std::to_string(kHashLength));
+            }
+
+            const auto node_state_mask{endian::load_big_u16(&data1_v[0])};
+            const auto node_tree_mask{endian::load_big_u16(&data1_v[2])};
+            const auto node_hash_mask{endian::load_big_u16(&data1_v[4])};
+            bool node_has_root{false};
+
+            if (!node_state_mask) {
+                // This node should not be here as it does not point to anything
+                std::string what{"At key " + to_hex(data1_k, true) +
+                                 " node with nil state_mask. Does not point to anything. Shouldn't be here"};
+                if (!continue_scan) {
+                    throw std::runtime_error(what);
+                }
+                is_healthy = false;
+                std::cout << " " << what << "\n";
+            }
+
+            if (!trie::is_subset(node_tree_mask, node_state_mask)) {
+                throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask " +
+                                         std::bitset<16>(node_tree_mask).to_string() + " is not subset of state mask " +
+                                         std::bitset<16>(node_state_mask).to_string());
+            }
+            if (!trie::is_subset(node_hash_mask, node_state_mask)) {
+                throw std::runtime_error("At key " + to_hex(data1_k, true) + " hash mask " +
+                                         std::bitset<16>(node_hash_mask).to_string() + " is not subset of state mask " +
+                                         std::bitset<16>(node_state_mask).to_string());
+            }
+
+            data1_v.remove_prefix(6);
+            auto expected_hashes_count{static_cast<size_t>(std::popcount(node_hash_mask))};
+            auto effective_hashes_count{data1_v.length() / kHashLength};
+            if (!(effective_hashes_count == expected_hashes_count ||
+                  effective_hashes_count == expected_hashes_count + 1u)) {
+                std::string what{"At key " + to_hex(data1_k, true) + " invalid hashes count " +
+                                 std::to_string(effective_hashes_count) + ". Expected " +
+                                 std::to_string(expected_hashes_count) + " from mask " +
+                                 std::bitset<16>(node_hash_mask).to_string()};
+
+                if (!continue_scan) {
+                    throw std::runtime_error(what);
+                }
+                is_healthy = false;
+                std::cout << " " << what << "\n";
+            } else {
+                node_has_root = (effective_hashes_count == expected_hashes_count + 1u);
+            }
+
+            /*
+             * Nodes with a key length == 0 are root nodes and MUST have a root hash
+             */
+            if (node_k.empty() && !node_has_root) {
+                std::string what{"At key " + to_hex(data1_k, true) + " found root node without root hash"};
+                if (!continue_scan) {
+                    throw std::runtime_error(what);
+                }
+                is_healthy = false;
+                std::cout << " " << what << "\n";
+            } else if (!node_k.empty() && node_has_root) {
+                log::Warning("Unexpected root hash", {"key", to_hex(data1_k, true)});
+            }
+
+            /*
+             * Check children (if any)
+             * Each bit set in tree_mask must point to an existing child
+             * Example :
+             * Current key       : 010203
+             * Current tree_mask : 0b0000000000000100
+             * Children key      : 01020302 must exist
+             *
+             * Current key       : 010203
+             * Current tree_mask : 0b0000000000100000
+             * Children key      : 01020305 must exist
+             */
+
+            if (node_tree_mask) {
+                buffer.assign(data1_k).push_back('\0');
+                for (int i{std::countr_zero(node_tree_mask)}, e{std::bit_width(node_tree_mask)}; i < e; ++i) {
+                    if (((1 << i) & node_tree_mask) == 0) {
+                        continue;
+                    }
+                    buffer.back() = static_cast<uint8_t>(i);
+                    auto data2{trie_cursor2.lower_bound(db::to_slice(buffer), false)};
+                    if (!data2) {
+                        throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
+                                                 std::bitset<16>(node_tree_mask).to_string() +
+                                                 " but there is no child " + std::to_string(i) +
+                                                 " in db. LTE found is : null");
+                    }
+                    auto data2_k{db::from_slice(data2.key)};
+                    if (!data2_k.starts_with(buffer)) {
+                        throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
+                                                 std::bitset<16>(node_tree_mask).to_string() +
+                                                 " but there is no child " + std::to_string(i) +
+                                                 " in db. LTE found is : " + to_hex(data2_k, true));
+                    }
+                }
+            }
+
+            /*
+             * Check parents (if not root)
+             * Whether node key length > 1 then at least one parent with a key length shorter than this one must exist
+             * Note : length is expressed in nibbles count
+             * Example:
+             * When node key : 01020304
+             * Must find one key in list {010203; 0102} (max jump of 2)
+             */
+
+            if (!node_k.empty()) {
+                bool found{false};
+
+                for (size_t i{data1_k.size() - 1}; i >= prefix_len && !found; --i) {
+                    auto parent_seek_key{data1_k.substr(0, i)};
+                    auto data2{trie_cursor2.find(db::to_slice(parent_seek_key), false)};
+                    if (!data2) {
+                        continue;
+                    }
+                    found = true;
+                    const auto data2_v{db::from_slice(data2.value)};
+                    const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
+                    const auto parent_child_id{static_cast<int>(data1_k[i])};
+                    const auto parent_has_tree_bit{(parent_tree_mask & (1 << parent_child_id)) != 0};
+                    if (!parent_has_tree_bit) {
+                        found = false;
+                        if (sanitize) {
+                            SILK_WARN << "Erasing orphan" << log::Args{"key", to_hex(data1_k, true)};
+                            trie_cursor1.erase();
+                            goto next_node;
+                        }
+                        std::string what{"At key " + to_hex(data1_k, true) + " found parent key " +
+                                         to_hex(parent_seek_key, true) +
+                                         " with tree mask : " + std::bitset<16>(parent_tree_mask).to_string() +
+                                         " and no bit set at position " + std::to_string(parent_child_id)};
+                        if (!continue_scan) {
+                            throw std::runtime_error(what);
+                        }
+                        is_healthy = false;
+                        std::cout << " " << what << "\n";
+                    }
+                }
+
+                if (!found) {
+                    if (sanitize) {
+                        SILK_WARN << "Erasing orphan" << log::Args{"key", to_hex(data1_k, true)};
+                        trie_cursor1.erase();
+                        goto next_node;
+                    }
+                    std::string what{"At key " + to_hex(data1_k, true) + " no parent found"};
+                    if (!continue_scan) {
+                        throw std::runtime_error(what);
+                    }
+                    is_healthy = false;
+                    std::cout << " " << what << "\n";
+                }
+            }
+
+            /*
+             * Slow check for state coverage
+             * Whether the node has any hash_state bit set then we must ensure the bits point to
+             * an existing hashed state (either account or storage)
+             *
+             * Example:
+             * Current key        : 010203
+             * Current state_mask : 0b0000000000000001
+             * New Nibbled key    : 01020300
+             * Packed key         : 1230
+             * A state with prefix in range [1230 ... 1231) must exist
+             */
+
+            if (with_state_coverage && node_state_mask) {
+                // Buffer is used to build seek key
+                buffer.assign(data1_k.substr(prefix_len));
+                buffer.push_back('\0');
+
+                auto bits_to_match{buffer.length() * 4};
+
+                // >>> See Erigon /ethdb/kv_util.go::BytesMask
+                uint8_t mask{0xff};
+                auto fixed_bytes{(bits_to_match + 7) / 8};
+                auto shift_bits{bits_to_match & 7};
+                if (shift_bits != 0) {
+                    mask <<= (8 - shift_bits);
+                }
+                // <<< See Erigon's ByteMask
+
+                for (int i{std::countr_zero(node_state_mask)}, e{std::bit_width(node_state_mask)}; i < e; ++i) {
+                    if (((1 << i) & node_state_mask) == 0) {
+                        continue;
+                    }
+
+                    bool found{false};
+                    buffer.back() = static_cast<uint8_t>(i);
+
+                    Bytes seek{trie::pack_nibbles(buffer)};
+
+                    // On first loop we search HashedAccounts (which is not dup-sorted)
+                    if (!loop_id) {
+                        auto data3{state_cursor.lower_bound(db::to_slice(seek), false)};
+                        if (data3) {
+                            auto data3_k{db::from_slice(data3.key)};
+                            if (data3_k.length() >= fixed_bytes) {
+                                found = (bits_to_match == 0 ||
+                                         ((data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
+                                          ((data3_k[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask))));
+                            }
+                        }
+                        if (!found) {
+                            std::string what{"At key " + to_hex(data1_k, true) + " state mask is " +
+                                             std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
+                                             std::to_string(i) + "," + to_hex(seek, true) + " in hashed state"};
+                            if (data3) {
+                                auto data3_k{db::from_slice(data3.key)};
+                                what.append(" found instead " + to_hex(data3_k, true));
+                            }
+                            throw std::runtime_error(what);
+                        }
+                    } else {
+                        // On second loop we search HashedStorage (which is dup-sorted)
+                        auto data3{state_cursor.lower_bound_multivalue(db::to_slice(data1_k.substr(0, prefix_len)),
+                                                                       db::to_slice(seek), false)};
+                        if (data3) {
+                            auto data3_v{db::from_slice(data3.value)};
+                            if (data3_v.length() >= fixed_bytes) {
+                                found = (bits_to_match == 0 ||
+                                         ((data3_v.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
+                                          ((data3_v[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask))));
+                            }
+                        }
+                        if (!found) {
+                            std::string what{"At key " + to_hex(data1_k, true) + " state mask is " +
+                                             std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
+                                             std::to_string(i) + "," + to_hex(seek, true) + " in state"};
+                            if (data3) {
+                                auto data3_k{db::from_slice(data3.key)};
+                                auto data3_v{db::from_slice(data3.value)};
+                                what.append(" found instead " + to_hex(data3_k, true) + to_hex(data3_v, false));
+                            }
+                            throw std::runtime_error(what);
+                        }
+                    }
+                }
+            }
+
+            if (std::chrono::time_point now{std::chrono::steady_clock::now()}; now - start >= 10s) {
+                if (SignalHandler::signalled()) {
+                    throw std::runtime_error("Interrupted");
+                }
+                std::swap(start, now);
+                log::Info("Checking ...", {"source", source, "key", to_hex(data1_k, true)});
+            }
+
+        next_node:
+            data1 = trie_cursor1.to_next(false);
+        }
+    }
+    if (!is_healthy) {
+        throw std::runtime_error("Check failed");
+    }
+
+    SILK_INFO << "Integrity check" << log::Args{"status", "ok"};
+    SILK_INFO << "Closing db" << log::Args{"path", env.get_path().string()};
+    txn.commit();
+    env.close();
+}
+
+void trie_reset(db::EnvConfig& config, bool always_yes) {
+    if (!config.exclusive) {
+        throw std::runtime_error("Function requires exclusive access to database");
+    }
+
+    if (!always_yes) {
+        if (!user_confirmation()) {
+            return;
+        }
+    }
+
+    auto env{open_env(config)};
+    db::RWTxnManaged txn{env};
+    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfAccounts.name};
+    txn->clear_map(db::table::kTrieOfAccounts.name);
+    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfStorage.name};
+    txn->clear_map(db::table::kTrieOfStorage.name);
+    SILK_INFO << "Setting progress ..." << log::Args{"key", db::stages::kIntermediateHashesKey, "value", "0"};
+    db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
+    SILK_INFO << "Committing ..." << log::Args{};
+    txn.commit_and_renew();
+    SILK_INFO << "Closing db" << log::Args{"path", env.get_path().string()};
+    env.close();
+}
+
+void trie_root(db::EnvConfig& config) {
+    if (!config.exclusive) {
+        throw std::runtime_error("Function requires exclusive access to database");
+    }
+
+    auto env{open_env(config)};
+    db::ROTxnManaged txn{env};
+    db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
+
+    // Retrieve expected state root
+    auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
+    auto intermediate_hashes_stage_progress{db::stages::read_stage_progress(txn, db::stages::kIntermediateHashesKey)};
+    if (hashstate_stage_progress != intermediate_hashes_stage_progress) {
+        throw std::runtime_error("HashState and Intermediate hashes stage progresses do not match");
+    }
+    auto header_hash{read_canonical_header_hash(txn, hashstate_stage_progress)};
+    auto header{read_header(txn, hashstate_stage_progress, header_hash->bytes)};
+    auto expected_state_root{header->state_root};
+
+    trie::PrefixSet empty_changes{};  // We need this to tell we have no changes. If nullptr means full regen
+    trie::HashBuilder hash_builder;
+
+    trie::TrieCursor trie_cursor{trie_accounts, &empty_changes};
+    for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
+        SILKWORM_ASSERT(!trie_data.first_uncovered.has_value());  // Means skip state
+        SILK_INFO << "Trie" << log::Args{"key", to_hex(trie_data.key.value(), true), "hash", to_hex(trie_data.hash.value(), true)};
+        auto& hash = trie_data.hash.value();
+        hash_builder.add_branch_node(trie_data.key.value(), hash, false);
+        if (SignalHandler::signalled()) {
+            throw std::runtime_error("Interrupted");
+        }
+        if (trie_data.key->empty()) {
+            break;  // just added root node
+        }
+    }
+
+    const auto computed_state_root = hash_builder.root_hash();
+    if (computed_state_root != expected_state_root) {
+        log::Error("State root",
+                   {"expected", to_hex(expected_state_root, true), "got", to_hex(hash_builder.root_hash(), true)});
+    } else {
+        log::Info("State root " + to_hex(computed_state_root, true));
+    }
+}
+
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
@@ -763,6 +1304,7 @@ int main(int argc, char* argv[]) {
     auto datadir_opt = db_opts_paths->add_option("--datadir", "Path to data directory")->excludes(chaindata_opt);
 
     /* Common opts and flags */
+    auto app_yes_opt = app.add_flag("-Y,--yes", "Assume yes to all requests of confirmation");
     auto app_dry_opt = app.add_flag("--dry", "Don't commit to db. Only simulate");
 
     cmd::common::add_logging_options(app, log_settings);
@@ -772,7 +1314,7 @@ int main(int argc, char* argv[]) {
     auto cmd_stages = app.add_subcommand("stages", "List stages and their actual heights");
 
     // Stages tool
-    auto cmd_stageset = app.add_subcommand("stage-set", "Sets a stage to a new height");
+    auto cmd_stageset = app.add_subcommand("stage_set", "Sets a stage to a new height");
     auto cmd_stageset_name_opt = cmd_stageset->add_option("--name", "Name of the stage to set")->required();
     auto cmd_stageset_height_opt =
         cmd_stageset->add_option("--height", "Block height to set the stage to")->required()->check(CLI::Range(0u, UINT32_MAX));
@@ -834,10 +1376,30 @@ int main(int argc, char* argv[]) {
     // Reset after download
     // Truncates all the work done beyond download stages
     auto cmd_reset_to_download =
-        app.add_subcommand("reset-to-download", "Reset all work and data written after bodies download");
+        app.add_subcommand("reset_to_download", "Reset all work and data written after bodies download");
     auto cmd_reset_to_download_keep_senders_opt =
-        cmd_reset_to_download->add_flag("--keep-senders", "Keep the recovered transaction senders");
+        cmd_reset_to_download->add_flag("--keep_senders", "Keep the recovered transaction senders");
     auto cmd_reset_to_download_force_opt = cmd_reset_to_download->add_flag("--force", "Force user confirmation");
+
+    // Scan tries
+    auto cmd_trie_scan = app.add_subcommand("trie-scan", "Scans tries for empty values");
+    auto cmd_trie_scan_delete_opt = cmd_trie_scan->add_flag("--delete", "Delete");
+
+    // Reset tries
+    auto cmd_trie_reset = app.add_subcommand("trie-reset", "Resets stage_interhashes");
+
+    // Trie integrity
+    auto cmd_trie_integrity = app.add_subcommand("trie-integrity", "Checks trie integrity");
+    auto cmd_trie_integrity_state_opt = cmd_trie_integrity->add_flag("--with-state", "Checks covered states (slower)");
+    auto cmd_trie_integrity_continue_opt = cmd_trie_integrity->add_flag("--continue", "Keeps scanning on found errors");
+    auto cmd_trie_integrity_sanitize_opt = cmd_trie_integrity->add_flag("--sanitize", "Clean orphan nodes");
+
+    // Trie account analysis
+    auto cmd_trie_account_analysis =
+        app.add_subcommand("trie-account-analysis", "Trie account key sizes analysis");
+
+    // Trie root hash verification
+    auto cmd_trie_root = app.add_subcommand("trie-root", "Checks trie root");
 
     try {
         // Parse arguments and validate
@@ -912,6 +1474,19 @@ int main(int argc, char* argv[]) {
             reset_to_download(chaindata_env_config,
                               cmd_reset_to_download_keep_senders_opt->as<bool>(),
                               cmd_reset_to_download_force_opt->as<bool>());
+        } else if (*cmd_trie_scan) {
+            trie_scan(chaindata_env_config, static_cast<bool>(*cmd_trie_scan_delete_opt));
+        } else if (*cmd_trie_reset) {
+            trie_reset(chaindata_env_config, static_cast<bool>(*app_yes_opt));
+        } else if (*cmd_trie_integrity) {
+            trie_integrity(chaindata_env_config,
+                           static_cast<bool>(*cmd_trie_integrity_state_opt),
+                           static_cast<bool>(*cmd_trie_integrity_continue_opt),
+                           static_cast<bool>(*cmd_trie_integrity_sanitize_opt));
+        } else if (*cmd_trie_account_analysis) {
+            trie_account_analysis(chaindata_env_config);
+        } else if (*cmd_trie_root) {
+            trie_root(chaindata_env_config);
         }
 
         return 0;

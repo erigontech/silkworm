@@ -176,16 +176,16 @@ ValidationResult pre_validate_common_base(const Transaction& txn, evmc_revision 
         return ValidationResult::kNonceTooHigh;
     }
 
-    // EIP-3860: Limit and meter initcode
-    const bool contract_creation{!txn.to};
-    if (revision >= EVMC_SHANGHAI && contract_creation && txn.data.size() > kMaxInitCodeSize) {
-        return ValidationResult::kMaxInitCodeSizeExceeded;
-    }
-
     return ValidationResult::kOk;
 }
 
 ValidationResult pre_validate_common_forks(const Transaction& txn, const evmc_revision rev, const std::optional<intx::uint256>& blob_gas_price) noexcept {
+    // EIP-3860: Limit and meter initcode
+    const bool contract_creation{!txn.to};
+    if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > kMaxInitCodeSize) {
+        return ValidationResult::kMaxInitCodeSizeExceeded;
+    }
+
     if (rev >= EVMC_CANCUN) {
         // EIP-4844: Shard Blob Transactions
         if (txn.type == TransactionType::kBlob) {
@@ -205,16 +205,13 @@ ValidationResult pre_validate_common_forks(const Transaction& txn, const evmc_re
                 return ValidationResult::kProhibitedContractCreation;
             }
         }
-        //        if (!excess_blob_gas) {
-        //           return ValidationResult::kWrongBlobGasUsed;
-        //       }
     }
 
     if (rev >= EVMC_PRAGUE) {
         // EIP-7702
         if (txn.type == TransactionType::kSetCode) {
             // Contract creation is disallowed for SetCode transactions
-            if (!txn.to) {
+            if (contract_creation) {
                 return ValidationResult::kProhibitedContractCreation;
             }
             if (std::empty(txn.authorizations)) {

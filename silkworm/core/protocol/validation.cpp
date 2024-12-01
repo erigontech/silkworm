@@ -44,12 +44,12 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas,
                                           const std::optional<intx::uint256>& blob_gas_price) {
-    if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
-        return ValidationResult::kInvalidSignature;
-    }
-
     if (const auto common_check = pre_validate_common_base(txn, rev, chain_id); common_check != ValidationResult::kOk) {
         return common_check;
+    }
+
+    if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
+        return ValidationResult::kInvalidSignature;
     }
 
     if (rev >= EVMC_LONDON) {

@@ -130,7 +130,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_b
         const auto stop_stage_name{Environment::get_stop_before_stage()};
         const auto stop_at_block = Environment::get_stop_at_block();
         if (stop_at_block) {
-            sync_context_->target_height = *stop_at_block;
+            sync_context_->target_block_num = *stop_at_block;
         }
 
         current_stages_count_ = stages_forward_order_.size();

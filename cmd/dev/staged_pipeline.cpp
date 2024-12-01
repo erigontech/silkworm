@@ -34,9 +34,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chain_data_init.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/db/snapshot_bundle_factory_impl.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -203,7 +201,7 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
     config.readonly = false;
 
     const auto datadir_path = std::filesystem::path{config.path}.parent_path();
-    SILK_INFO << "Debug unwind: datadir=" << datadir_path.string();
+    SILK_INFO << "Debug unwind datadir: " << datadir_path.string();
 
     Environment::set_stop_at_block(height);
     Environment::set_start_at_stage(start_at_stage);
@@ -216,13 +214,11 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
     ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
     ro_txn.abort();
 
-    auto data_directory = std::make_unique<DataDirectory>();
-    snapshots::SnapshotRepository repository{
-        data_directory->snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>(),
-    };
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    auto data_directory = std::make_unique<DataDirectory>(datadir_path);
+    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/false);
+    auto state_repository = db::state::make_state_repository(data_directory->snapshots().path(), /*open=*/false);
+    db::DataStoreRef data_store{db::RWAccess{env}, blocks_repository, state_repository};
+    db::DataModelFactory data_model_factory{data_store};
 
     // We need full snapshot sync to take place to have database tables properly updated
     snapshots::SnapshotSettings snapshot_settings{
@@ -237,7 +233,7 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
     db::SnapshotSync snapshot_sync{
         std::move(snapshot_settings),
         chain_config->chain_id,
-        db::DataStoreRef{env, repository},  // NOLINT(*-slicing)
+        data_store,
         std::filesystem::path{},
         empty_scheduler};
 
@@ -303,10 +299,10 @@ void debug_unwind(db::EnvConfig& config, BlockNum height, uint32_t step, const b
 
     // Unwind has just set progress for pre-Execution stages back to unwind_point even if it is within the snapshots
     // We need to reset progress for such stages to the max block in snapshots to avoid database update on next start
-    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, repository.max_block_available());
-    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, repository.max_block_available());
-    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, repository.max_block_available());
-    db::stages::write_stage_progress(txn, db::stages::kSendersKey, repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, blocks_repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, blocks_repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, blocks_repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kSendersKey, blocks_repository.max_block_available());
 
     txn.commit_and_stop();
 }
@@ -333,12 +329,10 @@ void unwind(db::EnvConfig& config, BlockNum unwind_point, const bool remove_bloc
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
     auto data_directory = std::make_unique<DataDirectory>();
-    snapshots::SnapshotRepository repository{
-        data_directory->snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>(),
-    };
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
+    auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
+    db::DataStoreRef data_store{db::RWAccess{env}, blocks_repository, state_repository};
+    db::DataModelFactory data_model_factory{data_store};
 
     boost::asio::io_context io_context;
 
@@ -443,12 +437,10 @@ void forward(db::EnvConfig& config, BlockNum forward_point, const bool dry,
     SILK_INFO << "Forward: datadir=" << datadir_path.string();
 
     auto data_directory = std::make_unique<DataDirectory>();
-    snapshots::SnapshotRepository repository{
-        data_directory->snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>(),
-    };
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
+    auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
+    db::DataStoreRef data_store{db::RWAccess{env}, blocks_repository, state_repository};
+    db::DataModelFactory data_model_factory{data_store};
 
     boost::asio::io_context io_context;
 
@@ -515,12 +507,10 @@ void bisect_pipeline(db::EnvConfig& config, BlockNum start, BlockNum end, const 
     SILK_INFO << "Bisect: datadir=" << datadir_path.string();
 
     auto data_directory = std::make_unique<DataDirectory>();
-    snapshots::SnapshotRepository repository{
-        data_directory->snapshots().path(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
-        std::make_unique<db::SnapshotBundleFactoryImpl>(),
-    };
-    db::DataModelFactory data_model_factory = [&](db::ROTxn& tx) { return db::DataModel{tx, repository}; };
+    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
+    auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
+    db::DataStoreRef data_store{db::RWAccess{env}, blocks_repository, state_repository};
+    db::DataModelFactory data_model_factory{data_store};
 
     boost::asio::io_context io_context;
 

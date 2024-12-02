@@ -655,11 +655,10 @@ void reset_to_download(db::EnvConfig& config, const bool keep_senders, const boo
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    if (!force && !user_confirmation("Are you sure? This will erase the database content written after BlockHashes stage!")) {
+    if (!force && !user_confirmation("Are you sure? This will erase the database content written after " +
+                                     std::string(keep_senders ? db::stages::kSendersKey : db::stages::kBlockHashesKey) + " stage!")) {
         return;
     }
-
-    log::Info() << "OK, please be patient...";
 
     auto env{silkworm::db::open_env(config)};
     db::RWTxnManaged txn(env);
@@ -668,50 +667,50 @@ void reset_to_download(db::EnvConfig& config, const bool keep_senders, const boo
     // Void finish stage
     db::stages::write_stage_progress(txn, db::stages::kFinishKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kFinishKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kFinishKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void TxLookup stage
-    SILK_INFO << db::stages::kTxLookupKey << log::Args{"table", db::table::kTxLookup.name} << "truncating ...";
+    SILK_INFO_M(db::stages::kTxLookupKey, {"table", db::table::kTxLookup.name}) << "truncating ...";
     db::PooledCursor source(*txn, db::table::kTxLookup);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kTxLookupKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kTxLookupKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kTxLookupKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kTxLookupKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void CallTraces stage
-    SILK_INFO << db::stages::kCallTracesKey << log::Args{"table", db::table::kCallFromIndex.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kCallTracesKey, {"table", db::table::kCallFromIndex.name}) << "truncating ...";
     source.bind(*txn, db::table::kCallFromIndex);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kCallTracesKey << log::Args{"table", db::table::kCallToIndex.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kCallTracesKey, {"table", db::table::kCallToIndex.name}) << "truncating ...";
     source.bind(*txn, db::table::kCallToIndex);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kCallTracesKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kCallTracesKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kCallTracesKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kCallTracesKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void LogIndex stage
-    SILK_INFO << db::stages::kLogIndexKey << log::Args{"table", db::table::kLogTopicIndex.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kLogIndexKey, {"table", db::table::kLogTopicIndex.name}) << "truncating ...";
     source.bind(*txn, db::table::kLogTopicIndex);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kLogIndexKey << log::Args{"table", db::table::kLogAddressIndex.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kLogIndexKey, {"table", db::table::kLogAddressIndex.name}) << "truncating ...";
     source.bind(*txn, db::table::kLogAddressIndex);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kLogIndexKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kLogIndexKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kLogIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kLogIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HistoryIndex (StorageHistoryIndex + AccountHistoryIndex) stage
-    SILK_INFO << db::stages::kStorageHistoryIndexKey << log::Args{"table", db::table::kStorageHistory.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kStorageHistoryIndexKey, {"table", db::table::kStorageHistory.name}) << "truncating ...";
     source.bind(*txn, db::table::kStorageHistory);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kAccountHistoryIndexKey << log::Args{"table", db::table::kAccountHistory.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kAccountHistoryIndexKey, {"table", db::table::kAccountHistory.name}) << "truncating ...";
     source.bind(*txn, db::table::kAccountHistory);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kStorageHistoryIndexKey, 0);
@@ -719,70 +718,70 @@ void reset_to_download(db::EnvConfig& config, const bool keep_senders, const boo
     db::stages::write_stage_prune_progress(txn, db::stages::kStorageHistoryIndexKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kAccountHistoryIndexKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kStorageHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
-    SILK_INFO << db::stages::kAccountHistoryIndexKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kStorageHistoryIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    SILK_INFO_M(db::stages::kAccountHistoryIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HashState stage
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"table", db::table::kHashedCodeHash.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedCodeHash.name}) << "truncating ...";
     source.bind(*txn, db::table::kHashedCodeHash);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"table", db::table::kHashedStorage.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedStorage.name}) << "truncating ...";
     source.bind(*txn, db::table::kHashedStorage);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"table", db::table::kHashedAccounts.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedAccounts.name}) << "truncating ...";
     source.bind(*txn, db::table::kHashedAccounts);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kHashStateKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kHashStateKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kHashStateKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kHashStateKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Intermediate Hashes stage
-    SILK_INFO << db::stages::kIntermediateHashesKey << log::Args{"table", db::table::kTrieOfStorage.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfStorage.name}) << "truncating ...";
     source.bind(*txn, db::table::kTrieOfStorage);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kIntermediateHashesKey << log::Args{"table", db::table::kTrieOfAccounts.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfAccounts.name}) << "truncating ...";
     source.bind(*txn, db::table::kTrieOfAccounts);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kIntermediateHashesKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kIntermediateHashesKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Execution stage
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kBlockReceipts.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kBlockReceipts.name}) << "truncating ...";
     source.bind(*txn, db::table::kBlockReceipts);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kLogs.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kLogs.name}) << "truncating ...";
     source.bind(*txn, db::table::kLogs);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kIncarnationMap.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kIncarnationMap.name}) << "truncating ...";
     source.bind(*txn, db::table::kIncarnationMap);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kCode.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kCode.name}) << "truncating ...";
     source.bind(*txn, db::table::kCode);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kPlainCodeHash.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainCodeHash.name}) << "truncating ...";
     source.bind(*txn, db::table::kPlainCodeHash);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kAccountChangeSet.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kAccountChangeSet.name}) << "truncating ...";
     source.bind(*txn, db::table::kAccountChangeSet);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kStorageChangeSet.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kStorageChangeSet.name}) << "truncating ...";
     source.bind(*txn, db::table::kStorageChangeSet);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kCallTraceSet.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kCallTraceSet.name}) << "truncating ...";
     source.bind(*txn, db::table::kCallTraceSet);
     txn->clear_map(source.map());
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kPlainState.name} << " truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainState.name}) << "truncating ...";
     source.bind(*txn, db::table::kPlainState);
     txn->clear_map(source.map());
     txn.commit_and_renew();
 
     {
-        SILK_INFO << db::stages::kExecutionKey << log::Args{"table", db::table::kPlainState.name} << " redo genesis allocations ...";
+        SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainState.name}) << "redo genesis allocations ...";
         // Read chain ID from database
         const auto chain_config{db::read_chain_config(txn)};
         ensure(chain_config.has_value(), "cannot read chain configuration from database");
@@ -798,23 +797,23 @@ void reset_to_download(db::EnvConfig& config, const bool keep_senders, const boo
     db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, 0);
     txn.commit_and_renew();
-    SILK_INFO << db::stages::kExecutionKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+    SILK_INFO_M(db::stages::kExecutionKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
 
     if (!keep_senders) {
         // Void Senders stage
-        SILK_INFO << db::stages::kSendersKey << log::Args{"table", db::table::kSenders.name} << " truncating ...";
+        SILK_INFO_M(db::stages::kSendersKey, {"table", db::table::kSenders.name}) << "truncating ...";
         source.bind(*txn, db::table::kSenders);
         txn->clear_map(source.map());
         db::stages::write_stage_progress(txn, db::stages::kSendersKey, 0);
         db::stages::write_stage_prune_progress(txn, db::stages::kSendersKey, 0);
         txn.commit_and_renew();
-        SILK_INFO << db::stages::kSendersKey << log::Args{"new height", "0", "in", StopWatch::format(sw.lap().second)};
+        SILK_INFO_M(db::stages::kSendersKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
         if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
     }
 
-    auto [tp, _]{sw.stop()};
-    auto duration{sw.since_start(tp)};
-    SILK_INFO << "All done" << log::Args{"in", StopWatch::format(duration)};
+    const auto [tp, _] = sw.stop();
+    const auto duration = sw.since_start(tp);
+    SILK_INFO_M("All done", {"in", StopWatch::format(duration)});
 }
 
 void trie_account_analysis(db::EnvConfig& config) {

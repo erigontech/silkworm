@@ -23,6 +23,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -71,6 +72,10 @@ uint64_t Block::get_block_size() const {
     return rlp_head.payload_length;
 }
 
+}
+
+namespace silkworm {
+
 std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_hash) {
     if (block_num_or_hash.is_number()) {
         out << "0x" << std::hex << block_num_or_hash.number() << std::dec;
@@ -85,12 +90,12 @@ std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_h
 
 void BlockNumOrHash::build(const std::string& block_num_or_hash) {
     value_ = uint64_t{0};
-    if (block_num_or_hash == core::kEarliestBlockId) {
+    if (block_num_or_hash == kEarliestBlockId) {
         value_ = kEarliestBlockNum;
-    } else if (block_num_or_hash == core::kLatestBlockId ||
-               block_num_or_hash == core::kPendingBlockId ||
-               block_num_or_hash == core::kFinalizedBlockId ||
-               block_num_or_hash == core::kSafeBlockId) {
+    } else if (block_num_or_hash == kLatestBlockId ||
+               block_num_or_hash == kPendingBlockId ||
+               block_num_or_hash == kFinalizedBlockId ||
+               block_num_or_hash == kSafeBlockId) {
         value_ = block_num_or_hash;
     } else if (absl::StartsWithIgnoreCase(block_num_or_hash, "0x")) {
         if (block_num_or_hash.length() == 66) {
@@ -104,5 +109,6 @@ void BlockNumOrHash::build(const std::string& block_num_or_hash) {
         value_ = std::stoul(block_num_or_hash, nullptr, 10);
     }
 }
+
 
 }  // namespace silkworm::rpc

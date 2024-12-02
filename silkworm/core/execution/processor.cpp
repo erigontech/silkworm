@@ -31,7 +31,8 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& ru
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
-    SILKWORM_ASSERT(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
+    // Plain debug assertion instead of SILKWORM_ASSERT not to validate txn twice (see execute_block_no_post_validation)
+    assert(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());

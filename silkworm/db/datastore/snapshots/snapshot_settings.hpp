@@ -34,6 +34,7 @@ struct SnapshotSettings {
     // Stop producing new snapshots
     bool stop_freezer{false};
     bool verify_on_startup{false};
+    bool no_seeding{false};
 };
 
 }  // namespace silkworm::snapshots

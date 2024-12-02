@@ -75,3 +75,6 @@ target_link_libraries(snapshots PRIVATE absl::strings cmd_common magic_enum::mag
 
 add_executable(db_toolbox db_toolbox.cpp)
 target_link_libraries(db_toolbox PRIVATE silkworm_node cmd_common CLI11::CLI11 magic_enum::magic_enum)
+
+add_executable(staged_pipeline staged_pipeline.cpp)
+target_link_libraries(staged_pipeline PRIVATE silkworm_node cmd_common CLI11::CLI11 magic_enum::magic_enum)

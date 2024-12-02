@@ -167,10 +167,11 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
     auto expected_block_num{from + 1};
     auto header_key{db::block_key(expected_block_num)};
     auto canon_hashes_cursor = txn.rw_cursor(db::table::kCanonicalHashes);
-    auto data{canon_hashes_cursor->find(db::to_slice(header_key), /*throw_notfound=*/false)};
+    auto data = canon_hashes_cursor->find(db::to_slice(header_key), /*throw_notfound=*/false);
     while (data.done) {
         reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
         if (reached_block_num_ > to) {
+            --reached_block_num_;
             break;
         }
 

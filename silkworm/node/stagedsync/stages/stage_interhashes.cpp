@@ -89,7 +89,9 @@ Stage::Result InterHashes::forward(RWTxn& txn) {
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
-            ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
+            // TODO(canepat) debug_unwind with target 4'000'000 does not work in incremental mode
+            // ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
+            ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         }
 
         if (ret == Stage::Result::kWrongStateRoot) {
@@ -104,20 +106,16 @@ Stage::Result InterHashes::forward(RWTxn& txn) {
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -173,7 +171,9 @@ Stage::Result InterHashes::unwind(RWTxn& txn) {
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
-            ret = increment_intermediate_hashes(txn, previous_progress, to, &expected_state_root);
+            // TODO(canepat) debug_unwind with target 4'000'000 does not work in incremental mode
+            // ret = increment_intermediate_hashes(txn, previous_progress, to, &expected_state_root);
+            ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         }
 
         success_or_throw(ret);
@@ -182,20 +182,16 @@ Stage::Result InterHashes::unwind(RWTxn& txn) {
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -458,6 +454,7 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(RWTxn& txn, const evmc
         log_lck.unlock();
 
         const evmc::bytes32 computed_root{trie_loader_->calculate_root()};
+        SILK_TRACE_M(log_prefix_, {"function", std::string(__FUNCTION__), "computed_root", to_hex(computed_root.bytes)});
 
         // Fail if not what expected
         if (expected_root != nullptr && computed_root != *expected_root) {
@@ -473,20 +470,16 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(RWTxn& txn, const evmc
         flush_collected_nodes(txn);
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -522,6 +515,7 @@ Stage::Result InterHashes::increment_intermediate_hashes(RWTxn& txn, BlockNum fr
         log_lck.unlock();
 
         const evmc::bytes32 computed_root{trie_loader_->calculate_root()};
+        SILK_TRACE_M(log_prefix_, {"function", std::string(__FUNCTION__), "computed_root", to_hex(computed_root.bytes)});
 
         // Fail if not what expected
         if (expected_root != nullptr && computed_root != *expected_root) {
@@ -530,28 +524,23 @@ Stage::Result InterHashes::increment_intermediate_hashes(RWTxn& txn, BlockNum fr
             account_collector_.reset();  // Will invoke dtor which causes all flushed files (if any) to be deleted
             storage_collector_.reset();  // Will invoke dtor which causes all flushed files (if any) to be deleted
             log_lck.unlock();
-            log::Error("Wrong trie root",
-                       {"expected", to_hex(*expected_root, true), "got", to_hex(computed_root, true)});
+            SILK_ERROR_M("Wrong trie root", {"expected", to_hex(*expected_root, true), "got", to_hex(computed_root, true)});
             return Stage::Result::kWrongStateRoot;
         }
 
         flush_collected_nodes(txn);
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -621,4 +610,5 @@ std::vector<std::string> InterHashes::get_log_progress() {
     }
     return ret;
 }
+
 }  // namespace silkworm::stagedsync

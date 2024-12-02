@@ -30,6 +30,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
@@ -69,11 +70,13 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin();
 
     try {
+        rpc::BlockReader block_reader{*tx->create_storage(), *tx};
+
         // Check if target block is the latest one: use local state cache (if any) for target transaction
-        const bool is_latest_block = co_await core::is_latest_block_num(BlockNumOrHash{block_id}, *tx);
+        const bool is_latest_block = co_await block_reader.is_latest_block_num(BlockNumOrHash{block_id});
         tx->set_state_cache_enabled(is_latest_block);
 
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         StateReader state_reader{*tx, block_num + 1};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
@@ -109,8 +112,10 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
@@ -205,8 +210,10 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto block_num = co_await block_reader.get_block_num(block_id);
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {

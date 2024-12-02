@@ -410,7 +410,10 @@ TEST_CASE("get_modified_accounts") {
             co_return result;
         }));
 
-        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx, 0x52a010, 0x52a010), boost::asio::use_future);
+        const auto chain_storage = tx.create_storage();
+        rpc::BlockReader block_reader{*chain_storage, tx};
+
+        auto result = boost::asio::co_spawn(pool, get_modified_accounts(block_reader, tx, 0x52a010, 0x52a010), boost::asio::use_future);
         const auto accounts = result.get();
         nlohmann::json j = accounts;
         CHECK(j == R"([

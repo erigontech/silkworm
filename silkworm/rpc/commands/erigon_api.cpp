@@ -290,8 +290,9 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
 
     try {
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto header{co_await chain_storage->read_canonical_header(block_num)};
 
         if (!header) {

@@ -16,23 +16,21 @@
 
 #pragma once
 
-#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/db/stages.hpp>
 
 namespace silkworm::db::chain {
 
 //! ChainStorage represents the storage for blockchain primary data, namely: chain configuration, block headers,
 //! bodies and transactions.
 
-inline constexpr const char* kEarliestBlockId{"earliest"};
-inline constexpr const char* kLatestBlockId{"latest"};
-inline constexpr const char* kPendingBlockId{"pending"};
-inline constexpr const char* kFinalizedBlockId{"finalized"};
-inline constexpr const char* kSafeBlockId{"safe"};
-inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
+inline const Bytes kHeaders = string_to_bytes(db::stages::kHeadersKey);
+inline const Bytes kExecution = string_to_bytes(db::stages::kExecutionKey);
+inline const Bytes kFinish = string_to_bytes(db::stages::kFinishKey);
 
 class ChainStorage {
   public:
@@ -100,33 +98,31 @@ class ChainStorage {
     virtual Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const = 0;
 
 
-    Task<bool> is_latest_block_num(BlockNum block_num, db::kv::api::Transaction& tx);
+    Task<bool> is_latest_block_num(BlockNum block_num);
 
-    Task<BlockNum> get_block_num_by_tag(const std::string& block_id, db::kv::api::Transaction& tx);
+    Task<BlockNum> get_block_num_by_tag(const std::string& block_id);
 
-    Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, db::kv::api::Transaction& tx, bool latest_required);
+    Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, bool latest_required);
+    Task<BlockNum> get_block_num(const std::string& block_id);
+    Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash);
 
-    Task<BlockNum> get_block_num(const std::string& block_id, db::kv::api::Transaction& tx);
+    Task<BlockNum> get_current_block_num();
 
-    Task<std::pair<BlockNum, bool>> get_block_num(const api::BlockNumOrHash& block_num_or_hash, db::kv::api::Transaction& tx);
+    Task<BlockNum> get_max_block_num();
 
-    Task<BlockNum> get_current_block_num(db::kv::api::Transaction& tx);
+    Task<BlockNum> get_latest_block_num();
 
-    Task<BlockNum> get_max_block_num(db::kv::api::Transaction& tx);
+    Task<BlockNum> get_latest_executed_block_num();
 
-    Task<BlockNum> get_latest_block_num(db::kv::api::Transaction& tx);
+    Task<BlockNum> get_forkchoice_finalized_block_num();
 
-    Task<BlockNum> get_latest_executed_block_num(db::kv::api::Transaction& tx);
+    Task<BlockNum> get_forkchoice_safe_block_num();
 
-    Task<BlockNum> get_forkchoice_finalized_block_num(db::kv::api::Transaction& tx);
-
-    Task<BlockNum> get_forkchoice_safe_block_num(db::kv::api::Transaction& tx);
-
-    Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash, db::kv::api::Transaction& tx);
+    Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash);
 
 private:
-    Task<BlockNum> get_forkchoice_block_num(kv::api::Transaction& tx, const char* block_hash_tag);
-
+    Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag);
+    Task<BlockNum> get_sync_stage_progress(const Bytes& stage_key);
 
 };
 

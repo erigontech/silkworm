@@ -495,8 +495,9 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_num(const nlohman
 
     try {
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (!block_with_hash) {
             reply = make_json_content(request, nullptr);
@@ -728,8 +729,9 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_num_and_index(con
 
     try {
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const auto& transactions = block_with_hash->block.transactions;
@@ -777,8 +779,9 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_num_and_index
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const auto& transactions = block_with_hash->block.transactions;
@@ -884,12 +887,14 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     SILK_DEBUG << "call: " << call;
 
     auto tx = co_await database_->begin();
+    const auto chain_storage{tx->create_storage()};
+    rpc::BlockReader block_reader{*chain_storage, *tx};
 
     std::optional<BlockNum> block_num_for_gas_limit;
     if (params.size() == 2) {
         const auto block_id = params[1].get<std::string>();
         SILK_DEBUG << "block_id: " << block_id;
-        block_num_for_gas_limit = co_await core::get_block_num(block_id, *tx);
+        block_num_for_gas_limit = co_await block_reader.get_block_num(block_id);
     }
 
     try {
@@ -897,9 +902,8 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
 
         const BlockNumOrHash block_num_or_hash{kLatestBlockId};
 
-        const auto chain_storage{tx->create_storage()};
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const auto latest_block_num = co_await core::get_block_num(core::kLatestBlockId, *tx);
+        const auto latest_block_num = co_await block_reader.get_block_num(core::kLatestBlockId);
         SILK_DEBUG << "chain_id: " << chain_config.chain_id << ", latest_block_num: " << latest_block_num;
 
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_num);
@@ -959,8 +963,11 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
     auto tx = co_await database_->begin();
 
     try {
+        const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
         const auto block_num_or_hash = BlockNumOrHash{block_id};
-        const auto [block_num, is_latest_block] = co_await core::get_block_num(block_num_or_hash, *tx);
+        const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_num_or_hash);
         tx->set_state_cache_enabled(is_latest_block);
 
         StateReader state_reader{*tx, block_num + 1};
@@ -996,7 +1003,10 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
     auto tx = co_await database_->begin();
 
     try {
-        const auto [block_num, is_latest_block] = co_await core::get_block_num(block_id, *tx, /*latest_required=*/true);
+        const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
         StateReader state_reader{*tx, block_num + 1};
@@ -1035,7 +1045,9 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
     auto tx = co_await database_->begin();
 
     try {
-        const auto [block_num, is_latest_block] = co_await core::get_block_num(block_id, *tx, /*latest_required=*/true);
+        const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
         StateReader state_reader{*tx, block_num + 1};
@@ -1081,7 +1093,9 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
     auto tx = co_await database_->begin();
 
     try {
-        const auto [block_num, is_latest_block] = co_await core::get_block_num(block_id, *tx, /*latest_required=*/true);
+        const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
         StateReader state_reader{*tx, block_num + 1};
@@ -1127,8 +1141,9 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
 
     try {
         const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const auto [block_num, is_latest_block] = co_await core::get_block_num(block_id, *tx, /*latest_required=*/true);
+        const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
@@ -1238,7 +1253,9 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
         tx->set_state_cache_enabled(/*cache_enabled=*/true);  // always at latest block
 
         const auto chain_storage{tx->create_storage()};
-        const auto latest_block_num = co_await core::get_block_num(core::kLatestBlockId, *tx);
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto latest_block_num = co_await block_reader.get_block_num(core::kLatestBlockId);
         SILK_TRACE << "latest_block_num " << latest_block_num;
 
         BlockProvider block_provider = [this, &chain_storage](BlockNum block_num) {
@@ -1485,6 +1502,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
 
     try {
         LogsWalker logs_walker{*block_cache_, *tx};
+
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         filter.start = start;
         filter.end = end;

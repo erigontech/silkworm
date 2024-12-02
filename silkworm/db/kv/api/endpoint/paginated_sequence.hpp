@@ -298,7 +298,7 @@ class IntersectionIterator : public PaginatedIterator<V> {
 };
 
 template <Value V>
-std::unique_ptr<PaginatedIterator<V>> set_intersection(PaginatedStream<V> it1, PaginatedStream<V> it2, size_t limit = std::numeric_limits<size_t>::max()) {
+PaginatedStream<V> set_intersection(PaginatedStream<V> it1, PaginatedStream<V> it2, size_t limit = std::numeric_limits<size_t>::max()) {
     if (!it1 || !it2) {
         return std::make_unique<EmptyIterator<V>>();
     }
@@ -367,7 +367,7 @@ class UnionIterator : public PaginatedIterator<V> {
 };
 
 template <Value V>
-std::unique_ptr<PaginatedIterator<V>> set_union(PaginatedStream<V> it1, PaginatedStream<V> it2, bool ascending = true, size_t limit = std::numeric_limits<size_t>::max()) {
+PaginatedStream<V> set_union(PaginatedStream<V> it1, PaginatedStream<V> it2, bool ascending = true, size_t limit = std::numeric_limits<size_t>::max()) {
     if (!it1 && !it2) {
         return std::make_unique<EmptyIterator<V>>();
     }

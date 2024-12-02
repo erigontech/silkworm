@@ -29,9 +29,6 @@ using namespace silkworm::db::chain;
 
 namespace silkworm::db::chain {
 
-static constexpr const char* kHeadBlockHash = "headBlockHash";
-static constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
-static constexpr const char* kSafeBlockHash = "safeBlockHash";
 
 Task<bool> ChainStorage::is_latest_block_num(BlockNum block_num) {
     const auto last_executed_block_num = co_await get_latest_executed_block_num();
@@ -140,59 +137,6 @@ Task<bool> ChainStorage::is_latest_block_num(const BlockNumOrHash& block_num_or_
             co_return block_num == latest_block_num;
         }
     }
-}
-
-Task<BlockNum> ChainStorage::get_latest_block_num() {
-    std::cout << "empty:: ChainStorage::get_latest_block_num\n";
-
-    // TODO
-    /*
-
-    const auto kv_pair = co_await tx.get(table::kLastForkchoiceName, string_to_bytes(kHeadBlockHash));
-    const auto head_block_hash_data = kv_pair.value;
-    if (!head_block_hash_data.empty()) {
-        const auto head_block_hash = to_bytes32(head_block_hash_data);
-        co_return co_await read_block_num(head_block_hash);
-    }
-    co_return co_await get_latest_executed_block_num();
-*/
-    co_return 0;
-}
-
-Task<BlockNum> ChainStorage::get_sync_stage_progress(const Bytes& /* stage_key */) {
-    std::cout << "empty:: ChainStorage::get_sync_stage_progress\n";
-    // TODO
-    /*
-    const auto kv_pair = co_await tx.get(db::table::kSyncStageProgressName, stage_key);
-    const auto value = kv_pair.value;
-    if (value.empty()) {
-        co_return 0;
-    }
-    if (value.length() < 8) {
-        throw std::runtime_error("data too short, expected 8 got " + std::to_string(value.length()));
-    }
-    BlockNum block_num = endian::load_big_u64(value.substr(0, 8).data());
-    co_return block_num;
-
-     */
-    co_return 0;
-}
-
-Task<BlockNum> ChainStorage::get_forkchoice_block_num(const char* /*block_hash_tag */) {
-    std::cout << "empty:: ChainStorage::get_forkchoice_block_num\n";
-
-    // TODO
-    /*
-    const auto kv_pair = co_await tx.get(table::kLastForkchoiceName, string_to_bytes(block_hash_tag));
-    const auto block_hash_data = kv_pair.value;
-    if (block_hash_data.empty()) {
-        co_return 0;
-    }
-    const auto block_hash = to_bytes32(block_hash_data);
-    co_return co_await read_block_num(block_hash);
-
-     */
-    co_return 0;
 }
 
 }  // namespace silkworm::db::chain

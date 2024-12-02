@@ -73,6 +73,10 @@ class MockChainStorage : public chain::ChainStorage {
 
     MOCK_METHOD((Task<std::optional<BlockNum>>), read_block_num_by_transaction_hash, (const evmc::bytes32&), (const, override));
     MOCK_METHOD((Task<std::optional<Transaction>>), read_transaction_by_idx_in_block, (BlockNum, uint64_t), (const, override));
+
+    MOCK_METHOD((Task<BlockNum>), get_latest_executed_block_num, (), (override));
+    MOCK_METHOD((Task<BlockNum>), get_forkchoice_finalized_block_num, (), (const, override));
+    MOCK_METHOD((Task<BlockNum>), get_forkchoice_safe_block_num, (), (const, override));
 };
 
 }  // namespace silkworm::db::test_util

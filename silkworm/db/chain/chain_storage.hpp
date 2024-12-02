@@ -33,6 +33,10 @@ inline const Bytes kHeaders = string_to_bytes(db::stages::kHeadersKey);
 inline const Bytes kExecution = string_to_bytes(db::stages::kExecutionKey);
 inline const Bytes kFinish = string_to_bytes(db::stages::kFinishKey);
 
+inline constexpr const char* kHeadBlockHash = "headBlockHash";
+inline constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
+inline constexpr const char* kSafeBlockHash = "safeBlockHash";
+
 class ChainStorage {
   public:
     virtual ~ChainStorage() = default;
@@ -98,6 +102,10 @@ class ChainStorage {
     virtual Task<std::optional<BlockNum>> read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const = 0;
     virtual Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const = 0;
 
+    virtual Task<BlockNum> get_latest_block_num() = 0;
+    virtual Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag) const = 0;
+    virtual Task<BlockNum> get_sync_stage_progress(const Bytes& stage_key) const = 0;
+
     Task<bool> is_latest_block_num(BlockNum block_num);
 
     Task<BlockNum> get_block_num_by_tag(const std::string& block_id);
@@ -110,7 +118,6 @@ class ChainStorage {
 
     Task<BlockNum> get_max_block_num();
 
-    Task<BlockNum> get_latest_block_num();
 
     Task<BlockNum> get_latest_executed_block_num();
 
@@ -120,9 +127,7 @@ class ChainStorage {
 
     Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash);
 
-  private:
-    Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag);
-    Task<BlockNum> get_sync_stage_progress(const Bytes& stage_key);
+
 };
 
 }  // namespace silkworm::db::chain

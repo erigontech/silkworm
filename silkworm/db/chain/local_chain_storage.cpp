@@ -149,4 +149,22 @@ Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_b
     throw std::runtime_error{"not yet implemented"};
 }
 
+Task<BlockNum> LocalChainStorage::get_latest_block_num()  {
+    throw std::runtime_error{"LocalChainStorage::get_latest_block_num: not yet implemented"};
+    // TODO    co_return 0;
+    co_return 0;
+}
+
+Task<BlockNum> LocalChainStorage::get_sync_stage_progress(const Bytes& /* stage_key */) const {
+    // TODO
+    throw std::runtime_error{"LocalChainStorage::get_sync_stage_progress:: not yet implemented"};
+    co_return 0;
+}
+
+Task<BlockNum> LocalChainStorage::get_forkchoice_block_num(const char* /*block_hash_tag */) const {
+    // TODO
+    throw std::runtime_error{"LocalChainStorage::get_forkchoice_block_num:: not yet implemented"};
+    co_return 0;
+}
+
 }  // namespace silkworm::db::chain

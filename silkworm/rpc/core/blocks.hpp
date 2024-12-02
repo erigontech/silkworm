@@ -21,9 +21,9 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/types/block.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkworm::rpc::core {
 

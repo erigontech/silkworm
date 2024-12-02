@@ -30,7 +30,6 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 
-
 // intx does not include operator<< overloading for uint<N>
 namespace intx {
 
@@ -44,7 +43,6 @@ inline std::ostream& operator<<(std::ostream& out, const uint<N>& value) {
 
 namespace silkworm {
 
-
 inline constexpr const char* kEarliestBlockId{"earliest"};
 inline constexpr const char* kLatestBlockId{"latest"};
 inline constexpr const char* kPendingBlockId{"pending"};
@@ -52,9 +50,8 @@ inline constexpr const char* kFinalizedBlockId{"finalized"};
 inline constexpr const char* kSafeBlockId{"safe"};
 inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
-
 class BlockNumOrHash {
-public:
+  public:
     explicit BlockNumOrHash(const std::string& block_num_or_hash) { build(block_num_or_hash); }
     explicit BlockNumOrHash(BlockNum block_num) noexcept : value_{block_num} {}
 
@@ -90,13 +87,12 @@ public:
         return is_tag() ? *std::get_if<std::string>(&value_) : "";
     }
 
-private:
+  private:
     void build(std::string const& block_num_or_hash);
 
     std::variant<uint64_t, evmc::bytes32, std::string> value_;
 };
 std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& b);
-
 
 //! \brief Strips leftmost zeroed bytes from byte sequence
 //! \param [in] data : The view to process

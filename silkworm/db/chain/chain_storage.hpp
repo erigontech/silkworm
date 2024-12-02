@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/infra/concurrency/task.hpp>
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -97,7 +98,6 @@ class ChainStorage {
     virtual Task<std::optional<BlockNum>> read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const = 0;
     virtual Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const = 0;
 
-
     Task<bool> is_latest_block_num(BlockNum block_num);
 
     Task<BlockNum> get_block_num_by_tag(const std::string& block_id);
@@ -120,10 +120,9 @@ class ChainStorage {
 
     Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash);
 
-private:
+  private:
     Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag);
     Task<BlockNum> get_sync_stage_progress(const Bytes& stage_key);
-
 };
 
 }  // namespace silkworm::db::chain

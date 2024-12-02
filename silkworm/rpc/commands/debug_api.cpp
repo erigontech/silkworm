@@ -447,7 +447,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     try {
         const auto chain_storage = tx->create_storage();
 
-        const bool is_latest_block = co_await core::is_latest_block_num(block_num_or_hash, *tx);
+        const bool is_latest_block = co_await chain_storage->is_latest_block_num(block_num_or_hash);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};

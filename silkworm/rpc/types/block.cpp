@@ -72,7 +72,7 @@ uint64_t Block::get_block_size() const {
     return rlp_head.payload_length;
 }
 
-}
+}  // namespace silkworm::rpc
 
 namespace silkworm {
 
@@ -110,5 +110,4 @@ void BlockNumOrHash::build(const std::string& block_num_or_hash) {
     }
 }
 
-
-}  // namespace silkworm::rpc
+}  // namespace silkworm

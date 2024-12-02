@@ -17,13 +17,12 @@
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/chain/chain.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-
 
 using namespace silkworm::db;
 using namespace silkworm::db::chain;
@@ -33,7 +32,6 @@ namespace silkworm::db::chain {
 static constexpr const char* kHeadBlockHash = "headBlockHash";
 static constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
 static constexpr const char* kSafeBlockHash = "safeBlockHash";
-
 
 Task<bool> ChainStorage::is_latest_block_num(BlockNum block_num) {
     const auto last_executed_block_num = co_await get_latest_executed_block_num();
@@ -102,8 +100,8 @@ Task<std::pair<BlockNum, bool>> ChainStorage::get_block_num(const BlockNumOrHash
     } else if (block_num_or_hash.is_hash()) {
         const auto block_num = co_await read_block_num(block_num_or_hash.hash());
         const auto latest_block_num = co_await get_latest_block_num();
-        std::cout << "TODO: should not happen: " << *block_num << " " <<  latest_block_num << "\n";
-        //co_return std::make_pair(block_num, block_num == latest_block_num); TODO
+        std::cout << "TODO: should not happen: " << *block_num << " " << latest_block_num << "\n";
+        // co_return std::make_pair(block_num, block_num == latest_block_num); TODO
     } else {
         throw std::invalid_argument("Invalid Block Number or Hash");
     }
@@ -120,7 +118,6 @@ Task<BlockNum> ChainStorage::get_max_block_num() {
 Task<BlockNum> ChainStorage::get_latest_executed_block_num() {
     co_return co_await get_sync_stage_progress(kExecution);
 }
-
 
 Task<BlockNum> ChainStorage::get_forkchoice_finalized_block_num() {
     co_return co_await get_forkchoice_block_num(kFinalizedBlockHash);
@@ -179,7 +176,6 @@ Task<BlockNum> ChainStorage::get_sync_stage_progress(const Bytes& /* stage_key *
 
      */
     co_return 0;
-
 }
 
 Task<BlockNum> ChainStorage::get_forkchoice_block_num(const char* /*block_hash_tag */) {
@@ -199,4 +195,4 @@ Task<BlockNum> ChainStorage::get_forkchoice_block_num(const char* /*block_hash_t
     co_return 0;
 }
 
-}  // namespace silkworm::rpc::core
+}  // namespace silkworm::db::chain

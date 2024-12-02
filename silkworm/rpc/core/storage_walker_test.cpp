@@ -65,11 +65,11 @@ class DummyCursor : public CursorDupSort {
     }
 
     Task<KeyValue> seek(silkworm::ByteView key) override {
-        const auto key_ = silkworm::to_hex(key);
+        const auto key_hex = silkworm::to_hex(key);
 
         KeyValue out;
         for (itr_ = table_.begin(); itr_ != table_.end(); ++itr_) {
-            auto actual = key_;
+            auto actual = key_hex;
             auto delta = itr_.key().size() - actual.size();
             if (delta > 0) {
                 actual += kZeros.substr(0, delta);

@@ -92,22 +92,22 @@ class Progress {
     //! Prints progress ticks
     std::string print_interval(char c = '.') {
         uint32_t percentage{std::min(percent(), 100u)};
-        uint32_t numChars{percentage / percent_step_};
-        if (!numChars) return "";
-        uint32_t intChars{numChars - printed_bar_len_};
-        if (!intChars) return "";
-        std::string ret(intChars, c);
-        printed_bar_len_ += intChars;
+        uint32_t num_chars{percentage / percent_step_};
+        if (!num_chars) return "";
+        uint32_t int_chars{num_chars - printed_bar_len_};
+        if (!int_chars) return "";
+        std::string ret(int_chars, c);
+        printed_bar_len_ += int_chars;
         return ret;
     }
 
     [[maybe_unused]] std::string print_progress(char c = '.') const {
         uint32_t percentage{percent()};
-        uint32_t numChars{percentage / percent_step_};
-        if (!numChars) {
+        uint32_t num_chars{percentage / percent_step_};
+        if (!num_chars) {
             return "";
         }
-        std::string ret(numChars, c);
+        std::string ret(num_chars, c);
         return ret;
     }
 
@@ -173,8 +173,8 @@ struct StageOrderCompare {
 };
 
 void list_stages(db::EnvConfig& config) {
-    static std::string kTableHeaderFormat{" %-26s %10s "};
-    static std::string kTableRowFormat{" %-26s %10u %-8s"};
+    static constexpr char kTableHeaderFormat[] = " %-26s %10s ";
+    static constexpr char kTableRowFormat[] = " %-26s %10u %-8s";
 
     auto env = silkworm::db::open_env(config);
     auto txn = env.start_read();

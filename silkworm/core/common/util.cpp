@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <regex>
-#include <string_view>
 
 #include <silkworm/core/common/assert.hpp>
 

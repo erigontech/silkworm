@@ -69,10 +69,10 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
     }
 
     SECTION("file path contains . or ..") {
-        const std::vector<std::filesystem::path> kJwtFilePaths{
+        const std::vector<std::filesystem::path> jwt_file_paths{
             TemporaryDirectory::get_unique_temporary_path() / "../jwt.hex",
             TemporaryDirectory::get_unique_temporary_path() / "./jwt.hex"};
-        for (const auto& jwt_file_path : kJwtFilePaths) {
+        for (const auto& jwt_file_path : jwt_file_paths) {
             std::string jwt_token;
             CHECK_NOTHROW((jwt_token = generate_jwt_token(jwt_file_path)));
             REQUIRE(std::filesystem::exists(jwt_file_path));

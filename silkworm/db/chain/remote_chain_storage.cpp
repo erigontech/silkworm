@@ -252,7 +252,6 @@ Task<BlockNum> RemoteChainStorage::get_sync_stage_progress(const Bytes& stage_ke
     }
     BlockNum block_num = endian::load_big_u64(value.substr(0, 8).data());
     co_return block_num;
-
 }
 
 Task<BlockNum> RemoteChainStorage::get_forkchoice_block_num(const char* block_hash_tag) const {
@@ -265,8 +264,6 @@ Task<BlockNum> RemoteChainStorage::get_forkchoice_block_num(const char* block_ha
     auto block_num = co_await read_block_num(block_hash);
     SILKWORM_ASSERT(block_num);
     co_return *block_num;
-
 }
-
 
 }  // namespace silkworm::db::chain

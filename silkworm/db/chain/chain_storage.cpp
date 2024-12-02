@@ -29,7 +29,6 @@ using namespace silkworm::db::chain;
 
 namespace silkworm::db::chain {
 
-
 Task<bool> ChainStorage::is_latest_block_num(BlockNum block_num) {
     const auto last_executed_block_num = co_await get_latest_executed_block_num();
     co_return last_executed_block_num == block_num;

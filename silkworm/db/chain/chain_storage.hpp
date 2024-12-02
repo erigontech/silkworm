@@ -118,7 +118,6 @@ class ChainStorage {
 
     Task<BlockNum> get_max_block_num();
 
-
     Task<BlockNum> get_latest_executed_block_num();
 
     Task<BlockNum> get_forkchoice_finalized_block_num();
@@ -126,8 +125,6 @@ class ChainStorage {
     Task<BlockNum> get_forkchoice_safe_block_num();
 
     Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash);
-
-
 };
 
 }  // namespace silkworm::db::chain

@@ -149,7 +149,7 @@ Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_b
     throw std::runtime_error{"not yet implemented"};
 }
 
-Task<BlockNum> LocalChainStorage::get_latest_block_num()  {
+Task<BlockNum> LocalChainStorage::get_latest_block_num() {
     throw std::runtime_error{"LocalChainStorage::get_latest_block_num: not yet implemented"};
     // TODO    co_return 0;
     co_return 0;

@@ -53,16 +53,17 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
                     << ", next=" << next;
             } else {
                 header = data_model_.read_canonical_header(next);
-                if (!header)
+                if (!header) {
                     unknown = true;
-                else {
-                    Hash nextHash = header->hash();
-                    auto [exp_next_hash, _] = get_ancestor(nextHash, next, skip + 1, max_non_canonical);
+                } else {
+                    Hash next_hash = header->hash();
+                    auto [exp_next_hash, _] = get_ancestor(next_hash, next, skip + 1, max_non_canonical);
                     if (exp_next_hash == hash) {
-                        hash = nextHash;
+                        hash = next_hash;
                         block_num = next;
-                    } else
+                    } else {
                         unknown = true;
+                    }
                 }
             }
         } else {  // reverse

@@ -32,6 +32,46 @@ static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
+static const ExecutionPipeline::StageNames kStagesForwardOrder{
+    kHeadersKey,
+    kBlockHashesKey,
+    kBlockBodiesKey,
+    kSendersKey,
+    kExecutionKey,
+    kHashStateKey,
+    kIntermediateHashesKey,
+    kHistoryIndexKey,
+    kLogIndexKey,
+    kCallTracesKey,
+    kTxLookupKey,
+    kTriggersStageKey,
+    kFinishKey,
+};
+
+static const ExecutionPipeline::StageNames kStagesUnwindOrder{
+    kFinishKey,
+    kTriggersStageKey,
+    kTxLookupKey,
+    kCallTracesKey,
+    kLogIndexKey,
+    kHistoryIndexKey,
+    kHashStateKey,
+    kIntermediateHashesKey,  // Needs to happen after unwinding HashState
+    kExecutionKey,
+    kSendersKey,
+    kBlockBodiesKey,
+    kBlockHashesKey,
+    kHeadersKey,
+};
+
+ExecutionPipeline::StageNames ExecutionPipeline::stages_forward_order() {
+    return kStagesForwardOrder;
+}
+
+ExecutionPipeline::StageNames ExecutionPipeline::stages_unwind_order() {
+    return kStagesUnwindOrder;
+}
+
 ExecutionPipeline::ExecutionPipeline(
     db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
@@ -40,39 +80,9 @@ ExecutionPipeline::ExecutionPipeline(
       log_timer_factory_{std::move(log_timer_factory)},
       sync_context_{std::make_unique<SyncContext>()},
       stages_{stages_factory(*sync_context_)},
-      current_stage_{stages_.end()} {
-    stages_forward_order_ = StageNames{
-        kHeadersKey,
-        kBlockHashesKey,
-        kBlockBodiesKey,
-        kSendersKey,
-        kExecutionKey,
-        kHashStateKey,
-        kIntermediateHashesKey,
-        kHistoryIndexKey,
-        kLogIndexKey,
-        kCallTracesKey,
-        kTxLookupKey,
-        kTriggersStageKey,
-        kFinishKey,
-    };
-
-    stages_unwind_order_ = StageNames{
-        kFinishKey,
-        kTriggersStageKey,
-        kTxLookupKey,
-        kCallTracesKey,
-        kLogIndexKey,
-        kHistoryIndexKey,
-        kHashStateKey,
-        kIntermediateHashesKey,  // Needs to happen after unwinding HashState
-        kExecutionKey,
-        kSendersKey,
-        kBlockBodiesKey,
-        kBlockHashesKey,  // De-canonify block hashes
-        kHeadersKey,
-    };
-}
+      current_stage_{stages_.end()},
+      stages_forward_order_{kStagesForwardOrder},
+      stages_unwind_order_{kStagesUnwindOrder} {}
 
 BlockNum ExecutionPipeline::head_header_number() const {
     return head_header_block_num_;
@@ -119,6 +129,9 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_b
         auto start_stage_name{Environment::get_start_at_stage()};
         const auto stop_stage_name{Environment::get_stop_before_stage()};
         const auto stop_at_block = Environment::get_stop_at_block();
+        if (stop_at_block) {
+            sync_context_->target_block_num = *stop_at_block;
+        }
 
         current_stages_count_ = stages_forward_order_.size();
         current_stage_number_ = 0;
@@ -181,7 +194,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_b
         head_header_hash_ = head_header_hash.value_or(Hash{});
         ensure(head_header.has_value(), [&]() { return "Sync pipeline, missing head header hash " + to_hex(head_header_hash_); });
         head_header_block_num_ = head_header->number;
-        if (head_header_block_num_ != target_block_num) {
+        if (!stop_at_block && head_header_block_num_ != target_block_num) {
             throw std::logic_error("Sync pipeline: head header not at target block_num " + to_string(target_block_num) +
                                    ", head_header_block_num= " + to_string(head_header_block_num_));
         }

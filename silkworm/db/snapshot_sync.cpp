@@ -56,7 +56,7 @@ struct PathHasher {
 static bool snapshot_file_is_fully_merged(std::string_view file_name) {
     const auto path = SnapshotPath::parse(std::filesystem::path{file_name});
     return path.has_value() &&
-           (path->extension() == blocks::kSegmentExtension) &&
+           (path->extension() == blocks::kSegmentExtension || path->extension() == blocks::kIdxExtension) &&
            (path->step_range().to_block_num_range().size() >= kMaxMergerSnapshotSize);
 }
 
@@ -88,6 +88,11 @@ Task<void> SnapshotSync::run() {
 
     if (!settings_.enabled) {
         SILK_INFO << "Snapshot sync disabled, no snapshot must be downloaded";
+        co_return;
+    }
+
+    if (settings_.no_downloader && settings_.no_seeding) {
+        co_await setup_and_run();
         co_return;
     }
 
@@ -137,7 +142,9 @@ Task<void> SnapshotSync::setup() {
     update_database(rw_txn, blocks_repository().max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
 
-    seed_frozen_local_snapshots();
+    if (!settings_.no_seeding) {
+        seed_frozen_local_snapshots();
+    }
 
     if (settings_.verify_on_startup) {
         client_.recheck_all_finished_torrents();

@@ -59,4 +59,5 @@ ValidationResult BlockExecutor::execute_single(const Block& block, db::Buffer& s
 
     return ValidationResult::kOk;
 }
+
 }  // namespace silkworm::execution::block

@@ -902,7 +902,7 @@ Task<void> kv_index_range_query(const std::shared_ptr<Service>& kv_service,
         std::cout << "KV IndexRange <- #timestamps: ";
         int count{0};
         ListOfTimestamp timestamps;
-        while (const auto value = co_await it.next()) {
+        while (const auto value = co_await it->next()) {
             timestamps.emplace_back(*value);
             ++count;
         }
@@ -929,7 +929,7 @@ Task<void> kv_history_range_query(const std::shared_ptr<Service>& kv_service,
         std::cout << "KV HistoryRange <- #keys and #values: ";
         int count{0};
         std::vector<KeyValue> keys_and_values;
-        while (const auto key_value = co_await it.next()) {
+        while (const auto key_value = co_await it->next()) {
             keys_and_values.emplace_back(*key_value);
             ++count;
         }
@@ -956,7 +956,7 @@ Task<void> kv_range_as_of_query(const std::shared_ptr<Service>& kv_service,
         std::cout << "KV RangeAsOf <- #keys and #values: ";
         int count{0};
         std::vector<KeyValue> keys_and_values;
-        while (const auto key_value = co_await it.next()) {
+        while (const auto key_value = co_await it->next()) {
             keys_and_values.emplace_back(*key_value);
             ++count;
         }

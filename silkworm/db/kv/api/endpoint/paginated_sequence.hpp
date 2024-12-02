@@ -19,6 +19,7 @@
 #include <concepts>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <optional>
 #include <tuple>
 #include <vector>
@@ -32,20 +33,37 @@
 
 namespace silkworm::db::kv::api {
 
+template <typename V>
+concept Value = std::copyable<V>;
+
 //! Definition of asynchronous paginated iterator (a.k.a. stream)
-template <typename I>
-concept PaginatedIterator =
-    requires(I i) {
-        typename I::value_type;
-        { i.has_next() } -> std::same_as<Task<bool>>;
-        { i.next() } -> std::same_as<Task<std::optional<typename std::iter_value_t<I>>>>;
-    };
+template <Value V>
+struct PaginatedIterator {
+    virtual ~PaginatedIterator() = default;
+
+    virtual Task<bool> has_next() = 0;
+    virtual Task<std::optional<V>> next() = 0;
+};
+
+template <Value V>
+using PaginatedStream = std::unique_ptr<PaginatedIterator<V>>;
+
+//! Empty paginated iterator
+template <Value V>
+class EmptyIterator : public PaginatedIterator<V> {
+  public:
+    using value_type = V;
+
+    Task<bool> has_next() override { co_return false; }
+
+    Task<std::optional<value_type>> next() override { co_return std::nullopt; }
+};
 
 //! Sequence of values produced by pagination using some asynchronous page provider function.
-template <typename T>
+template <Value V>
 class PaginatedSequence {
   public:
-    using Page = std::vector<T>;
+    using Page = std::vector<V>;
     struct PageResult {
         Page values;
         std::string next_page_token;
@@ -53,13 +71,13 @@ class PaginatedSequence {
     using PageToken = std::string;
     using Paginator = std::function<Task<PageResult>(PageToken)>;
 
-    class Iterator {
+    class Iterator : public PaginatedIterator<V> {
       public:
-        using value_type = T;
+        using value_type = V;
 
-        Task<bool> has_next() const { co_return it_ != current_.values.cend(); }
+        Task<bool> has_next() override { co_return it_ != current_.values.cend(); }
 
-        Task<std::optional<T>> next() {
+        Task<std::optional<V>> next() override {
             if (it_ == current_.values.cend()) {
                 if (!current_.next_page_token.empty()) {
                     current_ = co_await next_page_provider_(std::move(current_.next_page_token));
@@ -95,36 +113,38 @@ class PaginatedSequence {
         typename Page::const_iterator it_;
     };
 
-    static_assert(PaginatedIterator<Iterator>);
-
     explicit PaginatedSequence(Paginator next_page_provider) noexcept
         : next_page_provider_(std::move(next_page_provider)) {}
 
-    Task<Iterator> begin() {
+    Task<PaginatedStream<V>> begin() {
         auto current = co_await next_page_provider_("");
-        co_return Iterator{next_page_provider_, std::move(current)};
+        co_return std::make_unique<Iterator>(next_page_provider_, std::move(current));
     }
 
   private:
     Paginator next_page_provider_;
 };
 
-template <PaginatedIterator I, typename R = typename I::value_type>
-Task<std::vector<R>> paginated_iterator_to_vector(I it) {
+template <Value V, Value R = V>
+Task<std::vector<R>> paginated_iterator_to_vector(const PaginatedStream<V>& it) {
     std::vector<R> all_values;
-    while (const auto value = co_await it.next()) {
+    if (!it) {
+        co_return all_values;
+    }
+    while (const auto value = co_await it->next()) {
         all_values.emplace_back(*value);
     }
     co_return all_values;
 }
 
-template <typename T>
-Task<std::vector<T>> paginated_to_vector(PaginatedSequence<T>& paginated) {
-    co_return co_await paginated_iterator_to_vector(co_await paginated.begin());
+template <typename V>
+Task<std::vector<V>> paginated_to_vector(PaginatedSequence<V>& paginated) {
+    auto it = co_await paginated.begin();
+    co_return co_await paginated_iterator_to_vector(it);
 }
 
 //! Sequence of keys and values produced by pagination using some asynchronous page provider function.
-template <typename K, typename V>
+template <Value K, Value V>
 class PaginatedSequencePair {
   public:
     using KPage = std::vector<K>;
@@ -136,19 +156,20 @@ class PaginatedSequencePair {
     };
     using PageToken = std::string;
     using Paginator = std::function<Task<PageResult>(PageToken)>;
+    using KVPair = std::pair<K, V>;
 
-    class Iterator {
+    class Iterator : public PaginatedIterator<KVPair> {
       public:
-        using value_type = std::pair<K, V>;
+        using value_type = KVPair;
 
-        Task<bool> has_next() const {
+        Task<bool> has_next() override {
             const bool has_next_key = key_it_ != current_.keys.cend();
             const bool has_next_value = value_it_ != current_.values.cend();
             SILKWORM_ASSERT(has_next_key == has_next_value);
             co_return has_next_key;
         }
 
-        Task<std::optional<value_type>> next() {
+        Task<std::optional<value_type>> next() override {
             if (key_it_ == current_.keys.cend()) {
                 SILKWORM_ASSERT(value_it_ == current_.values.cend());
                 if (!current_.next_page_token.empty()) {
@@ -193,41 +214,39 @@ class PaginatedSequencePair {
         typename VPage::const_iterator value_it_;
     };
 
-    static_assert(PaginatedIterator<Iterator>);
-
     explicit PaginatedSequencePair(Paginator next_page_provider) noexcept
         : next_page_provider_(std::move(next_page_provider)) {}
 
-    Task<Iterator> begin() {
+    Task<PaginatedStream<KVPair>> begin() {
         auto current = co_await next_page_provider_("");
         ensure(current.keys.size() == current.values.size(), "PaginatedSequencePair::begin keys/values size mismatch");
-        co_return Iterator{next_page_provider_, std::move(current)};
+        co_return std::make_unique<Iterator>(next_page_provider_, std::move(current));
     }
 
   private:
     Paginator next_page_provider_;
 };
 
-template <typename K, typename V>
+template <Value K, Value V>
 Task<std::vector<KeyValue>> paginated_to_vector(PaginatedSequencePair<K, V>& paginated) {
     std::vector<KeyValue> all_values;
     auto it = co_await paginated.begin();
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         all_values.emplace_back(*value);
     }
     co_return all_values;
 }
 
 //! Paginated iterator implementing 'intersection' set operation between 2 paginated iterators
-template <PaginatedIterator I>
-class IntersectionIterator {
+template <Value V>
+class IntersectionIterator : public PaginatedIterator<V> {
   public:
-    using value_type = typename I::value_type;
+    using value_type = V;
 
-    IntersectionIterator(I it1, I it2, size_t limit)
+    IntersectionIterator(PaginatedStream<V> it1, PaginatedStream<V> it2, size_t limit)
         : it1_(std::move(it1)), it2_(std::move(it2)), limit_(limit) {}
 
-    Task<bool> has_next() {
+    Task<bool> has_next() override {
         if (!initialized_) {
             initialized_ = true;
             co_await advance();
@@ -235,7 +254,7 @@ class IntersectionIterator {
         co_return limit_ != 0 && next_v1_&& next_v2_;
     }
 
-    Task<std::optional<value_type>> next() {
+    Task<std::optional<value_type>> next() override {
         if (limit_ == 0) {
             co_return std::nullopt;
         }
@@ -251,17 +270,17 @@ class IntersectionIterator {
 
   private:
     Task<std::optional<value_type>> advance() {
-        next_v1_ = co_await it1_.next();
-        next_v2_ = co_await it2_.next();
+        next_v1_ = co_await it1_->next();
+        next_v2_ = co_await it2_->next();
         while (next_v1_ && next_v2_) {
             if (*next_v1_ < *next_v2_) {
-                next_v1_ = co_await it1_.next();
+                next_v1_ = co_await it1_->next();
                 continue;
             }
             if (*next_v1_ == *next_v2_) {
                 co_return next_v1_;  // *next_v2_ and *next_v2_ are equivalent
             } else {
-                next_v2_ = co_await it2_.next();
+                next_v2_ = co_await it2_->next();
                 continue;
             }
         }
@@ -271,43 +290,44 @@ class IntersectionIterator {
     }
 
     bool initialized_{false};
-    I it1_;
-    I it2_;
+    PaginatedStream<V> it1_;
+    PaginatedStream<V> it2_;
     std::optional<value_type> next_v1_;
     std::optional<value_type> next_v2_;
     size_t limit_;
 };
 
-static_assert(PaginatedIterator<IntersectionIterator<PaginatedSequence<uint64_t>::Iterator>>);
-
-template <PaginatedIterator I>
-IntersectionIterator<I> set_intersection(I it1, I it2, size_t limit = std::numeric_limits<size_t>::max()) {
-    return IntersectionIterator<I>{std::move(it1), std::move(it2), limit};
+template <Value V>
+std::unique_ptr<PaginatedIterator<V>> set_intersection(PaginatedStream<V> it1, PaginatedStream<V> it2, size_t limit = std::numeric_limits<size_t>::max()) {
+    if (!it1 || !it2) {
+        return std::make_unique<EmptyIterator<V>>();
+    }
+    return std::make_unique<IntersectionIterator<V>>(std::move(it1), std::move(it2), limit);
 }
 
 //! Paginated iterator implementing 'union' set operation between 2 paginated iterators
-template <PaginatedIterator I>
-class UnionIterator {
+template <Value V>
+class UnionIterator : public PaginatedIterator<V> {
   public:
-    using value_type = typename I::value_type;
+    using value_type = V;
 
-    UnionIterator(I it1, I it2, bool ascending, size_t limit)
+    UnionIterator(PaginatedStream<V> it1, PaginatedStream<V> it2, bool ascending, size_t limit)
         : it1_(std::move(it1)), it2_(std::move(it2)), ascending_(ascending), limit_(limit) {}
 
-    Task<bool> has_next() const {
-        co_return limit_ != 0 && (co_await it1_.has_next() || co_await it2_.has_next() || next_v1_ || next_v2_);
+    Task<bool> has_next() override {
+        co_return limit_ != 0 && (co_await it1_->has_next() || co_await it2_->has_next() || next_v1_ || next_v2_);
     }
 
-    Task<std::optional<value_type>> next() {
+    Task<std::optional<value_type>> next() override {
         if (limit_ == 0) {
             co_return std::nullopt;
         }
         --limit_;
-        if (!next_v1_ && co_await it1_.has_next()) {
-            next_v1_ = co_await it1_.next();
+        if (!next_v1_ && co_await it1_->has_next()) {
+            next_v1_ = co_await it1_->next();
         }
-        if (!next_v2_ && co_await it2_.has_next()) {
-            next_v2_ = co_await it2_.next();
+        if (!next_v2_ && co_await it2_->has_next()) {
+            next_v2_ = co_await it2_->next();
         }
         if (!next_v1_ && !next_v2_) {
             co_return std::nullopt;
@@ -315,42 +335,49 @@ class UnionIterator {
         if (next_v1_ && next_v2_) {
             if ((ascending_ && *next_v1_ < *next_v2_) || (!ascending_ && *next_v1_ > *next_v2_)) {
                 const auto v1 = *next_v1_;
-                next_v1_ = co_await it1_.next();
+                next_v1_ = co_await it1_->next();
                 co_return v1;
             } else if (*next_v1_ == *next_v2_) {
                 const auto v1 = *next_v1_;
-                next_v1_ = co_await it1_.next();
-                next_v2_ = co_await it2_.next();
+                next_v1_ = co_await it1_->next();
+                next_v2_ = co_await it2_->next();
                 co_return v1;  // *v1 and *v2 are equivalent
             }
             const auto v2 = *next_v2_;
-            next_v2_ = co_await it2_.next();
+            next_v2_ = co_await it2_->next();
             co_return v2;
         }
         if (next_v1_) {
             const auto v1 = *next_v1_;
-            next_v1_ = co_await it1_.next();
+            next_v1_ = co_await it1_->next();
             co_return v1;
         }
         const auto v2 = *next_v2_;
-        next_v2_ = co_await it2_.next();
+        next_v2_ = co_await it2_->next();
         co_return v2;
     }
 
   private:
-    I it1_;
-    I it2_;
+    PaginatedStream<V> it1_;
+    PaginatedStream<V> it2_;
     std::optional<value_type> next_v1_;
     std::optional<value_type> next_v2_;
     bool ascending_;
     size_t limit_;
 };
 
-static_assert(PaginatedIterator<UnionIterator<PaginatedSequence<uint64_t>::Iterator>>);
-
-template <PaginatedIterator I>
-UnionIterator<I> set_union(I it1, I it2, bool ascending = true, size_t limit = std::numeric_limits<size_t>::max()) {
-    return UnionIterator<I>{std::move(it1), std::move(it2), ascending, limit};
+template <Value V>
+std::unique_ptr<PaginatedIterator<V>> set_union(PaginatedStream<V> it1, PaginatedStream<V> it2, bool ascending = true, size_t limit = std::numeric_limits<size_t>::max()) {
+    if (!it1 && !it2) {
+        return std::make_unique<EmptyIterator<V>>();
+    }
+    if (!it1) {
+        return it2;
+    }
+    if (!it2) {
+        return it1;
+    }
+    return std::make_unique<UnionIterator<V>>(std::move(it1), std::move(it2), ascending, limit);
 }
 
 }  // namespace silkworm::db::kv::api

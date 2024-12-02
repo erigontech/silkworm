@@ -67,7 +67,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     auto paginated_result = co_await transaction_.range_as_of((std::move(query)));
     auto it = co_await paginated_result.begin();
 
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         DumpAccount dump_account;
         evmc::address address{bytes_to_address(value->first)};
 
@@ -126,10 +126,10 @@ Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_ac
             .ascending_order = true};
 
         auto paginated_result = co_await transaction_.range_as_of(std::move(query));
-        std::map<Bytes, Bytes> collected_entries;  // TODO(canepat) switch to ByteView?
+        std::map<Bytes, Bytes> collected_entries;
         auto it = co_await paginated_result.begin();
 
-        while (const auto value = co_await it.next()) {
+        while (const auto value = co_await it->next()) {
             if (value->second.empty())
                 continue;
 

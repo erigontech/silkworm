@@ -44,7 +44,7 @@ TSequence make_paginated_sequence(const size_t page_size, const size_t n) {
 Task<size_t> paginated_sequence_iteration(PaginatedUint64& paginated) {
     size_t accumulator{0};
     auto it = co_await paginated.begin();
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         accumulator += *value;
     }
     co_return accumulator;

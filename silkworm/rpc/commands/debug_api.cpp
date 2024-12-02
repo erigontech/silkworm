@@ -667,7 +667,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     auto it = co_await paginated_result.begin();
 
     std::set<evmc::address> addresses;
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         addresses.insert(bytes_to_address(value->first));
     }
 

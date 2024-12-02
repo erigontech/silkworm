@@ -44,6 +44,15 @@ inline std::ostream& operator<<(std::ostream& out, const uint<N>& value) {
 
 namespace silkworm {
 
+
+inline constexpr const char* kEarliestBlockId{"earliest"};
+inline constexpr const char* kLatestBlockId{"latest"};
+inline constexpr const char* kPendingBlockId{"pending"};
+inline constexpr const char* kFinalizedBlockId{"finalized"};
+inline constexpr const char* kSafeBlockId{"safe"};
+inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
+
+
 class BlockNumOrHash {
 public:
     explicit BlockNumOrHash(const std::string& block_num_or_hash) { build(block_num_or_hash); }

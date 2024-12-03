@@ -83,6 +83,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         block.header.base_fee_per_gas = 0x7;
         block.header.number = block_num;
         silkworm::Transaction txn{};
+        txn.gas_limit = 100'000;
         txn.max_fee_per_gas = 0x2;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
@@ -97,6 +98,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         block.header.base_fee_per_gas = 0x1;
         block.header.number = block_num;
         silkworm::Transaction txn{};
+        txn.gas_limit = 100'000;
         txn.max_fee_per_gas = 0x2;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
         txn.max_priority_fee_per_gas = 0x18;

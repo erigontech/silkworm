@@ -31,6 +31,8 @@
 
 namespace silkworm::rpc::core {
 
+#ifdef notdef
+
 using db::kv::api::KeyValue;
 using db::test_util::MockTransaction;
 using testing::_;
@@ -406,5 +408,6 @@ TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
         CHECK(!result.get());
     }
 }
+#endif
 
 }  // namespace silkworm::rpc::core

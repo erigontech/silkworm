@@ -22,6 +22,7 @@
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/types/filter.hpp>
 #include <silkworm/rpc/types/log.hpp>
@@ -33,7 +34,7 @@ using boost::asio::awaitable;
 class LogsWalker {
   public:
     explicit LogsWalker(BlockCache& block_cache, db::kv::api::Transaction& tx)
-        : block_cache_(block_cache), tx_(tx) {}
+        : block_cache_(block_cache), tx_(tx), block_reader_(*tx.create_storage(), tx) {}
 
     LogsWalker(const LogsWalker&) = delete;
     LogsWalker& operator=(const LogsWalker&) = delete;
@@ -54,6 +55,7 @@ class LogsWalker {
 
     BlockCache& block_cache_;
     db::kv::api::Transaction& tx_;
+    rpc::BlockReader block_reader_;
 };
 
 }  // namespace silkworm::rpc

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "address_decoder.hpp"
+#include "storage_domain.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -22,11 +22,17 @@
 
 namespace silkworm::db::state {
 
-TEST_CASE("AddressDecoder") {
+TEST_CASE("StorageAddressAndLocationDecoder") {
     using evmc::literals::operator""_address;
-    AddressDecoder decoder;
-    decoder.decode_word(*from_hex("0x000000000000000000636f6e736f6c652e6c6f67"));
-    CHECK(decoder.value == 0x000000000000000000636f6e736f6c652e6c6f67_address);
+    using evmc::literals::operator""_bytes32;
+    StorageAddressAndLocationDecoder decoder;
+
+    decoder.decode_word(
+        *from_hex(
+            "000000000000000000636f6e736f6c652e6c6f67"
+            "000000000000000000000000000000000000000000005666856076ebaf477f07"));
+    CHECK(decoder.value.address.value == 0x000000000000000000636f6e736f6c652e6c6f67_address);
+    CHECK(decoder.value.location_hash.value == 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32);
 
     CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
 }

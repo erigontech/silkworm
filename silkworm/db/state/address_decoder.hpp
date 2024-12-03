@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <algorithm>
+#include <stdexcept>
 
 #include <evmc/evmc.hpp>
 
@@ -30,7 +30,9 @@ struct AddressDecoder : public snapshots::Decoder {
     ~AddressDecoder() override = default;
 
     void decode_word(ByteView word) override {
-        std::copy_n(word.data(), kAddressLength, value.bytes);
+        if (word.size() < kAddressLength)
+            throw std::runtime_error{"AddressDecoder failed to decode"};
+        std::memcpy(value.bytes, word.data(), kAddressLength);
     }
 };
 

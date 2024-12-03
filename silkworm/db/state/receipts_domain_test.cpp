@@ -14,19 +14,16 @@
    limitations under the License.
 */
 
-#include "address_decoder.hpp"
+#include "receipts_domain.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/core/common/util.hpp>
-
 namespace silkworm::db::state {
 
-TEST_CASE("AddressDecoder") {
-    using evmc::literals::operator""_address;
-    AddressDecoder decoder;
-    decoder.decode_word(*from_hex("0x000000000000000000636f6e736f6c652e6c6f67"));
-    CHECK(decoder.value == 0x000000000000000000636f6e736f6c652e6c6f67_address);
+TEST_CASE("ReceiptsDomainKeyDecoder") {
+    ReceiptsDomainKeyDecoder decoder;
+    decoder.decode_word(Bytes{1});
+    CHECK(decoder.value == ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey);
 
     CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
 }

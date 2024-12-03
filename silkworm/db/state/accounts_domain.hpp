@@ -16,25 +16,29 @@
 
 #pragma once
 
-#include <algorithm>
+#include <silkworm/core/types/account.hpp>
+#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 
-#include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/datastore/snapshots/common/codec.hpp>
+#include "address_decoder.hpp"
 
 namespace silkworm::db::state {
 
-struct HashDecoder : public snapshots::Decoder {
-    Hash value;
+struct AccountDecoder : public snapshots::Decoder {
+    Account value;
 
-    ~HashDecoder() override = default;
+    ~AccountDecoder() override = default;
 
     void decode_word(ByteView word) override {
-        if (word.size() < kHashLength)
-            throw std::runtime_error{"HashDecoder failed to decode"};
-        value = Hash{word};
+        auto account = Account::from_encoded_storage_v3(word);
+        if (!account)
+            throw DecodingException{account.error(), "AccountDecoder failed to decode Account"};
+        value = std::move(*account);
     }
 };
 
-static_assert(snapshots::DecoderConcept<HashDecoder>);
+static_assert(snapshots::DecoderConcept<AccountDecoder>);
+
+using AccountsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, AccountDecoder>;
 
 }  // namespace silkworm::db::state

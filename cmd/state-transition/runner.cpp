@@ -62,8 +62,8 @@ int main(int argc, char* argv[]) {
 
 void execute_test(const std::string& path, bool terminate_flag, bool diagnostics_flag) {
     std::ifstream input_file(path);
-    nlohmann::json baseJson;
-    input_file >> baseJson;
-    auto stateTransition = StateTransition(baseJson, terminate_flag, diagnostics_flag);
-    stateTransition.run();
+    nlohmann::json base_json;
+    input_file >> base_json;
+    auto state_transition = StateTransition(base_json, terminate_flag, diagnostics_flag);
+    state_transition.run();
 }

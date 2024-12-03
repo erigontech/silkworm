@@ -373,25 +373,25 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     context.set_deadline(std::chrono::system_clock::system_clock::now() + std::chrono::milliseconds{timeout});
     const auto reader_writer = stub->PrepareAsyncTx(&context, &queue);
 
-    void* START_TAG = reinterpret_cast<void*>(0);
-    void* OPEN_TAG = reinterpret_cast<void*>(1);
-    void* SEEK_TAG = reinterpret_cast<void*>(2);
-    void* CLOSE_TAG = reinterpret_cast<void*>(3);
-    void* FINISH_TAG = reinterpret_cast<void*>(4);
+    void* start_tag = reinterpret_cast<void*>(0);
+    void* open_tag = reinterpret_cast<void*>(1);
+    void* seek_tag = reinterpret_cast<void*>(2);
+    void* close_tag = reinterpret_cast<void*>(3);
+    void* finish_tag = reinterpret_cast<void*>(4);
 
     // 1) StartCall
     std::cout << "KV Tx START\n";
     // 1.1) StartCall + Next
-    reader_writer->StartCall(START_TAG);
+    reader_writer->StartCall(start_tag);
     bool has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != START_TAG) {
+    if (!has_event || got_tag != start_tag) {
         return -1;
     }
     // 1.2) Read + Next
     auto tx_id_pair = remote::Pair{};
-    reader_writer->Read(&tx_id_pair, START_TAG);
+    reader_writer->Read(&tx_id_pair, start_tag);
     has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != START_TAG) {
+    if (!has_event || got_tag != start_tag) {
         return -1;
     }
     const auto tx_id = tx_id_pair.cursor_id();
@@ -403,16 +403,16 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     auto open_message = remote::Cursor{};
     open_message.set_op(remote::Op::OPEN);
     open_message.set_bucket_name(table_name);
-    reader_writer->Write(open_message, OPEN_TAG);
+    reader_writer->Write(open_message, open_tag);
     has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != OPEN_TAG) {
+    if (!has_event || got_tag != open_tag) {
         return -1;
     }
     // 2.2) Read + Next
     auto open_pair = remote::Pair{};
-    reader_writer->Read(&open_pair, OPEN_TAG);
+    reader_writer->Read(&open_pair, open_tag);
     has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != OPEN_TAG) {
+    if (!has_event || got_tag != open_tag) {
         return -1;
     }
     auto cursor_id = open_pair.cursor_id();
@@ -425,16 +425,16 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     seek_message.set_op(remote::Op::SEEK);
     seek_message.set_cursor(cursor_id);
     seek_message.set_k(key.data(), key.length());
-    reader_writer->Write(seek_message, SEEK_TAG);
+    reader_writer->Write(seek_message, seek_tag);
     has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != SEEK_TAG) {
+    if (!has_event || got_tag != seek_tag) {
         return -1;
     }
     // 3.2) Read + Next
     auto seek_pair = remote::Pair{};
-    reader_writer->Read(&seek_pair, SEEK_TAG);
+    reader_writer->Read(&seek_pair, seek_tag);
     has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != SEEK_TAG) {
+    if (!has_event || got_tag != seek_tag) {
         return -1;
     }
     const auto& key_bytes = silkworm::string_view_to_byte_view(seek_pair.k());
@@ -447,22 +447,22 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     auto close_message = remote::Cursor{};
     close_message.set_op(remote::Op::CLOSE);
     close_message.set_cursor(cursor_id);
-    reader_writer->Write(close_message, CLOSE_TAG);
+    reader_writer->Write(close_message, close_tag);
     has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != CLOSE_TAG) {
+    if (!has_event || got_tag != close_tag) {
         return -1;
     }
     // 4.2) Read + Next
     auto close_pair = remote::Pair{};
-    reader_writer->Read(&close_pair, CLOSE_TAG);
+    reader_writer->Read(&close_pair, close_tag);
     has_event = queue.Next(&got_tag, &ok);
-    if (!has_event || got_tag != CLOSE_TAG) {
+    if (!has_event || got_tag != close_tag) {
         return -1;
     }
     std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursor_id() << "\n";
 
     // 5) Finish
-    reader_writer->Finish(&status, FINISH_TAG);
+    reader_writer->Finish(&status, finish_tag);
     if (!status.ok()) {
         std::cout << "KV Tx Status <- error_code: " << status.error_code() << "\n";
         std::cout << "KV Tx Status <- error_message: " << status.error_message() << "\n";

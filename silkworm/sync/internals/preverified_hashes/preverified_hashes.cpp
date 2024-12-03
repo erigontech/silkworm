@@ -44,12 +44,12 @@ void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*p
 }
 
 PreverifiedHashes& PreverifiedHashes::load(uint64_t chain_id) {
-    static PreverifiedHashes kEmpty;
+    static PreverifiedHashes empty;
     static PreverifiedHashes mainnet_instance;
     static std::once_flag load_once_flag;
 
     if (Environment::are_pre_verified_hashes_disabled()) {
-        return kEmpty;
+        return empty;
     }
 
     if (chain_id == 1) {
@@ -63,7 +63,7 @@ PreverifiedHashes& PreverifiedHashes::load(uint64_t chain_id) {
         return mainnet_instance;
     }
 
-    return kEmpty;
+    return empty;
 }
 
 bool PreverifiedHashes::contains(const evmc::bytes32& hash) const {

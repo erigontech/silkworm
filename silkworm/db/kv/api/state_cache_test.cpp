@@ -527,11 +527,11 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view two views", "[rpc
 
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max views", "[rpc][ethdb][kv][state_cache]") {
     const CoherentCacheConfig config;
-    const auto kMaxViews{config.max_views};
+    const auto max_views{config.max_views};
     CoherentStateCache cache{config};
 
     // Create as many state views as the maximum allowed number
-    for (uint64_t i{0}; i < kMaxViews; ++i) {
+    for (uint64_t i{0}; i < max_views; ++i) {
         cache.on_new_block(
             new_batch_with_upsert(kTestViewId0 + i, kTestBlockNum + i, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
         test_util::MockTransaction txn;
@@ -541,9 +541,9 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max vi
 
     // Next incoming batch with progressive view ID overflows the state views
     cache.on_new_block(
-        new_batch_with_upsert(kTestViewId0 + kMaxViews, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+        new_batch_with_upsert(kTestViewId0 + max_views, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
     test_util::MockTransaction txn;
-    EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0 + kMaxViews));
+    EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0 + max_views));
     CHECK(cache.get_view(txn) != nullptr);
 
     // Oldest state view i.e. state view with id=0 should have been erased
@@ -576,13 +576,13 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max ke
 
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block clear the cache on view ID wrapping", "[rpc][ethdb][kv][state_cache]") {
     const CoherentCacheConfig config;
-    const auto kMaxViews{config.max_views};
+    const auto max_views{config.max_views};
     CoherentStateCache cache{config};
 
     // Create as many state views as the maximum allowed number *up to the max view ID*
     const uint64_t max_view_id = std::numeric_limits<uint64_t>::max();
     std::vector<uint64_t> wrapping_view_ids{max_view_id - 4, max_view_id - 3, max_view_id - 2, max_view_id - 1, max_view_id};
-    SILKWORM_ASSERT(wrapping_view_ids.size() == kMaxViews);
+    SILKWORM_ASSERT(wrapping_view_ids.size() == max_views);
     for (uint64_t i{0}; i < wrapping_view_ids.size(); ++i) {
         uint64_t view_id = wrapping_view_ids[i];
         cache.on_new_block(

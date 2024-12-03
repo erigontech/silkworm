@@ -64,7 +64,7 @@ TEST_CASE("Database genesis initialization") {
     SECTION("Initialize with errors in Json payload") {
         // Base is mainnet
         auto source_data{read_genesis_data(kMainnetConfig.chain_id)};
-        nlohmann::json notHex = "0xgg";
+        nlohmann::json not_hex = "0xgg";
 
         // Remove mandatory members
         {
@@ -83,21 +83,21 @@ TEST_CASE("Database genesis initialization") {
         {
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
             REQUIRE(genesis_json.is_discarded() == false);
-            genesis_json["difficulty"] = notHex;
-            genesis_json["nonce"] = notHex;
+            genesis_json["difficulty"] = not_hex;
+            genesis_json["nonce"] = not_hex;
             const auto& [valid, errors]{validate_genesis_json(genesis_json)};
             REQUIRE(valid == false);
             CHECK(errors.size() == 2);
 
             genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-            genesis_json["alloc"]["c951900c341abbb3bafbf7ee2029377071dbc36a"]["balance"] = notHex;
+            genesis_json["alloc"]["c951900c341abbb3bafbf7ee2029377071dbc36a"]["balance"] = not_hex;
         }
 
         // Tamper with hex values on allocations
         {
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-            genesis_json["alloc"]["c951900c341abbb3bafbf7ee2029377071dbc36a"]["balance"] = notHex;
-            genesis_json["alloc"]["c951900c341abbb3bafbf7ee2029377071dbc"]["balance"] = notHex;
+            genesis_json["alloc"]["c951900c341abbb3bafbf7ee2029377071dbc36a"]["balance"] = not_hex;
+            genesis_json["alloc"]["c951900c341abbb3bafbf7ee2029377071dbc"]["balance"] = not_hex;
             const auto& [valid, errors]{validate_genesis_json(genesis_json)};
             REQUIRE(valid == false);
             CHECK(errors.size() == 2);

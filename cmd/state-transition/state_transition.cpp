@@ -42,20 +42,20 @@ namespace silkworm::cmd::state_transition {
 
 StateTransition::StateTransition(const std::string& file_path) noexcept {
     std::ifstream input_file(file_path);
-    nlohmann::json baseJson;
-    input_file >> baseJson;
-    auto testObject = baseJson.begin();
-    test_name_ = testObject.key();
-    test_data_ = testObject.value();
+    nlohmann::json base_json;
+    input_file >> base_json;
+    auto test_object = base_json.begin();
+    test_name_ = test_object.key();
+    test_data_ = test_object.value();
 }
 
 StateTransition::StateTransition(const nlohmann::json& json, const bool terminate_on_error, const bool show_diagnostics) noexcept
     : terminate_on_error_{terminate_on_error},
       show_diagnostics_{show_diagnostics} {
-    auto testObject = json.begin();
-    test_name_ = testObject.key();
+    auto test_object = json.begin();
+    test_name_ = test_object.key();
     std::cout << test_name_ << ":" << std::endl;
-    test_data_ = testObject.value();
+    test_data_ = test_object.value();
 }
 
 std::string StateTransition::name() {
@@ -71,15 +71,15 @@ bool StateTransition::contains_env(const std::string& key) {
 }
 
 std::vector<ExpectedState> StateTransition::get_expected_states() {
-    std::vector<ExpectedState> expectedStates;
+    std::vector<ExpectedState> expected_states;
 
-    for (const auto& postState : test_data_.at("post").items()) {
-        nlohmann::json data = postState.value();
-        const std::string& key = postState.key();
-        expectedStates.emplace_back(data, key);
+    for (const auto& post_state : test_data_.at("post").items()) {
+        nlohmann::json data = post_state.value();
+        const std::string& key = post_state.key();
+        expected_states.emplace_back(data, key);
     }
 
-    return expectedStates;
+    return expected_states;
 }
 
 evmc::address StateTransition::to_evmc_address(const std::string& address) {
@@ -281,22 +281,22 @@ void StateTransition::run() {
     failed_count_ = 0;
     total_count_ = 0;
 
-    for (auto& expectedState : get_expected_states()) {
-        for (const auto& expectedSubState : expectedState.get_sub_states()) {
+    for (auto& expected_state : get_expected_states()) {
+        for (const auto& expected_sub_state : expected_state.get_sub_states()) {
             ++total_count_;
-            auto config = expectedState.get_config();
-            auto ruleSet = protocol::rule_set_factory(config);
+            auto config = expected_state.get_config();
+            auto rule_set = protocol::rule_set_factory(config);
             auto state = read_genesis_allocation(test_data_["pre"]);
             auto block = get_block(state, config);
-            auto txn = get_transaction(expectedSubState);
+            auto txn = get_transaction(expected_sub_state);
 
-            ExecutionProcessor processor{block, *ruleSet, state, config};
+            ExecutionProcessor processor{block, *rule_set, state, config};
             Receipt receipt;
 
             const evmc_revision rev{config.revision(block.header.number, block.header.timestamp)};
 
-            auto pre_block_validation = ruleSet->pre_validate_block_body(block, state);
-            auto block_validation = ruleSet->validate_block_header(block.header, state, true);
+            auto pre_block_validation = rule_set->pre_validate_block_body(block, state);
+            auto block_validation = rule_set->validate_block_header(block.header, state, true);
             auto pre_txn_validation = protocol::pre_validate_transaction(txn, rev, config.chain_id, block.header.base_fee_per_gas, block.header.blob_gas_price());
             auto txn_validation = protocol::validate_transaction(txn, processor.evm().state(), processor.available_gas());
 
@@ -317,7 +317,7 @@ void StateTransition::run() {
             // std::cout << "post: " << std::endl;
             // state->print_state_root_hash();
 
-            validate_transition(receipt, expectedState, expectedSubState, state);
+            validate_transition(receipt, expected_state, expected_sub_state, state);
         }
     }
 

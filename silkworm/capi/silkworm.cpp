@@ -248,7 +248,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 }
 
 SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* segments[], size_t len) SILKWORM_NOEXCEPT {
-    const int kNeededIndexesToBuildInParallel = 2;
+    constexpr int kNeededIndexesToBuildInParallel = 2;
 
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;

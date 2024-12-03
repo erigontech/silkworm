@@ -64,10 +64,10 @@ TEST_CASE("NewBlockHashesPacket encoding") {
 
     NewBlockHashesPacket packet;
 
-    NewBlockHash newBlock;
-    newBlock.hash = *Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354");
-    newBlock.block_num = 12'420'112;
-    packet.push_back(newBlock);
+    NewBlockHash new_block;
+    new_block.hash = *Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354");
+    new_block.block_num = 12'420'112;
+    packet.push_back(new_block);
 
     Bytes encoded;
     rlp::encode(encoded, packet);

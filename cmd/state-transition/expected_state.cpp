@@ -42,22 +42,22 @@ std::vector<ExpectedSubState> ExpectedState::get_sub_states() {
     unsigned i = 0;
 
     for (auto& tx : state_data_) {
-        ExpectedSubState subState;
+        ExpectedSubState sub_state;
 
-        subState.stateHash = to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
-        subState.logsHash = to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
-        subState.dataIndex = tx["indexes"]["data"].get<uint64_t>();
-        subState.gasIndex = tx["indexes"]["gas"].get<uint64_t>();
-        subState.valueIndex = tx["indexes"]["value"].get<uint64_t>();
+        sub_state.stateHash = to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
+        sub_state.logsHash = to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
+        sub_state.dataIndex = tx["indexes"]["data"].get<uint64_t>();
+        sub_state.gasIndex = tx["indexes"]["gas"].get<uint64_t>();
+        sub_state.valueIndex = tx["indexes"]["value"].get<uint64_t>();
         if (tx.contains("expectException")) {
-            subState.exceptionExpected = true;
-            subState.exceptionMessage = tx["expectException"];
+            sub_state.exceptionExpected = true;
+            sub_state.exceptionMessage = tx["expectException"];
         } else {
-            subState.exceptionExpected = false;
+            sub_state.exceptionExpected = false;
         }
 
-        subState.index = i;
-        sub_states.push_back(subState);
+        sub_state.index = i;
+        sub_states.push_back(sub_state);
         ++i;
     }
 

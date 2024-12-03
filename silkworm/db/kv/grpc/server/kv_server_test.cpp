@@ -693,13 +693,13 @@ TEST_CASE_METHOD(KvEnd2EndTest, "KvServer E2E: KV", "[silkworm][node][rpc]") {
 #ifndef _WIN32
 TEST_CASE("KvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
-        const uint32_t kNumTxs{1000};
+        const uint32_t num_txs{1000};
         KvEnd2EndTest test;
         test.fill_tables();
         auto kv_client = *test.kv_client;
 
         // Start many Tx calls w/o reading responses after writing requests.
-        for (uint32_t i{0}; i < kNumTxs; ++i) {
+        for (uint32_t i{0}; i < num_txs; ++i) {
             ::grpc::ClientContext context;
             auto tx_stream = kv_client.tx_start(&context);
             remote::Pair response;

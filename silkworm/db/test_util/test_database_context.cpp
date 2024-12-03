@@ -105,7 +105,7 @@ void populate_blocks(RWTxn& txn, const std::filesystem::path& tests_dir, InMemor
     if (!chain_config.has_value()) {
         throw std::logic_error("Failed to read chain config");
     }
-    auto ruleSet = protocol::rule_set_factory(*chain_config);
+    auto rule_set = protocol::rule_set_factory(*chain_config);
 
     while (!rlp_view.empty()) {
         silkworm::Block block;
@@ -126,7 +126,7 @@ void populate_blocks(RWTxn& txn, const std::filesystem::path& tests_dir, InMemor
 
         // FIX 4b: populate receipts and logs table
         std::vector<silkworm::Receipt> receipts;
-        ExecutionProcessor processor{block, *ruleSet, state_buffer, *chain_config};
+        ExecutionProcessor processor{block, *rule_set, state_buffer, *chain_config};
         Buffer db_buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
         for (auto& block_txn : block.transactions) {
             silkworm::Receipt receipt{};

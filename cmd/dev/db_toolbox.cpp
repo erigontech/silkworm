@@ -93,22 +93,22 @@ class Progress {
     //! Prints progress ticks
     std::string print_interval(char c = '.') {
         uint32_t percentage{std::min(percent(), 100u)};
-        uint32_t numChars{percentage / percent_step_};
-        if (!numChars) return "";
-        uint32_t intChars{numChars - printed_bar_len_};
-        if (!intChars) return "";
-        std::string ret(intChars, c);
-        printed_bar_len_ += intChars;
+        uint32_t num_chars{percentage / percent_step_};
+        if (!num_chars) return "";
+        uint32_t int_chars{num_chars - printed_bar_len_};
+        if (!int_chars) return "";
+        std::string ret(int_chars, c);
+        printed_bar_len_ += int_chars;
         return ret;
     }
 
     [[maybe_unused]] std::string print_progress(char c = '.') const {
         uint32_t percentage{percent()};
-        uint32_t numChars{percentage / percent_step_};
-        if (!numChars) {
+        uint32_t num_chars{percentage / percent_step_};
+        if (!num_chars) {
             return "";
         }
-        std::string ret(numChars, c);
+        std::string ret(num_chars, c);
         return ret;
     }
 
@@ -319,14 +319,14 @@ DbFreeInfo get_free_info(::mdbx::txn& txn) {
     auto page_size{txn.get_map_stat(free_map).ms_psize};
 
     const auto& collect_func{[&ret, &page_size](ByteView key, ByteView value) {
-        size_t txId{0};
-        std::memcpy(&txId, key.data(), sizeof(size_t));
-        uint32_t pagesCount{0};
-        std::memcpy(&pagesCount, value.data(), sizeof(uint32_t));
-        size_t pagesSize = pagesCount * page_size;
-        ret.pages += pagesCount;
-        ret.size += pagesSize;
-        ret.entries.push_back({txId, pagesCount, pagesSize});
+        size_t tx_id{0};
+        std::memcpy(&tx_id, key.data(), sizeof(size_t));
+        uint32_t page_count{0};
+        std::memcpy(&page_count, value.data(), sizeof(uint32_t));
+        size_t total_size = page_count * page_size;
+        ret.pages += page_count;
+        ret.size += total_size;
+        ret.entries.push_back({tx_id, page_count, total_size});
     }};
 
     auto free_crs{txn.open_cursor(free_map)};
@@ -386,18 +386,18 @@ void do_scan(EnvConfig& config) {
     auto env{open_env(config)};
     auto txn{env.start_read()};
 
-    auto tablesInfo{get_tables_info(txn)};
+    auto tables_info{get_tables_info(txn)};
 
-    std::cout << "\n Database tables    : " << tablesInfo.tables.size() << "\n\n";
+    std::cout << "\n Database tables    : " << tables_info.tables.size() << "\n\n";
 
-    if (!tablesInfo.tables.empty()) {
+    if (!tables_info.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Total")
                   << "\n";
         std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(50, '-') %
                       std::string(13, '-') % std::string(13, '-') % std::string(13, '-'))
                   << std::flush;
 
-        for (DbTableInfo item : tablesInfo.tables) {
+        for (DbTableInfo item : tables_info.tables) {
             mdbx::map_handle tbl_map;
 
             std::cout << "\n"
@@ -490,14 +490,14 @@ void do_tables(EnvConfig& config) {
     auto env{open_env(config)};
     auto txn{env.start_read()};
 
-    auto dbTablesInfo{get_tables_info(txn)};
-    auto dbFreeInfo{get_free_info(txn)};
+    auto db_tables_info{get_tables_info(txn)};
+    auto db_free_info{get_free_info(txn)};
 
-    std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << "\n";
+    std::cout << "\n Database tables          : " << db_tables_info.tables.size() << "\n";
     std::cout << " Effective pruning        : " << read_prune_mode(txn).to_string() << "\n"
               << "\n";
 
-    if (!dbTablesInfo.tables.empty()) {
+    if (!db_tables_info.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" % "Overflow" %
                       "Size" % "Key" % "Value")
                   << "\n";
@@ -506,24 +506,24 @@ void do_tables(EnvConfig& config) {
                       std::string(12, '-') % std::string(10, '-') % std::string(10, '-'))
                   << "\n";
 
-        for (auto& item : dbTablesInfo.tables) {
-            auto keyMode = magic_enum::enum_name(item.info.key_mode());
-            auto valueMode = magic_enum::enum_name(item.info.value_mode());
+        for (auto& item : db_tables_info.tables) {
+            auto key_mode = magic_enum::enum_name(item.info.key_mode());
+            auto value_mode = magic_enum::enum_name(item.info.value_mode());
             std::cout << (boost::format(fmt_row) % item.id % item.name % item.stat.ms_entries % item.stat.ms_depth %
                           item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages %
-                          human_size(item.size()) % keyMode % valueMode)
+                          human_size(item.size()) % key_mode % value_mode)
                       << "\n";
         }
     }
 
     std::cout << "\n"
-              << " Database file size   (A) : " << (boost::format("%13s") % human_size(dbTablesInfo.file_size)) << "\n"
-              << " Data pages count         : " << (boost::format("%13u") % dbTablesInfo.pages) << "\n"
-              << " Data pages size      (B) : " << (boost::format("%13s") % human_size(dbTablesInfo.size)) << "\n"
-              << " Free pages count         : " << (boost::format("%13u") % dbFreeInfo.pages) << "\n"
-              << " Free pages size      (C) : " << (boost::format("%13s") % human_size(dbFreeInfo.size)) << "\n"
+              << " Database file size   (A) : " << (boost::format("%13s") % human_size(db_tables_info.file_size)) << "\n"
+              << " Data pages count         : " << (boost::format("%13u") % db_tables_info.pages) << "\n"
+              << " Data pages size      (B) : " << (boost::format("%13s") % human_size(db_tables_info.size)) << "\n"
+              << " Free pages count         : " << (boost::format("%13u") % db_free_info.pages) << "\n"
+              << " Free pages size      (C) : " << (boost::format("%13s") % human_size(db_free_info.size)) << "\n"
               << " Reclaimable space        : "
-              << (boost::format("%13s") % human_size(dbTablesInfo.file_size - dbTablesInfo.size + dbFreeInfo.size))
+              << (boost::format("%13s") % human_size(db_tables_info.file_size - db_tables_info.size + db_free_info.size))
               << " == A - B + C \n\n";
 
     txn.commit();
@@ -688,7 +688,7 @@ void do_copy(EnvConfig& src_config, const std::string& target_dir, bool create, 
         throw std::runtime_error("Source db has no tables to copy.");
     }
 
-    size_t bytesWritten{0};
+    size_t bytes_written{0};
     std::cout << boost::format(" %-24s %=50s") % "Table" % "Progress\n";
     std::cout << boost::format(" %-24s %=50s") % std::string(24, '-') % std::string(50, '-') << std::flush;
 
@@ -779,13 +779,13 @@ void do_copy(EnvConfig& src_config, const std::string& target_dir, bool create, 
         auto data{src_table_crs.to_first(/*throw_notfound =*/false)};
         while (data) {
             ::mdbx::error::success_or_throw(tgt_table_crs.put(data.key, &data.value, put_flags));
-            bytesWritten += (data.key.length() + data.value.length());
-            if (bytesWritten >= 2_Gibi) {
+            bytes_written += (data.key.length() + data.value.length());
+            if (bytes_written >= 2_Gibi) {
                 tgt_txn.commit();
                 tgt_txn = tgt_env.start_write();
                 tgt_table_crs.renew(tgt_txn);
                 batch_committed = true;
-                bytesWritten = 0;
+                bytes_written = 0;
             }
 
             if (!--batch_size) {
@@ -809,7 +809,7 @@ void do_copy(EnvConfig& src_config, const std::string& target_dir, bool create, 
         tgt_txn.commit();
         tgt_txn = tgt_env.start_write();
         batch_committed = true;
-        bytesWritten = 0;
+        bytes_written = 0;
 
         progress.set_current(src_table.stat.ms_entries);
         std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;

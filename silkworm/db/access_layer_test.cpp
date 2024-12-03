@@ -238,9 +238,9 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
     auto& txn{context.txn()};
 
     SECTION("Prune Mode") {
-        BlockAmount blockAmount;
-        REQUIRE(blockAmount.value() == 0);
-        REQUIRE(blockAmount.value_from_head(1'000'000) == 0);
+        BlockAmount block_amount;
+        REQUIRE(block_amount.value() == 0);
+        REQUIRE(block_amount.value_from_head(1'000'000) == 0);
 
         // Uninitialized mode
         PruneMode default_mode{};
@@ -267,29 +267,29 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
             std::string db_key{"pruneHistoryType"};
             std::string db_value{"random"};
             target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
-            bool hasThrown{false};
+            bool has_thrown{false};
             try {
                 (void)read_prune_mode(txn);
             } catch (const std::runtime_error&) {
-                hasThrown = true;
+                has_thrown = true;
             }
-            REQUIRE(hasThrown);
+            REQUIRE(has_thrown);
             db_value = "older";
             target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
         }
 
         // Provide different combinations of cli arguments
         std::string prune, expected;
-        PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-        PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
+        PruneDistance older_history, older_receipts, older_senders, older_tx_index, older_call_traces;
+        PruneThreshold before_history, before_receipts, before_senders, before_tx_index, before_call_traces;
 
         prune = "hrstc";
         expected = "--prune=hrstc";
         {
             auto prune_mode =
                 parse_prune_mode(prune,  //
-                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                                 older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                                 before_history, before_receipts, before_senders, before_tx_index, before_call_traces);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
             prune_mode = read_prune_mode(txn);
@@ -298,15 +298,15 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
         }
 
         prune = "htc";
-        olderHistory.emplace(8000);
-        olderSenders.emplace(80000);
-        beforeReceipts.emplace(10000);
+        older_history.emplace(8000);
+        older_senders.emplace(80000);
+        before_receipts.emplace(10000);
         expected = "--prune=tc --prune.h.older=8000 --prune.r.before=10000 --prune.s.older=80000";
         {
             auto prune_mode =
                 parse_prune_mode(prune,  //
-                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                                 older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                                 before_history, before_receipts, before_senders, before_tx_index, before_call_traces);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
             prune_mode = read_prune_mode(txn);
@@ -316,15 +316,15 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
         }
 
         prune = "htc";
-        olderHistory.emplace(kFullImmutabilityThreshold);
-        olderSenders.reset();
-        beforeReceipts.emplace(10000);
+        older_history.emplace(kFullImmutabilityThreshold);
+        older_senders.reset();
+        before_receipts.emplace(10000);
         expected = "--prune=htc --prune.r.before=10000";
         {
             auto prune_mode =
                 parse_prune_mode(prune,  //
-                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                                 older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                                 before_history, before_receipts, before_senders, before_tx_index, before_call_traces);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
             prune_mode = read_prune_mode(txn);
@@ -334,15 +334,15 @@ TEST_CASE("Storage and Prune Modes", "[db][access_layer]") {
         }
 
         prune = "hrtc";
-        olderHistory.emplace(kFullImmutabilityThreshold + 5);
-        beforeReceipts.reset();
-        beforeCallTraces.emplace(10000);
+        older_history.emplace(kFullImmutabilityThreshold + 5);
+        before_receipts.reset();
+        before_call_traces.emplace(10000);
         expected = "--prune=rt --prune.h.older=90005 --prune.c.before=10000";
         {
             auto prune_mode =
                 parse_prune_mode(prune,  //
-                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                                 older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                                 before_history, before_receipts, before_senders, before_tx_index, before_call_traces);
             REQUIRE(prune_mode.to_string() == expected);
             REQUIRE_NOTHROW(write_prune_mode(txn, prune_mode));
             prune_mode = read_prune_mode(txn);

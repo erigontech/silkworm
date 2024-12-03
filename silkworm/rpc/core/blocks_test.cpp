@@ -32,7 +32,6 @@
 
 namespace silkworm::rpc::core {
 
-
 using db::kv::api::KeyValue;
 using db::test_util::MockTransaction;
 using testing::_;

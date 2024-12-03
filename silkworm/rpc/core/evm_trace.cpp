@@ -1778,27 +1778,39 @@ Task<TraceCallResult> TraceCallExecutor::execute(
 
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
+
+    std::shared_ptr<State> curr_state{};
+
+    if (index == -1) {
+        curr_state = tx_.create_state(current_executor, chain_storage_, block_num);
+    } else {
+        auto txn_id = co_await tx_.first_txn_num_in_block(block_num) + static_cast<uint64_t>(index);
+        curr_state = tx_.create_state_txn(current_executor, chain_storage_, txn_id);
+    }
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {
+        Tracers tracers;
+
         auto state = tx_.create_state(current_executor, chain_storage_, block_num);
         silkworm::IntraBlockState initial_ibs{*state};
-
-        Tracers tracers;
         StateAddresses state_addresses(initial_ibs);
-        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
-        tracers.push_back(tracer);
 
-        auto curr_state = tx_.create_state(current_executor, chain_storage_, block_num);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
-        for (size_t idx{0}; idx < transaction.transaction_index; ++idx) {
-            silkworm::Transaction txn{block.transactions[idx]};
-            const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);
-            if (execution_result.pre_check_error) {
-                SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
-            }
-            executor.reset();
-        }
 
-        tracers.clear();
+        if (index == -1) {
+            std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
+            tracers.push_back(tracer);
+
+            for (size_t idx{0}; idx < transaction.transaction_index; ++idx) {
+                silkworm::Transaction txn{block.transactions[idx]};
+                const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);
+                if (execution_result.pre_check_error) {
+                    SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
+                }
+                executor.reset();
+            }
+
+            tracers.clear();
+        }
 
         TraceCallResult result;
         TraceCallTraces& traces = result.traces;

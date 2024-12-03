@@ -51,7 +51,6 @@ class BlockReader {
 
     Task<void> read_balance_changes(BlockCache& cache, const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const;
 
-  private:
     Task<bool> is_latest_block_num(BlockNum block_num);
 
     Task<BlockNum> get_block_num_by_tag(const std::string& block_id);

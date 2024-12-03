@@ -55,6 +55,8 @@ class LocalTransaction : public BaseTransaction {
 
     std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) override;
 
+    std::shared_ptr<State> create_state_txn(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, TxnId txnId) override;
+
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 
     Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;

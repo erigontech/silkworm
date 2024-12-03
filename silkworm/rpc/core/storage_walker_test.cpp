@@ -198,6 +198,10 @@ class DummyTransaction : public BaseTransaction {
         return nullptr;
     }
 
+    std::shared_ptr<silkworm::State> create_state_txn(boost::asio::any_io_executor&, const ChainStorage&, TxnId) override {
+        return nullptr;
+    }
+
     std::shared_ptr<ChainStorage> create_storage() override {
         return nullptr;
     }

@@ -62,7 +62,12 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
 
 std::shared_ptr<State> LocalTransaction::create_state(boost::asio::any_io_executor&, const chain::ChainStorage&, BlockNum block_num) {
     // The calling thread *must* be *different* from the one which created this LocalTransaction instance
-    return std::make_shared<state::LocalState>(block_num, data_store_);
+    return std::make_shared<state::LocalState>(block_num, std::nullopt, data_store_);
+}
+
+std::shared_ptr<State> LocalTransaction::create_state_txn(boost::asio::any_io_executor&, const chain::ChainStorage&, TxnId txn) {
+    // The calling thread *must* be *different* from the one which created this LocalTransaction instance
+    return std::make_shared<state::LocalState>(std::nullopt, txn, data_store_);
 }
 
 std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {

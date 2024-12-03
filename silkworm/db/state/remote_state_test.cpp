@@ -55,7 +55,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 co_return Bytes{};
             }));
         const BlockNum block_num = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        AsyncRemoteState state{transaction, chain_storage, block_num, std::nullopt};
         const auto code_read{spawn_and_wait(state.read_code(address, kEmptyHash))};
         CHECK(code_read.empty());
     }

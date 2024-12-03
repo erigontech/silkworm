@@ -57,6 +57,8 @@ class Transaction {
 
     virtual std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) = 0;
 
+    virtual std::shared_ptr<State> create_state_txn(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, TxnId txnId) = 0;
+
     virtual std::shared_ptr<chain::ChainStorage> create_storage() = 0;
 
     virtual Task<void> close() = 0;

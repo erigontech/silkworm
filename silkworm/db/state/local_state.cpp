@@ -21,7 +21,12 @@
 namespace silkworm::db::state {
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    return db::read_account(txn_, address, block_num_ + 1);
+    if (block_num_) {
+        return db::read_account(txn_, address, *block_num_ + 1);
+    } else {
+        // TODO txnId
+        return std::nullopt;
+    }
 }
 
 ByteView LocalState::read_code(const evmc::address& /*address*/, const evmc::bytes32& code_hash) const noexcept {
@@ -33,7 +38,12 @@ ByteView LocalState::read_code(const evmc::address& /*address*/, const evmc::byt
 }
 
 evmc::bytes32 LocalState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
-    return db::read_storage(txn_, address, incarnation, location, block_num_ + 1);
+    if (block_num_) {
+        return db::read_storage(txn_, address, incarnation, location, *block_num_ + 1);
+    } else {
+        // TODO txnId
+        return {};
+    }
 }
 
 uint64_t LocalState::previous_incarnation(const evmc::address& /*address*/) const noexcept {

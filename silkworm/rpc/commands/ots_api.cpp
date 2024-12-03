@@ -429,7 +429,9 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        auto block_num = co_await core::get_latest_block_num(*tx);
+        const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        auto block_num = co_await block_reader.get_latest_block_num();
         StateReader state_reader{*tx, block_num};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
         if (!account_opt || account_opt.value().code_hash == kEmptyHash) {
@@ -533,7 +535,6 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 tx_index = creation_txn_id - min_txn_id - 1;
             }
 
-            const auto chain_storage{tx->create_storage()};
             const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, tx_index);
             if (!transaction) {
                 SILK_DEBUG << "No transaction found in block " << block_num << " for index " << tx_index;

@@ -1299,6 +1299,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
 
     try {
         const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, {});
@@ -1307,7 +1308,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         }
 
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const bool is_latest_block = co_await core::get_latest_executed_block_num(*tx) == block_with_hash->block.header.number;
+        const bool is_latest_block = co_await block_reader.get_latest_executed_block_num() == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
         StateReader state_reader{*tx, block_with_hash->block.header.number + 1};
@@ -1407,6 +1408,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
 
     try {
         const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
@@ -1415,7 +1417,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             co_return;
         }
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const bool is_latest_block = co_await core::get_latest_executed_block_num(*tx) == block_with_hash->block.header.number;
+        const bool is_latest_block = co_await block_reader.get_latest_executed_block_num() == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
         const auto start_time = clock_time::now();
@@ -2053,6 +2055,7 @@ Task<void> EthereumRpcApi::handle_eth_fee_history(const nlohmann::json& request,
 
     try {
         const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
         rpc::fee_history::BlockHeaderProvider block_header_provider = [&chain_storage](BlockNum block_num) {
             return chain_storage->read_canonical_header(block_num);
@@ -2064,14 +2067,14 @@ Task<void> EthereumRpcApi::handle_eth_fee_history(const nlohmann::json& request,
             return core::get_receipts(*tx, block_with_hash, *chain_storage, this->workers_);
         };
 
-        rpc::fee_history::LatestBlockProvider latest_block_provider = [&tx]() {
-            return core::get_block_num(kLatestBlockId, *tx);
+        rpc::fee_history::LatestBlockProvider latest_block_provider = [&block_reader]() {
+            return block_reader.get_block_num(kLatestBlockId);
         };
 
         const auto chain_config = co_await chain_storage->read_chain_config();
         rpc::fee_history::FeeHistoryOracle oracle{chain_config, block_header_provider, block_provider, receipts_provider, latest_block_provider};
 
-        const auto block_num = co_await core::get_block_num(newest_block, *tx);
+        const auto block_num = co_await block_reader.get_block_num(newest_block);
         const auto fee_history = co_await oracle.fee_history(block_num, block_count, reward_percentiles);
 
         if (fee_history.error) {
@@ -2104,8 +2107,10 @@ Task<void> EthereumRpcApi::handle_eth_base_fee(const nlohmann::json& request, nl
     try {
         intx::uint256 base_fee{0};
         const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const auto latest_block_num = co_await core::get_block_num(kLatestBlockId, *tx);
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_num);
         if (!latest_block_with_hash) {
             reply = make_json_content(request, to_quantity(base_fee));
@@ -2147,7 +2152,9 @@ Task<void> EthereumRpcApi::handle_eth_blob_base_fee(const nlohmann::json& reques
     try {
         intx::uint256 blob_base_fee{0};
         const auto chain_storage{tx->create_storage()};
-        const auto latest_block_num = co_await core::get_block_num(kLatestBlockId, *tx);
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_num);
         if (!latest_block_with_hash) {
             reply = make_json_content(request, to_quantity(blob_base_fee));
@@ -2190,9 +2197,10 @@ Task<void> EthereumRpcApi::handle_eth_get_block_receipts(const nlohmann::json& r
 
     try {
         const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num_or_hash = BlockNumOrHash{block_id};
-        const auto block_num = co_await core::get_block_num(block_num_or_hash, *tx);
+        const auto block_num = co_await block_reader.get_block_num(block_num_or_hash);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num.first);
         if (block_with_hash) {
             auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};

@@ -477,7 +477,9 @@ Task<void> ErigonRpcApi::handle_erigon_block_num(const nlohmann::json& request, 
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num{co_await core::get_block_num_by_tag(block_id, *tx)};
+        const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto block_num{co_await block_reader.get_block_num_by_tag(block_id)};
         reply = make_json_content(request, to_quantity(block_num));
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();

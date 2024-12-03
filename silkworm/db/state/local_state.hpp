@@ -92,7 +92,6 @@ class LocalState : public State {
   private:
     std::optional<BlockNum> block_num_;
     std::optional<TxnId> txnid_;
-    bool state_on_block_;
     mutable db::ROTxnManaged txn_;
     db::DataModel data_model_;
 };

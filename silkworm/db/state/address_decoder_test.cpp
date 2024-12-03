@@ -14,22 +14,21 @@
    limitations under the License.
 */
 
-#pragma once
+#include "address_decoder.hpp"
 
-#include "elias_fano/elias_fano_decoder.hpp"
-#include "rec_split/accessor_index.hpp"
-#include "segment/kv_segment_reader.hpp"
+#include <catch2/catch_test_macros.hpp>
 
-namespace silkworm::snapshots {
+#include <silkworm/core/common/util.hpp>
 
-struct InvertedIndex {
-    const segment::KVSegmentFileReader& kv_segment;
-    const rec_split::AccessorIndex& accessor_index;
+namespace silkworm::db::state {
 
-    template <DecoderConcept TKeyDecoder>
-    segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder> kv_segment_reader() {
-        return {kv_segment};
-    }
-};
+TEST_CASE("AddressDecoder") {
+    using evmc::literals::operator""_address;
+    AddressDecoder decoder;
+    decoder.decode_word(*from_hex("0x000000000000000000636f6e736f6c652e6c6f67"));
+    CHECK(decoder.value == 0x000000000000000000636f6e736f6c652e6c6f67_address);
 
-}  // namespace silkworm::snapshots
+    CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+}
+
+}  // namespace silkworm::db::state

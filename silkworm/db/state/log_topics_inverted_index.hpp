@@ -16,20 +16,13 @@
 
 #pragma once
 
-#include "elias_fano/elias_fano_decoder.hpp"
-#include "rec_split/accessor_index.hpp"
-#include "segment/kv_segment_reader.hpp"
+#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
+#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
-namespace silkworm::snapshots {
+#include "hash_decoder.hpp"
 
-struct InvertedIndex {
-    const segment::KVSegmentFileReader& kv_segment;
-    const rec_split::AccessorIndex& accessor_index;
+namespace silkworm::db::state {
 
-    template <DecoderConcept TKeyDecoder>
-    segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder> kv_segment_reader() {
-        return {kv_segment};
-    }
-};
+using LogTopicsInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<HashDecoder, snapshots::RawDecoder<Bytes>>;
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::db::state

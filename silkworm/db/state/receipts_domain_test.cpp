@@ -14,22 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
+#include "receipts_domain.hpp"
 
-#include "elias_fano/elias_fano_decoder.hpp"
-#include "rec_split/accessor_index.hpp"
-#include "segment/kv_segment_reader.hpp"
+#include <catch2/catch_test_macros.hpp>
 
-namespace silkworm::snapshots {
+namespace silkworm::db::state {
 
-struct InvertedIndex {
-    const segment::KVSegmentFileReader& kv_segment;
-    const rec_split::AccessorIndex& accessor_index;
+TEST_CASE("ReceiptsDomainKeyDecoder") {
+    ReceiptsDomainKeyDecoder decoder;
+    decoder.decode_word(Bytes{1});
+    CHECK(decoder.value == ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey);
 
-    template <DecoderConcept TKeyDecoder>
-    segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder> kv_segment_reader() {
-        return {kv_segment};
-    }
-};
+    CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+}
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::db::state

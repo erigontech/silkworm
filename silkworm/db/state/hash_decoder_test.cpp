@@ -14,22 +14,21 @@
    limitations under the License.
 */
 
-#pragma once
+#include "hash_decoder.hpp"
 
-#include "elias_fano/elias_fano_decoder.hpp"
-#include "rec_split/accessor_index.hpp"
-#include "segment/kv_segment_reader.hpp"
+#include <catch2/catch_test_macros.hpp>
 
-namespace silkworm::snapshots {
+#include <silkworm/core/common/util.hpp>
 
-struct InvertedIndex {
-    const segment::KVSegmentFileReader& kv_segment;
-    const rec_split::AccessorIndex& accessor_index;
+namespace silkworm::db::state {
 
-    template <DecoderConcept TKeyDecoder>
-    segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder> kv_segment_reader() {
-        return {kv_segment};
-    }
-};
+TEST_CASE("HashDecoder") {
+    using evmc::literals::operator""_bytes32;
+    HashDecoder decoder;
+    decoder.decode_word(*from_hex("0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55"));
+    CHECK(decoder.value == 0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32);
 
-}  // namespace silkworm::snapshots
+    CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+}
+
+}  // namespace silkworm::db::state

@@ -115,12 +115,12 @@ class EliasFanoList32 {
     static constexpr size_t kULength{sizeof(uint64_t)};
 
     //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
-    static std::unique_ptr<EliasFanoList32> from_encoded_data(std::span<uint8_t> encoded_data) {
+    static EliasFanoList32 from_encoded_data(std::span<const uint8_t> encoded_data) {
         ensure(encoded_data.size() >= kCountLength + kULength, "EliasFanoList32::from_encoded_data data too short");
         const uint64_t count = endian::load_big_u64(encoded_data.data());
         const uint64_t u = endian::load_big_u64(encoded_data.subspan(kCountLength).data());
         const auto remaining_data = encoded_data.subspan(kCountLength + kULength);
-        return std::make_unique<EliasFanoList32>(count, u, remaining_data);
+        return EliasFanoList32{count, u, remaining_data};
     }
 
     //! Create an empty new 32-bit EF list prepared for the given data sequence length and max value
@@ -138,7 +138,7 @@ class EliasFanoList32 {
     //! \param count the number of EF data points
     //! \param u the strict upper bound on the EF data points, i.e. max value plus one
     //! \param data the existing data sequence (portion exceeding the total words will be ignored)
-    EliasFanoList32(uint64_t count, uint64_t u, std::span<uint8_t> data)
+    EliasFanoList32(uint64_t count, uint64_t u, std::span<const uint8_t> data)
         : count_(count),
           u_(u),
           max_value_(u - 1) {
@@ -246,6 +246,12 @@ class EliasFanoList32 {
 
         os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
         return os;
+    }
+
+    bool operator==(const EliasFanoList32& other) const {
+        return (count_ == other.count_) &&
+               (max_value_ == other.max_value_) &&
+               (data_ == other.data_);
     }
 
   private:

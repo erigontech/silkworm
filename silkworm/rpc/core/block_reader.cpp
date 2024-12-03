@@ -16,12 +16,10 @@
 
 #include "block_reader.hpp"
 
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -60,7 +58,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     auto paginated_result = co_await transaction_.history_range(std::move(query));
     auto it = co_await paginated_result.begin();
 
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         intx::uint256 old_balance{0};
         intx::uint256 current_balance{0};
 

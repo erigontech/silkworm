@@ -291,7 +291,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         uint64_t count = 0;
         TxnId prev_txn_id = 0;
         TxnId next_txn_id = 0;
-        while (const auto value = co_await it.next()) {
+        while (const auto value = co_await it->next()) {
             const auto txn_id = static_cast<TxnId>(*value);
             if (count++ % kTxnProbeWindowSize != 0) {
                 next_txn_id = txn_id;
@@ -449,7 +449,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         uint64_t count = 0;
         TxnId prev_txn_id = 0;
         TxnId next_txn_id = 0;
-        while (const auto value = co_await it.next()) {
+        while (const auto value = co_await it->next()) {
             const auto txn_id = static_cast<TxnId>(*value);
             if (count++ % kTxnProbeWindowSize != 0) {
                 next_txn_id = txn_id;
@@ -853,10 +853,10 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     std::optional<BlockInfo> block_info;
     auto block_num_changed = false;
 
-    auto it = db::kv::api::set_union(it_from, it_to, ascending);
+    auto it = db::kv::api::set_union(std::move(it_from), std::move(it_to), ascending);
     const auto chain_storage = tx.create_storage();
 
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         const auto txn_id = static_cast<TxnId>(*value);
         const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
         if (!block_num_opt) {

@@ -54,7 +54,7 @@ Task<void> StorageWalker::storage_range_at(
     auto paginated_result = co_await transaction_.range_as_of(std::move(query));
     auto it = co_await paginated_result.begin();
 
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         if (value->second.empty())
             continue;
 

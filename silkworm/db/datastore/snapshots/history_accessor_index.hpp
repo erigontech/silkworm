@@ -16,35 +16,36 @@
 
 #pragma once
 
-#include "codec.hpp"
+#include <silkworm/core/common/endian.hpp>
+
+#include "common/codec.hpp"
+#include "common/raw_codec.hpp"
 
 namespace silkworm::snapshots {
 
-template <class TBytes>
-concept BytesOrByteView = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
+template <EncoderConcept TIIKeyEncoder>
+struct HistoryAccessorIndexKeyEncoder : public snapshots::Encoder {
+    struct {
+        TxnId txn_id{};
+        TIIKeyEncoder inverted_index_key;
+    } value;
 
-template <BytesOrByteView TBytes>
-struct RawDecoder : public Decoder {
-    TBytes value;
-    ~RawDecoder() override = default;
-    void decode_word(ByteView word) override {
-        value = std::move(TBytes{word});
-    }
-};
+    Bytes word;
 
-static_assert(DecoderConcept<RawDecoder<Bytes>>);
-static_assert(DecoderConcept<RawDecoder<ByteView>>);
+    ~HistoryAccessorIndexKeyEncoder() override = default;
 
-template <BytesOrByteView TBytes>
-struct RawEncoder : public Encoder {
-    TBytes value;
-    ~RawEncoder() override = default;
     ByteView encode_word() override {
-        return value;
+        word.clear();
+
+        word.append(sizeof(TxnId), 0);
+        endian::store_big_u64(word.data(), value.txn_id);
+
+        word += value.inverted_index_key.encode_word();
+
+        return word;
     }
 };
 
-static_assert(EncoderConcept<RawEncoder<Bytes>>);
-static_assert(EncoderConcept<RawEncoder<ByteView>>);
+static_assert(snapshots::EncoderConcept<HistoryAccessorIndexKeyEncoder<RawEncoder<ByteView>>>);
 
 }  // namespace silkworm::snapshots

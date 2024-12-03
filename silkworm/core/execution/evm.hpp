@@ -99,6 +99,15 @@ class EVM {
 
     ~EVM();
 
+    /// Returns the reference to the underlying evmone's VM object.
+    evmc::VM& vm() noexcept { return evm1_; }
+
+    /// Returns the reference to the evmone's internal interface for EVM.
+    evmone::VM& vm_impl() noexcept {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+        return *static_cast<evmone::VM*>(evm1_.get_raw_pointer());
+    }
+
     const Block& block() const noexcept { return block_; }
 
     const ChainConfig& config() const noexcept { return config_; }
@@ -146,7 +155,7 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
-    evmone::VM* evm1_{nullptr};
+    evmc::VM evm1_;
 };
 
 class EvmHost : public evmc::Host {

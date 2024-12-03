@@ -64,10 +64,9 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       block_{block},
       state_{state},
       config_{config},
-      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-{}
+      evm1_{evmc_create_evmone()} {}
 
-EVM::~EVM() { evm1_->destroy(evm1_); }
+EVM::~EVM() = default;
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     SILKWORM_ASSERT(txn.sender());  // sender must be valid
@@ -298,7 +297,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     }
 
     EvmHost host{*this};
-    evmc_result res{evmone::baseline::execute(*evm1_, EvmHost::get_interface(), host.to_context(), rev, message, *analysis)};
+    evmc_result res{evmone::baseline::execute(vm_impl(), EvmHost::get_interface(), host.to_context(), rev, message, *analysis)};
     return res;
 }
 
@@ -307,12 +306,12 @@ evmc_revision EVM::revision() const noexcept {
 }
 
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
-    evm1_->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+    vm_impl().add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
     tracers_.push_back(std::ref(tracer));
 }
 
 void EVM::remove_tracers() noexcept {
-    evm1_->remove_tracers();
+    vm_impl().remove_tracers();
     tracers_.clear();
 }
 

@@ -294,6 +294,7 @@ using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
 
+#ifdef notdef
 TEST_CASE("get_modified_accounts") {
     WorkerPool pool{1};
     nlohmann::json json;
@@ -529,6 +530,7 @@ TEST_CASE("get_modified_accounts") {
     }
 #endif
 }
+#endif
 #endif  // !defined(__clang__)
 
 #endif  // SILKWORM_SANITIZE

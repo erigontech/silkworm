@@ -27,7 +27,6 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
@@ -278,7 +277,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
     const auto block_id = params[0].is_string() ? params[0].get<std::string>() : to_quantity(params[0].get<uint64_t>());
     SILK_DEBUG << "block_id: " << block_id;
 
-    if (block_id == core::kPendingBlockId) {
+    if (block_id == kPendingBlockId) {
         // TODO(canepat): add pending block only known to the miner
         auto error_msg = "pending block not implemented in erigon_getHeaderByNumber";
         SILK_ERROR << error_msg;
@@ -463,7 +462,7 @@ Task<void> ErigonRpcApi::handle_erigon_block_num(const nlohmann::json& request, 
     const auto& params = request["params"];
     std::string block_id;
     if (params.empty()) {
-        block_id = core::kLatestExecutedBlockId;
+        block_id = kLatestExecutedBlockId;
     } else if (params.size() == 1) {
         block_id = params[0];
     } else {

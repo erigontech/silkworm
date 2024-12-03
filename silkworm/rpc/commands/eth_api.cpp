@@ -903,7 +903,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         const BlockNumOrHash block_num_or_hash{kLatestBlockId};
 
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const auto latest_block_num = co_await block_reader.get_block_num(core::kLatestBlockId);
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
         SILK_DEBUG << "chain_id: " << chain_config.chain_id << ", latest_block_num: " << latest_block_num;
 
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_num);
@@ -1255,7 +1255,7 @@ Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::j
         const auto chain_storage{tx->create_storage()};
         rpc::BlockReader block_reader{*chain_storage, *tx};
 
-        const auto latest_block_num = co_await block_reader.get_block_num(core::kLatestBlockId);
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
         SILK_TRACE << "latest_block_num " << latest_block_num;
 
         BlockProvider block_provider = [this, &chain_storage](BlockNum block_num) {
@@ -1494,8 +1494,8 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
     auto filter = params[0].get<StoredFilter>();
     SILK_DEBUG << "filter: " << filter;
 
-    if ((filter.from_block && filter.from_block.value() == core::kPendingBlockId) ||
-        (filter.to_block && filter.to_block.value() == core::kPendingBlockId)) {
+    if ((filter.from_block && filter.from_block.value() == kPendingBlockId) ||
+        (filter.to_block && filter.to_block.value() == kPendingBlockId)) {
         reply = make_json_error(request, kInvalidParams, "pending logs not supported");
         co_return;
     }

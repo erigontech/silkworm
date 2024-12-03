@@ -135,7 +135,9 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
             throw std::invalid_argument(msg.str());
         }
 
-        const auto addresses = co_await get_modified_accounts(block_reader, *tx, start_block_num, end_block_num + 1);
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
+
+        const auto addresses = co_await get_modified_accounts(*tx, start_block_num, end_block_num + 1, latest_block_num);
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -182,7 +184,10 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
         if (!end_block_num) {
             throw std::invalid_argument("end block " + silkworm::to_hex(end_hash) + " not found");
         }
-        const auto addresses = co_await get_modified_accounts(block_reader, *tx, *start_block_num, *end_block_num + 1);
+
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
+
+        const auto addresses = co_await get_modified_accounts(*tx, *start_block_num, *end_block_num + 1, latest_block_num);
 
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
@@ -641,9 +646,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-Task<std::set<evmc::address>> get_modified_accounts(rpc::BlockReader& block_reader, db::kv::api::Transaction& tx, BlockNum start_block_num, BlockNum end_block_num) {
-    const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
-
+Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_num, BlockNum end_block_num, BlockNum latest_block_num) {
     SILK_DEBUG << "latest: " << latest_block_num << " start: " << start_block_num << " end: " << end_block_num;
 
     if (start_block_num > latest_block_num) {

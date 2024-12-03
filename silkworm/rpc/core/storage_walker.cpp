@@ -58,7 +58,8 @@ Task<void> StorageWalker::storage_range_at(
         if (value->second.empty())
             continue;
 
-        const auto key = value->first.substr(20);
+        SILKWORM_ASSERT(value->first.size() >= kAddressLength);
+        const auto key = value->first.substr(kAddressLength);
         auto hash = hash_of(key);
         const auto sec_key = ByteView{hash.bytes};
         if (!collector(key, sec_key, value->second))

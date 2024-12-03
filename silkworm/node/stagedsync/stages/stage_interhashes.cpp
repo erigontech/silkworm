@@ -89,8 +89,9 @@ Stage::Result InterHashes::forward(RWTxn& txn) {
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
-            // TODO(canepat) debug_unwind with target 4'000'000 does not work in incremental mode
+            // TODO(canepat) debug_unwind block 4'000'000 step 1 fails with kWrongStateRoot in incremental mode
             // ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
+            SILK_TRACE_M(log_prefix_, {"function", std::string(__FUNCTION__), "algo", "full rather than incremental"});
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         }
 
@@ -171,8 +172,9 @@ Stage::Result InterHashes::unwind(RWTxn& txn) {
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
-            // TODO(canepat) debug_unwind with target 4'000'000 does not work in incremental mode
+            // TODO(canepat) debug_unwind block 4'000'000 step 1 fails with kWrongStateRoot in incremental mode
             // ret = increment_intermediate_hashes(txn, previous_progress, to, &expected_state_root);
+            SILK_TRACE_M(log_prefix_, {"function", std::string(__FUNCTION__), "algo", "full rather than incremental"});
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         }
 

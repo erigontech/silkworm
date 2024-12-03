@@ -379,13 +379,6 @@ TEST_CASE("get_modified_accounts") {
 
     auto& tx = transaction;
     SECTION("end == start") {
-        EXPECT_CALL(transaction, get(db::table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
-        }));
-        EXPECT_CALL(transaction, get(db::table::kSyncStageProgressName, ByteView{stages::kExecution}))
-            .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
-                co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("000000000052a010")};
-            }));
         EXPECT_CALL(transaction, first_txn_num_in_block(0x52a010))
             .WillOnce(InvokeWithoutArgs([]() -> Task<TxnId> {
                 co_return 0;
@@ -410,7 +403,7 @@ TEST_CASE("get_modified_accounts") {
             co_return result;
         }));
 
-        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx, 0x52a010, 0x52a010), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx, 0x52a010, 0x52a010, 0x800000), boost::asio::use_future);
         const auto accounts = result.get();
         nlohmann::json j = accounts;
         CHECK(j == R"([

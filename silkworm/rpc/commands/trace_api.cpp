@@ -25,7 +25,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -54,6 +54,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
 
     try {
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
@@ -61,7 +62,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const bool is_latest_block = co_await core::is_latest_block_num(block_with_hash->block.header.number, *tx);
+        const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
         tx->set_state_cache_enabled(is_latest_block);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -102,13 +103,15 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
 
     try {
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const bool is_latest_block = co_await core::is_latest_block_num(block_with_hash->block.header.number, *tx);
+        const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
         tx->set_state_cache_enabled(is_latest_block);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -190,9 +193,10 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
 
     try {
         tx->set_state_cache_enabled(/*cache_enabled=*/true);
-
-        const auto block_num = co_await core::get_latest_block_num(*tx);
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto block_num = co_await block_reader.get_latest_block_num();
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");

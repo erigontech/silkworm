@@ -30,7 +30,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
@@ -69,11 +69,13 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin();
 
     try {
+        rpc::BlockReader block_reader{*tx->create_storage(), *tx};
+
         // Check if target block is the latest one: use local state cache (if any) for target transaction
-        const bool is_latest_block = co_await core::is_latest_block_num(BlockNumOrHash{block_id}, *tx);
+        const bool is_latest_block = co_await block_reader.is_latest_block_num(BlockNumOrHash{block_id});
         tx->set_state_cache_enabled(is_latest_block);
 
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         StateReader state_reader{*tx, block_num + 1};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
@@ -109,8 +111,10 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
@@ -205,8 +209,10 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto block_num = co_await block_reader.get_block_num(block_id);
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
@@ -422,7 +428,9 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     auto tx = co_await database_->begin();
 
     try {
-        auto block_num = co_await core::get_latest_block_num(*tx);
+        const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        auto block_num = co_await block_reader.get_latest_block_num();
         StateReader state_reader{*tx, block_num};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
         if (!account_opt || account_opt.value().code_hash == kEmptyHash) {
@@ -526,7 +534,6 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 tx_index = creation_txn_id - min_txn_id - 1;
             }
 
-            const auto chain_storage{tx->create_storage()};
             const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, tx_index);
             if (!transaction) {
                 SILK_DEBUG << "No transaction found in block " << block_num << " for index " << tx_index;

@@ -25,7 +25,7 @@
 #include <silkworm/db/chain/chain.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
@@ -37,6 +37,7 @@ using namespace db::chain;
 
 Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& filter) {
     uint64_t start{}, end{};
+
     if (filter.block_hash.has_value()) {
         auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
         if (!block_hash_bytes.has_value()) {
@@ -49,16 +50,16 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& fil
     } else {
         uint64_t last_block_num = std::numeric_limits<uint64_t>::max();
         if (filter.from_block.has_value()) {
-            start = co_await core::get_block_num(filter.from_block.value(), tx_);
+            start = co_await block_reader_.get_block_num(filter.from_block.value());
         } else {
-            last_block_num = co_await core::get_latest_block_num(tx_);
+            last_block_num = co_await block_reader_.get_latest_block_num();
             start = last_block_num;
         }
         if (filter.to_block.has_value()) {
-            end = co_await core::get_block_num(filter.to_block.value(), tx_);
+            end = co_await block_reader_.get_block_num(filter.to_block.value());
         } else {
             if (last_block_num == std::numeric_limits<uint64_t>::max()) {
-                last_block_num = co_await core::get_latest_block_num(tx_);
+                last_block_num = co_await block_reader_.get_latest_block_num();
             }
             end = last_block_num;
         }

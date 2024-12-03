@@ -16,7 +16,7 @@
 
 #include "cached_chain.hpp"
 
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 
 namespace silkworm::rpc::core {
 
@@ -72,7 +72,8 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache&
     } else if (block_num_or_hash.is_hash()) {
         co_return co_await read_block_by_hash(cache, storage, block_num_or_hash.hash());
     } else if (block_num_or_hash.is_tag()) {
-        auto [block_num, ignore] = co_await get_block_num(block_num_or_hash.tag(), tx, /*latest_required=*/false);
+        rpc::BlockReader block_reader{storage, tx};
+        auto [block_num, ignore] = co_await block_reader.get_block_num(block_num_or_hash.tag(), /*latest_required=*/false);
         co_return co_await read_block_by_number(cache, storage, block_num);
     }
     throw std::runtime_error{"invalid block_num_or_hash value"};

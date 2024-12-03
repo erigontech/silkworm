@@ -32,7 +32,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/rpc/common/constants.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 
@@ -48,7 +48,9 @@ Task<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
 
     const auto db_transaction = co_await db.begin();
     try {
-        block_num = co_await core::get_latest_block_num(*db_transaction);
+        const auto chain_storage{db_transaction->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *db_transaction};
+        block_num = co_await block_reader.get_latest_block_num();
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
     } catch (...) {

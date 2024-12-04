@@ -1,0 +1,95 @@
+name: QA - Snapshot Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  execution-test-suite:
+    runs-on: [ self-hosted, Erigon2 ] # must run on E2 not to steal E3 runner, which is used for PR approval
+    timeout-minutes: 7200  # 5 days
+    env:
+      ERIGON_QA_PATH: /opt/erigon-qa
+      ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
+      ERIGON_SNAPSHOT_TEST_DIR: /opt/erigon-snapshot
+      CHAIN: mainnet
+
+    steps:
+      - name: Checkout Silkworm Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: "0"
+
+      - name: Clean Build Directory
+        run: rm -rf ${{runner.workspace}}/silkworm/build
+
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
+
+      - name: Configure CMake
+        working-directory: ${{runner.workspace}}/silkworm/build
+        run: |
+          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Target Snapshots
+        working-directory: ${{runner.workspace}}/silkworm/build
+        run: cmake --build . --config Release --target snapshots -j 8
+
+      - name: Pause the Erigon instance dedicated to db maintenance
+        run: |
+          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
+
+      - name: Sync the snapshot directory
+        run: |
+            rsync -a --delete $ERIGON_DATA_DIR/snapshots/ $ERIGON_SNAPSHOT_TEST_DIR/
+
+      - name: Run Execution Test
+        id: test_step
+        working-directory: ${{runner.workspace}}/silkworm/build/cmd
+        run: |
+          set +e # Disable exit on error
+          
+          # Initialize the variables to collect failed test names and the overall test exit status
+          failed_tests=""
+          test_exit_status=0
+          
+          # Run the first count_headers script
+          ./snapshots --snapshot_dir "$ERIGON_SNAPSHOT_TEST_DIR" count_headers
+          exit_status=$?
+          if [ $exit_status -ne 0 ]; then
+            failed_tests="$failed_tests count_headers"
+            test_exit_status=1
+          fi
+          
+          # Run the second count_bodies script
+          ./snapshots --snapshot_dir "$ERIGON_SNAPSHOT_TEST_DIR" count_bodies
+          exit_status=$?
+          if [ $exit_status -ne 0 ]; then
+            failed_tests="$failed_tests count_bodies"
+            test_exit_status=1
+          fi
+  
+          # Check test runner exit status
+          if [ "$test_exit_status" -eq 0 ]; then
+            echo "Tests completed successfully."
+            echo "TEST_RESULT=success" >> "$GITHUB_OUTPUT"
+          else
+          # Output the list of failed tests without commas
+            echo "Error detected during tests:$failed_tests"
+            echo "TEST_RESULT=failure" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resume the Erigon instance dedicated to db maintenance
+        run: |
+          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
+
+      - name: Action for Success
+        if: steps.test_step.outputs.TEST_RESULT == 'success'
+        run: echo "::notice::Tests completed successfully"
+
+      - name: Action for Failure
+        if: steps.test_step.outputs.TEST_RESULT != 'success'
+        run: |
+          echo "::error::Error detected during tests"
+          exit 1
+

@@ -71,9 +71,9 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& fil
 }
 
 class RangePaginatedIterator : public db::kv::api::PaginatedIterator<db::kv::api::Timestamp> {
-public:
+  public:
     RangePaginatedIterator(db::kv::api::Timestamp from, db::kv::api::Timestamp to)
-    : current_(from), to_(to) {}
+        : current_(from), to_(to) {}
 
     Task<bool> has_next() override {
         co_return current_ <= to_;
@@ -86,7 +86,7 @@ public:
         co_return current_++;
     }
 
-private:
+  private:
     db::kv::api::Timestamp current_;
     db::kv::api::Timestamp to_;
 };
@@ -126,10 +126,10 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                      << to_timestamp;
 
             db::kv::api::IndexRangeQuery query = {.table = db::table::kLogAddrIdx,
-                    .key = db::account_domain_key(*it),
-                    .from_timestamp = from_timestamp,
-                    .to_timestamp = to_timestamp,
-                    .ascending_order = true};
+                                                  .key = db::account_domain_key(*it),
+                                                  .from_timestamp = from_timestamp,
+                                                  .to_timestamp = to_timestamp,
+                                                  .ascending_order = true};
             auto paginated_result = co_await tx_.index_range(std::move(query));
             union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
         }
@@ -140,10 +140,10 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                      << to_timestamp;
 
             db::kv::api::IndexRangeQuery query = {.table = db::table::kLogAddrIdx,
-                    .key = db::account_domain_key(*it),
-                    .from_timestamp = from_timestamp,
-                    .to_timestamp = to_timestamp,
-                    .ascending_order = true};
+                                                  .key = db::account_domain_key(*it),
+                                                  .from_timestamp = from_timestamp,
+                                                  .to_timestamp = to_timestamp,
+                                                  .ascending_order = true};
             auto paginated_result = co_await tx_.index_range(std::move(query));
             union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
         }
@@ -164,9 +164,9 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
         const auto txn_index = txn_id - min_txn_id - 1;
 
         SILK_LOG << "txNum: " << txn_id
-            << ", blockNum: " << block_num
-            << ", txIndex: " << txn_index
-            << ", final txn: " << (txn_id == max_txn_id);
+                 << ", blockNum: " << block_num
+                 << ", txIndex: " << txn_index
+                 << ", final txn: " << (txn_id == max_txn_id);
     }
     //    if (!topics.empty()) {
     //        auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_, db::table::kLogTopicIndexName, topics, start, end);

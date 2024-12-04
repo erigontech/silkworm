@@ -28,7 +28,7 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::execution {
 
 std::unordered_map<evmc::bytes32, Bytes> AsyncRemoteState::code_;
 
@@ -172,4 +172,4 @@ std::optional<evmc::bytes32> RemoteState::canonical_hash(BlockNum /*block_num*/)
     throw std::logic_error{"RemoteState::canonical_hash not yet implemented"};
 }
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::execution

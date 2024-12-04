@@ -20,6 +20,7 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
@@ -152,9 +153,9 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, co
     const auto chain_config = co_await chain_storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     const auto receipts = co_await async_task(workers.executor(), [&]() -> Receipts {
-        auto state = tx.create_state(current_executor, chain_storage, block_num - 1);
+        auto state = execution::StateFactory{tx}.create_state(current_executor, chain_storage, block_num - 1);
 
-        auto curr_state = tx.create_state(current_executor, chain_storage, block_num - 1);
+        auto curr_state = execution::StateFactory{tx}.create_state(current_executor, chain_storage, block_num - 1);
         EVMExecutor executor{block, chain_config, workers, state};
 
         Receipts rpc_receipts;

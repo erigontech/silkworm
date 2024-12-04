@@ -194,10 +194,6 @@ class DummyTransaction : public BaseTransaction {
         co_return cursor;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const ChainStorage&, BlockNum) override {
-        return nullptr;
-    }
-
     std::shared_ptr<ChainStorage> create_storage() override {
         return nullptr;
     }

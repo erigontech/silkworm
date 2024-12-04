@@ -16,28 +16,67 @@
 
 #pragma once
 
-#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
 
+#include <silkworm/infra/concurrency/task.hpp>
+
+#include <boost/asio/io_context.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/chain/chain_storage.hpp>
+#include <silkworm/db/chain/providers.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 
-#include "../data_store.hpp"
+namespace silkworm::execution {
 
-namespace silkworm::db::state {
-
-class LocalState : public State {
+class AsyncRemoteState {
   public:
-    explicit LocalState(BlockNum block_num, DataStoreRef data_store)
-        : block_num_{block_num},
-          txn_{data_store.chaindata.start_ro_tx()},
-          data_model_{txn_, data_store.blocks_repository} {}
+    explicit AsyncRemoteState(
+        db::kv::api::Transaction& tx,
+        const db::chain::ChainStorage& storage,
+        BlockNum block_num)
+        : storage_(storage), state_reader_(tx, block_num + 1) {}
+
+    Task<std::optional<Account>> read_account(const evmc::address& address) const noexcept;
+
+    Task<ByteView> read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept;
+
+    Task<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept;
+
+    Task<uint64_t> previous_incarnation(const evmc::address& address) const noexcept;
+
+    Task<std::optional<BlockHeader>> read_header(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept;
+
+    Task<bool> read_body(BlockNum block_num, const evmc::bytes32& block_hash, BlockBody& filled_body) const noexcept;
+
+    Task<std::optional<intx::uint256>> total_difficulty(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept;
+
+    Task<evmc::bytes32> state_root_hash() const;
+
+    Task<BlockNum> current_canonical_block() const;
+
+    Task<std::optional<evmc::bytes32>> canonical_hash(BlockNum block_num) const;
+
+  private:
+    static std::unordered_map<evmc::bytes32, Bytes> code_;
+
+    const db::chain::ChainStorage& storage_;
+    db::kv::StateReader state_reader_;
+};
+
+class RemoteState : public State {
+  public:
+    explicit RemoteState(
+        boost::asio::any_io_executor& executor,
+        db::kv::api::Transaction& tx,
+        const db::chain::ChainStorage& storage,
+        BlockNum block_num)
+        : executor_(executor), async_state_{tx, storage, block_num} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -92,9 +131,10 @@ class LocalState : public State {
     void unwind_state_changes(BlockNum /*block_num*/) override {}
 
   private:
-    BlockNum block_num_;
-    mutable db::ROTxnManaged txn_;
-    db::DataModel data_model_;
+    boost::asio::any_io_executor executor_;
+    AsyncRemoteState async_state_;
 };
 
-}  // namespace silkworm::db::state
+std::ostream& operator<<(std::ostream& out, const RemoteState& s);
+
+}  // namespace silkworm::execution

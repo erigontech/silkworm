@@ -28,7 +28,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
-#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -54,7 +53,6 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
 };
 
 #ifndef SILKWORM_SANITIZE
-using silkworm::db::state::RemoteState;
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -68,11 +66,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
     static Bytes account_history_key1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df7030")};
     static Bytes account_history_key2{*silkworm::from_hex("0000000000000000000000000000000000000009")};
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
 
     SECTION("precompiled contract failure") {
         db::kv::api::GetAsOfQuery query1{
@@ -181,11 +174,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
 
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -932,11 +920,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
 
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
-
     SECTION("Call: TO present") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
@@ -1080,11 +1063,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
 
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
@@ -1238,11 +1216,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
 
     static Bytes account_history_key3{*silkworm::from_hex("000000000000000000000000000000000000000000000000005279a8")};
     static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
 
     SECTION("callMany: failed with intrinsic gas too low") {
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -1479,11 +1452,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
 
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static Bytes account_history_value3{*silkworm::from_hex("0008028ded68c33d14010000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
@@ -1935,8 +1903,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     static Bytes account_history_key3{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
     static Bytes account_history_value3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
-    auto& tx = transaction;
-
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
@@ -1952,9 +1918,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818873,
     };
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
         .Times(2)
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -2046,11 +2009,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
 
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static Bytes account_history_value3{*silkworm::from_hex("0008028ded68c33d14010000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
@@ -2971,11 +2929,6 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
 
     static Bytes account_history_key3{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
     static Bytes account_history_value3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,

@@ -34,6 +34,7 @@
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -1156,7 +1157,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
 
         const auto execution_result = co_await EVMExecutor::call(
             chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&tx](auto& io_executor, auto block_num1, auto& storage) {
-                return tx->create_state(io_executor, storage, block_num1);
+                return execution::StateFactory{*tx}.create_state(io_executor, storage, block_num1);
             });
 
         if (execution_result.success()) {
@@ -1343,7 +1344,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
                 chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
-                    return tx->create_state(io_executor, storage, block_num);
+                    return execution::StateFactory{*tx}.create_state(io_executor, storage, block_num);
                 },
                 tracers, /* refund */ true, /* gasBailout */ false);
 
@@ -1438,7 +1439,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
 
             const auto execution_result = co_await EVMExecutor::call(
                 chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, [&](auto& io_executor, auto block_num, auto& storage) {
-                    return tx->create_state(io_executor, storage, block_num);
+                    return execution::StateFactory{*tx}.create_state(io_executor, storage, block_num);
                 });
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request, kServerError, execution_result.pre_check_error.value());

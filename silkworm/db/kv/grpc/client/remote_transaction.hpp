@@ -54,8 +54,6 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<std::shared_ptr<api::CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) override;
-
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 
     Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;

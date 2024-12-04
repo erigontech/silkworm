@@ -32,7 +32,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::execution {
 
 using testing::_;
 using testing::Invoke;
@@ -50,7 +50,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     const evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
 
     SECTION("read_code for empty hash") {
-        EXPECT_CALL(transaction, get_one(table::kCodeName, _))
+        EXPECT_CALL(transaction, get_one(db::table::kCodeName, _))
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -374,7 +374,7 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::canonical_hash for empty response from chain storage") {
-        EXPECT_CALL(transaction, get_one(table::kCanonicalHashesName, _))
+        EXPECT_CALL(transaction, get_one(db::table::kCanonicalHashesName, _))
             .WillRepeatedly(InvokeWithoutArgs([=]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
@@ -406,4 +406,4 @@ TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::execution

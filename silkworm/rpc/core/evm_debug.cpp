@@ -25,6 +25,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -434,7 +435,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = tx_.create_state(current_executor, storage, block_num - 1);
+        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block_num - 1);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
@@ -492,7 +493,7 @@ Task<void> DebugExecutor::execute(
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
-        auto state = tx_.create_state(current_executor, storage, block_num);
+        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block_num);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (auto idx{0}; idx < index; ++idx) {
@@ -543,7 +544,7 @@ Task<void> DebugExecutor::execute(
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
-        auto state = tx_.create_state(current_executor, storage, block.header.number);
+        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block.header.number);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (auto idx{0}; idx < transaction_index; ++idx) {

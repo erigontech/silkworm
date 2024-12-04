@@ -26,7 +26,6 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
@@ -68,7 +67,6 @@ class TestDebugExecutor : DebugExecutor {
 };
 
 #ifndef SILKWORM_SANITIZE
-using silkworm::db::state::RemoteState;
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -85,12 +83,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
     static Bytes account_history_value1{*silkworm::from_hex("010203ed03e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-        }));
 
     SECTION("precompiled contract failure") {
         db::kv::api::GetAsOfQuery query1{
@@ -175,12 +167,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
     static Bytes account_history_key3{*silkworm::from_hex("0x0000000000000000000000000000000000000000")};
     static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-        }));
 
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -893,12 +879,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static Bytes account_history_value3{*silkworm::from_hex("00094165832d46fa1082db0000")};
 
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-        }));
-
     SECTION("Call: TO present") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
@@ -983,12 +963,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
 
     static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _))
-        .WillOnce(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-            return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-        }));
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,

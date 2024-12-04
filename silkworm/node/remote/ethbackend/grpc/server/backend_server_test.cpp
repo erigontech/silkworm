@@ -181,10 +181,11 @@ class MockSentryClient
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 const std::string kTestAddressUri{"localhost:12345"};
 
-const silkworm::db::MapConfig kTestMap{"TestTable"};
-const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+const silkworm::sw_mdbx::MapConfig kTestMap{"TestTable"};
+const silkworm::sw_mdbx::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 using namespace silkworm;
+using namespace silkworm::sw_mdbx;
 
 using StateChangeTokenObserver = std::function<void(std::optional<StateChangeToken>)>;
 
@@ -208,7 +209,7 @@ class TestableStateChangeCollection : public StateChangeCollection {
 
 class TestableEthereumBackEnd : public EthereumBackEnd {
   public:
-    TestableEthereumBackEnd(const NodeSettings& node_settings, db::ROAccess chaindata)
+    TestableEthereumBackEnd(const NodeSettings& node_settings, sw_mdbx::ROAccess chaindata)
         : EthereumBackEnd{
               node_settings,
               std::move(chaindata),
@@ -236,28 +237,28 @@ struct BackEndE2ETest {
 
         DataDirectory data_dir{tmp_dir.path()};
         REQUIRE_NOTHROW(data_dir.deploy());
-        db_config = std::make_unique<db::EnvConfig>();
+        db_config = std::make_unique<EnvConfig>();
         db_config->max_readers = options.chaindata_env_config.max_readers;
         db_config->path = data_dir.chaindata().path().string();
         db_config->create = true;
         db_config->in_memory = true;
-        database_env = db::open_env(*db_config);
+        database_env = open_env(*db_config);
         auto rw_txn{database_env.start_write()};
-        db::open_map(rw_txn, kTestMap);
-        db::open_map(rw_txn, kTestMultiMap);
+        open_map(rw_txn, kTestMap);
+        open_map(rw_txn, kTestMultiMap);
         rw_txn.commit();
 
-        backend = std::make_unique<TestableEthereumBackEnd>(options, db::ROAccess{database_env});
+        backend = std::make_unique<TestableEthereumBackEnd>(options, sw_mdbx::ROAccess{database_env});
         server = std::make_unique<BackEndServer>(srv_config, *backend);
         server->build_and_start();
     }
 
     void fill_tables() {
         auto rw_txn = database_env.start_write();
-        db::PooledCursor rw_cursor1{rw_txn, kTestMap};
+        PooledCursor rw_cursor1{rw_txn, kTestMap};
         rw_cursor1.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
         rw_cursor1.upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
-        db::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
+        PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"11"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"22"});
@@ -267,9 +268,9 @@ struct BackEndE2ETest {
 
     void alter_tables() {
         auto rw_txn = database_env.start_write();
-        db::PooledCursor rw_cursor1{rw_txn, kTestMap};
+        PooledCursor rw_cursor1{rw_txn, kTestMap};
         rw_cursor1.upsert(mdbx::slice{"CC"}, mdbx::slice{"22"});
-        db::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
+        PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"33"});
         rw_cursor2.upsert(mdbx::slice{"BB"}, mdbx::slice{"33"});
         rw_txn.commit();
@@ -285,7 +286,7 @@ struct BackEndE2ETest {
     std::unique_ptr<BackEndClient> backend_client;
     rpc::ServerSettings srv_config;
     TemporaryDirectory tmp_dir;
-    std::unique_ptr<db::EnvConfig> db_config;
+    std::unique_ptr<EnvConfig> db_config;
     mdbx::env_managed database_env;
     std::unique_ptr<TestableEthereumBackEnd> backend;
     std::unique_ptr<BackEndServer> server;
@@ -304,12 +305,12 @@ TEST_CASE("BackEndServer", "[silkworm][node][rpc]") {
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
     REQUIRE_NOTHROW(data_dir.deploy());
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
     db_config.in_memory = true;
-    auto chaindata_env = db::open_env(db_config);
+    auto chaindata_env = open_env(db_config);
     NodeSettings node_settings;
-    TestableEthereumBackEnd backend{node_settings, db::ROAccess{chaindata_env}};
+    TestableEthereumBackEnd backend{node_settings, sw_mdbx::ROAccess{chaindata_env}};
 
     SECTION("BackEndServer::BackEndServer OK: create/destroy server") {
         BackEndServer server{srv_config, backend};

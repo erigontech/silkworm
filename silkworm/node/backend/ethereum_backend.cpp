@@ -20,7 +20,7 @@ namespace silkworm {
 
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
-    db::ROAccess chaindata,
+    sw_mdbx::ROAccess chaindata,
     std::shared_ptr<sentry::api::SentryClient> sentry_client)
     : EthereumBackEnd{
           node_settings,
@@ -32,7 +32,7 @@ EthereumBackEnd::EthereumBackEnd(
 
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
-    db::ROAccess chaindata,
+    sw_mdbx::ROAccess chaindata,
     std::shared_ptr<sentry::api::SentryClient> sentry_client,
     std::unique_ptr<StateChangeCollection> state_change_collection)
     : node_settings_(node_settings),

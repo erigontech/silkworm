@@ -33,6 +33,8 @@ namespace silkworm::stagedsync {
 
 using namespace std::chrono_literals;
 using namespace silkworm::db;
+using silkworm::sw_mdbx::from_slice;
+using silkworm::sw_mdbx::to_slice;
 
 Senders::Senders(
     SyncContext* sync_context,
@@ -59,7 +61,7 @@ Stage::Result Senders::forward(RWTxn& txn) {
     total_collected_transactions_ = 0;
     log_lock.unlock();
 
-    collector_ = std::make_unique<etl_mdbx::Collector>(etl_settings_);
+    collector_ = std::make_unique<sw_mdbx::Collector>(etl_settings_);
 
     const auto res{parallel_recover(txn)};
     if (res == Stage::Result::kSuccess) {

@@ -31,7 +31,8 @@
 namespace silkworm::trie {
 
 using namespace silkworm::db;
-using etl_mdbx::Collector;
+using namespace silkworm::sw_mdbx;
+using sw_mdbx::Collector;
 
 static ethash::hash256 keccak256(const evmc::address& address) {
     return silkworm::keccak256(address.bytes);

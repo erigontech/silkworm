@@ -40,7 +40,7 @@ struct SettingsOverrides {
     bool no_downloader{false};
 };
 
-class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
+class NoopStageSchedulerAdapter : public datastore::StageScheduler {
   public:
     explicit NoopStageSchedulerAdapter() = default;
     ~NoopStageSchedulerAdapter() override = default;

@@ -40,27 +40,27 @@
 
 #include "mdbx.hpp"
 
-namespace silkworm::db::etl {
+namespace silkworm::etl {
 class Collector;
 }
 
-namespace silkworm::db::etl_mdbx {
+namespace silkworm::sw_mdbx {
 class Collector;
 }
 
-namespace silkworm::db::bitmap {
+namespace silkworm::sw_mdbx::bitmap {
 
 class IndexLoader {
   public:
-    explicit IndexLoader(const db::MapConfig& index_config) : index_config_{index_config} {}
+    explicit IndexLoader(const MapConfig& index_config) : index_config_{index_config} {}
 
     //! \brief Merges a list of bitmaps, previously collected, into index table ensuring
     //! all bitmaps are properly sharded and that last bitmap is marked with an UINT64_MAX upper bound
     //! \param txn [in] : An MDBX transaction holder
     //! \param key_size [in] : The actual length of key in the list of bitmap shards (the index)
-    //! \param collector [in] : A pointer to the etl::collector holding the bitmaps to be merged
-    void merge_bitmaps(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector);
-    void merge_bitmaps32(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector);
+    //! \param bitmaps_collector [in] : A pointer to the etl::collector holding the bitmaps to be merged
+    void merge_bitmaps(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector);
+    void merge_bitmaps32(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector);
 
     //! \brief Provided a list of keys for which the unwind should be applied this removes right values from shards
     //! \param txn [in] : An MDBX transaction holder
@@ -95,7 +95,7 @@ class IndexLoader {
 
   private:
     template <typename RoaringMap, typename BlockUpperBound>
-    void merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector);
+    void merge_bitmaps_impl(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector);
 
     template <typename RoaringMap, typename BlockUpperBound>
     void unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<Bytes, bool>& keys);
@@ -103,9 +103,9 @@ class IndexLoader {
     template <typename RoaringMap, typename BlockUpperBound>
     void prune_bitmaps_impl(RWTxn& txn, BlockNum threshold);
 
-    const db::MapConfig& index_config_;  // The bucket config holding the index of maps
-    mutable std::mutex log_mtx_;         // To get progress status
-    std::string current_key_;            // Key being processed
+    const MapConfig& index_config_;  // The bucket config holding the index of maps
+    mutable std::mutex log_mtx_;     // To get progress status
+    std::string current_key_;        // Key being processed
 };
 
 // Return the first value in the bitmap that is not less than (i.e. greater or equal to) n,
@@ -134,4 +134,4 @@ roaring::Roaring64Map parse(ByteView data);
 //! \brief Parse 32-bit roaring bitmap from MDBX slice
 roaring::Roaring parse32(const mdbx::slice& data);
 
-}  // namespace silkworm::db::bitmap
+}  // namespace silkworm::sw_mdbx::bitmap

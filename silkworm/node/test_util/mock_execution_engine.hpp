@@ -41,7 +41,7 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
         };
     };
 
-    MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, db::RWAccess dba)
+    MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, sw_mdbx::RWAccess dba)
         : ExecutionEngine{
               std::move(executor),
               ns,

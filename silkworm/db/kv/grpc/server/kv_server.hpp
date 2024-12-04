@@ -32,7 +32,7 @@ class KvServer : public virtual rpc::Server {
   public:
     KvServer(
         const rpc::ServerSettings& settings,
-        ROAccess chaindata,
+        sw_mdbx::ROAccess chaindata,
         StateChangeCollection* state_change_source);
 
     KvServer(const KvServer&) = delete;
@@ -50,7 +50,7 @@ class KvServer : public virtual rpc::Server {
     remote::KV::AsyncService kv_async_service_;
 
     //! The chain database environment
-    ROAccess chaindata_;
+    sw_mdbx::ROAccess chaindata_;
 
     //! The collector of state changes acting as source of state change notifications
     StateChangeCollection* state_change_source_;

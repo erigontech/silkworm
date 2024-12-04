@@ -36,7 +36,7 @@
  * It can be used to prototype code that will use the full ETL collector or to do performance comparisons
  * between a memory-only impl. and a file-based impl.
  */
-namespace silkworm::db::etl {
+namespace silkworm::etl {
 
 // Function pointer to process Load on before Load data into tables
 using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value)>;
@@ -155,4 +155,4 @@ class InMemoryCollector {
     std::string loading_key_{};   // Actual load key (for log purposes)
 };
 
-}  // namespace silkworm::db::etl
+}  // namespace silkworm::etl

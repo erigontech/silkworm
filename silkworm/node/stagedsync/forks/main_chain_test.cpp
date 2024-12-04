@@ -170,7 +170,7 @@ TEST_CASE("MainChain") {
     Environment::set_stop_before_stage(stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    RWAccess db_access = context.chaindata_rw();
+    auto db_access = context.chaindata_rw();
     MainChainForTest main_chain{
         ioc.get_executor(),
         node_settings,

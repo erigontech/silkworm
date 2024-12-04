@@ -44,6 +44,9 @@ class SnapshotRepository;
 
 namespace silkworm::db {
 
+using sw_mdbx::ROTxn;
+using sw_mdbx::RWTxn;
+
 //! \brief Pulls database schema version
 std::optional<VersionBase> read_schema_version(ROTxn& txn);
 
@@ -184,7 +187,7 @@ void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, 
 
 // See Erigon ReadTransactions
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
-void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
+void read_transactions(sw_mdbx::ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 
 bool read_rlp_transactions(ROTxn& txn, BlockNum block_num, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs);
 

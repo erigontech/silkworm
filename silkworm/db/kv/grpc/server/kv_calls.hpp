@@ -42,6 +42,8 @@
 
 namespace silkworm::db::kv::grpc::server {
 
+using namespace sw_mdbx;
+
 api::Version higher_version_ignoring_patch(api::Version lhs, api::Version rhs);
 
 //! Current DB schema version.

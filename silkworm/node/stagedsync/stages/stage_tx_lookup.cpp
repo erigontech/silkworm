@@ -27,7 +27,7 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using etl_mdbx::Collector;
+using sw_mdbx::Collector;
 
 Stage::Result TxLookup::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};

@@ -22,9 +22,12 @@
 
 namespace silkworm::db::test_util {
 
-class MockROCursor : public ROCursor {
+class MockROCursor : public sw_mdbx::ROCursor {
   public:
-    MOCK_METHOD((void), bind, (ROTxn&, const MapConfig&), (override));
+    using CursorResult = sw_mdbx::CursorResult;
+    using Slice = sw_mdbx::Slice;
+
+    MOCK_METHOD((void), bind, (sw_mdbx::ROTxn&, const sw_mdbx::MapConfig&), (override));
     MOCK_METHOD((size_t), size, (), (const, override));
     MOCK_METHOD((bool), empty, (), (const));
     MOCK_METHOD((bool), is_multi_value, (), (const, override));
@@ -44,8 +47,8 @@ class MockROCursor : public ROCursor {
     MOCK_METHOD((CursorResult), find, (const Slice&, bool), (override));
     MOCK_METHOD((CursorResult), lower_bound, (const Slice&), (override));
     MOCK_METHOD((CursorResult), lower_bound, (const Slice&, bool), (override));
-    MOCK_METHOD((MoveResult), move, (MoveOperation, bool), (override));
-    MOCK_METHOD((MoveResult), move, (MoveOperation, const Slice&, bool), (override));
+    MOCK_METHOD((sw_mdbx::MoveResult), move, (sw_mdbx::MoveOperation, bool), (override));
+    MOCK_METHOD((sw_mdbx::MoveResult), move, (sw_mdbx::MoveOperation, const Slice&, bool), (override));
     MOCK_METHOD((bool), seek, (const Slice&), (override));
     MOCK_METHOD((bool), eof, (), (const, override));
     MOCK_METHOD((bool), on_first, (), (const, override));

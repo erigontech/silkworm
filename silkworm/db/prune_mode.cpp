@@ -23,6 +23,9 @@
 
 namespace silkworm::db {
 
+using sw_mdbx::from_slice;
+using sw_mdbx::to_slice;
+
 //! \brief Retrieves the proper BlockAmount prune threshold for given key
 static BlockAmount read_block_amount_for_key(mdbx::cursor& source, const char* key) {
     std::string key_str{key};
@@ -139,7 +142,7 @@ std::string PruneMode::to_string() const {
 }
 
 PruneMode read_prune_mode(mdbx::txn& txn) {
-    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    auto src = sw_mdbx::open_cursor(txn, table::kDatabaseInfo);
 
     auto history{read_block_amount_for_key(src, kPruneModeHistoryKey)};
     auto receipts{read_block_amount_for_key(src, kPruneModeReceiptsKey)};
@@ -150,7 +153,7 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
 }
 
 void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
-    auto target{db::open_cursor(txn, table::kDatabaseInfo)};
+    auto target = sw_mdbx::open_cursor(txn, table::kDatabaseInfo);
     write_block_amount_for_key(target, kPruneModeHistoryKey, value.history());
     write_block_amount_for_key(target, kPruneModeReceiptsKey, value.receipts());
     write_block_amount_for_key(target, kPruneModeSendersKey, value.senders());

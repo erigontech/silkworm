@@ -48,7 +48,7 @@ class PatternAggregatorImpl {
   public:
     explicit PatternAggregatorImpl(const filesystem::path& etl_work_path)
         : etl_work_path_(etl_work_path),
-          collector_(make_unique<db::etl::Collector>(etl_work_path, db::etl::kOptimalBufferSize / 4)) {}
+          collector_(make_unique<etl::Collector>(etl_work_path, etl::kOptimalBufferSize / 4)) {}
 
     void collect_pattern(Pattern pattern) {
         collector_->collect(std::move(pattern.data), big_endian_encode(pattern.score));
@@ -67,20 +67,20 @@ class PatternAggregatorImpl {
     static constexpr size_t kMaxPatternsSoftLimit = 1'000'000;
 
     // destination = SELECT data, sum(score) FROM source GROUP BY data
-    static void sum_score_group_by_pattern(db::etl::Collector& source, db::etl::Collector& destination);
+    static void sum_score_group_by_pattern(etl::Collector& source, etl::Collector& destination);
 
     // SELECT * FROM source ORDER BY score DESC LIMIT kMaxPatterns
-    static vector<Pattern> order_by_score_and_limit(db::etl::Collector& source);
+    static vector<Pattern> order_by_score_and_limit(etl::Collector& source);
 
     filesystem::path etl_work_path_;
-    unique_ptr<db::etl::Collector> collector_;
+    unique_ptr<etl::Collector> collector_;
 };
 
-void PatternAggregatorImpl::sum_score_group_by_pattern(db::etl::Collector& source, db::etl::Collector& destination) {
+void PatternAggregatorImpl::sum_score_group_by_pattern(etl::Collector& source, etl::Collector& destination) {
     optional<Bytes> pending_pattern_data;
     uint64_t pending_pattern_score{};
 
-    source.load([&](const db::etl::Entry& entry) {
+    source.load([&](const etl::Entry& entry) {
         auto& pattern_data = entry.key;
         uint64_t pattern_score = big_endian_decode(entry.value);
 
@@ -99,11 +99,11 @@ void PatternAggregatorImpl::sum_score_group_by_pattern(db::etl::Collector& sourc
     }
 }
 
-vector<Pattern> PatternAggregatorImpl::order_by_score_and_limit(db::etl::Collector& source) {
+vector<Pattern> PatternAggregatorImpl::order_by_score_and_limit(etl::Collector& source) {
     vector<Pattern> patterns;
     std::greater<> comparator;
 
-    source.load([&](const db::etl::Entry& entry) {
+    source.load([&](const etl::Entry& entry) {
         Pattern pattern{
             .data = Bytes{entry.key},
             .score = big_endian_decode(entry.value),
@@ -128,7 +128,7 @@ vector<Pattern> PatternAggregatorImpl::order_by_score_and_limit(db::etl::Collect
 }
 
 vector<Pattern> PatternAggregatorImpl::aggregate() {
-    db::etl::Collector collector{etl_work_path_};
+    etl::Collector collector{etl_work_path_};
     sum_score_group_by_pattern(*collector_, collector);
 
     // the original collector_ is not needed anymore, free it

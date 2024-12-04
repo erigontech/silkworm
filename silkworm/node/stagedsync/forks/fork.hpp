@@ -40,7 +40,7 @@ class Fork {
   public:
     explicit Fork(
         BlockId forking_point,
-        db::ROTxnManaged main_tx,
+        sw_mdbx::ROTxnManaged main_tx,
         db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
         const StageContainerFactory& stages_factory,
@@ -84,9 +84,9 @@ class Fork {
 
     std::set<Hash> collect_bad_headers(execution::api::InvalidChain& invalid_chain);
 
-    db::ROTxnManaged main_tx_;
-    db::MemoryOverlay memory_db_;
-    mutable db::MemoryMutation memory_tx_;
+    sw_mdbx::ROTxnManaged main_tx_;
+    sw_mdbx::MemoryOverlay memory_db_;
+    mutable sw_mdbx::MemoryMutation memory_tx_;
     db::DataModelFactory data_model_factory_;
 
     ExecutionPipeline pipeline_;

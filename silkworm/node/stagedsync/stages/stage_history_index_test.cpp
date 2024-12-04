@@ -34,6 +34,7 @@ namespace silkworm {
 
 using namespace evmc::literals;
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 using db::test_util::TempChainData;
 
 stagedsync::HistoryIndex make_stage_history_index(

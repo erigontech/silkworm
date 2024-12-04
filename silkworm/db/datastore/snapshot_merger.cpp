@@ -29,7 +29,7 @@
 #include "snapshots/segment/segment_writer.hpp"
 #include "snapshots/snapshot_bundle.hpp"
 
-namespace silkworm::db {
+namespace silkworm::datastore {
 
 using namespace silkworm::snapshots;
 
@@ -144,4 +144,4 @@ Task<void> SnapshotMerger::cleanup() {
     co_return;
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore

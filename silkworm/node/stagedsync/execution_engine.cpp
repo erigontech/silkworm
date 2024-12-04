@@ -36,7 +36,7 @@ ExecutionEngine::ExecutionEngine(
     db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
     StageContainerFactory stages_factory,
-    db::RWAccess dba)
+    sw_mdbx::RWAccess dba)
     : context_pool_{executor ? std::unique_ptr<concurrency::ContextPool<>>{} : std::make_unique<concurrency::ContextPool<>>(1)},
       executor_{executor ? std::move(*executor) : context_pool_->any_executor()},
       node_settings_{ns},
@@ -337,7 +337,7 @@ bool ExecutionEngine::is_canonical(Hash header_hash) const {
     return main_chain_.is_finalized_canonical(header_hash);
 }
 
-StageScheduler& ExecutionEngine::stage_scheduler() const {
+datastore::StageScheduler& ExecutionEngine::stage_scheduler() const {
     return main_chain_.stage_scheduler();
 }
 

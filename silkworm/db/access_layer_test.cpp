@@ -114,6 +114,9 @@ static BlockBody block_body_17035047() {
 
 namespace silkworm::db {
 
+using namespace sw_mdbx;
+using sw_mdbx::to_slice;
+
 TEST_CASE("Methods cursor_for_each/cursor_for_count", "[db][access_layer]") {
     test_util::TempChainData context;
     auto& txn{context.rw_txn()};

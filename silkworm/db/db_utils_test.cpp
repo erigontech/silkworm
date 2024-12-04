@@ -25,6 +25,8 @@
 
 namespace silkworm::db {
 
+using namespace sw_mdbx;
+
 TEST_CASE("db access layer addendum") {
     TemporaryDirectory tmp_dir;
 

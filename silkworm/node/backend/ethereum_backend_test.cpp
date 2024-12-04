@@ -31,11 +31,11 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
     DataDirectory data_dir{tmp_dir.path()};
     REQUIRE_NOTHROW(data_dir.deploy());
 
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    sw_mdbx::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
     db_config.in_memory = true;
-    auto chaindata_env = db::open_env(db_config);
-    db::ROAccess chaindata{chaindata_env};
+    auto chaindata_env = sw_mdbx::open_env(db_config);
+    sw_mdbx::ROAccess chaindata{chaindata_env};
 
     NodeSettings node_settings;
 

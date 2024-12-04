@@ -23,8 +23,8 @@ namespace silkworm::stagedsync {
 
 class BlockHashes final : public Stage {
   public:
-    explicit BlockHashes(SyncContext* sync_context, db::etl::CollectorSettings etl_settings)
-        : Stage(sync_context, db::stages::kBlockHashesKey),
+    explicit BlockHashes(SyncContext* sync_context, etl::CollectorSettings etl_settings)
+        : Stage(sync_context, silkworm::db::stages::kBlockHashesKey),
           etl_settings_(std::move(etl_settings)) {}
     BlockHashes(const BlockHashes&) = delete;  // not copyable
     BlockHashes(BlockHashes&&) = delete;       // nor movable
@@ -36,8 +36,8 @@ class BlockHashes final : public Stage {
     std::vector<std::string> get_log_progress() final;
 
   private:
-    db::etl::CollectorSettings etl_settings_;
-    std::unique_ptr<db::etl_mdbx::Collector> collector_;
+    etl::CollectorSettings etl_settings_;
+    std::unique_ptr<sw_mdbx::Collector> collector_;
 
     /* Stats */
     std::atomic_uint32_t current_phase_{0};

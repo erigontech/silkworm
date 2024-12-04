@@ -25,6 +25,7 @@
 
 using namespace silkworm;
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 
 enum Operation {
     kHashAccount,

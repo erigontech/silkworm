@@ -64,7 +64,7 @@ class ExecutionPipeline : public Stoppable {
 
     bool stop() override;
 
-    StageScheduler& stage_scheduler() const;
+    datastore::StageScheduler& stage_scheduler() const;
 
   private:
     db::DataModelFactory data_model_factory_;

@@ -39,11 +39,11 @@ class TestDatabaseContext {
     explicit TestDatabaseContext(const TemporaryDirectory& tmp_dir);
     virtual ~TestDatabaseContext() = default;
 
-    virtual db::ROAccess chaindata() const {
-        return db::ROAccess{*env_};
+    virtual sw_mdbx::ROAccess chaindata() const {
+        return sw_mdbx::ROAccess{*env_};
     }
-    virtual db::RWAccess chaindata_rw() const {
-        return db::RWAccess{*env_};
+    virtual sw_mdbx::RWAccess chaindata_rw() const {
+        return sw_mdbx::RWAccess{*env_};
     }
 
     silkworm::ChainConfig get_chain_config() const;
@@ -76,10 +76,10 @@ class TestDataStore : public TestDatabaseContext {
     db::DataStore& operator*() { return data_store_; }
     db::DataStore* operator->() { return &data_store_; }
 
-    db::ROAccess chaindata() const override {
+    sw_mdbx::ROAccess chaindata() const override {
         return data_store_.chaindata();
     }
-    db::RWAccess chaindata_rw() const override {
+    sw_mdbx::RWAccess chaindata_rw() const override {
         return data_store_.chaindata_rw();
     }
 

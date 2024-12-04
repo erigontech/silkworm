@@ -59,6 +59,7 @@
 namespace fs = std::filesystem;
 using namespace silkworm;
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 
 class Progress {
   public:
@@ -1426,7 +1427,7 @@ void do_extract_headers(EnvConfig& config, const std::string& file_name, uint32_
 void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_blocks) {
     using namespace concurrency::awaitable_wait_for_one;
 
-    class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
+    class StageSchedulerAdapter : public datastore::StageScheduler, public ActiveComponent {
       public:
         explicit StageSchedulerAdapter(RWAccess db_access)
             : db_access_(std::move(db_access)) {}

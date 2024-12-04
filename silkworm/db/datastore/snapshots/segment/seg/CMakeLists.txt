@@ -22,5 +22,5 @@ find_package(Boost REQUIRED COMPONENTS headers iostreams)
 silkworm_library(
   silkworm_snapshots_seg
   PUBLIC silkworm_core silkworm_infra
-  PRIVATE Boost::headers Boost::iostreams sais_lite silkworm_db_etl
+  PRIVATE Boost::headers Boost::iostreams sais_lite silkworm_etl
 )

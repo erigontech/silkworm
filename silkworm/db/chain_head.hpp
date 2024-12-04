@@ -21,7 +21,7 @@
 
 namespace silkworm::db {
 
-ChainHead read_chain_head(ROTxn& txn);
-ChainHead read_chain_head(db::ROAccess db_access);
+ChainHead read_chain_head(sw_mdbx::ROTxn& txn);
+ChainHead read_chain_head(sw_mdbx::ROAccess db_access);
 
 }  // namespace silkworm::db

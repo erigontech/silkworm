@@ -25,7 +25,7 @@ class HashState final : public Stage {
   public:
     HashState(
         SyncContext* sync_context,
-        db::etl::CollectorSettings etl_settings)
+        etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kHashStateKey),
           etl_settings_(std::move(etl_settings)) {}
     HashState(const HashState&) = delete;  // not copyable
@@ -70,7 +70,7 @@ class HashState final : public Stage {
     Stage::Result write_changes_from_changed_addresses(db::RWTxn& txn, const ChangedAddresses& changed_addresses);
 
     //! \brief Writes to db the changes collected from storage changeset scan either in forward or unwind mode
-    Stage::Result write_changes_from_changed_storage(db::RWTxn& txn, db::StorageChanges& storage_changes,
+    Stage::Result write_changes_from_changed_storage(db::RWTxn& txn, silkworm::db::StorageChanges& storage_changes,
                                                      const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
 
     //! \brief Resets all fields related to log progress tracking
@@ -92,8 +92,8 @@ class HashState final : public Stage {
     std::string current_key_;
 
     // Collector (used only in !incremental_)
-    db::etl::CollectorSettings etl_settings_;
-    std::unique_ptr<db::etl_mdbx::Collector> collector_;
+    etl::CollectorSettings etl_settings_;
+    std::unique_ptr<sw_mdbx::Collector> collector_;
 };
 
 }  // namespace silkworm::stagedsync

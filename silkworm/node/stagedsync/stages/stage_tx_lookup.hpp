@@ -29,7 +29,7 @@ class TxLookup : public Stage {
     TxLookup(
         SyncContext* sync_context,
         db::DataModelFactory data_model_factory,
-        db::etl::CollectorSettings etl_settings,
+        etl::CollectorSettings etl_settings,
         db::BlockAmount prune_mode_tx_index)
         : Stage(sync_context, db::stages::kTxLookupKey),
           data_model_factory_(std::move(data_model_factory)),
@@ -46,10 +46,10 @@ class TxLookup : public Stage {
 
   private:
     db::DataModelFactory data_model_factory_;
-    db::etl::CollectorSettings etl_settings_;
+    etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_tx_index_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> collector_;
+    std::unique_ptr<sw_mdbx::Collector> collector_;
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

@@ -23,7 +23,7 @@
 
 #include "memory_mutation_cursor.hpp"
 
-namespace silkworm::db {
+namespace silkworm::sw_mdbx {
 
 MemoryDatabase::MemoryDatabase(const std::filesystem::path& tmp_dir) {
     DataDirectory data_dir{tmp_dir};
@@ -36,7 +36,7 @@ MemoryDatabase::MemoryDatabase(const std::filesystem::path& tmp_dir) {
         .in_memory = true,
         .max_size = 512_Mebi,
     };
-    memory_env_ = db::open_env(memory_config);
+    memory_env_ = open_env(memory_config);
 }
 
 MemoryDatabase::MemoryDatabase() : MemoryDatabase(TemporaryDirectory::get_unique_temporary_path()) {}
@@ -47,7 +47,7 @@ MemoryDatabase::MemoryDatabase() : MemoryDatabase(TemporaryDirectory::get_unique
 
 MemoryOverlay::MemoryOverlay(
     const std::filesystem::path& tmp_dir,
-    silkworm::db::ROTxn* txn,
+    ROTxn* txn,
     std::function<std::optional<MapConfig>(const std::string& map_name)> get_map_config,
     std::string sequence_map_name)
     : memory_db_(tmp_dir),
@@ -76,8 +76,8 @@ MemoryMutation::MemoryMutation(MemoryOverlay& overlay)
       overlay_(overlay) {
     // Initialize sequences
     const auto sequence_map_config = overlay.sequence_map_config();
-    db::PooledCursor cursor{*overlay_.external_txn(), sequence_map_config};
-    db::PooledCursor memory_cursor{managed_txn_, sequence_map_config};
+    PooledCursor cursor{*overlay_.external_txn(), sequence_map_config};
+    PooledCursor memory_cursor{managed_txn_, sequence_map_config};
     for (auto result = cursor.to_first(false); result; result = cursor.to_next(false)) {
         memory_cursor.put(result.key, &result.value, MDBX_put_flags_t::MDBX_UPSERT);
     }
@@ -119,7 +119,7 @@ bool MemoryMutation::is_dup_deleted(const std::string& table, const Slice& key, 
 }
 
 bool MemoryMutation::has_map(const std::string& bucket_name) const {
-    return db::has_map(*overlay_.external_txn(), bucket_name.c_str());
+    return sw_mdbx::has_map(*overlay_.external_txn(), bucket_name.c_str());
 }
 
 void MemoryMutation::update_txn(ROTxn* txn) {
@@ -174,7 +174,7 @@ bool MemoryMutation::clear_table(const std::string& table) {
     return managed_txn_.clear_map(table.c_str(), /*throw_if_absent=*/false);
 }
 
-void MemoryMutation::flush(db::RWTxn& rw_txn) {
+void MemoryMutation::flush(RWTxn& rw_txn) {
     reopen();
 
     // Obliterate buckets that need to be deleted
@@ -189,7 +189,7 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
             SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
             continue;
         }
-        const auto map_handle = db::open_map(rw_txn, *table_config);
+        const auto map_handle = open_map(rw_txn, *table_config);
         for (const auto& [key, _] : keys) {
             rw_txn->erase(map_handle, key);
         }
@@ -202,7 +202,7 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
             SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
             continue;
         }
-        const auto map_handle = db::open_map(rw_txn, *table_config);
+        const auto map_handle = open_map(rw_txn, *table_config);
         for (const auto& [key, vals] : keys) {
             for (const auto& [val, _] : vals) {
                 rw_txn->erase(map_handle, key, val);
@@ -211,7 +211,7 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
     }
 
     // Iterate over each touched bucket and apply changes accordingly
-    const auto tables = db::list_maps(managed_txn_);
+    const auto tables = list_maps(managed_txn_);
     for (const auto& table : tables) {
         const auto table_config = overlay_.map_config(table);
         if (!table_config) {
@@ -250,4 +250,4 @@ std::unique_ptr<MemoryMutationCursor> MemoryMutation::make_cursor(const MapConfi
     return std::make_unique<MemoryMutationCursor>(*this, config);
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::sw_mdbx

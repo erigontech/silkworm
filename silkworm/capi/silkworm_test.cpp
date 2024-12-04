@@ -41,6 +41,7 @@ namespace silkworm {
 
 namespace snapshot_test = snapshots::test_util;
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 
 struct CApiTest {
     TemporaryDirectory tmp_dir;

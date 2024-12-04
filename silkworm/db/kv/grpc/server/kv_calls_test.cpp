@@ -62,28 +62,30 @@ TEST_CASE("higher_version_ignoring_patch", "[silkworm][rpc][kv_calls]") {
     }
 }
 
-static const silkworm::db::MapConfig kTestMap{"TestTable"};
+static const sw_mdbx::MapConfig kTestMap{"TestTable"};
 
 TEST_CASE("dump_mdbx_result", "[silkworm][rpc][kv_calls]") {
+    using namespace sw_mdbx;
+
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
     REQUIRE_NOTHROW(data_dir.deploy());
-    db::EnvConfig db_config;
+    EnvConfig db_config;
     db_config.path = data_dir.chaindata().path().string();
     db_config.create = true;
     db_config.in_memory = true;
-    auto database_env = db::open_env(db_config);
+    auto database_env = open_env(db_config);
     auto rw_txn{database_env.start_write()};
-    db::open_map(rw_txn, kTestMap);
-    db::PooledCursor rw_cursor{rw_txn, kTestMap};
+    open_map(rw_txn, kTestMap);
+    PooledCursor rw_cursor{rw_txn, kTestMap};
     rw_cursor.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
     rw_cursor.upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
     rw_txn.commit();
 
     auto ro_txn = database_env.start_read();
-    db::PooledCursor cursor{ro_txn, kTestMap};
-    db::CursorResult result = cursor.to_first(/*throw_notfound=*/false);
-    const auto result_dump = db::detail::dump_mdbx_result(result);
+    PooledCursor cursor{ro_txn, kTestMap};
+    CursorResult result = cursor.to_first(/*throw_notfound=*/false);
+    const auto result_dump = sw_mdbx::detail::dump_mdbx_result(result);
     CHECK(result_dump.find(std::to_string(result.done)) != std::string::npos);
     CHECK(result_dump.find(std::to_string(static_cast<bool>(result.key))) != std::string::npos);
     CHECK(result_dump.find(std::to_string(static_cast<bool>(result.value))) != std::string::npos);

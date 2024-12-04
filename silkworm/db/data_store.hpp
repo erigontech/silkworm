@@ -25,7 +25,7 @@
 namespace silkworm::db {
 
 struct DataStoreRef {
-    RWAccess chaindata;
+    sw_mdbx::RWAccess chaindata;
     snapshots::SnapshotRepository& blocks_repository;
     snapshots::SnapshotRepository& state_repository;
 };
@@ -44,10 +44,10 @@ class DataStore {
           } {}
 
     DataStore(
-        const EnvConfig& chaindata_env_config,
+        const sw_mdbx::EnvConfig& chaindata_env_config,
         const std::filesystem::path& repository_path)
         : DataStore{
-              db::open_env(chaindata_env_config),
+              sw_mdbx::open_env(chaindata_env_config),
               blocks::make_blocks_repository(repository_path),
               state::make_state_repository(repository_path),
           } {}
@@ -64,8 +64,8 @@ class DataStore {
         };
     }
 
-    db::ROAccess chaindata() const { return store_.chaindata(); }
-    db::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
+    sw_mdbx::ROAccess chaindata() const { return store_.chaindata(); }
+    sw_mdbx::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
 
   private:
     static datastore::Schema make_schema();

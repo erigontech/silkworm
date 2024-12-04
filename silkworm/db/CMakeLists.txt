@@ -47,7 +47,7 @@ set(LIBS_PRIVATE
     Boost::headers
     gRPC::grpc++
     protobuf::libprotobuf
-    silkworm_db_etl
+    silkworm_etl
 )
 
 silkworm_library(

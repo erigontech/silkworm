@@ -20,10 +20,10 @@
 
 #include "mdbx.hpp"
 
-namespace silkworm::db::etl_mdbx {
+namespace silkworm::sw_mdbx {
 
 // Function pointer to process Load on before Load data into tables
-using LoadFunc = std::function<void(const etl::Entry&, db::RWCursorDupSort&, MDBX_put_flags_t)>;
+using LoadFunc = std::function<void(const etl::Entry&, RWCursorDupSort&, MDBX_put_flags_t)>;
 
 class Collector : public etl::Collector {
   public:
@@ -34,18 +34,18 @@ class Collector : public etl::Collector {
     //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
     //! \param [in] flags : Optional put flags for append or upsert (default) items
     void load(
-        db::RWCursorDupSort& target,
+        RWCursorDupSort& target,
         const LoadFunc& load_func = {},
         MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT) {
         etl::LoadFunc base_load_func = [&](const etl::Entry& etl_entry) {
             if (load_func) {
                 load_func(etl_entry, target, flags);
             } else {
-                mdbx::slice k{db::to_slice(etl_entry.key)};
+                mdbx::slice k = to_slice(etl_entry.key);
                 if (etl_entry.value.empty()) {
                     target.erase(k);
                 } else {
-                    mdbx::slice v{db::to_slice(etl_entry.value)};
+                    mdbx::slice v = to_slice(etl_entry.value);
                     mdbx::error::success_or_throw(target.put(k, &v, flags));
                 }
             }
@@ -55,4 +55,4 @@ class Collector : public etl::Collector {
     }
 };
 
-}  // namespace silkworm::db::etl_mdbx
+}  // namespace silkworm::sw_mdbx

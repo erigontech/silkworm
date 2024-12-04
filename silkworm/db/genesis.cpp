@@ -27,6 +27,8 @@
 
 namespace silkworm::db {
 
+using sw_mdbx::to_slice;
+
 std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::json& genesis_json) {
     std::pair<bool, std::vector<std::string>> ret{true, {}};
     if (genesis_json.is_discarded()) {

@@ -21,6 +21,7 @@
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
 namespace silkworm::db {
+
 //! \brief Validates provided genesis json payload
 //! \param [in] genesis_json : the payload to validate
 //! \returns A pair of bool and a vector of string errors (if any)

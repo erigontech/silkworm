@@ -21,7 +21,7 @@
 #include "mdbx.hpp"
 #include "memory_mutation.hpp"
 
-namespace silkworm::db {
+namespace silkworm::sw_mdbx {
 
 class MemoryMutationCursor : public RWCursorDupSort {
   public:
@@ -118,4 +118,4 @@ class MemoryMutationCursor : public RWCursorDupSort {
     bool is_previous_from_db_{false};
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::sw_mdbx

@@ -63,7 +63,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
         db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
         StageContainerFactory stages_factory,
-        db::RWAccess dba);
+        sw_mdbx::RWAccess dba);
     ~ExecutionEngine() override = default;
 
     // needed to circumvent mdbx threading model limitations
@@ -101,7 +101,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     std::vector<BlockHeader> get_last_headers(uint64_t limit) const override;
     std::optional<TotalDifficulty> get_header_td(Hash, std::optional<BlockNum>) const override;
 
-    StageScheduler& stage_scheduler() const;
+    datastore::StageScheduler& stage_scheduler() const;
 
   protected:
     struct ForkingPath {

@@ -22,7 +22,7 @@ namespace silkworm::cmd::common {
 
 void add_option_db_max_readers(CLI::App& cli, uint32_t& max_readers) {
     cli.add_option("--mdbx.max.readers", max_readers, "The maximum number of MDBX readers")
-        ->default_val(silkworm::db::EnvConfig{}.max_readers)
+        ->default_val(silkworm::sw_mdbx::EnvConfig{}.max_readers)
         ->check(CLI::Range(1, 32767));
 }
 

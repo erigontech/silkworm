@@ -23,7 +23,7 @@
 
 #include "mdbx.hpp"
 
-namespace silkworm::db {
+namespace silkworm::sw_mdbx {
 
 class MemoryDatabase {
   public:
@@ -50,7 +50,7 @@ class MemoryOverlay {
     MemoryOverlay(MemoryOverlay&& other) noexcept = default;
     MemoryOverlay& operator=(MemoryOverlay&&) noexcept = default;
 
-    db::ROTxn* external_txn() const { return txn_; }
+    ROTxn* external_txn() const { return txn_; }
     void update_txn(ROTxn* txn);
 
     ::mdbx::txn_managed start_rw_txn();
@@ -81,7 +81,7 @@ class MemoryMutation : public RWTxnManaged {
     bool is_dup_deleted(const std::string& table, const Slice& key, const Slice& value) const;
     bool has_map(const std::string& bucket_name) const;
 
-    db::ROTxn* external_txn() const { return overlay_.external_txn(); }
+    ROTxn* external_txn() const { return overlay_.external_txn(); }
 
     void update_txn(ROTxn* txn);
 
@@ -96,7 +96,7 @@ class MemoryMutation : public RWTxnManaged {
 
     bool clear_table(const std::string& table);
 
-    void flush(db::RWTxn& rw_txn);
+    void flush(RWTxn& rw_txn);
     void rollback();
     void reopen();
 
@@ -109,4 +109,4 @@ class MemoryMutation : public RWTxnManaged {
     std::map<std::string, bool> cleared_tables_;
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::sw_mdbx

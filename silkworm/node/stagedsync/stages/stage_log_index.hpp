@@ -30,7 +30,7 @@ class LogIndex : public Stage {
     LogIndex(
         SyncContext* sync_context,
         size_t batch_size,
-        db::etl::CollectorSettings etl_settings,
+        etl::CollectorSettings etl_settings,
         db::BlockAmount prune_mode_history)
         : Stage(sync_context, db::stages::kLogIndexKey),
           batch_size_(batch_size),
@@ -47,12 +47,12 @@ class LogIndex : public Stage {
 
   private:
     size_t batch_size_;
-    db::etl::CollectorSettings etl_settings_;
+    etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_history_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> topics_collector_;
-    std::unique_ptr<db::etl_mdbx::Collector> addresses_collector_;
-    std::unique_ptr<db::bitmap::IndexLoader> index_loader_;
+    std::unique_ptr<sw_mdbx::Collector> topics_collector_;
+    std::unique_ptr<sw_mdbx::Collector> addresses_collector_;
+    std::unique_ptr<sw_mdbx::bitmap::IndexLoader> index_loader_;
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

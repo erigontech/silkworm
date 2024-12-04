@@ -20,10 +20,10 @@
 
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::db {
+namespace silkworm::sw_mdbx {
 
 namespace detail {
-    std::string dump_mdbx_result(const db::CursorResult& result) {
+    std::string dump_mdbx_result(const CursorResult& result) {
         std::string dump{"done="};
         dump.append(std::to_string(result.done));
         dump.append(" bool(key)=");
@@ -33,7 +33,7 @@ namespace detail {
         return dump;
     }
 
-    std::string slice_as_hex(const db::Slice& data) {
+    std::string slice_as_hex(const Slice& data) {
         return ::mdbx::to_hex(data).as_string();
     }
 
@@ -103,7 +103,7 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
         throw std::runtime_error("Path " + env_path.string() + " is not valid");
     }
 
-    fs::path db_file{db::get_datafile_path(env_path)};
+    fs::path db_file{get_datafile_path(env_path)};
     const size_t db_file_size{fs::exists(db_file) ? fs::file_size(db_file) : 0};
 
     if (!config.create && !db_file_size) {
@@ -649,4 +649,4 @@ size_t cursor_erase(RWCursor& cursor, const ByteView set_key, const CursorMoveDi
     return ret;
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::sw_mdbx

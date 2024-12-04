@@ -91,7 +91,9 @@ static const std::map<std::string, std::string> kGeneticCode{
     {"UUU", "Phenylalanine"},
 };
 
-namespace silkworm::db {
+namespace silkworm::sw_mdbx {
+
+using namespace silkworm::db;
 
 TEST_CASE("Environment opening") {
     SECTION("Default page size on creation") {
@@ -965,4 +967,4 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
     }
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::sw_mdbx

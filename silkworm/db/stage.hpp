@@ -27,6 +27,12 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 
+namespace silkworm::db {
+using silkworm::sw_mdbx::MapConfig;
+using silkworm::sw_mdbx::ROTxn;
+using silkworm::sw_mdbx::RWTxn;
+}  // namespace silkworm::db
+
 namespace silkworm::stagedsync {
 
 class StageError;

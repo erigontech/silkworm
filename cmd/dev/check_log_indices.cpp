@@ -44,6 +44,7 @@
 using Roaring = roaring::Roaring;
 using namespace silkworm;
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 using namespace silkworm::cmd::common;
 
 enum class TargetIndex {

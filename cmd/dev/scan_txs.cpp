@@ -61,9 +61,9 @@ int main(int argc, char* argv[]) {
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
-        db::EnvConfig db_config{data_dir.chaindata().path().string()};
-        auto env{db::open_env(db_config)};
-        db::RWTxnManaged txn{env};
+        sw_mdbx::EnvConfig db_config{data_dir.chaindata().path().string()};
+        auto env{sw_mdbx::open_env(db_config)};
+        sw_mdbx::RWTxnManaged txn{env};
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");

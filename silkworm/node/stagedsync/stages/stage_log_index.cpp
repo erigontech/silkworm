@@ -26,6 +26,10 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
+using silkworm::sw_mdbx::to_slice;
+namespace bitmap {
+    using namespace silkworm::sw_mdbx::bitmap;
+}
 
 namespace {
     //! LogBitmapBuilder is a CBOR consumer which builds address and topic roaring bitmaps from the CBOR
@@ -256,7 +260,7 @@ Stage::Result LogIndex::prune(RWTxn& txn) {
 }
 
 void LogIndex::forward_impl(RWTxn& txn, const BlockNum from, const BlockNum to) {
-    using etl_mdbx::Collector;
+    using sw_mdbx::Collector;
 
     const MapConfig source_config{table::kLogs};
 

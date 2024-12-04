@@ -43,8 +43,8 @@ class DataStore {
     }
 
     const Schema& schema() const { return schema_; }
-    db::ROAccess chaindata() const { return db::ROAccess{chaindata_env_}; }
-    db::RWAccess chaindata_rw() const { return db::RWAccess{chaindata_env_}; }
+    sw_mdbx::ROAccess chaindata() const { return sw_mdbx::ROAccess{chaindata_env_}; }
+    sw_mdbx::RWAccess chaindata_rw() const { return sw_mdbx::RWAccess{chaindata_env_}; }
 
     snapshots::SnapshotRepository& repository(const EntityName& name) const { return *repositories_.at(name); }
 

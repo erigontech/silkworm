@@ -24,7 +24,7 @@
 #include "mdbx/mdbx.hpp"
 #include "snapshots/segment/segment_writer.hpp"
 
-namespace silkworm::db {
+namespace silkworm::datastore {
 
 struct SegmentCollationCommand : public DataMigrationCommand {
     BlockNumRange range;
@@ -46,10 +46,10 @@ struct SegmentCollation {
     virtual ~SegmentCollation() = default;
 
     //! Copies data for a block range from db to the snapshot file.
-    virtual void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const = 0;
+    virtual void copy(sw_mdbx::ROTxn& txn, const SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const = 0;
 
     //! Cleans up data for a block range from db after it was copied to the snapshot file.
-    virtual void prune(RWTxn& txn, BlockNumRange range) const = 0;
+    virtual void prune(sw_mdbx::RWTxn& txn, BlockNumRange range) const = 0;
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore

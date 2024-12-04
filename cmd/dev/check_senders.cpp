@@ -35,6 +35,7 @@
 
 using namespace silkworm;
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 using namespace silkworm::cmd::common;
 
 int main(int argc, char* argv[]) {

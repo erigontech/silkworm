@@ -31,6 +31,8 @@
 
 namespace silkworm::db {
 
+using sw_mdbx::to_slice;
+
 template <class TFlatHashMap>
 size_t flat_hash_map_memory_size(size_t capacity) {
     return sizeof(std::pair<const typename TFlatHashMap::key_type, typename TFlatHashMap::mapped_type>) * capacity;

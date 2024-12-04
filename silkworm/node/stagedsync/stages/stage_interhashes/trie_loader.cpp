@@ -28,6 +28,7 @@
 namespace silkworm::trie {
 
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 
 TrieLoader::TrieLoader(
     ROTxn& txn,

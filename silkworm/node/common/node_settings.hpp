@@ -34,7 +34,7 @@ namespace silkworm {
 struct NodeSettings {
     ApplicationInfo build_info;                            // Application build info (human-readable)
     std::unique_ptr<DataDirectory> data_directory;         // Pointer to data folder
-    db::EnvConfig chaindata_env_config{};                  // Chaindata db config
+    sw_mdbx::EnvConfig chaindata_env_config;               // Chaindata db config
     uint64_t network_id{kMainnetConfig.chain_id};          // Network/Chain id
     std::optional<ChainConfig> chain_config;               // Chain config
     size_t batch_size{512_Mebi};                           // Batch size to use in stages
@@ -49,7 +49,7 @@ struct NodeSettings {
     bool keep_db_txn_open{true};                           // Whether to keep db transaction open between requests
     std::optional<std::string> exec_api_address;           // Execution API GRPC server bind address (IP:port)
 
-    db::etl::CollectorSettings etl() const {
+    etl::CollectorSettings etl() const {
         return {data_directory->temp().path(), etl_buffer_size};
     }
 };

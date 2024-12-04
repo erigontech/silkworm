@@ -25,6 +25,9 @@
 
 namespace silkworm::db::stages {
 
+using sw_mdbx::ROTxn;
+using sw_mdbx::RWTxn;
+
 //! \brief Headers are downloaded, their Proof-Of-Work validity and chaining is verified
 inline constexpr const char* kHeadersKey{"Headers"};
 

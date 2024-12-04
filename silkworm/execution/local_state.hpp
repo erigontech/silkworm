@@ -92,7 +92,7 @@ class LocalState : public State {
 
   private:
     BlockNum block_num_;
-    mutable db::ROTxnManaged txn_;
+    mutable sw_mdbx::ROTxnManaged txn_;
     db::DataModel data_model_;
 };
 

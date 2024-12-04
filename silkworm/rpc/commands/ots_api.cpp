@@ -42,6 +42,9 @@ namespace silkworm::rpc::commands {
 
 using namespace silkworm::db;
 using db::kv::StateReader;
+namespace bitmap {
+    using namespace silkworm::sw_mdbx::bitmap;
+}
 
 static constexpr int kCurrentApiLevel{8};
 

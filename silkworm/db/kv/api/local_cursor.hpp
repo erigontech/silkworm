@@ -61,7 +61,7 @@ class LocalCursor : public CursorDupSort {
 
   private:
     uint32_t cursor_id_;
-    PooledCursor db_cursor_;
+    sw_mdbx::PooledCursor db_cursor_;
     mdbx::txn& txn_;
 };
 

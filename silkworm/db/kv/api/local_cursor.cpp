@@ -23,7 +23,8 @@
 
 namespace silkworm::db::kv::api {
 
-using detail::slice_as_hex;
+using namespace sw_mdbx;
+using sw_mdbx::detail::slice_as_hex;
 
 Task<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();

@@ -29,8 +29,8 @@ using execution::api::ValidationError;
 using execution::api::ValidChain;
 using execution::api::VerificationResult;
 
-static db::MemoryOverlay create_memory_db(const std::filesystem::path& base_path, db::ROTxn& main_tx) {
-    db::MemoryOverlay memory_overlay{
+static sw_mdbx::MemoryOverlay create_memory_db(const std::filesystem::path& base_path, db::ROTxn& main_tx) {
+    sw_mdbx::MemoryOverlay memory_overlay{
         TemporaryDirectory::get_unique_temporary_path(base_path),
         &main_tx,
         db::table::get_map_config,
@@ -39,7 +39,7 @@ static db::MemoryOverlay create_memory_db(const std::filesystem::path& base_path
 
     // Create predefined tables for chaindata schema
     auto txn = memory_overlay.start_rw_txn();
-    db::RWTxnUnmanaged txn_ref{txn};
+    sw_mdbx::RWTxnUnmanaged txn_ref{txn};
     db::table::check_or_create_chaindata_tables(txn_ref);
     txn.commit();
 
@@ -48,7 +48,7 @@ static db::MemoryOverlay create_memory_db(const std::filesystem::path& base_path
 
 Fork::Fork(
     BlockId forking_point,
-    db::ROTxnManaged main_tx,
+    sw_mdbx::ROTxnManaged main_tx,
     db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
     const StageContainerFactory& stages_factory,

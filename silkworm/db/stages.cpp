@@ -22,7 +22,9 @@
 
 namespace silkworm::db::stages {
 
-static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const db::MapConfig& domain,
+using namespace sw_mdbx;
+
+static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const MapConfig& domain,
                                const char* key_prefix = nullptr) {
     if (!is_known_stage(stage_name)) {
         throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
@@ -48,7 +50,7 @@ static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const db::Map
     }
 }
 
-static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain,
+static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_num, const MapConfig& domain,
                            const char* key_prefix = nullptr) {
     if (!is_known_stage(stage_name)) {
         throw std::invalid_argument("Unknown stage name");
@@ -63,7 +65,7 @@ static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_nu
         endian::store_big_u64(stage_progress.data(), block_num);
         auto target = txn.rw_cursor(domain);
         mdbx::slice key(item_key.c_str());
-        mdbx::slice value{db::to_slice(stage_progress)};
+        mdbx::slice value = sw_mdbx::to_slice(stage_progress);
         target->upsert(key, value);
     } catch (const mdbx::exception& ex) {
         std::string what("Error in " + std::string(__FUNCTION__) + " " + std::string(ex.what()));

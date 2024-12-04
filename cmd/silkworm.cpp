@@ -152,7 +152,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
         throw std::invalid_argument("--chaindata.pagesize is not a power of 2");
     }
 
-    const size_t mdbx_max_size_hard_limit = chaindata_page_size * db::kMdbxMaxPages;
+    const size_t mdbx_max_size_hard_limit = chaindata_page_size * sw_mdbx::kMdbxMaxPages;
     if (node_settings.chaindata_env_config.max_size > mdbx_max_size_hard_limit) {
         throw std::invalid_argument("--chaindata.maxsize exceeds max allowed size by page size i.e" +
                                     human_size(mdbx_max_size_hard_limit));

@@ -34,6 +34,7 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 
 Stage::Result Execution::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};

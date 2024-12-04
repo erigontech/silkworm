@@ -22,14 +22,14 @@
 
 namespace silkworm::db::test_util {
 
-class MockROTxn : public ROTxn {
+class MockROTxn : public sw_mdbx::ROTxn {
   public:
-    explicit MockROTxn() : ROTxn(txn_) {}
+    explicit MockROTxn() : sw_mdbx::ROTxn(txn_) {}
 
     MOCK_METHOD((bool), is_open, (), (const, override));
     MOCK_METHOD((mdbx::env), db, (), (const, override));
-    MOCK_METHOD((std::unique_ptr<ROCursor>), ro_cursor, (const MapConfig&), (override));
-    MOCK_METHOD((std::unique_ptr<ROCursorDupSort>), ro_cursor_dup_sort, (const MapConfig&), (override));
+    MOCK_METHOD((std::unique_ptr<sw_mdbx::ROCursor>), ro_cursor, (const sw_mdbx::MapConfig&), (override));
+    MOCK_METHOD((std::unique_ptr<sw_mdbx::ROCursorDupSort>), ro_cursor_dup_sort, (const sw_mdbx::MapConfig&), (override));
     MOCK_METHOD((void), abort, (), (override));
 
   private:

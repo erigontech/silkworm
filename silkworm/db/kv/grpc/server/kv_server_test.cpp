@@ -179,8 +179,8 @@ class ThreadedKvClient {
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 const std::string kTestAddressUri{"localhost:12345"};
 
-const silkworm::db::MapConfig kTestMap{"TestTable"};
-const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+const silkworm::sw_mdbx::MapConfig kTestMap{"TestTable"};
+const silkworm::sw_mdbx::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 using namespace silkworm;
 
@@ -218,27 +218,27 @@ struct KvEnd2EndTest {
 
         DataDirectory data_dir{tmp_dir.path()};
         REQUIRE_NOTHROW(data_dir.deploy());
-        db_config = std::make_unique<db::EnvConfig>();
+        db_config = std::make_unique<sw_mdbx::EnvConfig>();
         db_config->path = data_dir.chaindata().path().string();
         db_config->create = true;
         db_config->in_memory = true;
-        database_env = db::open_env(*db_config);
+        database_env = sw_mdbx::open_env(*db_config);
         auto rw_txn{database_env.start_write()};
-        db::open_map(rw_txn, kTestMap);
-        db::open_map(rw_txn, kTestMultiMap);
+        sw_mdbx::open_map(rw_txn, kTestMap);
+        sw_mdbx::open_map(rw_txn, kTestMultiMap);
         rw_txn.commit();
 
         state_change_collection = std::make_unique<TestableStateChangeCollection>();
-        server = std::make_unique<KvServer>(srv_config, db::ROAccess{database_env}, state_change_collection.get());
+        server = std::make_unique<KvServer>(srv_config, sw_mdbx::ROAccess{database_env}, state_change_collection.get());
         server->build_and_start();
     }
 
     void fill_tables() {
         auto rw_txn = database_env.start_write();
-        db::PooledCursor rw_cursor1{rw_txn, kTestMap};
+        sw_mdbx::PooledCursor rw_cursor1{rw_txn, kTestMap};
         rw_cursor1.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
         rw_cursor1.upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
-        db::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
+        sw_mdbx::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"11"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"22"});
@@ -248,9 +248,9 @@ struct KvEnd2EndTest {
 
     void alter_tables() {
         auto rw_txn = database_env.start_write();
-        db::PooledCursor rw_cursor1{rw_txn, kTestMap};
+        sw_mdbx::PooledCursor rw_cursor1{rw_txn, kTestMap};
         rw_cursor1.upsert(mdbx::slice{"CC"}, mdbx::slice{"22"});
-        db::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
+        sw_mdbx::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"33"});
         rw_cursor2.upsert(mdbx::slice{"BB"}, mdbx::slice{"33"});
         rw_txn.commit();
@@ -266,7 +266,7 @@ struct KvEnd2EndTest {
     std::unique_ptr<KvClient> kv_client;
     rpc::ServerSettings srv_config;
     TemporaryDirectory tmp_dir;
-    std::unique_ptr<db::EnvConfig> db_config;
+    std::unique_ptr<sw_mdbx::EnvConfig> db_config;
     mdbx::env_managed database_env;
     std::unique_ptr<TestableStateChangeCollection> state_change_collection;
     std::unique_ptr<KvServer> server;
@@ -285,10 +285,10 @@ TEST_CASE("KvServer", "[silkworm][node][rpc]") {
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
     REQUIRE_NOTHROW(data_dir.deploy());
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    sw_mdbx::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
     db_config.in_memory = true;
-    auto chaindata_env = db::open_env(db_config);
+    auto chaindata_env = sw_mdbx::open_env(db_config);
     ROAccess chaindata{chaindata_env};
     auto state_change_source{std::make_unique<TestableStateChangeCollection>()};
 

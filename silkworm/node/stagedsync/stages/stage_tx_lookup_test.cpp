@@ -26,6 +26,7 @@
 namespace silkworm {
 
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 using namespace evmc::literals;
 using db::test_util::TempChainDataStore;
 

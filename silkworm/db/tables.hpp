@@ -25,6 +25,8 @@
 
 namespace silkworm::db::table {
 
+using sw_mdbx::MapConfig;
+
 //! Database schema version for compatibility w/ Erigon
 //! 5.0 - BlockTransaction table has canonical IDs (txs of non-canonical blocks moved to NonCanonicalTransaction table)
 //! 6.0 - BlockTransaction table has system-txs before/after each block (absent if block has no system-tx, but sequence increasing)
@@ -414,7 +416,7 @@ inline constexpr MapConfig kChainDataTables[]{
 };
 
 //! \brief Ensures all defined tables are present in db with consistent flags. Should a table not exist it gets created
-void check_or_create_chaindata_tables(RWTxn& txn);
+void check_or_create_chaindata_tables(sw_mdbx::RWTxn& txn);
 
 //! \brief Get the table config associated to the table name (if any)
 std::optional<MapConfig> get_map_config(const std::string& map_name);

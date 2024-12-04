@@ -27,11 +27,11 @@ namespace silkworm::trie {
 class TrieLoader {
   public:
     explicit TrieLoader(
-        db::ROTxn& txn,
+        sw_mdbx::ROTxn& txn,
         PrefixSet* account_changes,
         PrefixSet* storage_changes,
-        db::etl::Collector* account_trie_node_collector,
-        db::etl::Collector* storage_trie_node_collector);
+        etl::Collector* account_trie_node_collector,
+        etl::Collector* storage_trie_node_collector);
 
     //! \brief (re)calculates root hash on behalf of collected hashed changes and existing data in TrieOfAccount and
     //! TrieOfStorage buckets
@@ -46,11 +46,11 @@ class TrieLoader {
     }
 
   private:
-    db::ROTxn& txn_;
+    sw_mdbx::ROTxn& txn_;
     PrefixSet* account_changes_;
     PrefixSet* storage_changes_;
-    db::etl::Collector* account_trie_node_collector_;
-    db::etl::Collector* storage_trie_node_collector_;
+    etl::Collector* account_trie_node_collector_;
+    etl::Collector* storage_trie_node_collector_;
 
     std::string log_key_{};         // To export logging key
     mutable std::mutex log_mtx_{};  // Guards async logging
@@ -62,7 +62,7 @@ class TrieLoader {
     static evmc::bytes32 calculate_storage_root(
         TrieCursor& trie_storage_cursor,
         HashBuilder& storage_hash_builder,
-        db::ROCursorDupSort& hashed_storage,
+        sw_mdbx::ROCursorDupSort& hashed_storage,
         const Bytes& db_storage_prefix);
 };
 }  // namespace silkworm::trie

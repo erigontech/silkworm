@@ -23,7 +23,7 @@
 namespace silkworm::db {
 
 struct ChainDataInitSettings {
-    db::EnvConfig chaindata_env_config;
+    sw_mdbx::EnvConfig chaindata_env_config;
     db::PruneMode prune_mode;
     ChainId network_id{0};
     bool init_if_empty{true};

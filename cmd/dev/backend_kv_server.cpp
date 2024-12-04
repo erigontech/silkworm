@@ -102,16 +102,16 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEnd
     }
 
     node_settings.data_directory = std::make_unique<DataDirectory>(data_dir, /*create=*/false);
-    node_settings.chaindata_env_config = db::EnvConfig{node_settings.data_directory->chaindata().path().string(),
-                                                       /*create=*/false,
-                                                       /*readonly=*/true};
+    node_settings.chaindata_env_config = sw_mdbx::EnvConfig{node_settings.data_directory->chaindata().path().string(),
+                                                            /*create=*/false,
+                                                            /*readonly=*/true};
     node_settings.chaindata_env_config.max_readers = max_readers;
 }
 
 std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
     const NodeSettings& node_settings,
     rpc::ClientContextPool& context_pool,
-    db::ROAccess db_access) {
+    sw_mdbx::ROAccess db_access) {
     std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client;
 
     auto chain_head_provider = [db_access = std::move(db_access)]() {
@@ -178,12 +178,12 @@ int main(int argc, char* argv[]) {
                  << " address: " << server_settings.address_uri
                  << " contexts: " << server_settings.context_pool_settings.num_contexts;
 
-        auto chaindata_env = db::open_env(node_settings.chaindata_env_config);
+        auto chaindata_env = sw_mdbx::open_env(node_settings.chaindata_env_config);
         SILK_INFO << "BackEndKvServer MDBX max readers: " << chaindata_env.max_readers();
 
         // Read chain config from database (this allows for custom config)
-        db::ROAccess chaindata{chaindata_env};
-        db::ROTxnManaged ro_txn = chaindata.start_ro_tx();
+        sw_mdbx::ROAccess chaindata{chaindata_env};
+        sw_mdbx::ROTxnManaged ro_txn = chaindata.start_ro_tx();
         node_settings.chain_config = db::read_chain_config(ro_txn);
         if (!node_settings.chain_config.has_value()) {
             throw std::runtime_error("invalid chain config in database");

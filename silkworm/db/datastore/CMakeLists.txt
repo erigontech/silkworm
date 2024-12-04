@@ -29,7 +29,7 @@ set(LIBS_PUBLIC
     silkworm_core
     silkworm_infra
     silkworm_datastore_common
-    silkworm_db_mdbx
+    silkworm_mdbx
     silkworm_snapshots
 )
 # cmake-format: on

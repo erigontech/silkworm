@@ -35,7 +35,9 @@
 
 namespace silkworm::db {
 
+using namespace sw_mdbx;
 using namespace snapshots;
+using sw_mdbx::to_slice;
 
 std::optional<VersionBase> read_schema_version(ROTxn& txn) {
     auto cursor = txn.ro_cursor(table::kDatabaseInfo);

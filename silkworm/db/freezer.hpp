@@ -23,12 +23,15 @@
 
 namespace silkworm::db {
 
-class Freezer : public DataMigration {
+class Freezer : public datastore::DataMigration {
   public:
+    using DataMigrationCommand = datastore::DataMigrationCommand;
+    using DataMigrationResult = datastore::DataMigrationResult;
+
     Freezer(
-        db::ROAccess db_access,
+        sw_mdbx::ROAccess db_access,
         snapshots::SnapshotRepository& snapshots,
-        stagedsync::StageScheduler& stage_scheduler,
+        datastore::StageScheduler& stage_scheduler,
         std::filesystem::path tmp_dir_path,
         bool keep_blocks)
         : db_access_(std::move(db_access)),
@@ -47,11 +50,11 @@ class Freezer : public DataMigration {
     void commit(std::shared_ptr<DataMigrationResult> result) override;
     Task<void> cleanup() override;
     BlockNumRange cleanup_range();
-    void prune_collations(RWTxn& db_tx, BlockNumRange range) const;
+    void prune_collations(sw_mdbx::RWTxn& db_tx, BlockNumRange range) const;
 
-    db::ROAccess db_access_;
+    sw_mdbx::ROAccess db_access_;
     snapshots::SnapshotRepository& snapshots_;
-    stagedsync::StageScheduler& stage_scheduler_;
+    datastore::StageScheduler& stage_scheduler_;
     std::filesystem::path tmp_dir_path_;
     bool keep_blocks_;
 };

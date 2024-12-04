@@ -102,7 +102,7 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
 
     auto daemon_settings = make_daemon_settings(handle, *settings);
     db::DataStoreRef data_store{
-        db::RWAccess{db::EnvUnmanaged{env}},
+        sw_mdbx::RWAccess{sw_mdbx::EnvUnmanaged{env}},
         *handle->blocks_repository,
         *handle->state_repository,
     };

@@ -22,8 +22,12 @@
 
 namespace silkworm::stagedsync {
 
-using db::etl::Entry;
-using db::etl_mdbx::Collector;
+using etl::Entry;
+using sw_mdbx::Collector;
+
+namespace db {
+    using namespace silkworm::db;
+}
 
 Stage::Result BlockHashes::forward(db::RWTxn& txn) {
     /*
@@ -167,7 +171,7 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
     auto expected_block_num{from + 1};
     auto header_key{db::block_key(expected_block_num)};
     auto canon_hashes_cursor = txn.rw_cursor(db::table::kCanonicalHashes);
-    auto data{canon_hashes_cursor->find(db::to_slice(header_key), /*throw_notfound=*/false)};
+    auto data{canon_hashes_cursor->find(sw_mdbx::to_slice(header_key), /*throw_notfound=*/false)};
     while (data.done) {
         reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
         if (reached_block_num_ > to) {
@@ -181,9 +185,9 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
                                                           " expected " + std::to_string(kHashLength));
         }
 
-        collector_->collect(Entry{Bytes{db::from_slice(data.value)}, operation_ == OperationType::kForward
-                                                                         ? Bytes{db::from_slice(data.key)}
-                                                                         : Bytes{}});
+        collector_->collect(Entry{Bytes{sw_mdbx::from_slice(data.value)}, operation_ == OperationType::kForward
+                                                                              ? Bytes{sw_mdbx::from_slice(data.key)}
+                                                                              : Bytes{}});
 
         // Do we need to abort ?
         if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {

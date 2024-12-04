@@ -28,7 +28,7 @@
 
 #include "util.hpp"
 
-namespace silkworm::db::etl_mdbx {
+namespace silkworm::sw_mdbx {
 
 // Function pointer to process Load on before Load data into tables
 using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value,
@@ -96,7 +96,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 
 template <typename COLLECTOR>
 void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
-    test_util::TempChainData context;
+    db::test_util::TempChainData context;
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
@@ -130,12 +130,12 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
     });
 
     // Load data
-    PooledCursor to{context.rw_txn(), table::kHeaderNumbers};
+    PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
     collector.load(to, load_func);
 
     if (load_func) {
         size_t found_items{0};
-        PooledCursor from{context.rw_txn(), table::kHeaderNumbers};
+        PooledCursor from{context.rw_txn(), db::table::kHeaderNumbers};
         auto data = from.to_first();
         while (data) {
             auto key = from_slice(data.key);
@@ -185,4 +185,4 @@ TEST_CASE("collect_and_load_in_memory_vector") {
     });
 }
 
-}  // namespace silkworm::db::etl_mdbx
+}  // namespace silkworm::sw_mdbx

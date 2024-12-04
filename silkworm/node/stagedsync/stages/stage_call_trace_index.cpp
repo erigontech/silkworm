@@ -21,6 +21,7 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
+using namespace silkworm::sw_mdbx;
 
 CallTraceIndex::CallTraceIndex(SyncContext* sync_context,
                                size_t batch_size,
@@ -233,8 +234,6 @@ Stage::Result CallTraceIndex::prune(RWTxn& txn) {
 }
 
 void CallTraceIndex::forward_impl(RWTxn& txn, const BlockNum from, const BlockNum to) {
-    using etl_mdbx::Collector;
-
     const MapConfig source_config{table::kCallTraceSet};
 
     std::unique_lock log_lck(sl_mutex_);

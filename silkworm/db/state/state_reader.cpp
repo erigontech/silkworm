@@ -19,23 +19,21 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
 namespace silkworm::db::state {
-StateReader::StateReader(kv::api::Transaction& tx, std::optional<BlockNum> block_num, std::optional<TxnId> txn) : tx_(tx), block_num_(block_num) {
-    if (!block_num) {
-        txn_number_ = txn;
-    }
+StateReader::StateReader(kv::api::Transaction& tx, std::optional<BlockNum> block_num, std::optional<TxnId> txn) : tx_(tx), block_num_(block_num), txn_number_(txn) {
+    SILKWORM_ASSERT((txn && !block_num) || (!txn && block_num));
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
     if (!txn_number_) {
         txn_number_ = co_await tx_.first_txn_num_in_block(*block_num_);
     }
-
     db::kv::api::GetAsOfQuery query{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(address),

@@ -70,8 +70,36 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& fil
     co_return std::make_pair(start, end);
 }
 
+class RangePaginatedIterator : public db::kv::api::PaginatedIterator<db::kv::api::Timestamp> {
+public:
+    RangePaginatedIterator(db::kv::api::Timestamp from, db::kv::api::Timestamp to)
+    : current_(from), to_(to) {}
+
+    Task<bool> has_next() override {
+        co_return current_ <= to_;
+    }
+
+    Task<std::optional<db::kv::api::Timestamp>> next() override {
+        if (current_ > to_) {
+            co_return std::nullopt;
+        }
+        co_return current_++;
+    }
+
+private:
+    db::kv::api::Timestamp current_;
+    db::kv::api::Timestamp to_;
+};
+
+db::kv::api::PaginatedStream<db::kv::api::Timestamp> create_range_stream(db::kv::api::Timestamp from, db::kv::api::Timestamp to) {
+    return std::make_unique<RangePaginatedIterator>(from, to);
+}
+
 Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
-                                const FilterAddresses& addresses, const FilterTopics& topics, const LogFilterOptions& options, bool desc_order, std::vector<Log>& logs) {
+                                const FilterAddresses& addresses,
+                                const FilterTopics& topics,
+                                const LogFilterOptions& options,
+                                bool desc_order, std::vector<Log>& logs) {
     SILK_DEBUG << "start block: " << start << " end block: " << end;
 
     auto provider = ethdb::kv::canonical_body_for_storage_provider(&backend_);
@@ -91,30 +119,54 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     roaring::Roaring block_nums;
     block_nums.addRange(start, end + 1);  // [min, max)
 
+    db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_itr;
     if (!topics.empty()) {
-        const auto& topic = topics.front();
-        SILK_LOG << "topic: " << topic;
-        //        db::kv::api::IndexRangeQuery query{
-        //                .table = db::table::kLogTopicIdx,
-        //                .key = db::hash_key(topic),
-        //                .from_timestamp = from_timestamp,
-        //                .to_timestamp = to_timestamp,
-        //                .ascending_order = true};
-        //        auto paginated_result = co_await tx_.index_range(std::move(query));
-        //        auto itr = co_await paginated_result.begin();
-        //        for (auto it = addresses.begin(); it < addresses.end(); ++it) {
-        //            SILK_LOG << "topic: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
-        //                     << to_timestamp;
-        //
-        //            query = {.table = db::table::kLogAddrIdx,
-        //                    .key = db::code_domain_key(*it),
-        //                    .from_timestamp = from_timestamp,
-        //                    .to_timestamp = to_timestamp,
-        //                    .ascending_order = true};
-        //            paginated_result = co_await tx_.index_range(std::move(query));
-        //
-        //            itr = db::kv::api::set_union(itr, co_await paginated_result.begin());
-        //        }
+        for (auto it = addresses.begin(); it < addresses.end(); ++it) {
+            SILK_LOG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
+                     << to_timestamp;
+
+            db::kv::api::IndexRangeQuery query = {.table = db::table::kLogAddrIdx,
+                    .key = db::account_domain_key(*it),
+                    .from_timestamp = from_timestamp,
+                    .to_timestamp = to_timestamp,
+                    .ascending_order = true};
+            auto paginated_result = co_await tx_.index_range(std::move(query));
+            union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
+        }
+    }
+    if (!addresses.empty()) {
+        for (auto it = addresses.begin(); it < addresses.end(); ++it) {
+            SILK_LOG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
+                     << to_timestamp;
+
+            db::kv::api::IndexRangeQuery query = {.table = db::table::kLogAddrIdx,
+                    .key = db::account_domain_key(*it),
+                    .from_timestamp = from_timestamp,
+                    .to_timestamp = to_timestamp,
+                    .ascending_order = true};
+            auto paginated_result = co_await tx_.index_range(std::move(query));
+            union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
+        }
+    }
+    if (!union_itr) {
+        union_itr = db::kv::api::set_union(std::move(union_itr), create_range_stream(from_timestamp, to_timestamp));
+    }
+    while (const auto value = co_await union_itr->next()) {
+        const auto txn_id = static_cast<TxnId>(*value);
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx_, txn_id, provider);
+        if (!block_num_opt) {
+            SILK_DEBUG << "No block found for txn_id " << txn_id;
+            break;
+        }
+        const auto block_num = block_num_opt.value();
+        const auto max_txn_id = co_await db::txn::max_tx_num(tx_, block_num, provider);
+        const auto min_txn_id = co_await db::txn::min_tx_num(tx_, block_num, provider);
+        const auto txn_index = txn_id - min_txn_id - 1;
+
+        SILK_LOG << "txNum: " << txn_id
+            << ", blockNum: " << block_num
+            << ", txIndex: " << txn_index
+            << ", final txn: " << (txn_id == max_txn_id);
     }
     //    if (!topics.empty()) {
     //        auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_, db::table::kLogTopicIndexName, topics, start, end);
@@ -125,42 +177,6 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     //            block_nums &= topics_bitmap;
     //        }
     //    }
-
-    std::optional<db::kv::api::PaginatedTimestamps::Iterator> opt_itr;
-    if (!addresses.empty()) {
-        const auto& addr = addresses.front();
-        SILK_LOG << "address: " << addr << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
-                 << to_timestamp;
-        db::kv::api::IndexRangeQuery query{
-            .table = db::table::kLogAddrIdx,
-            .key = db::account_domain_key(addr),
-            .from_timestamp = from_timestamp,
-            .to_timestamp = to_timestamp,
-            .ascending_order = true};
-        auto paginated_result = co_await tx_.index_range(std::move(query));
-        opt_itr.emplace(co_await paginated_result.begin());
-        for (auto it = addresses.begin(); it < addresses.end(); ++it) {
-            SILK_LOG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
-                     << to_timestamp;
-
-            //            query = {.table = db::table::kLogAddrIdx,
-            //                    .key = db::account_domain_key(*it),
-            //                    .from_timestamp = from_timestamp,
-            //                    .to_timestamp = to_timestamp,
-            //                    .ascending_order = true};
-            //            paginated_result = co_await tx_.index_range(std::move(query));
-            //
-            //            itr = db::kv::api::set_union(itr, co_await paginated_result.begin());
-        }
-    }
-
-    if (opt_itr) {
-        auto& it = opt_itr.value();
-        while (const auto value = co_await it.next()) {
-            const auto txn_id = static_cast<TxnId>(*value);
-            SILK_LOG << "txn_id: " << txn_id;
-        }
-    }
     //    if (!addresses.empty()) {
     //        auto addresses_bitmap = co_await ethdb::bitmap::from_addresses(tx_, db::table::kLogAddressIndexName, addresses, start, end);
     //        if (addresses_bitmap.isEmpty()) {

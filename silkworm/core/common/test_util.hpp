@@ -74,6 +74,7 @@ inline constexpr ChainConfig kPragueConfig{
     .london_block = 0,
     .terminal_total_difficulty = 0,
     .shanghai_time = 0,
+    .cancun_time = 0,
     .prague_time = 0,
 };
 
@@ -361,7 +362,6 @@ inline const std::map<std::string, ChainConfig> kNetworkConfig{
          .terminal_total_difficulty = 0,
          .shanghai_time = 0,
          .cancun_time = 0,
-         .prague_time = 0,
      }},
     {"ShanghaiToCancunAtTime15k",
      {

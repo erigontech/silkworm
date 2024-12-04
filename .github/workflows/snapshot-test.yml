@@ -83,20 +83,6 @@ jobs:
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ env.CHAIN }}
-          path: ${{runner.workspace}}/silkworm/build/cmd/result.json
-
-      - name: Upload test full log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: silkworm-log
-          path: ${{runner.workspace}}/silkworm/build/cmd/execution.log
-
       - name: Action for Success
         if: steps.test_step.outputs.TEST_RESULT == 'success'
         run: echo "::notice::Tests completed successfully"

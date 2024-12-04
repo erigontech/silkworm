@@ -32,7 +32,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/db/state/state_reader.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -52,7 +52,7 @@
 
 namespace silkworm::rpc::commands {
 
-using db::state::StateReader;
+using db::kv::StateReader;
 
 // https://eth.wiki/json-rpc/API#eth_blocknumber
 Task<void> EthereumRpcApi::handle_eth_block_num(const nlohmann::json& request, nlohmann::json& reply) {

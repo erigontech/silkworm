@@ -25,8 +25,8 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/datastore/mdbx/bitmap.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
-#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -41,7 +41,7 @@
 namespace silkworm::rpc::commands {
 
 using namespace silkworm::db;
-using db::state::StateReader;
+using db::kv::StateReader;
 
 static constexpr int kCurrentApiLevel{8};
 

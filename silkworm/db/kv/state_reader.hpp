@@ -30,7 +30,7 @@
 
 #include "version.hpp"
 
-namespace silkworm::db::state {
+namespace silkworm::db::kv {
 
 class StateReader {
   public:
@@ -53,4 +53,4 @@ class StateReader {
     mutable std::optional<TxnId> txn_number_;
 };
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::db::kv

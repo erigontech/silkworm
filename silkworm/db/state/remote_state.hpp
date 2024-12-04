@@ -30,7 +30,7 @@
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/db/state/state_reader.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 
 namespace silkworm::db::state {
 
@@ -63,7 +63,7 @@ class AsyncRemoteState {
     static std::unordered_map<evmc::bytes32, Bytes> code_;
 
     const chain::ChainStorage& storage_;
-    StateReader state_reader_;
+    kv::StateReader state_reader_;
 };
 
 class RemoteState : public State {

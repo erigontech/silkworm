@@ -23,7 +23,7 @@
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/state/state_reader.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -35,7 +35,7 @@
 
 namespace silkworm::rpc::core {
 
-using db::state::StateReader;
+using db::kv::StateReader;
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,

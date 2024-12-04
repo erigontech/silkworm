@@ -45,7 +45,7 @@ jobs:
 
       - name: Run Execution Test
         id: test_step
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd
+        working-directory: ${{runner.workspace}}/silkworm/build/cmd/dev
         run: |
           set +e # Disable exit on error
           

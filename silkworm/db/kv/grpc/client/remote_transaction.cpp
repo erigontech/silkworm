@@ -18,7 +18,6 @@
 
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
-#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/errors.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
@@ -107,10 +106,6 @@ Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::get_cursor(const st
         cursors_[table] = cursor;
     }
     co_return cursor;
-}
-
-std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) {
-    return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_num);
 }
 
 std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {

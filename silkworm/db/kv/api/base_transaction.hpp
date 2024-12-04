@@ -27,6 +27,7 @@ class BaseTransaction : public Transaction {
   public:
     explicit BaseTransaction(StateCache* state_cache) : state_cache_{state_cache} {}
 
+    bool is_local() const override { return false; }
     void set_state_cache_enabled(bool cache_enabled) override;
 
     Task<KeyValue> get(const std::string& table, ByteView key) override;

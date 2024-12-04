@@ -18,7 +18,7 @@
 
 #include <silkworm/core/common/util.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::execution {
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
     return db::read_account(txn_, address, block_num_ + 1);
@@ -66,4 +66,4 @@ std::optional<evmc::bytes32> LocalState::canonical_hash(BlockNum block_num) cons
     return data_model_.read_canonical_header_hash(block_num);
 }
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::execution

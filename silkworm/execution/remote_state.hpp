@@ -30,13 +30,16 @@
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/db/state/state_reader.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::execution {
 
 class AsyncRemoteState {
   public:
-    explicit AsyncRemoteState(kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_num)
+    explicit AsyncRemoteState(
+        db::kv::api::Transaction& tx,
+        const db::chain::ChainStorage& storage,
+        BlockNum block_num)
         : storage_(storage), state_reader_(tx, block_num + 1) {}
 
     Task<std::optional<Account>> read_account(const evmc::address& address) const noexcept;
@@ -62,13 +65,17 @@ class AsyncRemoteState {
   private:
     static std::unordered_map<evmc::bytes32, Bytes> code_;
 
-    const chain::ChainStorage& storage_;
-    StateReader state_reader_;
+    const db::chain::ChainStorage& storage_;
+    db::kv::StateReader state_reader_;
 };
 
 class RemoteState : public State {
   public:
-    explicit RemoteState(boost::asio::any_io_executor& executor, kv::api::Transaction& tx, const chain::ChainStorage& storage, BlockNum block_num)
+    explicit RemoteState(
+        boost::asio::any_io_executor& executor,
+        db::kv::api::Transaction& tx,
+        const db::chain::ChainStorage& storage,
+        BlockNum block_num)
         : executor_(executor), async_state_{tx, storage, block_num} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
@@ -130,4 +137,4 @@ class RemoteState : public State {
 
 std::ostream& operator<<(std::ostream& out, const RemoteState& s);
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::execution

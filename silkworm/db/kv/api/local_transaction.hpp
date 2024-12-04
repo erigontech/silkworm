@@ -53,7 +53,8 @@ class LocalTransaction : public BaseTransaction {
 
     Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) override;
+    bool is_local() const override { return true; }
+    DataStoreRef data_store() const { return data_store_; }
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 

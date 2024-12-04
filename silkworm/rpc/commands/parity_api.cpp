@@ -23,8 +23,8 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
-#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -34,7 +34,7 @@
 
 namespace silkworm::rpc::commands {
 
-using db::state::StateReader;
+using db::kv::StateReader;
 
 Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];

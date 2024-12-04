@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,34 +12,28 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+#pragma once
 
-find_package(asio-grpc REQUIRED)
-find_package(gRPC REQUIRED)
-find_package(GTest REQUIRED)
+#include <memory>
 
-# cmake-format: off
-set(LIBS_PRIVATE
-    gRPC::grpc++
-    silkworm_interfaces
-)
-# cmake-format: on
+#include <boost/asio/any_io_executor.hpp>
 
-# cmake-format: off
-set(LIBS_PUBLIC
-    asio-grpc::asio-grpc
-    silkworm_core
-    silkworm_infra
-    silkworm_db
-)
-# cmake-format: on
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/state/state.hpp>
+#include <silkworm/db/chain/chain_storage.hpp>
+#include <silkworm/db/kv/api/transaction.hpp>
 
-silkworm_library(
-  silkworm_execution
-  PUBLIC ${LIBS_PUBLIC}
-  PRIVATE ${LIBS_PRIVATE}
-)
+namespace silkworm::execution {
 
-target_link_libraries(silkworm_execution_test PRIVATE GTest::gmock silkworm_infra_test_util)
+struct StateFactory {
+    db::kv::api::Transaction& tx;
+
+    std::shared_ptr<State> create_state(
+        boost::asio::any_io_executor& executor,
+        const db::chain::ChainStorage& storage,
+        BlockNum block_num);
+};
+
+}  // namespace silkworm::execution

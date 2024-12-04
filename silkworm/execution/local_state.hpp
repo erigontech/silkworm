@@ -26,15 +26,14 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/mdbx/mdbx.hpp>
 
-#include "../data_store.hpp"
-
-namespace silkworm::db::state {
+namespace silkworm::execution {
 
 class LocalState : public State {
   public:
-    explicit LocalState(BlockNum block_num, DataStoreRef data_store)
+    explicit LocalState(BlockNum block_num, db::DataStoreRef data_store)
         : block_num_{block_num},
           txn_{data_store.chaindata.start_ro_tx()},
           data_model_{txn_, data_store.blocks_repository} {}
@@ -97,4 +96,4 @@ class LocalState : public State {
     db::DataModel data_model_;
 };
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::execution

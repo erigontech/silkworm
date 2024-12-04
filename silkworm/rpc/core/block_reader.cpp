@@ -20,7 +20,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/state/state_reader.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -30,7 +30,7 @@
 
 namespace silkworm::rpc {
 
-using db::state::StateReader;
+using db::kv::StateReader;
 using namespace silkworm::db;
 using namespace silkworm::db::chain;
 

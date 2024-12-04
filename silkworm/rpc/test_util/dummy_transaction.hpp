@@ -25,7 +25,6 @@
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
-#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 
@@ -68,10 +67,6 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
 
     Task<std::shared_ptr<db::kv::api::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
         co_return cursor_dup_sort_;
-    }
-
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const db::chain::ChainStorage& storage, BlockNum block_num) override {
-        return std::make_shared<db::state::RemoteState>(executor, *this, storage, block_num);
     }
 
     std::shared_ptr<db::chain::ChainStorage> create_storage() override {

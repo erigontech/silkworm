@@ -24,7 +24,7 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::db::kv {
 
 StateReader::StateReader(kv::api::Transaction& tx, BlockNum block_num) : tx_(tx), block_num_(block_num) {}
 
@@ -87,4 +87,4 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
     co_return result.value;
 }
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::db::kv

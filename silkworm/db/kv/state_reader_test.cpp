@@ -25,7 +25,7 @@
 #include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/rpc/common/util.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::db::kv {
 
 using testing::_;
 using testing::Invoke;
@@ -208,4 +208,4 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::db::kv

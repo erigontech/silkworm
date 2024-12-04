@@ -1779,18 +1779,20 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
 
+    std::shared_ptr<State> state{};
     std::shared_ptr<State> curr_state{};
 
     if (index == -1) {
+        state = tx_.create_state_txn(current_executor, chain_storage_, block_num);
         curr_state = tx_.create_state(current_executor, chain_storage_, block_num);
     } else {
         auto txn_id = co_await tx_.first_txn_num_in_block(block_num) + static_cast<uint64_t>(index);
-        curr_state = tx_.create_state_txn(current_executor, chain_storage_, txn_id);
+        state = tx_.create_state_txn(current_executor, chain_storage_, txn_id);
+        curr_state = tx_.create_state_txn(current_executor, chain_storage_, txn_id + 1);
     }
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {
         Tracers tracers;
 
-        auto state = tx_.create_state(current_executor, chain_storage_, block_num);
         silkworm::IntraBlockState initial_ibs{*state};
         StateAddresses state_addresses(initial_ibs);
 

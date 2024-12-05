@@ -230,6 +230,22 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: set_union", 
     }
 }
 
+TEST_CASE_METHOD(PaginatedSequenceTest, "range stream", "[db][kv][api][paginated_sequence]") {
+    const Fixtures<std::pair<uint64_t, uint64_t>, std::vector<uint64_t>> fixtures{
+        {/*from, to=*/{0, 0}, /*expected_sequence=*/{}},
+        {/*from, to=*/{0, 1}, /*expected_sequence=*/{0}},
+        {/*from, tot=*/{0, 2}, /*expected_sequence=*/{0, 1}},
+        {/*from, tot=*/{2, 0}, /*expected_sequence=*/{}}};
+    int i = 0;
+    for (const auto& [pair, expected_sequence] : fixtures) {
+        SECTION("test range: " + std::to_string(++i)) {
+            auto stream = make_range_stream<uint64_t>(pair.first, pair.second);
+            auto sequence = spawn_and_wait(paginated_iterator_to_vector(stream));
+            CHECK(sequence == expected_sequence);
+        }
+    }
+}
+
 TEST_CASE_METHOD(PaginatedSequenceTest, "empty iterators", "[db][kv][api][paginated_sequence]") {
     EmptyIterator<uint64_t> empty_it_u64;
     CHECK_FALSE(spawn_and_wait(empty_it_u64.has_next()));

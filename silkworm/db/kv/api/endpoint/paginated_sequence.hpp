@@ -380,4 +380,32 @@ PaginatedStream<V> set_union(PaginatedStream<V> it1, PaginatedStream<V> it2, boo
     return std::make_unique<UnionIterator<V>>(std::move(it1), std::move(it2), ascending, limit);
 }
 
+template <Value V>
+class RangePaginatedIterator : public PaginatedIterator<V> {
+  public:
+    using value_type = V;
+
+    RangePaginatedIterator(V from, V to)
+        : current_(from), to_(to) {}
+
+    Task<bool> has_next() override {
+        co_return current_ < to_;
+    }
+
+    Task<std::optional<value_type>> next() override {
+        if (current_ >= to_) {
+            co_return std::nullopt;
+        }
+        co_return current_++;
+    }
+
+  private:
+    V current_;
+    V to_;
+};
+
+template <Value V>
+PaginatedStream<V> make_range_stream(V from, V to) {
+    return std::make_unique<RangePaginatedIterator<V>>(from, to);
+}
 }  // namespace silkworm::db::kv::api

@@ -23,7 +23,7 @@
 
 #include "util.hpp"
 
-namespace silkworm::db::etl {
+namespace silkworm::datastore::etl {
 
 inline constexpr size_t kInitialBufferCapacity = 32768;
 
@@ -72,4 +72,4 @@ class Buffer {
     std::vector<Entry> buffer_;  // buffer for holding entries
 };
 
-}  // namespace silkworm::db::etl
+}  // namespace silkworm::datastore::etl

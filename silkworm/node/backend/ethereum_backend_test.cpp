@@ -19,7 +19,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm {
@@ -31,11 +31,11 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
     DataDirectory data_dir{tmp_dir.path()};
     REQUIRE_NOTHROW(data_dir.deploy());
 
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    datastore::kvdb::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
     db_config.in_memory = true;
-    auto chaindata_env = db::open_env(db_config);
-    db::ROAccess chaindata{chaindata_env};
+    auto chaindata_env = datastore::kvdb::open_env(db_config);
+    datastore::kvdb::ROAccess chaindata{chaindata_env};
 
     NodeSettings node_settings;
 

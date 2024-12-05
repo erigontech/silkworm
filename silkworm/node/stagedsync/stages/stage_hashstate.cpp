@@ -30,7 +30,9 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using silkworm::db::etl::Entry;
+using datastore::kvdb::from_slice;
+using datastore::kvdb::to_slice;
+using silkworm::datastore::etl::Entry;
 
 Stage::Result HashState::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
@@ -63,7 +65,7 @@ Stage::Result HashState::forward(RWTxn& txn) {
         }
 
         reset_log_progress();
-        collector_ = std::make_unique<etl_mdbx::Collector>(etl_settings_);
+        collector_ = std::make_unique<datastore::kvdb::Collector>(etl_settings_);
 
         if (!previous_progress || segment_width > stages::kLargeBlockSegmentWorthRegen) {
             // Clear any previous contents
@@ -289,10 +291,10 @@ Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
                 throw std::runtime_error(std::string(table::kHashedStorage.name) + " should be empty");
 
             // ETL key contains hashed location; for DB put we need to move it from key to value
-            const etl_mdbx::LoadFunc load_func = [&storage_target](
-                                                     const Entry& entry,
-                                                     RWCursorDupSort& target,
-                                                     MDBX_put_flags_t) -> void {
+            const datastore::kvdb::LoadFunc load_func = [&storage_target](
+                                                            const Entry& entry,
+                                                            datastore::kvdb::RWCursorDupSort& target,
+                                                            MDBX_put_flags_t) -> void {
                 if (entry.value.empty()) {
                     return;
                 }
@@ -466,7 +468,7 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
                 evmc::address address{bytes_to_address(changeset_value_view)};
                 if (!changed_addresses.contains(address)) {
                     auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
-                    auto plainstate_data{source_plainstate->find(to_slice(address), /*throw_notfound=*/false)};
+                    auto plainstate_data{source_plainstate->find(db::to_slice(address), /*throw_notfound=*/false)};
                     if (plainstate_data.done) {
                         Bytes current_value{from_slice(plainstate_data.value)};
                         changed_addresses[address] = std::make_pair(address_hash, current_value);
@@ -826,7 +828,7 @@ Stage::Result HashState::write_changes_from_changed_addresses(RWTxn& txn, const 
         auto& [address_hash, current_encoded_value] = pair;
         if (!current_encoded_value.empty()) {
             // Update HashedAccounts table
-            target_hashed_accounts->upsert(to_slice(address_hash), to_slice(current_encoded_value));
+            target_hashed_accounts->upsert(db::to_slice(address_hash), to_slice(current_encoded_value));
 
             // Lookup value in PlainCodeHash for Contract
             const auto incarnation{Account::incarnation_from_encoded_storage(current_encoded_value)};
@@ -845,7 +847,7 @@ Stage::Result HashState::write_changes_from_changed_addresses(RWTxn& txn, const 
                 }
             }
         } else {
-            target_hashed_accounts->erase(to_slice(address_hash));
+            target_hashed_accounts->erase(db::to_slice(address_hash));
         }
     }
 

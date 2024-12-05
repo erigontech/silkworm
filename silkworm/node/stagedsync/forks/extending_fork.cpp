@@ -69,7 +69,7 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
             // create the real fork
             fork_ = std::make_unique<Fork>(
                 forking_point_,
-                db::ROTxnManaged(main_chain_.tx().db()),
+                datastore::kvdb::ROTxnManaged(main_chain_.tx().db()),
                 main_chain_.data_model_factory(),
                 main_chain_.log_timer_factory(),
                 main_chain_.stages_factory(),

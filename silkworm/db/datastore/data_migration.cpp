@@ -21,7 +21,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/sleep.hpp>
 
-namespace silkworm::db {
+namespace silkworm::datastore {
 
 Task<bool> DataMigration::exec() {
     SILK_DEBUG_M(name()) << "START";
@@ -52,4 +52,4 @@ Task<void> DataMigration::run_loop() {
     }
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore

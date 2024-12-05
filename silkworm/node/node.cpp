@@ -107,7 +107,7 @@ class NodeImpl final {
     std::unique_ptr<snapshots::bittorrent::BitTorrentClient> bittorrent_client_;
 };
 
-static db::EnvConfig init_chain_data_db(NodeSettings& node_settings) {
+static datastore::kvdb::EnvConfig init_chain_data_db(NodeSettings& node_settings) {
     node_settings.data_directory->deploy();
     node_settings.chain_config = db::chain_data_init(db::ChainDataInitSettings{
         .chaindata_env_config = node_settings.chaindata_env_config,
@@ -174,7 +174,7 @@ static stagedsync::StageContainerFactory make_stages_factory(
 }
 
 static sentry::SessionSentryClient::StatusDataProvider make_sentry_eth_status_data_provider(
-    db::ROAccess db_access,
+    datastore::kvdb::ROAccess db_access,
     const ChainConfig& chain_config) {
     auto chain_head_provider = [db_access = std::move(db_access)] {
         return db::read_chain_head(db_access);

@@ -38,7 +38,7 @@
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
@@ -59,6 +59,7 @@
 namespace fs = std::filesystem;
 using namespace silkworm;
 using namespace silkworm::db;
+using namespace silkworm::datastore::kvdb;
 
 class Progress {
   public:
@@ -1426,7 +1427,7 @@ void do_extract_headers(EnvConfig& config, const std::string& file_name, uint32_
 void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_blocks) {
     using namespace concurrency::awaitable_wait_for_one;
 
-    class StageSchedulerAdapter : public stagedsync::StageScheduler, public ActiveComponent {
+    class StageSchedulerAdapter : public datastore::StageScheduler, public ActiveComponent {
       public:
         explicit StageSchedulerAdapter(RWAccess db_access)
             : db_access_(std::move(db_access)) {}

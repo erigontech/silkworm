@@ -86,7 +86,7 @@ TEST_CASE("Headers receiving and saving") {
     db::DataModelFactory data_model_factory = context.data_model_factory();
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    RWAccess db_access = context.chaindata_rw();
+    auto db_access = context.chaindata_rw();
 
     // creating the ExecutionEngine
     ExecutionEngineForTest exec_engine{

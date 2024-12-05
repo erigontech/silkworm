@@ -33,7 +33,7 @@
 
 #include "access_layer.hpp"
 #include "data_store.hpp"
-#include "datastore/mdbx/mdbx.hpp"
+#include "datastore/kvdb/mdbx.hpp"
 #include "datastore/snapshot_merger.hpp"
 #include "datastore/snapshots/bittorrent/client.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
@@ -53,7 +53,7 @@ class SnapshotSync {
         ChainId chain_id,
         db::DataStoreRef data_store,
         std::filesystem::path tmp_dir_path,
-        stagedsync::StageScheduler& stage_scheduler);
+        datastore::StageScheduler& stage_scheduler);
 
     Task<void> run();
 
@@ -86,7 +86,7 @@ class SnapshotSync {
     snapshots::bittorrent::BitTorrentClient client_;
 
     db::Freezer snapshot_freezer_;
-    db::SnapshotMerger snapshot_merger_;
+    datastore::SnapshotMerger snapshot_merger_;
 
     std::latch is_stopping_latch_;
     std::atomic_bool setup_done_;

@@ -17,7 +17,7 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 silkworm_library(
-  silkworm_db_etl
+  silkworm_datastore_etl
   PUBLIC silkworm_core
   PRIVATE silkworm_infra
 )

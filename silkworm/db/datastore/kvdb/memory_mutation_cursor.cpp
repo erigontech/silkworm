@@ -18,7 +18,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::db {
+namespace silkworm::datastore::kvdb {
 
 MemoryMutationCursor::MemoryMutationCursor(MemoryMutation& memory_mutation, const MapConfig& config)
     : memory_mutation_(memory_mutation),
@@ -835,4 +835,4 @@ void MemoryMutationCursor::throw_error_notfound() {
     mdbx::error::throw_exception(MDBX_error_t::MDBX_NOTFOUND);
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore::kvdb

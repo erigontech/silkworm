@@ -29,7 +29,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/infra/grpc/server/call.hpp>
 #include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
@@ -41,6 +41,8 @@
 // 5.1.0 - first issue
 
 namespace silkworm::db::kv::grpc::server {
+
+using namespace silkworm::datastore::kvdb;
 
 api::Version higher_version_ignoring_patch(api::Version lhs, api::Version rhs);
 

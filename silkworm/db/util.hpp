@@ -31,7 +31,7 @@ see its package dbutils.
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 
 namespace silkworm::db {
 
@@ -124,20 +124,20 @@ std::tuple<ByteView, uint32_t> split_log_topic_key(const mdbx::slice& key);
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(ByteView key, ByteView value);
 
 inline mdbx::slice to_slice(const evmc::bytes32& value) {
-    return to_slice(ByteView{value.bytes});
+    return datastore::kvdb::to_slice(ByteView{value.bytes});
 }
 
 inline mdbx::slice to_slice(const evmc::address& address) {
-    return to_slice(ByteView{address.bytes});
+    return datastore::kvdb::to_slice(ByteView{address.bytes});
 }
 
 // If there exists an entry in a multivalue table with a given key and a value starting with a given prefix,
 // return the suffix of the value.
 // Otherwise, return nullopt.
-std::optional<ByteView> find_value_suffix(ROCursorDupSort& table, ByteView key, ByteView value_prefix);
+std::optional<ByteView> find_value_suffix(datastore::kvdb::ROCursorDupSort& table, ByteView key, ByteView value_prefix);
 
 // We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
-void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
+void upsert_storage_value(datastore::kvdb::RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
 
 //! Build key for account domain given the target address and location
 Bytes account_domain_key(const evmc::address& address);

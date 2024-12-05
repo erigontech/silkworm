@@ -20,12 +20,18 @@
 #include <exception>
 #include <mutex>
 
-#include <silkworm/db/datastore/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/datastore/kvdb/etl_mdbx_collector.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
+
+namespace silkworm::db {
+using silkworm::datastore::kvdb::MapConfig;
+using silkworm::datastore::kvdb::ROTxn;
+using silkworm::datastore::kvdb::RWTxn;
+}  // namespace silkworm::db
 
 namespace silkworm::stagedsync {
 

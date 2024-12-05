@@ -123,7 +123,7 @@ template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::kMemo = RecSplit4::fill_golomb_rice();
 
 using RecSplit4 = RecSplit<kTestLeaf>;
-auto seq_build_strategy_4() { return std::make_unique<RecSplit4::SequentialBuildingStrategy>(db::etl::kOptimalBufferSize); }
+auto seq_build_strategy_4() { return std::make_unique<RecSplit4::SequentialBuildingStrategy>(datastore::etl::kOptimalBufferSize); }
 
 TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][snapshots][recsplit]") {
     TemporaryFile index_file;

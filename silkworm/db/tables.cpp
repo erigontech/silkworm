@@ -24,7 +24,7 @@ namespace silkworm::db::table {
 
 void check_or_create_chaindata_tables(RWTxn& txn) {
     for (const auto& config : kChainDataTables) {
-        if (db::has_map(txn, config.name)) {
+        if (has_map(txn, config.name)) {
             auto table_map{txn->open_map(config.name)};
             auto table_info{txn->get_handle_info(table_map)};
             auto table_key_mode{table_info.key_mode()};
@@ -48,7 +48,7 @@ void check_or_create_chaindata_tables(RWTxn& txn) {
     }
 }
 
-std::optional<db::MapConfig> get_map_config(const std::string& map_name) {
+std::optional<MapConfig> get_map_config(const std::string& map_name) {
     for (const auto& table_config : kChainDataTables) {
         if (table_config.name == map_name) {
             return table_config;

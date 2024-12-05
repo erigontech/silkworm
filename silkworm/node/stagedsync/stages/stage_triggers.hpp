@@ -23,7 +23,7 @@
 
 namespace silkworm::stagedsync {
 
-class TriggersStage : public Stage, public StageScheduler {
+class TriggersStage : public Stage, public datastore::StageScheduler {
   public:
     explicit TriggersStage(SyncContext* sync_context);
     ~TriggersStage() override = default;

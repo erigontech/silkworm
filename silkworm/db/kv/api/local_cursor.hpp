@@ -25,7 +25,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 
 #include "cursor.hpp"
 
@@ -61,7 +61,7 @@ class LocalCursor : public CursorDupSort {
 
   private:
     uint32_t cursor_id_;
-    PooledCursor db_cursor_;
+    datastore::kvdb::PooledCursor db_cursor_;
     mdbx::txn& txn_;
 };
 

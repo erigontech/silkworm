@@ -39,7 +39,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/os.hpp>
 
-namespace silkworm::db {
+namespace silkworm::datastore::kvdb {
 
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 
@@ -71,8 +71,8 @@ namespace detail {
         void operator()(MDBX_cursor* ptr) const noexcept { mdbx_cursor_close(ptr); }
     };
 
-    std::string dump_mdbx_result(const db::CursorResult& result);
-    std::string slice_as_hex(const db::Slice& data);
+    std::string dump_mdbx_result(const CursorResult& result);
+    std::string slice_as_hex(const Slice& data);
 }  // namespace detail
 
 class ROTxn;
@@ -597,4 +597,4 @@ inline ByteView from_slice(const Slice slice) {
     return {static_cast<const uint8_t*>(slice.data()), slice.length()};
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore::kvdb

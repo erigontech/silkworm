@@ -42,7 +42,7 @@ struct IndexDescriptor {
     uint64_t base_data_id{};
     bool double_enum_index{true};
     bool less_false_positives{};
-    size_t etl_buffer_size{db::etl::kOptimalBufferSize};
+    size_t etl_buffer_size{datastore::etl::kOptimalBufferSize};
 };
 
 struct IndexInputDataQuery {

@@ -31,7 +31,7 @@
 
 #include <silkworm/capi/silkworm.h>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -223,8 +223,8 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
     return snapshot_sequence;
 }
 
-int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, db::RWAccess chaindata) {
-    db::ROTxnManaged ro_txn = chaindata.start_ro_tx();
+int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, datastore::kvdb::RWAccess chaindata) {
+    datastore::kvdb::ROTxnManaged ro_txn = chaindata.start_ro_tx();
     const auto chain_config{db::read_chain_config(ro_txn)};
     ensure(chain_config.has_value(), "no chain configuration in database");
     const auto chain_id{chain_config->chain_id};
@@ -252,7 +252,7 @@ int execute_with_internal_txn(SilkwormHandle handle, ExecuteBlocksSettings setti
     return status_code;
 }
 
-int execute_with_external_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, db::RWTxnManaged rw_txn) {
+int execute_with_external_txn(SilkwormHandle handle, ExecuteBlocksSettings settings, datastore::kvdb::RWTxnManaged rw_txn) {
     const auto chain_config{db::read_chain_config(rw_txn)};
     ensure(chain_config.has_value(), "no chain configuration in database");
     const auto chain_id{chain_config->chain_id};
@@ -283,7 +283,7 @@ int execute_with_external_txn(SilkwormHandle handle, ExecuteBlocksSettings setti
 
 int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const DataDirectory& data_dir) {
     // Open chain database
-    silkworm::db::EnvConfig config{
+    silkworm::datastore::kvdb::EnvConfig config{
         .path = data_dir.chaindata().path().string(),
         .readonly = false,
         .exclusive = true};
@@ -376,11 +376,11 @@ int start_rpcdaemon(SilkwormHandle handle, const rpc::DaemonSettings& /*settings
     });
 
     // Open chain database
-    silkworm::db::EnvConfig config{
+    silkworm::datastore::kvdb::EnvConfig config{
         .path = data_dir.chaindata().path().string(),
         .readonly = false,
         .exclusive = true};
-    ::mdbx::env_managed env{silkworm::db::open_env(config)};
+    ::mdbx::env_managed env{silkworm::datastore::kvdb::open_env(config)};
 
     SilkwormRpcSettings settings{};
     const int status_code{silkworm_start_rpcdaemon(handle, &*env, &settings)};

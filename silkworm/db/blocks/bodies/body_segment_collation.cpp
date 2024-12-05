@@ -25,6 +25,9 @@
 
 namespace silkworm::db {
 
+using namespace silkworm::datastore::kvdb;
+using namespace datastore;
+
 void BodySegmentCollation::copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const {
     BlockNumRange range = command.range;
     uint64_t base_txn_id = command.base_txn_id;

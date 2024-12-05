@@ -17,13 +17,13 @@
 #pragma once
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 
 namespace silkworm::db {
 
 struct ChainDataInitSettings {
-    db::EnvConfig chaindata_env_config;
+    datastore::kvdb::EnvConfig chaindata_env_config;
     db::PruneMode prune_mode;
     ChainId network_id{0};
     bool init_if_empty{true};

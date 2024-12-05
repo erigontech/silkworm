@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 
 /*
@@ -24,6 +24,9 @@
 */
 
 namespace silkworm::db::stages {
+
+using datastore::kvdb::ROTxn;
+using datastore::kvdb::RWTxn;
 
 //! \brief Headers are downloaded, their Proof-Of-Work validity and chaining is verified
 inline constexpr const char* kHeadersKey{"Headers"};

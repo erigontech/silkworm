@@ -17,11 +17,11 @@
 #pragma once
 
 #include <silkworm/core/types/chain_head.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 
 namespace silkworm::db {
 
-ChainHead read_chain_head(ROTxn& txn);
-ChainHead read_chain_head(db::ROAccess db_access);
+ChainHead read_chain_head(datastore::kvdb::ROTxn& txn);
+ChainHead read_chain_head(datastore::kvdb::ROAccess db_access);
 
 }  // namespace silkworm::db

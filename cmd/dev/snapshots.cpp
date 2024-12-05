@@ -1001,13 +1001,13 @@ void lookup_transaction(const SnapshotSubcommandSettings& settings) {
 void merge(const SnapshotSettings& settings) {
     auto repository = make_repository(settings);
     TemporaryDirectory tmp_dir;
-    db::SnapshotMerger merger{repository, tmp_dir.path()};
+    datastore::SnapshotMerger merger{repository, tmp_dir.path()};
     test_util::TaskRunner runner;
     runner.run(merger.exec());
 }
 
 void sync(const SnapshotSettings& settings) {
-    class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
+    class NoopStageSchedulerAdapter : public datastore::StageScheduler {
       public:
         explicit NoopStageSchedulerAdapter() = default;
         ~NoopStageSchedulerAdapter() override = default;
@@ -1019,7 +1019,7 @@ void sync(const SnapshotSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     TemporaryDirectory tmp_dir;
-    db::EnvConfig chaindata_env_config{tmp_dir.path()};
+    datastore::kvdb::EnvConfig chaindata_env_config{tmp_dir.path()};
 
     db::DataStore data_store{
         chaindata_env_config,

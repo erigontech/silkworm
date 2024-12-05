@@ -28,7 +28,7 @@
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/memory_mutation.hpp>
+#include <silkworm/db/datastore/kvdb/memory_mutation.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/execution/api/endpoint/validation.hpp>
@@ -50,7 +50,7 @@ class MainChain {
         db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
         StageContainerFactory stages_factory,
-        db::RWAccess dba);
+        datastore::kvdb::RWAccess dba);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -100,7 +100,7 @@ class MainChain {
     const db::DataModelFactory& data_model_factory() const { return data_model_factory_; }
     const std::optional<TimerFactory>& log_timer_factory() const;
     const StageContainerFactory& stages_factory() const { return stages_factory_; }
-    StageScheduler& stage_scheduler() const;
+    datastore::StageScheduler& stage_scheduler() const;
 
   protected:
     db::DataModel data_model() const { return data_model_factory_(tx_); }
@@ -119,8 +119,8 @@ class MainChain {
     db::DataModelFactory data_model_factory_;
     std::optional<TimerFactory> log_timer_factory_;
     StageContainerFactory stages_factory_;
-    mutable db::RWAccess db_access_;
-    mutable db::RWTxnManaged tx_;
+    mutable datastore::kvdb::RWAccess db_access_;
+    mutable datastore::kvdb::RWTxnManaged tx_;
     bool is_first_sync_{true};
 
     ExecutionPipeline pipeline_;

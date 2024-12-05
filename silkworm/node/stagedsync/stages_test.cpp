@@ -39,6 +39,7 @@
 
 using namespace silkworm;
 using namespace silkworm::db;
+using namespace silkworm::datastore::kvdb;
 using namespace evmc::literals;
 
 static ethash::hash256 keccak256(const evmc::address& address) {
@@ -90,7 +91,7 @@ TEST_CASE("Sync Stages") {
         node_settings.data_directory->snapshots().path(),
     };
 
-    RWTxnManaged txn = data_store.chaindata_rw().start_rw_tx();
+    auto txn = data_store.chaindata_rw().start_rw_tx();
     table::check_or_create_chaindata_tables(txn);
     txn.commit_and_renew();
     const auto initial_tx_sequence{read_map_sequence(txn, table::kBlockTransactions.name)};

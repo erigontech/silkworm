@@ -34,7 +34,7 @@
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
 #include "blocks/headers/header_segment.hpp"
-#include "datastore/mdbx/etl_mdbx_collector.hpp"
+#include "datastore/kvdb/etl_mdbx_collector.hpp"
 #include "datastore/snapshots/bittorrent/torrent_file.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
 #include "stages.hpp"
@@ -65,7 +65,7 @@ SnapshotSync::SnapshotSync(
     ChainId chain_id,
     db::DataStoreRef data_store,
     std::filesystem::path tmp_dir_path,
-    stagedsync::StageScheduler& stage_scheduler)
+    datastore::StageScheduler& stage_scheduler)
     : settings_{std::move(settings)},
       snapshots_config_{Config::lookup_known_config(chain_id, snapshot_file_is_fully_merged)},
       data_store_{std::move(data_store)},
@@ -138,7 +138,7 @@ Task<void> SnapshotSync::setup() {
     blocks_repository().reopen_folder();
 
     // Update chain and stage progresses in database according to available snapshots
-    RWTxnManaged rw_txn = data_store_.chaindata.start_rw_tx();
+    datastore::kvdb::RWTxnManaged rw_txn = data_store_.chaindata.start_rw_tx();
     update_database(rw_txn, blocks_repository().max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
 
@@ -337,7 +337,7 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
     SILK_INFO << "SnapshotSync: database update started";
 
     // Iterate on block header snapshots and write header-related tables
-    etl_mdbx::Collector hash_to_block_num_collector;
+    datastore::kvdb::Collector hash_to_block_num_collector;
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
 
@@ -370,7 +370,7 @@ void SnapshotSync::update_block_headers(RWTxn& txn, BlockNum max_block_available
         }
     }
 
-    PooledCursor header_numbers_cursor{txn, table::kHeaderNumbers};
+    datastore::kvdb::PooledCursor header_numbers_cursor{txn, table::kHeaderNumbers};
     hash_to_block_num_collector.load(header_numbers_cursor);
     SILK_INFO << "SnapshotSync: database table HeaderNumbers updated";
 

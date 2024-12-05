@@ -72,7 +72,7 @@ class TransactionIndex {
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
             .base_data_id = first_tx_id,
             .less_false_positives = true,
-            .etl_buffer_size = db::etl::kOptimalBufferSize / 2,
+            .etl_buffer_size = datastore::etl::kOptimalBufferSize / 2,
         };
     }
 };

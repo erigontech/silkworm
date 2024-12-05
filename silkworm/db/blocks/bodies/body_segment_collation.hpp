@@ -20,11 +20,11 @@
 
 namespace silkworm::db {
 
-class BodySegmentCollation : public SegmentCollation {
+class BodySegmentCollation : public datastore::SegmentCollation {
   public:
     ~BodySegmentCollation() override = default;
-    void copy(ROTxn& txn, const SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const override;
-    void prune(RWTxn& txn, BlockNumRange range) const override;
+    void copy(datastore::kvdb::ROTxn& txn, const datastore::SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const override;
+    void prune(datastore::kvdb::RWTxn& txn, BlockNumRange range) const override;
 };
 
 }  // namespace silkworm::db

@@ -39,6 +39,7 @@
 
 namespace silkworm::db {
 
+using namespace silkworm::datastore;
 using namespace silkworm::snapshots;
 
 struct FreezerResult : public DataMigrationResult {

@@ -18,11 +18,11 @@
 
 #include <string>
 
-namespace silkworm::db {
+namespace silkworm::datastore {
 
 struct DataMigrationCommand {
     virtual ~DataMigrationCommand() = default;
     virtual std::string description() const = 0;
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore

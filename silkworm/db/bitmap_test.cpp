@@ -20,11 +20,13 @@
 #include <absl/container/btree_map.h>
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
-#include <silkworm/db/datastore/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/etl_mdbx_collector.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 
-namespace silkworm::db::bitmap {
+namespace silkworm::datastore::kvdb::bitmap {
+
+using namespace silkworm::db;
 
 static void cut_everything(roaring::Roaring& bm, uint64_t limit) {
     while (bm.cardinality() > 0) {
@@ -127,7 +129,7 @@ TEST_CASE("Bitmap Index Loader") {
         {Bytes(address3.bytes, kAddressLength), roaring3},
     };
 
-    etl_mdbx::Collector collector(context.dir().temp().path());
+    datastore::kvdb::Collector collector(context.dir().temp().path());
     IndexLoader bm_loader(table::kLogAddressIndex);
     IndexLoader::flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
     REQUIRE(collector.bytes_size());
@@ -211,4 +213,4 @@ TEST_CASE("Bitmap Index Loader") {
     REQUIRE(bm_loader.get_current_key().empty());
 }
 
-}  // namespace silkworm::db::bitmap
+}  // namespace silkworm::datastore::kvdb::bitmap

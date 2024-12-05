@@ -24,7 +24,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -34,6 +34,7 @@ namespace silkworm {
 
 using namespace evmc::literals;
 using namespace silkworm::db;
+using namespace silkworm::datastore::kvdb;
 using db::test_util::TempChainData;
 
 stagedsync::HistoryIndex make_stage_history_index(
@@ -43,7 +44,7 @@ stagedsync::HistoryIndex make_stage_history_index(
     return stagedsync::HistoryIndex{
         sync_context,
         kBatchSize,
-        etl::CollectorSettings{
+        datastore::etl::CollectorSettings{
             .work_path = chain_data.dir().temp().path(),
             .buffer_size = 256_Mebi},
         chain_data.prune_mode().history(),

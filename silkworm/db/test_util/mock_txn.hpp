@@ -18,18 +18,18 @@
 
 #include <gmock/gmock.h>
 
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 
 namespace silkworm::db::test_util {
 
-class MockROTxn : public ROTxn {
+class MockROTxn : public datastore::kvdb::ROTxn {
   public:
-    explicit MockROTxn() : ROTxn(txn_) {}
+    explicit MockROTxn() : datastore::kvdb::ROTxn(txn_) {}
 
     MOCK_METHOD((bool), is_open, (), (const, override));
     MOCK_METHOD((mdbx::env), db, (), (const, override));
-    MOCK_METHOD((std::unique_ptr<ROCursor>), ro_cursor, (const MapConfig&), (override));
-    MOCK_METHOD((std::unique_ptr<ROCursorDupSort>), ro_cursor_dup_sort, (const MapConfig&), (override));
+    MOCK_METHOD((std::unique_ptr<datastore::kvdb::ROCursor>), ro_cursor, (const datastore::kvdb::MapConfig&), (override));
+    MOCK_METHOD((std::unique_ptr<datastore::kvdb::ROCursorDupSort>), ro_cursor_dup_sort, (const datastore::kvdb::MapConfig&), (override));
     MOCK_METHOD((void), abort, (), (override));
 
   private:

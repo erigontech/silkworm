@@ -24,10 +24,12 @@
 
 namespace silkworm::db::test_util {
 
+using namespace silkworm::datastore::kvdb;
+
 TempChainData::TempChainData(bool with_create_tables, bool in_memory)
     : data_dir_(tmp_dir_.path(), /*create=*/true),
       chain_config_(kMainnetConfig),
-      chaindata_env_config_(db::EnvConfig{
+      chaindata_env_config_(EnvConfig{
           .path = data_dir_.chaindata().path().string(),
           .create = true,
           .readonly = false,
@@ -36,8 +38,8 @@ TempChainData::TempChainData(bool with_create_tables, bool in_memory)
       }) {
     chain_config_.genesis_hash.emplace(kMainnetGenesisHash);
 
-    env_ = std::make_unique<mdbx::env_managed>(db::open_env(chaindata_env_config_));
-    txn_ = std::make_unique<db::RWTxnManaged>(chaindata_rw().start_rw_tx());
+    env_ = std::make_unique<mdbx::env_managed>(open_env(chaindata_env_config_));
+    txn_ = std::make_unique<RWTxnManaged>(chaindata_rw().start_rw_tx());
 
     if (with_create_tables) {
         db::table::check_or_create_chaindata_tables(*txn_);

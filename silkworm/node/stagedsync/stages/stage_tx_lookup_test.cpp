@@ -26,6 +26,7 @@
 namespace silkworm {
 
 using namespace silkworm::db;
+using namespace silkworm::datastore::kvdb;
 using namespace evmc::literals;
 using db::test_util::TempChainDataStore;
 
@@ -35,7 +36,7 @@ stagedsync::TxLookup make_tx_lookup_stage(
     return stagedsync::TxLookup{
         sync_context,
         chain_data.data_model_factory(),
-        etl::CollectorSettings{chain_data.dir().temp().path(), 256_Mebi},
+        datastore::etl::CollectorSettings{chain_data.dir().temp().path(), 256_Mebi},
         chain_data.prune_mode().tx_index(),
     };
 }

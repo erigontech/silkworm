@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/common/directories.hpp>
 
-namespace silkworm::db {
+namespace silkworm::datastore::kvdb {
 
 static const MapConfig kTestMap{"TestTable"};
 static const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
@@ -53,12 +53,12 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     const TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path() / "main_db"};
     data_dir.deploy();
-    db::EnvConfig main_db_config{
+    EnvConfig main_db_config{
         .path = data_dir.chaindata().path().string(),
         .create = true,
         .in_memory = true,
     };
-    auto main_env{db::open_env(main_db_config)};
+    auto main_env{open_env(main_db_config)};
     RWTxnManaged main_rw_txn{main_env};
 
     MemoryOverlay overlay{
@@ -67,7 +67,7 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
         [](const std::string& map_name) {
             if (map_name == kTestMap.name) return kTestMap;
             if (map_name == kTestMultiMap.name) return kTestMultiMap;
-            return db::MapConfig{map_name.c_str()};
+            return MapConfig{map_name.c_str()};
         },
         "Sequence",
     };
@@ -289,4 +289,4 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     }
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore::kvdb

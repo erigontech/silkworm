@@ -26,7 +26,7 @@
 
 #include "etl_mdbx_collector.hpp"
 
-namespace silkworm::db::bitmap {
+namespace silkworm::datastore::kvdb::bitmap {
 
 template <typename BlockUpperBound>
 Bytes upper_bound_suffix(BlockUpperBound value) {
@@ -89,7 +89,7 @@ RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
 }
 
 template <typename RoaringMap, typename BlockUpperBound>
-void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector) {
     // Cannot use block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
     Bytes last_shard_suffix{upper_bound_suffix(std::numeric_limits<BlockUpperBound>::max())};
 
@@ -97,11 +97,11 @@ void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Coll
         max_value_size_for_leaf_page(*txn, key_size + /*shard upper_bound*/ sizeof(BlockUpperBound))};
 
     PooledCursor target(txn, index_config_);
-    etl_mdbx::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](
-                                     const etl::Entry& entry,
-                                     RWCursorDupSort& index_cursor,
-                                     MDBX_put_flags_t put_flags) -> void {
-        auto new_bitmap{bitmap::parse_impl<RoaringMap>(entry.value)};  // Bitmap being merged
+    datastore::kvdb::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](
+                                            const datastore::etl::Entry& entry,
+                                            RWCursorDupSort& index_cursor,
+                                            MDBX_put_flags_t put_flags) -> void {
+        auto new_bitmap{parse_impl<RoaringMap>(entry.value)};  // Bitmap being merged
 
         // Check whether we have any previous shard to merge with
         Bytes shard_key{
@@ -111,17 +111,17 @@ void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, etl_mdbx::Coll
 
         if (auto index_data{index_cursor.find(to_slice(shard_key), /*throw_notfound=*/false)}; index_data.done) {
             // Merge previous and current bitmap
-            new_bitmap |= bitmap::parse_impl<RoaringMap>(index_data.value);
+            new_bitmap |= parse_impl<RoaringMap>(index_data.value);
             index_cursor.erase();  // Delete currently found record as it'll be rewritten
         }
 
         // Consume bitmap splitting in shards
         while (!new_bitmap.isEmpty()) {
-            auto shard{bitmap::cut_left_impl<RoaringMap>(new_bitmap, optimal_shard_size)};
+            auto shard{cut_left_impl<RoaringMap>(new_bitmap, optimal_shard_size)};
             const bool consumed_to_last_chunk{new_bitmap.isEmpty()};
             const BlockUpperBound suffix{consumed_to_last_chunk ? std::numeric_limits<BlockUpperBound>::max() : shard.maximum()};
             intx::be::unsafe::store<BlockUpperBound>(&shard_key[shard_key.size() - sizeof(BlockUpperBound)], suffix);
-            Bytes shard_bytes{bitmap::to_bytes(shard)};
+            Bytes shard_bytes{to_bytes(shard)};
             mdbx::slice k{to_slice(shard_key)};
             mdbx::slice v{to_slice(shard_bytes)};
             mdbx::error::success_or_throw(index_cursor.put(k, &v, put_flags));
@@ -168,7 +168,7 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
                 break;
             }
 
-            auto db_bitmap{bitmap::parse_impl<RoaringMap>(index_data.value)};
+            auto db_bitmap{parse_impl<RoaringMap>(index_data.value)};
             if (db_bitmap.maximum() <= to) {
                 break;
             }
@@ -186,7 +186,7 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
 
             // Replace current record with the new bitmap ensuring is marked as last shard
             target.erase();
-            Bytes shard_bytes{bitmap::to_bytes(db_bitmap)};
+            Bytes shard_bytes{to_bytes(db_bitmap)};
             target.insert(to_slice(shard_key), to_slice(shard_bytes));
             break;
         }
@@ -196,11 +196,11 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
     current_key_.clear();
 }
 
-void IndexLoader::merge_bitmaps32(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps32(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector) {
     merge_bitmaps_impl<roaring::Roaring, uint32_t>(txn, key_size, bitmaps_collector);
 }
 
-void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl_mdbx::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector) {
     merge_bitmaps_impl<roaring::Roaring64Map, uint64_t>(txn, key_size, bitmaps_collector);
 }
 
@@ -240,7 +240,7 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
             target.erase();
         } else {
             // Read current bitmap
-            auto bitmap{bitmap::parse_impl<RoaringMap>(target_data.value)};
+            auto bitmap{parse_impl<RoaringMap>(target_data.value)};
             bool shard_shrunk{false};
             while (!bitmap.isEmpty() && bitmap.minimum() <= threshold) {
                 bitmap.remove(bitmap.minimum());
@@ -248,7 +248,7 @@ void IndexLoader::prune_bitmaps_impl(RWTxn& txn, BlockNum threshold) {
             }
             if (bitmap.isEmpty() || shard_shrunk) {
                 if (!bitmap.isEmpty()) {
-                    Bytes new_shard_data{bitmap::to_bytes(bitmap)};
+                    Bytes new_shard_data{to_bytes(bitmap)};
                     target.update(to_slice(data_key_view), to_slice(new_shard_data));
                 } else {
                     target.erase();
@@ -272,23 +272,23 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
 }
 
 template <typename RoaringMap>
-void flush_bitmaps_impl(absl::btree_map<Bytes, RoaringMap>& bitmaps, etl::Collector* collector, uint16_t flush_count) {
+void flush_bitmaps_impl(absl::btree_map<Bytes, RoaringMap>& bitmaps, datastore::etl::Collector* collector, uint16_t flush_count) {
     for (auto& [key, bitmap] : bitmaps) {
         Bytes etl_key(key.size() + sizeof(uint16_t), '\0');
         std::memcpy(&etl_key[0], key.data(), key.size());
         endian::store_big_u16(&etl_key[key.size()], flush_count);
-        collector->collect({etl_key, bitmap::to_bytes(bitmap)});
+        collector->collect({etl_key, to_bytes(bitmap)});
     }
     bitmaps.clear();
 }
 
 void IndexLoader::flush_bitmaps_to_etl(absl::btree_map<Bytes, roaring::Roaring64Map>& bitmaps,
-                                       etl::Collector* collector, uint16_t flush_count) {
+                                       datastore::etl::Collector* collector, uint16_t flush_count) {
     flush_bitmaps_impl(bitmaps, collector, flush_count);
 }
 
 void IndexLoader::flush_bitmaps_to_etl(absl::btree_map<Bytes, roaring::Roaring>& bitmaps,
-                                       etl::Collector* collector, uint16_t flush_count) {
+                                       datastore::etl::Collector* collector, uint16_t flush_count) {
     flush_bitmaps_impl(bitmaps, collector, flush_count);
 }
 
@@ -338,4 +338,4 @@ roaring::Roaring parse32(const mdbx::slice& data) {
     return parse_impl<roaring::Roaring>(data);
 }
 
-}  // namespace silkworm::db::bitmap
+}  // namespace silkworm::datastore::kvdb::bitmap

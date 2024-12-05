@@ -26,7 +26,7 @@
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 
-namespace silkworm::db::etl {
+namespace silkworm::datastore::etl {
 
 namespace fs = std::filesystem;
 
@@ -181,4 +181,4 @@ std::filesystem::path Collector::set_work_path(const std::optional<std::filesyst
     return res;
 }
 
-}  // namespace silkworm::db::etl
+}  // namespace silkworm::datastore::etl

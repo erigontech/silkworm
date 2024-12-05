@@ -38,12 +38,12 @@ int main(int argc, char* argv[]) {
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
-        db::EnvConfig db_config{data_dir.chaindata().path().string()};
-        auto env{db::open_env(db_config)};
+        datastore::kvdb::EnvConfig db_config{data_dir.chaindata().path().string()};
+        auto env{datastore::kvdb::open_env(db_config)};
         auto txn{env.start_read()};
 
-        auto canonical_hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
-        auto blockhashes_table{db::open_cursor(txn, db::table::kHeaderNumbers)};
+        auto canonical_hashes_table = datastore::kvdb::open_cursor(txn, db::table::kCanonicalHashes);
+        auto blockhashes_table = datastore::kvdb::open_cursor(txn, db::table::kHeaderNumbers);
         uint32_t scanned_headers{0};
 
         SILK_INFO << "Checking Block Hashes...";
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 
         // Check if each hash has the correct number according to the header table
         while (canonical_hashes_data) {
-            ByteView hash_data_view{db::from_slice(canonical_hashes_data.value)};  // Canonical Hash
+            ByteView hash_data_view{datastore::kvdb::from_slice(canonical_hashes_data.value)};  // Canonical Hash
             auto block_hashes_data{blockhashes_table.find(canonical_hashes_data.value, /*throw_notfound*/ false)};
             if (!block_hashes_data) {
                 uint64_t hash_block_num{

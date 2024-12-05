@@ -110,8 +110,8 @@ bool ExecutionPipeline::stop() {
     return stopped;
 }
 
-StageScheduler& ExecutionPipeline::stage_scheduler() const {
-    return *dynamic_cast<StageScheduler*>(stages_.at(kTriggersStageKey).get());
+datastore::StageScheduler& ExecutionPipeline::stage_scheduler() const {
+    return *dynamic_cast<datastore::StageScheduler*>(stages_.at(kTriggersStageKey).get());
 }
 
 Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_block_num) {

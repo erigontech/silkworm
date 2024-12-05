@@ -56,9 +56,10 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
     "ddcab467d5db31d063f2d58f266fa86c4502aa169d17762090e92b821843de69b41adbb5d86f5d114ba7f01a000000000000000000000"
     "00000000000000000000000000000000000000000000880000000000000000")};
 
+static const silkworm::ByteView kExecutionStage{stages::kExecution};
+
 TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     // SILK_LOG_STREAMS(test_util::null_stream(), test_util::null_stream());
-    const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -66,14 +67,12 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
-        const std::string EARLIEST_BLOCK_ID = kEarliestBlockId;
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(EARLIEST_BLOCK_ID, /*latest_required=*/false), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kEarliestBlockId, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == kEarliestBlockNum);
     }
 
     SECTION("kLatestBlockId") {
-        const std::string LATEST_BLOCK_ID = kLatestBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
         }));
@@ -81,23 +80,22 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(LATEST_BLOCK_ID, /*latest_required=*/false), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kLatestBlockId, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x1234567890123456);
     }
 
     SECTION("kLatestExecutedBlockId") {
-        const std::string LATEST_BLOCK_ID = kLatestExecutedBlockId;
+        const std::string kLatestBlockId = kLatestExecutedBlockId;
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(LATEST_BLOCK_ID, /*latest_required=*/false), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kLatestBlockId, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x1234567890123456);
     }
 
     SECTION("kPendingBlockId") {
-        const std::string PENDING_BLOCK_ID = kPendingBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
         }));
@@ -105,13 +103,12 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(PENDING_BLOCK_ID, /*latest_required=*/false), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kPendingBlockId, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x1234567890123456);
     }
 
     SECTION("kFinalizedBlockId") {
-        const std::string FINALIZED_FORKCHOICE_BLOCK_ID = kFinalizedBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, block_hash};
         }));
@@ -119,13 +116,12 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
             co_return kBlockNumber;
         }));
 
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(FINALIZED_FORKCHOICE_BLOCK_ID, /*latest_required=*/false), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kFinalizedBlockId, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x3d0900);
     }
 
     SECTION("kSafeBlockId") {
-        const std::string SAFE_FORKCHOICE_BLOCK_ID = kSafeBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, block_hash};
         }));
@@ -133,41 +129,41 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
             co_return kBlockNumber;
         }));
 
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(SAFE_FORKCHOICE_BLOCK_ID, /*latest_required=*/false), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kSafeBlockId, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x3d0900);
     }
 
     SECTION("block_num in hex") {
-        const std::string BLOCK_ID_HEX = "0x12345";
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(BLOCK_ID_HEX, /*latest_required=*/false), boost::asio::use_future);
+        const std::string kBlockIdHex = "0x12345";
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdHex, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x12345);
     }
 
     SECTION("block_num in dec") {
-        const std::string BLOCK_ID_DEC = "67890";
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(BLOCK_ID_DEC, /*latest_required=*/false), boost::asio::use_future);
+        const std::string kBlockIdDec = "67890";
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdDec, /*latest_required=*/false), boost::asio::use_future);
         REQUIRE_THROWS(result.get());
     }
 
     SECTION("block_num in hex & latest true") {
-        const std::string BLOCK_ID_HEX = "0x1234";
+        const std::string kBlockIdHex = "0x1234";
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000000000001234")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(BLOCK_ID_HEX, /*latest_required=*/true), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdHex, /*latest_required=*/true), boost::asio::use_future);
         auto [block_num, is_latest_block] = result.get();
         CHECK(block_num == 0x0000000000001234);
         CHECK(is_latest_block == true);
     }
 
     SECTION("block_num in hex & latest false") {
-        const std::string BLOCK_ID_HEX = "0x1234";
+        const std::string kBlockIdHex = "0x1234";
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000000000001235")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(BLOCK_ID_HEX, /*latest_required=*/true), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdHex, /*latest_required=*/true), boost::asio::use_future);
         auto [block_num, is_latest_block] = result.get();
         CHECK(block_num == 0x0000000000001234);
         CHECK(is_latest_block == false);
@@ -182,8 +178,7 @@ TEST_CASE("get_block_num ", "[rpc][core][blocks]") {
     WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
-        const std::string EARLIEST_BLOCK_ID = kEarliestBlockId;
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(EARLIEST_BLOCK_ID), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kEarliestBlockId), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == kEarliestBlockNum);
     }
@@ -191,21 +186,18 @@ TEST_CASE("get_block_num ", "[rpc][core][blocks]") {
 
 TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
     // SILK_LOG_STREAMS(null_stream(), null_stream());
-    const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
     WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
-        const std::string EARLIEST_BLOCK_ID = kEarliestBlockId;
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(EARLIEST_BLOCK_ID), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kEarliestBlockId), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == kEarliestBlockNum);
     }
 
     SECTION("kLatestBlockId") {
-        const std::string LATEST_BLOCK_ID = kLatestBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
         }));
@@ -213,23 +205,22 @@ TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(LATEST_BLOCK_ID), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kLatestBlockId), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == 0x1234567890123456);
     }
 
     SECTION("kLatestExecutedBlockId") {
-        const std::string LATEST_BLOCK_ID = kLatestExecutedBlockId;
+        const std::string kLatestBlockId = kLatestExecutedBlockId;
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(LATEST_BLOCK_ID), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kLatestBlockId), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == 0x1234567890123456);
     }
 
     SECTION("kPendingBlockId") {
-        const std::string PENDING_BLOCK_ID = kPendingBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}};
         }));
@@ -237,13 +228,12 @@ TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(PENDING_BLOCK_ID), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kPendingBlockId), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == 0x1234567890123456);
     }
 
     SECTION("kFinalizedBlockId") {
-        const std::string FINALIZED_FORKCHOICE_BLOCK_ID = kFinalizedBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, block_hash};
         }));
@@ -252,13 +242,12 @@ TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
             co_return kBlockNumber;
         }));
 
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(FINALIZED_FORKCHOICE_BLOCK_ID), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kFinalizedBlockId), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == 0x3d0900);
     }
 
     SECTION("kSafeBlockId") {
-        const std::string SAFE_FORKCHOICE_BLOCK_ID = kSafeBlockId;
         EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, block_hash};
         }));
@@ -266,14 +255,14 @@ TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
             co_return kBlockNumber;
         }));
 
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(SAFE_FORKCHOICE_BLOCK_ID), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kSafeBlockId), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == 0x3d0900);
     }
 }
 
 TEST_CASE("get_current_block_num", "[rpc][core][blocks]") {
-    const silkworm::ByteView kFinishStage{stages::kFinish};
+    static const silkworm::ByteView kFinishStage{stages::kFinish};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -288,7 +277,7 @@ TEST_CASE("get_current_block_num", "[rpc][core][blocks]") {
 }
 
 TEST_CASE("get_max_block_num", "[rpc][core][blocks]") {
-    const silkworm::ByteView kHeadersStage{stages::kHeaders};
+    static const silkworm::ByteView kHeadersStage{stages::kHeaders};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -303,7 +292,6 @@ TEST_CASE("get_max_block_num", "[rpc][core][blocks]") {
 }
 
 TEST_CASE("get_latest_block_num", "[rpc][core][blocks]") {
-    const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -321,7 +309,6 @@ TEST_CASE("get_latest_block_num", "[rpc][core][blocks]") {
 }
 
 TEST_CASE("get_latest_executed_block_num", "[rpc][core][blocks]") {
-    const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -380,7 +367,6 @@ TEST_CASE("get_forkchoice_safe_block_num genesis block_num if no safe block", "[
 }
 
 TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
-    const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};

@@ -112,7 +112,7 @@ void TxsAndBodiesQuery::Iterator::decode_body_rlp(ByteView body_rlp, BlockBodyFo
     }
 }
 
-TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() {
+TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() const {
     std::string log_title = "TxsAndBodiesQuery for: " + txs_segment_path_.path().string();
 
     auto txs_decoder = std::make_shared<seg::Decompressor>(txs_segment_path_.path(), txs_segment_region_);
@@ -146,7 +146,7 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() {
     return it;
 }
 
-TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::end() {
+TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::end() const {
     return Iterator{
         {},
         seg::Decompressor::Iterator::make_end(),

@@ -101,8 +101,8 @@ class TxsAndBodiesQuery {
           first_tx_id_(first_tx_id),
           expected_tx_count_(expected_tx_count) {}
 
-    Iterator begin();
-    Iterator end();
+    Iterator begin() const;
+    Iterator end() const;
 
     uint64_t expected_tx_count() const { return expected_tx_count_; }
 

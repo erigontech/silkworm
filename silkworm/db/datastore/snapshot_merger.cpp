@@ -111,6 +111,7 @@ void SnapshotMerger::index(std::shared_ptr<DataMigrationResult> result) {
 }
 
 static void schedule_bundle_cleanup(SnapshotBundle& bundle) {
+    // NOLINTNEXTLINE(performance-unnecessary-value-param)
     bundle.on_close([](std::vector<std::filesystem::path> files) {
         for (auto& path : files) {
             [[maybe_unused]] bool removed = std::filesystem::remove(path);

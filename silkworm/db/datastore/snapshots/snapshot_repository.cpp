@@ -110,11 +110,14 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
     SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
     auto segment_file_ext = some_bundle_paths.segment_paths().begin()->second.extension();
     SnapshotPathList segment_files = get_files(segment_file_ext);
+    SILK_INFO << "num segment files: " << segment_files.size();
     auto index_builders = index_builders_factory_->index_builders(segment_files);
+    SILK_INFO << "num index builders: " << index_builders.size();
 
     std::erase_if(index_builders, [&](const auto& builder) {
         return builder->path().exists();
     });
+    SILK_INFO << "num missing index builders: " << index_builders.size();
     return index_builders;
 }
 

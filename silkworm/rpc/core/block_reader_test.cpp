@@ -56,10 +56,8 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
     "ddcab467d5db31d063f2d58f266fa86c4502aa169d17762090e92b821843de69b41adbb5d86f5d114ba7f01a000000000000000000000"
     "00000000000000000000000000000000000000000000880000000000000000")};
 
-static const silkworm::ByteView kExecutionStage{stages::kExecution};
-
 TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
-    // SILK_LOG_STREAMS(test_util::null_stream(), test_util::null_stream());
+    static const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -86,7 +84,7 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     }
 
     SECTION("kLatestExecutedBlockId") {
-        const std::string kLatestBlockId = kLatestExecutedBlockId;
+        static const std::string kLatestBlockId = kLatestExecutedBlockId;
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
@@ -135,20 +133,20 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     }
 
     SECTION("block_num in hex") {
-        const std::string kBlockIdHex = "0x12345";
+        static const std::string kBlockIdHex = "0x12345";
         auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdHex, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x12345);
     }
 
     SECTION("block_num in dec") {
-        const std::string kBlockIdDec = "67890";
+        static const std::string kBlockIdDec = "67890";
         auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdDec, /*latest_required=*/false), boost::asio::use_future);
         REQUIRE_THROWS(result.get());
     }
 
     SECTION("block_num in hex & latest true") {
-        const std::string kBlockIdHex = "0x1234";
+        static const std::string kBlockIdHex = "0x1234";
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000000000001234")};
         }));
@@ -159,7 +157,7 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     }
 
     SECTION("block_num in hex & latest false") {
-        const std::string kBlockIdHex = "0x1234";
+        static const std::string kBlockIdHex = "0x1234";
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000000000001235")};
         }));
@@ -171,7 +169,6 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
 }
 
 TEST_CASE("get_block_num ", "[rpc][core][blocks]") {
-    // SILK_LOG_STREAMS(null_stream(), null_stream());
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -185,7 +182,7 @@ TEST_CASE("get_block_num ", "[rpc][core][blocks]") {
 }
 
 TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
-    // SILK_LOG_STREAMS(null_stream(), null_stream());
+    static const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -211,7 +208,7 @@ TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
     }
 
     SECTION("kLatestExecutedBlockId") {
-        const std::string kLatestBlockId = kLatestExecutedBlockId;
+        static const std::string kLatestBlockId = kLatestExecutedBlockId;
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
@@ -292,6 +289,7 @@ TEST_CASE("get_max_block_num", "[rpc][core][blocks]") {
 }
 
 TEST_CASE("get_latest_block_num", "[rpc][core][blocks]") {
+    static const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -309,6 +307,7 @@ TEST_CASE("get_latest_block_num", "[rpc][core][blocks]") {
 }
 
 TEST_CASE("get_latest_executed_block_num", "[rpc][core][blocks]") {
+    static const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};
@@ -367,6 +366,7 @@ TEST_CASE("get_forkchoice_safe_block_num genesis block_num if no safe block", "[
 }
 
 TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
+    static const silkworm::ByteView kExecutionStage{stages::kExecution};
     MockTransaction transaction;
     MockChainStorage chain_storage;
     rpc::BlockReader block_reader{chain_storage, transaction};

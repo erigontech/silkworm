@@ -34,6 +34,11 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // Plain debug assertion instead of SILKWORM_ASSERT not to validate txn twice (see execute_block_no_post_validation)
     assert(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
+    const auto rev = evm_.revision();
+    const auto g0 = protocol::intrinsic_gas(txn, rev);
+    SILKWORM_ASSERT(g0 <= INT64_MAX);  // true due to the precondition (transaction must be valid)
+    const auto execution_gas_limit = txn.gas_limit - static_cast<uint64_t>(g0);
+
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());
 
@@ -42,7 +47,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
 
-    const evmc_revision rev{evm_.revision()};
     update_access_lists(*sender, txn, rev);
 
     if (txn.to) {
@@ -64,10 +68,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint256 blob_gas_price{header.blob_gas_price().value_or(0)};
     state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
 
-    const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
-    SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
-
-    const CallResult vm_res = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
+    const CallResult vm_res = evm_.execute(txn, execution_gas_limit);
 
     const uint64_t gas_used{txn.gas_limit - refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund)};
 
